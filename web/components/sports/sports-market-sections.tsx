@@ -4,14 +4,11 @@ import Link from 'next/link'
 import { Contract, isSportsContract } from 'common/contract'
 import { SportInfo, sportGroupIds } from 'common/sports-schedule'
 import { DAY_MS } from 'common/util/time'
-import { ContractRow } from 'web/components/contract/contracts-table'
-import {
-  probColumn,
-  traderColumn,
-} from 'web/components/contract/contract-table-col-formats'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useHidesBlocked } from './blocked-topics'
+import { RelatedMarketRow } from './game-related-markets'
 
 /**
  * Markets that aren't tied to a specific game: what's hot in this sport right
@@ -24,6 +21,7 @@ export function SportsMarketSections(props: {
   enabled?: boolean
 }) {
   const { sport, className, enabled = true } = props
+  const hides = useHidesBlocked()
   const key = sport === 'all' ? 'all' : sport.key
   const gids = (sport === 'all' ? sportGroupIds('all') : sport.groupIds).join(
     ','
@@ -42,25 +40,29 @@ export function SportsMarketSections(props: {
     { term: '', filter: 'open', sort: 'score', gids, limit: 30 },
     undefined,
     `sports-trending-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
   const futures = useAPIGetter(
     'search-markets-full',
     { term: '', filter: 'open', sort: 'liquidity', gids, limit: 40 },
     undefined,
     `sports-futures-${key}`,
-    enabled
+    enabled && gids.length > 0
   )
+
+  // An empty topic set must never become an unfiltered search.
+  if (!gids) return null
 
   const now = Date.now()
   const trendingMarkets = (trending.data ?? [])
-    .filter((c) => !isSportsContract(c))
+    .filter((c) => !isSportsContract(c) && !hides(c.groupSlugs))
     .slice(0, 8)
   const trendingIds = new Set(trendingMarkets.map((c) => c.id))
   const futuresMarkets = (futures.data ?? [])
     .filter(
       (c) =>
         !isSportsContract(c) &&
+        !hides(c.groupSlugs) &&
         !trendingIds.has(c.id) &&
         (c.closeTime ?? 0) - now > 21 * DAY_MS
     )
@@ -112,14 +114,9 @@ function MarketSection(props: {
           ))}
         </Col>
       ) : (
-        <Col className="pb-1">
+        <Col className="divide-ink-100 divide-y pb-1">
           {contracts.map((c) => (
-            <ContractRow
-              key={c.id}
-              contract={c}
-              columns={[traderColumn, probColumn]}
-              hideAvatar
-            />
+            <RelatedMarketRow key={c.id} contract={c} />
           ))}
         </Col>
       )}

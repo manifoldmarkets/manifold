@@ -7,6 +7,11 @@ import { revalidateStaticProps } from 'shared/utils'
 // never shows up there. This files the sports that were missing, the obvious
 // subtopics of those sports, and two duplicates under the sport they repeat.
 //
+// It also files every sport's main topic directly under Sports, alongside
+// whatever umbrella holds it (Basketball, Motorsports…), so Sports is the main
+// topic of every sport. That changes nothing on /sports: curated sports claim
+// their topics by id.
+//
 // Dry-runs by default (prints each link and whether it would be added). Pass
 // --commit to add them. Safe to re-run: existing links are skipped.
 
@@ -24,6 +29,19 @@ const LINKS: [parent: string, child: string][] = [
   ['sports-default', 'fencing'],
   ['sports-default', 'pickleball'],
   ['sports-default', 'rock-climbing'],
+  // Sports whose main topic sat only under an umbrella topic.
+  ['sports-default', 'nba'],
+  ['sports-default', 'wnba'],
+  ['sports-default', 'college-basketball'],
+  ['sports-default', 'womens-ncaa-basketball'],
+  ['sports-default', 'college-football'],
+  ['sports-default', 'american-football'],
+  ['sports-default', 'mlb'],
+  ['sports-default', 'nhl'],
+  ['sports-default', 'formula-1'],
+  ['sports-default', 'mma'],
+  ['sports-default', 'nrl'],
+  ['sports-default', 'handball'],
   // Leagues and events of those sports, so their markets count too.
   ['cricket', 'ipl'],
   ['cricket', 'ipl-2026'],

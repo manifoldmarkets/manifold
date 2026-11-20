@@ -127,6 +127,22 @@ export async function processMembershipRenewals() {
 
     try {
       const result = await runTransactionWithRetries(async (tx) => {
+        // The batch was selected before this transaction, so the user may have
+        // since renewed, changed tier or cancelled. Charging then would bill
+        // twice (or for a deleted tier).
+        const stillDue = await tx.oneOrNone(
+          `SELECT 1 FROM user_entitlements
+           WHERE user_id = $1 AND entitlement_id = $2
+           AND auto_renew = true
+           AND expires_time IS NOT NULL
+           AND expires_time <= NOW()`,
+          [user_id, entitlement_id]
+        )
+        if (!stillDue) {
+          log(`${entitlement_id} for user ${user_id} no longer due, skipping renewal`)
+          return null
+        }
+
         // Get user's current balance
         const user = await tx.oneOrNone<{ balance: number }>(
           `SELECT balance FROM users WHERE id = $1`,

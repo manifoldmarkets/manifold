@@ -210,6 +210,22 @@ export function createSupabaseDirectClient(opts?: {
     // See queries to run during outage here: https://www.notion.so/manifoldmarkets/Backend-resources-8fba2b67cad04dd188564442c5876bfa?pvs=4#a8629a618e9e44ee9b6bbe408b10f9ff
     connectionTimeoutMillis: 10_000,
 
+    // TCP keepalive, so a connection whose peer has silently gone away is torn
+    // down by the kernel instead of sitting there until query_timeout. On
+    // 2026-10-17 from ~09:25 UTC three statements on the main scheduler (a
+    // clean-old-notifications delete chunk, the mv_ach_volume refresh and the
+    // sports-odds-resolve poll) each hung for exactly the 60-minute client
+    // timeout and failed with 'Query read timeout'. The 59-minute server-side
+    // statement_timeout never fired, so nothing was running on the server: the
+    // sockets were dead. With keepalive the kernel starts probing after
+    // keepAliveInitialDelayMillis of silence and gives up after the OS probe
+    // schedule (Linux default: 9 probes, 75 s apart), so a dead peer surfaces
+    // in about 12 minutes as a connection error the pool discards, rather
+    // than an hour-long hang that croner's `protect` turns into an hour of
+    // skipped runs.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+
     // ian: during the past few outages we've seen a lot of "idle in transaction" connections
     // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
     // Although we don't yet know the cause, setting this timeout will limit the damage

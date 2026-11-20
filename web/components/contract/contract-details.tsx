@@ -18,6 +18,7 @@ import { NO_CLOSE_TIME_TYPES } from 'common/contract'
 import { updateMarket } from 'web/lib/api/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
@@ -80,9 +81,11 @@ export function AuthorInfo(props: {
 export function CloseOrResolveTime(props: {
   contract: Contract
   editable?: boolean
+  // Can only edit because the user is a mod or admin
+  modAction?: boolean
   className?: string
 }) {
-  const { contract, editable, className } = props
+  const { contract, editable, modAction, className } = props
   const { resolutionTime, closeTime, isResolved } = contract
   if (contract.outcomeType === 'STONK') return null
   // Perps have no scheduled close; "Never closes" text is noise in the header.
@@ -105,6 +108,7 @@ export function CloseOrResolveTime(props: {
           closeTime={closeTime}
           contract={contract}
           editable={!!editable}
+          modAction={modAction}
         />
       )}
     </Row>
@@ -115,8 +119,9 @@ export function CloseDate(props: {
   closeTime: number | undefined
   contract: Contract
   editable?: boolean
+  modAction?: boolean
 }) {
-  const { closeTime, contract, editable } = props
+  const { closeTime, contract, editable, modAction } = props
 
   const [isEditingCloseTime, setIsEditingCloseTime] = useState(false)
   const dayJsCloseTime = dayjs(closeTime)
@@ -165,7 +170,14 @@ export function CloseDate(props: {
           )
         )}
         {editable && (
-          <PencilIcon className="sm:group-hover:fill-ink-600 hidden h-4 w-4 sm:flex sm:fill-transparent" />
+          <PencilIcon
+            className={clsx(
+              'hidden h-4 w-4 sm:flex sm:fill-transparent',
+              modAction
+                ? [MOD_ACTION_TEXT_CLASS, 'sm:group-hover:fill-current']
+                : 'sm:group-hover:fill-ink-600'
+            )}
+          />
         )}
       </Row>
       <EditCloseTimeModal

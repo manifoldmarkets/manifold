@@ -1,7 +1,8 @@
-import { MNX_INSTRUMENTS } from 'common/perps/mnx'
+import { MNX_LIVE_INSTRUMENTS } from 'common/perps/mnx'
 import { ENV } from 'common/envs/constants'
 import { fetchMnxSnapshot } from 'shared/mnx'
 import { getLocalEnv } from 'shared/init-admin'
+import { databaseOracleClock } from 'shared/oracle-clock'
 import { getOracleFeed } from 'shared/oracle-feeds'
 import { publishOracleObservation } from 'shared/perps/publish-oracle-observation'
 import { log } from 'shared/utils'
@@ -18,12 +19,13 @@ if (require.main === module)
       throw new Error(
         'Set NEXT_PUBLIC_FIREBASE_ENV explicitly to DEV or PROD and select the matching Firebase project'
       )
-    const snapshot = await fetchMnxSnapshot()
+    // Publish on the clock that stamps orders, as the tick does.
+    const snapshot = await fetchMnxSnapshot(databaseOracleClock(pg))
     const apply = process.argv.includes('--apply')
     const requested = process.argv
       .find((arg) => arg.startsWith('--feed='))
       ?.slice(7)
-    const specs = MNX_INSTRUMENTS.filter(
+    const specs = MNX_LIVE_INSTRUMENTS.filter(
       (spec) => !requested || spec.feedId === requested
     )
     if (!specs.length) throw new Error('Unknown MNX feed')

@@ -1,6 +1,6 @@
 import { runScript } from 'run-script'
 import {
-  STARTING_BALANCE,
+  LEGACY_VERIFIED_SIGNUP_TOP_UP,
   VERIFIED_SIGNUP_BONUS_DESCRIPTION,
 } from 'common/economy'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -40,14 +40,16 @@ runScript(async ({ pg }) => {
        )
      group by v.user_id, u.id
      order by approved_time`,
-    [VERIFIED_SIGNUP_BONUS_DESCRIPTION, STARTING_BALANCE]
+    [VERIFIED_SIGNUP_BONUS_DESCRIPTION, LEGACY_VERIFIED_SIGNUP_TOP_UP]
   )
 
   console.log(`${users.length} users missing the verification signup bonus:`)
   for (const u of users) {
     console.log(`  ${u.user_id} (${u.username}) approved ${u.approved_time}`)
   }
-  console.log(`Total to pay: ${users.length * STARTING_BALANCE} M$`)
+  console.log(
+    `Total to pay: ${users.length * LEGACY_VERIFIED_SIGNUP_TOP_UP} M$`
+  )
 
   if (!commit) {
     console.log('Dry run only — rerun with --commit to pay.')
@@ -73,19 +75,23 @@ runScript(async ({ pg }) => {
           fromType: 'BANK',
           toId: u.user_id,
           toType: 'USER',
-          amount: STARTING_BALANCE,
+          amount: LEGACY_VERIFIED_SIGNUP_TOP_UP,
           token: 'M$',
           category: 'SIGNUP_BONUS',
           description: VERIFIED_SIGNUP_BONUS_DESCRIPTION,
           data: { backfill: true },
         })
-        await updateUser(tx, u.user_id, { signupBonusPaid: STARTING_BALANCE })
+        await updateUser(tx, u.user_id, {
+          signupBonusPaid: LEGACY_VERIFIED_SIGNUP_TOP_UP,
+        })
         return 'paid'
       })
 
       if (result === 'paid') {
         paid++
-        console.log(`Paid ${STARTING_BALANCE} to ${u.username} (${u.user_id})`)
+        console.log(
+          `Paid ${LEGACY_VERIFIED_SIGNUP_TOP_UP} to ${u.username} (${u.user_id})`
+        )
       } else {
         console.log(`Skipped ${u.username} (${u.user_id}) — already paid`)
       }

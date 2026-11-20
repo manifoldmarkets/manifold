@@ -29,6 +29,8 @@ const PerpOverview = dynamic(
 const POLLING_FEED_TITLES: Record<string, string> = {
   'trump-approval-rating': 'Trump approval',
   'votehub-generic-ballot-2026': 'Generic ballot (D share)',
+  'votehub-generic-ballot-2028-dem': '2028 generic ballot (D share)',
+  'votehub-generic-ballot-2028-rep': '2028 generic ballot (R share)',
   'vance-favorability': 'Vance favorability',
 }
 
@@ -130,6 +132,8 @@ function PollingPerpCard(props: { perp: PerpContract; className?: string }) {
           contract={perp}
           height={56}
           className="!my-1"
+          // "VoteHub average" above already names the source.
+          hideCredit
           emptyState={
             <div className="text-ink-500 flex h-[56px] items-center text-xs">
               No recent prices

@@ -1,5 +1,6 @@
 import { find } from 'linkifyjs'
 import { Fragment } from 'react'
+import { SocialLink } from './social-link'
 
 export const getSocialLinks = (text: string) =>
   find(text).filter(
@@ -14,14 +15,12 @@ export function SocialText({ text }: { text: string }) {
       {links.map((link, i) => (
         <Fragment key={link.start}>
           {text.slice(links[i - 1]?.end ?? 0, link.start)}
-          <a
+          <SocialLink
             className="text-primary-700 hover:underline"
             href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
           >
             {link.value}
-          </a>
+          </SocialLink>
         </Fragment>
       ))}
       {text.slice(links[links.length - 1]?.end ?? 0)}

@@ -4,9 +4,14 @@ import { Button } from './button'
 import { api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
 import { Input } from '../widgets/input'
+import { ModActionBadge } from '../moderation/mod-action'
 
-export function UnresolveButton(props: { contractId: string }) {
-  const { contractId } = props
+export function UnresolveButton(props: {
+  contractId: string
+  modAction?: boolean
+  adminOnly?: boolean
+}) {
+  const { contractId, modAction, adminOnly } = props
 
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -15,7 +20,12 @@ export function UnresolveButton(props: { contractId: string }) {
 
   return (
     <>
-      <Button size="2xs" color="gray" onClick={() => setOpen(true)}>
+      <Button
+        size="2xs"
+        color={modAction ? 'purple-outline' : 'gray'}
+        onClick={() => setOpen(true)}
+      >
+        {modAction && <ModActionBadge admin={adminOnly} className="mr-1" />}
         Unresolve
       </Button>
       <Modal

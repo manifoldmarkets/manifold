@@ -3,7 +3,10 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { millisToTs, Row } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, mapValues, sortBy } from 'lodash'
-import { type SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  type SupabaseDirectClient,
+  type SupabaseTransaction,
+} from 'shared/supabase/init'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
@@ -30,6 +33,44 @@ export const getAnswerForUpdate = async (
     [id]
   )
   return row ? convertAnswer(row) : null
+}
+
+// An independent multiple choice market splits liquidity added to the whole
+// market equally among the answers open at that moment, as each one's pending
+// subsidy: the drizzle deepens that answer's pool with it, and resolution pays
+// out what's left. The provision records these answers, so a cancelled answer
+// refunds exactly its share (getIndependentMultiFixedPayouts). The row locks
+// keep any of them from resolving, and paying out its subsidy, without this
+// share until the transaction commits. Returns the answers, none if every
+// answer has resolved.
+export const addSubsidyToOpenAnswers = async (
+  pg: SupabaseTransaction,
+  contractId: string,
+  amount: number
+) => {
+  const answerIds = await pg.map(
+    `select id from answers
+    where contract_id = $1 and resolution is null
+    order by id
+    for update`,
+    [contractId],
+    (r: { id: string }) => r.id
+  )
+  if (answerIds.length === 0) return []
+  const share = amount / answerIds.length
+  const answers = await pg.map(
+    // Both columns can be null, and null plus a share is still null: the
+    // provision would record an answer that got nothing.
+    `update answers
+    set
+      subsidy_pool = coalesce(subsidy_pool, 0) + $1,
+      total_liquidity = coalesce(total_liquidity, 0) + $1
+    where id in ($2:list)
+    returning *`,
+    [share, answerIds],
+    convertAnswer
+  )
+  return sortBy(answers, 'index')
 }
 
 export const getAnswersForContractsDirect = async (
@@ -63,18 +104,31 @@ export const getAnswersForContract = async (
   )
 }
 
+export type AnswerWriteOptions = {
+  // Each write below is broadcast over the websocket as soon as its SQL runs.
+  // Inside a transaction that may be retried (runTransactionWithRetries), pass
+  // false and broadcast the returned value once the transaction has committed:
+  // an attempt that rolls back after the write would otherwise announce an
+  // answer, or prices, that never existed.
+  broadcast?: boolean
+}
+
 export const insertAnswer = async (
   pg: SupabaseDirectClient,
-  ans: Omit<Answer, 'id'>
+  ans: Omit<Answer, 'id'>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await insert(pg, 'answers', answerToRow(ans))
-  broadcastNewAnswer(convertAnswer(row))
+  const answer = convertAnswer(row)
+  if (options?.broadcast !== false) broadcastNewAnswer(answer)
+  return answer
 }
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   answerId: string,
-  data: Partial<Answer>
+  data: Partial<Answer>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await update(
     pg,
@@ -83,18 +137,21 @@ export const updateAnswer = async (
     partialAnswerToRow({ ...data, id: answerId })
   )
   const answer = convertAnswer(row)
-  broadcastUpdatedAnswers(answer.contractId, [answer])
+  if (options?.broadcast !== false) {
+    broadcastUpdatedAnswers(answer.contractId, [answer])
+  }
   return answer
 }
 
 export const updateAnswers = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  updates: (Partial<Answer> & { id: string })[]
+  updates: (Partial<Answer> & { id: string })[],
+  options?: AnswerWriteOptions
 ) => {
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 
-  broadcastUpdatedAnswers(contractId, updates)
+  if (options?.broadcast !== false) broadcastUpdatedAnswers(contractId, updates)
 }
 
 // Can update answers across multiple contracts.

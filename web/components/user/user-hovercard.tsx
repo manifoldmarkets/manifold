@@ -51,6 +51,7 @@ import { Linkify } from '../widgets/linkify'
 import { StackedUserNames } from '../widgets/user-link'
 import { TrophySvg } from '../shop/trophy-svg'
 import { isAprilFools } from 'common/util/time'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -337,7 +338,7 @@ const FetchUserHovercardContent = forwardRef(
                 <SimpleCopyTextButton
                   text={user.id}
                   tooltip="Copy user id"
-                  className="!px-1 !py-px"
+                  className={clsx('!px-1 !py-px', MOD_ACTION_TEXT_CLASS)}
                   eventTrackingName={'admin copy user id'}
                 />
               )}

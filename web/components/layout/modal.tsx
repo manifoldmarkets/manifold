@@ -21,6 +21,7 @@ export function Modal(props: {
   ariaLabel?: string
   hideCloseButton?: boolean
   adaptToKeyboard?: boolean
+  closeButtonPosition?: 'inside' | 'outside'
 }) {
   const {
     children,
@@ -33,6 +34,7 @@ export function Modal(props: {
     ariaLabel,
     hideCloseButton = false,
     adaptToKeyboard = false,
+    closeButtonPosition = 'outside',
   } = props
 
   const viewport = useVisualViewport(open && adaptToKeyboard)
@@ -45,7 +47,9 @@ export function Modal(props: {
     ? {
         // Leave room for the form and footer when the keyboard is open.
         '--modal-top-spacing':
-          'clamp(0px, calc(var(--modal-viewport-height, 100dvh) - 12rem), 5rem)',
+          closeButtonPosition === 'inside'
+            ? 'clamp(0px, calc(var(--modal-viewport-height, 100dvh) - 12rem), 1rem)'
+            : 'clamp(0px, calc(var(--modal-viewport-height, 100dvh) - 12rem), 5rem)',
         ...(viewport && {
           top: viewport.offsetTop,
           bottom: 'auto',
@@ -117,12 +121,20 @@ export function Modal(props: {
                 onClick={() => setOpen(false)}
                 aria-label="Close dialog"
                 className={clsx(
-                  'text-ink-700 bottom-50 hover:text-primary-400 focus:text-primary-400 absolute -top-4 right-4 -translate-y-full cursor-pointer outline-none sm:right-0',
-                  position === 'top' &&
+                  'text-ink-700 hover:text-primary-400 focus:text-primary-400 absolute cursor-pointer outline-none',
+                  closeButtonPosition === 'inside'
+                    ? 'focus-visible:ring-primary-500 right-2 top-2 rounded-md p-1 focus-visible:ring-2'
+                    : '-top-4 right-4 -translate-y-full sm:right-0',
+                  closeButtonPosition === 'outside' &&
+                    position === 'top' &&
                     'sm:-bottom-4 sm:top-auto sm:translate-y-full'
                 )}
               >
-                <XIcon className="h-8 w-8" />
+                <XIcon
+                  className={
+                    closeButtonPosition === 'inside' ? 'h-6 w-6' : 'h-8 w-8'
+                  }
+                />
                 <div className="sr-only">Close</div>
               </button>
             )}

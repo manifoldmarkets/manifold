@@ -2,7 +2,7 @@
  * @fileoverview DEPRECATED - GIDX registration form
  *
  * This component is being replaced by idenfy for identity verification.
- * See web/components/onboarding/identity-verification-page.tsx for the new flow.
+ * See web/hooks/use-start-identity-verification.ts for the new flow.
  */
 
 import { Col } from 'web/components/layout/col'

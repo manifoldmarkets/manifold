@@ -1,0 +1,362 @@
+[
+  {
+    "file": "khanna.png",
+    "name": "Ro Khanna",
+    "source": "https://unitedstates.github.io/images/congress/original/K000389.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "moore.png",
+    "name": "Wes Moore",
+    "source": "https://commons.wikimedia.org/wiki/File:Wes_Moore_Official_Governor_Portrait.jpg",
+    "author": "Maryland State Government (Office of Governor Wes Moore)",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "bsanders.png",
+    "name": "Bernie Sanders",
+    "source": "https://commons.wikimedia.org/wiki/File:Bernie_Sanders.jpg",
+    "author": "United States Congress (official Senate portrait)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "hbiden.png",
+    "name": "Hunter Biden",
+    "source": "https://commons.wikimedia.org/wiki/File:R._Hunter_Biden_at_Center_for_Strategic_%26_International_Studies.jpg",
+    "author": "Center for Strategic & International Studies (CSIS)",
+    "license": "CC BY 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "trumpjr.png",
+    "name": "Donald Trump Jr.",
+    "source": "https://commons.wikimedia.org/wiki/File:Donald_Trump,_Jr._(55021618832)_(cropped_2).jpg",
+    "author": "Gage Skidmore",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "massie.png",
+    "name": "Thomas Massie",
+    "source": "https://commons.wikimedia.org/wiki/File:Thomas_Massie_-_119th_Congress.jpg",
+    "author": "U.S. Congress (official House portrait, House Creative Services)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "kemp.png",
+    "name": "Brian Kemp",
+    "source": "https://commons.wikimedia.org/wiki/File:Brian_Kemp_2025_(cropped).jpg",
+    "author": "Governo do Estado de São Paulo",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "itrump.png",
+    "name": "Ivanka Trump",
+    "source": "https://commons.wikimedia.org/wiki/File:Ivanka_Trump_official_portrait_2020.jpg",
+    "author": "Andrea Hanks, Official White House Photo",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "greene.png",
+    "name": "Marjorie Taylor Greene",
+    "source": "https://unitedstates.github.io/images/congress/original/G000596.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "hawley.png",
+    "name": "Josh Hawley",
+    "source": "https://commons.wikimedia.org/wiki/File:Josh_Hawley,_official_portrait,_116th_congress.jpg",
+    "author": "Rebecca Hammel, U.S. Senate Photographic Studio",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "vanhollen.png",
+    "name": "Chris Van Hollen",
+    "source": "https://commons.wikimedia.org/wiki/File:Chris_Van_Hollen_official_portrait_115th_Congress.jpg",
+    "author": "U.S. Senate Photographic Studio",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "klobuchar.png",
+    "name": "Amy Klobuchar",
+    "source": "https://commons.wikimedia.org/wiki/File:Amy_Klobuchar,_official_portrait,_113th_Congress.jpg",
+    "author": "United States Senate",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "mjohnson.png",
+    "name": "Mike Johnson",
+    "source": "https://commons.wikimedia.org/wiki/File:Speaker_Mike_Johnson_Official_Portrait_(cropped)(b).jpg",
+    "author": "United States Congress (Office of the Speaker)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "spanberger.png",
+    "name": "Abigail Spanberger",
+    "source": "https://unitedstates.github.io/images/congress/original/S001209.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "cmurphy.png",
+    "name": "Chris Murphy",
+    "source": "https://commons.wikimedia.org/wiki/File:Chris_Murphy,_official_portrait,_113th_Congress.jpg",
+    "author": "United States Senate",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "talarico.png",
+    "name": "James Talarico",
+    "source": "https://commons.wikimedia.org/wiki/File:James_Talarico_Open_Congress_Austin_2023.jpg",
+    "author": "Larry D. Moore",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "slotkin.png",
+    "name": "Elissa Slotkin",
+    "source": "https://unitedstates.github.io/images/congress/original/S001208.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "gallego.png",
+    "name": "Ruben Gallego",
+    "source": "https://commons.wikimedia.org/wiki/File:Senator_Ruben_Gallego_Official_Portrait.jpg",
+    "author": "U.S. Senate Photographic Studio",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "booker.png",
+    "name": "Cory Booker",
+    "source": "https://commons.wikimedia.org/wiki/File:Cory_Booker,_official_portrait_(119th_Congress).jpg",
+    "author": "U.S. Senate",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "cotton.png",
+    "name": "Tom Cotton",
+    "source": "https://commons.wikimedia.org/wiki/File:Tom_Cotton_official_Senate_photo.jpg",
+    "author": "U.S. Senate Photo Office",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "warren.png",
+    "name": "Elizabeth Warren",
+    "source": "https://commons.wikimedia.org/wiki/File:Elizabeth_Warren,_official_portrait,_114th_Congress.jpg",
+    "author": "United States Senate",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "crockett.png",
+    "name": "Jasmine Crockett",
+    "source": "https://commons.wikimedia.org/wiki/File:Rep._Jasmine_Crockett_-_118th_Congress.jpg",
+    "author": "U.S. House of Representatives",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "etrump.png",
+    "name": "Eric Trump",
+    "source": "https://commons.wikimedia.org/wiki/File:Eric_Trump_by_Gage_Skidmore.jpg",
+    "author": "Gage Skidmore",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "kinzinger.png",
+    "name": "Adam Kinzinger",
+    "source": "https://commons.wikimedia.org/wiki/File:Adam_Kinzinger_-_117th_Congress_(3x4_cropped).jpg",
+    "author": "U.S. House of Representatives",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "emanuel.png",
+    "name": "Rahm Emanuel",
+    "source": "https://commons.wikimedia.org/wiki/File:Ambassador-emanuel-portrait_(cropped).jpg",
+    "author": "U.S. Embassy in Japan",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "raimondo.png",
+    "name": "Gina Raimondo",
+    "source": "https://commons.wikimedia.org/wiki/File:Gina_Raimondo.jpg",
+    "author": "United States Department of Commerce",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "landrieu.png",
+    "name": "Mitch Landrieu",
+    "source": "https://commons.wikimedia.org/wiki/File:Mitch_Landrieu_January_2022.jpg",
+    "author": "The White House",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "jnkennedy.png",
+    "name": "John N. Kennedy",
+    "source": "https://commons.wikimedia.org/wiki/File:John_Kennedy,_official_portrait,_115th_Congress.jpg",
+    "author": "United States Congress (official Senate portrait)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "paul.png",
+    "name": "Rand Paul",
+    "source": "https://commons.wikimedia.org/wiki/File:Rand_Paul_Portrait.jpg",
+    "author": "U.S. Senate Photography Office",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "green.png",
+    "name": "Josh Green",
+    "source": "https://commons.wikimedia.org/wiki/File:Governor_Josh_Green_in_Tokyo_2024.jpg",
+    "author": "U.S. Embassy in Tokyo",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "gillibrand.png",
+    "name": "Kirsten Gillibrand",
+    "source": "https://commons.wikimedia.org/wiki/File:Kirsten_Gillibrand,_official_photo,_116th_Congress.jpg",
+    "author": "U.S. Senate Photography",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "casar.png",
+    "name": "Greg Casar",
+    "source": "https://commons.wikimedia.org/wiki/File:Rep._Greg_Casar_-_118th_Congress.jpg",
+    "author": "U.S. House of Representatives",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "torres.png",
+    "name": "Ritchie Torres",
+    "source": "https://unitedstates.github.io/images/congress/original/T000486.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "yang.png",
+    "name": "Andrew Yang",
+    "source": "https://commons.wikimedia.org/wiki/File:Andrew_Yang_(53318650512).jpg",
+    "author": "Gage Skidmore",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "romney.png",
+    "name": "Mitt Romney",
+    "source": "https://unitedstates.github.io/images/congress/original/R000615.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "donalds.png",
+    "name": "Byron Donalds",
+    "source": "https://unitedstates.github.io/images/congress/original/D000032.jpg",
+    "author": "U.S. Congress official portrait (GPO Member Guide, via the unitedstates/images project)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "pmurphy.png",
+    "name": "Phil Murphy",
+    "source": "https://commons.wikimedia.org/wiki/File:Phil_Murphy_for_Governor_(cropped_2).jpg",
+    "author": "Phil Murphy for Governor campaign (Flickr: PhilMurphyNJ)",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "stein.png",
+    "name": "Josh Stein",
+    "source": "https://commons.wikimedia.org/wiki/File:Josh_Stein,_Governor_of_North_Carolina_(cropped).jpg",
+    "author": "U.S. Department of Housing and Urban Development (HUD)",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "kim.png",
+    "name": "Andy Kim",
+    "source": "https://commons.wikimedia.org/wiki/File:Sen_Andy_Kim_118th_Congress.jpg",
+    "author": "U.S. Senate Photographic Studio",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  },
+  {
+    "file": "hegseth.png",
+    "name": "Pete Hegseth",
+    "source": "https://commons.wikimedia.org/wiki/File:Pete_Hegseth_Official_Portrait.jpg",
+    "author": "U.S. Department of Defense",
+    "license": "Public domain (US federal government work)",
+    "licenseUrl": "https://www.usa.gov/government-copyright",
+    "retrieved": "2026-11-05"
+  }
+]

@@ -55,7 +55,7 @@ Question: ${question}
 Now: ${now}
 Response:`
     response = await promptAI(prompt, {
-      model: aiModels.flash,
+      model: aiModels.haiku,
       thinkingLevel: 'low',
     })
   } catch (e: any) {

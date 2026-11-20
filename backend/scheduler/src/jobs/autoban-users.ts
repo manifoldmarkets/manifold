@@ -6,7 +6,7 @@ import {
   URL_REGEX,
   VIETNAMESE_GAMBLING_TERMS,
 } from 'common/spam-terms'
-import { PRE_KYC_STARTING_BALANCE } from 'common/economy'
+import { STARTING_BALANCE } from 'common/economy'
 import { MANIFOLD_USER_USERNAME } from 'common/user'
 import { DAY_MS } from 'common/util/time'
 import { superBanUserCore } from 'shared/helpers/super-ban'
@@ -219,7 +219,7 @@ export async function autobanUsers({ lastEndTime }: JobContext) {
 
   for (const candidate of candidates) {
     const hasBets = usersWithBets.has(candidate.id)
-    if (candidate.balance > PRE_KYC_STARTING_BALANCE || hasBets) continue
+    if (candidate.balance > STARTING_BALANCE || hasBets) continue
 
     const referrerId = candidate.userData.referredByUserId
     if (referrerId && safeReferrerIds.has(referrerId)) continue

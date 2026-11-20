@@ -23,6 +23,7 @@ import {
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
 import { formatMoney, formatMoneyUSD } from 'common/util/format'
+import { OFFER_MAX_DISCOUNT_PCT } from 'common/personalized-mana-offer'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
@@ -372,7 +373,11 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
-  } else if (reason === 'perp_liquidation' || reason === 'perp_adl') {
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_order_failed'
+  ) {
     // Must come before the contract/updated suppressor below — perp engine
     // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
     // and were being swallowed into blank rows.
@@ -461,6 +466,15 @@ export function NotificationItem(props: {
   } else if (reason === 'subsidized_your_market') {
     return (
       <LiquidityNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'liquidity_returned') {
+    return (
+      <LiquidityReturnedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1786,6 +1800,56 @@ function LiquidityNotification(props: {
   )
 }
 
+function LiquidityReturnedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceText,
+    sourceContractTitle,
+    data,
+  } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💧'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        withdrew liquidity
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            from <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+        , returning{' '}
+        {sourceText && (
+          <span>{formatMoney(parseFloat(sourceText), data?.token)} of</span>
+        )}{' '}
+        your liquidity to your balance. You can add it back to the market if you
+        want to keep it there.
+      </div>
+    </NotificationFrame>
+  )
+}
+
 function ReferralProgramNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -2417,6 +2481,14 @@ function PersonalizedManaOfferNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
+  // The stored text bakes in the discount on offer at send time ("up to 30%
+  // off" while crypto was on). Show today's best discount instead: an offer
+  // stays redeemable until 72h after it's opened, so an old notification
+  // could otherwise promise a price checkout no longer has.
+  const text = (notification.sourceText ?? '').replace(
+    /up to \d+% off/,
+    `up to ${OFFER_MAX_DISCOUNT_PCT}% off`
+  )
   return (
     <NotificationFrame
       notification={notification}
@@ -2433,7 +2505,7 @@ function PersonalizedManaOfferNotification(props: {
         </span>
       }
     >
-      <span>{notification.sourceText}</span>
+      <span>{text}</span>
     </NotificationFrame>
   )
 }

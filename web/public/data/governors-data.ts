@@ -105,12 +105,3 @@ export const governors2026: StateElectionMarket[] = [
   // Block is priced too; see the creation manifest.
   { state: 'RI', slug: 'who-will-win-the-2026-rhode-island' },
 ]
-
-// Candidate ("who will be elected") markets for marquee governor races, surfaced
-// in the state detail card so people see and trade the actual candidates.
-export const governorCandidates2026: StateElectionMarket[] = [
-  // Audit: Conflux's market has stated call/certification rules and real depth.
-  { state: 'CA', slug: 'who-will-win-the-2026-california-gu' },
-  // NY card removed: it lists Delgado and Stefanik (both out) and not the
-  // Republican nominee Bruce Blakeman.
-]

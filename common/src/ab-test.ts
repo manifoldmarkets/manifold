@@ -41,3 +41,13 @@ export const getDeterministicABTestVariant = <T extends string>(
   const rand = createRNG(`${testName}:${assignmentKey}`)
   return orderedVariants[Math.floor(rand() * orderedVariants.length)]
 }
+
+// Analytics attributes an event to whoever Firebase has signed in when it is
+// sent. A user unit's exposure carries no other id, so it can only be logged
+// while that user is signed in. A device unit's carries its device token, so
+// it can always be logged: device-assigned tests count signed-in visitors too.
+export const canLogABTestExposure = (
+  assignmentUnit: 'user' | 'device',
+  assignmentId: string,
+  signedInUserId: string | undefined
+) => assignmentUnit === 'device' || assignmentId === signedInUserId

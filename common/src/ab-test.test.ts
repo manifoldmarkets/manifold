@@ -1,5 +1,6 @@
 import {
   AB_TEST_ACCOUNT_OVERRIDES,
+  canLogABTestExposure,
   getDeterministicABTestVariant,
   getForcedABTestVariant,
 } from './ab-test'
@@ -55,5 +56,20 @@ describe('A/B test assignment', () => {
       cA1JupYR5AR8btHUs2xvkui7jA93: 'treatment',
       IPTOzEqrpkWmEzh6hwvAyY9PqFb2: 'control',
     })
+  })
+})
+
+describe('A/B test exposure logging', () => {
+  it('logs a user unit only while that user is signed in', () => {
+    expect(canLogABTestExposure('user', 'abc', 'abc')).toBe(true)
+    // Account switched, or signed out, since the assignment was made.
+    expect(canLogABTestExposure('user', 'abc', 'xyz')).toBe(false)
+    expect(canLogABTestExposure('user', 'abc', undefined)).toBe(false)
+  })
+
+  it('logs a device unit whoever is signed in', () => {
+    expect(canLogABTestExposure('device', 'tok', undefined)).toBe(true)
+    // A device-assigned test still counts signed-in visitors.
+    expect(canLogABTestExposure('device', 'tok', 'abc')).toBe(true)
   })
 })

@@ -10,6 +10,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
@@ -144,7 +145,10 @@ export default function AdminUpdateUserPage() {
     <Page trackPageView={'admin update user page'}>
       <NoSEO />
       <div className="mx-8">
-        <Title>Admin - Update User</Title>
+        <Title>
+          Admin - Update User
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
 
         <Col className="gap-6">
           {/* User Search Section */}

@@ -5,6 +5,7 @@ import { showsSideProbability, versusSideProb } from 'common/versus'
 import { CPMMMultiContract, CPMMNumericContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { useAnswerBetTrackingLocation } from 'web/hooks/use-answer-bet-tracking-location'
 import { formatPercent } from 'common/util/format'
 import { BuyPanel } from '../bet/bet-panel'
 
@@ -29,6 +30,7 @@ export function AnswerCpmmBetPanel(props: {
       NO: { pseudonymName: 'NO', pseudonymColor: 'red' },
     },
   } = props
+  const location = useAnswerBetTrackingLocation()
 
   return (
     <Col className="bg-canvas-0 rounded-2xl">
@@ -41,7 +43,7 @@ export function AnswerCpmmBetPanel(props: {
         initialOutcome={outcome}
         // singularView={outcome}
         onBuySuccess={() => setTimeout(closePanel, 500)}
-        location={'contract page answer'}
+        location={location}
         feedReason={feedReason}
         inModal={true}
         alwaysShowOutcomeSwitcher={alwaysShowOutcomeSwitcher}

@@ -208,11 +208,16 @@ export const cancelLimitOrdersQuery = (limitOrders: LimitBet[]) => {
 
 export const cancelLimitOrders = async (
   pg: SupabaseDirectClient,
-  limitOrders: LimitBet[]
-) => {
-  if (limitOrders.length > 0) {
-    const { query, bets } = cancelLimitOrdersQuery(limitOrders)
-    await pg.none(query)
-    broadcastOrders(bets)
+  limitOrders: LimitBet[],
+  options?: {
+    // Pass false inside a transaction that may be retried, and broadcast the
+    // returned orders once it has committed (see AnswerWriteOptions).
+    broadcast?: boolean
   }
+) => {
+  if (limitOrders.length === 0) return []
+  const { query, bets } = cancelLimitOrdersQuery(limitOrders)
+  await pg.none(query)
+  if (options?.broadcast !== false) broadcastOrders(bets)
+  return bets
 }

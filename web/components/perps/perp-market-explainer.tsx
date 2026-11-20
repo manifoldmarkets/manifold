@@ -136,6 +136,17 @@ export function PerpExplainerContent(props: {
   const user = useUser()
   return (
     <>
+      <div className="bg-canvas-50 border-ink-200 text-ink-600 rounded-lg border p-3 text-sm">
+        <p className="text-ink-700 font-medium">
+          Orders fill at the next price
+        </p>
+        <p className="mt-1">
+          The displayed oracle price is indicative. Opens, adds, closes and
+          flips wait for the next eligible oracle update and cannot be
+          cancelled. Slow feeds may take longer. Existing positions remain
+          exposed to funding and liquidation while a close or flip is pending.
+        </p>
+      </div>
       <div>
         {!hideHeading && (
           <div className="flex items-baseline justify-between gap-3">

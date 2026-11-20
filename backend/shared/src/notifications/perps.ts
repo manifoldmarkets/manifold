@@ -1,6 +1,7 @@
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import { PerpContract } from 'common/contract'
 import { Notification } from 'common/notification'
+import { PerpOrderRequest } from 'common/perps/orders'
 import { inferPriceDecimals } from 'common/perps/format'
 import { getPrivateUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
@@ -211,6 +212,68 @@ export const createPerpAdlNotification = async (
     sourceTitle: contract.question,
     sourceText,
     data: data as any,
+  }
+  await insertNotificationToSupabase(notification, pg)
+}
+
+// Notify a user that a queued order was rejected or expired. Orders execute
+// after the trader may have left the page, and a failed close leaves the
+// position open, so this cannot rely on the page's own poller.
+export const createPerpOrderFailedNotification = async (
+  pg: SupabaseDirectClient,
+  contract: PerpContract,
+  userId: string,
+  data: { orderId: string; request: PerpOrderRequest; error: string | null }
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'perp_order_failed'
+  )
+  if (!sendToBrowser) return
+
+  const { request } = data
+  // A trade order can be an open, an add or a flip: name it, not the outcome.
+  const what =
+    request.kind === 'close'
+      ? `order to close your ${request.direction}`
+      : `${formatMoney(request.mana)} ${request.direction} order`
+  // A close can fail because the position is already gone (liquidated), so
+  // don't claim it is still open.
+  const consequence =
+    request.kind === 'close'
+      ? 'Any position you still hold stays open.'
+      : 'Any reserved mana was returned.'
+  // Order errors are not all full sentences ("No eligible price arrived
+  // before expiry"), so end the reason before the next one starts.
+  const reason = (data.error ?? 'it could not be filled').trim()
+  const sourceText = `Your ${what} on ${
+    contract.question
+  } did not execute: ${reason}${
+    /[.!?]$/.test(reason) ? '' : '.'
+  } ${consequence}`
+
+  const notification: Notification = {
+    // Order-derived, so a redelivered outbox entry inserts nothing new.
+    id: `perp-order-${data.orderId}`,
+    userId,
+    reason: 'perp_order_failed',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: contract.id,
+    sourceType: 'contract',
+    sourceUpdateType: 'updated',
+    sourceContractId: contract.id,
+    sourceContractTitle: contract.question,
+    sourceContractSlug: contract.slug,
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceUserName: contract.creatorName,
+    sourceUserUsername: contract.creatorUsername,
+    sourceUserAvatarUrl: contract.creatorAvatarUrl ?? MANIFOLD_AVATAR_URL,
+    sourceSlug: contract.slug,
+    sourceTitle: contract.question,
+    sourceText,
   }
   await insertNotificationToSupabase(notification, pg)
 }

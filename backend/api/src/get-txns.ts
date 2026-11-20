@@ -1,5 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { convertTxn } from 'common/supabase/txns'
+import { toPublicTxn } from 'common/public-txn'
 import { millisToTs } from 'common/supabase/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
@@ -55,5 +56,5 @@ export const getTxnsMain = async (props: {
     limit(limitValue, offset)
   )
 
-  return await pg.map(query, [], convertTxn)
+  return await pg.map(query, [], (row) => toPublicTxn(convertTxn(row)))
 }

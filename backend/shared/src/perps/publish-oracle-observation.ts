@@ -222,12 +222,33 @@ export const publishOracleObservation = async (
         point.sourceTs != null &&
         point.sourceTs === previous.sourceTs &&
         point.price !== previous.price
-      )
+      ) {
+        // A provider that legitimately re-records a stamp (see
+        // OracleFeedDef.sourceRevision) keeps the published value: decided
+        // here, under the lock, because a restarted or overlapping
+        // publisher's own cache cannot know what is already published.
+        if (feed.sourceRevision === 'keep-published') return previous
         throw new InvalidOracleObservation(
           'Provider source timestamp conflicts with published history'
         )
+      }
+      // Waiting orders need flat observations persisted. A provider-stamped
+      // mark only advances one with a new stamp, or when re-received after
+      // arriving stamped ahead of its first receipt (ineligible until now).
+      const canAdvanceOrders =
+        point.sourceTs == null ||
+        previous?.sourceTs == null ||
+        point.sourceTs !== previous.sourceTs ||
+        previous.sourceTs > previous.ts
+      const pending =
+        canAdvanceOrders &&
+        (await tx.oneOrNone(
+          "select o.id from perp_orders o join contracts c on c.id=o.contract_id where c.data->>'oracleFeedId'=$1 and o.status='pending' limit 1",
+          [feed.id]
+        ))
       // Price changes and flat-price heartbeats follow the normal fast-tick rule.
       if (
+        !pending &&
         previous &&
         point.price === previous.price &&
         point.ts - previous.ts < feed.staleAfterMs / 2

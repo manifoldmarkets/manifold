@@ -1,5 +1,5 @@
 import { runScript } from 'run-script'
-import { PRE_KYC_STARTING_BALANCE } from 'common/economy'
+import { LEGACY_PRE_KYC_STARTING_BALANCE } from 'common/economy'
 import { insertTxns, TxnData } from 'shared/txn/run-txn'
 
 const dryRun = process.argv.includes('--dry-run')
@@ -43,8 +43,8 @@ runScript(async ({ pg }) => {
     !u.has_pre_kyc_bonus && u.balance === 0 && u.total_deposits === 0
   const looksLikeFiftyStart = (u: RecentUser) =>
     u.has_pre_kyc_bonus ||
-    (u.balance === PRE_KYC_STARTING_BALANCE &&
-      u.total_deposits === PRE_KYC_STARTING_BALANCE)
+    (u.balance === LEGACY_PRE_KYC_STARTING_BALANCE &&
+      u.total_deposits === LEGACY_PRE_KYC_STARTING_BALANCE)
 
   const switchoverIndex = inactiveUsers.findIndex((user, i) => {
     if (!looksLikeFiftyStart(user)) return false
@@ -65,7 +65,7 @@ runScript(async ({ pg }) => {
 
   if (switchoverIndex === -1) {
     console.error(
-      `Could not detect 0 -> ${PRE_KYC_STARTING_BALANCE} switchover in the last ${LOOKBACK_HOURS} hours.`
+      `Could not detect 0 -> ${LEGACY_PRE_KYC_STARTING_BALANCE} switchover in the last ${LOOKBACK_HOURS} hours.`
     )
     process.exit(1)
   }
@@ -93,7 +93,7 @@ runScript(async ({ pg }) => {
     fromType: 'BANK' as const,
     toId: u.id,
     toType: 'USER' as const,
-    amount: PRE_KYC_STARTING_BALANCE,
+    amount: LEGACY_PRE_KYC_STARTING_BALANCE,
     token: 'M$' as const,
     category: 'PRE_KYC_BONUS' as const,
     description: 'Pre-KYC starting balance (backfill)',

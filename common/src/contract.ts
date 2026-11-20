@@ -413,7 +413,20 @@ export type Poll = {
   maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
-export type SportsMarketType = 'moneyline' | 'spread' | 'total' | 'prop'
+/**
+ * moneyline, spread, total, prop: markets about a game between two teams.
+ * winner, podium: markets about one session of a field event (a Grand Prix),
+ * whose answers are the entrants (see common/f1-markets.ts).
+ * title: a season's championship, whose answers are the drivers or teams.
+ */
+export type SportsMarketType =
+  | 'moneyline'
+  | 'spread'
+  | 'total'
+  | 'prop'
+  | 'winner'
+  | 'podium'
+  | 'title'
 
 export type Sports = {
   sportsStartTimestamp: string
@@ -427,6 +440,25 @@ export type Sports = {
   sportsAwayTeam?: string
   /** What the market is about the game; the sports page files it by this. */
   sportsMarketType?: SportsMarketType
+  /**
+   * A field event's entrants by answer index: the provider's id of the
+   * driver each answer stands for, null for the stand-in answer. The
+   * resolver matches results by id, never by name.
+   */
+  sportsEntrantIds?: (number | null)[]
+  /**
+   * A field event's session: when the pipeline first saw the provider mark
+   * it cancelled, cleared once it's seen otherwise. N/A waits for this to be
+   * old enough (common/f1-markets.ts F1_CANCEL_CONFIRM_HOURS).
+   */
+  sportsCanceledSince?: number
+  /**
+   * A field event's session: when the pipeline first saw it final, cleared
+   * once it's seen otherwise. A payout waits F1_RESOLVE_DELAY_HOURS from
+   * this as well as from the session's own time, so a stale or rewritten
+   * date can't bring it forward.
+   */
+  sportsFinalSince?: number
 }
 
 export type MultiContract =
@@ -594,6 +626,20 @@ export const convertsToCpmmMulti2 = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType === 'MULTIPLE_CHOICE'
 
+// Whole-market liquidity on an independent multiple choice market (a user's
+// add, a house subsidy, the extra at creation) goes at once to the answers
+// open at the time, as their own pending subsidy, and the provision records
+// them (answerIds). Off, it goes to the market's pending pool with a provision
+// that names no answer, as it did before. Payouts read both kinds either way.
+//
+// Code from before this flag reads a recorded provision as amount / all
+// answers, in every answer. So this goes on only once no instance of such
+// code is serving (API and scheduler): deploy with it off, check every
+// instance runs that deploy, then turn it on and deploy again. To roll back,
+// turn it off and deploy. Never go back to code from before this flag once a
+// provision has been recorded.
+export const INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = true
+
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
@@ -638,6 +684,8 @@ export type ContractParams = {
   totalComments: number
   totalPositions: number
   totalBets: number
+  /** How many answers the market has. A big market's contract holds only its top answers until the live contract loads */
+  totalAnswers?: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]

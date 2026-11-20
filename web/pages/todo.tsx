@@ -433,6 +433,7 @@ export default function TodoPage() {
                                 isAdmin && {
                                   icon: <UserIcon className="h-4 w-4" />,
                                   name: 'Assign to...',
+                                  adminAction: true,
                                   onClick: () => {
                                     setSelectedTaskId(task.id)
                                     setIsAssignModalOpen(true)

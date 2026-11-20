@@ -476,7 +476,7 @@ function DotMenu(props: {
         label={'Comment'}
       />
       <DropdownMenu
-        menuWidth={'w-36'}
+        menuWidth={isMod ? 'w-44' : 'w-36'}
         buttonContent={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
@@ -534,6 +534,7 @@ function DotMenu(props: {
               name: 'Edit',
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
+              adminAction: comment.userId !== user.id,
             },
           isContractCreator && {
             name: 'Add to chart',
@@ -542,7 +543,12 @@ function DotMenu(props: {
           },
           (isMod || isContractCreator) && {
             name: comment.hidden ? 'Unhide' : 'Hide',
-            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            icon: (
+              <EyeOffIcon
+                className={clsx('h-5 w-5', isContractCreator && 'text-red-500')}
+              />
+            ),
+            modAction: !isContractCreator,
             onClick: async () => {
               const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
               const wasHidden = comment.hidden
@@ -565,7 +571,15 @@ function DotMenu(props: {
           },
           (isMod || isContractCreator) && {
             name: comment.pinned ? 'Unpin' : 'Pin',
-            icon: <PiPushPinBold className="text-primary-500 h-5 w-5" />,
+            icon: (
+              <PiPushPinBold
+                className={clsx(
+                  'h-5 w-5',
+                  isContractCreator && 'text-primary-500'
+                )}
+              />
+            ),
+            modAction: !isContractCreator,
             onClick: async () => {
               const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
               const wasPinned = comment.pinned
@@ -585,8 +599,9 @@ function DotMenu(props: {
           },
           isMod &&
             !comment.deleted && {
-              name: 'Delete',
-              icon: <TrashIcon className="h-5 w-5 text-red-600" />,
+              name: 'Delete spam',
+              icon: <TrashIcon className="h-5 w-5" />,
+              modAction: true,
               onClick: async () => {
                 const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
                 const wasDeleted = comment.deleted

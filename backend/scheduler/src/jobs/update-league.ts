@@ -148,6 +148,10 @@ export async function updateLeague(
 // current season came back as 6,387 rows / 4.3 MB of bet JSON on 2026-10-09.
 const CONTRACT_CHUNK_SIZE = 250
 
+// A fill that matched another bet rather than the AMM. Passed as a parameter
+// so pg-promise never sees `$[` in the query text.
+const MATCHED_FILL_PATH = '$[*] ? (@.matchedBetId != null)'
+
 // Sums each league member's profit over the season's scorable contracts.
 //
 // Season bets are loaded per chunk of contracts, never all at once. This job
@@ -163,11 +167,18 @@ const CONTRACT_CHUNK_SIZE = 250
 // 11:50 UTC for at least the month of logs we keep.
 //
 // Two things reduce the rows held at once:
-//  - zero-amount/zero-share rows without fills (empty limit orders) are
-//    excluded in SQL. Filled synthetic rows can also have zero amount and
-//    shares: excludeSelfTrades needs their fills before the creator-time
-//    filter runs, so those rows must stay. Keep nullable historical values
-//    conservatively too; only known empty rows are discarded.
+//  - rows that cannot move a score are excluded in SQL. A row counts only if
+//    it has a non-zero amount or shares (getCpmmOrDpmProfit reads nothing
+//    else), or one of its fills names another bet (excludeSelfTrades
+//    subtracts a fill that matched the user's own order from the bet's
+//    amount, so a zero-amount bet with a self-matched fill becomes a
+//    synthetic sale and must stay). A zero row whose fills name no bet, the
+//    shape every redemption written on a sums-to-one market has (two AMM
+//    fills that cancel), does nothing in either path. On 2026-10-18 the
+//    season's member rows were 722k non-zero, 29k zero with a matched fill,
+//    and 2.13M zero with only unmatched fills; keeping the first two and not
+//    the third cut the rows scored per run from 2.88M to 761k. Null amounts
+//    or shares are kept (`is distinct from 0`), as before.
 //  - what remains is fetched CONTRACT_CHUNK_SIZE contracts at a time, joined
 //    to the season's league members (the only users ever scored), so the
 //    heap holds one chunk and the loop yields between chunks. The number of
@@ -204,9 +215,15 @@ export const computeSeasonProfit = async (
         and (
           cb.amount is distinct from 0
           or cb.shares is distinct from 0
-          or coalesce(cb.data->'fills', '[]'::jsonb) <> '[]'::jsonb
+          or jsonb_path_exists(cb.data->'fills', $5::jsonpath)
         )`,
-      [season, chunkContracts.map((c) => c.id), seasonStart, seasonEnd],
+      [
+        season,
+        chunkContracts.map((c) => c.id),
+        seasonStart,
+        seasonEnd,
+        MATCHED_FILL_PATH,
+      ],
       (r) => r.data as Bet
     )
     betCount += bets.length

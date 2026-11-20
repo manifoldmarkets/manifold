@@ -10,6 +10,7 @@ import { NoSEO } from 'web/components/NoSEO'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
@@ -298,7 +299,10 @@ export default function AdminUserInfoPage() {
     <Page trackPageView={'admin user info page'}>
       <NoSEO />
       <div className="mx-8">
-        <Title>Admin - User Info & Account Management</Title>
+        <Title>
+          Admin - User Info & Account Management
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
 
         <Col className="gap-6">
           {/* Info Section */}
@@ -1050,22 +1054,23 @@ function BonusEligibilitySection({
     },
     {
       value: 'eligible' as const,
-      label: 'Eligible (bonuses only)',
+      label: 'Eligible (trusted, no KYC)',
       description:
-        'Gets bonuses without KYC (purchaser or hand-granted). Does NOT unlock prize drawings.',
+        'Purchaser or hand-granted: skips the new-account comment gate. Does NOT unlock prize drawings.',
       color: 'text-teal-600',
     },
     {
       value: 'ineligible' as const,
       label: 'Ineligible',
-      description: 'Not eligible for bonuses',
+      description:
+        'Bonus-blocked: 0.2x quests, streaks and referrals; no loans, league prizes, push or perp bonuses. Not cleared by verifying.',
       color: 'text-red-600',
     },
     {
       value: null,
-      label: 'Require Verification',
+      label: 'Default (unset)',
       description:
-        'Clear eligibility - user must complete iDenfy to get bonuses',
+        'Clear eligibility: full bonuses, prize drawings still need iDenfy. To pause bonuses until they verify, use Flag for Verification below.',
       color: 'text-orange-600',
     },
   ] as const
@@ -1092,7 +1097,7 @@ function BonusEligibilitySection({
       })
       toast.success(
         selectedEligibility === null
-          ? 'Cleared eligibility - user must re-verify'
+          ? 'Cleared eligibility - back to default'
           : `Bonus eligibility updated to '${selectedEligibility}'`
       )
       onUpdate({
@@ -1187,9 +1192,10 @@ function BonusEligibilitySection({
 
       <div className="mt-3 rounded border border-blue-200 bg-blue-50 p-3">
         <p className="text-sm text-blue-800">
-          <strong>Note:</strong> Bonus eligibility controls whether the user can
-          receive site bonuses (signup bonus, referral bonus, quest rewards,
-          league prizes, etc.).
+          <strong>Note:</strong> Every account gets full site bonuses (quest
+          rewards, referral bonus, league prizes, etc.) unless it's Ineligible
+          or flagged for verification. Verification is optional — it only
+          unlocks prize drawings and early commenting.
         </p>
         <ul className="mt-2 list-inside list-disc text-sm text-blue-700">
           <li>
@@ -1199,13 +1205,18 @@ function BonusEligibilitySection({
             <strong>Grandfathered:</strong> Active user before KYC was required
           </li>
           <li>
-            <strong>Ineligible:</strong> User failed verification or is
-            otherwise not eligible
+            <strong>Eligible:</strong> Purchaser or hand-granted; skips the
+            new-account comment gate, no prize drawings without KYC
           </li>
           <li>
-            <strong>Require Verification / Not Set:</strong> User must complete
-            iDenfy verification to receive bonuses. Use this to end a user's
-            grandfathered status.
+            <strong>Ineligible:</strong> Bonus-blocked, e.g. superbanned: 0.2x
+            quests, streaks and referrals; no loans, league prizes, push or perp
+            bonuses. Passing verification doesn't clear it.
+          </li>
+          <li>
+            <strong>Default / Not Set:</strong> Full bonuses; prize drawings
+            need iDenfy. Use this to end a user's grandfathered status. To pause
+            bonuses until they verify, use Flag for Verification.
           </li>
         </ul>
       </div>

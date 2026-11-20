@@ -1,5 +1,5 @@
 import { TokenNumber } from './widgets/token-number'
-import { PHONE_VERIFICATION_BONUS } from 'common/src/economy'
+import { STARTING_BALANCE } from 'common/economy'
 
 export const PlayMoneyDisclaimer = () => {
   return (
@@ -7,7 +7,7 @@ export const PlayMoneyDisclaimer = () => {
       Get{' '}
       <TokenNumber
         className="font-semibold"
-        amount={PHONE_VERIFICATION_BONUS}
+        amount={STARTING_BALANCE}
         coinType="mana"
         isInline
       />{' '}

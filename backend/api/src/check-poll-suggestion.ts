@@ -67,7 +67,7 @@ Default to isSubjective: false when uncertain — a wrongly-suggested poll is wo
           confidence: number
           reason: string
         }>(prompt, {
-          model: aiModels.flash,
+          model: aiModels.haiku,
           parseAsJson: true,
         })
 

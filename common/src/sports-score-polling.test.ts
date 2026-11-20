@@ -42,6 +42,81 @@ const settings = (
 const keys = (plan: { sportKey: string }[]) => plan.map((p) => p.sportKey)
 
 describe('scorePollPlan', () => {
+  it('adapts to distinct games sharing a feed, without charging once per match', () => {
+    const adaptive = settings({ adaptive: true })
+    const polled = { americanfootball_nfl: NOW - 40_000 }
+    const games = [game('a', 30), game('b', 30), game('c', 30), game('d', 30)]
+    expect(scorePollPlan(games, adaptive, polled, NOW)).toHaveLength(1)
+    expect(scorePollPlan(games.slice(0, 3), adaptive, polled, NOW)).toEqual([])
+    expect(
+      scorePollPlan(
+        games.slice(0, 3),
+        adaptive,
+        { americanfootball_nfl: NOW - MIN },
+        NOW
+      )
+    ).toHaveLength(1)
+    expect(
+      scorePollPlan(
+        games.slice(0, 1),
+        adaptive,
+        { americanfootball_nfl: NOW - MIN },
+        NOW
+      )
+    ).toEqual([])
+    expect(
+      scorePollPlan(
+        games.slice(0, 1),
+        adaptive,
+        { americanfootball_nfl: NOW - 2 * MIN },
+        NOW
+      )
+    ).toHaveLength(1)
+    const sameEvent = games.map((g) => ({ ...g, eventId: 'same' }))
+    expect(scorePollPlan(sameEvent, adaptive, polled, NOW)).toEqual([])
+  })
+
+  it('honours explicit off/fixed speeds and excludes future, closed or missing games from adaptation', () => {
+    const games = [game('a', 30), game('b', 30), game('c', 30), game('d', 30)]
+    const polled = { americanfootball_nfl: NOW - 40_000 }
+    expect(
+      scorePollPlan(
+        games,
+        settings({ adaptive: true, sports: { nfl: 300 } }),
+        polled,
+        NOW
+      )
+    ).toEqual([])
+    expect(
+      scorePollPlan(
+        games,
+        settings({ adaptive: true, sports: { nfl: 0 } }),
+        polled,
+        NOW
+      )
+    ).toEqual([])
+    const excluded = [
+      games[0],
+      game('future', -10),
+      game('closed', 30, { closeTime: NOW - 1 }),
+      game('gone', 30, { missing: true }),
+    ]
+    expect(
+      scorePollPlan(
+        excluded,
+        settings({ adaptive: true }),
+        polled,
+        NOW,
+        {},
+        polled
+      )
+    ).toEqual([])
+    expect(
+      parsePollingRows([{ target: 'adaptive', intervalSeconds: 1 }]).adaptive
+    ).toBe(true)
+    expect(pollingSettingError('adaptive', 30)).toBeDefined()
+  })
+
   it('polls a sport with a game on every 5 minutes by default', () => {
     const games = [game('a', 30)]
     expect(scorePollPlan(games, settings(), {}, NOW)).toEqual([

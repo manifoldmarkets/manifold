@@ -17,7 +17,8 @@ export type PerpState = {
 export type AdlSettlement = {
   /** Position immediately before the factor-zero ADL. */
   position: PerpPosition
-  /** Remaining margin returned to the user from the position's own pool. */
+  /** Remaining margin returned to the user from the position's own pool, less
+   * any float dust that pool was short (see debitPool). */
   payout: number
 }
 
@@ -406,19 +407,35 @@ export const applyADL = (state: PerpState, price: number) => {
   // and can never reshape a path that was going to throw regardless.
   const surplusL = L - CL
   const surplusS = S - CS
+  // Exact, with no allowance: the donor is held at its reserve below, so any
+  // shortfall this let through would be minted into the pools, and a real
+  // shortfall small enough to pass on every tick would mint its way past
+  // escrow tolerance with no escrow check on a price-only tick. The cost is
+  // that a surplus that is the deficit exactly can still round an ulp short
+  // of it (64.1 - 0.1 < 64) and be declined, as before.
   const transferToL = surplusL < 0 && surplusS >= -surplusL ? -surplusL : 0
   const transferToS = surplusS < 0 && surplusL >= -surplusS ? -surplusS : 0
   /** Positive = moved S -> L, negative = moved L -> S. */
   const crossSideTransfer = transferToL - transferToS
   // Assign the RECIPIENT its reserve exactly rather than computing
   // `L + (CL - L)`, which is not exactly CL in float and can leave cover one
-  // ULP negative. That is not a rounding nuisance here: the -Infinity branch of
-  // solvencyFactor has no tolerance, so a single ULP of negative cover on a
-  // side with no profit left is the difference between unwedging and staying
-  // wedged. The donor absorbs the same value, so escrow moves by at most one
-  // ULP, which assertPerpEscrowBalance tolerates.
-  const adjustedL = transferToL > 0 ? CL : L - transferToS
-  const adjustedS = transferToS > 0 ? CS : S - transferToL
+  // ULP negative. On a side with no profit left that ULP reads as -Infinity.
+  //
+  // Hold the DONOR at no less than its own reserve, for the same reason. The
+  // transfer only happens when the donor's surplus, as computed, covers the
+  // deficit, so a donor left under its reserve is short by the rounding of
+  // that surplus, an ulp or so of the far larger pool it was: 100,000.01 -
+  // 100,000 lands 5e-12 under a 0.01 reserve. Left there it is a gap below a
+  // reserve, which funding grows (see debitPool).
+  //
+  // Each assignment moves escrow by at most about an ULP of the pool it
+  // adjusts. assertPerpEscrowBalance tolerates that on pools under about 4e12
+  // mana; past that an ULP outgrows its 1e-3 cap, as the recipient's
+  // assignment alone always has.
+  const adjustedL =
+    transferToL > 0 ? CL : transferToS > 0 ? Math.max(L - transferToS, CL) : L
+  const adjustedS =
+    transferToS > 0 ? CS : transferToL > 0 ? Math.max(S - transferToL, CS) : S
 
   const sL = EL > 0 ? (adjustedS - CS) / EL : 1
   const sS = ES > 0 ? (adjustedL - CL) / ES : 1
@@ -473,19 +490,62 @@ export const applyADL = (state: PerpState, price: number) => {
     .filter((s) => s.position.direction === 'short')
     .reduce((sum, s) => sum + s.payout, 0)
 
+  // Settling can drain a pool far larger than what it leaves, so debitPool
+  // absorbs the dust that leaves behind; the settlements on that side pay
+  // what actually left their pool.
+  const next: PerpState = { pool: state.pool, positions }
+  const long = debitPool(
+    'long',
+    adjustedL,
+    longSettlementPayout,
+    next,
+    state,
+    price
+  )
+  const short = debitPool(
+    'short',
+    adjustedS,
+    shortSettlementPayout,
+    next,
+    state,
+    price
+  )
+
   return {
-    state: {
-      pool: {
-        L: poolAfterDebit(adjustedL, longSettlementPayout),
-        S: poolAfterDebit(adjustedS, shortSettlementPayout),
-      },
-      positions,
-    },
+    state: { pool: { L: long.pool, S: short.pool }, positions },
     adlFactorLong,
     adlFactorShort,
-    settled,
+    settled: trimSettlements(
+      trimSettlements(settled, 'long', longSettlementPayout - long.paid),
+      'short',
+      shortSettlementPayout - short.paid
+    ),
     crossSideTransfer,
   }
+}
+
+/** Takes `trim` off `side`'s settlements, the largest first. */
+const trimSettlements = (
+  settled: AdlSettlement[],
+  side: PerpDirection,
+  trim: number
+) => {
+  if (!(trim > 0)) return settled
+  const payouts = settled.map((s) => s.payout)
+  const largestFirst = settled
+    .map((_, i) => i)
+    .filter((i) => settled[i].position.direction === side)
+    .sort((a, b) => payouts[b] - payouts[a])
+  let rest = trim
+  for (const i of largestFirst) {
+    const take = Math.min(rest, payouts[i])
+    payouts[i] -= take
+    rest -= take
+    if (!(rest > 0)) break
+  }
+  return settled.map((s, i) =>
+    payouts[i] === s.payout ? s : { ...s, payout: payouts[i] }
+  )
 }
 
 // -------- open / close --------
@@ -802,20 +862,26 @@ export const closePosition = (
           !(p.userId === position.userId && p.direction === position.direction)
       )
 
+  // A close can pay out far more than its pools keep (a profit that consumes
+  // the whole cover leaves only the opposing reserve), so debitPool absorbs
+  // the dust that leaves behind while the payment is still known.
+  const next: PerpState = { pool: state.pool, positions }
+  const long =
+    poolLongDelta < 0
+      ? debitPool('long', state.pool.L, -poolLongDelta, next, state, price)
+      : { pool: state.pool.L + poolLongDelta, paid: 0 }
+  const short =
+    poolShortDelta < 0
+      ? debitPool('short', state.pool.S, -poolShortDelta, next, state, price)
+      : { pool: state.pool.S + poolShortDelta, paid: 0 }
+  if (poolLongDelta < 0) poolLongDelta = -long.paid
+  if (poolShortDelta < 0) poolShortDelta = -short.paid
+  // The legs as actually paid: bit-for-bit the payout above unless a pool
+  // needed reconciling.
+  payout = -poolLongDelta - poolShortDelta
+
   return {
-    state: {
-      pool: {
-        L:
-          poolLongDelta < 0
-            ? poolAfterDebit(state.pool.L, -poolLongDelta)
-            : state.pool.L + poolLongDelta,
-        S:
-          poolShortDelta < 0
-            ? poolAfterDebit(state.pool.S, -poolShortDelta)
-            : state.pool.S + poolShortDelta,
-      },
-      positions,
-    },
+    state: { pool: { L: long.pool, S: short.pool }, positions },
     payout,
     pnl: π,
     poolLongDelta,
@@ -873,6 +939,29 @@ export const isPerpOpenInterestWithinLimit = (
   return openInterest <= limit + tolerance
 }
 
+/** Refundable value of a side's open positions, each capped at cost basis. */
+const calculateSideReserve = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) =>
+  state.positions
+    .filter((p) => p.direction === side && p.size > 0)
+    .reduce(
+      (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
+      0
+    )
+
+/** A side's unrealized profit: what the opposing pool's cover must pay. */
+const calculateSideProfit = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) =>
+  state.positions
+    .filter((p) => p.direction === side && p.size > 0)
+    .reduce((s, p) => s + Math.max(getUnrealizedEquity(p, price), 0), 0)
+
 const calculateAvailableCover = (
   side: PerpDirection,
   state: PerpState,
@@ -880,13 +969,7 @@ const calculateAvailableCover = (
 ) => {
   const opposingPool = side === 'long' ? state.pool.S : state.pool.L
   const oppositeDirection = side === 'long' ? 'short' : 'long'
-  const reservedOpposingValue = state.positions
-    .filter((p) => p.direction === oppositeDirection && p.size > 0)
-    .reduce(
-      (sum, p) => sum + Math.min(p.costBasis, getPositionValue(p, price)),
-      0
-    )
-  return opposingPool - reservedOpposingValue
+  return opposingPool - calculateSideReserve(oppositeDirection, state, price)
 }
 
 /**
@@ -1046,17 +1129,18 @@ export const getPerpOpenInterestCapacityForOpen = (
 }
 
 /**
- * Solvency factor for a side (>= 1 means fully solvent). Used to refuse opens
- * that would immediately require ADL.
+ * Solvency factor for a side: cover over profit, >= 1 when every winner could
+ * close now and be paid in full. This is the raw ratio, the same scale ADL
+ * applies, and it words the errors. The pass/fail decision is
+ * isPerpSideSolvent, which also forgives float dust that this ratio magnifies
+ * without bound as the profit shrinks toward zero.
  */
 export const solvencyFactor = (
   side: PerpDirection,
   state: PerpState,
   price: number
 ) => {
-  const E = state.positions
-    .filter((p) => p.direction === side && p.size > 0)
-    .reduce((s, p) => s + Math.max(getUnrealizedEquity(p, price), 0), 0)
+  const E = calculateSideProfit(side, state, price)
   const availableCover = calculateAvailableCover(side, state, price)
   if (E <= 0) return availableCover >= 0 ? Infinity : -Infinity
   return availableCover / E
@@ -1067,6 +1151,118 @@ export const solvencyFactor = (
  * exactly 1, so a small allowance is needed for floating-point division.
  */
 export const PERP_SOLVENCY_FACTOR_TOLERANCE = 1e-12
+
+/**
+ * Mana by which a side's cover may fall short of its profit and still pass:
+ * float residue, which the RELATIVE tolerance above stops absorbing once the
+ * profit it is measured against is tiny or zero. Cover an ulp below zero with
+ * no profit reads as -Infinity; cover an ulp of a 100-mana pool short of a
+ * 5e-6 profit reads as 1 - 3e-9.
+ *
+ * Scaled to the book the way poolAfterDebit scales pool dust, under the same
+ * 1e-6 cap: 1e-12 of the largest pool, reserve or profit. That is rounding at
+ * the book's OWN scale. Dust from an operand that has already left the book
+ * can be far larger (a 50,000 profit paid from a 50,001 pool leaves 7e-12 on
+ * a book whose largest number is 1), so debitPool absorbs it in the
+ * transition that makes it, and it never reaches this check.
+ */
+export const getPerpSolvencyDust = (state: PerpState, price: number) => {
+  const scale = Math.max(
+    1,
+    Math.abs(state.pool.L),
+    Math.abs(state.pool.S),
+    calculateSideReserve('long', state, price),
+    calculateSideReserve('short', state, price),
+    calculateSideProfit('long', state, price),
+    calculateSideProfit('short', state, price)
+  )
+  // A book whose magnitudes are not even finite forgives nothing.
+  if (!Number.isFinite(scale)) return 0
+  return Math.min(1e-6, PERP_SOLVENCY_FACTOR_TOLERANCE * scale)
+}
+
+/**
+ * What one side's pool owes: that side's own refundable reserve, plus the
+ * other side's profit, which it pays.
+ */
+const calculatePoolObligations = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number
+) =>
+  calculateSideReserve(side, state, price) +
+  calculateSideProfit(side === 'long' ? 'short' : 'long', state, price)
+
+/**
+ * Debits `side`'s pool, landing it on what it owes when the debit would leave
+ * it dust-short. Returns the pool and what the debited leg actually pays.
+ *
+ * ADL lands a side's factor a few ulps under 1 about a quarter of the time,
+ * and a debit far larger than the pool it leaves turns ulps of the operand
+ * into a shortfall that dwarfs the book that remains. Paying a winner its
+ * whole profit leaves the opposing pool ulps under the reserve it still
+ * holds; a factor-zero settlement does the same to its own pool. Tolerating
+ * that does not work: nothing left in the book can size it, the later debit
+ * that drains the pool is far smaller than the one that made it, and funding
+ * scales a receiving pool and its positions by the same 1 + g, so a gap below
+ * a reserve grows with the pool until it is no longer dust.
+ *
+ * So the transition that makes the gap absorbs it while the payment is still
+ * known: the pool is assigned exactly what it owes and the leg pays what
+ * actually left the pool, never more than `debit`. Like the cross-side
+ * transfer, that keeps escrow within an ulp of the leg. The gap may be at
+ * most what the solvency check could already have passed on `prior` (its
+ * dust, plus the relative tolerance on the profit this pool pays), plus that
+ * dust again for this transition's own rounding. Anything larger is a real
+ * deficit, debited as is for assertPerpStateSolvent to refuse.
+ */
+const debitPool = (
+  side: PerpDirection,
+  before: number,
+  debit: number,
+  /** The book with this transition's positions; its pools are not read. */
+  next: PerpState,
+  prior: PerpState,
+  price: number
+) => {
+  const after = poolAfterDebit(before, debit)
+  const obligations = calculatePoolObligations(side, next, price)
+  const gap = obligations - after
+  // Finite or nothing: a profit that overflows makes both the gap and the
+  // budget Infinity, and reconciling that would pay out the whole pool.
+  const budget = () => {
+    const allowed =
+      2 * getPerpSolvencyDust(prior, price) +
+      PERP_SOLVENCY_FACTOR_TOLERANCE *
+        calculateSideProfit(side === 'long' ? 'short' : 'long', prior, price)
+    return Number.isFinite(allowed) ? allowed : 0
+  }
+  if (
+    !Number.isFinite(after) ||
+    !Number.isFinite(obligations) ||
+    !(gap > 0) ||
+    !(obligations <= before) ||
+    !(gap <= budget())
+  )
+    return { pool: after, paid: debit }
+  return { pool: obligations, paid: Math.min(debit, before - obligations) }
+}
+
+/**
+ * Whether `side`'s profit is covered: its cover reaches (1 - tolerance) of
+ * that profit, less getPerpSolvencyDust. The single solvency decision, shared
+ * by the assert below and the engine's open check, so a book the assert lets
+ * through cannot then refuse every open on that side until the next tick.
+ */
+export const isPerpSideSolvent = (
+  side: PerpDirection,
+  state: PerpState,
+  price: number,
+  tolerance = PERP_SOLVENCY_FACTOR_TOLERANCE
+) =>
+  calculateAvailableCover(side, state, price) +
+    getPerpSolvencyDust(state, price) >=
+  (1 - tolerance) * calculateSideProfit(side, state, price)
 
 const assertFiniteNumber = (label: string, value: number) => {
   if (!Number.isFinite(value)) throw new Error(`${label} must be finite`)
@@ -1147,8 +1343,10 @@ export const assertPerpStateNumbers = (state: PerpState, price: number) => {
 /**
  * Fail closed before a PERP state is persisted or used for payouts.
  *
- * Positive Infinity is the valid no-profit case. Negative Infinity means the
- * opposing pool cannot even reserve the other side's current position values.
+ * isPerpSideSolvent decides; the factor only words the error. Positive
+ * Infinity is the valid no-profit case. Negative Infinity means the opposing
+ * pool cannot even reserve the other side's current position values, by more
+ * than float dust.
  */
 export const assertPerpStateSolvent = (
   state: PerpState,
@@ -1161,14 +1359,13 @@ export const assertPerpStateSolvent = (
   assertPerpStateNumbers(state, price)
 
   for (const side of ['long', 'short'] as const) {
+    if (isPerpSideSolvent(side, state, price, tolerance)) continue
     const factor = solvencyFactor(side, state, price)
-    if (factor === Infinity) continue
     if (!Number.isFinite(factor))
       throw new Error(`${side} solvency factor must be finite or +Infinity`)
-    if (factor < 1 - tolerance)
-      throw new Error(
-        `${side} solvency factor ${factor} is below ${1 - tolerance}`
-      )
+    throw new Error(
+      `${side} solvency factor ${factor} is below ${1 - tolerance}`
+    )
   }
 }
 

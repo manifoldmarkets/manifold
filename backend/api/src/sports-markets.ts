@@ -71,6 +71,11 @@ export const sportsMarkets: APIHandler<'sports-markets'> = async (props) => {
         d.sportsPenAway != null ? (d.sportsPenAway as number) : null,
       sportsLiveStatus: (d.sportsLiveStatus as string) ?? null,
       sportsLiveMinute: (d.sportsLiveMinute as string) ?? null,
+      sportsScoreUpdatedTime:
+        typeof d.sportsScoreUpdatedTime === 'number' &&
+        Number.isFinite(d.sportsScoreUpdatedTime)
+          ? d.sportsScoreUpdatedTime
+          : null,
       sportsLiveUpdatedTime:
         d.sportsLiveUpdatedTime != null &&
         Number.isFinite(Number(d.sportsLiveUpdatedTime))

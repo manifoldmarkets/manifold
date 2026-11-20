@@ -8,6 +8,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useAdmin } from 'web/hooks/use-admin'
@@ -31,7 +32,10 @@ export default function AdminWhalesPage() {
   return (
     <Page trackPageView="admin-whales">
       <Col className="gap-6">
-        <Title>Top Mana Purchasers (Whales)</Title>
+        <Title>
+          Top Mana Purchasers (Whales)
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <WhalesTable />
       </Col>
     </Page>

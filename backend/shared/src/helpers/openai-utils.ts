@@ -7,9 +7,12 @@ import OpenAI from 'openai'
 import { log } from 'shared/utils'
 import { parseAIResponseAsJson } from './gemini'
 dayjs.extend(utc)
+// Prices per 1M tokens as of Oct 2026 (https://developers.openai.com/api/docs/pricing):
+//   gpt     gpt-6-sol   $2.00 in / $10.00 out  (replaces gpt-5.4 at $2.50 / $15)
+//   gptMini gpt-6-luna  $0.10 in / $0.50 out   (replaces gpt-5.4-mini at $0.75 / $4.50)
 export const models = {
-  gpt5: 'gpt-5.4',
-  gpt5mini: 'gpt-5.4-mini',
+  gpt: 'gpt-6-sol',
+  gptMini: 'gpt-6-luna',
 } as const
 export const EMBEDDING_MODEL = 'text-embedding-3-small'
 
@@ -46,32 +49,13 @@ export const generateEmbeddings = async (
   return response.data[0]?.embedding
 }
 
-const imagePrompt = (q: string) =>
-  `Header image for a discussion thread about predicting "${q}". Do not include text.`
-
-export const generateImage = async (q: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const prompt = imagePrompt(q)
-
-  return await openai.images
-    .generate({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1792x1024',
-      quality: 'standard',
-    })
-    .then((res) => res.data[0].url)
-    .catch((err) => (console.log(err), undefined))
-}
-
 const defaultOptions: {
   system?: string
   model: (typeof models)[keyof typeof models]
   reasoning?: { effort: 'low' | 'medium' | 'high' }
   webSearch?: boolean
 } = {
-  model: models.gpt5,
+  model: models.gpt,
 }
 
 export const promptOpenAI = async (

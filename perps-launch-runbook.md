@@ -68,7 +68,7 @@ Record the owner, chosen leverage/backing limits, and observed pool transfers.
 
 ## MNX rollout (DEV and PROD)
 
-The sixteen feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
+The live feeds in `MNX_LAUNCH_MARKETS` form an explicit `--cohort=mnx`
 rollout in either environment. Default gate commands continue to check the
 existing launch cohort; neither cohort requires the other to have created
 markets. All unresolved markets in either cohort still undergo token,
@@ -149,7 +149,8 @@ See [MNX oracle methodology](https://docs.mnx.fi/contracts/oracle-methodology),
 
 Launch at the manifest's 3× recommendation (or MNX's margin ceiling, if
 lower), M25,000 per side, funding sensitivity 1 and a nominal annual
-funding cap of 1. Funding runs hourly for all sixteen. The normal 10bps web
+funding cap of 1. Funding runs hourly on every live MNX market (fifteen since
+2026-11-20). The normal 10bps web
 opening fee and API-effective `max(web, configured API)` fee apply; there is
 no fee waiver. Thinness and public marks still permit latency arbitrage even
 at a 2s tick, so retain the existing fee and exposure controls. Preflight warns
@@ -218,7 +219,8 @@ instrument is unavailable. It exits nonzero on unavailable/rejected publication.
 Repair discovery prerequisites with
 `backfill-perp-launch-discovery.ts --cohort=mnx` (dry run), then `--apply`.
 Creation requires `MANIFOLD_API_KEY` belonging to the environment's official
-Manifold creator and sufficient backing (M800,000 for all sixteen). By default
+Manifold creator and sufficient backing (M750,000 for all fifteen live instruments at the
+manifest's M25,000 per side). By default
 the official account owns the markets; `--creator=mnx` makes the verified
 `@MNX` partner account the owner instead, in which case that account must hold
 the backing (the owner pays it at creation and receives the residual pool at
@@ -244,13 +246,47 @@ After normal visibility changes, select the same cohort for the progressive
 and final public gates:
 
 ```powershell
-npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=rollout --public-feed=mnx-anthropic-mark --acknowledge-latency-risk --allow-warning=external-alert-policies
+npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=rollout --public-feed=mnx-openai-mark --acknowledge-latency-risk --allow-warning=external-alert-policies
 npx.cmd ts-node perp-launch-preflight.ts --cohort=mnx --phase=public --acknowledge-latency-risk --allow-warning=external-alert-policies
 ```
 
 No database writes, market creation, deployments or DEV/PROD trading drills
 were performed as part of the code revision. Those are rollout steps, separate
 from passing the code tests and live-provider read checks.
+
+### When MNX delists or replaces an instrument
+
+MNX ends an instrument by dropping it from `/v0/markets` (its own record
+gains a `delisting` with a settlement price). Our market on it then pauses
+with "Missing from MNX active markets", and the tick warns once a minute until
+the feed is retired. The order:
+
+1. Resolve the Manifold market (MKT) at the settlement value decided for it.
+2. Move its row from `instruments` to `delisted` in `common/src/perps/mnx.ts`
+   with a `retirements` entry (`at` = the settlement time). That retires the
+   registry feed, drops it from `MNX_LAUNCH_MARKETS` into
+   `PERP_LAUNCH_RETIRED_MARKETS`, and makes the parser stop looking for it.
+   Keep its ticker in `common/src/perps/ticker.ts`: the settled page shows it.
+   (SNDK, delisted 2026-11-19 with no successor, needed only steps 1, 2 and 4.)
+3. Add any successor as a new row with its own MNX market id and feed id.
+   Never reuse a retired feed id.
+4. Deploy scheduler-perps, then the API, and confirm the web production
+   deployment includes the change (Vercel builds `main` on merge). The new
+   feed's `$` formatting, ticker and MNX source credit are bundled into web,
+   so a market created while web is behind renders without them.
+5. Backfill and create the successor for the owning account. For the
+   Anthropic share perpetual (2026-11-20), backed with the M$153,620 residual
+   @MNX received when `ANTHROPIC` settled:
+
+```bash
+npx ts-node backfill-mnx-oracle.ts --feed=mnx-ant-mark          # then --apply
+npx ts-node create-mnx-perps.ts --creator=mnx --feed=mnx-ant-mark   --subsidy-per-side=76810 --max-leverage=10   --topics=anthropic,ai,llms,finance,technology-default           # then --apply
+```
+
+A new listing has less history than the feed preflight's 30-day minimum, so
+expect that check to fail for it until the history accumulates. Before
+making the market public, open it and check the price shows as dollars with
+the ticker badge and the MNX credit.
 
 ## Why oracle latency is still a launch decision
 
@@ -268,6 +304,44 @@ protect the pools when the trader is flat at the funding timestamp.
 | Crypto Fear & Greed            | Mean-reverting sentiment gauge, two-sided       | New daily value is public at ~00:00 UTC; exposure bounded by the 5-minute poll               |
 | OpenRouter open-weight share   | Two-sided index with coherent adoption theses   | Upstream exposes complete UTC days, so hourly writes usually repeat a predictable daily step |
 | OpenRouter Anthropic / CN labs | Two-sided proxies for third-party-routed demand | Same payload and same daily step as the open-weight share                                    |
+| Adjacent MSRY                  | Two-sided macro index, but quiet                | Fills wait for a value computed after the order; 5:30 p.m. ET roll steps are predictable     |
+
+### Adjacent Misery Implied Index
+
+`adjacent-msry` reads Adjacent's realtime one-minute series. Both of its
+gates are met:
+
+1. Adjacent permitted this market in writing on 2026-10-28 (marking,
+   displaying and settling a perpetual on MSRY, plus MSRY charts in the
+   product and in marketing about it). The credit it asks for is in
+   `common/src/perps/oracle-attribution.ts`, and it goes on every chart,
+   market page and methodology or FAQ that shows MSRY. The app renders it on
+   the market page, the /perps chart, embeds and the seven-day charts on
+   cards; the /perps list's row sparklines go without. Add it to any
+   screenshot or chart used in marketing.
+2. The Adjacent organization has realtime API access, and `ADJACENT_API_KEY`
+   (an `ak_` key with read scope for indices) is in Secret Manager for dev
+   and prod. `backend/scripts/probe-adjacent-msry.ts` passed in both on
+   2026-10-29: realtime rows, one for every minute even while the value was
+   flat, with the newest minute served about 2.5 minutes after it began.
+   Rerun it after rotating the key.
+
+Without the secret every poll fails as a provider error, which pages under
+`[oracle-feeds]` once an hour. To launch, deploy `scheduler-perps`, run
+`backfill-adjacent-msry-oracle --dry-run` and then for real, deploy the API,
+and create the market from the admin page. Orders fill about 3 minutes (2.5
+to 4) after they are placed: an order waits for the first minute that starts
+after it, and that minute arrives about 2.5 minutes after it begins. That is
+well inside the 10-minute order lifetime.
+
+Either side may end the permission on written notice. Manifold must then stop
+using new MSRY levels and take Adjacent's name, ticker and credit off the live
+product; winding down open positions is Manifold's call. Disable creation,
+resolve the market at the last level published before the notice, and remove
+the feed. If Adjacent changes the methodology, for example to a five-minute
+TWAP, redo the latency review before keeping the market open: a TWAP keeps
+moving for several prints after its inputs jump, so next-price fills stop
+neutralising the jump.
 
 ### xStocks on-chain sources (ongoing, post-launch)
 

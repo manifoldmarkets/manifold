@@ -1,6 +1,5 @@
 import { filterDefined } from './util/array'
 import { notification_reason_types, NotificationReason } from './notification'
-import { getApiUrl } from './api/utils'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
@@ -48,6 +47,7 @@ export type notification_preferences = {
   unique_bettors_on_your_contract: notification_destination_types[]
   limit_order_fills: notification_destination_types[]
   quest_payout: notification_destination_types[]
+  liquidity_returned: notification_destination_types[]
   airdrop: notification_destination_types[]
   manifest_airdrop: notification_destination_types[]
   extra_purchased_mana: notification_destination_types[]
@@ -62,6 +62,7 @@ export type notification_preferences = {
   // Perps
   perp_liquidation: notification_destination_types[]
   perp_adl: notification_destination_types[]
+  perp_order_failed: notification_destination_types[]
 
   // Manifold.love
   new_match: notification_destination_types[]
@@ -72,6 +73,7 @@ export type notification_preferences = {
   // User-related
   new_message: notification_destination_types[]
   tagged_user: notification_destination_types[]
+  tagged_all_traders: notification_destination_types[]
   user_liked_your_content: notification_destination_types[]
   on_new_follow: notification_destination_types[]
   contract_from_followed_user: notification_destination_types[]
@@ -159,6 +161,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     unique_bettors_on_your_contract: constructPref(true, true, false),
     limit_order_fills: constructPref(true, false, true),
     quest_payout: constructPref(true, false, false),
+    liquidity_returned: constructPref(true, false, false),
     airdrop: constructPref(true, false, false),
     manifest_airdrop: constructPref(true, false, false),
     extra_purchased_mana: constructPref(true, false, false),
@@ -173,6 +176,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Perps
     perp_liquidation: constructPref(true, true, true),
     perp_adl: constructPref(true, false, false),
+    perp_order_failed: constructPref(true, false, false),
 
     // Manifold.love
     new_match: constructPref(true, true, true),
@@ -183,6 +187,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // User-related
     new_message: constructPref(true, true, true),
     tagged_user: constructPref(true, true, true),
+    tagged_all_traders: constructPref(true, false, false),
     on_new_follow: constructPref(true, true, false),
     contract_from_followed_user: constructPref(true, false, false),
     user_liked_your_content: constructPref(true, false, false),
@@ -230,6 +235,27 @@ export const notificationReasonToSubscriptionType: Partial<
   reply_to_users_comment: 'all_replies_to_my_comments_on_watched_markets',
 }
 
+// Preferences split out of an older one. Users who haven't set the newer
+// preference keep whatever they chose for the one it was split from.
+const inheritedPreferences: Partial<
+  Record<notification_preference, notification_preference>
+> = {
+  tagged_all_traders: 'tagged_user',
+}
+
+export const getSavedNotificationDestinations = (
+  notificationSettings: Partial<notification_preferences>,
+  preference: notification_preference
+): notification_destination_types[] => {
+  const inheritFrom = inheritedPreferences[preference]
+  return (
+    notificationSettings[preference] ??
+    (inheritFrom ? notificationSettings[inheritFrom] : undefined) ??
+    getDefaultNotificationPreferences()[preference] ??
+    []
+  )
+}
+
 export function getNotificationPreference(reason: NotificationReason) {
   return (notificationReasonToSubscriptionType[
     reason as notification_reason_types
@@ -242,14 +268,14 @@ export const getNotificationDestinationsForUser = (
   reason: NotificationReason
 ) => {
   const notificationSettings = privateUser.notificationPreferences
-  const unsubscribeEndpoint = getApiUrl('unsubscribe')
   try {
     const notificationPreference = getNotificationPreference(reason)
     // Get default destinations if user has no settings for this preference
     // TODO: write the default notif preferences to the user's settings when missing
-    const destinations =
-      notificationSettings[notificationPreference] ??
-      getDefaultNotificationPreferences()[notificationPreference]
+    const destinations = getSavedNotificationDestinations(
+      notificationSettings,
+      notificationPreference
+    )
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
@@ -264,7 +290,6 @@ export const getNotificationDestinationsForUser = (
       sendToEmail: destinations.includes('email') && !optedOutOfEmail,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
       sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
-      unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${notificationPreference}`,
       urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
       notificationPreference,
     }
@@ -277,7 +302,6 @@ export const getNotificationDestinationsForUser = (
       sendToEmail: false,
       sendToBrowser: false,
       sendToMobile: false,
-      unsubscribeUrl: '',
       urlToManageThisNotification: '',
     }
   }

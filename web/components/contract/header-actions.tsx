@@ -42,11 +42,15 @@ import { AddLiquidityModal } from './liquidity-modal'
 
 export function HeaderActions(props: {
   contract: Contract
+  // Whether contract.answers holds every answer the market has (see
+  // duplicateContractHref)
+  hasAllAnswers: boolean
   initialHideGraph: boolean
   hideGraph: boolean
   setHideGraph: (hideGraph: boolean) => void
 }) {
-  const { contract, initialHideGraph, hideGraph, setHideGraph } = props
+  const { contract, hasAllAnswers, initialHideGraph, hideGraph, setHideGraph } =
+    props
   const user = useUser()
   const privateUser = usePrivateUser()
   const { isNative } = useNativeInfo()
@@ -58,7 +62,7 @@ export function HeaderActions(props: {
   const [liquidityOpen, setLiquidityOpen] = useState(false)
   const [tippingOpen, setTippingOpen] = useState(false)
 
-  const duplicateHref = duplicateContractHref(contract)
+  const duplicateHref = duplicateContractHref(contract, hasAllAnswers)
 
   const isBlocked =
     privateUser && privateUser.blockedContractIds?.includes(contract.id)

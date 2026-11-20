@@ -19,10 +19,9 @@ const contractsById = {
 }
 
 describe('canTakeLoans', () => {
-  // The point of the change: loans are off the full-bonus axis, because they're
-  // borrowed against the user's own positions and the membership table
-  // advertises the 1% daily free loan to unverified users.
-  it('allows unverified users (bonusEligibility undefined)', () => {
+  // Loans are borrowed against the user's own positions, so never-verified
+  // accounts can take them like everyone else in good standing.
+  it('allows never-verified users (bonusEligibility undefined)', () => {
     expect(canTakeLoans({})).toBe(true)
   })
 
@@ -38,23 +37,11 @@ describe('canTakeLoans', () => {
     )
   })
 
-  // 'ineligible' is overloaded and two of its three writers are enforcement:
-  // the iDenfy callback on denied/suspected/EXPIRED/DELETED, and
-  // superBanUserCore alongside permanent bans. Allowing it would hand loans
-  // back to superbanned accounts.
-  it('blocks explicitly-ineligible accounts (superban, failed/expired KYC)', () => {
+  // 'ineligible' is written by superBanUserCore alongside permanent bans (and,
+  // on older rows, by failed/expired iDenfy sessions). Allowing it would hand
+  // loans back to superbanned accounts.
+  it('blocks explicitly-ineligible accounts (superban, legacy failed KYC)', () => {
     expect(canTakeLoans({ bonusEligibility: 'ineligible' })).toBe(false)
-  })
-
-  // Regression guard: mapIdenfyStatus folds EXPIRED/DELETED into 'denied', and
-  // the denial branch rewrites a non-grandfathered user to 'ineligible'. So an
-  // admin hold must not become loan access just by letting a session lapse.
-  it('does not let an admin hold lapse into loan access via expiry', () => {
-    const flagged = { bonusEligibility: 'requires_verification' }
-    expect(canTakeLoans(flagged)).toBe(false)
-    // ... iDenfy session expires, callback rewrites the field:
-    const afterExpiry = { bonusEligibility: 'ineligible' }
-    expect(canTakeLoans(afterExpiry)).toBe(false)
   })
 
   // Bots self-exclude from bonuses, but that exclusion lives on isBot and the

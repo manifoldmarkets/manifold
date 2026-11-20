@@ -36,6 +36,7 @@ import {
 } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { canStaffAddSportsAnswers } from 'common/sports'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { floatingEqual } from 'common/util/math'
@@ -212,7 +213,8 @@ export function AnswersPanel(props: {
       !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
-          user.id === contract.creatorId)) &&
+          (user.id === contract.creatorId ||
+            canStaffAddSportsAnswers(contract, user.id)))) &&
       tradingAllowed(contract) &&
       !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
       unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
@@ -261,6 +263,7 @@ export function AnswersPanel(props: {
           setSort={setSort}
           showDefaultSort={showSetDefaultSort && contract.sort !== sort}
           setDefaultSort={setDefaultSort}
+          defaultSortModAction={!!user && user.id !== contract.creatorId}
         />
       )}
       <Col ref={answersContainerRef}>
@@ -656,6 +659,7 @@ export function AnswerComponent(props: {
         icon: <PencilIcon className=" h-4 w-4" />,
         name: 'Edit',
         onClick: () => setEditingAnswer(answer),
+        modAction: isModAnswerEdit(answer, contract, user),
       },
 
     onCommentClick && {
@@ -866,6 +870,19 @@ export function canEditAnswer(
       isModId(user.id) ||
       user.id === contract.creatorId ||
       user.id === answer.userId)
+  )
+}
+
+// Can only edit the answer because the user is a mod or admin
+export function isModAnswerEdit(
+  answer: Answer,
+  contract: MultiContract,
+  user?: User | undefined | null
+) {
+  return (
+    !!canEditAnswer(answer, contract, user) &&
+    user?.id !== contract.creatorId &&
+    user?.id !== answer.userId
   )
 }
 

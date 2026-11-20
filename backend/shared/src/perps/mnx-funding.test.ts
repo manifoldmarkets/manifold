@@ -53,6 +53,7 @@ const database = (
   )
   const fundingRead = jest.fn(async () => null)
   const oneOrNone = jest.fn(async (sql: string) => {
+    if (sql.includes('from perp_orders')) return null
     if (sql.includes('contract_perp_funding_events')) return fundingRead()
     if (sql.includes('system_trading_status')) return { status: true }
     if (sql.includes('from users'))
@@ -282,7 +283,7 @@ it('the trading engine refuses a frozen provider before balance or position writ
     oracleFeedHealth: { ...health, status: 'unavailable', reason: 'Frozen' },
   })
   await expect(
-    openOrAddPosition('h100', 'user', 'long', 100, 2)
-  ).rejects.toThrow(/Frozen/)
+    openOrAddPosition('h100', 'user', 'long', 100, 2, 'abcdefghij')
+  ).rejects.toThrow(/oracle.*unavailable/i)
   expect(db.writes).not.toHaveBeenCalled()
 })

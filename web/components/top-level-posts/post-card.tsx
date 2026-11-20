@@ -23,6 +23,7 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
 import DropdownMenu from '../widgets/dropdown-menu'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 import { UserLink } from '../widgets/user-link'
 
 export function PostCard(props: { post: TopLevelPost; className?: string }) {
@@ -63,11 +64,14 @@ export function PostCard(props: { post: TopLevelPost; className?: string }) {
       name: post.visibility === 'unlisted' ? 'List' : 'Unlist',
       icon: <EyeOffIcon className="h-5 w-5" />,
       onClick: handleSetUnlisted,
+      modAction: true,
     },
     isAdminOrMod && {
       name: 'Superban',
       icon: <IoWarning className="h-5 w-5" />,
       onClick: handleSuperban,
+      modAction: true,
+      destructive: true,
     }
   )
 
@@ -135,7 +139,12 @@ export function PostCard(props: { post: TopLevelPost; className?: string }) {
               <DropdownMenu
                 items={dropdownItems}
                 buttonContent={
-                  <DotsHorizontalIcon className="text-ink-400 hover:text-ink-600 h-5 w-5 transition-colors" />
+                  <DotsHorizontalIcon
+                    className={clsx(
+                      'h-5 w-5 transition-colors',
+                      MOD_ACTION_TEXT_CLASS
+                    )}
+                  />
                 }
                 menuWidth="w-40"
                 buttonClass="p-1 hover:bg-ink-100 rounded-lg transition-colors"

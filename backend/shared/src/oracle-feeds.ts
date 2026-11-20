@@ -5,9 +5,19 @@ import { MNX_INSTRUMENTS, MNX_POLL_MS } from 'common/perps/mnx'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { validateBasicOraclePoint } from 'common/perps/oracle'
 import { FEAR_GREED_MAX } from 'common/perps/fear-greed'
-
-import { fetchBtcUsdSpot } from './btc-price'
 import {
+  MSRY_MAX_PRICE,
+  MSRY_MAX_SOURCE_AGE_MS,
+  MSRY_MIN_PRICE,
+  MSRY_POLL_MS,
+  MSRY_UPDATE_PERIOD_MS,
+} from 'common/perps/adjacent-msry'
+
+import { fetchAdjacentMsryObservation } from './adjacent-msry'
+import { fetchBtcUsdSpot } from './btc-price'
+import { OracleClock } from './oracle-clock'
+import {
+  ADJACENT_MSRY_FEED_ID,
   BTC_USD_FEED_ID,
   CRYPTO_FEAR_GREED_FEED_ID,
   GLDX_USD_FEED_ID,
@@ -20,6 +30,8 @@ import {
   TRUMP_APPROVAL_FEED_ID,
   VANCE_FAVORABILITY_FEED_ID,
   VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+  VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
 } from './oracle'
 import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 
@@ -35,9 +47,47 @@ import { XSTOCK_SPECS, fetchXStockUsdPrice } from './xstocks-price'
 //     tighter than the feed's expected cadence (it would freeze between
 //     perfectly normal updates).
 
+/**
+ * Where a feed is in its life when it is not simply live.
+ *
+ * - 'awaiting-source': registered ahead of its provider. The series it reads
+ *   does not exist yet (a VoteHub average for a cycle nobody has polled), so
+ *   nothing polls it, nothing probes its staleness, and create-perp refuses
+ *   it. Registering early keeps the bounds, cadence and launch settings
+ *   reviewed in one place; the flip to live is clearing this field once
+ *   `reason` no longer holds, together with the creation flag and the
+ *   launch-manifest move that the manifest check requires.
+ * - 'retired': the series ended or every market on it settled. A feed with
+ *   no new points is then complete, not stale: nothing polls, probes or
+ *   publishes it, and create-perp refuses it. Its oracle_prices history stays
+ *   for the settled market's chart, as do its ticker, attribution and
+ *   display entries in `common`. `at` is when expectations of new points
+ *   ended (the settlement, or the provider's end date).
+ *
+ * Both phases require `marketCreationEnabled: false`; the launch manifest
+ * check enforces it so the two flags cannot disagree.
+ */
+export type OracleFeedLifecycle =
+  | { phase: 'awaiting-source'; reason: string }
+  | { phase: 'retired'; at: number; reason: string }
+
+/** Live feeds are polled or probed, alerted on, and creatable when enabled. */
+export const isOracleFeedLive = (feed: Pick<OracleFeedDef, 'lifecycle'>) =>
+  feed.lifecycle == null
+
+/** One clause for log lines and API errors. */
+export const describeOracleFeedLifecycle = (lifecycle: OracleFeedLifecycle) =>
+  lifecycle.phase === 'retired'
+    ? `retired since ${new Date(lifecycle.at).toISOString().slice(0, 10)} (${
+        lifecycle.reason
+      })`
+    : `awaiting its source (${lifecycle.reason})`
+
 export type OracleFeedDef = {
   id: string
   description: string
+  /** Absent = live. See OracleFeedLifecycle. */
+  lifecycle?: OracleFeedLifecycle
   /** Whether admins may create new perp markets on this feed. Required so
    * every registry addition makes an explicit product decision. Disabling
    * creation does not stop ingestion, health checks, or updates for existing
@@ -89,13 +139,23 @@ export type OracleFeedDef = {
    * holders too). Trade it off against the source's rate limits: poll faster
    * than the source publishes and you spend quota for no new information. */
   pollPeriodMs?: number
-  fetchLatest?: () => Promise<OraclePoint | null>
+  /** `clock` stamps the observation; the tick passes the database clock that
+   * also stamps perp orders (see oracle-clock). */
+  fetchLatest?: (clock: OracleClock) => Promise<OraclePoint | null>
   /** A provider can withdraw availability independently of its last price.
    * The fast tick commits successful health and price in one engine update. */
-  fetchObservation?: () => Promise<{
+  fetchObservation?: (clock: OracleClock) => Promise<{
     point?: OraclePoint
     health: OracleFeedHealth
   }>
+  /** What the observation publisher does when a provider stamp it has
+   * already published arrives at a different price. Absent: corruption, so
+   * the observation is refused and availability withdrawn (MNX, whose stamps
+   * name one immutable mark). 'keep-published': a legitimate re-recording,
+   * so the published value stands and the provider's next stamp supersedes
+   * it (Adjacent, whose one-minute bucket holds the last value recorded in
+   * it). */
+  sourceRevision?: 'keep-published'
   /** All recently-finalized points, oldest first. Takes precedence over
    * fetchLatest in the tick: sources that publish out of order (NESO batch
    * settling) permanently lose interleaved points under a latest-only
@@ -104,19 +164,29 @@ export type OracleFeedDef = {
 }
 
 export const ORACLE_FEEDS: OracleFeedDef[] = [
-  // One shared /v0/markets request prices all sixteen instruments every 2s
+  // One shared /v0/markets request prices every live instrument every 2s
   // (30 requests/minute per scheduler process; briefly 60 during deploy overlap). MNX publishes no numeric REST quota in its
   // public docs; honor Retry-After and back off on errors. H100 source age is
   // independent of this tick. The defined target is MNX's mark, not its oracle
   // or the underlying share/valuation: see common/perps/mnx and the runbook.
+  // An instrument MNX delisted stays registered as retired (see
+  // MNX_INSTRUMENTS' `retired`): once it leaves /v0/markets the tick would
+  // otherwise warn "Missing from MNX active markets" every minute.
   ...MNX_INSTRUMENTS.map(
     (i): OracleFeedDef => ({
       id: i.feedId,
       description: i.description,
-      marketCreationEnabled: true,
+      ...(i.retired && {
+        lifecycle: {
+          phase: 'retired',
+          at: i.retired.at,
+          reason: i.retired.reason,
+        },
+      }),
+      marketCreationEnabled: !i.retired,
       cadence: 'fast',
       pollPeriodMs: MNX_POLL_MS,
-      fetchObservation: () => fetchMnxObservation(i.feedId),
+      fetchObservation: (clock) => fetchMnxObservation(i.feedId, clock),
       minPrice: i.minPrice,
       maxPrice: i.maxPrice,
       staleAfterMs: i.maxAgeMs,
@@ -192,7 +262,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.SPYX, clock),
   },
   {
     id: QQQX_USD_FEED_ID,
@@ -205,7 +275,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.QQQX, clock),
   },
   {
     id: GLDX_USD_FEED_ID,
@@ -218,7 +288,7 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.GLDX, clock),
   },
   {
     id: NVDAX_USD_FEED_ID,
@@ -231,7 +301,43 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
     staleAfterMs: 5 * MINUTE_MS,
     updatePeriodMs: 2_000,
     pollPeriodMs: 2_000,
-    fetchLatest: () => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX),
+    fetchLatest: (clock) => fetchXStockUsdPrice(XSTOCK_SPECS.NVDAX, clock),
+  },
+  // Adjacent's Misery Implied Index: implied U-3 unemployment plus implied
+  // CPI-U year-over-year, in percentage points, recalculated by Adjacent once
+  // a minute (common/perps/adjacent-msry.ts). Fast like MNX, not 'daily':
+  // the value moves intraday, the provider stamps when it produced each
+  // value, and that stamp drives next-price eligibility. It rides the shared
+  // tick at a 20s poll because Adjacent's quota is organization-wide (see
+  // MSRY_POLL_MS); the realtime tier needs ADJACENT_API_KEY, and without it
+  // every poll fails as a provider error.
+  //
+  // Adjacent permitted this market in writing on 2026-10-28; its terms and
+  // credit line are in common/perps/oracle-attribution.ts.
+  {
+    id: ADJACENT_MSRY_FEED_ID,
+    description:
+      "Adjacent's Misery Implied Index (MSRY): implied U-3 unemployment plus CPI-U YoY, percentage points",
+    marketCreationEnabled: true,
+    cadence: 'fast',
+    pollPeriodMs: MSRY_POLL_MS,
+    fetchObservation: fetchAdjacentMsryObservation,
+    // A re-recorded minute must not withdraw availability on a healthy feed,
+    // including when a restarted or overlapping scheduler sees the revision
+    // first; the next minute's value supersedes it.
+    sourceRevision: 'keep-published',
+    // Unit-confused garbage only (a fraction, a 50-150 political level, a
+    // 1000-based NAV) and the non-positive prints the methodology's 0.00
+    // floor allows; never a fast move. Corruption is caught at the source:
+    // the parser rejects a page with any malformed row, and the observation
+    // rule refuses a value older than MSRY_MAX_SOURCE_AGE_MS.
+    minPrice: MSRY_MIN_PRICE,
+    maxPrice: MSRY_MAX_PRICE,
+    // Same as the provider-age limit: five missed recalculations. Flat
+    // stretches are normal (the index often holds for hours), so unchanged
+    // values are written as heartbeats every staleAfterMs / 2.
+    staleAfterMs: MSRY_MAX_SOURCE_AGE_MS,
+    updatePeriodMs: MSRY_UPDATE_PERIOD_MS,
   },
   // Daily feeds use a 26h threshold (one missed daily run + slack) rather
   // than a lazy 3d: the hourly update-perps job turns feed staleness into
@@ -281,13 +387,74 @@ export const ORACLE_FEEDS: OracleFeedDef[] = [
   {
     id: VOTEHUB_GENERIC_BALLOT_2026_FEED_ID,
     description:
-      "Democratic share (%) of VoteHub's published 2026 generic-ballot average",
-    marketCreationEnabled: true,
+      "Democratic share (%) of VoteHub's published 2026 generic-ballot average (series ended 2026-11-03; retired)",
+    marketCreationEnabled: false,
+    // RETIRED. VoteHub's `generic_ballot_2026` series is cycle-bound: its
+    // `end_date` is election day, 2026-11-03, and the final 11/03 value was
+    // posted on 11/04. The one market on it (nScRu5uy6yCu) was settled at
+    // that value on 2026-11-05. Until this was marked, the publisher kept
+    // polling the ended series every 5 minutes and, once the last point aged
+    // past 20h, logged an un-throttled ERROR per attempt (288/day) while the
+    // hourly staleness probe paged `[oracle-feeds]` — for a feed with nothing
+    // left to publish. The entry stays so the settled market's chart, ticker
+    // and credit keep resolving, and as the template for the 2028 pair below.
+    lifecycle: {
+      phase: 'retired',
+      at: Date.UTC(2026, 10, 5, 21, 56, 39),
+      reason:
+        'VoteHub series ended 2026-11-03; market nScRu5uy6yCu settled 2026-11-05 at the last accepted value',
+    },
     cadence: 'daily',
     // A major party's generic-ballot share has sat between the high 30s and
     // the mid 50s for as long as the question has been polled; 20-80 leaves
     // room for any real result and still catches a margin (D-R, typically
     // single digits) or a fraction being published in its place.
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  // The 2028 generic ballot as two feeds on ONE VoteHub series: the Democratic
+  // share and the Republican share, so both parties' numbers trade as levels.
+  // Each is a share, never a margin, so each price is strictly positive. Same
+  // publisher, cadence, bounds and dead-man threshold as the 2026 feed.
+  //
+  // AWAITING SOURCE. VoteHub had not published a `generic_ballot_2028`
+  // average as of 2026-11-09 (HTTP 404 — the key is inferred from
+  // `generic_ballot_2026`) and listed no 2028 generic-ballot polls. Nothing
+  // polls or probes these until the lifecycle is cleared. Promotion:
+  // `backend/scripts/list-votehub-averages.ts` reports when the key appears
+  // with `dem`/`rep` answer objects; then clear `lifecycle`, set
+  // marketCreationEnabled, move the launch-manifest entries out of pending,
+  // deploy API + scheduler-perps, backfill both feeds, and create the markets
+  // with `create-votehub-perps.ts`.
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2028_DEM_FEED_ID,
+    description:
+      "Democratic share (%) of VoteHub's published 2028 generic-ballot average",
+    marketCreationEnabled: false,
+    lifecycle: {
+      phase: 'awaiting-source',
+      reason:
+        'VoteHub had not published a generic_ballot_2028 average as of 2026-11-09',
+    },
+    cadence: 'daily',
+    minPrice: 20,
+    maxPrice: 80,
+    staleAfterMs: 26 * HOUR_MS,
+    updatePeriodMs: DAY_MS,
+  },
+  {
+    id: VOTEHUB_GENERIC_BALLOT_2028_REP_FEED_ID,
+    description:
+      "Republican share (%) of VoteHub's published 2028 generic-ballot average",
+    marketCreationEnabled: false,
+    lifecycle: {
+      phase: 'awaiting-source',
+      reason:
+        'VoteHub had not published a generic_ballot_2028 average as of 2026-11-09',
+    },
+    cadence: 'daily',
     minPrice: 20,
     maxPrice: 80,
     staleAfterMs: 26 * HOUR_MS,

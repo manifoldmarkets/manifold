@@ -7,7 +7,7 @@ import {
 } from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract, isMultiCpmm } from 'common/contract'
-import { User } from 'common/user'
+import { paysLegacyReferralHalves, User } from 'common/user'
 import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
@@ -29,19 +29,13 @@ import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
+  LEGACY_REFERRAL_BET_BONUS,
   MAX_TRADERS_FOR_BIG_BONUS,
-  REFERRAL_BET_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
 } from 'common/economy'
-import { ReferralTxn, UniqueBettorBonusTxn } from 'common/txn'
-import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-  roundTierBonus,
-} from 'common/supporter-config'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { runTxnFromBank } from 'shared/txn/run-txn'
+import { UniqueBettorBonusTxn } from 'common/txn'
+import { payReferralBonus } from 'shared/referral-bonus'
 import { Answer } from 'common/answer'
 import {
   addHouseSubsidy,
@@ -224,12 +218,13 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
   ])
 }
 
-// Pays the referrer the first-bet portion (REFERRAL_BET_BONUS) when the
-// referred user places their very first bet. The remaining verify portion
-// is paid in idenfy/callback.ts when the user completes ID verification.
+// Pays the referrer the legacy first-bet half (LEGACY_REFERRAL_BET_BONUS) when
+// a user referred before signup-time referral payouts places their very first
+// bet. Referrals recorded since then were settled at signup (refer-user.ts),
+// even when the referrer's tier paid nothing, and never reach the payout.
 export const payReferralBetBonus = async (referredUser: User) => {
   const referrerId = referredUser.referredByUserId
-  if (!referrerId) return
+  if (!referrerId || !paysLegacyReferralHalves(referredUser)) return
   if (referrerId === referredUser.id) {
     log(`Skipped referral first-bet bonus - self-referral for ${referredUser.id}`)
     return
@@ -238,65 +233,18 @@ export const payReferralBetBonus = async (referredUser: User) => {
   const referrer = await getUser(referrerId)
   if (!referrer) return
 
-  // SERIALIZABLE isolation + retry: protects the dedupe SELECT against
-  // concurrent first-bet calls (e.g. two tabs, parallel API requests) that
-  // would otherwise both miss the dedup and double-pay. Matches the pattern
-  // used in refer-user.ts and runTransactionWithRetries.
-  const result = await runTransactionWithRetries(async (tx) => {
-    // Dedupe against any prior REFERRAL payout for this referred user:
-    // - legacy single-payment txns (no bonusType) covered the full bonus
-    // - explicit 'first_bet' txns from this code path
-    const existing = await tx.oneOrNone(
-      `SELECT 1 FROM txns WHERE to_id = $1
-       AND category = 'REFERRAL'
-       AND data->'data'->>'referredUserId' = $2
-       AND (data->'data'->>'bonusType' IS NULL OR data->'data'->>'bonusType' = 'first_bet')`,
-      [referrer.id, referredUser.id]
-    )
-    if (existing) return null
-
-    // Referral multiplier comes from effective tier: unverified referrers
-    // get a reduced 0.2x, verified gets 1x, subscribers higher.
-    const entitlements = await getActiveSupporterEntitlements(tx, referrer.id)
-    const referrerTier = resolveEffectiveTier({
-      entitlements,
-      bonusEligibility: referrer.bonusEligibility,
+  // SERIALIZABLE isolation + retry: protects payReferralBonus's dedupe SELECT
+  // against concurrent first-bet calls (e.g. two tabs, parallel API requests)
+  // that would otherwise both miss the dedup and double-pay.
+  const result = await runTransactionWithRetries((tx) =>
+    payReferralBonus(tx, {
+      referrer,
+      referredUserId: referredUser.id,
+      referredContractId: referredUser.referredByContractId,
+      bonusType: 'first_bet',
+      baseAmount: LEGACY_REFERRAL_BET_BONUS,
     })
-    const referralMultiplier = getEffectiveBonusMultiplier(
-      referrerTier,
-      'referral'
-    )
-    const amount = roundTierBonus(REFERRAL_BET_BONUS * referralMultiplier)
-    if (amount <= 0) {
-      log(
-        `Skipped referral first-bet bonus for referrer ${referrerId} - effective tier ${referrerTier} (multiplier ${referralMultiplier})`
-      )
-      return null
-    }
-
-    const bonusTxn: Omit<ReferralTxn, 'id' | 'createdTime' | 'fromId'> = {
-      fromType: 'BANK',
-      toId: referrer.id,
-      toType: 'USER',
-      amount,
-      token: 'M$',
-      category: 'REFERRAL',
-      description: `Referral first-bet bonus for new user ${referredUser.id}: ${amount}`,
-      data: {
-        referredUserId: referredUser.id,
-        referredContractId: referredUser.referredByContractId,
-        bonusType: 'first_bet',
-        effectiveTier: referrerTier,
-        referralMultiplier,
-        supporterBonus: referralMultiplier > 1,
-      },
-    }
-    await runTxnFromBank(tx, bonusTxn)
-    log(
-      `Paid referral first-bet bonus of ${amount} to ${referrer.id} for ${referredUser.id}`
-    )
-    return amount
-  })
+  )
 
   if (result) {
     await createReferralNotification(

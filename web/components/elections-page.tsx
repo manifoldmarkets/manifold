@@ -20,6 +20,7 @@ import { ElectionsPageProps } from 'web/public/data/elections-data'
 import { SectionInView } from './us-elections/section-in-view'
 import { PollingPerpsRow } from './us-elections/polling-perps-row'
 import { MarketSpotlightGrid } from './us-elections/market-spotlight'
+import { SenateSeatsChart } from './us-elections/senate-seats-chart'
 import {
   ConditionalMatrix,
   LiveConditionOdds,
@@ -102,8 +103,7 @@ export function USElectionsPage(
     presidency2028PartyContract,
     rawSenateStateContracts,
     rawGovernorStateContracts,
-    rawSenateCandidateContracts,
-    rawGovernorCandidateContracts,
+    linkedMarketCounts,
     balanceOfPowerContract,
     houseControlContract,
     senateControlContract,
@@ -118,6 +118,7 @@ export function USElectionsPage(
     houseMatrixRows = [],
     bothMatrixRows = [],
     presidencyMatrixRows = [],
+    senateSeatsContract,
     hideTitle,
   } = props
 
@@ -169,11 +170,13 @@ export function USElectionsPage(
     <Col
       className={clsx(interactions.scope, 'isolate mb-8 gap-6 px-1 sm:px-2')}
     >
-      {/* Hero with back navigation, left-aligned (back sits left of the title).
+      {/* Left-aligned hero with back and share controls on mobile.
           A visitor arriving from a shared link has no Manifold history to go
-          back to, so the arrow goes Home instead of off-site. */}
+          back to, so the arrow goes Home instead of off-site. On desktop
+          the sidebar already links everywhere the arrow could go, so it is
+          hidden there. */}
       <Row className="items-center gap-2 pt-3 sm:pt-1">
-        <BackButton homeFallback />
+        <BackButton homeFallback className="lg:hidden" />
         <Col className={clsx(hideTitle && 'hidden')}>
           <h1 className="text-primary-700 text-3xl font-normal sm:text-4xl">
             Elections
@@ -189,13 +192,13 @@ export function USElectionsPage(
           tooltip="Share this page"
           color="gray-outline"
           size="sm"
-          className="ml-auto shrink-0 gap-1.5 sm:ml-4"
+          className="ml-auto shrink-0 gap-1.5 sm:ml-4 lg:hidden"
         >
           Share
         </CopyLinkOrShareButton>
       </Row>
 
-      {/* Chamber controls sit above the map's own surface. */}
+      {/* Chamber controls sit below the map's own surface. */}
       <SectionInView section="midterms map" className="gap-3">
         <SectionHeader>2026 Midterms</SectionHeader>
         <LiveElectionMap
@@ -203,12 +206,15 @@ export function USElectionsPage(
           senateControlContract={senateControlContract}
           rawSenateStateContracts={rawSenateStateContracts}
           rawGovernorStateContracts={rawGovernorStateContracts}
-          rawSenateCandidateContracts={rawSenateCandidateContracts}
-          rawGovernorCandidateContracts={rawGovernorCandidateContracts}
+          linkedMarketCounts={linkedMarketCounts}
           houseDistrictsContract={houseDistrictsContract}
           additionalHouseContracts={additionalHouseContracts}
           ballotMeasureContracts={ballotMeasureContracts}
         />
+        {/* The Senate seat count, right under the chamber toplines. */}
+        {senateSeatsContract && (
+          <SenateSeatsChart contract={senateSeatsContract} />
+        )}
       </SectionInView>
 
       {/* Polling averages - the continuously-updating numbers (approval,

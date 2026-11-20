@@ -62,6 +62,7 @@ const apiRoute = (endpoint: RequestHandler) => {
 export const addOldRoutes = (app: express.Application) => {
   app.get('/health', ...apiRoute(health))
   app.get('/unsubscribe', ...apiRoute(unsubscribe))
+  app.post('/unsubscribe', ...apiRoute(unsubscribe))
 
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
   app.post('/creategroup', ...apiRoute(creategroup))

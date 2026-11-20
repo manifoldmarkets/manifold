@@ -11,7 +11,7 @@
       "topic": "elections",
       "officialSourceUrl": "https://www.elections.alaska.gov/",
       "approvalRule": "Majority of votes cast on the proposition (Alaska Const. art. XI §6); effective 90 days after certification.",
-      "coverage": "needs-creation-held",
+      "coverage": "created",
       "aliases": [
         "Ballot Measure 2",
         "Measure 2",
@@ -28,7 +28,13 @@
       "yesMeans": "Yes: repeals top-four primaries and ranked-choice voting, restores party primaries and plurality general elections, and repeals 2020 campaign-finance rules.",
       "noMeans": "Keeps top-four open primaries, ranked-choice general elections and the 2020 campaign-finance rules.",
       "verification": "secondary",
-      "marketNote": "No linked market yet · ballot details or market criteria under review."
+      "source": {
+        "kind": "binary",
+        "contractId": "ng0d0ShghR",
+        "slug": "will-alaska-measure-2-to-repeal-ran",
+        "yesOrientation": "approve",
+        "confidence": "confirmed"
+      }
     },
     {
       "key": "AK-measure-3",
@@ -851,7 +857,7 @@
       "topic": "taxes",
       "officialSourceUrl": "https://voterguide.sos.ca.gov/propositions/43/",
       "approvalRule": "Simple majority of votes cast on the measure (Cal. Const. art. II §10(a); art. XVIII §4 for amendments). If conflicting measures both pass, the one with more yes votes prevails (art. II §10(b)).",
-      "coverage": "held",
+      "coverage": "reuse-conditional",
       "aliases": [
         "Prop 43",
         "Proposition 43",
@@ -867,7 +873,16 @@
       "yesMeans": "Certain local government taxes would require two-thirds approval by voters.",
       "noMeans": "Certain local government taxes could continue to be approved by voters with a majority vote.",
       "verification": "official",
-      "marketNote": "The existing market describes a withdrawn initiative. A market for this proposition is awaiting clarification."
+      "source": {
+        "kind": "portfolio-answer",
+        "contractId": "SOIC6UEE60",
+        "slug": "which-nov-2026-california-ballot-pr",
+        "answerId": "gutZhURRgL",
+        "yesOrientation": "approve",
+        "confidence": "conditional",
+        "offBallot": "unspecified",
+        "criteriaNote": "This portfolio has no resolution description. Approval is inferred from the question and answer; cancellation and certification rules are unspecified."
+      }
     },
     {
       "key": "CA-prop-44",

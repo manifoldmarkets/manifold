@@ -2,7 +2,8 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { contractPath } from 'common/contract'
-import { ENV } from 'common/envs/constants'
+import { ENV, isAdminId } from 'common/envs/constants'
+import { getMnxCreatorId } from 'common/perps/creator-accounts'
 import {
   getPerpConfig,
   getEffectiveApiFee,
@@ -11,7 +12,7 @@ import {
 } from 'common/perps/management'
 import {
   MNX_DEFAULT_FEES,
-  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
   getMnxInstrument,
 } from 'common/perps/mnx'
 import { getPerpOracleFreshness } from 'common/perps/oracle'
@@ -19,6 +20,7 @@ import { randomString } from 'common/util/random'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { api } from 'web/lib/api/api'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import {
   buildMnxRulePatch,
   isMnxBatchInProgress,
@@ -107,7 +109,7 @@ export function MnxDashboardView({
 
   const live = data.markets.filter(({ contract }) => !contract.isResolved)
   const targets = live.filter(({ contract }) => selected.includes(contract.id))
-  const missing = MNX_INSTRUMENTS.filter(
+  const missing = MNX_LIVE_INSTRUMENTS.filter(
     (i) => !live.some((m) => m.contract.oracleFeedId === i.feedId)
   )
   const sum = (fn: (m: MnxDashboardMarket) => number) =>
@@ -294,6 +296,10 @@ export function MnxDashboardView({
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             MNX markets
+            {isAdminId(data.payer.id) &&
+              data.payer.id !== getMnxCreatorId(ENV) && (
+                <ModActionTag admin className="ml-2 align-middle" />
+              )}
           </h1>
           <p className="text-ink-500 mt-2 text-sm">
             Backing, activity, and trading rules in one place.

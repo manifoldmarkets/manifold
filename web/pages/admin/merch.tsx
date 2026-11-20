@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -35,7 +36,10 @@ export default function AdminMerchPage() {
     <Page trackPageView={'admin merch page'}>
       <NoSEO />
       <Col className="mx-8 gap-8">
-        <Title>Merch Management</Title>
+        <Title>
+          Merch Management
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <p className="text-ink-500 -mt-4 text-sm">
           Always refresh the page before canceling an order in case the status
           has changed.

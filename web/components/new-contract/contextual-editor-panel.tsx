@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { CreateableOutcomeType, PollType } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { Group } from 'common/group'
+import { MarketLinkRelation } from 'common/market-links'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
@@ -25,6 +26,10 @@ export type FormState = {
   closeDate?: string
   closeHoursMinutes?: string
   neverCloses: boolean
+  // Persist creator intent so reloading a linked draft preserves its close time.
+  hasManuallyEditedCloseDate?: boolean
+  // Parent whose deadline was loaded for preview; this is not an override.
+  inheritedCloseTimeFrom?: string
   selectedGroups: Group[]
   visibility: 'public' | 'unlisted'
   liquidityTier: number
@@ -46,6 +51,9 @@ export type FormState = {
   pollType?: PollType // 'single' | 'multi-select' | 'ranked-choice'
   maxSelections?: number // For multi-select polls
   boostMarket?: boolean // Whether to also boost the market on creation
+  // The market this one is about (common/market-links), and how.
+  linkedToContractId?: string
+  linkRelation?: MarketLinkRelation
 }
 
 export type ValidationErrors = {

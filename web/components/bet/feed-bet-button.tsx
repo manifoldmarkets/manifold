@@ -22,7 +22,8 @@ export function BetButton(props: {
   className?: string
   labels?: { yes: string; no: string }
   questionTitle?: string
-  /** Where the trade starts, for analytics. Defaults to the feed card. */
+  // Analytics location for the bet. 'feed card' bets count toward the home
+  // feed conversion rate, so callers outside the feed must pass their own.
   location?: string
   onBuySuccess?: () => void
 }) {

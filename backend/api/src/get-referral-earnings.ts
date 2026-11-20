@@ -10,11 +10,11 @@ export const getReferralEarnings: APIHandler<'get-referral-earnings'> = async (
   // result set is bounded by this user's referral count.
   // referredUserId / referralMultiplier / bonusType are nested at data->'data'
   // (legacy double-wrapping in txnToRow). One row per (referredUser, bonusType)
-  // pair, so the frontend can tell apart "M250 first_bet only — verify still
-  // possible" vs "M1250 fully paid".
+  // pair ('signup' for referrals paid in full at signup; 'first_bet'/'verify'
+  // for the legacy split payout).
   const rows = await pg.manyOrNone<{
     referred_user_id: string | null
-    bonus_type: 'first_bet' | 'verify' | null
+    bonus_type: 'signup' | 'first_bet' | 'verify' | null
     amount_sum: string
     max_multiplier: string | null
   }>(
@@ -33,7 +33,7 @@ export const getReferralEarnings: APIHandler<'get-referral-earnings'> = async (
   type Entry = {
     amount: number
     maxMultiplier: number
-    bonusTypes: ('first_bet' | 'verify' | 'legacy')[]
+    bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
   }
   const byReferredUserId: Record<string, Entry> = {}
   let total = 0

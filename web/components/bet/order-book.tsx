@@ -8,6 +8,7 @@ import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
   CPMMMultiContract,
+  getMainBinaryMCAnswer,
   isBinaryMulti,
   isMultiCpmm,
   MultiContract,
@@ -560,7 +561,9 @@ export function OrderBookPanel(props: {
             {(w, h) => (
               <DepthChart
                 contract={contract as any}
-                answer={answer}
+                // Versus prices above are the main answer's, so mark its
+                // price even when the ticket is for the other answer.
+                answer={isBinaryMC ? getMainBinaryMCAnswer(contract) : answer}
                 yesBets={yesBets}
                 noBets={noBets}
                 width={w}

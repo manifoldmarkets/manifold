@@ -9,6 +9,7 @@ import {
   parseMnxCandles,
   createMnxSnapshotFetcher,
 } from './mnx'
+import { log } from './utils'
 
 jest.mock('./utils', () => ({
   log: Object.assign(jest.fn(), { warn: jest.fn(), error: jest.fn() }),
@@ -16,11 +17,12 @@ jest.mock('./utils', () => ({
 afterEach(() => jest.restoreAllMocks())
 
 const now = 1_800_000_000_000
+// A live valuation future (OpenAI): parsing skips the delisted ANTHROPIC row.
 const spec = MNX_INSTRUMENTS[0]
 const market = (over: Record<string, unknown> = {}) => ({
-  market_id: 11,
-  symbol: 'ANTHROPIC',
-  slug: 'anthropic',
+  market_id: spec.marketId,
+  symbol: spec.symbol,
+  slug: spec.slug,
   type: 'future',
   price_display: 'billion_usd',
   mark_price: 2104,
@@ -96,14 +98,16 @@ it('rejects envelopes, detects duplicates, and isolates unavailable symbols', ()
   expect(
     parseMnxSnapshot([market(), market()], now).feeds[spec.feedId].health.status
   ).toBe('unavailable')
-  const parsed = parseMnxSnapshot([market(), { symbol: 'OPENAI' }], now)
+  const parsed = parseMnxSnapshot([market(), { symbol: 'DEEPSEEK' }], now)
   expect(parsed.feeds[spec.feedId].health.status).toBe('available')
-  expect(parsed.feeds['mnx-openai-mark'].health.status).toBe('unavailable')
+  expect(parsed.feeds['mnx-deepseek-mark'].health.status).toBe('unavailable')
+  // A delisted instrument is not looked for, so its absence is not a fault.
+  expect(parsed.feeds['mnx-anthropic-mark']).toBeUndefined()
 })
 
 it('pins identity and chronology across missing/disabled intervals', () => {
   const frozen = parseMnxSnapshot([market({ oracle_frozen: true })], now)
-  expect(frozen.feeds[spec.feedId].marketId).toBe(11)
+  expect(frozen.feeds[spec.feedId].marketId).toBe(spec.marketId)
   expect(frozen.feeds[spec.feedId].point).toBeUndefined()
   expect(
     parseMnxSnapshot([market({ market_id: 99 })], now, frozen).feeds[
@@ -112,7 +116,7 @@ it('pins identity and chronology across missing/disabled intervals', () => {
   ).toMatch(/identity|instrument/)
   const first = parseMnxSnapshot([market()], now)
   const missing = parseMnxSnapshot([], now + MINUTE_MS, first)
-  expect(missing.feeds[spec.feedId].marketId).toBe(11)
+  expect(missing.feeds[spec.feedId].marketId).toBe(spec.marketId)
   expect(missing.feeds[spec.feedId].point?.ts).toBe(now)
   const changed = parseMnxSnapshot(
     [market({ market_id: 99 })],
@@ -143,7 +147,7 @@ it('pins identity and chronology across missing/disabled intervals', () => {
   expect(older.feeds[spec.feedId].health.status).toBe('available')
   expect(older.feeds[spec.feedId].health.reason).toBeUndefined()
   expect(older.feeds[spec.feedId].point).toEqual(first.feeds[spec.feedId].point)
-  expect(older.feeds[spec.feedId].marketId).toBe(11)
+  expect(older.feeds[spec.feedId].marketId).toBe(spec.marketId)
   const recovered = parseMnxSnapshot([market()], now + MINUTE_MS, missing)
   expect(recovered.feeds[spec.feedId].health.checkedAt).toBe(now + MINUTE_MS)
   expect(recovered.feeds[spec.feedId].point?.ts).toBe(now + MINUTE_MS)
@@ -194,7 +198,7 @@ it('honors Retry-After seconds and HTTP dates and backs off other HTTP failures'
 it('labels completed candles and excludes unfinished/live-overlapping buckets', () => {
   const points = parseMnxCandles(
     {
-      market_id: 11,
+      market_id: spec.marketId,
       interval: '1h',
       candlesticks: [
         { time: now / 1000 - 7200, close: 2100 },
@@ -202,7 +206,7 @@ it('labels completed candles and excludes unfinished/live-overlapping buckets', 
       ],
     },
     spec,
-    11,
+    spec.marketId,
     now
   )
   expect(points).toHaveLength(1)
@@ -266,6 +270,47 @@ it('caps excessive retry headers, retries after the cap, and a new process start
   await fetchSnapshot()
   expect(fetcher).toHaveBeenCalledTimes(3)
   expect(mnxRetryDelay(new MnxHttpError(429, 'nonsense'), 1, now, 0)).toBe(2000)
+})
+
+it("stamps a snapshot from its starting caller's clock before requesting, and a clock failure is not an MNX outage", async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  const order: string[] = []
+  const fetcher = jest.fn(async () => {
+    order.push('request')
+    return [market()]
+  })
+  const fetchSnapshot = createMnxSnapshotFetcher(fetcher)
+  await expect(
+    fetchSnapshot(async () => {
+      throw new Error('database unavailable')
+    })
+  ).rejects.toThrow('database unavailable')
+  expect(fetcher).not.toHaveBeenCalled()
+  // No provider backoff: the next poll requests as usual.
+  jest.spyOn(Date, 'now').mockReturnValue(now + 2_000)
+  const snapshot = await fetchSnapshot(async () => {
+    order.push('clock')
+    return now + 1_500
+  })
+  expect(order).toEqual(['clock', 'request'])
+  expect(snapshot.feeds[spec.feedId].point?.ts).toBe(now + 1_500)
+  // A caller sharing the snapshot keeps its stamp.
+  expect(await fetchSnapshot(async () => now + 9_999)).toBe(snapshot)
+  expect(fetcher).toHaveBeenCalledTimes(1)
+})
+
+it('warns when MNX stamps a mark after we receive it, well before the eligibility allowance', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  const fetchSnapshot = createMnxSnapshotFetcher(async () => [
+    market({ mark_price_timestamp: new Date(now + 1_200).toISOString() }),
+  ])
+  await fetchSnapshot(async () => now)
+  expect(log.warn).toHaveBeenCalledWith(
+    expect.stringContaining('MNX stamped a mark 1200ms after we received it')
+  )
+  expect(log.error).not.toHaveBeenCalledWith(
+    expect.stringContaining('MNX stamped a mark')
+  )
 })
 
 it('keeps H100 candle provenance behind a live mark older than the latest bucket', () => {

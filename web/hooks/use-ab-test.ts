@@ -1,4 +1,7 @@
-import { getDeterministicABTestVariant } from 'common/ab-test'
+import {
+  canLogABTestExposure,
+  getDeterministicABTestVariant,
+} from 'common/ab-test'
 import { track } from 'web/lib/service/analytics'
 import { ensureDeviceToken } from 'web/lib/util/device-token'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -54,6 +57,16 @@ export const useABTestAssignment = <T extends string>(
     )
 
     setAssignment({ assignmentId, assignmentUnit, variant })
+
+    // Firebase's identity can change between render and this effect, and
+    // track() attributes the exposure to whoever is signed in when it runs.
+    // If that isn't this unit, skip without caching so a later run logs it.
+    const signedInUserId = auth.currentUser?.uid
+    if (
+      !IS_LOCAL_ONLY &&
+      !canLogABTestExposure(assignmentUnit, assignmentId, signedInUserId)
+    )
+      return
 
     // Only track once per assignment unit per browser session. If somebody
     // signs into a different account without reloading, that is a new unit.

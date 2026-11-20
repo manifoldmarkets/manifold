@@ -34,6 +34,7 @@ import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { ModActionBadge } from '../moderation/mod-action'
 import { MoneyDisplay } from './money-display'
 import { SellSharesModal } from './sell-row'
 import { ShareBetModal } from './share-bet'
@@ -336,6 +337,7 @@ export function BetsSummary(props: {
                 color={'red-outline'}
                 onClick={() => setShowAdminSellModal(true)}
               >
+                <ModActionBadge admin className="mr-1" />
                 Admin Sell
               </Button>
               {showAdminSellModal && (

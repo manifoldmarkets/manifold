@@ -107,7 +107,7 @@ export const GUIDELINES_SEARCH_INDEX: SearchEntry[] = [
   {
     page: 'Leagues',
     section: 'Prizes',
-    text: 'prizes season end divisions ranks identity verification kyc silicon bots 100 mana one prize per season',
+    text: 'prizes season end divisions ranks flagged verification silicon bots 100 mana one prize per season',
     href: '/community-guidelines/leagues#prizes',
   },
   {

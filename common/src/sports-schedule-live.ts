@@ -8,7 +8,10 @@ import {
 export type Stamped<T> = { value: T; at: number }
 export type LiveGameState = {
   probs?: Record<string, Stamped<number>>
-  liveScore?: Stamped<ScheduleGame['liveScore']> & { status: string }
+  liveScore?: Stamped<ScheduleGame['liveScore']> & {
+    status: string
+    scoreUpdatedTime?: number | null
+  }
 }
 
 export function pruneSportsLive(
@@ -64,6 +67,10 @@ export function applySportsLive(
     away: withProb(game.away),
     draw: game.draw ? withProb(game.draw) : null,
     liveScore,
+    liveUpdatedTime: score ? score.at : game.liveUpdatedTime,
+    scoreUpdatedTime: score
+      ? score.scoreUpdatedTime ?? null
+      : game.scoreUpdatedTime,
     status:
       score && TERMINAL_STATUSES.has(score.status)
         ? 'finished'

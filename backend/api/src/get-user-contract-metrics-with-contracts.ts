@@ -17,9 +17,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
   const pg = createSupabaseDirectClient()
   const metricFilterSQL = `(c.mechanism not in ${MULTI_CPMM_MECHANISMS_SQL} OR ucm.answer_id is not null)`
   const rankedOrderBySQL =
-    order === 'profit'
-      ? `total_profit DESC`
-      : `last_bet_time DESC NULLS LAST`
+    order === 'profit' ? `total_profit DESC` : `last_bet_time DESC NULLS LAST`
   const finalOrderBySQL =
     order === 'profit'
       ? `rc.total_profit DESC`
@@ -88,6 +86,9 @@ export const getUserContractMetricsWithContracts: APIHandler<
       'max',
       'isLogScale',
       'unit',
+      // Official sports league labels in the profile bets table.
+      'sportsEventId',
+      'sportsLeague',
       // Perp fields ('perp' mechanism): the profile table shows the oracle
       // price where CPMM rows show prob, and marks position PnL against it.
       'oraclePrice',

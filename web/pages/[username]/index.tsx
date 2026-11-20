@@ -47,10 +47,14 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionTag,
+} from 'web/components/moderation/mod-action'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -383,6 +387,17 @@ function UserProfile(props: {
             {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
+        {user.userDeleted && (
+          <Row
+            className={clsx(
+              'mx-4 items-center gap-2 text-sm',
+              MOD_ACTION_TEXT_CLASS
+            )}
+          >
+            <ModActionTag />
+            This account has been deleted. Only mods can see this profile.
+          </Row>
+        )}
         {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
             <ProfilePublicStats user={user} currentUser={currentUser} />
@@ -409,9 +424,7 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && (
-          <Col className="mx-4 mt-2">
-            <VerifyPhoneNumberBanner user={currentUser} />
-          </Col>
+          <FlaggedAccountBanner user={currentUser} className="mx-4 mt-2" />
         )}
 
         <Col className="mx-4">

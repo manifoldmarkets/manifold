@@ -23,6 +23,7 @@ import { track } from 'web/lib/service/analytics'
 import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
+import { TradeDialog } from '../bet/trade-ticket'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -261,7 +262,13 @@ const YesNoBetButtons = (props: {
     !!user &&
     user.id === contract.creatorId &&
     contract.creatorBannedFromBetting === true
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  // Kept after closing so the ticket doesn't flip sides while it fades out.
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const [open, setOpen] = useState(false)
+  const openTicket = (side: 'YES' | 'NO') => {
+    setOutcome(side)
+    setOpen(true)
+  }
 
   if (isCreatorBanned) {
     return null
@@ -269,19 +276,17 @@ const YesNoBetButtons = (props: {
 
   return (
     <>
-      <Modal
-        open={outcome != undefined}
-        ariaLabel={`Bet on ${answer.text}`}
-        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-      >
-        <AnswerCpmmBetPanel
-          answer={answer}
-          feedReason={feedReason}
-          contract={contract}
-          outcome={outcome}
-          closePanel={() => setOutcome(undefined)}
-        />
-      </Modal>
+      <TradeDialog
+        contract={contract}
+        multiProps={{ answers: contract.answers, answerToBuy: answer }}
+        open={open}
+        setOpen={setOpen}
+        initialOutcome={outcome}
+        trackingLocation="contract page answer"
+        feedReason={feedReason}
+        title={answer.text}
+        question={contract.question}
+      />
 
       <Button
         size="2xs"
@@ -293,7 +298,7 @@ const YesNoBetButtons = (props: {
           e.stopPropagation()
           // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
-          setOutcome('YES')
+          openTicket('YES')
         }}
       >
         Yes
@@ -308,7 +313,7 @@ const YesNoBetButtons = (props: {
           e.stopPropagation()
           // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
-          setOutcome('NO')
+          openTicket('NO')
         }}
       >
         No

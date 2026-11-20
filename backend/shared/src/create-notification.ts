@@ -307,11 +307,11 @@ export const createReferralNotification = async (
   referredUser: User,
   bonusAmount: string,
   referredByContract?: Contract,
-  // Suffix the notification id so the split payout (first_bet + verify) emits
-  // two notifications instead of having the second silently dropped by the
-  // ON CONFLICT DO NOTHING insert. Defaults to 'legacy' so existing callers
-  // and backfilled rows keep their stable id.
-  bonusType: 'first_bet' | 'verify' | 'legacy' = 'legacy'
+  // Suffix the notification id so the legacy split payout (first_bet +
+  // verify) emits two notifications instead of having the second silently
+  // dropped by the ON CONFLICT DO NOTHING insert. Defaults to 'legacy' so
+  // existing callers and backfilled rows keep their stable id.
+  bonusType: 'signup' | 'first_bet' | 'verify' | 'legacy' = 'legacy'
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { formatMoneyUSD } from 'common/util/format'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Row } from 'web/components/layout/row'
@@ -14,8 +15,10 @@ import { PendingCashoutStatusData } from 'common/gidx/gidx'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { api } from 'web/lib/api/api'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function AdminCashouts() {
+  const isAdmin = useAdmin()
   const [page, setPage] = useState(0)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -110,7 +113,10 @@ export default function AdminCashouts() {
   return (
     <Page trackPageView="admin-redemptions">
       <Col className="gap-4">
-        <Title>Redemptions</Title>
+        <Title>
+          Redemptions
+          {isAdmin && <ModActionTag admin className="ml-2 align-middle" />}
+        </Title>
         {error && (
           <div className="relative rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
             <span className="font-bold">Error: </span>

@@ -2,6 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
@@ -29,7 +30,10 @@ export default function AdminSalesPage() {
   return (
     <Page trackPageView="admin-sales">
       <Col className="gap-6">
-        <Title>Mana Sales</Title>
+        <Title>
+          Mana Sales
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <SalesTable />
       </Col>
     </Page>

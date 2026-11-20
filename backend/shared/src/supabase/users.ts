@@ -169,8 +169,15 @@ export const incrementBalance = async (
     spiceBalance?: number
     totalDeposits?: number
     totalCashDeposits?: number
+  },
+  options?: {
+    // Pass false inside a transaction that may be retried, and broadcast the
+    // returned user update once it has committed (see AnswerWriteOptions in
+    // ./answers.ts): an attempt that rolls back after the write would
+    // otherwise announce a balance that never existed.
+    broadcast?: boolean
   }
-) => {
+): Promise<(Partial<User> & { id: string }) | undefined> => {
   const updates = [
     ['balance', deltas.balance],
     ['cash_balance', deltas.cashBalance],
@@ -180,7 +187,7 @@ export const incrementBalance = async (
   ].filter(([_, v]) => v) // defined and not 0
 
   if (updates.length === 0) {
-    return
+    return undefined
   }
 
   const result = await db.one(
@@ -191,16 +198,16 @@ export const incrementBalance = async (
     [id]
   )
 
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id,
-      balance: result.balance,
-      cashBalance: result.cash_balance,
-      spiceBalance: result.spice_balance,
-      totalDeposits: result.total_deposits,
-      totalCashDeposits: result.total_cash_deposits,
-    })
-  )
+  const userUpdate = removeUndefinedProps({
+    id,
+    balance: result.balance,
+    cashBalance: result.cash_balance,
+    spiceBalance: result.spice_balance,
+    totalDeposits: result.total_deposits,
+    totalCashDeposits: result.total_cash_deposits,
+  })
+  if (options?.broadcast !== false) broadcastUpdatedUser(userUpdate)
+  return userUpdate
 }
 
 export const incrementStreakQuery = (user: User, newBetTime: number) => {

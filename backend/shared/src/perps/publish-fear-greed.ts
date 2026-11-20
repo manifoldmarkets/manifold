@@ -49,11 +49,9 @@ export const publishFearGreedPoint = async (
   options: { force?: boolean } = {}
 ): Promise<FearGreedPublishResult> => {
   const feedId = CRYPTO_FEAR_GREED_FEED_ID
-  const latest = await fetchFearGreedLatest()
-  // Stamp the observation the moment it arrives: the point is when we saw
-  // the value, and under the lock below validateOraclePoint uses this stamp
-  // to stop a stalled publisher rolling the mark back onto an older reading.
+  // An in-flight fetch must not qualify orders submitted after it began.
   const observedAt = Date.now()
+  const latest = await fetchFearGreedLatest()
 
   // A source that stops updating must stop the feed, not be relaid every
   // heartbeat under a fresh timestamp.

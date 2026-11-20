@@ -10,14 +10,9 @@ import {
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
-import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import { BetDialog } from 'web/components/bet/bet-dialog'
+import { TradeDialog } from 'web/components/bet/trade-ticket'
 import { Button } from 'web/components/buttons/button'
-import {
-  Modal,
-  MODAL_CLASS,
-  SCROLLABLE_MODAL_CLASS,
-} from 'web/components/layout/modal'
 import {
   BinaryUserPosition,
   UserPosition,
@@ -31,6 +26,7 @@ import { api } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { complementParty, sourceAudit } from './audited-sources'
+import { useElectionAsOf } from './election-as-of'
 import { formatOdds } from './election-display'
 import type { ElectionMode, Race } from './election-map-model'
 import {
@@ -121,21 +117,18 @@ function MultiOutcomes(props: { contract: CPMMMultiContract; race: Race }) {
           ) : null
         }}
       />
+      {/* Position badges and selling are keyed by the stored answer id. Keep
+          map trades on the clicked answer, including two-answer races. */}
       {betting && (
-        <Modal
+        <TradeDialog
+          contract={contract}
+          multiProps={{ answers: contract.answers, answerToBuy: betting }}
           open
           setOpen={(open) => !open && setBetting(undefined)}
-          ariaLabel={`Bet on ${betting.text}, ${race.label}`}
-          className={`${MODAL_CLASS} ${SCROLLABLE_MODAL_CLASS}`}
-        >
-          <AnswerCpmmBetPanel
-            answer={betting}
-            contract={contract}
-            outcome="YES"
-            closePanel={() => setBetting(undefined)}
-            alwaysShowOutcomeSwitcher
-          />
-        </Modal>
+          title={`${betting.text}, ${race.label}`}
+          initialOutcome="YES"
+          trackingLocation="election map race"
+        />
       )}
     </>
   )
@@ -233,31 +226,24 @@ export function DistrictOutcomes(props: {
           : 'This market asks whether a Democrat wins. No means any other winner.'}
       </p>
       {outcome && (
-        <Modal
+        <TradeDialog
+          contract={contract}
+          multiProps={{ answers: contract.answers, answerToBuy: answer }}
           open
           setOpen={(open) => !open && setOutcome(undefined)}
-          ariaLabel={`Bet on ${race.label}`}
-          className={`${MODAL_CLASS} ${SCROLLABLE_MODAL_CLASS}`}
-        >
-          <h2 className="mb-2 text-xl font-semibold">{race.label}</h2>
-          <p className="text-ink-600 mb-4 text-sm">
-            Will a Democrat win this district? Yes = Democratic; No = any other
-            winner{noIsRep ? ', in practice the Republican' : ''}.
-          </p>
-          <AnswerCpmmBetPanel
-            answer={answer}
-            contract={contract}
-            outcome={outcome}
-            closePanel={() => setOutcome(undefined)}
-            alwaysShowOutcomeSwitcher
-            pseudonym={{
-              YES: { pseudonymName: 'Democratic', pseudonymColor: 'azure' },
-              NO: noIsRep
-                ? { pseudonymName: 'Republican', pseudonymColor: 'sienna' }
-                : { pseudonymName: 'Any other winner', pseudonymColor: 'gray' },
-            }}
-          />
-        </Modal>
+          title={race.label}
+          description={`Will a Democrat win this district? Yes = Democratic; No = any other winner${
+            noIsRep ? ', in practice the Republican' : ''
+          }.`}
+          initialOutcome={outcome}
+          trackingLocation="election map district"
+          pseudonym={{
+            YES: { pseudonymName: 'Democratic', pseudonymColor: 'azure' },
+            NO: noIsRep
+              ? { pseudonymName: 'Republican', pseudonymColor: 'sienna' }
+              : { pseudonymName: 'Any other winner', pseudonymColor: 'gray' },
+          }}
+        />
       )}
     </>
   )
@@ -271,6 +257,9 @@ function OutcomeList(props: {
   extra?: (row: OutcomeRow) => ReactNode
 }) {
   const { rows, raceLabel, canBet, onBet, extra } = props
+  // A rewound race is re-priced for display only: no bets, and no position
+  // badges valued at past odds.
+  const rewound = useElectionAsOf() !== undefined
   const [expanded, setExpanded] = useState(false)
   const { shown, folded } = arrangeOutcomes(rows)
   const visible = expanded ? [...shown, ...folded] : shown
@@ -291,12 +280,12 @@ function OutcomeList(props: {
             <span className={styles.outcomeName}>
               <span>{row.label}</span>
               {row.subtitle && <small>{row.subtitle}</small>}
-              {extra?.(row)}
+              {!rewound && extra?.(row)}
             </span>
             <strong className={styles.outcomeProb}>
               {formatOdds(row.prob)}
             </strong>
-            {canBet(row) ? (
+            {!rewound && canBet(row) ? (
               <Button
                 size="2xs"
                 color="indigo-outline"

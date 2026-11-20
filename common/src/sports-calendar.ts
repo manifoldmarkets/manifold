@@ -1,3 +1,4 @@
+import { additionalFeedCalendar } from './sports-feeds'
 import type { SportKey } from './sports-schedule'
 import { ENV } from './envs/constants'
 
@@ -19,6 +20,14 @@ export type SportId =
   | 'wnba'
   | 'nhl'
   | 'cbb'
+  | 'football'
+  | 'basketball'
+  | 'wcbb'
+  | 'hockey'
+  | 'afl'
+  | 'nrl'
+  | 'handball'
+  | 'tennis'
 
 export type SportsCalendarStatus = 'upcoming' | 'active' | 'completed'
 
@@ -55,6 +64,17 @@ export interface SportsCalendarEntry {
   locked?: string
   /** The Odds API sport key. Competitions without one are created by hand. */
   oddsKey?: string
+  /**
+   * A feed other than The Odds API that the scheduler creates this phase's
+   * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
+   */
+  provider?: 'bdl-f1'
+  /**
+   * F1: how many rounds the season was announced with. The season title
+   * markets need it to pay out: the provider must list at least this many
+   * weekends (f1CalendarListsEveryRound).
+   */
+  rounds?: number
 }
 
 type CalendarInput = Omit<SportsCalendarEntry, 'oddsKey'>
@@ -91,6 +111,7 @@ const ODDS_KEY_BY_COMPETITION: Record<string, string> = {
   'ligue1-2026-27': 'soccer_france_ligue_one',
   'nhl-2026-27': 'icehockey_nhl',
   'ncaab-tournament-2027': 'basketball_ncaab',
+  'ncaab-season-2026-27': 'basketball_ncaab',
 }
 
 const ENTRIES: CalendarInput[] = [
@@ -217,22 +238,32 @@ const ENTRIES: CalendarInput[] = [
     phase: '2026 Remaining',
     startDate: '2026-08-28',
     endDate: '2026-12-07',
-    // No Odds API key: F1 markets are made by hand.
+    // The sports-f1-create job makes race winner, podium, sprint winner and
+    // pole markets from BALLDONTLIE once this is switched on in
+    // /admin/sports; off until then.
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: true,
     notes:
-      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. DECISION NEEDED: one market per race weekend or separate markets per session (qualifying, sprint, race)?',
+      'Remaining races: Zandvoort, Monza, Singapore, Austin, Mexico City, São Paulo, Las Vegas, Abu Dhabi. Race winner, podium, pole and sprint winner per weekend from BALLDONTLIE (shared/f1-markets.ts).',
   },
   {
     sport: 'f1',
     competition: 'F1 World Championship 2027',
     competitionId: 'f1-2027',
     phase: '2027 Season',
-    startDate: '2027-03-07',
-    endDate: '2027-11-28',
+    // Announced 16 Sep 2026: 24 rounds, from Bahrain (12–14 Mar) to Abu
+    // Dhabi (10–12 Dec), 10 of them sprint weekends. The last date must stay
+    // the finale's race day: the title markets check the provider's
+    // calendar against it (f1CalendarReachesEnd).
+    startDate: '2027-03-12',
+    endDate: '2027-12-12',
+    rounds: 24,
+    provider: 'bdl-f1',
     autoCreate: false,
     autoResolve: false,
-    notes: 'Calendar TBC — hold auto-create until full race calendar confirmed',
+    notes:
+      'Bahrain 12–14 Mar to Abu Dhabi 10–12 Dec. Switch on in the winter to open the drivers’ and constructors’ title markets before the first weekend; session markets follow within F1_DAYS_AHEAD of each session.',
   },
 
   // ── Tour de France ───────────────────────────────────────────────────────────
@@ -507,7 +538,19 @@ const ENTRIES: CalendarInput[] = [
   },
 
   // ── College basketball ───────────────────────────────────────────────────────
-  // March Madness only, not the ~5,000-game regular season.
+  // The provider includes all college tournaments on the same feed.
+  {
+    sport: 'cbb',
+    competition: 'NCAA Basketball 2026–27',
+    competitionId: 'ncaab-season-2026-27',
+    phase: 'Regular Season',
+    startDate: '2026-11-01',
+    endDate: '2027-03-14',
+    autoCreate: false,
+    autoResolve: true,
+    notes:
+      'Priority 1. Includes conference tournaments. High market volume: check creator funding before enabling.',
+  },
   {
     sport: 'cbb',
     competition: 'NCAA Tournament 2027',
@@ -548,10 +591,13 @@ const ENTRIES: CalendarInput[] = [
   },
 ]
 
-export const SPORTS_CALENDAR: SportsCalendarEntry[] = ENTRIES.map((e) => ({
-  ...e,
-  oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
-}))
+export const SPORTS_CALENDAR: SportsCalendarEntry[] = [
+  ...ENTRIES.map((e) => ({
+    ...e,
+    oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
+  })),
+  ...additionalFeedCalendar(),
+]
 
 export function calendarStatus(
   entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>,
@@ -646,7 +692,7 @@ export function autoCreates(
   entry: SportsCalendarEntry,
   switches: CompetitionSwitches
 ): boolean {
-  if (entry.locked || !entry.oddsKey) return false
+  if (entry.locked || !(entry.oddsKey || entry.provider)) return false
   return (
     switches[calendarPhaseKey(entry)] ??
     (CALENDAR_DEFAULTS_ON && entry.autoCreate)
@@ -663,7 +709,8 @@ export function competitionSwitchError(
     (e) => e.competitionId === competitionId && e.phase === phase
   )
   if (!entry) return `No calendar phase ${competitionId} / ${phase}`
-  if (!entry.oddsKey) return `${entry.competition} has no Odds API sport key`
+  if (!entry.oddsKey && !entry.provider)
+    return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
   return undefined
 }
@@ -702,6 +749,14 @@ export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   tdf: 'Tour de France',
   nhl: 'NHL',
   cbb: 'NCAAB',
+  football: 'Football',
+  basketball: 'Basketball',
+  wcbb: 'WNCAAB',
+  hockey: 'Ice Hockey',
+  afl: 'AFL',
+  nrl: 'NRL',
+  handball: 'Handball',
+  tennis: 'Tennis',
 }
 
 /** Which chip on /sports a calendar sport belongs to. */
@@ -710,12 +765,20 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   cfb: 'ncaaf',
   mlb: 'mlb',
   nba: 'nba',
-  wnba: 'nba',
+  wnba: 'wnba',
   soccer: 'soccer',
   f1: 'f1',
   tdf: 'other',
   nhl: 'nhl',
   cbb: 'ncaab',
+  football: 'football',
+  basketball: 'basketball',
+  wcbb: 'wncaab',
+  hockey: 'hockey',
+  afl: 'afl',
+  nrl: 'nrl',
+  handball: 'handball',
+  tennis: 'tennis',
 }
 
 // Hours after the start before the market closes: the longest realistic game
@@ -731,4 +794,101 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   tdf: 1,
   nhl: 4,
   cbb: 3,
+  football: 4,
+  basketball: 3,
+  wcbb: 3,
+  hockey: 4,
+  afl: 4,
+  nrl: 3,
+  handball: 3,
+  tennis: 6,
+}
+
+// ─── Readiness filters ────────────────────────────────────────────────────────
+//
+// The calendar now lists every feed the provider scores, most of them locked
+// until their settlement rule is checked, so /admin/sports needs to show only
+// the phases an admin can act on.
+
+/**
+ * 'on': the scheduler creates this phase's games.
+ * 'ready': it would with a switch.
+ * 'needs-validation': locked until its settlement rule is implemented or
+ *   checked against provider results (knockout extra time, tennis walkovers).
+ */
+export type SwitchReadiness = 'on' | 'ready' | 'needs-validation'
+
+export const switchReadiness = (
+  s: Pick<CompetitionSwitchState, 'on' | 'locked'>
+): SwitchReadiness => (s.locked ? 'needs-validation' : s.on ? 'on' : 'ready')
+
+export interface SwitchFilter {
+  /** 'ready' shows on and ready phases: everything that can run. */
+  readiness: SwitchReadiness | 'all'
+  sport: SportId | 'all'
+  /** Matched against the competition, phase, notes and lock reason. */
+  query: string
+  showFinished: boolean
+}
+
+export const DEFAULT_SWITCH_FILTER: SwitchFilter = {
+  readiness: 'ready',
+  sport: 'all',
+  query: '',
+  showFinished: false,
+}
+
+const matchesReadiness = (
+  s: Pick<CompetitionSwitchState, 'on' | 'locked'>,
+  readiness: SwitchFilter['readiness']
+) => {
+  const r = switchReadiness(s)
+  if (readiness === 'all') return true
+  if (readiness === 'ready') return r !== 'needs-validation'
+  return r === readiness
+}
+
+const matchesQuery = (s: CompetitionSwitchState, query: string) => {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  return [
+    s.competition,
+    s.phase,
+    s.notes ?? '',
+    s.locked ?? '',
+    SPORT_LEAGUE_LABEL[s.sport],
+  ].some((text) => text.toLowerCase().includes(q))
+}
+
+/** Switches matching every part of the filter. */
+export function filterSwitches(
+  switches: CompetitionSwitchState[],
+  filter: SwitchFilter
+): CompetitionSwitchState[] {
+  return switches.filter(
+    (s) =>
+      (filter.showFinished || s.status !== 'completed') &&
+      (filter.sport === 'all' || s.sport === filter.sport) &&
+      matchesReadiness(s, filter.readiness) &&
+      matchesQuery(s, filter.query)
+  )
+}
+
+/**
+ * How many phases each readiness choice would show, given the rest of the
+ * filter, so the choice labels say what they hide.
+ */
+export function countByReadiness(
+  switches: CompetitionSwitchState[],
+  filter: Omit<SwitchFilter, 'readiness'>
+): Record<SwitchFilter['readiness'], number> {
+  const rest = filterSwitches(switches, { ...filter, readiness: 'all' })
+  const count = (readiness: SwitchFilter['readiness']) =>
+    rest.filter((s) => matchesReadiness(s, readiness)).length
+  return {
+    all: rest.length,
+    on: count('on'),
+    ready: count('ready'),
+    'needs-validation': count('needs-validation'),
+  }
 }

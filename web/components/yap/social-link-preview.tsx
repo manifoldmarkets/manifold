@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useLinkPreview } from 'web/hooks/use-link-previews'
 import { getSocialLinks } from './social-text'
+import { SocialLink } from './social-link'
 
 export function SocialLinkPreview({ text }: { text: string }) {
   const url = getSocialLinks(text)[0]?.href
@@ -16,10 +17,8 @@ function LinkPreviewCard({ url }: { url: string }) {
 
   const image = preview.image
   return (
-    <a
+    <SocialLink
       href={url}
-      target="_blank"
-      rel="noopener noreferrer ugc"
       className="border-ink-200 dark:border-ink-300 hover:border-primary-400 hover:bg-canvas-50 mt-3 block overflow-hidden rounded-xl border transition-colors"
     >
       {image && /^https?:\/\//i.test(image) && !imageFailed && (
@@ -46,6 +45,6 @@ function LinkPreviewCard({ url }: { url: string }) {
           </div>
         )}
       </div>
-    </a>
+    </SocialLink>
   )
 }

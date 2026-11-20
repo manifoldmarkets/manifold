@@ -1,10 +1,12 @@
 import {
   fitAnswerProbs,
   fitCopiedAnswerProbs,
+  getCopiedAnswerProbs,
   roundAnswerProbs,
   withAnswerProbRemoved,
   withAnswerProbSet,
 } from './answer-probs'
+import { Answer } from './answer'
 import { getInitialAnswerProbability } from './calculate'
 import { getInitialAnswerPools } from './calculate-cpmm'
 import { CPMMMultiContract } from './contract'
@@ -571,5 +573,104 @@ describe('fitting the odds of a market with an Other answer to seed a copy', () 
         )
     }
     expect(carried).toBeGreaterThan(2000)
+  })
+})
+
+describe('getCopiedAnswerProbs', () => {
+  const answer = (prob: number, isOther = false) => ({ prob, isOther })
+  const market = (
+    answers: Pick<Answer, 'prob' | 'isOther' | 'resolution'>[],
+    overrides: Partial<Parameters<typeof getCopiedAnswerProbs>[0]> = {}
+  ) => ({
+    mechanism: 'cpmm-multi-2' as const,
+    outcomeType: 'MULTIPLE_CHOICE' as const,
+    isResolved: false,
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED' as const,
+    answers,
+    ...overrides,
+  })
+
+  it('carries the odds of a market the page holds every answer of', () => {
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(0.5), answer(0.3), answer(0.2)]),
+        true
+      )
+    ).toEqual([50, 30, 20])
+    // Fitted along with Other, then Other is dropped to be recreated.
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(0.6), answer(0.3), answer(0.1, true)], {
+          addAnswersMode: 'ANYONE',
+        }),
+        true
+      )
+    ).toEqual([60, 30])
+  })
+
+  it('carries nothing until the page holds every answer', () => {
+    // The page of a 51-answer market renders its top 20, here 3.5% each, or
+    // 70% in all. Fitted on their own they'd fill the 100% as 5% each.
+    const top20 = market(Array.from({ length: 20 }, () => answer(0.035)))
+    expect(getCopiedAnswerProbs(top20, false)).toBeUndefined()
+    const all51 = market([
+      ...top20.answers,
+      ...Array.from({ length: 31 }, () => answer(0.3 / 31)),
+    ])
+    const fitted = getCopiedAnswerProbs(all51, true)!
+    expect(fitted).toHaveLength(51)
+    fitted.slice(0, 20).forEach((prob) => expect(prob).toBeCloseTo(3.5, 0))
+    fitted.slice(20).forEach((prob) => expect(prob).toBeCloseTo(1, 0))
+    expect(fitted.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 6)
+  })
+
+  it('carries nothing from a market that opens at an even split anyway', () => {
+    const answers = [answer(0.7), answer(0.3)]
+    expect(
+      getCopiedAnswerProbs(market(answers, { mechanism: 'cpmm-multi-1' }), true)
+    ).toBeUndefined()
+    expect(
+      getCopiedAnswerProbs(
+        market(answers, { outcomeType: 'MULTI_NUMERIC' }),
+        true
+      )
+    ).toBeUndefined()
+  })
+
+  it('carries nothing once the market or an answer is resolved', () => {
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(1), answer(0)], { isResolved: true }),
+        true
+      )
+    ).toBeUndefined()
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(0.7), { prob: 0, resolution: 'NO' }], {
+          shouldAnswersSumToOne: false,
+        }),
+        true
+      )
+    ).toBeUndefined()
+  })
+
+  it('carries nothing unless the copy has an Other exactly where the market does', () => {
+    // The market has Other but the copy, which won't take answers, would not.
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(0.6), answer(0.4, true)], {
+          addAnswersMode: 'DISABLED',
+        }),
+        true
+      )
+    ).toBeUndefined()
+    // The copy would have Other but the market does not.
+    expect(
+      getCopiedAnswerProbs(
+        market([answer(0.6), answer(0.4)], { addAnswersMode: 'ANYONE' }),
+        true
+      )
+    ).toBeUndefined()
   })
 })

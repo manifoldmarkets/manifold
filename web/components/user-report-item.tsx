@@ -16,6 +16,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 
 export default function UserReportItem(props: {
   report: LiteReport
@@ -111,7 +112,7 @@ export default function UserReportItem(props: {
           />
           {isMod && contentType === 'social_post' && (
             <Button
-              color="red-outline"
+              color="purple-outline"
               size="xs"
               onClick={async () => {
                 try {
@@ -129,16 +130,18 @@ export default function UserReportItem(props: {
                 }
               }}
             >
+              <ModActionBadge className="mr-1" />
               Remove post
             </Button>
           )}
           {isMod && (
             <Button
-              color="red-outline"
+              color="purple-outline"
               size="xs"
               onClick={handleDismiss}
               className="whitespace-nowrap"
             >
+              <ModActionBadge className="mr-1" />
               Dismiss Report
             </Button>
           )}

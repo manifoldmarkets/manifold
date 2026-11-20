@@ -7,15 +7,18 @@ import {
   matchRelatedMarket,
   mentionsTeam,
   NBA_TOPIC_ID,
+  WNBA_TOPIC_ID,
   parseSportsStart,
   RelatedCandidate,
   relatedGroupFor,
   splitFlag,
   sportForMarket,
+  sportsPathForTopic,
   SPORTS_DEFAULT_GROUP_ID,
   SportsTopic,
   SportsTopicLink,
   sportTagIds,
+  sportGroupIds,
   splitTopicName,
   teamAliases,
   teamDisplayName,
@@ -421,7 +424,7 @@ describe('pipeline handoff fields', () => {
       'ncaaf'
     )
     expect(sportForMarket({ sportsLeague: 'basketball_nba' })).toBe('nba')
-    expect(sportForMarket({ sportsLeague: 'basketball_wnba' })).toBe('nba')
+    expect(sportForMarket({ sportsLeague: 'basketball_wnba' })).toBe('wnba')
     expect(sportForMarket({ sportsLeague: 'basketball_ncaab' })).toBe('ncaab')
     expect(sportForMarket({ sportsLeague: 'baseball_mlb' })).toBe('mlb')
     expect(sportForMarket({ sportsLeague: 'icehockey_nhl' })).toBe('nhl')
@@ -434,12 +437,24 @@ describe('pipeline handoff fields', () => {
     )
     expect(sportForMarket({ sportsLeague: 'boxing_boxing' })).toBe('other')
   })
-  it('tags WNBA games with basketball but not the NBA topic', () => {
-    const nba = sportTagIds('nba', 'NBA')
-    const wnba = sportTagIds('nba', 'WNBA')
+  it('keeps WNBA games apart from the NBA', () => {
+    expect(sportForMarket({ sportsLeague: 'WNBA' })).toBe('wnba')
+    expect(sportForMarket({ sportsLeague: 'NBA' })).toBe('nba')
+    // Tagged with Basketball, but not with the NBA topic.
+    const nba = sportTagIds('nba')
+    const wnba = sportTagIds('wnba')
     expect(nba).toContain(NBA_TOPIC_ID)
-    expect(wnba).toEqual(nba.filter((id) => id !== NBA_TOPIC_ID))
-    expect(wnba.length).toBeGreaterThan(1)
+    expect(wnba).toContain(WNBA_TOPIC_ID)
+    expect(wnba).not.toContain(NBA_TOPIC_ID)
+    expect(wnba.filter((id) => nba.includes(id)).length).toBeGreaterThan(1)
+    // A market in both the WNBA and Basketball topics is a WNBA market,
+    // whichever order the topics come back in.
+    for (const groupIds of [
+      [WNBA_TOPIC_ID, ...nba],
+      [...nba, WNBA_TOPIC_ID],
+    ]) {
+      expect(sportForMarket({ groupIds })).toBe('wnba')
+    }
   })
   it('files a market by its stamped sportsMarketType before guessing', () => {
     expect(
@@ -467,6 +482,46 @@ describe('pipeline handoff fields', () => {
 })
 
 describe('sports from the topic tree', () => {
+  it('keeps existing sports first and does not search all sports for a feed-only category', () => {
+    expect(CURATED_SPORTS.slice(0, 4).map((s) => s.key)).toEqual([
+      'nfl',
+      'nba',
+      'wnba',
+      'mlb',
+    ])
+    expect(sportGroupIds('basketball')).toEqual([])
+    expect(
+      buildSportsIndex([], []).sports.find((s) => s.key === 'basketball')
+        ?.groupIds
+    ).toEqual([])
+  })
+
+  it.each([
+    ['afl', 'afl', '0afc8d1a-871b-40da-a4e2-8acb2dbd25bd'],
+    [
+      'wncaab',
+      'womens-ncaa-basketball',
+      '23ac7b3c-a185-4340-8ba9-d9399e4929f0',
+    ],
+    ['nrl', 'nrl', 'ab71806e-a3c9-456d-884a-929ae13f109e'],
+    ['handball', 'handball', '8R4AyMGqOTrSAN4n4rNL'],
+    ['hockey', 'ice-hockey', '68ee6874-3058-4c8f-ae72-5b8a764c8741'],
+    ['football', 'american-football', 'ce506ff3-38db-4709-83ce-b40797d884e4'],
+  ] as const)(
+    'claims the existing %s topic without a duplicate chip',
+    (key, slug, id) => {
+      const index = buildSportsIndex(
+        [{ id, slug, name: key, totalMembers: 1 }],
+        [{ parentId: SPORTS_DEFAULT_GROUP_ID, childId: id }]
+      )
+      expect(index.sports.filter((s) => s.key === key)).toHaveLength(1)
+      expect(index.sports.some((s) => s.key === `topic-${id}`)).toBe(false)
+      expect(index.sports.find((s) => s.key === key)?.groupIds).toContain(id)
+      expect(sportForMarket({ groupIds: [id] }, index)).toBe(key)
+      expect(sportTagIds(key)).toContain(id)
+    }
+  )
+
   // A slice of the prod tree under 🏟️ Sports.
   const root = SPORTS_DEFAULT_GROUP_ID
   const football = 'Vcf6CYTTSXAiStbKSqQq'
@@ -571,6 +626,15 @@ describe('sports from the topic tree', () => {
     expect(sportOf(collegeFootball, football)).toBe('ncaaf')
   })
 
+  it('files WNBA apart from the NBA, though both use Basketball', () => {
+    // As on prod, the WNBA topic isn't in the tree; the sport claims it by id.
+    expect(sportOf(basketball, WNBA_TOPIC_ID)).toBe('wnba')
+    expect(sportOf(WNBA_TOPIC_ID, basketball)).toBe('wnba')
+    expect(sportOf(NBA_TOPIC_ID, basketball)).toBe('nba')
+    // Basketball alone is the NBA's.
+    expect(sportOf(basketball)).toBe('nba')
+  })
+
   it('never files a market by a topic that groups sports', () => {
     expect(sportOf(football, soccer)).toBe('soccer')
     expect(sportOf(football)).toBe('other')
@@ -585,6 +649,96 @@ describe('sports from the topic tree', () => {
     expect(sportForMarket({ groupIds: [football, nfl] })).toBe('nfl')
     // New NFL games are still tagged with the Football topic.
     expect(sportTagIds('nfl')).toContain(football)
+  })
+
+  it("sends Sports and each sport's main topic to its sports page", () => {
+    const page = (id: string, slug: string) =>
+      sportsPathForTopic({ id, slug }, index)
+    expect(page(root, 'sports-default')).toBe('/sports')
+    // The second, generic Sports topic.
+    expect(page('d489c4e4-ec93-4473-845d-12537350cfee', 'sports')).toBe(
+      '/sports'
+    )
+    expect(page(nfl, 'nfl')).toBe('/sports/nfl')
+    expect(page(formula1, 'formula-1')).toBe('/sports/f1')
+    expect(page(collegeBasketball, 'college-basketball')).toBe('/sports/ncaab')
+    expect(page('cycling', 'road-bicycle-racing')).toBe(
+      '/sports/road-bicycle-racing'
+    )
+    expect(page('combat', 'combat-sports')).toBe('/sports/combat-sports')
+    expect(page('elsewhere', 'politics-default')).toBeUndefined()
+  })
+
+  it('gives every other topic under Sports a page under its sport', () => {
+    const page = (id: string, slug: string) =>
+      sportsPathForTopic({ id, slug }, index)
+    expect(page('superbowl', 'super-bowl')).toBe('/sports/nfl/super-bowl')
+    expect(page('tdf', 'tour-de-france')).toBe(
+      '/sports/road-bicycle-racing/tour-de-france'
+    )
+    // Sumo sits under Sports too, but Combat Sports holds it.
+    expect(page('sumo', 'sumo')).toBe('/sports/combat-sports/sumo')
+    expect(page('womens', 'peloton-discord-65dd39510b70')).toBe(
+      '/sports/road-bicycle-racing/peloton-discord-65dd39510b70'
+    )
+    // Topics that group sports open under All.
+    expect(page(basketball, 'basketball')).toBe('/sports/all/basketball')
+    expect(page(football, 'football')).toBe('/sports/all/football')
+    expect(page(sportsBetting, 'sports-betting')).toBe(
+      '/sports/all/sports-betting'
+    )
+  })
+
+  it('lists the other topics with what their pages cover', () => {
+    const byId = Object.fromEntries(index.topics.map((t) => [t.id, t]))
+    expect(index.topics.map((t) => t.slug)).toEqual([
+      'sports-betting',
+      'basketball',
+      'football',
+      'super-bowl',
+      'tour-de-france',
+      'boxing',
+      'peloton-discord-65dd39510b70',
+      'sumo',
+    ])
+    expect(byId[basketball]).toEqual({
+      id: basketball,
+      slug: 'basketball',
+      label: 'Basketball',
+      emoji: '🏀',
+      sport: 'all',
+      groupIds: [basketball, collegeBasketball],
+      totalMembers: 5484,
+    })
+    expect(byId[football].groupIds).toEqual([
+      football,
+      soccer,
+      nfl,
+      collegeFootball,
+      'superbowl',
+    ])
+    expect(byId['boxing']).toMatchObject({ sport: 'combat-sports' })
+    expect(byId['boxing']).not.toHaveProperty('emoji')
+    expect(byId['superbowl']).toMatchObject({
+      sport: 'nfl',
+      label: 'Super Bowl',
+      emoji: '🏈',
+      groupIds: ['superbowl'],
+    })
+  })
+
+  it('moves only the sports themselves while the topic list is unavailable', () => {
+    const page = (id: string, slug: string) =>
+      sportsPathForTopic({ id, slug }, { sports: index.sports })
+    expect(page(nfl, 'nfl')).toBe('/sports/nfl')
+    expect(page('superbowl', 'super-bowl')).toBeUndefined()
+  })
+
+  it('sends only Sports itself while the sports list is unavailable', () => {
+    const page = (id: string, slug: string) =>
+      sportsPathForTopic({ id, slug }, { sports: [] })
+    expect(page(root, 'sports-default')).toBe('/sports')
+    expect(page(nfl, 'nfl')).toBeUndefined()
   })
 
   it('claims a topic by slug where ids differ, as on dev', () => {

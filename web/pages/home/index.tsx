@@ -1,4 +1,3 @@
-import clsx from 'clsx'
 import Router from 'next/router'
 
 import { SEO } from 'web/components/SEO'
@@ -7,32 +6,33 @@ import { Page } from 'web/components/layout/page'
 import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { BrowsePageContent } from '../browse'
+import { BrowsePageContent, BrowseViewToggle } from '../browse'
+import { useBrowseView } from 'web/components/browse-v2/use-browse-view'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 export default function Home() {
   const user = useUser()
   useSaveReferral(user)
   useRedirectIfSignedOut()
+  const browseView = useBrowseView({ enabled: !!user })
 
   return (
-    <Page trackPageView={'home'} className="lg:px-4">
+    <Page trackPageView={'home'} className="min-w-0 lg:px-4">
       <Welcome />
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      {/* Flagged users earn zero bonuses until they verify — make it evident on
-          the home page too (non-dismissible). Gated to flagged users only, so
-          there's no new banner for ordinary unverified users. */}
-      {user?.bonusEligibility === 'requires_verification' && (
-        <VerifyPhoneNumberBanner user={user} dismissible={false} compact />
-      )}
-      <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
-      <BrowsePageContent />
+      {/* Renders only for admin-flagged accounts, which earn zero bonuses
+          until they verify. Nobody else is prompted to verify here. */}
+      <FlaggedAccountBanner user={user} />
+      <DailyStats className="w-full px-3 pb-1 pt-2 lg:px-0" user={user}>
+        <BrowseViewToggle browseView={browseView} />
+      </DailyStats>
+      <BrowsePageContent browseView={browseView} hideViewSwitch />
       {user && (
         <button
           type="button"

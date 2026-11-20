@@ -50,7 +50,7 @@ import { TradesButton } from 'web/components/contract/trades-button'
 import { ReactButton } from 'web/components/contract/react-button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { FeedPerpPriceSparkline } from 'web/components/perps/feed-perp-price-sparkline'
-import { PerpMarketBadge } from 'web/components/perps/perp-market-badge'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { LiquidityTooltip } from 'web/components/tiers/liquidity-tooltip'
 
 type ActivityItemBase = {
@@ -172,9 +172,7 @@ export const ActivityCard = memo(function ActivityCard(props: {
           }}
         >
           <VisibilityIcon contract={contract} />{' '}
-          {contract.outcomeType === 'PERP' && (
-            <PerpMarketBadge contract={contract} className="mr-1" />
-          )}
+          <MarketTitleLabel contract={contract} className="mr-1" />
           {removeEmojis(contract.question)}
         </Link>
 

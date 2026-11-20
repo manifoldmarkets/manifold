@@ -19,9 +19,9 @@ import { JobInterestCard } from 'web/components/jobs/job-interest-card'
 type Job = {
   title: string
   location: string
-  comp: string
   blurb: string
   intro: string
+  employmentDetails: string
   whatYoullDo: string[]
   whatWereLookingFor: string[]
   contactEmail: string
@@ -29,58 +29,29 @@ type Job = {
 
 const JOBS: Job[] = [
   {
-    title: 'Backend Engineer',
-    location: 'San Francisco',
-    comp: 'Base + equity',
-    blurb:
-      'Build the high-performance backend infra that turns onchain contracts into a real trading platform.',
+    title: 'Design Engineer',
+    location: 'San Francisco · In person',
+    blurb: 'Own the core MNX product across web and mobile.',
     intro:
-      'Build high performance exchange infra. Most of your work is backend: the ' +
-      'services, pipelines, and infrastructure that turn onchain contracts into a ' +
-      "real trading platform, but you'll reach across the stack wherever the product " +
-      'needs you.',
+      'You own the core MNX product across web and mobile. You have a strong eye for design and care about the details people notice before they can explain what’s wrong. You’ll decide what needs improving, design the solution, and ship it. When you find a bug or a clumsy interaction, you take responsibility for fixing it.',
+    employmentDetails: 'This is a full-time, in-person role in San Francisco.',
     whatYoullDo: [
-      'Build and operate the backend services behind the exchange: APIs, market data, order/position state, and the systems that sit between the protocol and the UI',
-      'Own key exchange infrastructure: data pipelines from oracles and price feeds, indexing onchain events, monitoring, and deploys',
-      'Take on the broad platform tasks a small team generates — internal tooling, integrations, performance, and reliability',
-      'Help set engineering practices and own features end to end, from design through production',
+      'Own the web and mobile experience end to end, from product decisions and design through implementation and polish',
+      'Make complex trading workflows clear, intuitive, and visually sharp',
+      'Sweat the details: typography, spacing, responsiveness, loading states, error messages, and interactions',
+      'Proactively find and fix bugs, rough edges, and inconsistencies across the platform',
+      'Use coding agents and modern AI tools to build, test, and ship improvements',
+      'Use the product yourself, listen to users, and decide what deserves attention next',
     ],
     whatWereLookingFor: [
-      'A strong generalist engineer with solid backend chops — building reliable services and data systems in production',
-      'Comfortable across the stack and happy to context-switch; you reach for the right tool rather than the familiar one',
-      "Some Solidity or EVM exposure is a real plus — enough to read contracts and contribute, even if it isn't your core",
-      'Bonus: experience with trading systems, real-time data, or crypto infra',
+      'Excellent design taste and examples of work that show it',
+      'Meticulous attention to detail and a high standard for what you ship',
+      'Strong product judgment: you can spot what’s confusing, decide what matters, and make it better',
+      'High agency and follow-through; you identify problems and carry fixes through without waiting for a ticket',
+      'Familiarity with modern agentic workflows and the ability to turn an idea into a working product',
+      'No engineering or CS background required',
     ],
-    contactEmail: 'dev@mnx.fi',
-  },
-  {
-    title: 'Quantitative Trader',
-    location: 'San Francisco',
-    comp: 'Base + equity + carry',
-    blurb:
-      'Run the liquidity vault and make markets across novel, illiquid instruments — high-ownership and performance-based.',
-    intro:
-      "As part of the trading team, you'll help run the liquidity vault and make " +
-      'markets across our full market catalog, from private-lab valuations, H100 ' +
-      "prices, equity perps, etc. You'll set quotes, manage inventory and funding, " +
-      'and keep the book deep enough for serious size. Much of this is novel and ' +
-      "illiquid; you'll be pricing instruments that have never had a market before. " +
-      'This is a high-ownership seat at the center of how the exchange actually ' +
-      'trades with a heavily performance-based comp structure.',
-    whatYoullDo: [
-      'Manage the protocol liquidity vault',
-      'Make markets across the catalog: quote, hedge, and manage funding rates on perps and event markets',
-      'Build pricing and risk models for thin, novel underlyings where no clean reference market exists',
-      'Own risk: position limits, exposure, liquidations, and the behavior of the book under stress',
-      'Partner with engineering on vault mechanics, oracle inputs, and settlement; with growth on which markets to list next',
-    ],
-    whatWereLookingFor: [
-      'Market-making or quant-trading experience: crypto perps, TradFi derivatives, or both',
-      'Comfort pricing illiquid and unusual instruments, and sizing risk under genuine uncertainty',
-      'Sharp risk discipline and a calm hand when markets move',
-      'Bonus: onchain trading experience, automated MM systems, or a research background in derivatives pricing',
-    ],
-    contactEmail: 'gamma@mnx.fi',
+    contactEmail: 'dev at mnx.fi',
   },
 ]
 
@@ -126,10 +97,6 @@ function JobCard({ job }: { job: Job }) {
               />
               <dd>{job.location}</dd>
             </div>
-            <div>
-              <dt className="sr-only">Compensation</dt>
-              <dd>{job.comp}</dd>
-            </div>
           </dl>
           <div className="border-ink-100 mt-2 flex items-center justify-end border-t pt-4 dark:border-slate-700/60">
             <span className="text-primary-600 group-hover:text-primary-700 flex items-center gap-1.5 text-sm font-semibold dark:text-indigo-300 dark:group-hover:text-indigo-200">
@@ -151,6 +118,9 @@ function JobCard({ job }: { job: Job }) {
       >
         <p className="text-ink-700 mb-6 text-base leading-relaxed dark:text-slate-300">
           {job.intro}
+        </p>
+        <p className="text-ink-700 mb-6 text-base leading-relaxed dark:text-slate-300">
+          {job.employmentDetails}
         </p>
 
         <section className="mb-6">
@@ -186,7 +156,7 @@ function JobCard({ job }: { job: Job }) {
         </section>
 
         <p className="text-ink-700 mb-6 select-text text-base leading-relaxed dark:text-slate-300">
-          To apply, email {job.contactEmail}.
+          Send the best thing you’ve designed to {job.contactEmail}.
         </p>
 
         <button

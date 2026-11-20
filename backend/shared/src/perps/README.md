@@ -10,6 +10,24 @@ decide to sunset perps. Nothing under `backend/shared/src/perps/` is imported by
 the existing CPMM / multi / numeric code paths; integration points are narrow and
 explicit (see "Integration points" below).
 
+## Next-price market orders
+
+Public `openOrAddPosition` and `closePosition` enqueue all user orders. There is no synchronous cached-price execution path. `runOracleUpdate` performs liquidation and ADL, then settles eligible queued orders in the same serialized transaction. Existing private settlement math handles fees, margin, partial closes, harmonic entry merging and atomic flips.
+
+The `perp_orders` migration is required before deploying the API or scheduler. One pending trade and one pending close per user and contract are enforced by a partial unique index, so a waiting open or add never blocks an exit; closes settle first. Orders cannot be cancelled. Idempotent retries return the same instruction. A missing bound position rejects an add, close or flip instead of creating an unintended fresh position.
+
+Submission changes no market state, so it takes no contract lock: it runs at READ COMMITTED under the user's row lock, and the unique indexes decide replays and one-per-kind. Submissions to one market therefore run side by side and never queue the oracle tick. (Under SERIALIZABLE behind the contract lock, each snapshot predated its wait, so a burst aborted and requeued itself and starved the tick.) On a size-fee market, an allowance below the fee at the current pools is refused at submission rather than accepted to fail at execution.
+
+BTC, xStocks and daily publisher sampling timestamps use request start. Shared xStocks snapshots retain that original timestamp across feeds. Provider-stamped feeds (`isProviderStampedFeed` in `common/perps/orders.ts`: MNX, and Adjacent's MSRY) additionally require the provider's production stamp to be after submission, less `PROVIDER_SOURCE_CLOCK_ALLOWANCE_MS`: MNX's mark time, and the start of the one-minute bucket MSRY's value was recorded in. Re-received cached values do not qualify. Daily source timestamps describe reporting periods, so those feeds use their accepted observation time. This execution rule does not claim to remove all upstream cache latency or predictable published-index moves.
+
+While an order waits, `USER -> BANK:PERP_ORDER_ESCROW` holds its cash. `PERP_ORDER_RELEASE` returns it inside the same transaction as fill, rejection or expiry. The ordinary margin and fee transfers then execute. Pending cash never enters long or short backing, so the existing contract-ledger-equals-pools invariant remains unchanged. Pending cash is included at face value in authoritative user-contract metrics with zero profit.
+
+Pending orders cause unchanged-price observations to be persisted, avoiding a wait-for-a-different-number deadlock on fast feeds. If a previously published eligible observation was missed, refund and reject rather than selecting a later price. To keep misses rare, a bounded fast tick that gives up while orders wait is retried without bounds (applied late rather than skipped). The mark also advances only once nothing still waits on it. Under the contract lock, before writing anything, an update checks for an order still eligible at the current mark, and for a persisted point the mark skipped while an order waits on it (an overlapping scheduler, or an apply that failed after persisting). If either exists, it rolls back, catches up (settles that backlog, or replays the skipped point as its own update, gated by the incoming point's provider health and notified at its own price), and retries. A backlog past one tick's budget, an order committed while a tick ran, or a point another scheduler landed first then fills at its own price instead of being rejected. The check can only see committed orders, so submission stamps `created_time` as its last statement: an order becomes visible within the commit of its stamp, long before the tick of the next point sampled after it. Catch-up and the post-tick follow-ups are bounded as the update is. Orders still contended after their attempts are no longer waited on. All rounds for one incoming point share a single `MAX_CATCH_UP_ROUNDS` budget, after which the update advances regardless, so waiting orders cannot hold back the mark and the liquidations it carries; whatever still waits is then rejected as before. Each order settles in its own savepoint: lock or serialization contention leaves it pending at the same price for a follow-up transaction (and scheduler housekeeping), and any other failure, including an engine invariant, rejects and refunds that order only; neither can roll back the price, liquidations or ADL. At most `PERP_ORDERS_PER_SETTLEMENT` orders settle per transaction; the rest continue at the same price in follow-up transactions. Expiry runs from oracle dispatcher housekeeping even during provider outages. Completed orders create durable outbox work relayed to the API writer, which pays creator bonuses for fills, broadcasts the new balance (scheduler broadcasts reach no browser), and notifies the trader when an order is rejected or expires. The betting streak is credited on submission, the trader's own action, as immediate trades did.
+
+`PERP_TRADING_MODE` gates submissions only; orders already queued still fill. To stop them, drain with `backend/scripts/refund-pending-perp-orders.ts --apply` (or toggle MANA trading off site-wide). Roll back by pausing trading and running that drain before deploying code that does not know `perp_orders`, never by selectively repricing orders at the current cache.
+
+Deployment requires a coordinated cutover, in this order: stop exposure increases (`PERP_TRADING_MODE=reduce-only` on the API), apply the migration, deploy **both** scheduler instances (`prod perps` settles fast feeds and daily publishers; `prod main` applies the DAU feed through update-stats), deploy the API from a clean checkout at the PR head, then merge, which deploys the web client through Vercel. The new schedulers are inert while no orders exist, and an API that queues orders before `scheduler-perps` can settle them would strand closes. Invalidate old bundles before reopening. Both trade endpoints now return `{order}`. Old clients must migrate; do not keep an immediate-fill compatibility route. No deployment is performed by the implementation branch.
+
 ## Files
 
 - `engine.ts` — the authoritative entry point. Exports:
@@ -17,9 +35,9 @@ explicit (see "Integration points" below).
   - `openOrAddPosition(contractId, userId, direction, mana, leverage, idempotencyKey?)`
     — opens a new position or adds to an existing same-side position. An opposite-side
     position is closed atomically before the new side opens. Returns
-    `{ position, event, isNewUniqueBettor }`.
+    a durable next-price order; submission does not open a position.
   - `closePosition(contractId, userId, direction, idempotencyKey?, expectedOpenedTime?)`
-    — closes a user's position at the current oracle price, credits/debits mana, and
+    — queues a close of the bound position at the next eligible oracle price, credits/debits mana, and
     writes a `close` event. The optional opening timestamp prevents a stale client
     from closing a replacement position. Receipt/event `pnl` is settlement payout
     minus original deposited margin, so it includes funding; `pricePnl` preserves
@@ -36,7 +54,8 @@ explicit (see "Integration points" below).
     margin and payout (not lifetime market turnover).
 
   Every mutating call acquires a `pg_advisory_xact_lock` keyed on the contract id
-  so per-contract state transitions are serialized.
+  so per-contract state transitions are serialized. Order submission is the
+  exception: it changes no market state (see the order queue above).
 
 - `queries.ts` — small SQL helpers used by `engine.ts` to keep the engine focused
   on state transitions rather than SQL construction. Row ↔ object converters live
@@ -166,8 +185,9 @@ reduces open interest, and its state is asserted with the same
 
 ## Taker fee
 
-`common/src/perps/fees.ts`. Trades execute at the cached oracle price, and
-with zero fees that price is a free option for latency bots (2026-08-07: two
+`common/src/perps/fees.ts`. Fees still apply to queued execution. The following
+history describes the earlier immediate-fill model: trades executed at the
+cached oracle price, and with zero fees that price was a free option for latency bots (2026-08-07: two
 bots extracted ~M$70k from the BTC perp pools by sniping the then-15s tick at
 a measured edge of ~1.5 bps of notional per round trip).
 
@@ -284,7 +304,7 @@ Why per-channel: the 2026-08-19/20 BTC drain was API-key flow (5 API accounts
 were 85% of opening notional over that week against 135 web traders), so a
 flat raise would tax the honest web majority for the bots' edge. A bot can
 still dodge by scripting a session token — this is a raised bar and a clean
-ToS line, not a wall; the structural fix is next-tick execution.
+ToS line, not a wall; next-price execution now addresses the cached-fill window.
 
 The two rates carry different domains — `PERP_TAKER_FEE_BPS_MAX` = 100,
 `PERP_TAKER_FEE_API_BPS_MAX` = 300 — and neither is validated against
@@ -382,12 +402,72 @@ checks `L + S` against one contract balance, so the split is an accounting
 convention, not a custody boundary; the transfer conserves total escrow and
 moves no user balance. It is all-or-nothing: a partial transfer cannot make the
 book representable but would change the ADL factors on the way to the same
-throw, so it can only ever turn a failure into a success.
+throw, so it can only ever turn a failure into a success. The donor is then
+held at no less than its own reserve (see below). "At least that much" stays
+exact: the hold mints whatever the donor lacks, so any allowance there would
+let a real shortfall that grows a little each tick mint its way past escrow
+tolerance on ticks that never check escrow. A surplus that is the deficit
+exactly can therefore still round an ulp short of it (`64.1 − 0.1 < 64`) and
+be declined, as before.
 
 This does NOT stop principal being spent against an opposing side's unrealized
 loss in the first place — it lets the pot honour the resulting claim out of its
 own surplus. Reserving at full cost basis would prevent the spend, at the cost
 of much lower profit capacity on every market. That is a separate decision.
+
+## Solvency dust
+
+ADL lands a side's factor a few ulps under 1 about a quarter of the time,
+inside the `1e-12` relative tolerance. A debit far larger than the pool it
+leaves then turns ulps of that debit into a shortfall the remaining book cannot
+size: paying a 50,000 profit out of a 50,001 pool leaves the pool 7e-12 under
+the 1-mana reserve it still holds, which `solvencyFactor` reads as `-Infinity`.
+That used to fail a legitimate close right after ADL, and failed `resolvePerp`
+deterministically, since it closes every position at one fixed price. A
+factor-zero ADL settlement does the same to its own pool, and so does the
+cross-side transfer to its donor: `100,000.01 − 100,000` lands 5e-12 under a
+0.01 reserve.
+
+Tolerating that dust is not enough. The later debit that drains the pool is far
+smaller than the one that left the gap, and funding scales a receiving pool
+and its positions by the same `1 + g`, so a gap below a reserve grows with the
+pool until it is no longer dust. So `debitPool` reconciles it where it is made:
+when a close or settlement would leave a pool short of what it owes (its own
+side's reserve plus the other side's profit) by no more than the dust the check
+could already have passed, the pool is assigned exactly what it owes and the
+debited leg pays what actually left it. The payout falls short of the bare
+profit by at most that dust (one ulp, usually), and escrow moves by at most an
+ulp. A larger gap is a real deficit and still fails closed, as does anything
+non-finite. The transfer's donor is held at its own reserve the same way.
+
+What is left is residue at the book's own scale: an ulp of a 100-mana pool
+against 5e-6 of remaining profit reads as a factor of `1 − 3e-9`. So
+`assertPerpStateSolvent` and the open path share one predicate,
+`isPerpSideSolvent`, that also forgives `getPerpSolvencyDust`: 1e-12 of the
+largest pool, reserve or profit on the book, capped at 1e-6 mana.
+
+**Deploy order:** `scheduler-perps` first, then the main scheduler, then the
+API, back to back from one SHA. Stay clear of the daily `update-stats` run
+(scheduled to start at 04:20 America/Los_Angeles), and don't trigger it by
+hand during the deploy. Queued orders execute inside the oracle tick, so every
+process that applies oracle points can leave the residue above:
+
+- `scheduler-perps`: the fast feeds, and the hourly `update-perps` fallback.
+- The main scheduler: `update-stats` applies the DAU point.
+- The API: the admin `internal-write-oracle-price`, and `resolvePerp`.
+
+Old code has no absolute tolerance. Its only path that refuses such a state on
+its input is funding (`applyFundingWithSolvency`), and only `scheduler-perps`
+runs funding. Until all three are on new code, an old process that meets the
+residue may fail closed, as prod already does on dust: the order is refunded
+as an execution fault, an open is rejected and its reserve returned, a
+resolution fails and can be retried, or the tick halts until the next
+successful new-code tick clears it.
+
+Roll back in reverse, with `scheduler-perps` last. Old funding can then refuse
+a book that new code left with residue, until a later successful ADL pass or a
+small `add-perp-subsidy` top-up clears it. Watch for
+`[update-perps] error updating <slug>`.
 
 ## Solvency halt (tick liveness)
 
@@ -480,7 +560,7 @@ agreement in `btc-price.ts`, `validateOpenWeightPublication` in
 
 Feed adapters live next to it:
 
-- `mnx.ts` ? sixteen MNX derivative marks via a shared `fetchObservation`
+- `mnx.ts` ? the live MNX derivative marks (fifteen since 2026-11-20) via a shared `fetchObservation`
   on the 2-second tick; see the detailed MNX section below.
 
 - `btc-price.ts` — BTC/USD spot, median of Coinbase/Kraken/Bitstamp (all
@@ -492,14 +572,38 @@ Feed adapters live next to it:
   accounts). Chain state only — every venue API evaluated came with terms.
 - `votehub-feeds.ts` — VoteHub's published, time-weighted polling averages,
   parameterised by a `VoteHubFeedSpec` (average key, answer key, canary poll
-  query, log prefix, rules). Three feeds: `trump-approval-rating` (via the
-  thin `trump-approval.ts` wrapper, unchanged in behaviour),
-  `votehub-generic-ballot-2026` (Democratic share of the 2026 generic
-  ballot), and `vance-favorability` (JD Vance's Favorable share). Always a
-  share, never a margin, so the price is strictly positive. The
+  query, log prefix, rules, and `seriesEndsOn` for a cycle-bound series).
+  Feeds: `trump-approval-rating` (via the thin `trump-approval.ts` wrapper,
+  unchanged in behaviour), `vance-favorability` (JD Vance's Favorable
+  share), `votehub-generic-ballot-2026` (Democratic share of the 2026 generic
+  ballot — RETIRED: the series ended 2026-11-03 and its market settled
+  2026-11-05), and the 2028 pair `votehub-generic-ballot-2028-dem` /
+  `-rep` (both parties' shares of one `generic_ballot_2028` series — AWAITING
+  SOURCE until VoteHub publishes it; `list-votehub-averages.ts` reports when
+  it does, and the pending entry in `launch-manifest.ts` lists the promotion
+  steps). Always a share, never a margin, so the price is strictly positive.
+  The
   answer-key-parameterised reader and the cross-check canary live in
   `common/src/perps/votehub-average.ts`; the publish-on-change plus 12h
   heartbeat rule every slow feed shares is `common/src/perps/daily-feed-publish.ts`.
+- `adjacent-msry.ts` — Adjacent's Misery Implied Index (`adjacent-msry`):
+  implied U-3 unemployment plus implied CPI-U year-over-year, in percentage
+  points, recalculated by Adjacent every minute. A fast observation feed on
+  the shared tick, polled every 20s because Adjacent's quota is per
+  organization (Pro: 30/minute, 20,000/day). The realtime tier needs
+  `ADJACENT_API_KEY` (an optional secret: without it every poll fails as a
+  provider error); the keyless public tier is 15 minutes delayed and only
+  backs the chart backfill. The parser and observation rule (new minute,
+  re-served minute, re-recorded minute, stale source) live in
+  `common/perps/adjacent-msry.ts`; its bucket stamps make it
+  provider-stamped for next-price eligibility. Because a minute can be
+  re-recorded, the registry entry sets `sourceRevision: 'keep-published'`:
+  the publisher keeps the published value for a re-priced stamp instead of
+  withdrawing availability, as it does for MNX. Adjacent permitted the market
+  in writing on 2026-10-28. Its credit shows on the market page, the /perps
+  chart, embeds and the seven-day charts on feed, dashboard and activity
+  cards, which show every perp's source; the /perps watchlist's row
+  sparklines go without. The launch definition is in `PERP_LAUNCH_MARKETS`.
 - `fear-greed.ts` — Alternative.me's Crypto Fear & Greed index
   (`crypto-fear-greed`, 0-100 sentiment points, documented `/fng/` API only).
   The parser in `common/src/perps/fear-greed.ts` treats every field as
@@ -536,13 +640,14 @@ short thesis. If an ingest-only feed is ever added again, list it in
 enforces that exclusion.
 
 Backfill scripts
-(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter,mnx}-oracle.ts`;
+(`backend/scripts/backfill-{btc,xstocks,trump-approval,votehub,fear-greed,openrouter,mnx,adjacent-msry}-oracle.ts`;
 `backfill-votehub-oracle` and `backfill-openrouter-oracle` take
 `--feed=<feedId>`) seed chart history before market creation. They are for
 feeds with NO live market: published history is append-only and a backfill
 stamps day boundaries, so on a live feed it would add a second point to every
-day rather than fill a hole. The VoteHub, Fear & Greed and OpenRouter scripts
-check this (`backfill-guard.ts`) and refuse a feed that backs an unresolved
+day rather than fill a hole. The VoteHub, Fear & Greed, OpenRouter and
+Adjacent MSRY scripts check this (`backfill-guard.ts`) and refuse a feed that
+backs an unresolved
 market unless `--force` is passed. MNX also uses the guard, with **no force
 escape**, and accepts `--feed=<feedId>`.
 
@@ -566,8 +671,9 @@ existed.
 
 ### MNX marks (2-second bulk adapter)
 
-`common/perps/mnx.ts` pins the sixteen reviewed instrument IDs, feed IDs,
-display units and bounds. `shared/mnx.ts` reads one shared `/v0/markets`
+`common/perps/mnx.ts` pins the reviewed instrument IDs, feed IDs,
+display units and bounds: fifteen live instruments, plus delisted ones kept as
+retired feeds so their settled markets still render. `shared/mnx.ts` reads one shared `/v0/markets`
 snapshot per fast tick, with a 1.5s HTTP timeout, an in-flight guard and shared
 failure backoff. This is approximately 30 requests/minute per scheduler
 process (briefly 60 during deployment overlap), plus API/script reads. Tick
@@ -682,10 +788,19 @@ ad-hoc query must bound `ts` — that is the only index on `user_events`, and th
 table is hundreds of millions of rows:
 
 ```sql
-select data->>'location' as placement, count(*), count(distinct user_id)
-from user_events
-where name = 'click mnx link' and ts >= now() - interval '7 days'
-group by 1 order by 2 desc;
+select
+  data - > > 'location' as placement,
+  count(*),
+  count(distinct user_id)
+from
+  user_events
+where
+  name = 'click mnx link'
+  and ts >= now () - interval '7 days'
+group by
+  1
+order by
+  2 desc;
 ```
 
 ## Scheduler
@@ -706,8 +821,10 @@ group by 1 order by 2 desc;
 - `update-trump-approval.ts` polls VoteHub every 5 minutes and publishes
   the Trump average on change plus a 12h heartbeat, under `[trump-approval]`.
 - `update-votehub-averages.ts` does the same for the other VoteHub specs
-  (generic ballot, Vance favorability), every 5 minutes offset two minutes
-  from the Trump job, each spec published independently, under `[votehub]`.
+  (Vance favorability, the generic-ballot feeds), every 5 minutes offset two
+  minutes from the Trump job, each spec published independently, under
+  `[votehub]`. A spec whose registry entry carries a `lifecycle` (retired, or
+  awaiting its source) is skipped silently before any request.
 - `update-fear-greed.ts` polls Alternative.me every 5 minutes and publishes
   on change plus a heartbeat, under `[fear-greed]`. The index itself steps
   once a day around 00:00 UTC.
@@ -729,6 +846,22 @@ Feed-health alerts are `log.error` lines prefixed `[oracle-feeds]` /
 `[votehub]`, `[fear-greed]` and `[openrouter]` — wire GCP log-based alerting
 to all of those.
 
+**Feed lifecycle.** An `OracleFeedDef` may carry `lifecycle: { phase:
+'retired' | 'awaiting-source', ... }`. Either phase takes the feed out of the
+oracle tick and the daily staleness probe (`update-oracle-feeds`), out of the
+publishers (`publishVoteHubPoint` returns `inactive` before any request), and
+out of `create-perp`; `marketCreationEnabled` must be false and the launch
+manifest check enforces that the feed sits in `PERP_LAUNCH_RETIRED_MARKETS`
+or `PERP_LAUNCH_PENDING_MARKETS` to match. Retire a cycle-bound feed once its
+series has ended and its market is settled — the 2026 generic ballot paged
+the `[oracle-feeds]` dead-man hourly and logged an ERROR every five minutes
+for two days after its settlement because nothing told the scheduler the
+series was finished. Register a feed ahead of its provider as
+`awaiting-source` so its reviewed settings live in the codebase without a
+never-published feed alerting hourly. Its `oracle_prices` history and its
+`common` ticker / attribution / display entries stay, because the settled
+market's page still renders them.
+
 Trading and closes share `getOracleFreshness` from
 `common/src/perps/oracle.ts`. A stale price, missing timestamp, or invalid
 freshness limit pauses both paths until a valid update arrives; the market page
@@ -739,6 +872,10 @@ The API reads `PERP_TRADING_MODE` on each request:
 - `enabled` permits creation, opens, adds, flips, and closes;
 - `reduce-only` blocks creation and exposure increases while preserving closes;
 - `halted` blocks all user-initiated PERP trading, including closes.
+
+These gate submission only: orders already queued still execute at their next
+eligible observation. Drain them with `refund-pending-perp-orders.ts` (see
+"Next-price market orders").
 
 An absent value is `enabled` only when the compiled `PERPS_ENABLED` switch is
 true. A false compiled switch cannot be overridden at runtime and remains at

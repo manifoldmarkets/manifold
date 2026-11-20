@@ -8,6 +8,7 @@ import { useModReports, useReportPages } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
 import UserReportItem from 'web/components/user-report-item'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { api } from 'web/lib/api/api'
 import { useEffect, useMemo, useState } from 'react'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
@@ -392,7 +393,10 @@ export default function ReportsPage() {
         url="/reports"
       />
       <Col className="p-4">
-        <Title>Reports</Title>
+        <Title>
+          <ModActionTag className="mr-2" />
+          Reports
+        </Title>
         <ControlledTabs
           tabs={tabs}
           activeIndex={activeTab === 'user-reports' ? 1 : 0}

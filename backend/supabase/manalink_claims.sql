@@ -9,13 +9,6 @@ create table if not exists
 -- Row Level Security
 alter table manalink_claims enable row level security;
 
--- Policies
-drop policy if exists "public read" on manalink_claims;
-
-create policy "public read" on manalink_claims for
-select
-  using (true);
-
 -- Indexes
 drop index if exists manalink_claims_pkey;
 

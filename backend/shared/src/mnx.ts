@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import {
   MNX_API_URL,
-  MNX_INSTRUMENTS,
+  MNX_LIVE_INSTRUMENTS,
   MNX_POLL_MS,
   MnxInstrument,
 } from 'common/perps/mnx'
@@ -9,6 +9,7 @@ import {
   OracleFeedHealth,
   ORACLE_HEALTH_MAX_AGE_MS,
 } from 'common/perps/oracle-health'
+import { localOracleClock, OracleClock } from './oracle-clock'
 import { OracleProviderError } from './oracle-provider'
 import { log } from './utils'
 import { metrics } from './monitoring/metrics'
@@ -17,6 +18,7 @@ import {
   getPerpOracleFreshness,
   OraclePoint,
 } from 'common/perps/oracle'
+import { MNX_SOURCE_CLOCK_ALLOWANCE_MS } from 'common/perps/orders'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 
 const rawPrice = z.string().regex(/^\d{1,80}$/)
@@ -82,7 +84,9 @@ export const parseMnxSnapshot = (
   if (!Number.isFinite(fetchedAt) || fetchedAt <= 0)
     throw new Error('Invalid fetch time')
   const feeds: MnxSnapshot['feeds'] = {}
-  for (const spec of MNX_INSTRUMENTS) {
+  // A delisted instrument is absent from /v0/markets by design; its feed is
+  // retired, so nothing asks for it.
+  for (const spec of MNX_LIVE_INSTRUMENTS) {
     const prior = previous?.feeds[spec.feedId]
     const matches = payload.filter((m) => m && m.symbol === spec.symbol)
     let identity: Pick<MnxFeedSnapshot, 'marketId'> = {}
@@ -300,7 +304,7 @@ export const parseMnxCandles = (
   })
 }
 
-/** Shared request per tick; keep failures shared too so 16 feeds do not each
+/** Shared request per tick; keep failures shared too so the MNX feeds do not each
  * retry an outage. Restarting polls immediately. Retry-After can extend backoff up to ten minutes. */
 export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   let cached: Promise<MnxSnapshot> | undefined
@@ -310,7 +314,9 @@ export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   let retryAt = 0
   let failures = 0
   let lastBackoffLogAt = -Infinity
-  return () => {
+  // `clock` stamps the snapshot the call starts; callers sharing it keep that
+  // stamp.
+  return (clock: OracleClock = localOracleClock) => {
     const now = Date.now()
     metrics.set(
       'perps/mnx_backoff_remaining_ms',
@@ -325,30 +331,41 @@ export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
       return cached
     startedAt = now
     inFlight = true
-    cached = fetchMarkets()
-      .then((payload) => {
-        previous = parseMnxSnapshot(payload, Date.now(), previous)
-        failures = 0
-        retryAt = 0
-        return previous
-      })
-      .catch((error) => {
-        const failedAt = Date.now()
-        retryAt = failedAt + mnxRetryDelay(error, ++failures, failedAt)
-        // One message per request, not per feed/tick sharing its rejection.
-        // The cached error also exposes this deadline in throttled feed logs.
-        if (error instanceof OracleProviderError) {
-          error.message += `; next MNX attempt ${new Date(
-            retryAt
-          ).toISOString()} (delay ${
-            retryAt - failedAt
-          }ms, capped at ${MNX_MAX_RETRY_MS}ms)`
-          if (failedAt - lastBackoffLogAt >= MINUTE_MS) {
-            lastBackoffLogAt = failedAt
-            log.warn(`[oracle-feeds] MNX backoff: ${error.message}`)
-          }
-        }
-        throw error
+    // Read before the request, so the stamp never postdates the marks. A
+    // failed read is ours, not MNX's, and must not start provider backoff.
+    cached = clock()
+      .then((fetchedAt) => {
+        const requestedAt = Date.now()
+        return fetchMarkets()
+          .then((payload) => {
+            previous = parseMnxSnapshot(payload, fetchedAt, previous)
+            failures = 0
+            retryAt = 0
+            warnOnSourceLead(
+              previous,
+              fetchedAt,
+              fetchedAt + Date.now() - requestedAt
+            )
+            return previous
+          })
+          .catch((error) => {
+            const failedAt = Date.now()
+            retryAt = failedAt + mnxRetryDelay(error, ++failures, failedAt)
+            // One message per request, not per feed/tick sharing its rejection.
+            // The cached error also exposes this deadline in throttled feed logs.
+            if (error instanceof OracleProviderError) {
+              error.message += `; next MNX attempt ${new Date(
+                retryAt
+              ).toISOString()} (delay ${
+                retryAt - failedAt
+              }ms, capped at ${MNX_MAX_RETRY_MS}ms)`
+              if (failedAt - lastBackoffLogAt >= MINUTE_MS) {
+                lastBackoffLogAt = failedAt
+                log.warn(`[oracle-feeds] MNX backoff: ${error.message}`)
+              }
+            }
+            throw error
+          })
       })
       .finally(() => {
         inFlight = false
@@ -357,9 +374,37 @@ export const createMnxSnapshotFetcher = (fetchMarkets = fetchMnxMarkets) => {
   }
 }
 
+// Next-price eligibility trusts MNX's mark stamps only to within
+// MNX_SOURCE_CLOCK_ALLOWANCE_MS of its clock running ahead of ours. A mark
+// stamped after we received it shows at least that much lead; report it well
+// before it reaches the allowance.
+let lastSourceLeadLogAt = -Infinity
+const warnOnSourceLead = (
+  snapshot: MnxSnapshot,
+  fetchedAt: number,
+  receivedAt: number
+) => {
+  const lead = Math.max(
+    ...Object.values(snapshot.feeds).map((feed) =>
+      feed.point?.ts === fetchedAt && feed.point.sourceTs != null
+        ? feed.point.sourceTs - receivedAt
+        : -Infinity
+    )
+  )
+  if (lead <= MNX_SOURCE_CLOCK_ALLOWANCE_MS / 2) return
+  const now = Date.now()
+  if (now - lastSourceLeadLogAt < MINUTE_MS) return
+  lastSourceLeadLogAt = now
+  const message = `[oracle-feeds] MNX stamped a mark ${lead}ms after we received it; next-price eligibility allows ${MNX_SOURCE_CLOCK_ALLOWANCE_MS}ms of provider clock lead`
+  if (lead > MNX_SOURCE_CLOCK_ALLOWANCE_MS) log.error(message)
+  else log.warn(message)
+}
+
 export const fetchMnxSnapshot = createMnxSnapshotFetcher()
-export const fetchMnxObservation = async (feedId: string) =>
-  (await fetchMnxSnapshot()).feeds[feedId]
+export const fetchMnxObservation = async (
+  feedId: string,
+  clock?: OracleClock
+) => (await fetchMnxSnapshot(clock)).feeds[feedId]
 
 export const requireMnxReady = (
   snapshot: MnxSnapshot,

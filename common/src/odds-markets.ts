@@ -212,8 +212,8 @@ export function teamScores(
   }
   const find = (name: string) => {
     const raw = score.scores?.find((s) => sameTeam(s.name, name))?.score
-    const n = raw == null ? NaN : parseInt(raw, 10)
-    return isNaN(n) ? null : n
+    const n = raw != null && /^\d+$/.test(raw.trim()) ? Number(raw) : NaN
+    return Number.isSafeInteger(n) && n >= 0 ? n : null
   }
   return { home: find(homeName), away: find(awayName) }
 }
@@ -239,15 +239,18 @@ export function winningSide(
 const DRAW_ANSWER = 'Draw'
 
 /**
- * Whether a game in this Odds API sport can end level. Soccer and NFL games
- * can; hockey, baseball, basketball and college football play on until
- * someone wins, so a level final from the feed is missing its decider (an
- * NHL shootout, say) and isn't resolved from.
+ * Whether this feed permits a final draw, including selected preseason and
+ * regular-season rules. Other feeds play on until someone wins, so a level
+ * final is missing its decider (an NHL shootout, say) and isn't resolved from.
  */
 export function canEndLevel(sportKey: string): boolean {
   return (
     sportKey.startsWith('soccer_') ||
-    sportKey.startsWith('americanfootball_nfl')
+    sportKey.startsWith('americanfootball_nfl') ||
+    sportKey === 'americanfootball_cfl' ||
+    sportKey === 'baseball_mlb_preseason' ||
+    sportKey === 'aussierules_afl' ||
+    sportKey === 'rugbyleague_nrl'
   )
 }
 
@@ -364,10 +367,12 @@ export function buildOddsMarketParams(
   const colors = gameAnswerColors(entry.sport, home, away, threeWay)
   const answerColors = colors && (threeWay ? colors : [colors[1], colors[0]])
 
-  // The date tells repeat fixtures apart (series, rematches).
+  // The date tells repeat fixtures apart (series, rematches). The league
+  // label in front of the title marks the market as official, so the title
+  // doesn't say it.
   const question = threeWay
-    ? `${home} vs ${away}, ${date} [official]`
-    : `${away} at ${home}, ${date} [official]`
+    ? `${home} vs ${away}, ${date}`
+    : `${away} at ${home}, ${date}`
 
   const sportParam = SPORT_ID_TO_SPORT_KEY[entry.sport]
   const manifoldSportsLink =
@@ -386,7 +391,7 @@ export function buildOddsMarketParams(
     : [
         `**${away} at ${home}**`,
         ``,
-        `Market auto-resolves to the winner.`,
+        `Market auto-resolves to the winner, including any overtime or tiebreaker.`,
         `If the game ends in a tie, it resolves 50/50 between the two teams.`,
         `Resolves N/A if the game is cancelled or postponed indefinitely.`,
         ``,

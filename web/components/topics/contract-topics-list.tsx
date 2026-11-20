@@ -12,6 +12,7 @@ import { useUser } from 'web/hooks/use-user'
 import { CreateTopicModal } from './create-topic-modal'
 import { PRIVACY_STATUS_ITEMS } from './topic-privacy-modal'
 import { useSearchGroups } from './topic-selector'
+import { MOD_ACTION_TEXT_CLASS, ModActionTag } from '../moderation/mod-action'
 
 export function ContractTopicsList(props: {
   canEdit: boolean
@@ -19,8 +20,11 @@ export function ContractTopicsList(props: {
   topics: Topic[]
   addTopic: (topic: Topic) => Promise<void>
   removeTopic: (topic: Topic) => Promise<void>
+  // Only editable because the user is a mod
+  modAction?: boolean
 }) {
-  const { canEditTopic, canEdit, topics, addTopic, removeTopic } = props
+  const { canEditTopic, canEdit, topics, addTopic, removeTopic, modAction } =
+    props
   const user = useUser()
 
   const [error, setError] = useState('')
@@ -48,6 +52,7 @@ export function ContractTopicsList(props: {
         <span className="text-ink-400 text-sm">
           {topics.length}/{MAX_GROUPS_PER_MARKET}
         </span>
+        {modAction && <ModActionTag />}
       </Row>
 
       {topics.length === 0 ? (
@@ -65,7 +70,12 @@ export function ContractTopicsList(props: {
             >
               {canEditTopic(t.id) && (
                 <button
-                  className="text-ink-400 hover:text-ink-700 hover:bg-ink-200 ml-0.5 rounded-full p-0.5 transition-colors"
+                  className={clsx(
+                    'hover:bg-ink-200 ml-0.5 rounded-full p-0.5 transition-colors',
+                    modAction
+                      ? MOD_ACTION_TEXT_CLASS
+                      : 'text-ink-400 hover:text-ink-700'
+                  )}
                   onClick={() => {
                     toast.promise(removeTopic(t), {
                       loading: `Removing "${t.name}"…`,

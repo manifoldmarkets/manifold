@@ -5,11 +5,15 @@ import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
 import { AddMarketToGroupModal } from './add-market-modal'
 import { useUser } from 'web/hooks/use-user'
-import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
+import {
+  useGroupFromSlug,
+  useGroupRoleInfo,
+} from 'web/hooks/use-group-supabase'
 import { Button } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { getAddContractToGroupPermission } from 'web/components/topics/topic-options'
 import { User } from 'common/user'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 
 export type AddContractToGroupPermissionType =
   | 'new' // user can add a new contract
@@ -24,11 +28,17 @@ export function AddContractToGroupModal(props: {
   className?: string
 }) {
   const { group, open, user, setOpen, className } = props
-  const userRole = useGroupRole(group.id, user)
+  const { role: userRole, topicRole } = useGroupRoleInfo(group.id, user)
   const isCreator = group.creatorId == user.id
   const addPermission = getAddContractToGroupPermission(
     group.privacyStatus,
     userRole,
+    isCreator
+  )
+  // What the user could do without site mod powers
+  const nonModPermission = getAddContractToGroupPermission(
+    group.privacyStatus,
+    topicRole,
     isCreator
   )
   async function onSubmit(contracts: Contract[]) {
@@ -61,6 +71,7 @@ export function AddContractToGroupModal(props: {
           setOpen={setOpen}
           onAddMarkets={onSubmit}
           addPermission={addPermission}
+          nonModPermission={nonModPermission}
         />
       </div>
     )
@@ -73,17 +84,29 @@ export const AddContractToGroupButton = (props: { groupSlug: string }) => {
   const group = useGroupFromSlug(groupSlug)
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const userRole = useGroupRole(group?.id ?? '_', user)
+  const { role: userRole, topicRole } = useGroupRoleInfo(group?.id ?? '_', user)
   if (!group) return <></>
   const addPermission = getAddContractToGroupPermission(
     group.privacyStatus,
     userRole,
     group.creatorId == user?.id
   )
+  const modAction =
+    getAddContractToGroupPermission(
+      group.privacyStatus,
+      topicRole,
+      group.creatorId == user?.id
+    ) === 'none'
   return (
     <>
       {addPermission !== 'none' && (
-        <Button onClick={() => setOpen(true)}>Add a question</Button>
+        <Button
+          color={modAction ? 'purple' : undefined}
+          onClick={() => setOpen(true)}
+        >
+          {modAction && <ModActionBadge className="mr-1" />}
+          Add a question
+        </Button>
       )}
       {group && user && (
         <AddContractToGroupModal

@@ -60,6 +60,7 @@ export const adminSportsScorePolling: APIHandler<
     SPORTS_CALENDAR.filter((e) => e.oddsKey).map((e) => e.sport)
   )
   return {
+    adaptive: settings.adaptive ?? false,
     sports: sports.map((sport) => ({
       sport,
       intervalSeconds: settings.sports[sport] ?? DEFAULT_LIVE_INTERVAL,

@@ -77,8 +77,7 @@ export const isPerpChange = (
 
 export const isTxnChange = (
   change: AnyBalanceChangeType
-): change is TxnBalanceChange =>
-  !('bet' in change) && !isPerpChange(change)
+): change is TxnBalanceChange => !('bet' in change) && !isPerpChange(change)
 
 export const BALANCE_CHANGE_TYPE_LABELS: Record<
   | (typeof BET_BALANCE_CHANGE_TYPES)[number]
@@ -87,6 +86,8 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   string
 > = {
   // Bet types
+  PERP_ORDER_RESERVE: 'Reserve for pending perp order',
+  PERP_ORDER_RELEASE: 'Release perp order reserve',
   create_bet: 'Buy shares',
   sell_shares: 'Sell shares',
   redeem_shares: 'Redeem shares',

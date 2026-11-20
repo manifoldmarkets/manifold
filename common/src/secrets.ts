@@ -39,9 +39,12 @@ export const secrets = (
     'SPORTSDB_KEY',
     'FOOTBALL_DATA_API_KEY',
     'THE_ODDS_API_KEY',
+    'BALLDONTLIE_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
     'OPENROUTER_API_KEY',
+    // Adjacent Markets realtime API (`ak_` key): the MSRY perp oracle feed.
+    'ADJACENT_API_KEY',
     'IDENFY_API_KEY',
     'IDENFY_API_SECRET',
     'IDENFY_CALLBACK_SECRET',
@@ -60,6 +63,8 @@ export const secrets = (
     // parallel names (e.g. STRIPE_15_OFF_10K_PRICE_ID).
     'STRIPE_20_OFF_5K_PRICE_ID',
     'STRIPE_20_OFF_5K_COUPON_ID',
+    // HMAC key for one-click email unsubscribe links.
+    'UNSUBSCRIBE_SIGNING_KEY',
     // The news feed's licensed sources (dev-docs/news-feed-commercial-plan.md).
     // TOLLBIT_AGENT_ID is the agent's name on TollBit's developer dashboard,
     // not a secret, but it differs per project like the keys do.
@@ -78,6 +83,15 @@ type SecretId = (typeof secrets)[number]
 const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
   // The Odds API sports jobs skip themselves without it.
   'THE_ODDS_API_KEY',
+  // F1 market creation (admin-sports-create-f1-markets) refuses without it.
+  'BALLDONTLIE_API_KEY',
+  // Without it the MSRY feed's polls fail as provider errors (throttled
+  // warnings, an hourly error) and nothing else is affected; an MSRY market
+  // pauses until the key works.
+  'ADJACENT_API_KEY',
+  // Without it, emails link to the notification settings page instead of a
+  // one-click unsubscribe, and /unsubscribe changes nothing.
+  'UNSUBSCRIBE_SIGNING_KEY',
   // The news feed runs without any of these: a source counts only when its
   // key is set.
   'TOLLBIT_API_KEY',
