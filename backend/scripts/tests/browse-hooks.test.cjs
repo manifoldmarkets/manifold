@@ -288,8 +288,15 @@ function markets(api) {
 // localStorage; without it storage is blocked. `memory` is the in-memory
 // state that outlives a remount within one visit; without it every mount
 // starts fresh, as a page load does.
-function browsePageFixture(query = {}, results = [], local, memory) {
+function browsePageFixture(
+  query = {},
+  results = [],
+  local,
+  memory,
+  options = {}
+) {
   const empty = () => null
+  const tracked = []
   const shared = {
     react: React,
     'react/jsx-runtime': require('react/jsx-runtime'),
@@ -337,8 +344,13 @@ function browsePageFixture(query = {}, results = [], local, memory) {
     addEventListener() {},
     removeEventListener() {},
   })
-  const Market = ({ contract }) =>
-    React.createElement('div', { 'data-market-id': contract.id })
+  const marketIn =
+    (layout) =>
+    ({ contract }) =>
+      React.createElement('div', {
+        'data-market-id': contract.id,
+        'data-layout': layout,
+      })
   const { BrowseV2 } = load(
     'web/components/browse-v2/browse-v2.tsx',
     {
@@ -350,13 +362,14 @@ function browsePageFixture(query = {}, results = [], local, memory) {
       'web/components/widgets/visibility-observer': {
         LoadMoreUntilNotVisible: empty,
       },
-      'web/hooks/use-persistent-local-state': local
-        ? persistentWith(local)
-        : persistent,
-      'web/hooks/use-is-mobile': { useIsMobile: () => false },
+      'web/hooks/use-persistent-local-state':
+        options.persistent ?? (local ? persistentWith(local) : persistent),
+      'web/hooks/use-is-mobile': { useIsMobile: () => !!options.mobile },
       'web/hooks/use-user': { useUser: () => null },
       'web/lib/firebase/users': { firebaseLogin: empty },
-      'web/lib/service/analytics': { track: empty },
+      'web/lib/service/analytics': {
+        track: (name, properties) => tracked.push({ name, ...properties }),
+      },
       'web/lib/supabase/groups': { listGroupsBySlug: async () => [] },
       'web/lib/util/local': { safeLocalStorage: local },
       './browse-topics': {
@@ -377,8 +390,8 @@ function browsePageFixture(query = {}, results = [], local, memory) {
         },
       },
       './market-card': {
-        MarketCard: Market,
-        MarketListRow: Market,
+        MarketCard: marketIn('cards'),
+        MarketListRow: marketIn('list'),
         MarketCardSkeleton: empty,
         MarketRowSkeleton: empty,
       },
@@ -402,6 +415,7 @@ function browsePageFixture(query = {}, results = [], local, memory) {
   )
   return {
     calls,
+    tracked,
     defaults: lenses.DEFAULT_FILTERS,
     get controls() {
       return controls
@@ -431,6 +445,17 @@ const plainMarket = {
   creatorUsername: 'someone',
   uniqueBettorCount: 3,
 }
+// A perp. Perps were folded at first; they stay in the feed now.
+const perpMarket = {
+  id: 'perp',
+  outcomeType: 'PERP',
+  creatorUsername: 'MNX',
+  uniqueBettorCount: 2,
+}
+const layoutsShown = () =>
+  [...document.querySelectorAll('[data-layout]')].map((element) =>
+    element.getAttribute('data-layout')
+  )
 const marketsShown = (scope = document) =>
   [...scope.querySelectorAll('[data-market-id]')].map((element) =>
     element.getAttribute('data-market-id')
@@ -701,6 +726,265 @@ test('with storage blocked, filters set by a link or a wider search still leave 
   assert.equal(linked.controls.filters.contractType, 'BINARY')
   assert.equal(linked.controls.filters.showHubMarkets, true)
   assert.deepEqual(marketsShown(), ['hub', 'plain'])
+})
+
+test('perps stay in the general list; small house sports and race markets fold', async () => {
+  const page = browsePageFixture({}, [perpMarket, hubMarket, plainMarket])
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['perp', 'plain'])
+  assert.ok(document.body.textContent.includes('1 market in hubs'))
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['perp', 'hub', 'plain'])
+  // Popular house markets were never folded.
+  assert.equal(
+    hubFold.isHubMarket({ ...hubMarket, uniqueBettorCount: 20 }),
+    false
+  )
+  assert.equal(hubFold.isHubMarket(perpMarket), false)
+  assert.equal(
+    hubFold.isHubMarket({ ...hubMarket, creatorUsername: 'ManifoldPolitics' }),
+    true
+  )
+})
+
+test('every screen opens on the list, and a chosen layout is kept', async () => {
+  const local = deviceStorage()
+  // Desktop and phone, with no choice made: the list.
+  for (const mobile of [false, true]) {
+    const page = browsePageFixture({}, [plainMarket], local, undefined, {
+      mobile,
+    })
+    await page.mount()
+    assert.deepEqual(layoutsShown(), ['list'], `mobile ${mobile}`)
+    await leavePage()
+  }
+  // Choosing cards is remembered, on both.
+  const page = browsePageFixture({}, [plainMarket], local)
+  await page.mount()
+  await act(async () => page.controls.onLayout('cards'))
+  assert.deepEqual(layoutsShown(), ['cards'])
+  await leavePage()
+  for (const mobile of [false, true]) {
+    const again = browsePageFixture({}, [plainMarket], local, undefined, {
+      mobile,
+    })
+    await again.mount()
+    assert.deepEqual(layoutsShown(), ['cards'], `mobile ${mobile}`)
+    await leavePage()
+  }
+})
+
+test('pressing the hub chip a stale tab already shows as chosen still chooses it', async () => {
+  const local = deviceStorage()
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+  // Both tabs folded; the second turns hub markets on.
+  const tabA = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const a = (await tabA.mount()).element
+  const tabB = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const b = (await tabB.mount()).element
+  await press(SHOW, b)
+  assert.equal(remembered(), 'true')
+
+  // The first tab still shows "In their hubs" as chosen. Pressing it is the
+  // person choosing it, and is written.
+  assert.equal(tabA.controls.filters.showHubMarkets, false)
+  await press(FOLD, a)
+  assert.equal(remembered(), 'false')
+
+  // The same the other way round.
+  await press(SHOW, b)
+  await press(FOLD, b)
+  await press(SHOW, a)
+  assert.equal(remembered(), 'true')
+  await press(FOLD, b)
+  assert.equal(remembered(), 'false')
+  // "Show them here" in a tab that already shows them is not offered, and a
+  // tab that is folded offers it and writes it.
+  await press('Show them here', b)
+  assert.equal(remembered(), 'true')
+})
+
+test('on a full page load the remembered hub choice comes back after the first render, and loading writes nothing', async () => {
+  const local = deviceStorage()
+  local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+  const writes = []
+  const watched = {
+    getItem: local.getItem,
+    setItem: (key, value) => {
+      writes.push([key, value])
+      local.setItem(key, value)
+    },
+    removeItem: local.removeItem,
+  }
+  // The real hook with the real client check: the first render is the
+  // server's, which knows nothing of the device.
+  const firstRenders = []
+  const isClient = load('web/hooks/use-is-client.ts', {
+    react: React,
+    'client-common/hooks/use-persistent-in-memory-state': {
+      usePersistentInMemoryState: React.useState,
+    },
+  })
+  const hook = load('web/hooks/use-persistent-local-state.ts', {
+    react: React,
+    'common/util/json': json,
+    'web/lib/util/local': { safeLocalStorage: watched },
+    'client-common/hooks/use-persistent-in-memory-state': {
+      isFunction: (v) => typeof v === 'function',
+    },
+    'client-common/hooks/use-event': useEvent,
+    'web/hooks/use-is-client': {
+      useIsClient: () => {
+        const client = isClient.useIsClient()
+        firstRenders.push(client)
+        return client
+      },
+    },
+  })
+  const page = browsePageFixture(
+    {},
+    [hubMarket, plainMarket],
+    watched,
+    undefined,
+    {
+      persistent: hook,
+    }
+  )
+  await page.mount()
+  assert.equal(firstRenders[0], false)
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  assert.deepEqual(
+    writes.filter(([key]) => key === hubFold.SHOW_HUB_MARKETS_KEY),
+    []
+  )
+})
+
+test('the new search box sends the same search event as Classic, only with something typed', async () => {
+  // React DOM is loaded here before the test window exists, so it sees
+  // neither typing nor focus events. A link's query fills the box the same
+  // way typing does, and the box's own blur handler is called as React would.
+  const blurSearch = () =>
+    act(async () => {
+      const input = document.querySelector('input[type="search"]')
+      const props = Object.keys(input).find((key) =>
+        key.startsWith('__reactProps')
+      )
+      input[props].onBlur()
+    })
+  const empty = browsePageFixture({}, [plainMarket])
+  await empty.mount()
+  await blurSearch()
+  const blank = browsePageFixture({ q: '   ' }, [plainMarket])
+  await leavePage()
+  await blank.mount()
+  await blurSearch()
+  assert.deepEqual(
+    [...empty.tracked, ...blank.tracked].filter((e) => e.name === 'search'),
+    []
+  )
+  await leavePage()
+  const typed = browsePageFixture({ q: 'climate' }, [plainMarket])
+  await typed.mount()
+  assert.equal(document.querySelector('input[type="search"]').value, 'climate')
+  await blurSearch()
+  assert.deepEqual(
+    typed.tracked.filter((e) => e.name === 'search'),
+    [{ name: 'search', query: 'climate', location: 'browse-v2' }]
+  )
+})
+
+// The real sidebar, with every icon and widget a stand-in: which links it
+// shows, in which order.
+async function sidebarLinks({ user = null, isMobile = false } = {}) {
+  const Stub = () => null
+  const stubs = new Proxy(
+    {},
+    { get: (_, key) => (key === '__esModule' ? false : Stub) }
+  )
+  const Sidebar = load('web/components/nav/sidebar.tsx', {
+    react: React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    '@heroicons/react/outline': stubs,
+    clsx: { default: (...names) => names.filter(Boolean).join(' ') },
+    'web/lib/icons/trophy-icon.svg': { default: Stub },
+    'common/util/array': load('common/src/util/array.ts', {
+      lodash: require('lodash'),
+    }),
+    'common/shop/items': { SHOP_ITEMS: [] },
+    'common/sweepstakes': { getTotalPrizePool: () => 0 },
+    'common/util/time': { DAY_MS: 86400000, isAprilFools: () => false },
+    'next/dist/shared/lib/app-router-context.shared-runtime': {},
+    'next/navigation': {
+      usePathname: () => '/home',
+      useRouter: () => ({ push: () => {} }),
+    },
+    'react-icons/lu': stubs,
+    'react-icons/io5': stubs,
+    'react-icons/tb': stubs,
+    'web/components/buttons/app-badges-or-get-app-button': stubs,
+    'web/components/buttons/create-question-button': stubs,
+    'web/components/notifications-icon': stubs,
+    'web/hooks/use-admin': { useAdminOrMod: () => false },
+    'web/hooks/use-api-getter': { useAPIGetter: () => ({ data: undefined }) },
+    'web/hooks/use-theme': {
+      useTheme: () => ({ theme: 'auto', setTheme: Stub }),
+    },
+    'web/hooks/use-user': { useUser: () => user },
+    'web/lib/firebase/users': stubs,
+    'web/lib/service/analytics': { withTracking: (f) => f },
+    '../buttons/mobile-apps-qr-code-button': stubs,
+    '../buttons/sign-up-button': stubs,
+    '../layout/col': { Col: ({ children }) => children },
+    '../widgets/dropdown-menu': { default: Stub },
+    '../profile/add-funds-button': stubs,
+    '../reports-icon': stubs,
+    '../tv-icon': stubs,
+    '../tv/tv-schedule': { useTVIsLive: () => false },
+    './manifold-logo': stubs,
+    './profile-summary': stubs,
+    './sidebar-item': {
+      SidebarItem: ({ item }) =>
+        React.createElement('a', {
+          'data-nav': item.name,
+          'data-href': item.href ?? '',
+          'data-event': item.trackingEventName ?? '',
+        }),
+    },
+  }).default
+  await mount(() => React.createElement(Sidebar, { isMobile }), true)
+  const links = [...document.querySelectorAll('[data-nav]')].map((a) => ({
+    name: a.getAttribute('data-nav'),
+    href: a.getAttribute('data-href'),
+    event: a.getAttribute('data-event'),
+  }))
+  await leavePage()
+  return links
+}
+
+test('the sidebar links the three hubs right after Browse, signed in or out, and first in the phone menu', async () => {
+  const hubs = [
+    { name: 'Sports', href: '/sports', event: '' },
+    { name: 'Perps', href: '/perps', event: '' },
+    // The Elections link keeps the event name the old sidebar link sent.
+    { name: 'Elections', href: '/election', event: 'Election' },
+  ]
+  const signedOut = await sidebarLinks()
+  assert.deepEqual(signedOut.slice(0, 4), [
+    { name: 'Browse', href: '/', event: '' },
+    ...hubs,
+  ])
+  const user = { id: 'u1', createdTime: 0 }
+  const signedIn = await sidebarLinks({ user })
+  assert.deepEqual(signedIn.slice(0, 4), [
+    { name: 'Browse', href: '/home', event: '' },
+    ...hubs,
+  ])
+  for (const links of [signedOut, signedIn])
+    assert.equal(links.filter((link) => link.name === 'Sports').length, 1)
+  const phone = await sidebarLinks({ user, isMobile: true })
+  assert.deepEqual(phone.slice(0, 3), hubs)
+  assert.equal(phone.filter((link) => link.name === 'Elections').length, 1)
 })
 
 test('Closing soonest preserves closing-week and substitutes open for all', async () => {

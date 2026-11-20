@@ -90,8 +90,8 @@ export type BrowseFilters = {
   status: Filter
   liquidity: number | undefined
   contractType: ContractType
-  // Perps and small house sports/race markets are folded into their hubs
-  // unless this is on (see hub-fold.ts).
+  // Small house sports and race markets are folded into their hubs unless
+  // this is on (see hub-fold.ts).
   showHubMarkets?: boolean
 }
 export const DEFAULT_FILTERS: BrowseFilters = {
@@ -138,9 +138,10 @@ export function LensBar(props: {
   followedTopics: TopicChoice[]
   onTopic: (topic: TopicChoice) => void
   filters: BrowseFilters
-  // `reset` says the person asked for the defaults, as opposed to arriving
-  // at them one filter at a time.
-  onFilters: (filters: BrowseFilters, reset?: boolean) => void
+  // `choseHubMarkets` says the person chose the hub-markets setting
+  // themselves: by resetting every filter, or with its own chips. Other
+  // filter changes carry it along without choosing it.
+  onFilters: (filters: BrowseFilters, choseHubMarkets?: boolean) => void
   layout: BrowseLayout
   onLayout: (layout: BrowseLayout) => void
   onYourTopics: () => void
@@ -439,7 +440,7 @@ function ScrollableFilters(props: { children: ReactNode }) {
 
 function FiltersPopover(props: {
   filters: BrowseFilters
-  onFilters: (filters: BrowseFilters, reset?: boolean) => void
+  onFilters: (filters: BrowseFilters, choseHubMarkets?: boolean) => void
 }) {
   const { filters, onFilters } = props
   const active =
@@ -483,11 +484,13 @@ function FiltersPopover(props: {
             onChange={(contractType) => onFilters({ ...filters, contractType })}
           />
           <ChipGroup
-            title="Perps, sports and race markets"
+            title="Small sports and race markets"
             options={HUB_MARKET_OPTIONS}
             value={!!filters.showHubMarkets}
+            // Pressing the chip already shown as chosen still chooses it:
+            // another tab may have changed the setting since.
             onChange={(showHubMarkets) =>
-              onFilters({ ...filters, showHubMarkets })
+              onFilters({ ...filters, showHubMarkets }, true)
             }
           />
           {active > 0 && (

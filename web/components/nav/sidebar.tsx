@@ -6,6 +6,7 @@ import {
   DotsHorizontalIcon,
   GiftIcon,
   HeartIcon,
+  LibraryIcon,
   LoginIcon,
   LogoutIcon,
   MoonIcon,
@@ -14,6 +15,7 @@ import {
   SparklesIcon,
   StarIcon,
   SunIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
@@ -28,6 +30,7 @@ import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.share
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
 import { IoCompassOutline } from 'react-icons/io5'
+import { TbBallBasketball } from 'react-icons/tb'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -316,6 +319,22 @@ export default function Sidebar(props: {
   )
 }
 
+// The hub pages, beside Browse in every nav. Visitors reached the election
+// pages mostly through the sidebar while it linked them, and Sports, which it
+// never linked, is where new visitors go on to bet most often.
+const HUB_NAV_ITEMS: NavItem[] = [
+  { name: 'Sports', href: '/sports', icon: TbBallBasketball },
+  { name: 'Perps', href: '/perps', icon: TrendingUpIcon },
+  {
+    name: 'Elections',
+    // The event name the sidebar link had before, so its clicks line up.
+    trackingEventName: 'Election',
+    href: '/election',
+    icon: LibraryIcon,
+    flagHover: true,
+  },
+]
+
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
@@ -330,6 +349,7 @@ const getDesktopNav = (
   if (loggedIn)
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
+      ...HUB_NAV_ITEMS,
       {
         name: 'Yap',
         href: '/yap',
@@ -372,6 +392,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    ...HUB_NAV_ITEMS,
     { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -391,6 +412,7 @@ const getMobileNav = (
   const { isAdminOrMod, isLiveTV, showShopNewBadge, prizePoolLabel } = options
 
   return buildArray<NavItem>(
+    ...HUB_NAV_ITEMS,
     loggedIn && {
       name: 'Prize Drawing',
       href: '/prize',

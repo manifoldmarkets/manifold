@@ -82,8 +82,10 @@ function BrowseV2Inner() {
     'best',
     'browse-v2-lens'
   )
-  // Most browse clicks land several markets down the list, so phones default
-  // to the denser list view. A choice either way is remembered.
+  // Most browse clicks land several markets down the list, so every screen
+  // defaults to the denser list view: desktop cards showed fewer markets
+  // before the fold, and fewer were opened from them. Cards remain a choice,
+  // and a choice either way is remembered.
   const isMobile = useIsMobile()
   const [showRail, setShowRail] = useState(false)
   useEffect(() => {
@@ -100,7 +102,7 @@ function BrowseV2Inner() {
   const [savedLayout, setLayout] = usePersistentLocalState<
     BrowseLayout | undefined
   >(undefined, 'browse-v2-layout')
-  const layout: BrowseLayout = savedLayout ?? (isMobile ? 'list' : 'cards')
+  const layout: BrowseLayout = savedLayout ?? 'list'
   const [topicChoice, setTopicChoice] = usePersistentInMemoryState<TopicChoice>(
     ALL_TOPICS,
     'browse-v2-topic'
@@ -127,11 +129,12 @@ function BrowseV2Inner() {
   // The filters as the person set them: the hub choice in them is the one
   // to remember. Filters set for them (a link, a wider search) go to
   // setSessionFilters and carry the hub choice over as it was.
-  const setFilters = (next: BrowseFilters, reset = false) => {
-    // Written when the person changes it, and always when they reset. Not
-    // on any other change: a tab that never touched the choice must not
-    // undo what another tab chose.
-    if (reset || !!next.showHubMarkets !== showHubMarkets)
+  const setFilters = (next: BrowseFilters, choseHubMarkets = false) => {
+    // Written when the person changes it, and always when they choose it
+    // (its own chips, "Show them here", a reset), even if this tab already
+    // shows that choice. Not on any other change: a tab that never touched
+    // the choice must not undo what another tab chose.
+    if (choseHubMarkets || !!next.showHubMarkets !== showHubMarkets)
       setShowHubMarkets(!!next.showHubMarkets)
     setSessionFilters(next)
   }
@@ -305,9 +308,9 @@ function BrowseV2Inner() {
     track('browse v2 topic', { topic: next.key })
     setTopicChoice(next)
   }
-  const onFilters = (next: BrowseFilters, reset?: boolean) => {
+  const onFilters = (next: BrowseFilters, choseHubMarkets?: boolean) => {
     track('browse v2 filters', { ...next })
-    setFilters(next, reset)
+    setFilters(next, choseHubMarkets)
   }
   const onLayout = (next: BrowseLayout) => {
     track('browse v2 layout', { layout: next })
@@ -346,6 +349,12 @@ function BrowseV2Inner() {
               type="search"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              // The same event Classic's search box sends, so the two
+              // layouts' searches can be compared.
+              onBlur={() => {
+                if (input.trim())
+                  track('search', { query: input, location: 'browse-v2' })
+              }}
               placeholder="Search markets, users, topics, and posts"
               className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
             />
@@ -453,7 +462,7 @@ function BrowseV2Inner() {
                     <button
                       type="button"
                       onClick={() =>
-                        onFilters({ ...filters, showHubMarkets: true })
+                        onFilters({ ...filters, showHubMarkets: true }, true)
                       }
                       className="text-primary-700 font-medium"
                     >

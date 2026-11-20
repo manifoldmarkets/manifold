@@ -83,6 +83,20 @@ shared browsers and unidentified automated traffic limit interpretation. A signu
 after token rotation without another browse exposure cannot be attributed. Events
 are per Browse/Home visit or layout change, so monitor volume during rollout.
 
+## Changing New while v2 runs
+
+Changing the New layout while v2 is assigning changes what the treatment arm
+sees. Note the production deploy time and read before and after it separately;
+do not pool them into one v2 result. Assignment itself is unchanged.
+
+One such change made New open on the list on every screen, fold only small
+house sports and race markets (perps stay in the feed), and treat a press of
+the hub-markets chips as a choice even when the tab already showed it. It also
+made New's search box send the same `search` event as Classic's, with
+`location: 'browse-v2'`, so search can be compared between the arms only from
+that deploy on. The same change links the hubs from the sidebar, which Classic
+and New share, so both arms got those links at the same time.
+
 ## Regression checks
 
 ```sh
