@@ -1,6 +1,7 @@
 import { Notification } from 'common/notification'
+import { chunk } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { bulkInsert } from 'shared/supabase/utils'
+import { bulkInsert, bulkInsertQuery } from 'shared/supabase/utils'
 import { broadcast } from 'shared/websockets/server'
 
 export const insertNotificationToSupabase = async (
@@ -40,4 +41,50 @@ export const bulkInsertNotifications = async (
       broadcast(`user-notifications/${notification.userId}`, { notification })
     )
   }
+}
+
+/**
+ * Inserts the notifications a user doesn't already have (by the primary key
+ * (user_id, notification_id)), broadcasts only those, and returns them. The
+ * web client adds every broadcast to its list without de-duplicating, so an
+ * id must never be broadcast twice.
+ */
+export const insertNotificationsIfAbsent = async (
+  notifications: Notification[],
+  pg: SupabaseDirectClient
+) => {
+  const byKey = new Map(
+    notifications.map((n) => [`${n.userId}\u0000${n.id}`, n] as const)
+  )
+  // Insert in key order: two runs inserting the same keys at once (two of a
+  // bulk creator's markets writing the day's digest rows) then wait on each
+  // other's rows in the same order instead of deadlocking.
+  const sorted = [...byKey.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([, n]) => n)
+  const inserted: Notification[] = []
+  for (const batch of chunk(sorted, 25000)) {
+    const query = bulkInsertQuery(
+      'user_notifications',
+      batch.map((n) => ({ user_id: n.userId, notification_id: n.id, data: n })),
+      false
+    )
+    const rows = await pg.manyOrNone<{
+      user_id: string
+      notification_id: string
+    }>(
+      `${query} on conflict (user_id, notification_id) do nothing
+       returning user_id, notification_id`
+    )
+    for (const row of rows) {
+      const notification = byKey.get(
+        `${row.user_id}\u0000${row.notification_id}`
+      )
+      if (notification) inserted.push(notification)
+    }
+  }
+  inserted.forEach((notification) =>
+    broadcast(`user-notifications/${notification.userId}`, { notification })
+  )
+  return inserted
 }
