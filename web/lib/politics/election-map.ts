@@ -5,10 +5,14 @@
 
 import { sortBy, sumBy } from 'lodash'
 
+import { getAnswerProbability } from 'common/calculate'
+import { Contract, isMultiCpmm } from 'common/contract'
+import { shownPercent } from 'web/components/usa-map/election-display'
 import { ELECTORAL_UNITS, EV_TO_WIN, RatingBucket, ratingOf } from './ec-model'
 import { placeIn, placeName, TERRITORIES } from './official-markets'
 import { PrimaryCell, PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
+import { rankedAnswers } from './settlement'
 
 export type MapMode = 'president' | 'senate' | 'governor' | 'house' | 'primary'
 export type PrimaryOffice = 'P' | 'S' | 'G'
@@ -463,14 +467,59 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
   }
 }
 
-// The electoral units most likely to decide 2028, for the map's outlines and
-// the tracker's chips: up to `limit`, each a tipping point in at least
-// `floor` of simulations.
+export type TipChance = { key: string; p: number }
+
+// The tipping-point market's odds by state (postal code), likeliest first:
+// its live prices, or once it resolves, the state it went to. Other, an
+// answer that names no single state, and a cancelled market give nothing.
+// The market resolves a Maine or Nebraska district that tips it to its
+// state, so every key is a state (or DC).
+export function marketTippingPoints(
+  contract: Contract | null | undefined
+): TipChance[] {
+  if (!contract || !isMultiCpmm(contract)) return []
+  if (contract.isResolved && contract.resolution === 'CANCEL') return []
+  const ranked = rankedAnswers(
+    contract,
+    (id) => getAnswerProbability(contract, id),
+    contract.answers.length
+  )
+  const byState = new Map<string, number>()
+  for (const { answer, p } of ranked) {
+    const key = tippingStateOf(answer.text)
+    if (!key || !Number.isFinite(p)) continue
+    byState.set(key, (byState.get(key) ?? 0) + p)
+  }
+  return sortBy(
+    [...byState].map(([key, p]) => ({ key, p })),
+    (t) => -t.p
+  )
+}
+
+const STATE_KEYS = new Set(
+  ELECTORAL_UNITS.filter((u) => u.key === u.state).map((u) => u.key)
+)
+
+// "Pennsylvania", "Washington, D.C." or "PA" as its postal code.
+function tippingStateOf(text: string): string | undefined {
+  const code = text.trim().toUpperCase()
+  if (STATE_KEYS.has(code)) return code
+  const place = placeIn(text)
+  return place && STATE_KEYS.has(place) ? place : undefined
+}
+
+// Where the map draws a tipping point: every state showing at least this
+// chance, however many that is. As the market settles on one state, the
+// rest drop below it and lose their outline.
+export const TIP_HIGHLIGHT_PERCENT = 5
+
+// The states the map outlines and lists as chips: each showing
+// TIP_HIGHLIGHT_PERCENT or more (as rounded for display, so a "5%" chip is
+// always outlined), likeliest first.
 export const tippingPlaces = (
-  tips: { key: string; p: number }[],
-  limit = 5,
-  floor = 0.03
-) => tips.filter((t) => t.p >= floor).slice(0, limit)
+  tips: TipChance[],
+  percent = TIP_HIGHLIGHT_PERCENT
+) => tips.filter((t) => shownPercent(t.p) >= percent)
 
 // ---------------------------------------------------------------------------
 // A place's card

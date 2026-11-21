@@ -345,6 +345,7 @@ export function Elections2028Page(props: Elections2028PageProps) {
           defaultMode={phase === 'primaries' ? 'primary' : 'president'}
           model={model}
           partyContract={partyContract}
+          tippingContract={national2028.tippingPoint}
         />
       </SectionInView>
     ),

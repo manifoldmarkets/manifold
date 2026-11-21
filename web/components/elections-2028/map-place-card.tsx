@@ -158,6 +158,18 @@ function OtherRaces(props: { st: string; view: MapView; races: BoardRace[] }) {
   )
 }
 
+// A state's chance in the tipping-point market (from <1%), or, once it has
+// resolved there, that it was the tipping point.
+function TippingLine(props: { p: number | undefined }) {
+  const { p } = props
+  if (p === undefined || !Number.isFinite(p) || p < 0.005) return null
+  return (
+    <span className={own.tipping}>
+      {p >= 1 ? 'The tipping point' : `Tipping point: ${formatOdds(p)}`}
+    </span>
+  )
+}
+
 // The few lines a hovered place shows next to the pointer.
 export function HoverFacts(props: {
   place: string
@@ -184,11 +196,7 @@ export function HoverFacts(props: {
           No {OFFICE_WORD[view.mode]} race in 2028
         </span>
       )}
-      {tipping !== undefined && tipping >= 0.005 && (
-        <span className={own.tipping}>
-          Tipping point in {formatOdds(tipping)} of simulations
-        </span>
-      )}
+      <TippingLine p={tipping} />
       {!place.includes('-') && <OtherRaces st={st} view={view} races={races} />}
     </>
   )
@@ -231,11 +239,7 @@ export function PinnedPlace(props: {
             <span className={own.focusLabel}>{focus.label}</span>
             <SummaryText summary={focus.summary} />
           </div>
-          {tipping !== undefined && tipping >= 0.005 && (
-            <span className={own.tipping}>
-              Tipping point in {formatOdds(tipping)} of simulations
-            </span>
-          )}
+          <TippingLine p={tipping} />
           <RaceMarket slug={focus.slug} creator={focus.creator} />
         </div>
       ) : (

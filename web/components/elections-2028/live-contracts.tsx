@@ -32,7 +32,9 @@ export function LiveContracts(props: {
   )
 }
 
-function Subscribe(props: {
+// One market's live copy, reported through `onLive` (renders nothing), for a
+// component that needs a live market in its own state.
+export function Subscribe(props: {
   contract: Contract
   onLive: (c: Contract) => void
 }) {

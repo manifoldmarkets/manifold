@@ -1,6 +1,7 @@
 import { SearchIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { sortBy, uniq } from 'lodash'
+import Link from 'next/link'
 import {
   CSSProperties,
   useEffect,
@@ -11,7 +12,7 @@ import {
 } from 'react'
 
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
 import {
   Atlas,
   CALLOUTS,
@@ -61,11 +62,14 @@ import {
   mapFills,
   MAP_VIEW_EVENT,
   mapTracker,
+  marketTippingPoints,
   matchesPlace,
   PlacedMarket,
   placeTitle,
   SENATE_NOT_UP_2028,
   statePanel,
+  TIP_HIGHLIGHT_PERCENT,
+  TipChance,
   tippingPlaces,
 } from 'web/lib/politics/election-map'
 import type { ElectoralModel } from 'web/lib/politics/elections-2028'
@@ -75,6 +79,7 @@ import { BoardRace } from 'web/lib/politics/race-board'
 import { settledPartyProbs } from 'web/lib/politics/settlement'
 import { track } from 'web/lib/service/analytics'
 import own from './election-map.module.css'
+import { Subscribe } from './live-contracts'
 import { fillColor, HoverFacts, PinnedPlace } from './map-place-card'
 import { MapTracker, segmentColor } from './map-tracker'
 
@@ -84,8 +89,9 @@ import { MapTracker, segmentColor } from './map-tracker'
 // Nebraska by district, with a statewide badge), Senate, Governor, House
 // and the primaries. Above the map, a tracker counts every electoral vote
 // or seat by how sure our markets are; the President view outlines the
-// likeliest tipping points. A clicked place lists every market the page has
-// for its state, each tradable in place.
+// likeliest tipping points, live from the tipping-point market. A clicked
+// place lists every market the page has for its state, each tradable in
+// place.
 
 const MODES: { mode: MapMode; label: string }[] = [
   { mode: 'president', label: 'President' },
@@ -186,8 +192,11 @@ export function ElectionMap(props: {
   defaultMode: MapMode
   model?: ElectoralModel | null
   partyContract?: Contract | null
+  // "Which state will be the tipping point": the President view's outlined
+  // states, chips and card lines, kept live as people bet.
+  tippingContract?: Contract | null
 }) {
-  const { races, primaries, model } = props
+  const { races, primaries, model, tippingContract } = props
   const modes = useMemo(
     () => availableModes(races, primaries),
     [races, primaries]
@@ -245,15 +254,20 @@ export function ElectionMap(props: {
     () => mapTracker(view, races, primaries),
     [view, races, primaries]
   )
-  const tips = useMemo(
-    () => (model ? tippingPlaces(model.tippingPoints) : []),
-    [model]
-  )
+  // The tipping-point market, live: the page's copy until the first update.
+  const [tipUpdate, setTipUpdate] = useState<Contract>()
+  const tipMarket =
+    tipUpdate && tipUpdate.id === tippingContract?.id
+      ? tipUpdate
+      : tippingContract ?? undefined
+  const tipChances = useMemo(() => marketTippingPoints(tipMarket), [tipMarket])
+  const tips = useMemo(() => tippingPlaces(tipChances), [tipChances])
   const tipChance = useMemo(
-    () =>
-      Object.fromEntries((model?.tippingPoints ?? []).map((t) => [t.key, t.p])),
-    [model]
+    () => Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
+    [tipChances]
   )
+  const tipSettled =
+    !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
   const more = useMemo<PlacedMarket[]>(
     () =>
       props.offYear.map((c) => ({
@@ -270,6 +284,16 @@ export function ElectionMap(props: {
   const shapeById = useMemo(
     () => new Map(shapes.map((s) => [s.id, s])),
     [shapes]
+  )
+  // A tipping state's shapes: Maine and Nebraska are drawn as districts plus
+  // a statewide badge, so the outline takes all of them.
+  const tipOutlines = useMemo(
+    () =>
+      tips.flatMap((t) => [
+        t.key,
+        ...shapes.filter((s) => s.id.startsWith(`${t.key}-`)).map((s) => s.id),
+      ]),
+    [tips, shapes]
   )
   // Places the map can't draw: territories and Democrats Abroad in the
   // primaries, DC in the tile grid (and as a chip where it gets no label).
@@ -738,12 +762,17 @@ export function ElectionMap(props: {
           </div>
         </header>
 
+        {tippingContract && (
+          <Subscribe contract={tippingContract} onLive={setTipUpdate} />
+        )}
         {mode === 'primary' && <PrimaryControls view={view} update={update} />}
-        {president && model && (
+        {president && (model || tips.length > 0) && (
           <PresidentNotes
-            model={model}
+            model={model ?? null}
             partyContract={props.partyContract ?? null}
             tips={tips}
+            tipMarket={tipMarket}
+            tipSettled={tipSettled}
             onPreview={(key) => setPreview(key ? `tip:${key}` : undefined)}
             onPick={(key, element) => {
               track('election map tipping point', { place: key })
@@ -873,11 +902,7 @@ export function ElectionMap(props: {
                       />
                     ))}
                 <g className={styles.overlays} aria-hidden>
-                  {president &&
-                    overlay(
-                      tips.map((t) => t.key),
-                      own.tipOutline
-                    )}
+                  {president && overlay(tipOutlines, own.tipOutline)}
                   {overlay(narrowed ? listed : [], styles.matchOutline)}
                   {overlay(previewPlaces, styles.previewOutline)}
                   {overlay([selected], styles.selectedHalo)}
@@ -1092,7 +1117,13 @@ export function ElectionMap(props: {
         <MapLegend
           view={view}
           tracker={tracker}
-          tipping={president && tips.length > 0}
+          tipping={
+            !president || tips.length === 0
+              ? undefined
+              : tipSettled
+              ? 'Tipping point'
+              : `Tipping point: ${TIP_HIGHLIGHT_PERCENT}% or more`
+          }
           fills={fills}
         />
         <p className={styles.hint}>
@@ -1261,40 +1292,27 @@ function PrimaryControls(props: {
 }
 
 // Under the President tracker: the electoral college model (simulated from
-// the state markets) next to the national market, and the places most
-// likely to tip the election, outlined on the map.
+// the state markets) next to the national market, and the states the
+// tipping-point market gives TIP_HIGHLIGHT_PERCENT or more, outlined on the
+// map.
 function PresidentNotes(props: {
-  model: ElectoralModel
+  model: ElectoralModel | null
   partyContract: Contract | null
-  tips: { key: string; p: number }[]
+  tips: TipChance[]
+  tipMarket: Contract | undefined
+  tipSettled: boolean
   onPreview: (key: string | undefined) => void
   onPick: (key: string, element: HTMLElement) => void
 }) {
-  const { model, tips, onPreview, onPick } = props
-  const demEv = Math.round(model.meanDemEv)
+  const { model, tips, tipMarket, tipSettled, onPreview, onPick } = props
   return (
     <div className={own.notes}>
-      <p className={own.model}>
-        <span className={own.modelLabel}>Electoral college model</span>
-        <span>
-          <b data-tone="dem">Democrats {formatOdds(model.pDem)}</b>
-          {' · '}
-          <b data-tone="rep">Republicans {formatOdds(model.pRep)}</b>
-          {model.pTie >= 0.005 && <> · 269–269 tie {formatOdds(model.pTie)}</>}
-        </span>
-        <span className={own.muted}>
-          Expected electoral votes: D {demEv}, R {538 - demEv}.
-          {props.partyContract && (
-            <NationalMarket
-              contract={props.partyContract}
-              modelDem={model.pDem}
-            />
-          )}
-        </span>
-      </p>
+      {model && <ModelLine model={model} partyContract={props.partyContract} />}
       {tips.length > 0 && (
         <div className={own.tips}>
-          <span className={own.modelLabel}>Tipping points</span>
+          <span className={own.modelLabel}>
+            {tipSettled ? 'Tipping point' : 'Tipping points'}
+          </span>
           {tips.map((t) => (
             <button
               key={t.key}
@@ -1308,16 +1326,50 @@ function PresidentNotes(props: {
               onBlur={() => onPreview(undefined)}
             >
               {t.key}
-              <span>{formatOdds(t.p)}</span>
+              {!tipSettled && <span>{formatOdds(t.p)}</span>}
             </button>
           ))}
-          <span className={own.muted}>
-            How often each puts the winner over 270, in{' '}
-            {model.sims.toLocaleString('en-US')} simulations.
-          </span>
+          {tipMarket && (
+            <span className={own.muted}>
+              {tipSettled
+                ? 'The state that gave the winner their 270th electoral vote. '
+                : `Every state traders give ${TIP_HIGHLIGHT_PERCENT}% or more to deliver the winner's 270th electoral vote. `}
+              <Link href={contractPath(tipMarket)} className={own.marketLink}>
+                Market →
+              </Link>
+            </span>
+          )}
         </div>
       )}
     </div>
+  )
+}
+
+function ModelLine(props: {
+  model: ElectoralModel
+  partyContract: Contract | null
+}) {
+  const { model } = props
+  const demEv = Math.round(model.meanDemEv)
+  return (
+    <p className={own.model}>
+      <span className={own.modelLabel}>Electoral college model</span>
+      <span>
+        <b data-tone="dem">Democrats {formatOdds(model.pDem)}</b>
+        {' · '}
+        <b data-tone="rep">Republicans {formatOdds(model.pRep)}</b>
+        {model.pTie >= 0.005 && <> · 269–269 tie {formatOdds(model.pTie)}</>}
+      </span>
+      <span className={own.muted}>
+        Expected electoral votes: D {demEv}, R {538 - demEv}.
+        {props.partyContract && (
+          <NationalMarket
+            contract={props.partyContract}
+            modelDem={model.pDem}
+          />
+        )}
+      </span>
+    </p>
   )
 }
 
@@ -1339,7 +1391,8 @@ function NationalMarket(props: { contract: Contract; modelDem: number }) {
 function MapLegend(props: {
   view: MapView
   tracker: ReturnType<typeof mapTracker>
-  tipping: boolean
+  // The outline's legend line, when the map draws tipping points.
+  tipping: string | undefined
   fills: Record<string, Fill>
 }) {
   const { view, tracker, tipping, fills } = props
@@ -1387,7 +1440,7 @@ function MapLegend(props: {
         {tipping && (
           <span>
             <i className={own.tipSwatch} />
-            Likeliest tipping points
+            {tipping}
           </span>
         )}
         {view.mode === 'president' && (

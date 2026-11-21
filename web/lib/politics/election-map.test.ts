@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
+import { Contract } from 'common/contract'
 import {
   availableModes,
   describeFill,
@@ -12,6 +13,7 @@ import {
   mapFills,
   NO_LEADER_COLOR,
   mapTracker,
+  marketTippingPoints,
   matchesPlace,
   OTHER_LEADER_COLOR,
   placeTitle,
@@ -240,20 +242,118 @@ test('primary trackers count contests by leader or by how sure', () => {
   )
 })
 
-test('tipping points: the likeliest few, above a floor', () => {
+test('tipping points: every state showing 5% or more, with no cap', () => {
   const tips = [
-    { key: 'PA', p: 0.22 },
-    { key: 'MI', p: 0.15 },
-    { key: 'WI', p: 0.1 },
-    { key: 'NE-2', p: 0.02 },
+    { key: 'PA', p: 0.26 },
+    { key: 'GA', p: 0.13 },
+    { key: 'NC', p: 0.12 },
+    { key: 'WI', p: 0.113 },
+    { key: 'MI', p: 0.113 },
+    { key: 'NV', p: 0.062 },
+    { key: 'AZ', p: 0.056 },
+    { key: 'OH', p: 0.0451 }, // shows "5%", so it's outlined
+    { key: 'TX', p: 0.04 },
+    { key: 'FL', p: 0.014 },
   ]
   assert.deepEqual(
     tippingPlaces(tips).map((t) => t.key),
-    ['PA', 'MI', 'WI']
+    ['PA', 'GA', 'NC', 'WI', 'MI', 'NV', 'AZ', 'OH']
+  )
+  // Election night: one state runs away with it, the rest lose their outline.
+  assert.deepEqual(
+    tippingPlaces([
+      { key: 'PA', p: 0.93 },
+      { key: 'MI', p: 0.04 },
+      { key: 'WI', p: 0.03 },
+    ]).map((t) => t.key),
+    ['PA']
   )
   assert.deepEqual(
-    tippingPlaces(tips, 2).map((t) => t.key),
-    ['PA', 'MI']
+    tippingPlaces(tips, 12).map((t) => t.key),
+    ['PA', 'GA', 'NC']
+  )
+})
+
+test('tipping points from the tipping-point market', () => {
+  const answer = (id: string, text: string, p: number) => ({
+    id,
+    text,
+    poolYes: (1 - p) * 100,
+    poolNo: p * 100,
+    prob: p,
+  })
+  const market = (over: object) =>
+    ({
+      id: 'tip',
+      slug: 'which-state-will-be-the-tipping-point',
+      outcomeType: 'MULTIPLE_CHOICE',
+      mechanism: 'cpmm-multi-1',
+      shouldAnswersSumToOne: true,
+      answers: [
+        answer('pa', 'Pennsylvania', 0.3),
+        answer('ga', 'Georgia', 0.2),
+        answer('wv', 'West Virginia', 0.05),
+        answer('va', 'Virginia', 0.1),
+        answer('dc', 'Washington, D.C.', 0.01),
+        answer('wa', 'Washington', 0.04),
+        answer('nc', 'NC', 0.12),
+        answer('me2', "Maine's 2nd District", 0.03),
+        answer('pr', 'Puerto Rico', 0.02),
+        answer('xx', 'Atlantis', 0.03),
+        answer('o', 'Other', 0.1),
+      ],
+      ...over,
+    } as unknown as Contract)
+  const near = (x: number, y: number) =>
+    assert.ok(Math.abs(x - y) < 1e-9, `${x} ≈ ${y}`)
+
+  // Open: each state by its postal code, likeliest first. Other, a
+  // territory and a name that's no state are left out; a district reads as
+  // its state.
+  const open = marketTippingPoints(market({}))
+  assert.deepEqual(
+    open.map((t) => t.key),
+    ['PA', 'GA', 'NC', 'VA', 'WV', 'WA', 'ME', 'DC']
+  )
+  near(open[0].p, 0.3)
+  near(open.find((t) => t.key === 'WV')!.p, 0.05)
+  near(open.find((t) => t.key === 'DC')!.p, 0.01)
+
+  // Two answers for one state add up.
+  const twice = marketTippingPoints(
+    market({
+      answers: [
+        answer('me', 'Maine', 0.04),
+        answer('me2', "Maine's 2nd District", 0.03),
+      ],
+    })
+  )
+  assert.equal(twice.length, 1)
+  near(twice[0].p, 0.07)
+
+  // Resolved to Georgia: Georgia alone, at 100%, whatever the pools say.
+  assert.deepEqual(
+    marketTippingPoints(market({ isResolved: true, resolution: 'ga' })),
+    [{ key: 'GA', p: 1 }]
+  )
+  // Resolved to Other: no state.
+  assert.deepEqual(
+    marketTippingPoints(market({ isResolved: true, resolution: 'o' })),
+    []
+  )
+  // N/A (nobody reached 270): nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ isResolved: true, resolution: 'CANCEL' })),
+    []
+  )
+  // No market, or not a multiple choice one.
+  assert.deepEqual(marketTippingPoints(null), [])
+  assert.deepEqual(
+    marketTippingPoints({
+      outcomeType: 'BINARY',
+      mechanism: 'cpmm-1',
+    } as unknown as Contract),
+    []
   )
 })
 

@@ -158,7 +158,6 @@ export type ElectoralModel = {
   pRep: number
   pTie: number
   meanDemEv: number
-  tippingPoints: { key: string; p: number }[]
   units: UnitOdds[]
   sims: number
   rho: number
@@ -815,7 +814,6 @@ function getElectoralModel(units: UnitOdds[]): ElectoralModel {
     pRep: result.pRep,
     pTie: result.pTie,
     meanDemEv: result.meanDemEv,
-    tippingPoints: result.tippingPoints.slice(0, 8),
     units,
     sims: result.sims,
     rho: result.rho,
