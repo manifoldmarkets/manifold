@@ -39,8 +39,10 @@ create table if not exists
     ),
     endpoint_template text not null check (
       length(endpoint_template) between 1 and 128
-      and endpoint_template ~ '[^[:space:]]'
-      and endpoint_template !~ '[?[:cntrl:]]'
+      -- ECMAScript trim whitespace (ASCII controls are already disallowed below).
+      and endpoint_template collate "C" ~ U&'[^ \00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]'
+      -- A literal question mark or a Unicode C0/C1 control is never a template.
+      and endpoint_template collate "C" !~ U&'[?\0001-\001F\007F-\009F]'
     ),
     process_role text not null check (
       process_role in ('scheduler', 'api', 'dev', 'recorder', 'codex')

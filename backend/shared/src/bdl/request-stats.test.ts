@@ -295,3 +295,31 @@ it.each([
     expect(sink.none).not.toHaveBeenCalled()
   }
 )
+
+it.each([0x00a0, 0x2007, 0x202f, 0xfeff])(
+  'treats Unicode-only blank templates identically in the writer and SQL (code point %i)',
+  async (codePoint) => {
+    const spaces = ' ' + String.fromCodePoint(codePoint) + ' '
+    const key = { provider: 'odds' as const, league: 'nba', template: spaces }
+    const observation = {
+      status: 200,
+      at: '2026-06-01T12:00:00Z',
+      rateLimit: { limit: null, remaining: null },
+    }
+    await expect(
+      recordSportsProviderResponse(pg, key, 'dev', observation)
+    ).rejects.toThrow('Invalid sports request statistics key')
+    await expect(
+      db.query(
+        "insert into sports_provider_request_stats (provider,league_key,endpoint_template,process_role,other_count,last_status,last_request_at) values ('odds','nba',$1,'dev',1,500,now())",
+        [spaces]
+      )
+    ).rejects.toMatchObject({ code: '23514' })
+    await recordSportsProviderResponse(
+      pg,
+      { ...key, template: spaces + 'results' },
+      'dev',
+      observation
+    )
+  }
+)
