@@ -51,6 +51,11 @@ import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { api, searchGroups } from 'web/lib/api/api'
+import {
+  discoveryParams,
+  DiscoverySearchSession,
+  searchDiscoveryMarkets,
+} from 'web/lib/api/discovery-markets'
 import { track } from 'web/lib/service/analytics'
 import { searchUsers } from 'web/lib/supabase/users'
 import { Col } from './layout/col'
@@ -250,6 +255,7 @@ type SearchProps = {
   persistPrefix: string
   // Analytics identity is stable even when browser storage is account-scoped.
   discoverySourceComponent?: 'search'
+  sportsDiscovery?: 'home' | 'new'
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
@@ -427,6 +433,7 @@ export function Search(props: SearchProps) {
     discoveryTracking,
   } = useSearchResults({
     persistPrefix,
+    sportsDiscovery: props.sportsDiscovery,
     discoverySourceComponent,
     searchParams: searchParams,
     includeUsersAndTopics: showSearchTypes,
@@ -1152,6 +1159,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
 export const useSearchResults = (props: {
   persistPrefix: string
   discoverySourceComponent?: 'search'
+  sportsDiscovery?: 'home' | 'new'
   searchParams: SearchParams
   includeUsersAndTopics: boolean
   isReady: boolean
@@ -1177,9 +1185,13 @@ export const useSearchResults = (props: {
   // volume for embedded/topic search instances that the analysis excludes.
   const trackDiscoveryExperiment = discoverySourceComponent !== undefined
 
+  const resultPrefix = props.sportsDiscovery
+    ? persistPrefix + '-' + props.sportsDiscovery
+    : persistPrefix
+  const discoverySession = useRef<DiscoverySearchSession>({})
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
-    `${persistPrefix}-supabase-contract-search`
+    `${resultPrefix}-supabase-contract-search`
   )
   const [loading, setLoading] = useState(false)
   const [failedSearch, setFailedSearch] = useState<{
@@ -1189,18 +1201,20 @@ export const useSearchResults = (props: {
   const [lastSearchParams, setLastSearchParams] =
     usePersistentInMemoryState<SearchParams | null>(
       null,
-      `${persistPrefix}-last-search-params`
+      `${resultPrefix}-last-search-params`
     )
 
   const requestId = useRef(0)
   const paramsGeneration = useRef(0)
   const failedParamsGeneration = useRef<number>()
   const freshRequestAbortController = useRef<AbortController>()
+  const discoveryScan = useRef<AbortController>()
   const initialQuery = useRef<string>()
   const completedInThisMount = useRef(false)
 
   useEffect(
     () => () => {
+      discoveryScan.current?.abort()
       freshRequestAbortController.current?.abort()
     },
     []
@@ -1311,6 +1325,10 @@ export const useSearchResults = (props: {
         // replace the controller after we know this invocation will request.
         if (freshQuery) freshRequestAbortController.current?.abort()
         const abortController = new AbortController()
+        if (props.sportsDiscovery) {
+          discoveryScan.current?.abort()
+          discoveryScan.current = abortController
+        }
         if (freshQuery) {
           freshRequestAbortController.current = abortController
           failedParamsGeneration.current = undefined
@@ -1418,7 +1436,9 @@ export const useSearchResults = (props: {
               isFresh: !!freshQuery,
             })
           }
-          const marketApiParams: APIParams<'search-markets-full'> = {
+          const marketApiParams: APIParams<'search-markets-full'> & {
+            limit: number
+          } = {
             term: query,
             filter,
             sort,
@@ -1466,11 +1486,23 @@ export const useSearchResults = (props: {
                 ? seenMarketCutoffTime
                 : undefined,
           }
+          if (freshQuery) discoverySession.current = {}
+          const session = discoverySession.current
+          const readMarkets = (params: typeof marketApiParams) => {
+            const options = { signal: abortController.signal }
+            if (endpoint === 'recent-markets' || !props.sportsDiscovery)
+              return api(endpoint, params, options)
+            const previous = freshQuery ? [] : state.contracts ?? []
+            return searchDiscoveryMarkets(
+              discoveryParams(params, props.sportsDiscovery, previous),
+              previous,
+              session,
+              options
+            )
+          }
           const getMarkets = async () => {
             try {
-              return await api(endpoint, marketApiParams, {
-                signal: abortController.signal,
-              })
+              return await readMarkets(marketApiParams)
             } catch (error) {
               const retryMode = getSearchDiscoveryRetryMode({
                 freshQuery: !!freshQuery,
@@ -1493,17 +1525,13 @@ export const useSearchResults = (props: {
               } else {
                 usedCompatibilityFallback = true
               }
-              const contracts = await api(
-                endpoint,
-                {
-                  ...marketApiParams,
-                  ...getSearchDiscoveryRetryOptions(retryMode, {
-                    enableSemanticSearch: marketApiParams.enableSemanticSearch,
-                    discoveryVariant: marketApiParams.discoveryVariant,
-                  }),
-                },
-                { signal: abortController.signal }
-              )
+              const contracts = await readMarkets({
+                ...marketApiParams,
+                ...getSearchDiscoveryRetryOptions(retryMode, {
+                  enableSemanticSearch: marketApiParams.enableSemanticSearch,
+                  discoveryVariant: marketApiParams.discoveryVariant,
+                }),
+              })
               // The anchor-only retry still came from a current treatment
               // worker, including its explicit match markers and ranking.
               if (anchorFallback) return contracts
@@ -1784,6 +1812,7 @@ export const useSearchResults = (props: {
     // Pagination retries also set loading, but have no fresh controller.
     // Their stale completion cannot clear the busy state after invalidation.
     setLoading(false)
+    discoveryScan.current?.abort()
     const controller = freshRequestAbortController.current
     if (!controller) return
 

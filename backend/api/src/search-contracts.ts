@@ -1,7 +1,10 @@
 import {
   type FullMarketSearchResult,
   getMarketSearchRoute,
+  MAX_MARKET_SEARCH_OFFSET,
+  parseSportsDiscoveryCursor,
   searchProps,
+  shouldExcludeOfficialSports,
 } from 'common/api/market-search-types'
 import { toLiteMarket } from 'common/api/market-types'
 import { Contract } from 'common/contract'
@@ -83,20 +86,37 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
     requestedVariant: props.discoveryVariant,
   })
 
-  if (!props.enableSemanticSearch) {
-    return await search(props, auth?.uid, {
-      markSearchMatches: true,
-      allowSemanticFallback: false,
-      discoveryVariant,
-    })
-  }
-
-  return await search(props, auth?.uid, {
-    markSearchMatches: true,
-    allowSemanticFallback: true,
-    semanticCallerKey: getSemanticCallerKey(auth?.uid, req),
+  const excludeOfficialSports = shouldExcludeOfficialSports(props)
+  const cursor =
+    excludeOfficialSports &&
+    props.sort === 'newest' &&
+    props.sportsDiscoveryCursor
+      ? parseSportsDiscoveryCursor(props.sportsDiscoveryCursor)
+      : null
+  const query = cursor ? { ...props, ...cursor } : props
+  const fullSearchOptions = {
+    markSearchMatches: true as const,
     discoveryVariant,
-  })
+    excludeOfficialSports,
+  }
+  const results: FullMarketSearchResult[] = await search(
+    query,
+    auth?.uid,
+    props.enableSemanticSearch
+      ? {
+          ...fullSearchOptions,
+          allowSemanticFallback: true,
+          semanticCallerKey: getSemanticCallerKey(auth?.uid, req),
+        }
+      : { ...fullSearchOptions, allowSemanticFallback: false }
+  )
+  if (excludeOfficialSports && results.length) {
+    // A page from an older worker can contain no sports games by chance, yet
+    // use a different order for ties. Mark the emitted boundary after the merge.
+    const last = results.length - 1
+    results[last] = { ...results[last], sportsDiscoveryFiltered: true }
+  }
+  return results
 }
 
 export const getRecentMarkets: APIHandler<'recent-markets'> = async (
@@ -134,15 +154,16 @@ type SearchOptions =
     }
 
 const search = async (
-  requestProps: z.infer<typeof searchProps>,
+  requestProps: z.infer<typeof searchProps> & { beforeId?: string },
   userId: string | undefined,
-  options: SearchOptions
+  options: SearchOptions & { excludeOfficialSports?: boolean }
 ) => {
   // Control deliberately ignores a supplied seen anchor. This leaves the
   // reliability/privacy fixes common to both arms while reproducing the old
   // product behavior for ranking, repetition, and semantic fallback.
   const props = {
     ...requestProps,
+    excludeOfficialSports: options.excludeOfficialSports,
     discoveryVariant: options.discoveryVariant,
     seenMarketCutoffTime:
       options.discoveryVariant === 'treatment'
@@ -167,10 +188,10 @@ const search = async (
     return []
   }
 
-  if (offset > 1000) {
+  if (offset > MAX_MARKET_SEARCH_OFFSET) {
     throw new APIError(
       400,
-      'offset must be <= 1000. Use sort=newest with the beforeTime parameter to page through contracts to see our entire market list.'
+      `offset must be <= ${MAX_MARKET_SEARCH_OFFSET}. Use sort=newest with the beforeTime parameter to page through contracts to see our entire market list.`
     )
   }
 

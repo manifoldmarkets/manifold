@@ -118,12 +118,14 @@ function LegacyBrowseContent() {
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
-        key={browseDefault.persistPrefix}
+        key={browseDefault.persistPrefix + router.pathname}
+        sportsDiscovery={router.pathname === '/home' ? 'home' : 'new'}
         showTopicsFilterPills
         showHotTopics
         persistPrefix={browseDefault.persistPrefix}
         discoverySourceComponent="search"
         onBrowseModeChange={browseDefault.rememberMode}
+        // eslint-disable-next-line jsx-a11y/no-autofocus -- Keep desktop Browse keyboard search ready on a blank visit; mobile and linked queries skip focus.
         autoFocus={autoFocus}
         additionalFilter={{
           excludeContractIds: privateUser?.blockedContractIds,

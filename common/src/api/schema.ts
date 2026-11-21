@@ -85,6 +85,7 @@ import { PrivateUser, User, UserBan } from '../user'
 import {
   FIRESTORE_DOC_REF_ID_REGEX,
   type FullMarketSearchResult,
+  fullSearchProps,
   searchProps,
 } from './market-search-types'
 import {
@@ -1750,7 +1751,7 @@ export const API = (_apiTypeCheck = {
     preferAuth: true,
     cache: 'private, no-store',
     returns: [] as FullMarketSearchResult[],
-    props: searchProps,
+    props: fullSearchProps,
   },
   'recent-markets': {
     method: 'GET',

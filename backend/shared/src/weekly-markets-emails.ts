@@ -45,7 +45,7 @@ export async function sendWeeklyMarketsEmails() {
             privateUser
           )
           // TODO: bulkify this
-          await sendInterestingMarketsEmail(
+          const sent = await sendInterestingMarketsEmail(
             privateUser.name,
             privateUser,
             contractsToSend
@@ -53,7 +53,7 @@ export async function sendWeeklyMarketsEmails() {
           if (userIdsToAverageTopicConversionScores[privateUser.id]) {
             delete userIdsToAverageTopicConversionScores[privateUser.id]
           }
-          userIdsSentEmails.push(privateUser.id)
+          if (sent) userIdsSentEmails.push(privateUser.id)
         })
       )
       const failed = results.filter((r) => r.status === 'rejected')
@@ -97,6 +97,7 @@ export async function getForYouMarkets(
     offset: 0,
     sort: 'score',
     isPrizeMarket: false,
+    excludeOfficialSports: true,
     privateUser,
     token: 'ALL',
     threshold: 200,
