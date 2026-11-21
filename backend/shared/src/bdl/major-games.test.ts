@@ -43,12 +43,12 @@ const schedules = {
     eligible: true,
   },
   mlb: {
-    id: 402,
-    slateDate: '2026-05-14',
-    status: 'scheduled',
-    home: { id: 41, name: 'Lake City Cranes' },
-    away: { id: 42, name: 'Northport Oaks' },
-    homeScore: 0,
+    id: 5059601,
+    slateDate: '2026-08-13',
+    status: 'final',
+    home: { id: 13, name: 'Los Angeles Angels' },
+    away: { id: 28, name: 'Texas Rangers' },
+    homeScore: 7,
     awayScore: 0,
     postseason: false,
     eligible: true,
@@ -65,14 +65,11 @@ const schedules = {
     eligible: true,
   },
 } as const
-const recordedSchedules: MajorLeague[] = ['nba', 'nhl', 'wnba', 'nfl']
 const recordedOdds: MajorLeague[] = ['nba', 'nhl', 'nfl']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
     kind === 'games'
-      ? recordedSchedules.includes(league)
-        ? 'games__recorded-major-slate.json'
-        : 'games__spec-major-slate.json'
+      ? 'games__recorded-major-slate.json'
       : recordedOdds.includes(league)
       ? 'odds__recorded-synthetic-moneyline.json'
       : 'odds__spec-major-moneyline.json'
@@ -262,19 +259,33 @@ it('retains unknown lifecycle, excludes spring training, exhibitions and unknown
   ])
 })
 
-it('retains the suspended first game and the second game of a doubleheader', async () => {
-  const provider = localClient((url) =>
-    url.pathname.endsWith('/odds')
-      ? fixture('mlb', 'odds')
-      : fixture('mlb', 'games')
+it('numbers a synthetic suspended doubleheader by kickoff and holds tied starts', async () => {
+  const source = fixture('mlb', 'games').data[0]
+  const first = {
+    ...source,
+    id: 401,
+    date: '2026-05-14T18:10:00Z',
+    status_state: 'suspended',
+    period: 6,
+    home_team_data: { runs: 4 },
+    away_team_data: { runs: 2 },
+  }
+  const second = {
+    ...source,
+    id: 402,
+    date: '2026-05-14T23:10:00Z',
+    status_state: 'scheduled',
+    period: 0,
+  }
+  const client = localClient((url) =>
+    url.pathname.endsWith('/odds') ? { data: [] } : { data: [second, first] }
   ).client
-  const games = await fetchMajorGames(
-    provider,
-    'mlb',
-    '2026-05-14',
-    '2026-05-14'
-  )
-  expect(games[0].gameNumber).toBe(2)
+  const games = await fetchMajorGames(client, 'mlb', '2026-05-14', '2026-05-14')
+  expect(games[0]).toMatchObject({
+    id: 402,
+    gameNumber: 2,
+    status: 'scheduled',
+  })
   expect(games[1]).toMatchObject({
     id: 401,
     gameNumber: 1,
@@ -283,16 +294,12 @@ it('retains the suspended first game and the second game of a doubleheader', asy
     homeScore: 4,
     awayScore: 2,
   })
-  expect((await fetchMajorOdds(provider, 'mlb', games)).get(401)).toEqual([])
-})
-
-it('leaves tied start times unnumbered and ineligible in MLB', async () => {
-  const [row, second] = fixture('mlb', 'games').data
-  const { client } = localClient(() => ({
-    data: [row, { ...second, date: row.date }],
-  }))
-  const games = await fetchMajorGames(client, 'mlb', '2026-05-14', '2026-05-14')
-  expect(games.map((g) => [g.eligible, g.gameNumber])).toEqual([
+  expect((await fetchMajorOdds(client, 'mlb', games)).get(401)).toEqual([])
+  const tied = localClient(() => ({
+    data: [first, { ...second, date: first.date }],
+  })).client
+  const unknown = await fetchMajorGames(tied, 'mlb', '2026-05-14', '2026-05-14')
+  expect(unknown.map((g) => [g.eligible, g.gameNumber])).toEqual([
     [false, undefined],
     [false, undefined],
   ])
