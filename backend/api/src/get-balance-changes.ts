@@ -17,14 +17,18 @@ import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
 import { toPublicTxn } from 'common/public-txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { isMultiCpmm } from 'common/contract'
+import { isMultiCpmm, MultiContract } from 'common/contract'
 import { getContractsDirect } from 'shared/supabase/contracts'
+
+const MAX_ARRAY_LENGTH = 2 ** 32 - 1
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { userId, before, after, limit, offset, changeType } = props
+  const { userId, before, after, limit, offset } = props
+  // An empty changeType has always meant no filter.
+  const changeType = props.changeType || undefined
 
   const isBetType =
     changeType !== undefined &&
@@ -38,8 +42,10 @@ export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   // source needs more than its own newest `offset + limit`. Bounding the txn,
   // liquidity and perp reads keeps one request for a large account (the house
   // account has over a million txns) from loading its whole history.
+  // No array is longer than MAX_ARRAY_LENGTH, so a larger offset is always an
+  // empty page; checking first also keeps the SQL limit a valid bigint.
+  if (!(offset < MAX_ARRAY_LENGTH)) return []
   const maxPerSource = Math.ceil(offset + limit)
-  if (!Number.isFinite(maxPerSource)) return []
 
   const [betBalanceChanges, txnBalanceChanges, liquidityChanges, perpChanges] =
     await Promise.all([
@@ -149,7 +155,7 @@ const getPerpBalanceChanges = async (
        and e.event_type = 'liquidation'
        and ($1 is null or e.ts < millis_to_ts($1))
        and e.ts >= millis_to_ts($2)
-     order by e.ts desc
+     order by e.ts desc, e.id desc
      limit $4`,
     [before ?? null, after, userId, maxRows],
     (r): PerpBalanceChange => {
@@ -192,32 +198,59 @@ const getTxnBalanceChanges = async (
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
 
-  // The user's newest maxRows txns. Each side of the transfer reads its own
-  // index in time order (txns_to_created_time, txns_from_created_time) and
-  // stops at maxRows; the from side skips self-transfers, so each txn appears
-  // once, as it did with `to_id = $3 or from_id = $3`.
+  // The user's newest maxRows txns, plus the rest of the oldest millisecond
+  // among them, oldest first. The log sorts by millisecond and keeps a
+  // millisecond's txns oldest first, so this holds every txn a page of
+  // maxRows can show, in the order it shows them; `id` breaks exact ties.
+  // Each side of the transfer reads its own index in time order
+  // (txns_to_created_time, txns_from_created_time); the from side skips
+  // self-transfers, so each txn appears once, as with `to_id or from_id`.
   const txns = await pg.map(
-    `select * from (
-      (select * from txns
-        where to_id = $3
-          and created_time >= millis_to_ts($2)
-          and ($1 is null or created_time < millis_to_ts($1))
-          and ($4 is null or category = $4)
-        order by created_time desc
-        limit $5)
-      union all
-      (select * from txns
-        where from_id = $3
-          and to_id <> $3
-          and created_time >= millis_to_ts($2)
-          and ($1 is null or created_time < millis_to_ts($1))
-          and ($4 is null or category = $4)
-        order by created_time desc
-        limit $5)
-    ) user_txns
-    order by created_time desc
-    limit $5`,
-    [before ?? null, after, userId, categoryFilter ?? null, maxRows],
+    `with newest as (
+      select created_time from (
+        (select created_time from txns
+          where to_id = $3
+            and created_time >= millis_to_ts($2)
+            and ($1 is null or created_time < millis_to_ts($1))
+            and ($4 is null or category = $4)
+          order by created_time desc
+          limit $5)
+        union all
+        (select created_time from txns
+          where from_id = $3
+            and to_id <> $3
+            and created_time >= millis_to_ts($2)
+            and ($1 is null or created_time < millis_to_ts($1))
+            and ($4 is null or category = $4)
+          order by created_time desc
+          limit $5)
+      ) both_sides
+      order by created_time desc
+      limit $5
+    ),
+    cutoff as (
+      select case
+        when count(*) < $5 then '-infinity'::timestamptz
+        else date_trunc('milliseconds', min(created_time))
+      end as since
+      from newest
+    )
+    select * from txns
+      where to_id = $3
+        and created_time >= (select since from cutoff)
+        and created_time >= millis_to_ts($2)
+        and ($1 is null or created_time < millis_to_ts($1))
+        and ($4 is null or category = $4)
+    union all
+    select * from txns
+      where from_id = $3
+        and to_id <> $3
+        and created_time >= (select since from cutoff)
+        and created_time >= millis_to_ts($2)
+        and ($1 is null or created_time < millis_to_ts($1))
+        and ($4 is null or category = $4)
+    order by created_time, id`,
+    [before ?? null, after, userId, categoryFilter || null, maxRows],
     (row) => toPublicTxn(convertTxn(row))
   )
   const contractIds = uniq(
@@ -287,12 +320,16 @@ const getLiquidityBalanceChanges = async (
 ) => {
   const pg = createSupabaseDirectClient()
   // The newest maxRows rows the loop below will show. The join and the last
-  // condition drop, in SQL, the rows the loop skips (no market; the ante,
-  // already shown by its txn), so the limit counts only rows that are shown.
-  // `is not true` keeps a row whose times are missing, as the loop's
-  // `Math.abs(NaN) < 100` does. Plain `desc` (nulls first) matches the
-  // contract_liquidity_user_id index, so the scan stops at the limit; a null
-  // created_time already fails the `>=` above.
+  // condition drop, in SQL, the rows the loop skips, so the limit counts only
+  // rows that are shown:
+  // - no market: the loop looks the market up by the string data.contractId;
+  // - the ante, already shown by its txn: within 100 ms of the market's
+  //   creation. As in JS, a JSON null market time counts as 0, and a missing
+  //   one (NaN in JS, null here) never matches, hence `is not true`. Both
+  //   tables' triggers cast createdTime to bigint, so the casts cannot fail.
+  // Plain `desc` (nulls first) matches the contract_liquidity_user_id index,
+  // so the scan stops at the limit; a null created_time already fails the
+  // `>=` above. liquidity_id breaks ties, so every limit agrees.
   const liquidityDocs = await pg.map(
     `select cl.data from contract_liquidity cl
     join contracts c on c.id = cl.data->>'contractId'
@@ -300,10 +337,15 @@ const getLiquidityBalanceChanges = async (
     and cl.created_time >= millis_to_ts($2)
     and ($3 is null or cl.created_time < millis_to_ts($3))
     and cl.data->>'answerId' is not null
+    and jsonb_typeof(cl.data->'contractId') = 'string'
     and (abs(
-      (cl.data->>'createdTime')::numeric - (c.data->>'createdTime')::numeric
+      (cl.data->>'createdTime')::numeric
+      - case jsonb_typeof(c.data->'createdTime')
+          when 'null' then 0
+          else (c.data->>'createdTime')::numeric
+        end
     ) < 100) is not true
-    order by cl.created_time desc
+    order by cl.created_time desc, cl.liquidity_id desc
     limit $4`,
     [userId, after, before ?? null, maxRows],
     (row) => row.data as LiquidityProvision
@@ -314,6 +356,18 @@ const getLiquidityBalanceChanges = async (
   )
   const contracts = await getContractsDirect(contractIds, pg)
   const contractsById = new Map(contracts.map((c) => [c.id, c]))
+  // Answer text by id, built once per market (first match wins, as with find).
+  const answerTextsByContract = new Map<string, Map<string, string>>()
+  const getAnswerText = (contract: MultiContract, answerId: string) => {
+    let texts = answerTextsByContract.get(contract.id)
+    if (!texts) {
+      texts = new Map()
+      for (const a of contract.answers)
+        if (!texts.has(a.id)) texts.set(a.id, a.text)
+      answerTextsByContract.set(contract.id, texts)
+    }
+    return texts.get(answerId)
+  }
   const liquidityChanges = [] as TxnBalanceChange[]
   for (const doc of liquidityDocs) {
     const contract = contractsById.get(doc.contractId)
@@ -340,7 +394,7 @@ const getLiquidityBalanceChanges = async (
         doc.answerId &&
         contract.visibility === 'public' &&
         isMultiCpmm(contract)
-          ? contract.answers.find((a) => a.id === doc.answerId)?.text
+          ? getAnswerText(contract, doc.answerId)
           : undefined,
     }
     liquidityChanges.push(balanceChange)

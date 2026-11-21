@@ -318,6 +318,98 @@ beforeAll(async () => {
     { timestamp: nextTime(), amount: 6 },
   ]
   await bet('limit', 'bin', { limitProb: 0.4, fills })
+
+  // Thirty txns at one instant (one database transaction), then two in the
+  // same millisecond 800 microseconds apart, the later one with the smaller
+  // id. The log shows a millisecond's txns oldest first.
+  const instant = new Date(nextTime()).toISOString()
+  for (let i = 0; i < 30; i++) {
+    await insert('txns', {
+      id: `tie-${String(i).padStart(2, '0')}`,
+      amount: 1,
+      category: 'MANA_PAYMENT',
+      created_time: instant,
+      data: {},
+      from_id: 'friend',
+      from_type: 'USER',
+      to_id: ME,
+      to_type: 'USER',
+    })
+  }
+  const millisecond = new Date(nextTime()).toISOString()
+  for (const [id, micros] of [
+    ['sub-ms-a-later', '900'],
+    ['sub-ms-z-earlier', '100'],
+  ]) {
+    await insert('txns', {
+      id,
+      amount: 1,
+      category: 'MANA_PAYMENT',
+      created_time: millisecond.replace('Z', `${micros}Z`),
+      data: {},
+      from_id: ME,
+      from_type: 'USER',
+      to_id: 'friend',
+      to_type: 'USER',
+    })
+  }
+
+  // A market created last, so its ante is the user's newest liquidity row.
+  const lateCreated = nextTime()
+  await market('late-mc', 'cpmm-multi-2', 'public', {
+    createdTime: lateCreated,
+  })
+  await insert('contract_liquidity', {
+    contract_id: 'late-mc',
+    liquidity_id: 'late-ante',
+    data: {
+      id: 'late-ante',
+      userId: ME,
+      contractId: 'late-mc',
+      answerId: 'late-a0',
+      amount: 100,
+      createdTime: lateCreated + 30,
+    },
+  })
+
+  // A user with only liquidity rows, the newest of them an ante: a one-row
+  // page must skip it and show the older provision.
+  await liquidity('subsidizer-older', {
+    userId: 'subsidizer',
+    contractId: 'mc',
+    answerId: 'mc-a1',
+    createdTime: lateCreated - 60_000,
+  })
+  await liquidity('subsidizer-ante', {
+    userId: 'subsidizer',
+    contractId: 'late-mc',
+    answerId: 'late-a0',
+    createdTime: lateCreated + 40,
+  })
+
+  // Market times as the ante check reads them in JS: a JSON null is 0 and a
+  // missing one is NaN. The 'early' user's rows sit at 25-75 ms after 1970.
+  await market('null-time', 'cpmm-multi-2', 'public', { createdTime: null })
+  await market('ancient', 'cpmm-multi-2', 'public', { createdTime: -1000 })
+  await insert('contracts', {
+    id: 'no-time',
+    data: { id: 'no-time', mechanism: 'cpmm-multi-2', visibility: 'public' },
+    visibility: 'public',
+    token: 'MANA',
+    importance_score: 0,
+  })
+  for (const [id, contractId, createdTime] of [
+    ['early-null', 'null-time', 50],
+    ['early-missing', 'no-time', 75],
+    ['early-ancient', 'ancient', 25],
+  ] as const) {
+    await liquidity(id, {
+      userId: 'early',
+      contractId,
+      answerId: 'a',
+      createdTime,
+    })
+  }
 })
 
 afterAll(async () => {
@@ -360,6 +452,7 @@ describe('get-balance-changes', () => {
       expect(keys).not.toContain(`perp-liquidation-other-liquidated-${round}`)
     }
     expect(keys).not.toContain('ante')
+    expect(keys).not.toContain('late-ante')
     expect(keys).not.toContain('redeem-1')
     expect(keys).toContain('redeem-2')
     expect(keys.filter((k) => k.startsWith('limit-'))).toHaveLength(2)
@@ -434,9 +527,79 @@ describe('get-balance-changes', () => {
     }
   })
 
-  it('returns nothing for an offset past every row', async () => {
+  it("keeps a millisecond's txns oldest first, the same on every page", async () => {
+    for (const filter of [{}, { changeType: 'MANA_PAYMENT' }]) {
+      const full = await fullLog({ userId: ME, after: 0, ...filter })
+      const keys = keysOf(full)
+      expect(keys.indexOf('sub-ms-z-earlier')).toBeLessThan(
+        keys.indexOf('sub-ms-a-later')
+      )
+      const ties = keys.filter((k) => k.startsWith('tie-'))
+      expect(ties).toHaveLength(30)
+      expect(ties).toEqual([...ties].sort())
+
+      // One row per page, all the way down: every row once, in order.
+      const walked: string[] = []
+      for (let offset = 0; offset < full.length; offset++) {
+        const page = await handler({
+          userId: ME,
+          after: 0,
+          limit: 1,
+          offset,
+          ...filter,
+        })
+        walked.push(...keysOf(page))
+      }
+      expect(walked).toEqual(keys)
+    }
+  })
+
+  it('treats an empty changeType as no filter', async () => {
+    const all = await fullLog({ userId: ME, after: 0 })
     await expect(
-      handler({ userId: ME, after: 0, limit: 10, offset: Infinity })
-    ).resolves.toEqual([])
+      fullLog({ userId: ME, after: 0, changeType: '' })
+    ).resolves.toEqual(all)
+    await expect(
+      handler({ userId: ME, after: 0, changeType: '', limit: 3, offset: 4 })
+    ).resolves.toEqual(all.slice(4, 7))
+  })
+
+  it('skips a newest ante without shortening the page', async () => {
+    for (const changeType of [undefined, 'ADD_SUBSIDY']) {
+      const page = await handler({
+        userId: 'subsidizer',
+        after: 0,
+        limit: 1,
+        offset: 0,
+        changeType,
+      })
+      expect(keysOf(page)).toEqual(['subsidizer-older'])
+    }
+  })
+
+  it('reads market times as JS does when skipping antes', async () => {
+    const page = (offset: number) =>
+      handler({
+        userId: 'early',
+        after: 0,
+        limit: 1,
+        offset,
+        changeType: 'ADD_SUBSIDY',
+      })
+    // early-null (50 ms) is skipped: 50 - null is 50 in JS, under 100.
+    expect(keysOf(await page(0))).toEqual(['early-missing'])
+    expect(keysOf(await page(1))).toEqual(['early-ancient'])
+    expect(await page(2)).toEqual([])
+  })
+
+  it('returns nothing for an offset past every row', async () => {
+    const full = await fullLog({ userId: ME, after: 0 })
+    for (const offset of [Infinity, 1e19, 2 ** 32 - 1, full.length + 1e6]) {
+      for (const changeType of [undefined, 'MANA_PAYMENT']) {
+        await expect(
+          handler({ userId: ME, after: 0, limit: 10, offset, changeType })
+        ).resolves.toEqual([])
+      }
+    }
   })
 })

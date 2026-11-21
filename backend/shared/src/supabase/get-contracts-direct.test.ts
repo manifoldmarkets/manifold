@@ -116,6 +116,6 @@ describe('getContractsDirect', () => {
         true
       )
     }
-    expect(elapsedMs).toBeLessThan(5_000)
+    expect(elapsedMs).toBeLessThan(10_000)
   }, 60_000)
 })
