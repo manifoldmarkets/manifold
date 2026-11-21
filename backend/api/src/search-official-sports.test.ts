@@ -74,8 +74,8 @@ beforeAll(async () => {
     create text search configuration english_nostop_with_prefix (copy=english);
     create function millis_to_ts(bigint) returns timestamptz immutable language sql as 'select to_timestamp($1::numeric / 1000)';
     create table contracts(id text primary key,data jsonb not null,creator_id text,created_time timestamptz,slug text,
-      importance_score numeric,home_page_score_adjustment numeric,home_page_score_adjustment_expires_at timestamptz,
-      freshness_score numeric,conversion_score numeric,view_count bigint,token text default 'MANA',boosted boolean,
+      importance_score numeric not null default 0,home_page_score_adjustment numeric,home_page_score_adjustment_expires_at timestamptz,
+      freshness_score numeric not null default 0,conversion_score numeric,view_count bigint,token text default 'MANA',boosted boolean,
       daily_score numeric,unique_bettor_count int default 0,visibility text default 'public',deleted boolean default false,
       close_time timestamptz,resolution_time timestamptz,outcome_type text default 'BINARY',group_slugs text[],
       question_fts tsvector,question_nostop_fts tsvector,description_fts tsvector);
@@ -334,6 +334,8 @@ it('uses the existing time and score indexes on a selective ordered page', async
     sqlReads.length = 0
     await forYou(sort)
     const plan = await db.query('explain (format json) ' + sqlReads.at(-1)!)
-    expect(JSON.stringify(plan.rows)).toContain(index)
+    const nodes = JSON.stringify(plan.rows)
+    expect(nodes).toContain(index)
+    expect(nodes).toContain(' >= COALESCE(')
   }
 })

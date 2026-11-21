@@ -241,21 +241,21 @@ export async function getForYouSQL(
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
   // In discovery, the top N must be drawn from markets that can appear there.
-  // >= ALL also keeps every candidate when there are fewer than N eligible
-  // scores: the bounded index lookup returns an empty set in that case.
+  // Both score columns are NOT NULL. When fewer than N eligible scores
+  // exist, the lower bound admits every score. Keeping the outer column
+  // bare lets PostgreSQL range-scan the same score index for candidates.
   const useScoreCutoff =
     offset <= threshold / 2 && (sort === 'score' || sort === 'freshness-score')
   const cachedThreshold =
     sort === 'score' ? importanceScoreThreshold : freshnessScoreThreshold
   const scoreCutoff = args.excludeOfficialSports
     ? where(
-        `contracts.${sortByScore} >= all (
+        `contracts.${sortByScore} >= coalesce((
           select c.${sortByScore} from contracts c
-          where c.${sortByScore} is not null and not (${officialSportsGameSql(
-          'c'
-        )})
+          where not (${officialSportsGameSql('c')})
+            and c.${sortByScore} is not null
           order by c.${sortByScore} desc limit 1 offset $1
-        )`,
+        ), '-Infinity'::numeric)`,
         [threshold - 1]
       )
     : cachedThreshold &&
