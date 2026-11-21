@@ -75,7 +75,6 @@ import { User } from 'web/lib/firebase/users'
 import { buildPersonProfile } from 'web/lib/json-ld'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
-import { api } from 'web/lib/api/api'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
@@ -298,7 +297,15 @@ function UserProfile(props: {
                   'self-center opacity-0 transition-opacity first:ml-4',
                   headerStuck && 'opacity-100'
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
               >
                 <UserLink user={user} noLink />
               </div>
@@ -737,7 +744,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'numberOfComments',
       title: 'Chatterbox',
-      desc: 'Number of comments you’ve posted with at least 1 like.',
+      desc: 'Number of comments you’ve posted.',
       fmt: () => formatWithCommas(data.numberOfComments),
     },
     {
