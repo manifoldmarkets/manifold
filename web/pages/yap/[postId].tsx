@@ -13,16 +13,14 @@ import {
 } from 'web/components/yap/social-post-list'
 import { api } from 'web/lib/api/api'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { Button } from 'web/components/buttons/button'
 
 export default function YapPostPage() {
-  useRedirectIfSignedOut()
-  const isAuthorized = useIsAuthorized()
   const router = useRouter()
   const id =
     typeof router.query.postId === 'string' ? router.query.postId : undefined
   const user = useUser()
+  const isAuthorized = useIsAuthorized()
   const privateUser = usePrivateUser()
   const viewerKey = JSON.stringify([
     user?.id,
@@ -36,7 +34,7 @@ export default function YapPostPage() {
   const [version, setVersion] = useState(0)
   const refresh = () => setVersion((v) => v + 1)
   useEffect(() => {
-    if (!id || !isAuthorized || !user) {
+    if (!id || isAuthorized === undefined) {
       setDetail(undefined)
       return
     }
@@ -77,7 +75,7 @@ export default function YapPostPage() {
             Yap
           </Link>
         </header>
-        {!isAuthorized || !user ? (
+        {isAuthorized === undefined ? (
           <SocialPostSkeleton />
         ) : (
           <>
@@ -115,6 +113,7 @@ export default function YapPostPage() {
                   <SocialComposer
                     key={`reply-${id}`}
                     parentId={id}
+                    parentPost={current.post}
                     onPosted={refresh}
                   />
                 ) : (

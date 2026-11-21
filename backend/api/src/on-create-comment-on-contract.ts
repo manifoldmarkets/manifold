@@ -45,7 +45,9 @@ export const onCreateCommentOnContract = async (props: {
   const lastCommentTime = comment.createdTime
   await updateContract(pg, contract.id, {
     lastCommentTime,
-    lastUpdatedTime: Date.now(),
+    ...(creator.id !== contract.creatorId
+      ? { lastUpdatedTime: Date.now() }
+      : {}),
   })
   await revalidateStaticProps(contractPath(contract)).catch((e) =>
     log.error('Failed to revalidate contract after comment', {

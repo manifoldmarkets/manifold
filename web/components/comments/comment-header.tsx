@@ -14,8 +14,10 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
+import { socialPostPath } from 'common/social-post'
 import { buildArray } from 'common/util/array'
 import { formatPercent, formatWithToken } from 'common/util/format'
+import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
@@ -79,6 +81,7 @@ export function FeedCommentHeader(props: {
     isApi,
     bountyAwarded,
     isRepost,
+    socialPostId,
     betOrderAmount,
     betLimitProb,
     betToken,
@@ -113,6 +116,7 @@ export function FeedCommentHeader(props: {
               className={'font-semibold'}
             />
           </UserHovercard>
+          {comment.isModComment && <ModCommentLabel />}
           {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
             <span className={'ml-1'}>
               {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}
@@ -141,14 +145,21 @@ export function FeedCommentHeader(props: {
               />
             </span>
           )}
-          {isRepost && !inTimeline && (
+          {!inTimeline && socialPostId ? (
+            <Link
+              href={socialPostPath(socialPostId)}
+              className="text-ink-500 hover:text-primary-700 ml-1 whitespace-nowrap"
+            >
+              <BiRepost className="inline h-4 w-4" /> on Yap
+            </Link>
+          ) : isRepost && !inTimeline ? (
             <span>
               <Tooltip text={'Reposted to followers'}>
                 <BiRepost className=" inline h-4 w-4" />
                 {commenterIsBettor ? '' : ' reposted'}
               </Tooltip>
             </span>
-          )}
+          ) : null}
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">
@@ -661,5 +672,13 @@ function DotMenu(props: {
         />
       )}
     </>
+  )
+}
+
+function ModCommentLabel() {
+  return (
+    <span className="ml-1.5 mr-1 whitespace-nowrap rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+      Mod comment
+    </span>
   )
 }

@@ -14,6 +14,15 @@ create table social_posts (
   source_contract_id text references contracts(id),
   source_comment_id text,
   source_bet_id text,
+  -- The market comment this post mirrors. No foreign key: the API writes the
+  -- link with the post, before the comment row exists.
+  market_comment_id text,
+  -- One row per shared market ('market:<id>'), trade ('bet:<id>') or native
+  -- market comment ('comment:<id>').
+  canonical_key text,
+  feed_visible boolean not null default true,
+  -- Set when an admin or moderator hides the mirrored comment.
+  hidden_time timestamptz,
   deleted_time timestamptz,
   deleted_by text references users(id),
   removed_by_moderator boolean not null default false,
@@ -25,6 +34,11 @@ create index social_posts_timeline on social_posts(created_time desc, id desc)
 create index social_posts_replies on social_posts(parent_id, created_time, id);
 create index social_posts_root on social_posts(root_id);
 create index social_posts_author on social_posts(user_id, created_time desc);
+create index social_posts_created_time on social_posts(created_time);
+create unique index social_posts_canonical_key on social_posts(canonical_key)
+  where canonical_key is not null;
+create unique index social_posts_comment_identity on social_posts(market_comment_id)
+  where market_comment_id is not null;
 
 
 alter table social_posts enable row level security;
