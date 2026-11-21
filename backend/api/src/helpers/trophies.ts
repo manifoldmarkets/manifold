@@ -64,9 +64,12 @@ export async function getIsStarterTrophyAccount(
 // a heap read, and 5,000 cold reads took 6 s on prod (22 Nov 2026).
 const STARTER_STATS_BET_LIMIT = 500
 
-// Counts for the "Getting started" trophies (see STARTER_STAT_KEYS): buys of
-// M10 or more, not via the API, in mana markets, among the account's first
-// bets. Sells have negative amounts, so they never count.
+// Counts for the "Getting started" trophies (see STARTER_STAT_KEYS), from
+// the account's first bets: a market-day counts when the account's buys in
+// that market that Pacific day, not via the API and in a mana market, add up
+// to M10 or more. A purchase split across answers adds up; sells (negative
+// amounts) and redemptions don't count. A limit order counts on the day it
+// was placed, once its fills reach M10.
 export async function getStarterStats(
   pg: Pg,
   userId: string
@@ -76,25 +79,27 @@ export async function getStarterStats(
        select b.contract_id, b.amount, b.created_time, b.is_redemption, b.is_api
        from contract_bets b
        where b.user_id = $1
-       order by b.created_time
+       order by b.created_time, b.bet_id
        limit $2
      ),
-     qualifying as (
+     market_days as (
        select
          fb.contract_id,
          (fb.created_time at time zone 'America/Los_Angeles')::date as day
        from first_bets fb
        join contracts c on c.id = fb.contract_id
-       where fb.amount >= $3
+       where fb.amount > 0
          and not coalesce(fb.is_redemption, false)
          and not coalesce(fb.is_api, false)
          and c.token = 'MANA'
+       group by 1, 2
+       having sum(fb.amount) >= $3
      )
      select
-       count(distinct contract_id || ':' || day::text)::int as trades,
+       count(*)::int as trades,
        count(distinct contract_id)::int as markets,
        count(distinct day)::int as days
-     from qualifying`,
+     from market_days`,
     [userId, STARTER_STATS_BET_LIMIT, STARTER_MIN_TRADE_AMOUNT]
   )
   return {

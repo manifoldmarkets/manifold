@@ -68,12 +68,13 @@ export const CATEGORY_ORDER: TrophyCategory[] = [
 ]
 
 // Stats of the "Getting started" trophies, counted live by get-user-trophies
-// from the account's first bets (see getStarterStats in backend/api). They
-// count buys of M10 or more, not via the API, in mana markets:
-// - starterTrades: at most one per market per Pacific day, so buying and
-//   selling the same market again does not count again
-// - starterMarkets: distinct markets
-// - starterDays: distinct Pacific days
+// from the account's first bets (see getStarterStats in backend/api). The
+// unit is a market-day: a market and Pacific day in which the account's buys,
+// not via the API and in a mana market, add up to M10 or more.
+// - starterTrades: market-days, so buying and selling the same market again
+//   the same day does not count again
+// - starterMarkets: distinct markets among them
+// - starterDays: distinct days among them
 export const STARTER_STAT_KEYS = [
   'starterTrades',
   'starterMarkets',
@@ -154,7 +155,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'starter-trades',
     label: 'First Trades',
     description:
-      'Trades of M10 or more, counting one per market per day. Each milestone pays mana once',
+      'Trades of M10 or more, counting each market once a day. Each milestone pays mana once',
     category: 'starter',
     statKey: 'starterTrades',
     unit: 'trades',
@@ -169,7 +170,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'starter-markets',
     label: 'Markets Explored',
     description:
-      'Different markets you have traded M10 or more in. Each milestone pays mana once',
+      'Different markets you have traded M10 or more in on a day. Each milestone pays mana once',
     category: 'starter',
     statKey: 'starterMarkets',
     unit: 'markets',
@@ -182,7 +183,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'starter-days',
     label: 'Days Active',
     description:
-      'Days you have traded M10 or more. Each milestone pays mana once',
+      'Days you traded M10 or more in a market. Each milestone pays mana once',
     category: 'starter',
     statKey: 'starterDays',
     unit: 'days',

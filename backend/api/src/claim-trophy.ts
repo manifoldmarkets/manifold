@@ -20,8 +20,9 @@ import {
   isStarterTrophy,
   isStarterTrophyAccount,
 } from 'common/trophies'
+import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
 import { TrophyRewardTxn } from 'common/txn'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { UserUpdate, broadcastUserUpdates } from 'shared/supabase/users'
@@ -67,17 +68,37 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
       const { inserted, rewardAmount } = await pg.tx(async (tx) => {
         // Taken first, as quest rewards do, and the only lock waited for, so
         // this cannot deadlock with a bet or another payout.
-        const { bonus_eligibility } = await tx.one<{
+        const locked = await tx.one<{
           bonus_eligibility: string | null
+          user_deleted: boolean
+          is_bot: boolean
         }>(
-          `select data->>'bonusEligibility' as bonus_eligibility
+          `select data->>'bonusEligibility' as bonus_eligibility,
+             coalesce((data->>'userDeleted')::boolean, false) as user_deleted,
+             coalesce(is_bot, false) as is_bot
            from users where id = $1 for no key update`,
           [auth.uid]
         )
+        // Checked again under the lock: a deletion or ban committed since the
+        // check at the start of the request must stop the payout too.
+        if (locked.user_deleted) {
+          throw new APIError(403, 'Your account has been deleted')
+        }
+        const bans = await tx.manyOrNone<UserBan>(
+          `select * from user_bans where user_id = $1 and ended_at is null
+             and (end_time is null or end_time > now())`,
+          [auth.uid]
+        )
+        if (
+          getBanTypesForAction('claimTrophy').some((type) =>
+            isUserBanned(bans, type)
+          )
+        ) {
+          throw new APIError(403, 'You are banned from claiming trophies')
+        }
 
         // One row per milestone. A repeated or concurrent claim inserts
-        // nothing the second time, so it pays nothing either, and a claim can
-        // never be lowered.
+        // nothing the second time, and a claim can never be lowered.
         const inserted = await tx.manyOrNone<{
           trophy_id: string
           milestone_id: string
@@ -90,23 +111,42 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           [auth.uid, def.id, toClaim.map((m) => m.id)]
         )
 
-        const insertedIds = new Set(inserted.map((r) => r.milestone_id))
-        const paid = toClaim.filter(
-          (m) => insertedIds.has(m.id) && (m.rewardMana ?? 0) > 0
-        )
-        const baseAmount = getRewardManaTotal(paid)
-        if (!isStarterAccount || !(baseAmount > 0)) {
+        const rewardable = toClaim.filter((m) => (m.rewardMana ?? 0) > 0)
+        if (!isStarterAccount || locked.is_bot || rewardable.length === 0) {
           return { inserted, rewardAmount: 0 }
         }
 
         // Same tier multiplier as quests: zero for flagged accounts, reduced
-        // for bonus-blocked ones, more for members.
+        // for bonus-blocked ones, more for members. Membership takes
+        // precedence over a flag, as it does for quests.
         const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
         const effectiveTier = resolveEffectiveTier({
           entitlements,
-          bonusEligibility: toBonusEligibility(bonus_eligibility),
+          bonusEligibility: toBonusEligibility(locked.bonus_eligibility),
         })
         const multiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
+        // Nothing to pay: leave the rewards unpaid rather than used up, so
+        // claiming again (directly, or via a higher milestone) pays them if
+        // the account's standing changes.
+        if (
+          !(roundTierBonus(getRewardManaTotal(rewardable) * multiplier) > 0)
+        ) {
+          return { inserted, rewardAmount: 0 }
+        }
+
+        // Rewards are keyed separately from claims and never deleted, so a
+        // milestone pays once even if its claim is removed and made again.
+        // Only the rows inserted here are paid.
+        const newlyRewarded = await tx.manyOrNone<{ milestone_id: string }>(
+          `insert into user_trophy_rewards (user_id, trophy_id, milestone_id)
+           select $1, $2, unnest($3::text[])
+           on conflict (user_id, trophy_id, milestone_id) do nothing
+           returning milestone_id`,
+          [auth.uid, def.id, rewardable.map((m) => m.id)]
+        )
+        const newIds = new Set(newlyRewarded.map((r) => r.milestone_id))
+        const paid = rewardable.filter((m) => newIds.has(m.id))
+        const baseAmount = getRewardManaTotal(paid)
         const amount = roundTierBonus(baseAmount * multiplier)
         if (!Number.isFinite(amount) || !(amount > 0)) {
           return { inserted, rewardAmount: 0 }
@@ -135,7 +175,7 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           userUpdates.push(...u)
         )
         await tx.none(
-          `update user_trophy_milestones set reward_txn_id = $4
+          `update user_trophy_rewards set txn_id = $4
            where user_id = $1 and trophy_id = $2 and milestone_id = any($3::text[])`,
           [auth.uid, def.id, paid.map((m) => m.id), txn.id]
         )

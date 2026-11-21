@@ -105,7 +105,19 @@ beforeAll(async () => {
       balance numeric not null default 0,
       cash_balance numeric not null default 0,
       total_deposits numeric not null default 0,
-      total_cash_deposits numeric not null default 0
+      total_cash_deposits numeric not null default 0,
+      is_bot boolean not null default false
+    );
+    create table user_bans (
+      id serial primary key,
+      user_id text not null,
+      ban_type text not null,
+      reason text,
+      created_at timestamptz not null default now(),
+      created_by text,
+      end_time timestamptz,
+      ended_at timestamptz,
+      ended_by text
     );
     create table contracts (id text primary key, token text not null);
     create table contract_bets (
@@ -161,7 +173,9 @@ let betId = 0
 beforeEach(async () => {
   await db.exec(`
     delete from user_trophy_milestones;
+    delete from user_trophy_rewards;
     delete from user_showcase;
+    delete from user_bans;
     delete from txns;
     delete from contract_bets;
     delete from user_entitlements;
@@ -240,32 +254,50 @@ const rewardTxns = async (uid: string) =>
     [uid]
   )
 
+const rewardRows = async (uid: string) =>
+  rows(
+    `select milestone_id, txn_id from user_trophy_rewards where user_id = $1 order by milestone_id`,
+    [uid]
+  )
+
+const claimRows = async (uid: string) =>
+  rows(`select * from user_trophy_milestones where user_id = $1`, [uid])
+
 describe('starter stats', () => {
-  it('count buys of M10+ in mana markets, one per market per day', async () => {
+  it('count market-days whose buys add up to M10 in mana markets', async () => {
     await addUser('u')
     await bet('u', 'm1', 10, 0)
     await bet('u', 'm1', 25, 0) // same market and day: counts once
     await bet('u', 'm1', 10, 1) // same market, next day
     await bet('u', 'm2', 50, 1)
-    await bet('u', 'm3', 9.99, 2) // under M10
+    await bet('u', 'm3', 9.99, 2) // under M10 on its own
     await bet('u', 'm3', -40, 2) // a sell
     await bet('u', 'm3', 30, 2, { isApi: true })
     await bet('u', 'm3', 30, 2, { isRedemption: true })
     await bet('u', 'cash1', 30, 2) // not a mana market
 
-    const result = await trophiesOf('u')
-    expect(result.starter).toEqual({
+    expect((await trophiesOf('u')).starter).toEqual({
       starterTrades: 3,
       starterMarkets: 2,
       starterDays: 2,
     })
   })
 
+  it('add up a purchase split across answers', async () => {
+    await addUser('u')
+    await bet('u', 'm1', 5, 0)
+    await bet('u', 'm1', 5, 0)
+    expect((await trophiesOf('u')).starter).toEqual({
+      starterTrades: 1,
+      starterMarkets: 1,
+      starterDays: 1,
+    })
+  })
+
   it('are null for accounts created before the start', async () => {
     await addUser('old', { createdTime: START - 1 })
     await bet('old', 'm1', 100, 0)
-    const result = await trophiesOf('old')
-    expect(result.starter).toBeNull()
+    expect((await trophiesOf('old')).starter).toBeNull()
   })
 })
 
@@ -300,10 +332,10 @@ describe('claiming a starter milestone', () => {
       baseAmount: 100,
       multiplier: 1,
     })
-    const paidRows = await rows(
-      `select milestone_id, reward_txn_id from user_trophy_milestones where user_id = 'u'`
-    )
-    expect(paidRows.every((r) => r.reward_txn_id === txn.id)).toBe(true)
+    expect(await rewardRows('u')).toEqual([
+      { milestone_id: 'first-trade', txn_id: txn.id },
+      { milestone_id: 'hat-trick', txn_id: txn.id },
+    ])
     expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
 
     // Claiming again records and pays nothing.
@@ -314,7 +346,7 @@ describe('claiming a starter milestone', () => {
     expect(await rewardTxns('u')).toHaveLength(1)
   })
 
-  it('pays only the newly claimed milestones when a higher one follows', async () => {
+  it('pays only the newly reached milestones when a higher one follows', async () => {
     await addUser('u')
     await bet('u', 'm1', 10, 0)
     expect(
@@ -336,9 +368,7 @@ describe('claiming a starter milestone', () => {
       claim('u', 'starter-trades', 'getting-going')
     ).rejects.toMatchObject({ code: 403 })
     expect(await rewardTxns('u')).toHaveLength(0)
-    expect(
-      await rows(`select * from user_trophy_milestones where user_id = 'u'`)
-    ).toHaveLength(0)
+    expect(await claimRows('u')).toHaveLength(0)
   })
 
   it('refuses starter trophies for accounts created before the start', async () => {
@@ -350,7 +380,7 @@ describe('claiming a starter milestone', () => {
     expect(await rewardTxns('old')).toHaveLength(0)
   })
 
-  it('records the claim but pays nothing to a flagged account', async () => {
+  it('leaves a flagged account unpaid, and pays it once unflagged', async () => {
     await addUser('flagged', {
       data: { bonusEligibility: 'requires_verification' },
     })
@@ -359,7 +389,57 @@ describe('claiming a starter milestone', () => {
     expect(result.newlyClaimed).toHaveLength(1)
     expect(result.rewardAmount).toBe(0)
     expect(await rewardTxns('flagged')).toHaveLength(0)
-    expect((await balance('flagged')).balance).toBe(0)
+    expect(await rewardRows('flagged')).toEqual([])
+
+    await rows(
+      `update users set data = '{"bonusEligibility": "verified"}' where id = 'flagged'`
+    )
+    const later = await claim('flagged', 'starter-trades', 'first-trade')
+    expect(later.newlyClaimed).toEqual([])
+    expect(later.rewardAmount).toBe(50)
+    expect(await rewardTxns('flagged')).toHaveLength(1)
+  })
+
+  it('pays nothing to a bot account', async () => {
+    await addUser('bot')
+    await rows(`update users set is_bot = true where id = 'bot'`)
+    await bet('bot', 'm1', 10, 0)
+    const result = await claim('bot', 'starter-trades', 'first-trade')
+    expect(result.rewardAmount).toBe(0)
+    expect(await rewardTxns('bot')).toHaveLength(0)
+  })
+
+  it('re-checks bans and deletion under the lock', async () => {
+    await addUser('banned')
+    await bet('banned', 'm1', 10, 0)
+    await rows(
+      `insert into user_bans (user_id, ban_type) values ('banned', 'trading')`
+    )
+    await expect(
+      claim('banned', 'starter-trades', 'first-trade')
+    ).rejects.toMatchObject({ code: 403 })
+    expect(await claimRows('banned')).toHaveLength(0)
+
+    await addUser('deleted', { data: { userDeleted: true } })
+    await bet('deleted', 'm1', 10, 0)
+    await expect(
+      claim('deleted', 'starter-trades', 'first-trade')
+    ).rejects.toMatchObject({ code: 403 })
+    expect(await rewardTxns('deleted')).toHaveLength(0)
+  })
+
+  it('ignores a ban that has ended or expired', async () => {
+    await addUser('u')
+    await bet('u', 'm1', 10, 0)
+    await rows(
+      `insert into user_bans (user_id, ban_type, ended_at) values ('u', 'trading', now())`
+    )
+    await rows(
+      `insert into user_bans (user_id, ban_type, end_time) values ('u', 'posting', now() - interval '1 day')`
+    )
+    expect(
+      (await claim('u', 'starter-trades', 'first-trade')).rewardAmount
+    ).toBe(50)
   })
 
   it('applies the member multiplier', async () => {
@@ -384,9 +464,8 @@ describe('claiming a starter milestone', () => {
       await expect(
         claim('u', 'starter-trades', 'first-trade')
       ).rejects.toThrow()
-      expect(
-        await rows(`select * from user_trophy_milestones where user_id = 'u'`)
-      ).toHaveLength(0)
+      expect(await claimRows('u')).toHaveLength(0)
+      expect(await rewardRows('u')).toEqual([])
       expect((await balance('u')).balance).toBe(0)
     } finally {
       await rows(`alter table txns drop constraint no_rewards`)
@@ -414,39 +493,26 @@ describe('other trophies', () => {
 describe('admin unclaim', () => {
   const admin = ENV_CONFIG.adminIds[0]
 
-  it('keeps paid milestones, so claiming again cannot pay twice', async () => {
+  it('removes the claims and pin, but a paid milestone never pays again', async () => {
     await addUser('u')
     await bet('u', 'm1', 10, 0)
     await claim('u', 'starter-trades', 'first-trade')
     await rows(
-      `insert into user_showcase (user_id, pins) values ('u', array['trophy-starter-trades'])`
+      `insert into user_showcase (user_id, pins) values ('u', array['trophy-starter-trades', 'league'])`
     )
 
     const { claims } = await unclaim(admin, 'u', 'starter-trades')
-    expect(claims.map((c) => c.milestoneId)).toEqual(['first-trade'])
-    // A trophy that is still claimed keeps its pin.
-    expect(
-      (await rows(`select pins from user_showcase where user_id = 'u'`))[0].pins
-    ).toEqual(['trophy-starter-trades'])
-
-    const again = await claim('u', 'starter-trades', 'first-trade')
-    expect(again.rewardAmount).toBe(0)
-    expect(await rewardTxns('u')).toHaveLength(1)
-  })
-
-  it('removes unpaid milestones and the pin once none is left', async () => {
-    await addUser('u')
-    jest
-      .mocked(loadUserAchievements)
-      .mockResolvedValue({ totalVolumeMana: 20_000 } as never)
-    await claim('u', 'trading-volume', 'goldfish')
-    await rows(
-      `insert into user_showcase (user_id, pins) values ('u', array['trophy-trading-volume', 'league'])`
-    )
-    const { claims } = await unclaim(admin, 'u', 'trading-volume')
     expect(claims).toEqual([])
     expect(
       (await rows(`select pins from user_showcase where user_id = 'u'`))[0].pins
     ).toEqual(['league'])
+
+    const again = await claim('u', 'starter-trades', 'first-trade')
+    expect(again.newlyClaimed.map((c) => c.milestoneId)).toEqual([
+      'first-trade',
+    ])
+    expect(again.rewardAmount).toBe(0)
+    expect(await rewardTxns('u')).toHaveLength(1)
+    expect((await balance('u')).balance).toBe(50)
   })
 })

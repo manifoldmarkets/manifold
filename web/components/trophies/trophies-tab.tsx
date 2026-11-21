@@ -7,6 +7,10 @@ import { RanksType } from 'common/achievements'
 import { APIResponse } from 'common/api/schema'
 import { isAdminId } from 'common/envs/constants'
 import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+} from 'common/supporter-config'
+import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   SHOWCASE_SLOT_UNLOCKS,
@@ -56,6 +60,16 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
+  // The multiplier claim-trophy pays starter rewards at (as for quests).
+  const rewardMultiplier = currentUser
+    ? getEffectiveBonusMultiplier(
+        resolveEffectiveTier({
+          entitlements: currentUser.entitlements,
+          bonusEligibility: currentUser.bonusEligibility,
+        }),
+        'quest'
+      )
+    : undefined
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
@@ -190,7 +204,9 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
               isOwnProfile={isOwnProfile}
-              showRewards={isOwnProfile && !!starter}
+              rewardMultiplier={
+                isOwnProfile && starter ? rewardMultiplier : undefined
+              }
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}
