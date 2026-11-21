@@ -30,6 +30,11 @@ import {
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import {
+  applyShopDiscount,
+  formatDiscountPercent,
+  getShopDiscount,
+} from 'common/holiday-sale'
+import {
   getUserSupporterTier,
   getSupporterEntitlement as getSupporterEnt,
   SUPPORTER_TIERS,
@@ -116,6 +121,7 @@ import {
 import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
@@ -794,6 +800,8 @@ export default function ShopPage() {
           </Row>
         )}
 
+        <HolidaySaleShopNote />
+
         {/* Featured supporter card */}
         <SupporterCard
           entitlements={effectiveEntitlements}
@@ -1039,6 +1047,23 @@ type ShippingRate = {
  *  merch filter, since the page header already names the section). Pulled out
  *  so the shop page can render it in two positions: promoted above the regular
  *  grid when any merch item is NEW to the user, or in its default spot below. */
+// Black Friday / Cyber Monday: one note for the whole shop. Every price on the
+// page already includes the sale; memberships aren't in it.
+function HolidaySaleShopNote() {
+  const sale = useActiveHolidaySale()
+  if (!sale) return null
+  return (
+    <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+      <span className="font-semibold">
+        {sale.name}: {formatDiscountPercent(sale.shopDiscount)} off everything
+        in the shop
+      </span>{' '}
+      except memberships. The prices below include it; merch shipping is full
+      price.
+    </div>
+  )
+}
+
 function MerchSection(props: {
   user: User | null | undefined
   entitlements: UserEntitlement[]
@@ -1112,9 +1137,14 @@ function MerchItemCard(props: {
     onPurchased,
   } = props
   const tryOfferReview = useStoreReviewNudge('shop-order')
-  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice =
-    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  // Same rule the API charges by: supporter discount, or the holiday sale's
+  // merch discount if bigger.
+  const holidaySale = useActiveHolidaySale()
+  const { fraction: shopDiscount, sale: discountSale } = getShopDiscount(
+    getBenefit(allEntitlements, 'shopDiscount', 0),
+    holidaySale
+  )
+  const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0
   // Distinct colours offered by this item (in catalog order). Empty for
   // single-colour items (caps, AGGC tee) — colour selector hides when empty.
@@ -1603,7 +1633,8 @@ function MerchItemCard(props: {
                   : formatMoney(item.price)}
                 {hasDiscount && (
                   <span className="ml-1 text-xs text-green-600">
-                    ({Math.round(shopDiscount * 100)}% off)
+                    ({formatDiscountPercent(shopDiscount)} off
+                    {discountSale ? `, ${discountSale.name}` : ''})
                   </span>
                 )}
               </div>
@@ -5553,10 +5584,14 @@ function ShopItemCard(props: {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
 
-  // Calculate supporter discount
-  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice =
-    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  // Same rule the API charges by: supporter discount, or the holiday sale's
+  // shop discount if bigger. (Memberships never reach this card.)
+  const holidaySale = useActiveHolidaySale()
+  const { fraction: shopDiscount } = getShopDiscount(
+    getBenefit(allEntitlements, 'shopDiscount', 0),
+    holidaySale
+  )
+  const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0 && !owned
 
   const canPurchase = user && user.balance >= discountedPrice
