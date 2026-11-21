@@ -389,6 +389,12 @@ describe('deliverAnnouncement', () => {
       finished: true,
       closed: 'post is unlisted',
     })
+    // Still reported as closed, not as sent, on a later call.
+    expect(await deliverAnnouncement(pg, 'before')).toMatchObject({
+      sent: 0,
+      finished: true,
+      closed: 'post is unlisted',
+    })
 
     let inserts = 0
     failStatement = (sql) => insertsIntoNotifications(sql) && ++inserts > 1
@@ -473,6 +479,34 @@ describe('deliverAnnouncement', () => {
     await queueAnnouncementDelivery(pg, 'p1')
 
     expect((await rows(`select * from announcement_deliveries`)).length).toBe(1)
+  })
+
+  it('migration upgrades a table made by its first draft', async () => {
+    const fresh = new PGlite()
+    try {
+      // The table as 2023b9450's version of the migration made it.
+      await fresh.exec(`
+        create table announcement_deliveries (
+          post_id text primary key,
+          created_time timestamptz not null default now(),
+          last_user_id text,
+          sent_count int not null default 0,
+          finished_time timestamptz,
+          updated_time timestamptz not null default now(),
+          last_error text
+        );
+      `)
+      await fresh.exec(readFileSync(MIGRATION, 'utf8'))
+      const columns = (
+        await fresh.query(
+          `select column_name from information_schema.columns
+           where table_name = 'announcement_deliveries'`
+        )
+      ).rows.map((r: any) => r.column_name)
+      expect(columns).toContain('skip_existing')
+    } finally {
+      await fresh.close()
+    }
   })
 })
 
@@ -597,6 +631,22 @@ describe('create-post', () => {
     const { result, continue: next } = await post({
       isAnnouncement: true,
       visibility: 'unlisted',
+    })
+    await next()
+
+    expect(await deliveryOf(result.post.id)).toBeUndefined()
+    expect(createNewPostFromFollowedUserNotification).not.toHaveBeenCalled()
+    expect((await notificationsFor(result.post.id)).length).toBe(0)
+  })
+
+  it('sends nothing for a post saved unlisted though asked to be public', async () => {
+    await addUsers(5)
+    // create-post forces this account's posts to unlisted.
+    jest.mocked(getUser).mockResolvedValue({ ...admin, name: 'Rima Akter' })
+
+    const { result, continue: next } = await post({
+      isAnnouncement: true,
+      visibility: 'public',
     })
     await next()
 

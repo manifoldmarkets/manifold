@@ -11,18 +11,25 @@ import {
 // old sender reached part of, or none of, or to finish one by hand. Prints
 // the plan; pass --apply to send.
 //
-//   npx ts-node send-announcement.ts --post=<postId> [--apply]
+//   npx ts-node send-announcement.ts --post=<postId> [--apply] [--reopen]
 //
+// Run it only once the new API is live, so no old-style send is still going.
 // A send this script queues checks each user for a notification for the post
 // before sending them one, so users the old sender reached are skipped. The
 // delivery row keeps that setting, so a send the scheduler resumes keeps
-// skipping them too. Exits nonzero unless everyone has been sent it.
+// skipping them too. (A heavy user whose copy was pruned by
+// clean-old-notifications gets it again: they no longer have one.)
+//
+// A send closed early because the post was unlisted stays closed; --reopen
+// carries it on once the post is listed again. Exits nonzero unless everyone
+// has been sent it.
 
 const SAMPLE_SIZE = 300
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
+    const reopen = process.argv.includes('--reopen')
     const postId = process.argv
       .find((arg) => arg.startsWith('--post='))
       ?.slice('--post='.length)
@@ -80,15 +87,34 @@ if (require.main === module) {
       `Sample:    ${sample.already} of ${SAMPLE_SIZE} random users already have it`
     )
 
-    if (delivery?.finished_time) {
-      console.log('Already finished. Nothing to do.')
+    // A finished row with an error was closed early: the post was unlisted
+    // or not an announcement when a batch read it.
+    const closed = delivery?.finished_time ? delivery.last_error : null
+    if (delivery?.finished_time && !closed) {
+      console.log('Already sent to everyone. Nothing to do.')
       return
     }
+    if (closed && !reopen) {
+      throw new Error(
+        `This send was closed early (${closed}). If the post is listed again and should go out, pass --reopen.`
+      )
+    }
     if (!apply) {
-      console.log('Dry run. Pass --apply to send.')
+      console.log(`Dry run. Pass --apply${closed ? ' --reopen' : ''} to send.`)
       return
     }
 
+    if (closed) {
+      // Carries on from where it was closed, skipping users who have it.
+      await pg.none(
+        `update announcement_deliveries
+         set finished_time = null, last_error = null, skip_existing = true,
+           updated_time = now()
+         where post_id = $1 and finished_time is not null
+           and last_error is not null`,
+        [postId]
+      )
+    }
     await queueAnnouncementDelivery(pg, postId, { skipUsersWhoHaveIt: true })
     const result = await deliverAnnouncement(pg, postId)
     if (!result.finished || result.closed)

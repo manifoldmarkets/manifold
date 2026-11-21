@@ -11,7 +11,9 @@ import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 // and the cursor commit together, so a send that stops for any reason resumes
 // where it stopped, and no user is sent the announcement twice.
 //
-// The audience is every user who existed when the send was queued. Each batch
+// The audience is every user who existed when the send was queued. (A signup
+// still committing at that moment can be missed or not, depending on where
+// its id falls: users.created_time is its transaction's start.) Each batch
 // re-reads the post and stops the send if it has been unlisted or is no
 // longer an announcement.
 
@@ -185,13 +187,24 @@ export async function resumeStalledAnnouncementDeliveries(
       results.push({ postId, sent: 0, totalSent: 0, finished: false, error })
     }
   }
-  const unfinished = results.filter((r) => !r.finished)
-  if (unfinished.length > 0) {
-    throw new Error(
-      `Announcement sends still unfinished: ${unfinished
-        .map((r) => `${r.postId} (${r.error})`)
-        .join(', ')}`
+  const failed = results.filter((r) => !r.finished)
+  if (failed.length > 0) {
+    // Another sender may have finished one since this run gave up on it.
+    const stillOpen = new Set(
+      await pg.map(
+        `select post_id from announcement_deliveries
+         where post_id = any($1) and finished_time is null`,
+        [failed.map((r) => r.postId)],
+        (r: { post_id: string }) => r.post_id
+      )
     )
+    const unfinished = failed.filter((r) => stillOpen.has(r.postId))
+    if (unfinished.length > 0)
+      throw new Error(
+        `Announcement sends still unfinished: ${unfinished
+          .map((r) => `${r.postId} (${r.error})`)
+          .join(', ')}`
+      )
   }
   return results
 }
@@ -215,8 +228,9 @@ async function sendNextBatch(
     sent_count: number
     finished: boolean
     skip_existing: boolean
+    last_error: string | null
   }>(
-    `select last_user_id, sent_count, skip_existing,
+    `select last_user_id, sent_count, skip_existing, last_error,
        finished_time is not null as finished
      from announcement_deliveries
      where post_id = $1
@@ -225,12 +239,22 @@ async function sendNextBatch(
   )
   if (!delivery) throw new Error(`Announcement ${postId} is not queued`)
   if (delivery.finished) {
-    return { sent: 0, totalSent: delivery.sent_count, finished: true }
+    // A finished row keeps an error only if it was closed early (see below):
+    // every batch that sends clears it, and a failure never writes to a
+    // finished row.
+    return {
+      sent: 0,
+      totalSent: delivery.sent_count,
+      finished: true,
+      closed: delivery.last_error ?? undefined,
+    }
   }
 
-  // Read with every batch: a post unlisted mid-send stops going out.
+  // Read with every batch: a post unlisted mid-send stops going out. The
+  // share lock makes an unlist wait for this batch to commit, or this batch
+  // wait for the unlist and see it, so no batch goes out after one.
   const post = await tx.oneOrNone<{ data: TopLevelPost }>(
-    `select data from old_posts where id = $1`,
+    `select data from old_posts where id = $1 for share`,
     [postId]
   )
   const closed = !post

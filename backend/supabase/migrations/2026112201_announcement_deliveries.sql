@@ -42,6 +42,10 @@ create table if not exists announcement_deliveries (
   skip_existing boolean not null default false
 );
 
+-- For a table made by an earlier draft of this file, which lacked it.
+alter table announcement_deliveries
+  add column if not exists skip_existing boolean not null default false;
+
 alter table announcement_deliveries enable row level security;
 
 create index if not exists announcement_deliveries_unfinished

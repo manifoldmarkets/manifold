@@ -70,12 +70,11 @@ export const createPost: APIHandler<'create-post'> =
         post,
       ])
 
-      const notify = visibility !== 'unlisted'
+      // Decided on the post as saved, whatever visibility was asked for.
+      const notify = post.visibility === 'public'
       // Queued with the post, so an announcement is never left without a
-      // send: if the one below dies, the scheduler resumes it. Decided on the
-      // post as saved, whatever visibility was asked for.
-      const announce =
-        notify && !!isAnnouncement && post.visibility === 'public'
+      // send: if the one below dies, the scheduler resumes it.
+      const announce = notify && !!isAnnouncement
       if (announce) await queueAnnouncementDelivery(tx, post.id)
 
       return {
