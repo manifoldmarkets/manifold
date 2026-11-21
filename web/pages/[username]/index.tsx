@@ -13,17 +13,13 @@ import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import {
-  OPEN_SHOWCASE_PICKER_EVENT,
-  OpenShowcasePickerDetail,
-  openShowcasePicker,
-} from 'web/components/trophies/open-showcase-picker'
+import { OPEN_SHOWCASE_PICKER_EVENT } from 'web/components/trophies/open-showcase-picker'
 import { ProfileShowcase } from 'web/components/trophies/profile-showcase'
 import { TrophiesTab } from 'web/components/trophies/trophies-tab'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -213,18 +209,11 @@ function UserProfile(props: {
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
 
   // "Pin to profile" in the Trophies tab opens the picker in ProfileShowcase,
-  // which is only mounted while the profile header is expanded.
-  const expandedRef = useRef(expandProfileInfo)
-  expandedRef.current = expandProfileInfo
+  // which is only mounted while the header is expanded. Once it mounts, it
+  // takes the waiting request itself.
   useEffect(() => {
     if (!isCurrentUser) return
-    const handler = (e: Event) => {
-      if (expandedRef.current) return // ProfileShowcase handles it
-      setExpandProfileInfo(true)
-      const { detail } = e as CustomEvent<OpenShowcasePickerDetail>
-      // Send it again once ProfileShowcase has mounted.
-      setTimeout(() => openShowcasePicker(detail), 50)
-    }
+    const handler = () => setExpandProfileInfo(true)
     window.addEventListener(OPEN_SHOWCASE_PICKER_EVENT, handler)
     return () => window.removeEventListener(OPEN_SHOWCASE_PICKER_EVENT, handler)
   }, [isCurrentUser])

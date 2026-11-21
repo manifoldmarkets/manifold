@@ -28,14 +28,12 @@ async function circleCrop(inputPath: string, outputPath: string) {
 }
 
 // Process all subject images in trophy-badges/
-const baseDir = path.resolve(__dirname, '../web/public/trophy-badges')
+const baseDir = path.resolve(__dirname, '../../web/public/trophy-badges')
 
-const trophyDirs = fs
-  .readdirSync(baseDir)
-  .filter((d) => {
-    const full = path.join(baseDir, d)
-    return fs.statSync(full).isDirectory() && d !== 'borders'
-  })
+const trophyDirs = fs.readdirSync(baseDir).filter((d) => {
+  const full = path.join(baseDir, d)
+  return fs.statSync(full).isDirectory() && d !== 'borders'
+})
 
 async function run() {
   for (const dir of trophyDirs) {

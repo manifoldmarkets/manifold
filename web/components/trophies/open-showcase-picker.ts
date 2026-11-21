@@ -1,15 +1,21 @@
 // The Trophies tab and the profile showcase sit in different parts of the
-// profile page. "Pin to profile" on a trophy card asks the showcase to open
-// its picker (and pin the trophy) through this window event. The profile page
-// also listens, to expand its header so the showcase is mounted.
+// profile page, and the showcase is only mounted while the profile header is
+// expanded. "Pin to profile" on a trophy card leaves a request here and fires
+// a window event: the profile page expands its header on the event, and the
+// showcase takes the request when it hears the event or when it mounts.
 export const OPEN_SHOWCASE_PICKER_EVENT = 'open-showcase-picker'
 
-export type OpenShowcasePickerDetail = { pinId?: string }
+export type ShowcasePickerRequest = { pinId?: string }
 
-export function openShowcasePicker(detail: OpenShowcasePickerDetail) {
-  window.dispatchEvent(
-    new CustomEvent<OpenShowcasePickerDetail>(OPEN_SHOWCASE_PICKER_EVENT, {
-      detail,
-    })
-  )
+let pendingRequest: ShowcasePickerRequest | null = null
+
+export function openShowcasePicker(request: ShowcasePickerRequest) {
+  pendingRequest = request
+  window.dispatchEvent(new Event(OPEN_SHOWCASE_PICKER_EVENT))
+}
+
+export function takeShowcasePickerRequest(): ShowcasePickerRequest | null {
+  const request = pendingRequest
+  pendingRequest = null
+  return request
 }

@@ -12,11 +12,11 @@ import {
   SHOWCASE_SLOT_UNLOCKS,
   TROPHY_DEFINITIONS,
   TrophyCategory,
-  TrophyClaim,
   TrophyDefinition,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countReachedMilestones,
+  countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getTotalPossibleMilestones,
   getTrophyPinId,
@@ -32,17 +32,25 @@ import { openShowcasePicker } from 'web/components/trophies/open-showcase-picker
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
-import { useUserTrophies } from 'web/hooks/use-user-trophies'
+import {
+  addTrophyClaims,
+  replaceTrophyClaims,
+  useUserTrophies,
+} from 'web/hooks/use-user-trophies'
 import { api } from 'web/lib/api/api'
 
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
 
-  const { data: achievements } = useAPIGetter('get-user-achievements', {
-    userId,
-  })
-  // Shared with ProfileShowcase, so a claim shows up there at once.
-  const { trophies, update } = useUserTrophies(userId)
+  // Keyed per user, so another profile's stats never show while these load.
+  const { data: achievements } = useAPIGetter(
+    'get-user-achievements',
+    { userId },
+    undefined,
+    `get-user-achievements-${userId}`
+  )
+  // Shared live with ProfileShowcase, so a claim shows up there at once.
+  const { trophies, error: trophiesError } = useUserTrophies(userId)
 
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
@@ -50,14 +58,11 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
 
-  const setClaims = (claims: TrophyClaim[]) =>
-    update({ claims, pins: trophies?.pins ?? null })
-
   const handleClaim = async (trophyId: string, milestoneId: string) => {
     setClaimingId(trophyId)
     try {
       const { claims } = await api('claim-trophy', { trophyId, milestoneId })
-      setClaims(claims)
+      addTrophyClaims(userId, claims)
       setJustClaimed(trophyId)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -69,16 +74,28 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const handleUnclaim = async (trophyId: string) => {
     try {
       const { claims } = await api('unclaim-trophy', { trophyId, userId })
-      setClaims(claims)
+      replaceTrophyClaims(userId, claims)
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     }
   }
 
-  if (!achievements || !trophies) {
+  if (!achievements) {
     return (
       <Col className="items-center py-8">
         <div className="text-ink-400 text-sm">Loading trophies...</div>
+      </Col>
+    )
+  }
+  if (!trophies) {
+    return (
+      <Col className="gap-6 pt-4">
+        <div className="text-ink-500 py-4 text-center text-sm">
+          {trophiesError
+            ? "Trophies couldn't load. Try again later."
+            : 'Loading trophies...'}
+        </div>
+        <AchievementsSection data={achievements} />
       </Col>
     )
   }
@@ -88,7 +105,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const reached = countReachedMilestones(achievements)
   const total = getTotalPossibleMilestones()
   const claimedCount = countClaimedMilestones(claims)
-  const unclaimedCount = Math.max(reached - claimedCount, 0)
+  const unclaimedCount = countUnclaimedReachedMilestones(achievements, claims)
 
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])

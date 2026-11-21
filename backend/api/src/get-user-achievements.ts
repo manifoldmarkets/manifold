@@ -91,11 +91,13 @@ export async function loadUserAchievements(
           and c.token = 'MANA'
       ),
       account_age as (
-        select round(
+        -- Truncated, not rounded: the Account Age trophy needs whole years,
+        -- and rounding to 2 places reached 1.00 about two days early.
+        select trunc(
           (
             extract(epoch from (now() - u.created_time)) / (365.25*24*60*60)
           )::numeric,
-          2
+          4
         ) as account_age_years
         from users u
         where u.id = (select uid from base)

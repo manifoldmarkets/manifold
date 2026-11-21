@@ -189,9 +189,10 @@ export function TrophyCard(props: {
         {isOwnProfile && isReached && !isClaimed && onClaim ? (
           <button
             className={clsx(
-              'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold text-white transition-all',
+              'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
               claiming ? 'cursor-wait opacity-75' : 'hover:brightness-110',
-              style.gradient
+              style.gradient,
+              style.buttonText
             )}
             onClick={() => onClaim(definition.id, viewing.id)}
             disabled={claiming}
@@ -202,8 +203,9 @@ export function TrophyCard(props: {
           justClaimed && onPinToProfile ? (
             <button
               className={clsx(
-                'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold text-white transition-all hover:brightness-110',
-                style.gradient
+                'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all hover:brightness-110',
+                style.gradient,
+                style.buttonText
               )}
               onClick={() => onPinToProfile(definition.id)}
             >

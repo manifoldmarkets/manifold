@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import toast from 'react-hot-toast'
 
-import { useEvent } from 'client-common/hooks/use-event'
 import { DIVISION_NAMES } from 'common/leagues'
 import {
   LEAGUE_SHOWCASE_PIN,
@@ -22,13 +20,13 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import {
   OPEN_SHOWCASE_PICKER_EVENT,
-  OpenShowcasePickerDetail,
+  ShowcasePickerRequest,
+  takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { useUserTrophies } from 'web/hooks/use-user-trophies'
-import { api } from 'web/lib/api/api'
+import { setShowcasePins, useUserTrophies } from 'web/hooks/use-user-trophies'
 
 // Pinned trophies under a user's name on their profile.
 export function ProfileShowcase(props: {
@@ -37,14 +35,18 @@ export function ProfileShowcase(props: {
 }) {
   const { userId, isOwnProfile } = props
 
-  const { data: achievements } = useAPIGetter('get-user-achievements', {
-    userId,
-  })
-  const { trophies, update } = useUserTrophies(userId)
-  const league = useLeagueInfo(userId)
+  const { data: achievements } = useAPIGetter(
+    'get-user-achievements',
+    { userId },
+    undefined,
+    `get-user-achievements-${userId}`
+  )
+  const { trophies } = useUserTrophies(userId)
+  const league = useLeagueInfo(userId) // undefined while loading
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMessage, setPickerMessage] = useState<string | null>(null)
+  const [request, setRequest] = useState<ShowcasePickerRequest | null>(null)
 
   const claims = trophies?.claims ?? []
   const maxPins = getMaxShowcasePins(countClaimedMilestones(claims))
@@ -55,65 +57,68 @@ export function ProfileShowcase(props: {
   ])
   const badgeById = new Map(badges.map((b) => [b.id, b]))
 
-  // null: never set, so show the best badges. []: the user removed them all.
+  // Saved pins, minus ones that can no longer show. The league badge is kept
+  // until the league has loaded, so a save meanwhile doesn't drop it.
   const savedPins = trophies?.pins
-  const defaultPins = badges.slice(0, maxPins).map((b) => b.id)
+  const isShowable = (id: string) =>
+    badgeById.has(id) || (id === LEAGUE_SHOWCASE_PIN && league === undefined)
+  // null: never set, so show the best badges. []: the user removed them all.
   const pins =
     savedPins == null
-      ? defaultPins
-      : savedPins.filter((id) => badgeById.has(id)).slice(0, maxPins)
+      ? badges.slice(0, maxPins).map((b) => b.id)
+      : savedPins.filter(isShowable).slice(0, maxPins)
+  const pinnedBadges = pins.flatMap((id) => badgeById.get(id) ?? [])
 
-  const savePins = async (next: string[]) => {
-    if (!trophies) return
-    const previous = trophies
-    update({ ...trophies, pins: next })
-    try {
-      await api('set-showcase-pins', { pins: next })
-    } catch (e) {
-      update(previous)
-      toast.error(e instanceof Error ? e.message : String(e))
-    }
-  }
+  const savePins = (next: string[]) => setShowcasePins(userId, next)
 
   const togglePin = (id: string) => {
     if (pins.includes(id)) {
       savePins(pins.filter((p) => p !== id))
+      setPickerMessage(null)
     } else if (pins.length < maxPins) {
       savePins([...pins, id])
+      setPickerMessage(null)
     } else {
       setPickerMessage('Unpin a trophy first')
     }
   }
 
-  // "Pin to profile" on a just-claimed trophy card.
-  const onOpenPicker = useEvent((e: Event) => {
-    const { pinId } = ((e as CustomEvent).detail ??
-      {}) as OpenShowcasePickerDetail
+  // "Pin to profile" on a just-claimed trophy card: take the request when it
+  // is sent, or on mount if it was sent while this was not mounted.
+  useEffect(() => {
+    if (!isOwnProfile) return
+    const take = () => {
+      const next = takeShowcasePickerRequest()
+      if (next) setRequest(next)
+    }
+    take()
+    window.addEventListener(OPEN_SHOWCASE_PICKER_EVENT, take)
+    return () => window.removeEventListener(OPEN_SHOWCASE_PICKER_EVENT, take)
+  }, [isOwnProfile])
+
+  useEffect(() => {
+    if (!request || !trophies) return
+    setRequest(null)
     setShowPicker(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    if (!pinId || pins.includes(pinId)) {
-      setPickerMessage(null)
-      return
+    const { pinId } = request
+    if (!pinId) return setPickerMessage(null)
+    if (pins.includes(pinId)) {
+      // Make an automatic choice the user's own, so a better trophy claimed
+      // later doesn't push it out.
+      if (savedPins == null) savePins(pins)
+      return setPickerMessage(null)
     }
     // Pins the user never chose make way for one they did.
     const base = savedPins == null ? pins.slice(0, maxPins - 1) : pins
-    if (base.length >= maxPins) {
-      setPickerMessage('Unpin a trophy first')
-      return
-    }
-    setPickerMessage(null)
+    if (base.length >= maxPins) return setPickerMessage('Unpin a trophy first')
     savePins([...base, pinId])
-  })
-  useEffect(() => {
-    if (!isOwnProfile) return
-    window.addEventListener(OPEN_SHOWCASE_PICKER_EVENT, onOpenPicker)
-    return () =>
-      window.removeEventListener(OPEN_SHOWCASE_PICKER_EVENT, onOpenPicker)
-  }, [isOwnProfile, onOpenPicker])
+    setPickerMessage(null)
+    // Runs once per request, with the state of the render that set it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request, trophies])
 
   if (!trophies || (badges.length === 0 && !isOwnProfile)) return null
-
-  const pinnedBadges = pins.flatMap((id) => badgeById.get(id) ?? [])
 
   return (
     <>
