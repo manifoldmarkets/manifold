@@ -21,10 +21,10 @@ import {
 // skipping them too. (A heavy user whose copy was pruned by
 // clean-old-notifications gets it again: they no longer have one.)
 //
-// That check reads every user's notifications: on prod (~30M rows, 49 GB on
-// 2026-11-22) most of the table, from disk. For a post nobody has yet, pass
-// --no-skip-check on the --apply run to send without it. It is refused if
-// the sample finds anyone who has the post.
+// The check reads only each batch's notifications from the post's time on
+// (about 0.7 s a batch on prod). For a post nobody has yet, --no-skip-check
+// on the --apply run sends without it; it is refused if the sample finds
+// anyone who has the post.
 //
 // A send closed early because the post was unlisted stays closed; --reopen
 // carries it on once the post is listed again. Exits nonzero unless everyone

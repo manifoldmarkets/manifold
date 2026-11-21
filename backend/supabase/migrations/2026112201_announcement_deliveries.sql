@@ -42,7 +42,9 @@ create table if not exists announcement_deliveries (
   skip_existing boolean not null default false
 );
 
--- For a table made by an earlier draft of this file, which lacked it.
+-- A no-op: prod ran exactly this file on 2026-11-21 (for the resend of the
+-- Nov 22 changelog, before the API change was deployed), and no database
+-- ever ran an earlier draft of it. Kept so this file matches what prod ran.
 alter table announcement_deliveries
   add column if not exists skip_existing boolean not null default false;
 

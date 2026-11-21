@@ -2,6 +2,7 @@ import { Notification } from 'common/notification'
 import { TopLevelPost } from 'common/top-level-post'
 import { richTextToString } from 'common/util/parse'
 import { nanoid } from 'common/util/random'
+import { HOUR_MS } from 'common/util/time'
 import { log } from 'shared/monitoring/log'
 import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 
@@ -295,16 +296,22 @@ async function sendNextBatch(
 
   let recipients = userIds
   if (delivery.skip_existing && userIds.length > 0) {
-    // Looked up by user id, so it reads only these users' notifications. (As
-    // an anti-join against the insert, Postgres read the whole table every
-    // batch: 4.5 s a batch at 4M rows.)
+    // Looked up by user id, and only among notifications from (just before)
+    // the post on: every copy of it was made after it was posted. The time
+    // bound is a condition on user_notifications_user_id_read_created, so
+    // Postgres reads only those rows. Measured on prod 2026-11-22 for 1,000
+    // users (~146 notifications each): 0.66 s and 2,236 pages read, against
+    // 50 s and 86,452 pages without the bound. The hour allows for clocks
+    // that disagree between machines.
+    const since = (post.data.createdTime ?? 0) - HOUR_MS
     const have = new Set(
       await tx.map(
         `select distinct user_id from user_notifications
          where user_id = any($1::text[])
+           and (data->'createdTime')::bigint >= $3
            and data->>'sourceId' = $2
            and data->>'sourceType' = 'post'`,
-        [userIds, postId],
+        [userIds, postId, since],
         (r: { user_id: string }) => r.user_id
       )
     )

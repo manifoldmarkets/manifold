@@ -108,6 +108,7 @@ const client = {
 const pg = client as unknown as SupabaseDirectClient
 
 const ADMIN = ENV_CONFIG.adminIds[0]
+const POST_TIME = 1_795_277_772_236
 const doc = (text: string) => ({
   type: 'doc',
   content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
@@ -134,6 +135,7 @@ const addPost = async (
       creatorName: 'Gen',
       creatorUsername: 'Gen',
       creatorAvatarUrl: 'https://avatar',
+      createdTime: POST_TIME,
       isAnnouncement: options.isAnnouncement ?? true,
       visibility: options.visibility ?? 'public',
     },
@@ -361,11 +363,16 @@ describe('deliverAnnouncement', () => {
     await addUsers(6)
     await addPost('p1')
     // Two users the old sender reached.
-    for (const userId of ['u001', 'u004'])
+    // Two users the old sender reached: one after the post, one stamped a
+    // minute before it by a machine whose clock ran behind.
+    for (const [userId, createdTime] of [
+      ['u001', POST_TIME + 5000],
+      ['u004', POST_TIME - 60_000],
+    ] as const)
       await rows(
         `insert into user_notifications (user_id, notification_id, data)
          values ($1, 'old', $2)`,
-        [userId, { id: 'old', sourceId: 'p1', sourceType: 'post' }]
+        [userId, { id: 'old', sourceId: 'p1', sourceType: 'post', createdTime }]
       )
     await queueAnnouncementDelivery(pg, 'p1', { skipUsersWhoHaveIt: true })
 
