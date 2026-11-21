@@ -10,8 +10,10 @@
 //
 // The real handlers run here. The comments are rows in an in-memory
 // PostgreSQL, read and written by the handlers' own SQL (getComment,
-// updateData, the edit log). Markets and users are in-memory stand-ins, and
-// the bounty payout itself is a stand-in. No live database or network is used.
+// updateData, the edit log), in a real transaction where the handler opens
+// one. No comment here has a post on Yap. Markets and users are in-memory
+// stand-ins, and the bounty payout itself is a stand-in. No live database or
+// network is used.
 import { PGlite } from '@electric-sql/pglite'
 
 jest.mock('api/helpers/endpoint', () => ({
@@ -130,8 +132,9 @@ let db: PGlite
 const rows = async (sql: string, params?: unknown) =>
   (await db.query<Row>(pgp.as.format(sql, params))).rows
 
-// The parts of pg-promise the four handlers use. pg-promise formats the
-// placeholders as it does in production; PGlite executes the result.
+// The parts of pg-promise the four handlers use, on one connection.
+// pg-promise formats the placeholders as it does in production; PGlite
+// executes the result.
 const client = {
   oneOrNone: async <T>(
     sql: string,
@@ -150,6 +153,19 @@ const client = {
   },
   none: async (sql: string, params?: unknown) => {
     await rows(sql, params)
+  },
+  // One transaction: what the handler wrote is undone if it throws.
+  tx: async (...args: unknown[]) => {
+    const run = args[args.length - 1] as (tx: unknown) => Promise<unknown>
+    await db.exec('begin')
+    try {
+      const result = await run(client)
+      await db.exec('commit')
+      return result
+    } catch (error) {
+      await db.exec('rollback')
+      throw error
+    }
   },
 }
 
@@ -248,7 +264,8 @@ const expectOtherUntouched = async (commentId: string, before: Row[]) => {
 beforeAll(async () => {
   db = new PGlite()
   // contract_comments as backend/supabase/contract_comments.sql defines it,
-  // with the trigger that fills its columns from data, and the edit log.
+  // with the trigger that fills its columns from data, the edit log, and
+  // the part of social_posts the handlers read.
   await db.exec(`
     create function millis_to_ts (millis bigint) returns timestamptz
       language sql immutable as
@@ -288,6 +305,14 @@ beforeAll(async () => {
       editor_id text not null,
       id serial not null
     );
+    -- The columns hide-comment and edit-comment use when they look for the
+    -- comment's post on Yap. The table stays empty here.
+    create table social_posts (
+      id text primary key,
+      market_comment_id text,
+      hidden_time timestamptz,
+      deleted_time timestamptz
+    );
   `)
 })
 
@@ -297,7 +322,10 @@ afterAll(async () => {
 
 beforeEach(async () => {
   jest.clearAllMocks()
-  await db.exec(`truncate contract_comments; truncate contract_comment_edits;`)
+  await db.exec(
+    `truncate contract_comments; truncate contract_comment_edits;
+    truncate social_posts;`
+  )
   for (const c of [comment('on-a', 'market-a'), comment('on-b', 'market-b')])
     await rows(
       `insert into contract_comments (contract_id, comment_id, data)
