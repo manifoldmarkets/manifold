@@ -32,13 +32,13 @@ const schedules = {
     eligible: true,
   },
   wnba: {
-    id: 301,
-    slateDate: '2026-05-14',
+    id: 25005,
+    slateDate: '2026-08-13',
     status: 'final',
-    home: { id: 31, name: 'Lake City Herons' },
-    away: { id: 32, name: 'Northport Comets' },
-    homeScore: 84,
-    awayScore: 78,
+    home: { id: 1, name: 'New York Liberty' },
+    away: { id: 12, name: 'Los Angeles Sparks' },
+    homeScore: 85,
+    awayScore: 81,
     postseason: false,
     eligible: true,
   },
@@ -65,7 +65,7 @@ const schedules = {
     eligible: true,
   },
 } as const
-const recordedSchedules: MajorLeague[] = ['nba', 'nhl', 'nfl']
+const recordedSchedules: MajorLeague[] = ['nba', 'nhl', 'wnba', 'nfl']
 const recordedOdds: MajorLeague[] = ['nba', 'nhl', 'nfl']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
@@ -323,8 +323,8 @@ it('rejects unrelated dates, ignored WNBA phase, conflicting schedule IDs and un
     fetchMajorGames(
       localClient(() => fixture('wnba', 'games')).client,
       'wnba',
-      '2026-05-14',
-      '2026-05-14'
+      dateFor('wnba'),
+      dateFor('wnba')
     )
   ).rejects.toThrow('ignored the requested filter')
 })

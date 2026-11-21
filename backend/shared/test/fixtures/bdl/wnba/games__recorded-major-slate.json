@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": 25005,
+      "date": "2026-08-14T00:00:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "status": "post",
+      "status_state": "final",
+      "period": 4,
+      "time": "10:00",
+      "home_score": 85,
+      "away_score": 81,
+      "home_team": {
+        "id": 1,
+        "full_name": "New York Liberty",
+        "abbreviation": "NY"
+      },
+      "visitor_team": {
+        "id": 12,
+        "full_name": "Los Angeles Sparks",
+        "abbreviation": "LA"
+      }
+    }
+  ]
+}
