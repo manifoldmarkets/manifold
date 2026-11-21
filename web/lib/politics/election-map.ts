@@ -6,7 +6,7 @@
 import { sortBy, sumBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, isMultiCpmm } from 'common/contract'
+import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
 import { shownPercent } from 'web/components/usa-map/election-display'
 import { ELECTORAL_UNITS, EV_TO_WIN, RatingBucket, ratingOf } from './ec-model'
 import { placeIn, placeName, TERRITORIES } from './official-markets'
@@ -482,11 +482,13 @@ export function marketTippingPoints(
   if (!contract || !isMultiCpmm(contract)) return []
   if (!contract.shouldAnswersSumToOne) return []
   if (contract.isResolved && contract.resolution === 'CANCEL') return []
-  const ranked = rankedAnswers(
-    contract,
-    (id) => getAnswerProbability(contract, id),
-    contract.answers.length
-  )
+  const ranked =
+    splitPayout(contract) ??
+    rankedAnswers(
+      contract,
+      (id) => getAnswerProbability(contract, id),
+      contract.answers.length
+    )
   const byState = new Map<string, number>()
   for (const { answer, p } of ranked) {
     if (answer.isOther) continue
@@ -498,6 +500,26 @@ export function marketTippingPoints(
     [...byState].map(([key, p]) => ({ key, p: Math.min(1, Math.max(0, p)) })),
     (t) => -t.p
   )
+}
+
+// A split resolution (CHOOSE_MULTIPLE) as each answer's share of the
+// payout: its weight over the weights' total, as the payout divides them,
+// so { PA: 100, Other: 0.05 } pays Pennsylvania just under all of it, not
+// all of it. Undefined for any other state of the market.
+function splitPayout(contract: MultiContract) {
+  const { resolutions } = contract
+  if (!contract.isResolved || contract.resolution !== 'CHOOSE_MULTIPLE')
+    return undefined
+  if (!resolutions) return undefined
+  const weight = (id: string) => {
+    const w = resolutions[id]
+    return Number.isFinite(w) && w > 0 ? w : 0
+  }
+  const total = sumBy(contract.answers, (a) => weight(a.id))
+  if (!(total > 0)) return undefined
+  return contract.answers
+    .map((answer) => ({ answer, p: weight(answer.id) / total }))
+    .filter((x) => x.p > 0)
 }
 
 // The state a resolved tipping-point market went to in full, or undefined
@@ -527,17 +549,21 @@ const STATE_BY_LABEL = new Map<string, string>([
 
 // "Nebraska 2nd", "NE2", "Maine's 2nd congressional district".
 const DISTRICT_LABEL =
-  /^(maine|nebraska|me|ne)s?[ -]?\d(?:st|nd|rd|th)?(?: congressional)?(?: district)?$/
+  /^(maine|nebraska|me|ne)s?[ -]?(\d)(?:st|nd|rd|th)?(?: congressional)?(?: district)?$/
+
+const UNIT_KEYS = new Set(ELECTORAL_UNITS.map((u) => u.key))
 
 // The state an answer names, only when the answer is that name and nothing
 // else, so "Other (e.g. Iowa)" or a sentence naming a state reads as none.
+// A district counts only if it exists ("NE-9" is none).
 function tippingStateOf(text: string): string | undefined {
   const label = labelOf(text)
   const state = STATE_BY_LABEL.get(label)
   if (state) return state
-  const district = DISTRICT_LABEL.exec(label)?.[1]
-  if (!district) return undefined
-  return district.startsWith('m') ? 'ME' : 'NE'
+  const [, name, n] = DISTRICT_LABEL.exec(label) ?? []
+  if (!name) return undefined
+  const st = name.startsWith('m') ? 'ME' : 'NE'
+  return UNIT_KEYS.has(`${st}-${n}`) ? st : undefined
 }
 
 // Where the map draws a tipping point: every state showing at least this

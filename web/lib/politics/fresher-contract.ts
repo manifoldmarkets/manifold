@@ -15,6 +15,13 @@ export function fresherContract<C extends Contract>(
   return changedAt(page) > changedAt(live) ? page : live
 }
 
+// Changes when the page's copy of a market differs from the one before it
+// (a later change, or an answer added without one): key a market's live
+// subscription on it, and a remount refetches the market, so later socket
+// patches build on the newest whole copy instead of an older one.
+export const snapshotKey = (c: Contract) =>
+  `${c.id}:${changedAt(c)}:${'answers' in c ? c.answers.length : 0}`
+
 const changedAt = (c: Contract) =>
   Math.max(
     finiteOr0(c.lastUpdatedTime),

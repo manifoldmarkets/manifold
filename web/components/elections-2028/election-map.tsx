@@ -74,7 +74,7 @@ import {
   tippingWinner,
 } from 'web/lib/politics/election-map'
 import type { ElectoralModel } from 'web/lib/politics/elections-2028'
-import { fresherContract } from 'web/lib/politics/fresher-contract'
+import { fresherContract, snapshotKey } from 'web/lib/politics/fresher-contract'
 import { TERRITORIES } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
@@ -277,13 +277,19 @@ export function ElectionMap(props: {
     !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
   // Resolved to one state in full; a split payout keeps its shares on show.
   const tipWinner = tipSettled ? tippingWinner(tipChances) : undefined
-  // A tipping chip under the pointer or focus, while it's still a chip (a
-  // live update can remove it before its leave or blur fires).
+  // A tipping chip under the pointer or focus. A live update can remove the
+  // chip before its leave or blur fires, so a preview is dropped (not just
+  // hidden) once its chip is gone, and on leaving the President view.
   const [tipPreview, setTipPreview] = useState<string>()
-  const tipPreviewKey =
-    tipPreview && tips.some((t) => t.key === tipPreview)
-      ? tipPreview
-      : undefined
+  useEffect(() => {
+    if (tipPreview && (!president || !tipKeys.has(tipPreview)))
+      setTipPreview(undefined)
+  }, [tipPreview, tipKeys, president])
+  // The newest preview wins: a tracker segment or place chip hovered after a
+  // tipping chip took focus replaces it.
+  useEffect(() => {
+    if (preview) setTipPreview(undefined)
+  }, [preview])
   const more = useMemo<PlacedMarket[]>(
     () =>
       props.offYear.map((c) => ({
@@ -335,19 +341,21 @@ export function ElectionMap(props: {
     [tracker, groups]
   )
   const previewPlaces = useMemo(() => {
-    if (tipPreviewKey)
-      return new Set([
-        tipPreviewKey,
-        ...shapes
-          .filter((s) => s.id.startsWith(`${tipPreviewKey}-`))
-          .map((s) => s.id),
-      ])
+    // A tipping chip previews its state's shapes (with Maine's and
+    // Nebraska's districts). DC has no cartogram tile: with nothing to
+    // outline, it previews nothing rather than dimming the whole map.
+    if (tipPreview && tipKeys.has(tipPreview)) {
+      const drawn = shapes
+        .filter((s) => s.id === tipPreview || s.id.startsWith(`${tipPreview}-`))
+        .map((s) => s.id)
+      if (drawn.length > 0) return new Set(drawn)
+    }
     if (!preview) return new Set<string>()
     if (preview.startsWith('tip:')) return new Set([preview.slice(4)])
     return new Set(
       tracker.segments.find((s) => s.key === preview)?.places ?? []
     )
-  }, [tracker, preview, tipPreviewKey, shapes])
+  }, [tracker, preview, tipPreview, tipKeys, shapes])
   const searching = query.trim().length > 0
   const searchHits = useMemo(
     () =>
@@ -786,7 +794,11 @@ export function ElectionMap(props: {
         </header>
 
         {tippingContract && (
-          <Subscribe contract={tippingContract} onLive={setTipUpdate} />
+          <Subscribe
+            key={snapshotKey(tippingContract)}
+            contract={tippingContract}
+            onLive={setTipUpdate}
+          />
         )}
         {mode === 'primary' && <PrimaryControls view={view} update={update} />}
         {president && (model || tips.length > 0) && (
@@ -797,7 +809,10 @@ export function ElectionMap(props: {
             tipMarket={tipMarket}
             tipSettled={tipSettled}
             tipWinner={tipWinner}
-            onPreview={setTipPreview}
+            onPreview={(key) => {
+              setTipPreview(key)
+              if (key) setPreview(undefined)
+            }}
             onPick={(key, element) => {
               track('election map tipping point', { place: key })
               choose(key, element)

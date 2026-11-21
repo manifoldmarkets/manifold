@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Contract } from 'common/contract'
-import { fresherContract } from './fresher-contract'
+import { fresherContract, snapshotKey } from './fresher-contract'
 
 const market = (over: Partial<Contract>) =>
   ({ id: 'm', lastUpdatedTime: 1000, ...over } as unknown as Contract)
@@ -34,4 +34,25 @@ test('a resolution the socket missed arrives with the next refresh', () => {
   assert.equal(fresherContract(live, resolved), resolved)
   // A copy with no timestamps never beats one with them.
   assert.equal(fresherContract(live, market({ lastUpdatedTime: NaN })), live)
+})
+
+test('a page copy that differs gets a new subscription key', () => {
+  const answers = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ id: `a${i}` }))
+  const base = market({ lastUpdatedTime: 1000, answers: answers(3) } as object)
+  const same = market({ lastUpdatedTime: 1000, answers: answers(3) } as object)
+  assert.equal(snapshotKey(base), snapshotKey(same))
+  // A later change, or an answer added without one, remounts (refetches).
+  assert.notEqual(
+    snapshotKey(base),
+    snapshotKey(
+      market({ lastUpdatedTime: 2000, answers: answers(3) } as object)
+    )
+  )
+  assert.notEqual(
+    snapshotKey(base),
+    snapshotKey(
+      market({ lastUpdatedTime: 1000, answers: answers(4) } as object)
+    )
+  )
 })

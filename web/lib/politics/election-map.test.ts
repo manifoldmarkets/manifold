@@ -346,6 +346,9 @@ test('tipping points from the tipping-point market', () => {
   assert.deepEqual(labels(['Nebraska 2nd']), ['NE'])
   assert.deepEqual(labels(["Maine's 2nd congressional district"]), ['ME'])
   assert.deepEqual(labels(['pennsylvania ']), ['PA'])
+  assert.deepEqual(labels(['NE-3']), ['NE'])
+  assert.deepEqual(labels(['NE-9']), [])
+  assert.deepEqual(labels(['Maine 3rd district']), [])
   assert.deepEqual(labels(['Iowa or Ohio']), [])
   assert.deepEqual(labels(['Kansas City']), [])
   assert.deepEqual(labels(['Virginia Beach']), [])
@@ -362,10 +365,7 @@ test('tipping points from the tipping-point market', () => {
       market({
         isResolved: true,
         resolution: 'o',
-        answers: [
-          answer('ia', 'Ohio', 0.2),
-          answer('o', 'Iowa', 0.8, true),
-        ],
+        answers: [answer('ia', 'Ohio', 0.2), answer('o', 'Iowa', 0.8, true)],
       })
     ),
     []
@@ -381,6 +381,34 @@ test('tipping points from the tipping-point market', () => {
   )
   assert.deepEqual(split, [{ key: 'PA', p: 0.05 }])
   assert.equal(tippingWinner(split), undefined)
+  // A split's weights are shares of their total, as the payout divides
+  // them: { PA: 100, Other: 0.05 } pays Pennsylvania just under all of it,
+  // so it isn't a win in full.
+  const nearlyAll = marketTippingPoints(
+    market({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { pa: 100, o: 0.05 },
+    })
+  )
+  assert.equal(nearlyAll.length, 1)
+  assert.equal(nearlyAll[0].key, 'PA')
+  near(nearlyAll[0].p, 100 / 100.05)
+  assert.equal(tippingWinner(nearlyAll), undefined)
+  // Two states share it: each at its share.
+  const shared = marketTippingPoints(
+    market({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { pa: 60, ga: 40 },
+    })
+  )
+  assert.deepEqual(
+    shared.map((t) => t.key),
+    ['PA', 'GA']
+  )
+  near(shared[0].p, 0.6)
+  assert.equal(tippingWinner(shared), undefined)
   // Open: no winner, however lopsided.
   assert.equal(
     tippingWinner(

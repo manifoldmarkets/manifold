@@ -252,11 +252,16 @@ export function PinnedPlace(props: {
           <RaceMarket slug={focus.slug} creator={focus.creator} />
         </div>
       ) : (
-        <p className={styles.note}>
-          {view.mode === 'primary'
-            ? 'No market for this primary yet.'
-            : `No ${OFFICE_WORD[view.mode]} race here in 2028.`}
-        </p>
+        <>
+          <p className={styles.note}>
+            {view.mode === 'primary'
+              ? 'No market for this primary yet.'
+              : `No ${OFFICE_WORD[view.mode]} race here in 2028.`}
+          </p>
+          {/* A district with no market of its own still shows its state's
+              tipping chance, as its hover card does. */}
+          <TippingLine p={tipping} place={place} />
+        </>
       )}
       {restCount > 0 && (
         <MoreInState

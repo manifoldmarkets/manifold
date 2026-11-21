@@ -2,7 +2,7 @@ import { ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { Contract } from 'common/contract'
 import { useLiveContract } from 'web/hooks/use-contract'
-import { fresherContract } from 'web/lib/politics/fresher-contract'
+import { fresherContract, snapshotKey } from 'web/lib/politics/fresher-contract'
 
 // Live copies of a list of markets, for a picture drawn from several at once
 // (a tile map, a grid, a list of lines): one useLiveContract per market, as
@@ -26,7 +26,7 @@ export function LiveContracts(props: {
   return (
     <>
       {contracts.map((c) => (
-        <Subscribe key={c.id} contract={c} onLive={onLive} />
+        <Subscribe key={snapshotKey(c)} contract={c} onLive={onLive} />
       ))}
       {children(live)}
     </>
