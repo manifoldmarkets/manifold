@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { User } from 'common/user'
+import { canTakeLoans } from 'common/loans'
 import { LoansModal } from 'web/components/profile/loans-modal'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
@@ -18,6 +19,7 @@ import { api } from 'web/lib/api/api'
 import { formatMoney } from 'common/util/format'
 import toast from 'react-hot-toast'
 import { DailyFreeLoanModal } from './daily-free-loan-modal'
+import { VerificationRequiredModal } from 'web/components/modals/verification-required-modal'
 
 dayjs.extend(utc)
 dayjs.extend(timezone)
@@ -32,15 +34,21 @@ export function DailyLoan(props: {
 
   const [showLoansModal, setShowLoansModal] = useState(false)
   const [showFreeLoanModal, setShowFreeLoanModal] = useState(false)
+  const [showVerificationModal, setShowVerificationModal] = useState(false)
   const [isClaiming, setIsClaiming] = useState(false)
   const [justClaimed, setJustClaimed] = useState(false)
+
+  // Loans are open to unverified users too. Only admin-flagged accounts
+  // ('requires_verification') are held back, and for those the verification
+  // modal's isFlagged copy is the right prompt.
+  const userCanTakeLoans = canTakeLoans(user)
 
   // Get free loan availability
   const {
     data: freeLoanData,
     refresh: refreshFreeLoan,
     loading: freeLoanLoading,
-  } = useAPIGetter('get-free-loan-available', {})
+  } = useAPIGetter('get-free-loan-available', { userId: user.id })
   const canClaimFreeLoan = freeLoanData?.canClaim ?? false
   const freeLoanAmount = freeLoanData?.available ?? 0
 
@@ -82,6 +90,12 @@ export function DailyLoan(props: {
   }, [canClaimFreeLoan, isClaiming, refreshFreeLoan, refreshPortfolio])
 
   const handleChestClick = useCallback(() => {
+    // Flagged accounts must clear review before borrowing.
+    if (!userCanTakeLoans) {
+      setShowVerificationModal(true)
+      return
+    }
+
     if (canClaimFreeLoan && !isClaiming) {
       // Golden chest - auto claim
       handleClaimFreeLoan()
@@ -89,7 +103,7 @@ export function DailyLoan(props: {
       // Brown chest - open daily free loan modal
       setShowFreeLoanModal(true)
     }
-  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan])
+  }, [canClaimFreeLoan, isClaiming, handleClaimFreeLoan, userCanTakeLoans])
 
   const createdRecently = user.createdTime > Date.now() - 2 * DAY_MS
   if (createdRecently) {
@@ -104,11 +118,16 @@ export function DailyLoan(props: {
     freeLoanData.maxLoan > 0
   const hasNoEligiblePositions =
     freeLoanData && !alreadyClaimedToday && !atMaxLoanLimit && !canClaimFreeLoan
+  // Perps don't back loans, so a perp-only portfolio reads as "no positions".
+  const onlyPerpPositions =
+    hasNoEligiblePositions && (freeLoanData?.perpValueExcluded ?? 0) >= 1
 
   // Ineligible = at max limit OR no eligible positions (but NOT if already claimed)
   const isIneligible = atMaxLoanLimit || hasNoEligiblePositions
-  // Disabled = no eligible positions (can't even repay if nothing invested)
-  const isButtonDisabled = hasNoEligiblePositions
+  // Disabled = no eligible positions (can't even repay if nothing invested).
+  // Perp-only holders stay clickable so the modal can explain why perps don't
+  // count — the tooltip alone isn't shown on mobile.
+  const isButtonDisabled = hasNoEligiblePositions && !onlyPerpPositions
 
   const getTooltipText = () => {
     if (isLoading) return 'Loading...'
@@ -120,6 +139,9 @@ export function DailyLoan(props: {
     }
     if (atMaxLoanLimit) {
       return 'At maximum loan limit'
+    }
+    if (onlyPerpPositions) {
+      return "Perps don't earn daily loans — trade a market to start earning"
     }
     if (hasNoEligiblePositions) {
       return 'Invest more to earn daily loan'
@@ -166,6 +188,14 @@ export function DailyLoan(props: {
             isOpen={showFreeLoanModal}
             setOpen={setShowFreeLoanModal}
             user={user}
+          />
+        )}
+        {showVerificationModal && (
+          <VerificationRequiredModal
+            open={showVerificationModal}
+            setOpen={setShowVerificationModal}
+            user={user}
+            action="claim free loan"
           />
         )}
       </>

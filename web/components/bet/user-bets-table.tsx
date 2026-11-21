@@ -11,20 +11,30 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
-import { getContractBetNullMetrics } from 'common/calculate'
+import { getContractBetNullMetrics, getProbability } from 'common/calculate'
 import {
   Contract,
   contractPath,
   CPMMContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
-import { buildArray } from 'common/util/array'
-import { formatWithToken } from 'common/util/format'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
+import { getUserFacingPnl } from 'common/perps/pnl'
+import { PerpPosition } from 'common/perps/position'
+import {
+  formatMoney,
+  formatMoneyPrecise,
+  formatWithToken,
+} from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, mapValues, partition, sortBy, sum } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
@@ -32,6 +42,7 @@ import { OrderTable } from 'web/components/bet/order-book'
 import { BetsSummary } from 'web/components/bet/user-bet-summary'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Input } from 'web/components/widgets/input'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -68,6 +79,7 @@ type BetSort =
   | 'liquidity'
   | 'priceDiff'
   | 'loan'
+  | 'prob'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -77,6 +89,14 @@ export type BetFilter =
   | 'limit_bet'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
+
+const getSortProb = (c: MarketContract) => {
+  if (c.mechanism !== 'cpmm-1' || c.outcomeType !== 'BINARY') return undefined
+  // The pool retains the final trading price after resolution overwrites c.prob.
+  const prob = getProbability(c)
+  return Number.isFinite(prob) ? prob : undefined
+}
+
 export function UserBetsTable(props: { user: User }) {
   const { user } = props
 
@@ -113,29 +133,26 @@ export function UserBetsTable(props: { user: User }) {
     setOrderFilter(orderFilter === newFilter ? 'active' : newFilter)
   }
 
-  const getMetrics = useEvent(() =>
+  useEffect(() => {
+    if (isAuth === undefined) return
+    let cancelled = false
     // NOTE: this only returns the currently used contract props to save on bandwidth
     api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,
       // Hack for Ziddletwix
       limit: user.id === 'Iua2KQvL6KYcfGLGNI6PVeGkseo1' ? 10000 : 5000,
-    }).then((res) => {
-      const { contracts, metricsByContract } = res
+    }).then(({ contracts, metricsByContract }) => {
+      if (cancelled) return
       setMetricsByContract(
         mapValues(metricsByContract, (metrics) => metrics[0])
       )
-      setContracts((c) =>
-        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-      )
+      setContracts(contracts)
     })
-  )
-
-  useEffect(() => {
-    if (isAuth !== undefined) {
-      getMetrics()
+    return () => {
+      cancelled = true
     }
-  }, [getMetrics, user.id, isAuth])
+  }, [user.id, isAuth, setMetricsByContract, setContracts])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
     'open',
@@ -261,6 +278,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Lowest Position', field: 'position', direction: 'asc' },
     { label: 'Highest Profit', field: 'profit', direction: 'desc' },
     { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
+    { label: 'Highest Probability', field: 'prob', direction: 'desc' },
+    { label: 'Lowest Probability', field: 'prob', direction: 'asc' },
     { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
     { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
@@ -484,7 +503,6 @@ export function UserBetsTable(props: { user: User }) {
           contracts={filteredContracts as MarketContract[]}
           metricsByContractId={nullableMetricsByContract}
           user={user}
-          filter={filter}
           signedInUser={signedInUser}
           sortOption={sortOption}
           setSortOption={setSortOption}
@@ -537,7 +555,6 @@ const availableColumns: { value: BetSort; label: string; tooltip?: string }[] =
 function BetsTable(props: {
   contracts: MarketContract[]
   metricsByContractId: { [key: string]: ContractMetric }
-  filter: BetFilter
   user: User
   signedInUser: User | null | undefined
   sortOption: { field: BetSort; direction: 'asc' | 'desc' }
@@ -547,7 +564,6 @@ function BetsTable(props: {
 }) {
   const {
     metricsByContractId,
-    filter,
     user,
     signedInUser,
     sortOption,
@@ -594,6 +610,7 @@ function BetsTable(props: {
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
     loan: (c) => -(metricsByContractId[c.id].loan ?? 0),
+    prob: (c) => -(getSortProb(c) ?? 0),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
@@ -625,10 +642,16 @@ function BetsTable(props: {
   }
 
   const sortFunction = SORTS[sortOption.field]
-  const contracts =
+  const sortedContracts =
     sortOption.direction === 'desc'
       ? sortBy(allContracts, sortFunction)
       : sortBy(allContracts, sortFunction).reverse()
+  // Keep markets without a single probability (multiple choice, numeric, etc.)
+  // at the bottom in both directions, so the extremes show up first.
+  const contracts =
+    sortOption.field === 'prob'
+      ? partition(sortedContracts, (c) => getSortProb(c) !== undefined).flat()
+      : sortedContracts
 
   const visibleContracts = contracts.slice(0, displayCount)
 
@@ -720,14 +743,13 @@ function BetsTable(props: {
             {visibleContracts.map((contract) => {
               const metric = metricsByContractId[contract.id]
               const closeDate = contract.resolutionTime ?? contract.closeTime
-              const resolvedAnswer =
-                contract.mechanism === 'cpmm-multi-1'
-                  ? contract.answers.find(
-                      (a) =>
-                        a.id === contract.resolution ||
-                        (contract.resolutions?.[a.id] ?? 0) >= 99
-                    )
-                  : undefined
+              const resolvedAnswer = isMultiCpmm(contract)
+                ? contract.answers.find(
+                    (a) =>
+                      a.id === contract.resolution ||
+                      (contract.resolutions?.[a.id] ?? 0) >= 99
+                  )
+                : undefined
 
               const maxOutcome =
                 metricsByContractId[contract.id].maxSharesOutcome
@@ -739,7 +761,15 @@ function BetsTable(props: {
                 >
                   <div
                     className="flex w-full"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setNewExpandedId(contract.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setNewExpandedId(contract.id)
+                      }
+                    }}
                   >
                     {/* Question cell */}
                     <div
@@ -768,6 +798,10 @@ function BetsTable(props: {
                             : 'sm:line-clamp-1 sm:text-base'
                         )}
                       >
+                        <MarketTitleLabel
+                          contract={contract as Contract}
+                          className="mr-1"
+                        />
                         {contract.question}
                       </Link>
                       <div className="text-ink-500 mt-1 truncate text-sm">
@@ -1186,13 +1220,23 @@ function BetsTable(props: {
                   {/* Expanded content below the main row content */}
                   {expandedIds.includes(contract.id) && (
                     <div className="border-ink-200 border-t px-2 py-2">
-                      <ExpandedBetRow
-                        contract={contract}
-                        user={user}
-                        signedInUser={signedInUser}
-                        contractMetric={metric}
-                        areYourBets={areYourBets}
-                      />
+                      {/* The endpoint's type says MarketContract, but perp
+                          contracts flow through this table at runtime. */}
+                      {(contract as Contract).mechanism === 'perp' ? (
+                        <ExpandedPerpRow
+                          contract={contract}
+                          user={user}
+                          contractMetric={metric}
+                        />
+                      ) : (
+                        <ExpandedBetRow
+                          contract={contract}
+                          user={user}
+                          signedInUser={signedInUser}
+                          contractMetric={metric}
+                          areYourBets={areYourBets}
+                        />
+                      )}
                     </div>
                   )}
                 </div>
@@ -1206,6 +1250,188 @@ function BetsTable(props: {
         </div>
       </div>
     </div>
+  )
+}
+
+// Perp expansion: positions + recent activity. Perps have no rows in the
+// bets table (the engine keeps its own event log), so the CPMM expansion
+// renders an empty table with CPMM-speak headers ("Expected value", PROB).
+const ExpandedPerpRow = (props: {
+  contract: Contract
+  user: User
+  contractMetric: ContractMetric
+}) => {
+  const { contract, user, contractMetric: m } = props
+  // The API response omits contractId; re-attach it for the PnL helpers.
+  const [positions, setPositions] = useState<
+    Omit<PerpPosition, 'contractId'>[] | undefined
+  >()
+  const [events, setEvents] = useState<
+    | {
+        id: number
+        ts: number
+        eventType: string
+        direction: 'long' | 'short' | null
+        sizeDelta: number
+        originalCostBasisDelta: number
+        oraclePrice: number
+        payout: number | null
+        pnl: number | null
+      }[]
+    | undefined
+  >()
+
+  useEffect(() => {
+    let cancelled = false
+    api('get-perp-positions', { contractId: contract.id, userId: user.id })
+      .then((p) => !cancelled && setPositions(p))
+      .catch(() => !cancelled && setPositions([]))
+    api('get-perp-events', {
+      contractId: contract.id,
+      userId: user.id,
+      limit: 10,
+    })
+      .then((e) => !cancelled && setEvents(e))
+      .catch(() => !cancelled && setEvents([]))
+    return () => {
+      cancelled = true
+    }
+  }, [contract.id, user.id])
+
+  const markPrice = Number((contract as any).oraclePrice)
+  const hasMark = Number.isFinite(markPrice)
+  const decimals = inferPerpPriceDecimals([markPrice])
+
+  if (positions === undefined || events === undefined) {
+    return (
+      <Col className={'w-full items-center justify-center'}>
+        <LoadingIndicator />
+      </Col>
+    )
+  }
+
+  return (
+    <Col className="mt-2 w-full gap-4 pb-2">
+      {/* Summary in perp terms, not CPMM-speak */}
+      <Row className="flex-wrap gap-x-8 gap-y-2 text-sm">
+        <Col>
+          <span className="text-ink-500 text-xs">Position value</span>
+          <span className="font-semibold">{formatMoneyPrecise(m.payout)}</span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Amount invested</span>
+          <span className="font-semibold">
+            {formatMoneyPrecise(m.totalAmountInvested)}
+          </span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Returned on closes</span>
+          <span className="font-semibold">
+            {formatMoneyPrecise(m.totalAmountSold ?? 0)}
+          </span>
+        </Col>
+        <Col>
+          <span className="text-ink-500 text-xs">Profit</span>
+          <span
+            className={clsx(
+              'font-semibold',
+              m.profit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+            )}
+          >
+            {m.profit >= 0 ? '+' : ''}
+            {formatMoneyPrecise(m.profit)}
+          </span>
+        </Col>
+      </Row>
+
+      {positions.length > 0 && (
+        <Col className="gap-1">
+          <span className="text-ink-500 text-xs font-semibold uppercase">
+            Open positions
+          </span>
+          {positions.map((p) => {
+            const pnl = hasMark
+              ? getUserFacingPnl(
+                  { ...p, contractId: contract.id } as PerpPosition,
+                  markPrice
+                )
+              : undefined
+            return (
+              <Row
+                key={p.direction}
+                className="flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+              >
+                <span
+                  className={clsx(
+                    'font-semibold capitalize',
+                    p.direction === 'long'
+                      ? 'text-teal-600'
+                      : 'text-scarlet-600'
+                  )}
+                >
+                  {p.direction}
+                </span>
+                <span>{formatMoney(p.size)} notional</span>
+                <span className="text-ink-500">
+                  {formatMoney(p.originalCostBasis)} margin
+                </span>
+                <span className="text-ink-500">
+                  entry {formatPerpPrice(p.entryPrice, decimals)}
+                </span>
+                <span className="text-ink-500">
+                  liq {formatPerpPrice(p.liquidationPrice, decimals)}
+                </span>
+                {pnl !== undefined && (
+                  <span
+                    className={clsx(
+                      'font-semibold',
+                      pnl >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                    )}
+                  >
+                    {pnl >= 0 ? '+' : ''}
+                    {formatMoneyPrecise(pnl)}
+                  </span>
+                )}
+              </Row>
+            )
+          })}
+        </Col>
+      )}
+
+      {events.length > 0 && (
+        <Col className="gap-1">
+          <span className="text-ink-500 text-xs font-semibold uppercase">
+            Recent activity
+          </span>
+          {events.map((e) => (
+            <Row
+              key={e.id}
+              className="text-ink-700 flex-wrap items-baseline gap-x-4 gap-y-1 text-sm tabular-nums"
+            >
+              <span className="text-ink-500 w-14 capitalize">
+                {e.eventType}
+              </span>
+              {e.direction && <span className="capitalize">{e.direction}</span>}
+              <span>
+                {e.sizeDelta >= 0 ? '+' : ''}
+                {formatMoney(e.sizeDelta)}
+              </span>
+              <span className="text-ink-500">
+                @ {formatPerpPrice(e.oraclePrice, decimals)}
+              </span>
+              {e.payout != null && (
+                <span className="text-ink-500">
+                  payout {formatMoneyPrecise(e.payout)}
+                </span>
+              )}
+              <span className="text-ink-400 text-xs">
+                <RelativeTimestamp time={e.ts} shortened />
+              </span>
+            </Row>
+          ))}
+        </Col>
+      )}
+    </Col>
   )
 }
 
@@ -1341,7 +1567,15 @@ function BetsTableHeaders(props: {
                   'text-ink-500 w-[90px] flex-shrink-0 cursor-pointer py-2 text-right text-sm',
                   'border-ink-200 border-b'
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => handleHeaderClick(sortField)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleHeaderClick(sortField)
+                  }
+                }}
               >
                 <Row className="relative items-center justify-end gap-1">
                   <span>

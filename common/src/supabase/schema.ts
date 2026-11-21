@@ -14,6 +14,168 @@ export type Database = {
   }
   public: {
     Tables: {
+      social_posts: {
+        Row: {
+          id: string
+          user_id: string
+          text: string
+          rich_content: Json | null
+          image_urls: string[]
+          created_time: string
+          edited_time: string | null
+          parent_id: string | null
+          root_id: string
+          source_post_id: string | null
+          source_contract_id: string | null
+          source_comment_id: string | null
+          source_bet_id: string | null
+          deleted_time: string | null
+          deleted_by: string | null
+          removed_by_moderator: boolean
+        }
+        Insert: {
+          id: string
+          user_id: string
+          text: string
+          rich_content?: Json | null
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          text?: string
+          rich_content?: Json | null
+          image_urls?: string[]
+          created_time?: string
+          edited_time?: string | null
+          parent_id?: string | null
+          root_id?: string
+          source_post_id?: string | null
+          source_contract_id?: string | null
+          source_comment_id?: string | null
+          source_bet_id?: string | null
+          deleted_time?: string | null
+          deleted_by?: string | null
+          removed_by_moderator?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_source_post_id_fkey'
+            columns: ['source_post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_root_id_fkey'
+            columns: ['root_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_source_contract_id_fkey'
+            columns: ['source_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_posts_deleted_by_fkey'
+            columns: ['deleted_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_post_markets: {
+        Row: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Insert: {
+          post_id: string
+          contract_id: string
+          position: number
+        }
+        Update: {
+          post_id?: string
+          contract_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_post_markets_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_post_markets_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_write_limits: {
+        Row: {
+          user_id: string
+          action: string
+          window_start: string
+          count: number
+        }
+        Insert: {
+          user_id: string
+          action: string
+          window_start?: string
+          count?: number
+        }
+        Update: {
+          user_id?: string
+          action?: string
+          window_start?: string
+          count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_write_limits_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       answers: {
         Row: {
           color: string | null
@@ -24,6 +186,7 @@ export type Database = {
           index: number | null
           is_other: boolean
           midpoint: number | null
+          p: number
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
@@ -51,6 +214,7 @@ export type Database = {
           index?: number | null
           is_other?: boolean
           midpoint?: number | null
+          p?: number
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -78,6 +242,7 @@ export type Database = {
           index?: number | null
           is_other?: boolean
           midpoint?: number | null
+          p?: number
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
@@ -592,6 +757,225 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_perp_events: {
+        Row: {
+          applied_ts: string
+          contract_id: string
+          cost_basis_delta: number
+          data: Json | null
+          direction: string | null
+          event_type: string
+          id: number
+          leverage: number | null
+          oracle_price: number | null
+          original_cost_basis_delta: number
+          size_delta: number
+          ts: string
+          user_id: string | null
+        }
+        Insert: {
+          applied_ts?: string
+          contract_id: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Update: {
+          applied_ts?: string
+          contract_id?: string
+          cost_basis_delta?: number
+          data?: Json | null
+          direction?: string | null
+          event_type?: string
+          id?: number
+          leverage?: number | null
+          oracle_price?: number | null
+          original_cost_basis_delta?: number
+          size_delta?: number
+          ts?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      contract_perp_funding_events: {
+        Row: {
+          adl_factor_long: number
+          adl_factor_short: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Insert: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id: string
+          funding_rate: number
+          num_liquidations?: number
+          oracle_price: number
+          pool_long_after: number
+          pool_long_before: number
+          pool_short_after: number
+          pool_short_before: number
+          ts: string
+        }
+        Update: {
+          adl_factor_long?: number
+          adl_factor_short?: number
+          contract_id?: string
+          funding_rate?: number
+          num_liquidations?: number
+          oracle_price?: number
+          pool_long_after?: number
+          pool_long_before?: number
+          pool_short_after?: number
+          pool_short_before?: number
+          ts?: string
+        }
+        Relationships: []
+      }
+      perp_orders: {
+        Row: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time: number | null
+          reserved_mana: number
+          created_time: string
+          expires_time: string
+          status: string
+          result: Json | null
+          error: string | null
+          execution_point: Json | null
+          completed_time: string | null
+          participation_applied_at: string | null
+        }
+        Insert: {
+          id: string
+          contract_id: string
+          user_id: string
+          idempotency_key: string
+          fingerprint: string
+          request: Json
+          is_api: boolean
+          expected_opened_time?: number | null
+          reserved_mana: number
+          created_time?: string
+          expires_time: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Update: {
+          id?: string
+          contract_id?: string
+          user_id?: string
+          idempotency_key?: string
+          fingerprint?: string
+          request?: Json
+          is_api?: boolean
+          expected_opened_time?: number | null
+          reserved_mana?: number
+          created_time?: string
+          expires_time?: string
+          status?: string
+          result?: Json | null
+          error?: string | null
+          execution_point?: Json | null
+          completed_time?: string | null
+          participation_applied_at?: string | null
+        }
+        Relationships: []
+      }
+      contract_perp_positions: {
+        Row: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time: string
+          original_cost_basis: number
+          size: number
+          taker_fee_cost_basis: number
+          updated_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          cost_basis: number
+          direction: string
+          entry_price: number
+          leverage: number
+          liquidation_price: number
+          opened_time?: string
+          original_cost_basis: number
+          size: number
+          taker_fee_cost_basis?: number
+          updated_time?: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          cost_basis?: number
+          direction?: string
+          entry_price?: number
+          leverage?: number
+          liquidation_price?: number
+          opened_time?: string
+          original_cost_basis?: number
+          size?: number
+          taker_fee_cost_basis?: number
+          updated_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      oracle_prices: {
+        Row: {
+          feed_id: string
+          price: number
+          published_at: string
+          source_ts: string | null
+          ts: string
+        }
+        Insert: {
+          feed_id: string
+          price: number
+          published_at?: string
+          source_ts?: string | null
+          ts: string
+        }
+        Update: {
+          feed_id?: string
+          price?: number
+          published_at?: string
+          source_ts?: string | null
+          ts?: string
+        }
+        Relationships: []
+      }
       contract_movement_notifications: {
         Row: {
           answer_id: string | null
@@ -970,13 +1354,6 @@ export type Database = {
             foreignKeyName: 'public_dashboard_groups_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1258,13 +1635,6 @@ export type Database = {
             foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'group_contracts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1287,13 +1657,6 @@ export type Database = {
           group_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: true
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_group_embeddings_group_id_fkey'
             columns: ['group_id']
@@ -1321,22 +1684,8 @@ export type Database = {
             foreignKeyName: 'group_groups_bottom_id_fkey'
             columns: ['bottom_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'group_groups_bottom_id_fkey'
-            columns: ['bottom_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_groups_top_id_fkey'
-            columns: ['top_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
           },
           {
             foreignKeyName: 'group_groups_top_id_fkey'
@@ -1386,13 +1735,6 @@ export type Database = {
             foreignKeyName: 'public_group_invites_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
-          {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
           }
@@ -1418,13 +1760,6 @@ export type Database = {
           role?: string
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_group_members_group_id_fkey'
             columns: ['group_id']
@@ -2098,6 +2433,52 @@ export type Database = {
         }
         Relationships: []
       }
+      market_links: {
+        Row: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation: string
+          created_by: string
+          created_time: string
+        }
+        Insert: {
+          child_contract_id: string
+          parent_contract_id: string
+          relation?: string
+          created_by: string
+          created_time?: string
+        }
+        Update: {
+          child_contract_id?: string
+          parent_contract_id?: string
+          relation?: string
+          created_by?: string
+          created_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'market_links_child_contract_id_fkey'
+            columns: ['child_contract_id']
+            isOneToOne: true
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_parent_contract_id_fkey'
+            columns: ['parent_contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'market_links_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       market_ads: {
         Row: {
           cost_per_view: number
@@ -2319,13 +2700,6 @@ export type Database = {
           visibility?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'group_role'
-            referencedColumns: ['group_id']
-          },
           {
             foreignKeyName: 'public_old_posts_group_id_fkey'
             columns: ['group_id']
@@ -2998,6 +3372,118 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      sports_competition_switches: {
+        Row: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          competition_id: string
+          enabled: boolean
+          phase: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          competition_id?: string
+          enabled?: boolean
+          phase?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_competition_switches_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      sports_leaderboards: {
+        Row: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time: string
+        }
+        Insert: {
+          entries: Json
+          kind: string
+          sport: string
+          updated_time?: string
+        }
+        Update: {
+          entries?: Json
+          kind?: string
+          sport?: string
+          updated_time?: string
+        }
+        Relationships: []
+      }
+      sports_odds_api_usage: {
+        Row: {
+          calls: number
+          credits: number
+          day: string
+          remaining_after: number | null
+          sport_key: string
+          updated_time: string
+          used_after: number | null
+        }
+        Insert: {
+          calls?: number
+          credits?: number
+          day: string
+          remaining_after?: number | null
+          sport_key: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Update: {
+          calls?: number
+          credits?: number
+          day?: string
+          remaining_after?: number | null
+          sport_key?: string
+          updated_time?: string
+          used_after?: number | null
+        }
+        Relationships: []
+      }
+      sports_score_polling: {
+        Row: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time: string
+        }
+        Insert: {
+          interval_seconds: number
+          target: string
+          updated_by: string
+          updated_time?: string
+        }
+        Update: {
+          interval_seconds?: number
+          target?: string
+          updated_by?: string
+          updated_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_score_polling_updated_by_fkey'
+            columns: ['updated_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       stats: {
         Row: {
@@ -3939,38 +4425,6 @@ export type Database = {
       }
     }
     Views: {
-      final_pp_balances: {
-        Row: {
-          amount: number | null
-          user_id: string | null
-        }
-        Insert: {
-          amount?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          amount?: number | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      group_role: {
-        Row: {
-          avatar_url: string | null
-          createdtime: number | null
-          creator_id: string | null
-          group_id: string | null
-          group_name: string | null
-          group_slug: string | null
-          member_id: string | null
-          name: string | null
-          privacy_status: string | null
-          role: string | null
-          total_members: number | null
-          username: string | null
-        }
-        Relationships: []
-      }
       mv_user_achievement_stats: {
         Row: {
           comments_percentile: number | null

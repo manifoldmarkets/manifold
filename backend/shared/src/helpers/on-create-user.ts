@@ -16,7 +16,7 @@ export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
   await sendWelcomeEmail(user, privateUser)
 }
 
-const createIntroHelpMessage = async (newUser: User) => {
+const _createIntroHelpMessage = async (newUser: User) => {
   const pg = createSupabaseDirectClient()
   const random = Math.floor(Math.random() * NEW_USER_HERLPER_IDS.length)
   const creator = (await getUser(

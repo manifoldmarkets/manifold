@@ -16,6 +16,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 import { bulkInsertNotifications } from 'shared/supabase/notifications'
 import { convertPrivateUser } from 'common/supabase/users'
+import { NO_NEW_MARKET_EMAIL_CREATOR_IDS } from 'common/envs/constants'
 
 export const createNewContractNotification = async (
   contractCreator: User,
@@ -37,6 +38,10 @@ export const createNewContractNotification = async (
     (r) => ({ ...convertPrivateUser(r), name: r.name })
   )
   const followerUserIds = privateUsers.map((user) => user.id)
+  // Bulk creators' followers get the in-app notification but no email per market.
+  const emailFollowers = !NO_NEW_MARKET_EMAIL_CREATOR_IDS.includes(
+    contractCreator.id
+  )
   const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
   const sendNotificationsIfSettingsAllow = (
     userId: string,
@@ -73,7 +78,11 @@ export const createNewContractNotification = async (
       }
       bulkNotifications.push(notification)
     }
-    if (sendToEmail && reason === 'contract_from_followed_user') {
+    if (
+      sendToEmail &&
+      reason === 'contract_from_followed_user' &&
+      emailFollowers
+    ) {
       const entry = getNewFollowedMarketEmail(
         reason,
         privateUser.name,

@@ -98,6 +98,19 @@ async function createSubscriptionExpiringNotification(
   }
 }
 
+// Whole days until an entitlement expires, rounded up.
+//
+// `expires_time` is a timestamptz and arrives as an ISO string, not a Date:
+// shared/supabase/init.ts registers identity type parsers for timestamp and
+// timestamptz (#3803). Calling .getTime() on it threw
+// "expires_time.getTime is not a function" on every run from 2026-10-04,
+// the first day a supporter membership fell inside the 2-3 day window since
+// that change, so no expiry warning was ever sent.
+export const daysUntilExpiry = (
+  expiresTime: string | Date,
+  nowMs = Date.now()
+) => Math.ceil((new Date(expiresTime).getTime() - nowMs) / DAY_MS)
+
 export async function checkSubscriptionExpiry() {
   const pg = createSupabaseDirectClient()
 
@@ -110,7 +123,7 @@ export async function checkSubscriptionExpiry() {
   const expiringEntitlements = await pg.manyOrNone<{
     user_id: string
     entitlement_id: string
-    expires_time: Date
+    expires_time: string
     auto_renew: boolean
   }>(
     `SELECT user_id, entitlement_id, expires_time, auto_renew
@@ -135,9 +148,7 @@ export async function checkSubscriptionExpiry() {
       continue
     }
 
-    const daysUntilExpiry = Math.ceil(
-      (expires_time.getTime() - Date.now()) / DAY_MS
-    )
+    const days = daysUntilExpiry(expires_time)
 
     // Case 1: Auto-renew is off - user has cancelled
     if (!auto_renew) {
@@ -146,7 +157,7 @@ export async function checkSubscriptionExpiry() {
           user_id,
           tierInfo.name,
           tierInfo.price,
-          daysUntilExpiry,
+          days,
           'cancelled'
         )
         notifiedCount++
@@ -174,7 +185,7 @@ export async function checkSubscriptionExpiry() {
           user_id,
           tierInfo.name,
           tierInfo.price,
-          daysUntilExpiry,
+          days,
           'insufficient_balance'
         )
         notifiedCount++

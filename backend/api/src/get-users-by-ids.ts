@@ -5,7 +5,7 @@ import { removeNullOrUndefinedProps } from 'common/util/object'
 export const getUsersByIds: APIHandler<'users/by-id'> = async (props) => {
   const pg = createSupabaseDirectClient()
   const users = await pg.manyOrNone(
-    `select id, name, username, data->>'avatarUrl' as "avatarUrl", data->'isBannedFromPosting' as "isBannedFromPosting"
+    `select id, name, username, is_bot as "isBot", data->>'avatarUrl' as "avatarUrl", data->'isBannedFromPosting' as "isBannedFromPosting"
      from users
      where id = any($1)`,
     [props.ids]

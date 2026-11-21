@@ -1,9 +1,14 @@
 import { useMemo } from 'react'
-import { last, map, max, sum, zip, min, keyBy } from 'lodash'
+import { last, map, sum, zip, keyBy, sortBy } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { MultiDateContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getEndDate,
+  getRightmostVisibleDate,
+  getVisibleNumericYRange,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 
@@ -16,7 +21,8 @@ export const getDateBetPoints = (
   contract: MultiDateContract,
   bets: MultiPoints
 ) => {
-  const { answers, shouldAnswersSumToOne } = contract
+  const { shouldAnswersSumToOne } = contract
+  const answers = sortBy(contract.answers, 'index')
   const answersById = keyBy(answers, 'id')
   const filledInBetPoints = getAnswerProbAtEveryBetTime(bets, contract)
   if (shouldAnswersSumToOne) {
@@ -112,8 +118,17 @@ export const MultiDateContractChart = (props: {
   height: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
+  const {
+    contract,
+    width,
+    multiPoints,
+    height,
+    zoomParams,
+    showZoomer,
+    zoomY,
+  } = props
   const start = contract.createdTime
   const end = getEndDate(contract)
   const endP = getExpectedDate(contract)
@@ -135,14 +150,20 @@ export const MultiDateContractChart = (props: {
     [betPoints, end, endP, now]
   )
   const { min: answerMin, max: answerMax } = getMinMax(contract)
-  const allYs = singlePointData.map((p) => p.y)
-  const minY = min([...allYs, answerMin])!
-  const maxY = max([...allYs, answerMax])!
+  const [minY, maxY] = getVisibleNumericYRange({
+    data: singlePointData,
+    contractMin: answerMin,
+    contractMax: answerMax,
+    zoomY,
+    zoomParams,
+  })
+  const isYZoomed = minY !== answerMin || maxY !== answerMax
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
   // Scale for dates on Y-axis (time values in milliseconds)
   const yScale = scaleLinear([minY, maxY], [height, 0])
+  if (isYZoomed) yScale.nice()
 
   return (
     <SingleValueHistoryChart

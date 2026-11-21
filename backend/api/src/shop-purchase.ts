@@ -24,6 +24,7 @@ import {
   getMaxStreakFreezes,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { DAY_MS } from 'common/util/time'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
@@ -63,6 +64,60 @@ async function checkItemRequirement(
       )
       userValue = row?.loss ?? 0
       valueName = 'loss'
+      break
+    }
+    case 'yesProfit': {
+      // Profit from contracts where the user has net-bought YES.
+      // Excludes redemption bets (sells) so we measure conviction on entry,
+      // not net current position.
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `WITH user_direction AS (
+           SELECT contract_id,
+                  SUM(CASE WHEN outcome = 'YES' THEN amount ELSE 0 END) -
+                  SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
+             FROM contract_bets
+            WHERE user_id = $1
+              AND is_redemption = false
+            GROUP BY contract_id
+         )
+         SELECT COALESCE(SUM(ucm.profit), 0) AS profit
+           FROM user_contract_metrics ucm
+           JOIN user_direction ud ON ud.contract_id = ucm.contract_id
+          WHERE ucm.user_id = $1
+            AND ucm.answer_id IS NULL
+            AND ucm.profit > 0
+            AND ud.net_yes > 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'YES-side profit'
+      break
+    }
+    case 'noProfit': {
+      // Profit from contracts where the user has net-bought NO.
+      // Excludes redemption bets (sells) so we measure conviction on entry,
+      // not net current position.
+      const row = await pg.oneOrNone<{ profit: number }>(
+        `WITH user_direction AS (
+           SELECT contract_id,
+                  SUM(CASE WHEN outcome = 'YES' THEN amount ELSE 0 END) -
+                  SUM(CASE WHEN outcome = 'NO'  THEN amount ELSE 0 END) AS net_yes
+             FROM contract_bets
+            WHERE user_id = $1
+              AND is_redemption = false
+            GROUP BY contract_id
+         )
+         SELECT COALESCE(SUM(ucm.profit), 0) AS profit
+           FROM user_contract_metrics ucm
+           JOIN user_direction ud ON ud.contract_id = ucm.contract_id
+          WHERE ucm.user_id = $1
+            AND ucm.answer_id IS NULL
+            AND ucm.profit > 0
+            AND ud.net_yes < 0`,
+        [userId]
+      )
+      userValue = row?.profit ?? 0
+      valueName = 'NO-side profit'
       break
     }
     case 'volume': {
@@ -189,7 +244,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
       const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-      const maxFreezes = getMaxStreakFreezes(entitlements)
+      const maxFreezes = getMaxStreakFreezes(entitlements, user.bonusEligibility)
 
       // Get current streak freeze count
       const currentFreezes = user.streakForgiveness ?? 0
@@ -215,6 +270,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     if (isSupporterTierPurchase) {
       const supporterEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
       existingSupporter = supporterEntitlements[0] ?? null
+
+      // Buying the tier you already have on auto-renew would charge for a
+      // month the renewal covers anyway. Only a stale page offers it (e.g. a
+      // second confirm while the first purchase was still in flight).
+      if (
+        existingSupporter?.entitlementId === entitlementId &&
+        existingSupporter.autoRenew
+      ) {
+        throw new APIError(
+          409,
+          `You're already a ${item.name} member, and it renews automatically.`
+        )
+      }
 
       // Calculate prorated credit from remaining time on existing tier
       if (existingSupporter?.expiresTime) {
@@ -429,6 +497,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   }),
     [auth.uid]
   )
+
+  // Entitlements live outside the users row, so nothing else tells the
+  // user's open pages (e.g. Yap's member check) that they changed.
+  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
 
   return result
 }

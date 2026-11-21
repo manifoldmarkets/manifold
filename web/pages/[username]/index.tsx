@@ -26,6 +26,7 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
+import { JsonLd } from 'web/components/JsonLd'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -41,10 +42,14 @@ import { BlockedUser } from 'web/components/profile/blocked-user'
 import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import {
+  MOD_ACTION_TEXT_CLASS,
+  ModActionTag,
+} from 'web/components/moderation/mod-action'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -61,6 +66,7 @@ import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { useUserBans } from 'web/hooks/use-user-bans'
 import { User } from 'web/lib/firebase/users'
+import { buildPersonProfile } from 'web/lib/json-ld'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
@@ -76,17 +82,24 @@ export const getStaticProps = async (props: {
 
   const user = await getUserForStaticProps(db, username)
 
-  const [contracts, posts] = user
+  const [contracts, posts, perpEvents] = user
     ? await Promise.all([
         db.from('contracts').select('id').eq('creator_id', user.id).limit(1),
         db.from('old_posts').select('id').eq('creator_id', user.id).limit(1),
+        db
+          .from('contract_perp_events')
+          .select('id')
+          .eq('user_id', user.id)
+          .in('event_type', ['open', 'add', 'close'])
+          .limit(1),
       ])
     : []
   const hasCreatedQuestion = contracts?.data?.length || posts?.data?.length
+  const hasPerpTrade = !!perpEvents?.data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user
-    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion)
+    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion, hasPerpTrade)
     : false
 
   return {
@@ -120,7 +133,7 @@ export default function UserPage(props: {
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
-    privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
+    privateUser?.blockedUserIds?.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
   else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 
@@ -133,13 +146,18 @@ export default function UserPage(props: {
 
 const shouldIgnoreUserPage = async (
   user: User,
-  hasCreatedQuestion: boolean
+  hasCreatedQuestion: boolean,
+  hasPerpTrade: boolean
 ) => {
-  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
-  const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+  // lastBetTime isn't always reliable, so use both trade logs to be sure.
+  let hasBet = false
+  try {
+    const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+    hasBet = bet.length > 0
+  } catch {}
   return (
     user.userDeleted ||
-    isUserLikelySpammer(user, bet.length > 0, hasCreatedQuestion)
+    isUserLikelySpammer(user, hasBet || hasPerpTrade, hasCreatedQuestion)
   )
 }
 
@@ -262,6 +280,22 @@ function UserProfile(props: {
         url={`/${user.username}`}
         shouldIgnore={shouldIgnoreUser}
       />
+      <JsonLd
+        data={
+          shouldIgnoreUser
+            ? null
+            : buildPersonProfile({
+                name: user.name,
+                username: user.username,
+                avatarUrl: user.avatarUrl,
+                bio: user.bio,
+                website: user.website,
+                twitterHandle: user.twitterHandle,
+                createdTime: user.createdTime,
+              })
+        }
+        id="person"
+      />
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="relative">
@@ -368,6 +402,17 @@ function UserProfile(props: {
             {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
+        {user.userDeleted && (
+          <Row
+            className={clsx(
+              'mx-4 items-center gap-2 text-sm',
+              MOD_ACTION_TEXT_CLASS
+            )}
+          >
+            <ModActionTag />
+            This account has been deleted. Only mods can see this profile.
+          </Row>
+        )}
         {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
             <ProfileShowcase userId={user.id} isOwnProfile={!!isCurrentUser} />
@@ -394,6 +439,10 @@ function UserProfile(props: {
           />
         )}
 
+        {isCurrentUser && (
+          <FlaggedAccountBanner user={currentUser} className="mx-4 mt-2" />
+        )}
+
         <Col className="mx-4">
           <QueryUncontrolledTabs
             trackingName={'profile tabs'}
@@ -407,14 +456,7 @@ function UserProfile(props: {
                 title: 'Summary',
                 prerender: true,
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
-                content: (
-                  <>
-                    <Col className="mt-2 gap-2">
-                      <VerifyPhoneNumberBanner user={currentUser} />
-                    </Col>
-                    <PortfolioSummary className="mt-4" user={user} />
-                  </>
-                ),
+                content: <PortfolioSummary className="mt-4" user={user} />,
               },
               !!user.lastBetTime && {
                 title: 'Trades',

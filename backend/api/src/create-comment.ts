@@ -5,6 +5,10 @@ import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import { first } from 'lodash'
@@ -13,6 +17,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { anythingToRichText } from 'shared/tiptap'
+import { sanitizeJsonContent } from 'shared/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, getUser, log } from 'shared/utils'
 import { broadcastNewComment } from 'shared/websockets/helpers'
@@ -22,8 +27,8 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
-// For now, only supports creating a new top-level comment on a contract.
-// Replies, posts, chats are not supported yet.
+// Creates a new comment on a contract.
+// Posts and chats are not supported yet.
 export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction(
   'comment',
   async (props, auth) => {
@@ -78,6 +83,24 @@ export const createCommentOnContractInternal = async (
 
   const pg = createSupabaseDirectClient()
   const now = Date.now()
+
+  if (replyToCommentId) {
+    const repliedComment = await pg.oneOrNone<{
+      comment_id: string
+      reply_to_comment_id: string | null
+    }>(
+      `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+       from contract_comments
+       where comment_id = $1 and contract_id = $2`,
+      [replyToCommentId, contractId]
+    )
+    if (!repliedComment) {
+      throw new APIError(404, 'Comment to reply to not found')
+    }
+    if (repliedComment.reply_to_comment_id) {
+      throw new APIError(400, 'Can only reply to top-level comments')
+    }
+  }
 
   const bet = replyToBetId
     ? await pg
@@ -219,6 +242,17 @@ export const validateComment = async (
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
+
+  // Market creators can always comment on their own markets. Everyone else
+  // must pass the new-account gate, which unlocks after
+  // NEW_USER_COMMENT_GATE_MS, KYC verification, any mana purchase, or any
+  // active subscription.
+  if (contract.creatorId !== you.id && !(await passesNewAccountGate(pg, you))) {
+    throw new APIError(
+      403,
+      newAccountGateMessage("Commenting on other users' markets")
+    )
+  }
   if (contract.token !== 'MANA') {
     throw new APIError(
       400,
@@ -226,7 +260,8 @@ export const validateComment = async (
     )
   }
 
-  const contentJson = content || anythingToRichText({ html, markdown })
+  const contentJson = (content ? sanitizeJsonContent(content) : null) ||
+    anythingToRichText({ html, markdown })
 
   if (!contentJson) {
     throw new APIError(400, 'No comment content provided.')

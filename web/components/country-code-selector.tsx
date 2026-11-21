@@ -27,7 +27,10 @@ export const CountryCodeSelector = (props: {
       : `${countries[code.toLowerCase()]} (${code.toUpperCase()})`
   return (
     <Row className="relative">
-      <Combobox value={selectedCountry} onChange={setSelectedCountry}>
+      <Combobox
+        value={selectedCountry}
+        onChange={(code) => setSelectedCountry(code ?? '')}
+      >
         <Combobox.Input
           className="bg-canvas-0 border-ink-300 w-full rounded-md border px-4 py-3 focus:border-blue-300 focus:outline-none focus:ring  dark:text-white dark:focus:border-blue-500 md:text-sm"
           onChange={(e) => setQuery(e.target.value)}

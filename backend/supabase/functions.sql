@@ -79,7 +79,14 @@ FROM public.search_contract_embeddings(
 where contract_id != input_contract_id
   and resolution_time is null
   and contracts.visibility = 'public'
-  and contracts.close_time > now()
+  and (
+    contracts.close_time > now()
+    or (
+      contracts.mechanism = 'perp'
+      and contracts.close_time is null
+      and public.is_valid_contract(contracts)
+    )
+  )
 order by similarity * similarity * importance_score desc
 limit match_count;
 $function$;
@@ -431,11 +438,11 @@ $function$;
 
 create
 or replace function public.get_user_manalink_claims (creator_id text) returns table (manalink_id text, claimant_id text, ts bigint) language sql security definer as $function$
-    select mc.manalink_id, (tx.data)->>'toId' as claimant_id, ((tx.data)->'createdTime')::bigint as ts
+    select mc.manalink_id, tx.to_id as claimant_id, ts_to_millis(tx.created_time) as ts
     from manalink_claims as mc
     join manalinks as m on mc.manalink_id = m.id
     join txns as tx on mc.txn_id = tx.id
-    where m.creator_id = creator_id
+    where m.creator_id = get_user_manalink_claims.creator_id
 $function$;
 
 create

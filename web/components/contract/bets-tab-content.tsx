@@ -22,7 +22,9 @@ import generateFilterDropdownItems from 'web/components/search/search-dropdown-h
 import { Avatar } from 'web/components/widgets/avatar'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Input } from 'web/components/widgets/input'
+import ShortToggle from 'web/components/widgets/short-toggle'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { useHideApiTrades } from 'web/hooks/use-hide-api-trades'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -39,9 +41,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     props
   const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
+  const [finishedLoadingMatchingBets, setFinishedLoadingMatchingBets] =
+    useState(false)
 
   const [minAmountFilterIndex, setMinAmountFilterIndex] =
     usePersistentInMemoryState(0, `bet-amount-filter-${contract.id}`)
+  const [hideApiTrades, setHideApiTrades] = useHideApiTrades()
   const isNumber = outcomeType === 'NUMBER'
 
   // User filter state
@@ -100,15 +105,30 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   ]
   const selectedMinAmount = minAmountOptions[minAmountFilterIndex].value
 
-  // Filter initial bets on client side, server will filter olderBets
-  const filteredInitialBets = props.bets.filter((bet) => {
+  // Drop pages loaded under other filters during render, before loadMore
+  // measures where to continue from. Clicks already clear them, but the API
+  // trades filter also changes on its own when the user's saved value loads or
+  // is changed in another tab.
+  const filtersKey = `${selectedMinAmount}-${selectedUser?.id}-${hideApiTrades}`
+  const [olderBetsFiltersKey, setOlderBetsFiltersKey] = useState(filtersKey)
+  if (olderBetsFiltersKey !== filtersKey) {
+    setOlderBetsFiltersKey(filtersKey)
+    setOlderBets([])
+    setFinishedLoadingMatchingBets(false)
+  }
+
+  // Filter initial and live-updated bets on client side; older bets are also
+  // filtered by the server when loaded.
+  const passesBetFilters = (bet: Bet) => {
     if (selectedMinAmount && Math.abs(bet.amount) < selectedMinAmount)
       return false
     if (selectedUser && bet.userId !== selectedUser.id) return false
+    if (hideApiTrades && bet.isApi) return false
     return true
-  })
-
-  const bets = [...filteredInitialBets, ...olderBets]
+  }
+  const filteredInitialBets = props.bets.filter(passesBetFilters)
+  const filteredOlderBets = olderBets.filter(passesBetFilters)
+  const bets = [...filteredInitialBets, ...filteredOlderBets]
   listenToOrderUpdates(contract.id, setOlderBets, true)
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
@@ -150,12 +170,17 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const totalItems = totalBets + visibleLps.length
   const totalLoadedItems = bets.length + visibleLps.length
 
-  const shouldLoadMore = totalLoadedItems < totalItems
+  const shouldLoadMore =
+    totalLoadedItems < totalItems && !finishedLoadingMatchingBets
   const [now] = useState(Date.now())
   const oldestBetTime = oldestBet?.createdTime ?? now
 
+  // Bumped whenever the filters change, so a page requested under earlier
+  // filters can be dropped when it arrives.
+  const filtersEpochRef = useRef(0)
   const loadMore = useEvent(async () => {
     if (!shouldLoadMore) return false
+    const epoch = filtersEpochRef.current
 
     try {
       const newBets = await api('bets', {
@@ -166,12 +191,17 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         includeZeroShareRedemptions: isNumber,
         minAmount: selectedMinAmount,
         userId: selectedUser?.id,
+        excludeApi: hideApiTrades,
       })
+      // Stale: appending it could move the next page past trades the current
+      // filters show. Report more so the loader carries on.
+      if (filtersEpochRef.current !== epoch) return true
 
       if (newBets.length > 0) {
         setOlderBets((bets) => uniqBy([...bets, ...newBets], (b) => b.id))
         return true
       }
+      setFinishedLoadingMatchingBets(true)
       return false
     } catch (err) {
       console.error(err)
@@ -179,9 +209,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     }
   })
   useEffect(() => {
+    filtersEpochRef.current++
     setOlderBets([])
+    setFinishedLoadingMatchingBets(false)
     loadMore()
-  }, [selectedMinAmount, selectedUser?.id])
+  }, [selectedMinAmount, selectedUser?.id, hideApiTrades])
 
   const allItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -395,9 +427,36 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
             </button>
           )}
         </Row>
+
+        <div className="bg-ink-300 hidden h-4 w-px sm:block" />
+
+        {/* API trades filter */}
+        <Row className="items-center gap-2">
+          <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
+            Hide API trades
+          </span>
+          <ShortToggle
+            on={hideApiTrades}
+            setOn={(enabled) => {
+              setHideApiTrades(enabled)
+              setOlderBets([])
+              track('toggle-hide-api-trades-filter', {
+                contractSlug: contract.slug,
+                contractName: contract.question,
+                hideApiTrades: enabled,
+              })
+            }}
+            size="sm"
+          />
+        </Row>
       </Row>
 
       <Col className="mb-4 gap-2">
+        {allItems.length === 0 && !shouldLoadMore && (
+          <div className="text-ink-500 py-8 text-center text-sm">
+            No trades found with the selected filters.
+          </div>
+        )}
         {allItems.map((item) =>
           item.type === 'bet' ? (
             setGraphUser ? (
@@ -439,6 +498,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         {shouldLoadMore &&
           !minAmountFilterIndex &&
           !selectedUser &&
+          !hideApiTrades &&
           Array(numLoadingRows)
             .fill(0)
             .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}

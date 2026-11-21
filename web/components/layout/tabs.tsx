@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { usePathname, ReadonlyURLSearchParams } from 'next/navigation'
 import { useRouter } from 'next/router'
 
-import { ReactNode, useEffect, useRef } from 'react'
+import { KeyboardEvent, ReactNode, useEffect, useRef } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { Col } from './col'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -35,6 +35,35 @@ type TabProps = {
   renderAllTabs?: boolean
 }
 
+function onTabKeyDown(
+  e: KeyboardEvent<HTMLElement>,
+  activeIndex: number,
+  count: number,
+  activateTab: (index: number) => void,
+  focusTab: (index: number) => void
+) {
+  if (
+    e.key !== 'ArrowLeft' &&
+    e.key !== 'ArrowRight' &&
+    e.key !== 'Home' &&
+    e.key !== 'End'
+  )
+    return
+
+  e.preventDefault()
+  const nextIndex =
+    e.key === 'Home'
+      ? 0
+      : e.key === 'End'
+      ? count - 1
+      : e.key === 'ArrowRight'
+      ? (activeIndex + 1) % count
+      : (activeIndex - 1 + count) % count
+
+  activateTab(nextIndex)
+  focusTab(nextIndex)
+}
+
 export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
   const {
     tabs,
@@ -47,20 +76,31 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
   } = props
 
   const hasRenderedIndexRef = useRef(new Set<number>())
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   hasRenderedIndexRef.current.add(activeIndex)
+
+  const focusTab = (index: number) => {
+    requestAnimationFrame(() => tabRefs.current[index]?.focus())
+  }
 
   return (
     <>
       <Carousel
+        role="tablist"
         className={clsx('border-ink-200 border-b pb-1', className)}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
-          <a
-            href="#"
+          <button
+            type="button"
             key={tab.queryString ?? tab.title}
-            onClick={(e) => {
-              e.preventDefault()
+            ref={(el) => (tabRefs.current[i] = el)}
+            role="tab"
+            id={`minimal-tab-${i}`}
+            aria-selected={activeIndex === i}
+            aria-controls={`minimal-tabpanel-${i}`}
+            tabIndex={activeIndex === i ? 0 : -1}
+            onClick={() => {
               onClick?.(
                 tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
                 i
@@ -71,7 +111,20 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
                 })
               }
             }}
-            aria-current={activeIndex === i ? 'page' : undefined}
+            onKeyDown={(e) =>
+              onTabKeyDown(
+                e,
+                activeIndex,
+                tabs.length,
+                (index) =>
+                  onClick?.(
+                    tabs[index].queryString?.toLowerCase() ??
+                      tabs[index].title.toLowerCase(),
+                    index
+                  ),
+                focusTab
+              )
+            }
             className={clsx(
               activeIndex === i
                 ? 'text-primary-600'
@@ -85,7 +138,7 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
                 {tab.titleElement ?? tab.title}
               </Row>
             </Tooltip>
-          </a>
+          </button>
         ))}
       </Carousel>
       {tabs
@@ -96,6 +149,9 @@ export function MinimalistTabs(props: TabProps & { activeIndex: number }) {
         )
         .map(({ tab, i }) => (
           <div
+            role="tabpanel"
+            id={`minimal-tabpanel-${i}`}
+            aria-labelledby={`minimal-tab-${i}`}
             key={i}
             className={clsx(
               i === activeIndex ? 'contents' : 'hidden',
@@ -122,22 +178,32 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
   } = props
 
   const hasRenderedIndexRef = useRef(new Set<number>())
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
   hasRenderedIndexRef.current.add(activeIndex)
+
+  const focusTab = (index: number) => {
+    requestAnimationFrame(() => tabRefs.current[index]?.focus())
+  }
 
   return (
     <>
       <Carousel
+        role="tablist"
         className={clsx('border-ink-200 border-b', className)}
         labelsParentClassName={labelsParentClassName}
         aria-label="Tabs"
       >
         {tabs.map((tab, i) => (
-          <a
-            href="#"
+          <button
+            type="button"
             key={tab.queryString ?? tab.title}
-            onClick={(e) => {
-              e.preventDefault()
-
+            ref={(el) => (tabRefs.current[i] = el)}
+            role="tab"
+            id={`controlled-tab-${i}`}
+            aria-selected={activeIndex === i}
+            aria-controls={`controlled-tabpanel-${i}`}
+            tabIndex={activeIndex === i ? 0 : -1}
+            onClick={() => {
               onClick?.(
                 tab.queryString?.toLowerCase() ?? tab.title.toLowerCase(),
                 i
@@ -149,6 +215,20 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                 })
               }
             }}
+            onKeyDown={(e) =>
+              onTabKeyDown(
+                e,
+                activeIndex,
+                tabs.length,
+                (index) =>
+                  onClick?.(
+                    tabs[index].queryString?.toLowerCase() ??
+                      tabs[index].title.toLowerCase(),
+                    index
+                  ),
+                focusTab
+              )
+            }
             className={clsx(
               activeIndex === i
                 ? 'border-primary-500 text-primary-600'
@@ -157,7 +237,6 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
               labelClassName,
               'flex-shrink-0'
             )}
-            aria-current={activeIndex === i ? 'page' : undefined}
           >
             <Col
               className={clsx(
@@ -174,7 +253,7 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
                 </Row>
               </Tooltip>
             </Col>
-          </a>
+          </button>
         ))}
       </Carousel>
       {tabs
@@ -185,6 +264,9 @@ export function ControlledTabs(props: TabProps & { activeIndex: number }) {
         )
         .map(({ tab, i }) => (
           <div
+            role="tabpanel"
+            id={`controlled-tabpanel-${i}`}
+            aria-labelledby={`controlled-tab-${i}`}
             key={i}
             className={clsx(
               i === activeIndex ? 'contents' : 'hidden',

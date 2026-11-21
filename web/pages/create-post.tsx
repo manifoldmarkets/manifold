@@ -1,25 +1,28 @@
 import { useState } from 'react'
-import { Spacer } from 'web/components/layout/spacer'
-import { Title } from 'web/components/widgets/title'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import Router from 'next/router'
+
 import { Group } from 'common/group'
-import { ExpandingInput } from 'web/components/widgets/expanding-input'
-import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { linkClass } from 'web/components/widgets/site-link'
+import { Visibility } from 'common/contract'
+import { canPostSocially } from 'common/user'
+import { removeUndefinedProps } from 'common/util/object'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { api, APIError } from 'web/lib/api/api'
-import { Page } from 'web/components/layout/page'
-import { DAY_MS } from 'common/util/time'
-import ShortToggle from 'web/components/widgets/short-toggle'
-import { Row } from 'web/components/layout/row'
-import { useAdmin } from 'web/hooks/use-admin'
+import Router from 'next/router'
+import { Button } from 'web/components/buttons/button'
 import { BackButton } from 'web/components/contract/back-button'
-import { Visibility } from 'common/contract'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { removeUndefinedProps } from 'common/util/object'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { linkClass } from 'web/components/widgets/site-link'
+import { Title } from 'web/components/widgets/title'
+import { NewAccountGateNotice } from 'web/components/user/new-account-gate-notice'
+import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from 'web/components/moderation/mod-action'
+import { useUser } from 'web/hooks/use-user'
+import { api, APIError } from 'web/lib/api/api'
 
 export async function getServerSideProps(context: any) {
   return {
@@ -69,7 +72,7 @@ export function CreatePostForm(props: {
 
   const user = useUser()
   const isAdmin = useAdmin()
-  const canCreate = user?.createdTime && Date.now() - user.createdTime > DAY_MS
+  const canCreate = user && canPostSocially(user)
 
   async function savePost(title: string) {
     if (!editor) return
@@ -144,6 +147,7 @@ export function CreatePostForm(props: {
                     >
                       Announcement (sends a notification to all users)
                     </span>
+                    <ModActionTag admin />
                   </Row>
                   <Row className="items-center gap-2 px-1 py-2">
                     <ShortToggle on={isChangeLog} setOn={setIsChangeLog} />
@@ -157,6 +161,7 @@ export function CreatePostForm(props: {
                       </Link>
                       )
                     </span>
+                    <ModActionTag admin />
                   </Row>
                 </>
               )}
@@ -189,23 +194,7 @@ export function CreatePostForm(props: {
           </Button>
         </>
       ) : (
-        <div>
-          <p>
-            Due to high amounts of spam, posts can now only be created with
-            accounts more than 1 day old. (Or with the API.)
-          </p>
-          <br />
-          <p>
-            Did you mean to{' '}
-            <Link
-              href="/create"
-              className={clsx(linkClass, 'text-primary-700')}
-            >
-              create a market
-            </Link>{' '}
-            instead?
-          </p>
-        </div>
+        user && <NewAccountGateNotice user={user} action="Posting" />
       )}
     </div>
   )

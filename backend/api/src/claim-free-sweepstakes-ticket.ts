@@ -1,0 +1,100 @@
+import { APIHandler, APIError } from 'api/helpers/endpoint'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getIp } from 'shared/analytics'
+import { isSweepstakesLocationAllowed } from 'shared/ip-geolocation'
+import { getUser } from 'shared/utils'
+import { canEnterPrizeDrawings } from 'common/user'
+import { isAdminId } from 'common/envs/constants'
+import { SWEEPSTAKES_MIN_MANA_INVESTED } from 'common/sweepstakes'
+
+const FREE_TICKET_AMOUNT = 1 // One free ticket per user per sweepstakes
+
+export const claimFreeSweepstakesTicket: APIHandler<
+  'claim-free-sweepstakes-ticket'
+> = async (props, auth, req) => {
+  const { sweepstakesNum } = props
+
+  // Geofencing check
+  const ip = getIp(req)
+  const { allowed } = await isSweepstakesLocationAllowed(ip)
+  if (!allowed) {
+    throw new APIError(403, 'Sweepstakes is not available in your region')
+  }
+
+  const pg = createSupabaseDirectClient()
+
+  return await pg.tx(async (tx) => {
+    // Get sweepstakes and verify it's still open
+    const sweepstakes = await tx.oneOrNone<{
+      sweepstakes_num: number
+      close_time: string
+    }>(
+      `SELECT sweepstakes_num, close_time FROM sweepstakes WHERE sweepstakes_num = $1`,
+      [sweepstakesNum]
+    )
+
+    if (!sweepstakes) {
+      throw new APIError(404, 'Sweepstakes not found')
+    }
+
+    if (new Date(sweepstakes.close_time) <= new Date()) {
+      throw new APIError(400, 'Sweepstakes has closed')
+    }
+
+    // Check user eligibility
+    const user = await getUser(auth.uid, tx)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    if (isAdminId(user.id)) {
+      throw new APIError(403, 'Admins cannot participate in the sweepstakes')
+    }
+    if (!canEnterPrizeDrawings(user)) {
+      throw new APIError(
+        403,
+        'You must verify your identity to participate in the sweepstakes'
+      )
+    }
+
+    // Check minimum mana invested requirement
+    const investedResult = await tx.oneOrNone<{ total_invested: string }>(
+      `SELECT COALESCE(SUM((data->>'totalAmountInvested')::numeric), 0) as total_invested
+       FROM user_contract_metrics
+       WHERE user_id = $1`,
+      [auth.uid]
+    )
+    const totalManaInvested = parseFloat(investedResult?.total_invested ?? '0')
+    if (totalManaInvested < SWEEPSTAKES_MIN_MANA_INVESTED) {
+      throw new APIError(
+        403,
+        `You must have at least ${SWEEPSTAKES_MIN_MANA_INVESTED} mana invested to participate in the sweepstakes`
+      )
+    }
+
+    // Insert the free ticket claim record (idempotent)
+    const claimRow = await tx.oneOrNone(
+      `INSERT INTO sweepstakes_free_tickets (sweepstakes_num, user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (sweepstakes_num, user_id) DO NOTHING
+       RETURNING sweepstakes_num`,
+      [sweepstakesNum, auth.uid]
+    )
+
+    if (!claimRow) {
+      throw new APIError(400, 'You have already claimed your free ticket')
+    }
+
+    // Insert ticket purchase record (free, so mana_spent = 0)
+    const ticketRow = await tx.one<{ id: string }>(
+      `INSERT INTO sweepstakes_tickets (sweepstakes_num, user_id, num_tickets, mana_spent, is_free)
+       VALUES ($1, $2, $3, 0, true)
+       RETURNING id`,
+      [sweepstakesNum, auth.uid, FREE_TICKET_AMOUNT]
+    )
+
+    return {
+      ticketId: ticketRow.id,
+      numTickets: FREE_TICKET_AMOUNT,
+    }
+  })
+}

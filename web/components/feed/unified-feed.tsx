@@ -6,6 +6,7 @@ import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { CommentWithTotalReplies } from 'common/comment'
 import { Contract } from 'common/contract'
+import type { PerpTradeActivity } from 'common/perps/activity'
 import { Repost } from 'common/repost'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEvent } from 'client-common/hooks/use-event'
@@ -28,6 +29,7 @@ type UnifiedFeedData = {
   boostedContracts: Contract[]
   // Activity
   activityBets: Bet[]
+  activityPerpTrades: PerpTradeActivity[]
   activityComments: CommentWithTotalReplies[]
   activityNewContracts: Contract[]
   activityRelatedContracts: Contract[]
@@ -57,6 +59,7 @@ const defaultFeedData: UnifiedFeedData = {
   idsToReason: {},
   boostedContracts: [],
   activityBets: [],
+  activityPerpTrades: [],
   activityComments: [],
   activityNewContracts: [],
   activityRelatedContracts: [],
@@ -74,12 +77,14 @@ export function UnifiedFeed(props: { className?: string }) {
 
   const [feedData, setFeedData] = usePersistentInMemoryState<UnifiedFeedData>(
     defaultFeedData,
-    `unified-feed-data-v4-${user?.id ?? 'logged-out'}`
+    `unified-feed-data-v5-${user?.id ?? 'logged-out'}`
   )
 
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(
-    feedData.contracts.length === 0 && feedData.activityBets.length === 0
+    feedData.contracts.length === 0 &&
+      feedData.activityBets.length === 0 &&
+      feedData.activityPerpTrades.length === 0
   )
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
@@ -133,6 +138,10 @@ export function UnifiedFeed(props: { className?: string }) {
           [...prev.activityBets, ...data.activityBets],
           'id'
         ),
+        activityPerpTrades: uniqBy(
+          [...prev.activityPerpTrades, ...(data.activityPerpTrades ?? [])],
+          'id'
+        ),
         activityComments: uniqBy(
           [...prev.activityComments, ...data.activityComments],
           'id'
@@ -158,7 +167,11 @@ export function UnifiedFeed(props: { className?: string }) {
 
   // Initial fetch
   useEffect(() => {
-    if (feedData.contracts.length === 0 && feedData.activityBets.length === 0) {
+    if (
+      feedData.contracts.length === 0 &&
+      feedData.activityBets.length === 0 &&
+      feedData.activityPerpTrades.length === 0
+    ) {
       fetchMore()
     }
   }, [user?.id])
@@ -292,6 +305,17 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
     })
   }
 
+  for (const trade of feedData.activityPerpTrades) {
+    if (seenContractIds.has(trade.contractId)) continue
+    activityItems.push({
+      type: 'perp',
+      id: trade.id,
+      contractId: trade.contractId,
+      createdTime: trade.createdTime,
+      data: trade,
+    })
+  }
+
   for (const comment of feedData.activityComments) {
     if (seenContractIds.has(comment.contractId)) continue
     activityItems.push({
@@ -341,14 +365,15 @@ function buildUnifiedFeed(feedData: UnifiedFeedData): FeedItem[] {
 
   // Alternate between feed items and activity items
   const mixedItems: FeedItem[] = []
-  const maxLen = Math.max(feedItems.length, activityFeedItems.length)
+  const orderedActivityFeedItems = orderBy(activityFeedItems, 'time', 'desc')
+  const maxLen = Math.max(feedItems.length, orderedActivityFeedItems.length)
 
   for (let i = 0; i < maxLen; i++) {
     if (i < feedItems.length) {
       mixedItems.push(feedItems[i])
     }
-    if (i < activityFeedItems.length) {
-      mixedItems.push(activityFeedItems[i])
+    if (i < orderedActivityFeedItems.length) {
+      mixedItems.push(orderedActivityFeedItems[i])
     }
   }
 

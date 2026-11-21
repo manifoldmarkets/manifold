@@ -61,6 +61,7 @@ export const FollowPostIconButton = (props: {
     <IconButton
       size="xs"
       className={className}
+      aria-label={following ? 'Unfollow post' : 'Follow post'}
       onClick={async () => {
         if (!user) return firebaseLogin()
         if (following) {

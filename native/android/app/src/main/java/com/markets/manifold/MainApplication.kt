@@ -25,6 +25,9 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              // Local module exposing AppWidgetManager.requestPinAppWidget for
+              // the streak widget (triggered by the `pinStreakWidget` message).
+              add(WidgetPinPackage())
             }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

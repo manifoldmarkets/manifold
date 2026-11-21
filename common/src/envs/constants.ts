@@ -14,6 +14,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 export const TWOMBA_CASHOUT_ENABLED = true
 export const SWEEP_PRODUCTION_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
+export const STRIPE_PAYMENTS_ENABLED = true
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
 export const MIN_CASH_DONATION = 25
@@ -32,6 +33,20 @@ export const TRADE_TERM = 'bet'
 export const TRADED_TERM = 'bet'
 export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
+
+// Compiled default for perpetual futures (ManiPerp). The API's runtime
+// PERP_TRADING_MODE can select enabled, reduce-only, or halted without a source
+// edit; this flag remains the default when that environment setting is absent.
+// The oracle/liquidation/funding risk engine deliberately keeps running.
+// See backend/shared/src/perps/README.md for incident controls.
+export const PERPS_ENABLED = true
+
+// Testing-only escape hatch: bypass the "oracle price too old" check in the
+// perp engine's open/close paths. MUST be false in prod — a stale feed lets
+// traders cherry-pick a favorable cached price. For local dev without the
+// scheduler running, create test markets with a very large
+// maxOraclePriceAgeMs instead of flipping this.
+export const PERPS_SKIP_ORACLE_FRESHNESS = false
 
 export const ENV_CONFIG = CONFIGS[ENV]
 
@@ -72,7 +87,10 @@ export const CORS_ORIGIN_VERCEL = new RegExp(
 export const CORS_ORIGIN_LOCALHOST = /^http:\/\/localhost:\d+$/
 
 // TODO: These should maybe be part of the env config?
+/** @deprecated Use is_bot column on users table. Kept only as fallback during transition. */
 export const BOT_USERNAMES = [
+  'Terminator2',
+  'Cvillsbot',
   'TenShinoBot',
   'JDVance1',
   'Merchant',
@@ -182,6 +200,11 @@ export const BOT_USERNAMES = [
   'Evansbot',
   'PugBot',
   'cot',
+  'timestwo',
+  'XBot',
+  'Gluten',
+  'Rice',
+  'pythia',
 ]
 
 export const MOD_IDS = [
@@ -218,6 +241,7 @@ export const MOD_IDS = [
   'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'sCOvPc5J2sOacn0DYjwL7OAMzcV2', // bens
+  '9pduED6AAYSDeHBRRvMNxONVzMJ2', // Quroe
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
@@ -297,6 +321,8 @@ export const VERIFIED_USERNAMES = [
   'ModernDayDebate',
   'NickyCase',
   'TamayBesiroglu',
+  'realTomBayes',
+  'MNX',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
@@ -386,6 +412,14 @@ export const NEW_USER_HERLPER_IDS = [
   'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
 ]
 
+// Accounts that create markets in bulk (ManifoldPolitics made 46 election
+// conditionals in one evening). Their followers still get the in-app
+// notification for each new market, but not the "<creator> asked <question>"
+// email, which would arrive once per market.
+export const NO_NEW_MARKET_EMAIL_CREATOR_IDS = [
+  'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
+]
+
 export const OPTED_OUT_OF_LEAGUES = [
   'vuI5upWB8yU00rP7yxj95J2zd952', // ManifoldPolitics
   '8lZo8X5lewh4hnCoreI7iSc0GxK2', // ManifoldAI
@@ -403,6 +437,9 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
 ]
 
 export const INSTITUTIONAL_PARTNER_USER_IDS: string[] = []
+
+// @mods: tagging this account in a comment files a mod report
+export const MODS_USER_ID = 'WQJ92QkoqDPuyj6DAZ5lR6g1x573'
 
 export const BEING_DEAD_HEADS = [
   '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
@@ -544,6 +581,7 @@ export const RESERVED_PATHS = [
   'create-post',
   'date-docs',
   'dashboard',
+  'data',
   'discord',
   'discord-bot',
   'dream',
@@ -557,7 +595,9 @@ export const RESERVED_PATHS = [
   'groups',
   'help',
   'home',
+  'jobboard',
   'jobs',
+  'jobsboard',
   'lab',
   'leaderboard',
   'leaderboards',
@@ -603,6 +643,7 @@ export const RESERVED_PATHS = [
   'sitemap',
   'slack',
   'stats',
+  'store',
   'styles',
   'supporter',
   'swipe',

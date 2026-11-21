@@ -25,8 +25,10 @@ export const usePersistentLocalState = <T>(initialValue: T, key: string) => {
       const storedJson = getPersistentLocalState(key)
       const storedValue = storedJson == null ? initialValue : storedJson
       setState(storedValue as T)
-      setReady(true)
     }
+    // Persistence is optional. Blocked storage must not leave consumers
+    // waiting forever before they can fetch or render their default state.
+    setReady(true)
   }, [key])
 
   return [state, saveState, ready] as const

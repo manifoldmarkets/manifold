@@ -60,7 +60,9 @@ function skippableComponent(extension: string, label: string): Node<any, any> {
 
 export const extensions = [
   StarterKit,
-  Link,
+  Link.configure({
+    validate: (href) => /^https?:\/\//i.test(href),
+  }),
   Image.extend({ renderText: () => '[image]' }),
   Mention, // user @mention
   Mention.extend({ name: 'contract-mention' }), // market %mention

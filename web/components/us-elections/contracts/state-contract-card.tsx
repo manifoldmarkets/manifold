@@ -3,7 +3,12 @@ import Link from 'next/link'
 import Router from 'next/router'
 import { useState } from 'react'
 
-import { Contract, MultiContract, contractPath } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  MultiContract,
+  contractPath,
+} from 'common/contract'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import {
@@ -15,6 +20,7 @@ import { Row } from 'web/components/layout/row'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { track } from 'web/lib/service/analytics'
 import { DATA, StateDataType } from '../../usa-map/usa-map-data'
+import { StateBinaryPartyPanel } from './party-panel/binary-party-panel'
 import { PartyPanel } from './party-panel/party-panel'
 
 // This is not live updated from the object, so expects to be passed a contract with updated stuff
@@ -94,11 +100,18 @@ export function StateContractCard(props: {
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <PartyPanel
-          contract={contract as MultiContract}
-          maxAnswers={3}
-          includeHead={includeHead}
-        />
+        {/* Some state races only have a binary market (e.g. the FL Senate
+        special, "Will a Republican win ...?") — render party bars from its
+        YES/NO prob instead of multi-choice answers. */}
+        {contract.outcomeType === 'BINARY' ? (
+          <StateBinaryPartyPanel contract={contract as BinaryContract} />
+        ) : (
+          <PartyPanel
+            contract={contract as MultiContract}
+            maxAnswers={3}
+            includeHead={includeHead}
+          />
+        )}
       </div>
     </ClickFrame>
   )

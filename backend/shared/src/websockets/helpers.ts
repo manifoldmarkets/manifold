@@ -4,8 +4,10 @@ import { ContractComment, PostComment } from 'common/comment'
 import { Contract, Visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PendingClarification } from 'common/pending-clarification'
+import { PerpQuote } from 'common/perps/quote'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
+import { SportsLiveScore } from 'common/sports-schedule'
 import { groupBy } from 'lodash'
 import { broadcast, broadcastMulti } from './server'
 
@@ -15,7 +17,15 @@ export function broadcastUpdatedPrivateUser(userId: string) {
 }
 
 export function broadcastUpdatedUser(user: Partial<User> & { id: string }) {
-  broadcast(`user/${user.id}`, { user })
+  // Never broadcast admin-only verification fields: the user's own browser
+  // subscribes to user/{id}. Strip them before they go over the wire (they're
+  // also stripped from the public REST response).
+  const {
+    verificationFlagReason: _adminOnlyReason,
+    previousBonusEligibility: _adminOnlyPreviousEligibility,
+    ...safe
+  } = user
+  broadcast(`user/${user.id}`, { user: safe })
 }
 
 export function broadcastNewBets(
@@ -106,12 +116,33 @@ export function broadcastUpdatedContract(
   visibility: Visibility,
   contract: Partial<Contract> & { id: string }
 ) {
-  const payload = { contract }
+  const payload = { contract, broadcastTime: Date.now() }
   const topics = [`contract/${contract.id}`]
   if (visibility === 'public') {
     topics.push('global', 'global/updated-contract')
   }
   broadcastMulti(topics, payload)
+}
+
+// Live sports score for a market, pushed by the sports-live poller. Its own
+// topic (the score fields live in contract.data, not on Contract) so only the
+// sports dashboard subscribes and the generic contract/global topics stay quiet.
+export function broadcastSportsLiveScore(
+  contractId: string,
+  score: SportsLiveScore
+) {
+  broadcast(`contract/${contractId}/sports-live`, { ...score })
+}
+
+// Live oracle price/pool state for a perp market, pushed on every tick. Its
+// own topic so only open perp pages pay for it — a 5s tick on the generic
+// contract/global topics would spam every feed and watchlist subscriber.
+//
+// Only the process that owns the websocket server can deliver this (see the
+// note in perps/publish-perp-quote.ts): the scheduler applies the tick, then
+// hands the quote to the API over `internal-perp-broadcast`, which calls this.
+export function broadcastPerpQuote(quote: PerpQuote) {
+  broadcast(`contract/${quote.contractId}/perp-quote`, { quote })
 }
 
 export function broadcastNewAnswer(answer: Answer) {
@@ -127,7 +158,10 @@ export function broadcastUpdatedAnswers(
 ) {
   if (answers.length === 0) return
 
-  broadcast(`contract/${contractId}/updated-answers`, { answers })
+  broadcast(`contract/${contractId}/updated-answers`, {
+    answers,
+    broadcastTime: Date.now(),
+  })
   for (const a of answers) {
     broadcast(`answer/${a.id}/update`, { answer: a })
   }

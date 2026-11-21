@@ -1,14 +1,50 @@
 'use client'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import clsx from 'clsx'
+import { FullMarketSearchResult } from 'common/api/market-search-types'
 import { FullUser } from 'common/api/user-types'
-import { Contract } from 'common/contract'
+import { APIError } from 'common/api/utils'
+import { Contract, isMultiCpmm } from 'common/contract'
+import {
+  BrowseMode,
+  normalizeBrowseChange,
+} from 'common/browse-personalization'
+import {
+  DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
+  DISCOVERY_EXPERIMENT_NAME,
+  DISCOVERY_EXPOSURE_EVENT,
+  DISCOVERY_RESULTS_EVENT,
+  DISCOVERY_SEARCH_ABORT_EVENT,
+  DISCOVERY_SEARCH_ERROR_EVENT,
+  DISCOVERY_SEARCH_REQUEST_EVENT,
+  DiscoveryExperimentAssignmentSource,
+  DiscoveryExperimentSurface,
+  DiscoveryExperimentVariant,
+  DiscoveryResultTracking,
+  getDiscoveryQueryLengthBucket,
+} from 'common/discovery-experiment'
 import { LiteGroup } from 'common/group'
+import {
+  getPostSearchThreshold,
+  orderCombinedSearchResults,
+  shouldPreserveBackendMarketOrder,
+} from 'common/search-result-order'
+import {
+  getSearchDiscoveryRetryOptions,
+  getSearchDiscoveryRetryMode,
+  getLoadMoreRequestAction,
+  getSearchRequestDebounceMs,
+  shouldSendDiscoveryOptions,
+  shouldRetryStaleSearchRequest,
+} from 'common/search-request-coordination'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
-import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import { randomString } from 'common/util/random'
+import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
+import Link from 'next/link'
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -30,9 +66,13 @@ import { DAY_MS } from 'common/util/time'
 import { isEqual } from 'lodash'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import {
+  isABTestAssignmentCurrent,
+  useABTestAssignment,
+} from 'web/hooks/use-ab-test'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { db } from 'web/lib/supabase/db'
 import { CombinedResults } from './contract/combined-results'
 import { LoadingContractRow } from './contract/contracts-table'
@@ -43,9 +83,11 @@ import { UserResults } from './search/user-results'
 import { useSweepstakes } from './sweepstakes-provider'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { Carousel } from './widgets/carousel'
+import { LiveRegion } from './widgets/live-region'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
+const MAX_TRACKED_DISCOVERY_ITEMS = 100
 
 export const SORTS = [
   { label: 'Best', value: 'score' },
@@ -62,6 +104,7 @@ export const SORTS = [
   { label: 'Bounty amount', value: 'bounty-amount' },
   { label: 'High %', value: 'prob-descending' },
   { label: 'Low %', value: 'prob-ascending' },
+  { label: 'Mid %', value: 'prob-50' },
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
@@ -77,12 +120,13 @@ export const predictionMarketSorts = new Set([
   'most-popular',
   'prob-descending',
   'prob-ascending',
+  'prob-50',
   'freshness-score',
 ])
 
 export const bountySorts = new Set(['bounty-amount'])
 
-const probSorts = new Set(['prob-descending', 'prob-ascending'])
+const probSorts = new Set(['prob-descending', 'prob-ascending', 'prob-50'])
 
 export const BOUNTY_MARKET_SORTS = SORTS.filter(
   (item) => !predictionMarketSorts.has(item.value)
@@ -111,6 +155,7 @@ export const FILTERS = [
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
   { label: 'Recently changed', value: 'news' },
+  { label: 'Uncertain', value: 'uncertain' },
 ] as const
 
 export type Filter = (typeof FILTERS)[number]['value']
@@ -122,9 +167,11 @@ export const CONTRACT_TYPES = [
   { label: 'Set', value: 'INDEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Dependent MC', value: 'DEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
+  { label: 'Date', value: 'DATE' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
+  { label: 'Perpetual', value: 'PERP' },
   { label: 'Posts', value: 'POSTS' },
 ] as const
 
@@ -180,20 +227,35 @@ export type SupabaseAdditionalFilter = {
 }
 
 export type SearchState = {
-  contracts: Contract[] | undefined
+  contracts: FullMarketSearchResult[] | undefined
   users: FullUser[] | undefined
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
   posts: TopLevelPost[] | undefined
+  seenMarketCutoffTime: number | undefined
+  discoveryVariant: DiscoveryExperimentVariant | undefined
+  discoveryAssignmentSource: DiscoveryExperimentAssignmentSource | undefined
+  discoveryAssignmentKey: string | undefined
+  discoverySurface: DiscoveryExperimentSurface | undefined
+  discoveryResultSetId: string | undefined
+  discoveryLoadedPageCount: number
+  discoveryCompatibilityFallback: boolean
+  discoveryAnchorFallback: boolean
+  discoverySemanticEligible: boolean | undefined
+  discoverySemanticMarketCount: number | undefined
+  discoveryInitialLatencyMs: number | undefined
 }
 
 type SearchProps = {
   persistPrefix: string
+  // Analytics identity is stable even when browser storage is account-scoped.
+  discoverySourceComponent?: 'search'
   defaultSort?: Sort
   defaultFilter?: Filter
   defaultContractType?: ContractTypeType
   defaultSearchType?: SearchType
   defaultForYou?: '1' | '0'
+  onBrowseModeChange?: (mode: BrowseMode) => void
   additionalFilter?: SupabaseAdditionalFilter
   highlightContractIds?: string[]
   onContractClick?: (contract: Contract) => void
@@ -215,6 +277,8 @@ type SearchProps = {
   showTopicsFilterPills?: boolean
   refreshOnVisible?: boolean
   showHotTopics?: boolean
+  // Extra pills rendered as their own row below the sort/filter controls.
+  extraFilterPills?: ReactNode
 }
 
 // Collect all group IDs from SEARCH_TOPICS_TO_SUBTOPICS to filter out duplicates
@@ -254,6 +318,7 @@ export function Search(props: SearchProps) {
     defaultContractType,
     defaultSearchType,
     defaultForYou,
+    onBrowseModeChange,
     additionalFilter,
     onContractClick,
     hideActions,
@@ -261,6 +326,7 @@ export function Search(props: SearchProps) {
     highlightContractIds,
     headerClassName,
     persistPrefix,
+    discoverySourceComponent,
     isWholePage,
     useUrlParams,
     autoFocus,
@@ -274,6 +340,7 @@ export function Search(props: SearchProps) {
     refreshOnVisible,
     showHotTopics,
     initialTopics,
+    extraFilterPills,
   } = props
 
   // Filter hot topics to exclude duplicates of default topics and subtopics
@@ -290,6 +357,27 @@ export function Search(props: SearchProps) {
 
   const isMobile = useIsMobile()
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const user = useUser()
+  const isAuthorized = useIsAuthorized()
+  // The discovery-v1 experiment has concluded; only control is offered, so
+  // every account and device lands there. The assignment unit is kept so the
+  // discovery_v1 telemetry keeps its shape for the next test.
+  const discoveryAssignment = useABTestAssignment(
+    DISCOVERY_EXPERIMENT_NAME,
+    DISCOVERY_EXPERIMENT_ACTIVE_VARIANTS,
+    {
+      isReady: isAuthorized !== undefined,
+      userId: user?.id,
+    }
+  )
+  const discoveryVariant: DiscoveryExperimentVariant | undefined =
+    discoveryAssignment?.variant
+  const discoveryAssignmentKey = discoveryAssignment
+    ? `${discoveryAssignment.assignmentUnit}:${discoveryAssignment.assignmentId}`
+    : undefined
+  const discoveryAssignmentSource: DiscoveryExperimentAssignmentSource = user
+    ? 'user-hash'
+    : 'device-hash'
   const [searchParams, setSearchParams, isReady] = useSearchQueryState({
     defaultSort,
     defaultFilter,
@@ -330,18 +418,32 @@ export function Search(props: SearchProps) {
     users,
     topics,
     loading,
+    searchError,
+    retrySearch,
     shouldLoadMore,
     loadMoreContracts,
     refreshContracts,
     posts,
+    discoveryTracking,
   } = useSearchResults({
     persistPrefix,
+    discoverySourceComponent,
     searchParams: searchParams,
     includeUsersAndTopics: showSearchTypes,
-    isReady,
+    isReady: isReady && discoveryVariant !== undefined,
+    discoveryVariant,
+    discoveryAssignmentSource,
+    discoveryAssignmentKey,
     additionalFilter,
   })
   const visible = useIsPageVisible()
+  useTrackDiscoveryExposure({
+    contracts,
+    posts,
+    searchParams,
+    tracking: discoveryTracking,
+    visible,
+  })
   useEffect(() => {
     if (visible && refreshOnVisible) {
       refreshContracts()
@@ -350,9 +452,29 @@ export function Search(props: SearchProps) {
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
   const showUsers = users && users.length > 0 && query && query.length > 0
+  const searchInputId = `${persistPrefix}-search-input`
+  const searchResultsId = `${persistPrefix}-search-results`
+  const searchInstructionsId = `${persistPrefix}-search-instructions`
+  const totalResults =
+    (contracts?.length ?? 0) + (topics?.length ?? 0) + (users?.length ?? 0)
+  const searchAnnouncement =
+    query.length === 0
+      ? ''
+      : loading
+      ? `Searching for ${query}`
+      : `${totalResults} results for ${query}`
 
   const onChange = (changes: Partial<SearchParams>) => {
-    const updatedParams = { ...changes }
+    const updatedParams = showTopicsFilterPills
+      ? normalizeBrowseChange(searchParams, changes)
+      : { ...changes }
+
+    if (changes.fy === '0' || changes.fy === '1') {
+      onBrowseModeChange?.(changes.fy === '1' ? 'for-you' : 'all')
+    }
+    if (updatedParams.sw === '0' && sweepiesState === '1') {
+      setPrefersPlay(true)
+    }
 
     setSearchParams(updatedParams)
     if (isWholePage) window.scrollTo(0, 0)
@@ -361,7 +483,7 @@ export function Search(props: SearchProps) {
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
   const answersWithChanges = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? orderBy(
           c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
           (a) => Math.abs(a.probChanges.day),
@@ -371,7 +493,7 @@ export function Search(props: SearchProps) {
   )
 
   const answersMatchingQuery = contracts?.flatMap((c) =>
-    c.mechanism === 'cpmm-multi-1'
+    isMultiCpmm(c)
       ? c.answers
           .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
           .slice(0, 2)
@@ -442,9 +564,16 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
+  const selectedForYou =
+    !!user &&
+    searchParams[FOR_YOU_KEY] === '1' &&
+    !groupIds &&
+    !searchParams[TOPIC_FILTER_KEY]
   const selectedAll =
-    !selectedTopic && !selectedFollowed && !searchParams[TOPIC_FILTER_KEY]
-  const user = useUser()
+    !selectedForYou &&
+    !selectedTopic &&
+    !selectedFollowed &&
+    !searchParams[TOPIC_FILTER_KEY]
   const {
     data: followedGroupsData,
     loading: isLoadingFollowedGroups,
@@ -511,14 +640,18 @@ export function Search(props: SearchProps) {
           {showTopicsFilterPills && (
             <Row className="border-ink-100 dark:border-ink-200 items-baseline gap-4 border-b pb-2">
               <button
+                type="button"
+                aria-pressed={selectedAll}
                 className={clsx(
                   'shrink-0 font-medium',
                   selectedAll ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
+                  if (selectedAll) onBrowseModeChange?.('all')
                   if (!selectedAll) {
                     track('select search topic', { topic: 'all' })
                     const changes: Partial<SearchParams> = {
+                      [FOR_YOU_KEY]: '0',
                       [GROUP_IDS_KEY]: '',
                       [TOPIC_FILTER_KEY]: '',
                     }
@@ -528,6 +661,22 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
+              {!!user?.id && (
+                <button
+                  type="button"
+                  aria-pressed={selectedForYou}
+                  className={clsx(
+                    'shrink-0 whitespace-nowrap font-medium',
+                    selectedForYou ? 'text-primary-600' : 'text-ink-500'
+                  )}
+                  onClick={() => {
+                    track('select search topic', { topic: 'for-you' })
+                    onChange({ [FOR_YOU_KEY]: '1', [QUERY_KEY]: '' })
+                  }}
+                >
+                  For You
+                </button>
+              )}
               <Carousel
                 fadeEdges
                 showArrowsOnHover
@@ -554,6 +703,51 @@ export function Search(props: SearchProps) {
                     Followed
                   </button>
                 )}
+                <Link
+                  href="/sports"
+                  onClick={() =>
+                    track('select search topic', { topic: 'sports' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    // Turf to leather: the brown is the league label's
+                    // saddle brown (SPORTS_LEAGUE_LABEL_CLASS), tinted to
+                    // sit with the other pills' pastels.
+                    'bg-gradient-to-r from-green-100 to-[#8b4513]/25 dark:from-green-900/50 dark:to-[#8b4513]/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Sports
+                </Link>
+                <Link
+                  href="/election"
+                  onClick={() =>
+                    track('select search topic', { topic: 'elections' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-blue-100 to-rose-100 dark:from-blue-900/50 dark:to-rose-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Elections
+                </Link>
+                <Link
+                  href="/perps"
+                  onClick={() =>
+                    track('select search topic', { topic: 'perps' })
+                  }
+                  className={clsx(
+                    'shrink-0 self-center whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium',
+                    'bg-gradient-to-r from-teal-100 to-indigo-100 dark:from-teal-900/50 dark:to-indigo-900/50',
+                    'text-ink-700 ring-ink-200 ring-1',
+                    'transition-all hover:brightness-105'
+                  )}
+                >
+                  Perps
+                </Link>
                 {ALL_PARENT_TOPICS.map((topic) => (
                   <button
                     key={topic}
@@ -578,7 +772,9 @@ export function Search(props: SearchProps) {
                       }
                     }}
                   >
-                    {removeEmojis(topic)}
+                    {removeEmojis(topic) === 'Sports'
+                      ? 'Sports topics'
+                      : removeEmojis(topic)}
                   </button>
                 ))}
                 {showHotTopics &&
@@ -612,21 +808,33 @@ export function Search(props: SearchProps) {
           )}
         </Col>
         {!hideSearch && (
-          <SearchInput
-            value={query}
-            setValue={setQuery}
-            placeholder={
-              searchType === 'Users'
-                ? 'Search users'
-                : searchType === 'Questions' || contractsOnly
-                ? 'Search questions'
-                : isMobile
-                ? 'Search'
-                : 'Search questions, users, topics, and posts'
-            }
-            autoFocus={autoFocus}
-            loading={loading}
-          />
+          <>
+            <div id={searchInstructionsId} className="sr-only">
+              Search for markets, users, topics, and posts. Results update below
+              as you type.
+            </div>
+            <SearchInput
+              value={query}
+              setValue={setQuery}
+              placeholder={
+                searchType === 'Users'
+                  ? 'Search users'
+                  : searchType === 'Questions' || contractsOnly
+                  ? 'Search questions'
+                  : isMobile
+                  ? 'Search'
+                  : 'Search questions, users, topics, and posts'
+              }
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional: only true when opening the search popover, where focusing the input is expected
+              autoFocus={autoFocus}
+              loading={loading}
+              inputId={searchInputId}
+              listboxId={searchResultsId}
+              instructionsId={searchInstructionsId}
+              expanded={query.length > 0 && totalResults > 0}
+            />
+            <LiveRegion message={searchAnnouncement} />
+          </>
         )}
 
         {/* Subtopics row */}
@@ -693,122 +901,142 @@ export function Search(props: SearchProps) {
               searchType && searchType !== 'Questions' ? 'invisible' : ''
             }
             hideSweepsToggle={hideSweepsToggle}
+            extraFilterPills={extraFilterPills}
           />
         )}
       </Col>
       <Spacer h={1} />
-      {selectedFollowed && (
-        <Col className="mb-2">
-          <>
-            <Row className="text-ink-500 items-center gap-1 text-sm">
-              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-              <span>Your Followed Topics</span>
-              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-            </Row>
-            {usersFollowedGroups ? (
-              <BrowseTopicPills
-                className={'relative w-full px-2 py-1'}
-                topics={usersFollowedGroups}
-                clipOnMobile={true}
-              />
-            ) : isLoadingFollowedGroups ? (
-              <div className="text-ink-500 px-2 py-3 text-sm">
-                Loading your followed topics...
-              </div>
-            ) : null}
-          </>
-
-          {shouldShowTrendingTopics && (
+      <div id={searchResultsId} role="listbox" aria-labelledby={searchInputId}>
+        {selectedFollowed && (
+          <Col className="mb-2">
             <>
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-                <span>Explore Topics To Follow</span>
+                <span>Your Followed Topics</span>
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
-              {trendingTopics ? (
+              {usersFollowedGroups ? (
                 <BrowseTopicPills
                   className={'relative w-full px-2 py-1'}
-                  topics={trendingTopics}
-                  clipOnMobile={!shouldShowALotOfTrendingTopics}
-                  initialShown={shouldShowALotOfTrendingTopics ? 20 : undefined}
+                  topics={usersFollowedGroups}
+                  clipOnMobile={true}
                 />
-              ) : isLoadingTrendingTopics ? (
+              ) : isLoadingFollowedGroups ? (
                 <div className="text-ink-500 px-2 py-3 text-sm">
-                  Loading trending topics...
+                  Loading your followed topics...
                 </div>
               ) : null}
             </>
-          )}
-        </Col>
-      )}
-      {showSearchTypes && (
-        <Col>
-          {showTopics && (
-            <>
+
+            {shouldShowTrendingTopics && (
+              <>
+                <Row className="text-ink-500 items-center gap-1 text-sm">
+                  <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                  <span>Explore Topics To Follow</span>
+                  <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+                </Row>
+                {trendingTopics ? (
+                  <BrowseTopicPills
+                    className={'relative w-full px-2 py-1'}
+                    topics={trendingTopics}
+                    clipOnMobile={!shouldShowALotOfTrendingTopics}
+                    initialShown={
+                      shouldShowALotOfTrendingTopics ? 20 : undefined
+                    }
+                  />
+                ) : isLoadingTrendingTopics ? (
+                  <div className="text-ink-500 px-2 py-3 text-sm">
+                    Loading trending topics...
+                  </div>
+                ) : null}
+              </>
+            )}
+          </Col>
+        )}
+        {showSearchTypes && (
+          <Col>
+            {showTopics && (
+              <>
+                <Row className="text-ink-500 items-center gap-1 text-sm">
+                  <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                  <span>
+                    {!query || !topics?.length
+                      ? ''
+                      : topics.length >= 100
+                      ? '100+'
+                      : `${topics.length}`}{' '}
+                    {!query || !topics?.length ? 'Topics' : 'topics'}
+                  </span>
+                  <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+                </Row>
+                <BrowseTopicPills
+                  className={'relative w-full px-2 pb-4'}
+                  topics={topics}
+                />
+              </>
+            )}
+            {showUsers && <UserResults userResults={users} />}
+            {(showTopics || showUsers) && (
               <Row className="text-ink-500 items-center gap-1 text-sm">
                 <hr className="border-ink-300 ml-2 grow sm:ml-0" />
                 <span>
-                  {!query || !topics?.length
+                  {!query || !contracts?.length
                     ? ''
-                    : topics.length >= 100
+                    : contracts.length >= 100
                     ? '100+'
-                    : `${topics.length}`}{' '}
-                  {!query || !topics?.length ? 'Topics' : 'topics'}
+                    : shouldLoadMore && !loading
+                    ? `${contracts.length}+`
+                    : `${contracts.length}`}{' '}
+                  {!query || !contracts?.length ? 'Questions' : 'questions'}
                 </span>
                 <hr className="border-ink-300 mr-2 grow sm:mr-0" />
               </Row>
-              <BrowseTopicPills
-                className={'relative w-full px-2 pb-4'}
-                topics={topics}
-              />
-            </>
-          )}
-          {showUsers && <UserResults userResults={users} />}
-          {(showTopics || showUsers) && (
-            <Row className="text-ink-500 items-center gap-1 text-sm">
-              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
-              <span>
-                {!query || !contracts?.length
-                  ? ''
-                  : contracts.length >= 100
-                  ? '100+'
-                  : shouldLoadMore && !loading
-                  ? `${contracts.length}+`
-                  : `${contracts.length}`}{' '}
-                {!query || !contracts?.length ? 'Questions' : 'questions'}
-              </span>
-              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
-            </Row>
-          )}
-        </Col>
-      )}
+            )}
+          </Col>
+        )}
 
-      {!contracts && !posts ? (
-        <LoadingContractResults />
-      ) : contracts?.length === 0 && posts?.length === 0 ? (
-        emptyContractsState
-      ) : (
-        <>
-          {contracts || posts ? (
-            <CombinedResults
-              contracts={contracts ?? []}
-              posts={posts ?? []}
-              searchParams={searchParams}
-              onContractClick={onContractClick}
-              highlightContractIds={highlightContractIds}
-              answersByContractId={answersByContractId}
-              hideAvatars={hideAvatars}
-              hideActions={hideActions}
-              hasBets={hasBets}
-            />
-          ) : null}
-          <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
-          {shouldLoadMore && <LoadingContractResults />}
-          {!shouldLoadMore && (
-            <NoMoreResults params={searchParams} onChange={onChange} />
-          )}
-        </>
-      )}
+        {searchError && (
+          <SearchErrorNotice
+            onRetry={retrySearch}
+            loading={loading}
+            onBrowseAll={
+              selectedForYou ? () => onChange({ fy: '0' }) : undefined
+            }
+          />
+        )}
+        {!contracts && !posts ? (
+          searchError ? null : (
+            <LoadingContractResults />
+          )
+        ) : contracts?.length === 0 && posts?.length === 0 ? (
+          emptyContractsState
+        ) : (
+          <>
+            {contracts || posts ? (
+              <CombinedResults
+                contracts={contracts ?? []}
+                posts={posts ?? []}
+                searchParams={searchParams}
+                onContractClick={onContractClick}
+                highlightContractIds={highlightContractIds}
+                answersByContractId={answersByContractId}
+                hideAvatars={hideAvatars}
+                hideActions={hideActions}
+                hasBets={hasBets}
+                discoveryVariant={discoveryVariant}
+                discoveryTracking={discoveryTracking}
+              />
+            ) : null}
+            {!searchError && (
+              <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            )}
+            {shouldLoadMore && <LoadingContractResults />}
+            {!shouldLoadMore && !searchError && (
+              <NoMoreResults params={searchParams} onChange={onChange} />
+            )}
+          </>
+        )}
+      </div>
     </Col>
   )
 }
@@ -841,6 +1069,29 @@ export const LoadingContractResults = () => {
       <LoadingContractRow />
       <LoadingContractRow />
       <LoadingContractRow />
+    </Col>
+  )
+}
+
+export const SearchErrorNotice = (props: {
+  onRetry: () => void
+  loading: boolean
+  onBrowseAll?: () => void
+}) => {
+  const { onRetry, loading, onBrowseAll } = props
+  return (
+    <Col role="alert" className="text-ink-700 my-6 items-center gap-3">
+      <span>Questions couldn’t load. Please try again.</span>
+      <Row className="gap-2">
+        <Button color="gray-outline" onClick={onRetry} loading={loading}>
+          Retry
+        </Button>
+        {onBrowseAll && (
+          <Button color="gray-outline" onClick={onBrowseAll}>
+            Browse All
+          </Button>
+        )}
+      </Row>
     </Col>
   )
 }
@@ -884,22 +1135,57 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   topics: undefined,
   shouldLoadMore: true,
   posts: undefined,
+  seenMarketCutoffTime: undefined,
+  discoveryVariant: undefined,
+  discoveryAssignmentSource: undefined,
+  discoveryAssignmentKey: undefined,
+  discoverySurface: undefined,
+  discoveryResultSetId: undefined,
+  discoveryLoadedPageCount: 0,
+  discoveryCompatibilityFallback: false,
+  discoveryAnchorFallback: false,
+  discoverySemanticEligible: undefined,
+  discoverySemanticMarketCount: undefined,
+  discoveryInitialLatencyMs: undefined,
 }
 
 export const useSearchResults = (props: {
   persistPrefix: string
+  discoverySourceComponent?: 'search'
   searchParams: SearchParams
   includeUsersAndTopics: boolean
   isReady: boolean
+  discoveryVariant?: DiscoveryExperimentVariant
+  discoveryAssignmentSource?: DiscoveryExperimentAssignmentSource
+  discoveryAssignmentKey?: string
   additionalFilter?: SupabaseAdditionalFilter
 }) => {
-  const { persistPrefix, searchParams, isReady, additionalFilter } = props
+  const {
+    persistPrefix,
+    discoverySourceComponent = persistPrefix === 'search'
+      ? 'search'
+      : undefined,
+    searchParams,
+    isReady,
+    discoveryVariant,
+    discoveryAssignmentSource,
+    discoveryAssignmentKey,
+    additionalFilter,
+  } = props
+  // The treatment still applies to every Search instance, but the primary
+  // experiment scorecard is Browse-only. Avoid multiplying user_events write
+  // volume for embedded/topic search instances that the analysis excludes.
+  const trackDiscoveryExperiment = discoverySourceComponent !== undefined
 
   const [state, setState] = usePersistentInMemoryState<SearchState>(
     FRESH_SEARCH_CHANGED_STATE,
     `${persistPrefix}-supabase-contract-search`
   )
   const [loading, setLoading] = useState(false)
+  const [failedSearch, setFailedSearch] = useState<{
+    key: string
+    fresh: boolean
+  }>()
   const [lastSearchParams, setLastSearchParams] =
     usePersistentInMemoryState<SearchParams | null>(
       null,
@@ -907,6 +1193,18 @@ export const useSearchResults = (props: {
     )
 
   const requestId = useRef(0)
+  const paramsGeneration = useRef(0)
+  const failedParamsGeneration = useRef<number>()
+  const freshRequestAbortController = useRef<AbortController>()
+  const initialQuery = useRef<string>()
+  const completedInThisMount = useRef(false)
+
+  useEffect(
+    () => () => {
+      freshRequestAbortController.current?.abort()
+    },
+    []
+  )
 
   // Helper function to check if search parameters have meaningfully changed
   const searchParamsChanged = (
@@ -920,9 +1218,28 @@ export const useSearchResults = (props: {
     )
   }
 
+  const requestParamsChanged = () =>
+    searchParamsChanged(searchParams, lastSearchParams) ||
+    state.discoveryAssignmentKey !== discoveryAssignmentKey ||
+    state.discoveryVariant !== discoveryVariant
+
   const querySearchResults = useEvent(
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
-      if (!isReady) return true
+      if (!isReady || !isABTestAssignmentCurrent(discoveryAssignmentKey)) {
+        return true
+      }
+      // A visibility callback can be queued while the user changes filters.
+      // Wait for the fresh page instead of paging new params from the old
+      // offset. If that fresh request fails, stop the observer's timer loop.
+      if (!freshQuery) {
+        const action = getLoadMoreRequestAction(
+          freshRequestAbortController.current !== undefined,
+          requestParamsChanged(),
+          failedParamsGeneration.current,
+          paramsGeneration.current
+        )
+        if (action !== 'load') return action === 'wait'
+      }
       const {
         q: query,
         s: sort,
@@ -936,6 +1253,19 @@ export const useSearchResults = (props: {
         li: liquidity,
         hb: hasBets,
       } = searchParams
+      const usesForYouRoute =
+        forYou === '1' &&
+        query.length === 0 &&
+        filter !== 'news' &&
+        topicSlug.length === 0 &&
+        gids.length === 0 &&
+        (sort === 'score' || sort === 'freshness-score') &&
+        (sweepState === '0' || sweepState === '2')
+      const discoverySurface: DiscoveryExperimentSurface = query.trim()
+        ? 'text-search'
+        : usesForYouRoute
+        ? 'for-you'
+        : 'browse'
 
       const shouldSearchPostsWithContracts =
         SORTS_MIXING_POSTS_AND_MARKETS.includes(sort) &&
@@ -955,7 +1285,58 @@ export const useSearchResults = (props: {
         !contractsOnly && props.includeUsersAndTopics
 
       if (freshQuery || state.shouldLoadMore) {
+        const requestSearchKey = serializedSearchParams
+        // Keep a failed load-more observer unmounted until its retry finishes,
+        // so remounting it cannot start a duplicate request at the same offset.
+        if (failedSearch?.key === requestSearchKey) setLoading(true)
+        const discoveryResultSetId = freshQuery
+          ? randomString(16)
+          : state.discoveryResultSetId ?? randomString(16)
+        const discoveryPage = freshQuery
+          ? 0
+          : state.discoveryLoadedPageCount ?? 0
+        const requestStartedAt = Date.now()
+        let discoveryRequestAttemptId: string | undefined
+        let usedCompatibilityFallback = freshQuery
+          ? false
+          : state.discoveryCompatibilityFallback ?? false
+        let usedAnchorFallback = freshQuery
+          ? false
+          : state.discoveryAnchorFallback ?? false
+        const sendDiscoveryOptions = shouldSendDiscoveryOptions(
+          !!freshQuery,
+          usedCompatibilityFallback
+        )
+        // A no-op load-more must not cancel an active fresh search. Only
+        // replace the controller after we know this invocation will request.
+        if (freshQuery) freshRequestAbortController.current?.abort()
+        const abortController = new AbortController()
+        if (freshQuery) {
+          freshRequestAbortController.current = abortController
+          failedParamsGeneration.current = undefined
+        }
+        let seenMarketCutoffTime =
+          discoveryVariant === 'treatment'
+            ? freshQuery
+              ? Date.now()
+              : state.seenMarketCutoffTime
+            : undefined
+        const requestParamsGeneration = paramsGeneration.current
         const id = ++requestId.current
+        const shouldRetryAfterStaleResult = () =>
+          shouldRetryStaleSearchRequest(
+            !!freshQuery,
+            requestParamsGeneration,
+            paramsGeneration.current
+          )
+        const finishFreshRequest = () => {
+          if (
+            freshQuery &&
+            freshRequestAbortController.current === abortController
+          ) {
+            freshRequestAbortController.current = undefined
+          }
+        }
         let timeoutId: NodeJS.Timeout | undefined
         if (freshQuery) {
           timeoutId = setTimeout(() => {
@@ -967,75 +1348,186 @@ export const useSearchResults = (props: {
         const postApiParams: APIParams<'get-posts'> = {
           sortBy: sort === 'score' ? 'importance_score' : 'created_time',
           term: query,
-          limit: 10,
+          limit: sort === 'score' ? 1 : 3,
           userId: additionalFilter?.creatorId,
           offset: freshQuery ? 0 : state.posts?.length ?? 0,
         }
         try {
           if (contractType === 'POSTS') {
-            const posts = await api('get-posts', postApiParams)
-            const shouldLoadMore = posts.length === 10
+            const posts = await api('get-posts', postApiParams, {
+              signal: abortController.signal,
+            })
+            if (
+              id !== requestId.current ||
+              !isABTestAssignmentCurrent(discoveryAssignmentKey)
+            ) {
+              finishFreshRequest()
+              return shouldRetryAfterStaleResult()
+            }
+            const shouldLoadMore = posts.length === postApiParams.limit
             setState({
               contracts: [],
               users: undefined,
               topics: undefined,
               posts: uniqBy(buildArray(state.posts, posts), 'id'),
               shouldLoadMore,
+              seenMarketCutoffTime,
+              discoveryVariant,
+              discoveryAssignmentSource,
+              discoveryAssignmentKey,
+              discoverySurface,
+              discoveryResultSetId: undefined,
+              discoveryLoadedPageCount: 0,
+              discoveryCompatibilityFallback: false,
+              discoveryAnchorFallback: false,
+              discoverySemanticEligible: undefined,
+              discoverySemanticMarketCount: undefined,
+              discoveryInitialLatencyMs: undefined,
             })
 
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
+            setFailedSearch(undefined)
             setLoading(false)
             return shouldLoadMore
           }
           const endpoint =
             topicSlug === 'recent' ? 'recent-markets' : 'search-markets-full'
+          if (
+            trackDiscoveryExperiment &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+            discoveryVariant &&
+            discoveryAssignmentSource
+          ) {
+            discoveryRequestAttemptId = randomString(16)
+            void track(DISCOVERY_SEARCH_REQUEST_EVENT, {
+              schemaVersion: 1,
+              requestAttemptId: discoveryRequestAttemptId,
+              resultSetId: discoveryResultSetId,
+              variant: discoveryVariant,
+              assignmentSource: discoveryAssignmentSource,
+              sourceComponent: discoverySourceComponent,
+              surface: discoverySurface,
+              page: discoveryPage,
+              isFresh: !!freshQuery,
+            })
+          }
+          const marketApiParams: APIParams<'search-markets-full'> = {
+            term: query,
+            filter,
+            sort,
+            contractType,
+            ...(() => {
+              const useCursor =
+                !freshQuery && sort === 'newest' && !!state.contracts?.length
+              return useCursor
+                ? {
+                    offset: 0,
+                    beforeTime:
+                      state.contracts![state.contracts!.length - 1]
+                        ?.createdTime,
+                  }
+                : {
+                    offset: freshQuery ? 0 : state.contracts?.length ?? 0,
+                  }
+            })(),
+            limit: CONTRACTS_PER_SEARCH_PAGE,
+            topicSlug: topicSlug !== '' ? topicSlug : undefined,
+            creatorId: additionalFilter?.creatorId,
+            isPrizeMarket: isPrizeMarketString,
+            forYou,
+            token:
+              sweepState === '2' ? 'ALL' : sweepState === '1' ? 'CASH' : 'MANA',
+            gids,
+            liquidity: liquidity === '' ? undefined : parseInt(liquidity),
+            hasBets,
+            discoveryVariant: sendDiscoveryOptions
+              ? discoveryVariant
+              : undefined,
+            // The semantic tail on low-hit searches outlived the discovery-v1
+            // experiment; the legacy client-side sort already keeps semantic
+            // rows after the lexical results.
+            enableSemanticSearch:
+              sendDiscoveryOptions &&
+              endpoint === 'search-markets-full' &&
+              query.trim().length > 0
+                ? true
+                : undefined,
+            seenMarketCutoffTime:
+              sendDiscoveryOptions &&
+              discoveryVariant === 'treatment' &&
+              usesForYouRoute
+                ? seenMarketCutoffTime
+                : undefined,
+          }
+          const getMarkets = async () => {
+            try {
+              return await api(endpoint, marketApiParams, {
+                signal: abortController.signal,
+              })
+            } catch (error) {
+              const retryMode = getSearchDiscoveryRetryMode({
+                freshQuery: !!freshQuery,
+                seenMarketCutoffTime: marketApiParams.seenMarketCutoffTime,
+                enableSemanticSearch: marketApiParams.enableSemanticSearch,
+                discoveryVariant: marketApiParams.discoveryVariant,
+                errorCode: error instanceof APIError ? error.code : undefined,
+                errorMessage:
+                  error instanceof APIError ? error.message : undefined,
+                errorDetails:
+                  error instanceof APIError ? error.details : undefined,
+                isForYouRoute: usesForYouRoute,
+              })
+              if (!retryMode) throw error
+
+              const anchorFallback = retryMode === 'anchor-clock-skew'
+              if (anchorFallback) {
+                seenMarketCutoffTime = undefined
+                usedAnchorFallback = true
+              } else {
+                usedCompatibilityFallback = true
+              }
+              const contracts = await api(
+                endpoint,
+                {
+                  ...marketApiParams,
+                  ...getSearchDiscoveryRetryOptions(retryMode, {
+                    enableSemanticSearch: marketApiParams.enableSemanticSearch,
+                    discoveryVariant: marketApiParams.discoveryVariant,
+                  }),
+                },
+                { signal: abortController.signal }
+              )
+              // The anchor-only retry still came from a current treatment
+              // worker, including its explicit match markers and ranking.
+              if (anchorFallback) return contracts
+
+              // Semantic fallback never runs after page one, so any unmarked
+              // rows from an old worker are known to be lexical there. Keep a
+              // fresh unmarked response conservative: an intermediate worker
+              // may have returned an unmarked semantic tail.
+              return freshQuery
+                ? contracts
+                : contracts.map((contract) =>
+                    'searchMatchType' in contract
+                      ? contract
+                      : { ...contract, searchMatchType: 'lexical' as const }
+                  )
+            }
+          }
           const searchPromises: Promise<
             | APIResponse<'recent-markets'>
             | APIResponse<'search-markets-full'>
             | APIResponse<'get-posts'>
             | APIResponse<'search-users'>
             | APIResponse<'search-groups'>
-          >[] = [
-            api(endpoint, {
-              term: query,
-              filter,
-              sort,
-              contractType,
-              ...(() => {
-                const useCursor =
-                  !freshQuery && sort === 'newest' && !!state.contracts?.length
-                return useCursor
-                  ? {
-                      offset: 0,
-                      beforeTime:
-                        state.contracts![state.contracts!.length - 1]
-                          ?.createdTime,
-                    }
-                  : {
-                      offset: freshQuery ? 0 : state.contracts?.length ?? 0,
-                    }
-              })(),
-              limit: CONTRACTS_PER_SEARCH_PAGE,
-              topicSlug: topicSlug !== '' ? topicSlug : undefined,
-              creatorId: additionalFilter?.creatorId,
-              isPrizeMarket: isPrizeMarketString,
-              forYou,
-              token:
-                sweepState === '2'
-                  ? 'ALL'
-                  : sweepState === '1'
-                  ? 'CASH'
-                  : 'MANA',
-              gids,
-              liquidity: liquidity === '' ? undefined : parseInt(liquidity),
-              hasBets,
-            }),
-          ]
+          >[] = [getMarkets()]
 
           if (includeUsersAndTopics) {
             searchPromises.push(
@@ -1048,13 +1540,20 @@ export const useSearchResults = (props: {
             )
           }
           if (shouldSearchPostsWithContracts) {
-            searchPromises.push(api('get-posts', postApiParams))
+            searchPromises.push(
+              api('get-posts', postApiParams, {
+                signal: abortController.signal,
+              })
+            )
           }
 
           const results = await Promise.all(searchPromises)
 
-          if (id === requestId.current) {
-            const newContracts = results[0] as Contract[]
+          if (
+            id === requestId.current &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey)
+          ) {
+            const newContracts = results[0] as FullMarketSearchResult[]
             let postResultIndex = 1
             const newUsers = includeUsersAndTopics
               ? (results[postResultIndex++] as FullUser[])
@@ -1072,42 +1571,18 @@ export const useSearchResults = (props: {
             const freshContracts = freshQuery
               ? newContracts
               : buildArray(state.contracts, newContracts)
-            const bottomScoreFromAllContracts =
-              sort === 'score'
-                ? minBy(freshContracts, 'importanceScore')?.importanceScore
-                : minBy(freshContracts, 'createdTime')?.createdTime
 
             // This is necessary bc the posts are in a different table than the contracts.
             // TODO: this is bad and will leave posts out of the search results randomly.
             // We should fix this by joining the posts table to the contracts table or something.
-            let postFilteringThreshold: number | undefined
-            if (sort === 'score') {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'importanceScore'
-                )?.importanceScore
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            } else {
-              if (
-                !freshQuery &&
-                state.contracts &&
-                state.contracts.length > 0
-              ) {
-                postFilteringThreshold = minBy(
-                  state.contracts,
-                  'createdTime'
-                )?.createdTime
-              } else {
-                postFilteringThreshold = bottomScoreFromAllContracts
-              }
-            }
+            const contractsBeforeNewPosts =
+              !freshQuery && state.contracts?.length
+                ? state.contracts
+                : freshContracts
+            const postFilteringThreshold = getPostSearchThreshold(
+              contractsBeforeNewPosts,
+              sort === 'score' ? 'score' : 'newest'
+            )
             const freshPosts =
               freshQuery || !state.posts
                 ? newPostsResults
@@ -1125,8 +1600,41 @@ export const useSearchResults = (props: {
                     'id'
                   )
 
+            // Semantic rows only pad page one, so they never imply a page two.
             const shouldLoadMore =
-              newContracts.length === CONTRACTS_PER_SEARCH_PAGE
+              newContracts.filter((c) => c.searchMatchType !== 'semantic')
+                .length === CONTRACTS_PER_SEARCH_PAGE
+
+            const lexicalMarketCount = newContracts.filter(
+              (contract) => contract.searchMatchType !== 'semantic'
+            ).length
+            const semanticMarketCount = newContracts.length - lexicalMarketCount
+            const requestLatencyMs = Date.now() - requestStartedAt
+            // Match the API's pre-embedding cleanup so the low-hit segment is
+            // classified identically in both experiment arms.
+            const normalizedQuery = query
+              .replace(/['"]/g, '')
+              .trim()
+              .replace(/\s+/g, ' ')
+            const lowerQuery = normalizedQuery.toLowerCase()
+            const semanticEligible =
+              !!freshQuery &&
+              endpoint === 'search-markets-full' &&
+              sort !== 'newest' &&
+              !lowerQuery.startsWith('https://') &&
+              !lowerQuery.startsWith('http://') &&
+              normalizedQuery.length >= 3 &&
+              normalizedQuery.length <= 200 &&
+              lexicalMarketCount < Math.min(CONTRACTS_PER_SEARCH_PAGE, 5)
+            const resultSetSemanticEligible = freshQuery
+              ? semanticEligible
+              : state.discoverySemanticEligible ?? false
+            const resultSetSemanticMarketCount = freshQuery
+              ? semanticMarketCount
+              : state.discoverySemanticMarketCount ?? 0
+            const resultSetInitialLatencyMs = freshQuery
+              ? requestLatencyMs
+              : state.discoveryInitialLatencyMs ?? requestLatencyMs
 
             setState({
               contracts: freshContracts,
@@ -1134,20 +1642,132 @@ export const useSearchResults = (props: {
               topics: includeUsersAndTopics ? newTopics?.lite : state.topics,
               posts: freshPosts,
               shouldLoadMore,
+              seenMarketCutoffTime,
+              discoveryVariant,
+              discoveryAssignmentSource,
+              discoveryAssignmentKey,
+              discoverySurface,
+              discoveryResultSetId,
+              discoveryLoadedPageCount: discoveryPage + 1,
+              discoveryCompatibilityFallback: usedCompatibilityFallback,
+              discoveryAnchorFallback: usedAnchorFallback,
+              discoverySemanticEligible: resultSetSemanticEligible,
+              discoverySemanticMarketCount: resultSetSemanticMarketCount,
+              discoveryInitialLatencyMs: resultSetInitialLatencyMs,
             })
+
+            if (
+              trackDiscoveryExperiment &&
+              isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+              discoveryVariant &&
+              discoveryAssignmentSource
+            ) {
+              void track(DISCOVERY_RESULTS_EVENT, {
+                schemaVersion: 1,
+                requestAttemptId: discoveryRequestAttemptId,
+                resultSetId: discoveryResultSetId,
+                variant: discoveryVariant,
+                assignmentSource: discoveryAssignmentSource,
+                sourceComponent: discoverySourceComponent,
+                surface: discoverySurface,
+                page: discoveryPage,
+                isFresh: !!freshQuery,
+                resultCount: freshContracts.length + (freshPosts?.length ?? 0),
+                pageResultCount:
+                  newContracts.length + (newPostsResults?.length ?? 0),
+                lexicalMarketCount,
+                semanticMarketCount,
+                semanticEligible,
+                postCount: freshPosts?.length ?? 0,
+                queryLengthBucket: getDiscoveryQueryLengthBucket(query),
+                sort,
+                filter,
+                compatibilityFallback: usedCompatibilityFallback,
+                anchorFallback: usedAnchorFallback,
+                latencyMs: requestLatencyMs,
+                // Store page deltas so telemetry stays linear as people load
+                // more. The exposure event records exact rendered ordering.
+                items: [
+                  ...newContracts.map((item) => ({
+                    id: item.id,
+                    itemType: 'market',
+                    matchType: item.searchMatchType ?? 'lexical',
+                  })),
+                  ...(newPostsResults ?? []).map((item) => ({
+                    id: item.id,
+                    itemType: 'post',
+                  })),
+                ],
+              })
+            }
 
             // Store the search params that were used for this query
             if (freshQuery) {
               setLastSearchParams(searchParams)
+              completedInThisMount.current = true
             }
 
             clearTimeout(timeoutId)
+            finishFreshRequest()
+            setFailedSearch(undefined)
             setLoading(false)
 
             return shouldLoadMore
           }
+          finishFreshRequest()
+          return shouldRetryAfterStaleResult()
         } catch (error) {
+          clearTimeout(timeoutId)
+          finishFreshRequest()
+          if (error instanceof Error && error.name === 'AbortError') {
+            if (
+              discoveryRequestAttemptId &&
+              isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+              discoveryVariant &&
+              discoveryAssignmentSource
+            ) {
+              void track(DISCOVERY_SEARCH_ABORT_EVENT, {
+                schemaVersion: 1,
+                requestAttemptId: discoveryRequestAttemptId,
+                variant: discoveryVariant,
+                assignmentSource: discoveryAssignmentSource,
+                sourceComponent: discoverySourceComponent,
+                surface: discoverySurface,
+                page: discoveryPage,
+                isFresh: !!freshQuery,
+                latencyMs: Date.now() - requestStartedAt,
+              })
+            }
+            return false
+          }
+          if (id !== requestId.current) return shouldRetryAfterStaleResult()
+          if (freshQuery) {
+            failedParamsGeneration.current = requestParamsGeneration
+          }
+          if (
+            discoveryRequestAttemptId &&
+            isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+            discoveryVariant &&
+            discoveryAssignmentSource
+          ) {
+            void track(DISCOVERY_SEARCH_ERROR_EVENT, {
+              schemaVersion: 1,
+              requestAttemptId: discoveryRequestAttemptId,
+              variant: discoveryVariant,
+              assignmentSource: discoveryAssignmentSource,
+              sourceComponent: discoverySourceComponent,
+              surface: discoverySurface,
+              page: discoveryPage,
+              isFresh: !!freshQuery,
+              compatibilityFallback: usedCompatibilityFallback,
+              anchorFallback: usedAnchorFallback,
+              errorCode: error instanceof APIError ? error.code : undefined,
+              errorType: error instanceof Error ? error.name : typeof error,
+              latencyMs: Date.now() - requestStartedAt,
+            })
+          }
           console.error('Error fetching search results:', error)
+          setFailedSearch({ key: requestSearchKey, fresh: !!freshQuery })
           setLoading(false)
         }
       }
@@ -1155,51 +1775,213 @@ export const useSearchResults = (props: {
     }
   )
 
-  useDebouncedEffect(
-    () => {
-      if (!state.contracts?.length) {
-        querySearchResults(true)
-      }
-    },
-    50,
-    [isReady]
+  const invalidateCurrentRequests = useEvent(() => {
+    // Load-more requests intentionally do not replace the fresh-request abort
+    // controller, but their result must still become stale as soon as params
+    // change. Advance the generation before checking for a controller.
+    paramsGeneration.current++
+    requestId.current++
+    // Pagination retries also set loading, but have no fresh controller.
+    // Their stale completion cannot clear the busy state after invalidation.
+    setLoading(false)
+    const controller = freshRequestAbortController.current
+    if (!controller) return
+
+    // Invalidate before aborting so even an already-resolved continuation
+    // cannot publish stale state. The debounced effect issues any replacement
+    // required by the new params.
+    freshRequestAbortController.current = undefined
+    controller.abort()
+  })
+
+  const serializedSearchParams = JSON.stringify({
+    searchParams,
+    discoveryAssignmentKey,
+    discoveryVariant,
+  })
+  useSafeLayoutEffect(() => {
+    // Invalidate a superseded request immediately. Waiting for the next
+    // debounced request would let the old response land during that delay.
+    invalidateCurrentRequests()
+  }, [serializedSearchParams, invalidateCurrentRequests])
+
+  // The URL query reaches searchParams a render after isReady, so the query
+  // the page mounted with is whatever the first debounced pass over ready
+  // params sees. Until then the current query stands in for it, which keeps
+  // a deep-linked load as responsive as a blank one.
+  // lastSearchParams outlives this mount, so until a request completes here
+  // it may describe an earlier visit, and a deep-linked query would look
+  // typed next to it.
+  const requestDebounceMs = getSearchRequestDebounceMs(
+    searchParams[QUERY_KEY],
+    completedInThisMount.current ? lastSearchParams?.[QUERY_KEY] : undefined,
+    initialQuery.current ?? searchParams[QUERY_KEY]
   )
   useDebouncedEffect(
     () => {
-      // Only do a fresh query if search parameters have meaningfully changed
-      if (searchParamsChanged(searchParams, lastSearchParams)) {
+      // Whether this pass issues the first request or finds results restored
+      // from an earlier visit, the query it sees is the one this mount
+      // committed to, so typing after it waits like a keystroke.
+      if (isReady && initialQuery.current === undefined) {
+        initialQuery.current = searchParams[QUERY_KEY]
+      }
+      // One effect avoids duplicate initial requests. Term typing waits long
+      // enough for ordinary keystroke bursts to settle; filter changes stay
+      // responsive.
+      if (state.contracts === undefined || requestParamsChanged()) {
         querySearchResults(true)
       }
     },
-    50,
-    [JSON.stringify(searchParams)]
+    requestDebounceMs,
+    [isReady, serializedSearchParams]
   )
 
-  const contracts = state.contracts
-    ? uniqBy(
-        state.contracts.filter((c) => {
-          return (
-            !additionalFilter?.excludeContractIds?.includes(c.id) &&
-            !additionalFilter?.excludeGroupSlugs?.some((slug) =>
-              c.groupSlugs?.includes(slug)
-            ) &&
-            !additionalFilter?.excludeUserIds?.includes(c.creatorId)
-          )
-        }),
-        'id'
-      )
-    : undefined
+  // Persistent results are shared by the component key, so never render one
+  // account's personalized rows (or stale params) while a replacement loads.
+  const hasCurrentResults = !requestParamsChanged()
+  const contracts =
+    hasCurrentResults && state.contracts
+      ? uniqBy(
+          state.contracts.filter((c) => {
+            return (
+              !additionalFilter?.excludeContractIds?.includes(c.id) &&
+              !additionalFilter?.excludeGroupSlugs?.some((slug) =>
+                c.groupSlugs?.includes(slug)
+              ) &&
+              !additionalFilter?.excludeUserIds?.includes(c.creatorId)
+            )
+          }),
+          'id'
+        )
+      : undefined
 
+  // A result set can be restored from the in-memory cache on a later visit.
+  // Give each mounted presentation its own denominator while keeping the
+  // result-set ID stable for response/page diagnostics.
+  const discoveryPresentationId = useMemo(
+    () => (state.discoveryResultSetId ? randomString(16) : undefined),
+    [state.discoveryResultSetId]
+  )
+
+  const stateAssignmentKey = state.discoveryAssignmentKey
+  const discoveryTracking: DiscoveryResultTracking | undefined =
+    discoverySourceComponent &&
+    stateAssignmentKey &&
+    state.discoveryResultSetId &&
+    discoveryPresentationId &&
+    state.discoveryVariant &&
+    state.discoveryAssignmentSource &&
+    state.discoverySurface &&
+    state.discoverySemanticEligible !== undefined &&
+    state.discoverySemanticMarketCount !== undefined &&
+    state.discoveryInitialLatencyMs !== undefined &&
+    stateAssignmentKey === discoveryAssignmentKey &&
+    state.discoveryVariant === discoveryVariant &&
+    isABTestAssignmentCurrent(discoveryAssignmentKey) &&
+    !requestParamsChanged()
+      ? {
+          assignmentKey: stateAssignmentKey,
+          resultSetId: state.discoveryResultSetId,
+          presentationId: discoveryPresentationId,
+          variant: state.discoveryVariant,
+          source: state.discoveryAssignmentSource,
+          sourceComponent: discoverySourceComponent,
+          surface: state.discoverySurface,
+          semanticEligible: state.discoverySemanticEligible,
+          semanticMarketCount: state.discoverySemanticMarketCount,
+          initialLatencyMs: state.discoveryInitialLatencyMs,
+          compatibilityFallback: state.discoveryCompatibilityFallback ?? false,
+          anchorFallback: state.discoveryAnchorFallback ?? false,
+        }
+      : undefined
+
+  const searchError = failedSearch?.key === serializedSearchParams
   return {
     contracts,
-    users: state.users,
-    topics: state.topics,
+    users: hasCurrentResults ? state.users : undefined,
+    topics: hasCurrentResults ? state.topics : undefined,
     loading,
-    shouldLoadMore: state.shouldLoadMore,
+    searchError,
+    retrySearch: () => querySearchResults(failedSearch?.fresh ?? true),
+    shouldLoadMore: searchError
+      ? false
+      : hasCurrentResults
+      ? state.shouldLoadMore
+      : true,
     loadMoreContracts: () => querySearchResults(false, true),
     refreshContracts: () => querySearchResults(true, true),
-    posts: state.posts,
+    posts: hasCurrentResults ? state.posts : undefined,
+    discoveryTracking,
   }
+}
+
+const useTrackDiscoveryExposure = (props: {
+  contracts: FullMarketSearchResult[] | undefined
+  posts: TopLevelPost[] | undefined
+  searchParams: SearchParams
+  tracking: DiscoveryResultTracking | undefined
+  visible: boolean
+}) => {
+  const { contracts, posts, searchParams, tracking, visible } = props
+  const trackedPresentationId = useRef<string>()
+
+  useEffect(() => {
+    if (
+      !visible ||
+      !tracking ||
+      !isABTestAssignmentCurrent(tracking.assignmentKey) ||
+      (contracts === undefined && posts === undefined) ||
+      trackedPresentationId.current === tracking.presentationId
+    ) {
+      return
+    }
+    trackedPresentationId.current = tracking.presentationId
+
+    const sort =
+      searchParams[TOPIC_FILTER_KEY] === 'recent'
+        ? undefined
+        : searchParams[SORT_KEY]
+    const items = orderCombinedSearchResults(contracts ?? [], posts ?? [], {
+      sort,
+      preserveBackendMarketOrder: shouldPreserveBackendMarketOrder(
+        tracking.variant,
+        searchParams[QUERY_KEY],
+        searchParams[FOR_YOU_KEY] === '1'
+      ),
+    })
+
+    void track(DISCOVERY_EXPOSURE_EVENT, {
+      schemaVersion: 1,
+      presentationId: tracking.presentationId,
+      resultSetId: tracking.resultSetId,
+      variant: tracking.variant,
+      assignmentSource: tracking.source,
+      sourceComponent: tracking.sourceComponent,
+      surface: tracking.surface,
+      semanticEligible: tracking.semanticEligible,
+      semanticMarketCount: tracking.semanticMarketCount,
+      initialLatencyMs: tracking.initialLatencyMs,
+      compatibilityFallback: tracking.compatibilityFallback,
+      anchorFallback: tracking.anchorFallback,
+      resultCount: items.length,
+      marketCount: items.filter((item) => 'mechanism' in item).length,
+      postCount: items.filter((item) => !('mechanism' in item)).length,
+      items: items.slice(0, MAX_TRACKED_DISCOVERY_ITEMS).map((item, index) =>
+        'mechanism' in item
+          ? {
+              id: item.id,
+              itemType: 'market',
+              rank: index + 1,
+              matchType: item.searchMatchType ?? 'lexical',
+            }
+          : {
+              id: item.id,
+              itemType: 'post',
+              rank: index + 1,
+            }
+      ),
+    })
+  }, [visible, tracking, contracts, posts, searchParams])
 }
 
 export const useSearchQueryState = (props: {

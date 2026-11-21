@@ -1,3 +1,5 @@
+import { compact } from 'lodash'
+
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
 import { calculateConversionScore } from 'shared/conversion-score'
@@ -20,14 +22,18 @@ import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
+// Autoresolve temporarily disabled — uncomment to continue with $100/day.
+// import { autoGenerateAndResolvePrizeDrawings } from './auto-generate-and-resolve-prize-drawings'
+import { autobanUsers } from './autoban-users'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
-import { createJob } from './helpers'
+import { createJob as createCronJob, JobContext } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
+import { expirePersonalizedManaOffers } from './expire-personalized-mana-offers'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -48,14 +54,84 @@ import {
 import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
 import { scoreContracts } from './score-contracts'
 import { sendMarketCloseEmails } from './send-market-close-emails'
+import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
+import { checkStatsFreshness } from './check-stats-freshness'
+import { updatePerps } from './update-perps'
+import {
+  ORACLE_TICK_PERIOD_MS,
+  updateOracleFeeds,
+  validateOracleFeedPollPeriods,
+} from './update-oracle-feeds'
+import { updateOpenRouterShare } from './update-openrouter-share'
+import { updateClassificationAudit } from './update-classification-audit'
+import { updateModelClassifications } from './update-model-classifications'
+import { updateTrumpApproval } from './update-trump-approval'
+import { updateVoteHubAverages } from './update-votehub-averages'
+import { updateFearGreed } from './update-fear-greed'
+import { resolveSportsMarkets } from './sports-resolve'
+import { createUpcomingSportsMarkets } from './sports-create-markets'
+import { pollSportsLiveScores } from './sports-live'
+import { createOddsSportsMarkets } from './sports-odds-create'
+import { resolveOddsSportsMarkets } from './sports-odds-resolve'
+import { createF1SportsMarkets } from './sports-f1-create'
+import { resolveF1SportsMarkets } from './sports-f1-resolve'
+import { updateSportsLeaderboards } from './update-sports-leaderboards'
+import { updateElectionLeaderboards } from './update-election-leaderboards'
 
-export function createJobs() {
-  return [
+// Which subset of jobs this process runs. The 2s oracle tick (and the other
+// PERP jobs that apply funding and liquidations) must not share an event loop
+// with batch jobs like update-user-portfolio-histories, which block it for
+// minutes at prod scale and freeze the feed mid-liquidation. DEV and PROD deploy the
+// scheduler as a 'main' + 'perps' instance pair; 'all' is the single-instance
+// mode for local development only.
+export type SchedulerJobSet = 'all' | 'main' | 'perps'
+
+const PERP_JOB_NAMES = new Set([
+  'update-perps',
+  'update-oracle-feeds',
+  'update-openrouter-share',
+  'update-trump-approval',
+  'update-votehub-averages',
+  'update-fear-greed',
+])
+
+export function getSchedulerJobSet(): SchedulerJobSet {
+  const raw = process.env.SCHEDULER_JOBS ?? 'all'
+  if (raw === 'all' || raw === 'main' || raw === 'perps') return raw
+  // An unrecognized value must fail the process, not fall back to 'all': two
+  // instances both running the PERP jobs would double-apply funding transfers
+  // and liquidations.
+  throw new Error(
+    `Invalid SCHEDULER_JOBS '${raw}'; expected 'all', 'main', or 'perps'.`
+  )
+}
+
+export function createJobs(jobSet: SchedulerJobSet) {
+  // Report any feed whose pollPeriodMs the tick cannot actually honour. Here
+  // rather than at module scope so it runs once per boot, with logging up.
+  validateOracleFeedPollPeriods()
+
+  // Schedules are 6-field croner expressions (seconds first) evaluated in
+  // America/Los_Angeles (DEFAULT_OPTS in ./helpers.ts) — NOT UTC. A run that
+  // is still going when its next firing comes due is skipped ("protect").
+  //
+  // A job excluded from this set must never be constructed: a Cron starts
+  // ticking the moment `new Cron` runs, so filtering the returned array
+  // would leave excluded jobs live.
+  const createJob = (
+    name: string,
+    schedule: string | null,
+    fn: (ctx: JobContext) => Promise<void>
+  ) =>
+    jobSet === 'all' || PERP_JOB_NAMES.has(name) === (jobSet === 'perps')
+      ? createCronJob(name, schedule, fn)
+      : null
+  const jobs = compact([
     createJob(
       'auto-leagues-cycle',
       '0 */10 * * * *', // every 10 minutes
@@ -69,22 +145,22 @@ export function createJobs() {
     ),
     createJob(
       'update-contract-metrics',
-      '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
+      '0 */21 * * * *', // at :00, :21, and :42 of every hour
       () => updateContractMetricsCore(false)
     ),
     createJob(
       'update-contract-metrics-full',
-      '0 30 5 * * *', // every day at 5:30am
+      '0 30 5 * * *', // daily at 5:30 AM LA
       () => updateContractMetricsCore(true)
     ),
     createJob(
       'update-creator-metrics',
-      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 57 minutes - (on the 57th minute of every hour)
+      `0 ${CREATOR_UPDATE_FREQUENCY} * * * *`, // hourly at :57
       updateCreatorMetricsCore
     ),
     createJob(
       'group-importance-score',
-      '0 6 * * * *', // on the 6th minute of every hour
+      '0 6 * * * *', // hourly at :06
       () => calculateGroupImportanceScore()
     ),
     createJob(
@@ -94,32 +170,42 @@ export function createJobs() {
     ),
     createJob(
       'check-push-receipts',
-      '0 15 * * * *', // on the 15th minute of every hour
+      '0 15 * * * *', // hourly at :15
       checkPushNotificationReceipts
     ),
     createJob(
       'send-contract-movement-notifications',
-      '0 12 * * * *', // on the 12th minute of every hour
+      '0 12 * * * *', // hourly at :12
       () => sendMarketMovementNotifications(false)
     ),
     createJob(
       'calculate-conversion-scores',
-      '0 46 * * * *', // on the 46th minute of every hour
+      '0 46 * * * *', // hourly at :46
       calculateConversionScore
     ),
     createJob(
+      'send-prize-ending-soon-notifications',
+      '0 */5 * * * *', // every 5 minutes
+      sendPrizeEndingSoonNotifications
+    ),
+    createJob(
       'auto-award-bounty',
-      '0 55 * * * *', // on the 55th minute of every hour
+      '0 55 * * * *', // hourly at :55
       autoAwardBounty
     ),
     createJob(
+      'autoban-users',
+      '0 */15 * * * *', // every 15 minutes
+      autobanUsers
+    ),
+    createJob(
       'update-user-portfolio-histories',
-      '30 * * * * *', // every minute
+      '30 * * * * *', // every minute, at :30s
       () => updateUserPortfolioHistoriesCore()
     ),
     createJob(
       'drizzle-liquidity',
-      '0 */7 * * * *', // every 7th minute
+      '0 */7 * * * *', // at :00, :07, ... :56 of every hour
       drizzleLiquidity
     ),
     createJob(
@@ -134,7 +220,8 @@ export function createJobs() {
     ),
     createJob(
       'score-contracts',
-      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 60} * * * *`, // every 2 minutes
+      // every IMPORTANCE_MINUTE_INTERVAL (2) minutes in prod; hourly in dev
+      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 60} * * * *`,
       scoreContracts
     ),
     createJob(
@@ -152,27 +239,100 @@ export function createJobs() {
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
     ),
+    createJob(
+      'update-perps',
+      '0 0 * * * *', // every hour on the hour
+      updatePerps
+    ),
+    createJob(
+      'update-oracle-feeds',
+      // The FLOOR for how often any fast feed can be polled; each feed's own
+      // pollPeriodMs throttles it down from here, so raising this rate does
+      // not by itself increase load on any particular source. Derived from
+      // ORACLE_TICK_PERIOD_MS so the schedule and the throttle that rounds to
+      // it cannot drift apart.
+      `*/${ORACLE_TICK_PERIOD_MS / 1000} * * * * *`,
+      updateOracleFeeds
+    ),
+    createJob(
+      'update-openrouter-share',
+      // Hourly, not daily: each run appends a fresh-timestamped point for the
+      // trailing 7-day window (see the file header). At :50 so update-perps
+      // on the hour funds against a price minutes old rather than an hour.
+      // 24 calls/day against OpenRouter's 500/day account limit.
+      '0 50 * * * *',
+      updateOpenRouterShare
+    ),
+    createJob(
+      'update-model-classifications',
+      // Every 6 hours. Deliberately NOT a perp job: it makes a few hundred
+      // outbound HuggingFace calls, and the perps instance exists to keep the
+      // 2s oracle tick on an unshared event loop. It only writes a table the
+      // perps instance reads, so the split costs nothing.
+      // LA hours, like every schedule in this file. Chosen to miss both the
+      // 08:00 UTC API restart window and the ~10:00-11:30 UTC scheduler memory
+      // pressure window in BOTH DST offsets: 05/11/17/23 LA is 12/18/00/06 UTC
+      // in PDT and 13/19/01/07 UTC in PST. Those windows land on 00:00-04:30 LA
+      // across the two offsets, which makes this the only 6-hourly cycle that
+      // clears them year-round — do not shift it by an hour without redoing
+      // that arithmetic.
+      '0 15 5,11,17,23 * * *',
+      updateModelClassifications
+    ),
     // Daily jobs:
     createJob(
+      'classification-audit',
+      // 06:40 LA. NOT 03:40, which an earlier revision picked while claiming it
+      // sat in the "same quiet window" as the schedule above — it is the exact
+      // opposite. That comment defines the window to AVOID as 00:00-04:30 LA
+      // (the 08:00 UTC API restart and the ~10:00-11:30 UTC scheduler memory
+      // pressure, mapped through both DST offsets), which 03:40 is inside.
+      //
+      // 06:40 clears it in PDT and PST alike, and sits between the 05:15 and
+      // 11:15 firings of the classifier above so the two never contend for the
+      // HuggingFace rate limit. Daily rather than hourly because it re-verifies
+      // every published classification against a third-party API and nothing it
+      // looks for changes on an hourly timescale.
+      '0 40 6 * * *',
+      updateClassificationAudit
+    ),
+    createJob(
       'process-membership-renewals',
-      '0 0 8 * * *', // 8 AM UTC daily (midnight PT)
+      '0 0 8 * * *', // daily at 8:00 AM LA
       processMembershipRenewals
     ),
     createJob(
       'check-subscription-expiry',
-      '0 0 10 * * *', // 10 AM UTC daily (2 AM PT) - warns users 2-3 days before expiry
+      '0 0 10 * * *', // daily at 10:00 AM LA - warns users 2-3 days before expiry
       checkSubscriptionExpiry
     ),
     createJob(
+      'expire-personalized-mana-offers',
+      // Hourly. Interval is not load-bearing for correctness — the redemption
+      // path in stripe-endpoints.ts and daimo-webhook.ts accepts a 5-minute
+      // grace past expires_at and the cron itself only flips rows that are
+      // ALREADY past that grace window. Changing this to a finer cadence is
+      // fine; just don't widen the redemption-side grace above the cron lag
+      // or accidentally-expired offers will redeem at the offer rate again.
+      '0 17 * * * *',
+      expirePersonalizedManaOffers
+    ),
+    createJob(
       'send-unseen-notifications',
-      '0 0 13 * * *', // 1 PM daily
+      '0 0 13 * * *', // daily at 1:00 PM LA
       sendUnseenMarketMovementNotifications
     ),
     createJob(
       'clean-old-notifications',
-      '0 30 2 * * *', // 230 AM daily
+      '0 30 1 * * *', // daily at 1:30 AM LA - heavy disk user
       cleanOldNotifications
     ),
+    // Autoresolve temporarily disabled — uncomment to continue with $100/day.
+    // createJob(
+    //   'auto-generate-and-resolve-prize-drawings',
+    //   '0 0 13 * * *', // 1 PM PT daily
+    //   autoGenerateAndResolvePrizeDrawings
+    // ),
     // // Achievement MV refreshes (nightly, staggered ~10 mins apart)
     // createJob(
     //   'update-ach-trades',
@@ -181,120 +341,243 @@ export function createJobs() {
     // ),
     createJob(
       'refresh-ach-volume',
-      '0 30 2 * * *', // 2:30 AM
+      '0 30 2 * * *', // daily at 2:30 AM LA
       refreshAchVolume
     ),
     createJob(
       'refresh-ach-comments',
-      '0 40 2 * * *', // 2:40 AM
+      '0 40 2 * * *', // daily at 2:40 AM LA
       refreshAchComments
     ),
     createJob(
       'refresh-ach-creator-contracts',
-      '0 50 2 * * *', // 2:50 AM
+      '0 50 2 * * *', // daily at 2:50 AM LA
       refreshAchCreatorContracts
     ),
     createJob(
       'refresh-ach-referrals',
-      '0 0 3 * * *', // 3:00 AM
+      '0 0 3 * * *', // daily at 3:00 AM LA
       refreshAchReferrals
     ),
     createJob(
       'refresh-ach-creator-traders',
-      '0 10 3 * * *', // 3:10 AM
+      '0 10 3 * * *', // daily at 3:10 AM LA
       refreshAchCreatorTraders
     ),
     createJob(
       'refresh-ach-leagues',
-      '0 20 3 * * *', // 3:20 AM
+      '0 20 3 * * *', // daily at 3:20 AM LA
       refreshAchLeagues
     ),
     createJob(
       'refresh-ach-pnl',
-      '0 30 3 * * *', // 3:30 AM
+      '0 30 3 * * *', // daily at 3:30 AM LA
       refreshAchPnl
     ),
     createJob(
       'refresh-ach-txns',
-      '0 40 3 * * *', // 3:40 AM
+      '0 40 3 * * *', // daily at 3:40 AM LA
       refreshAchTxns
     ),
     createJob(
       'refresh-ach-account-age',
-      '0 50 3 * * *', // 3:50 AM
+      '0 50 3 * * *', // daily at 3:50 AM LA
       refreshAchAccountAge
     ),
     createJob(
       'update-user-metric-periods',
-      '0 0 2 * * *', // 2 AM daily
+      '0 0 2 * * *', // daily at 2:00 AM LA
       async () => {
         await updateUserMetricPeriods()
       }
     ),
     createJob(
       'reset-pg-stats',
-      '0 0 3 * * *', // 3 AM daily
+      '0 0 3 * * *', // daily at 3:00 AM LA
       resetPgStats
     ),
     createJob(
       'calculate-user-topic-interests',
-      '0 0 3 * * *', // 3 AM daily
+      '0 0 4 * * *', // daily at 4:00 AM LA
       () => calculateUserTopicInterests()
     ),
     createJob(
       'update-stats',
-      '0 20 4 * * *', // on 4:20am daily
+      '0 20 4 * * *', // daily at 4:20 AM LA
       () => updateStatsCore(7)
     ),
     createJob(
+      'check-stats-freshness',
+      '0 0 8 * * *', // daily at 8:00 AM LA, a few hours after update-stats
+      checkStatsFreshness
+    ),
+    createJob(
+      'update-trump-approval',
+      // Every 5 minutes, which is VoteHub's OWN freshness bound: their
+      // averages endpoint serves `Cache-Control: max-age=300`, so polling
+      // faster returns cached bytes rather than a newer number — and it
+      // bounds what any other observer can see too, since they read through
+      // the same cache. Hourly left a 59-minute window in which a move was
+      // publicly visible while the market still traded on the old mark.
+      '0 */5 * * * *',
+      updateTrumpApproval
+    ),
+    createJob(
+      'update-votehub-averages',
+      // The other VoteHub averages (2026 generic ballot, Vance favorability).
+      // Same 5-minute cadence and the same max-age=300 reasoning as the Trump
+      // job above, offset by two minutes so the two never hit VoteHub in the
+      // same instant. A separate job because the Trump job's name and
+      // `[trump-approval]` prefix are what the alert policies key on; these
+      // feeds alert under `[votehub]`.
+      '0 2-59/5 * * * *',
+      updateVoteHubAverages
+    ),
+    createJob(
+      'update-fear-greed',
+      // Alternative.me's Crypto Fear & Greed index steps once a day around
+      // 00:00 UTC; polling every 5 minutes bounds how long the new daily
+      // value is public before it is the market's mark. Offset from the two
+      // VoteHub jobs so the three slow-feed publishers never fire together.
+      '0 3-59/5 * * * *',
+      updateFearGreed
+    ),
+    createJob(
       'onboarding-notification',
-      '0 0 11 * * *', // 11 AM daily
+      '0 0 11 * * *', // daily at 11:00 AM LA
       sendOnboardingNotificationsInternal
     ),
     createJob(
       'weekly-portfolio-emails',
-      '0 * 12-14 * * 5', // every Friday from 12pm to 2pm
+      '0 * 12-14 * * 5', // every minute from 12:00 to 2:59 PM LA on Fridays
       sendPortfolioUpdateEmailsToAllUsers
     ),
     createJob(
       'weekly-markets-emails',
-      '0 */2 10-17 * * 1', // every Monday
+      '0 */2 10-17 * * 1', // every 2 minutes from 10 AM to 5:58 PM LA on Mondays
       sendWeeklyMarketsEmails
     ),
     createJob(
       'reset-weekly-email-flags',
-      '0 0 0 * * 6', // every Saturday at midnight
+      '0 0 0 * * 6', // Saturdays at midnight LA
       resetWeeklyEmailsFlags
     ),
     createJob(
       'send-streak-notifications',
-      '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
+      '0 30 18 * * *', // daily at 6:30 PM LA
       sendStreakExpirationNotification
     ),
     createJob(
       'update-league-ranks',
-      '0 0 0 * * *', // every day at midnight
+      '0 0 0 * * *', // daily at midnight LA
       () => updateLeagueRanks()
     ),
     createJob(
       'reset-betting-streaks',
-      '0 0 0 * * *', // every day at midnight
+      '0 0 0 * * *', // daily at midnight LA
       resetBettingStreaksInternal
     ),
     createJob(
       'reset-quests-stats',
-      '0 0 0 * * *', // every day at midnight
+      '0 0 0 * * *', // daily at midnight LA
       resetDailyQuestStatsInternal
     ),
     createJob(
       'reset-weekly-quests-stats',
-      '0 0 0 * * 1', // every Monday at midnight
+      '0 0 0 * * 1', // Mondays at midnight LA
       resetWeeklyQuestStatsInternal
     ),
     createJob(
       'downsample-portfolio-history',
-      '0 50 4 * * *', // every day at 4:50am
+      '0 50 4 * * *', // daily at 4:50 AM LA
       downsamplePortfolioHistory
     ),
-  ]
+    // All football-data.org tournaments: check for finished matches and auto-resolve every 15 minutes
+    createJob(
+      'sports-resolve',
+      '0 */15 * * * *', // every 15 minutes
+      resolveSportsMarkets
+    ),
+    // Create markets for upcoming matches in the next 7 days
+    createJob(
+      'sports-create-markets',
+      '0 0 7 * * *', // daily at 7:00 AM LA
+      createUpcomingSportsMarkets
+    ),
+    // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
+    // create the coming two weeks' game markets, twice a day. Lines for a
+    // day's games are often posted only that morning, so one failed morning
+    // call used to cost a day's slate (EPL and the NBA on 31 Oct and 7 Nov
+    // 2026: a 502 and a 429 at the top of the hour, when every customer's
+    // cron hits the provider). Hence off the hour, a midday run that retries
+    // a failed morning and picks up late lines, and an alert only when the
+    // midday run fails too.
+    createJob(
+      'sports-odds-create',
+      '0 7 6 * * *', // daily at 6:07 AM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: false })
+    ),
+    createJob(
+      'sports-odds-create-midday',
+      '0 7 12 * * *', // daily at 12:07 PM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: true })
+    ),
+    // ...and while a game is on, ask for its sport's scores as often as
+    // /admin/sports says (live scores, and finals once a game is due to end),
+    // write them onto the market and resolve from the final. The tick only
+    // checks what's due; one scores call per sport, none while nothing is.
+    createJob(
+      'sports-odds-resolve',
+      '*/10 * * * * *', // every 10 seconds
+      resolveOddsSportsMarkets
+    ),
+    // F1 from BALLDONTLIE: the coming two weeks' session markets for the F1
+    // phases switched on in /admin/sports (all off by default)...
+    createJob(
+      'sports-f1-create',
+      '0 30 6 * * *', // daily at 6:30 AM LA
+      createF1SportsMarkets
+    ),
+    // ...and their resolution from the session's classification, two hours
+    // after each market closes.
+    createJob(
+      'sports-f1-resolve',
+      '0 5,20,35,50 * * * *', // every 15 minutes
+      resolveF1SportsMarkets
+    ),
+    // Poll in-play scores every 10s and broadcast them over websockets. No-op
+    // (no football-data call, just a cheap DB count) outside a tournament's
+    // active match window. During a window it's ~6 calls/min per tournament,
+    // well under the 20/min football-data budget; the throttled client backs
+    // off if a burst ever approaches the limit.
+    createJob(
+      'sports-live',
+      '*/10 * * * * *', // every 10 seconds
+      pollSportsLiveScores
+    ),
+    // The sports pages' leaderboards: profit and creators per sport, from
+    // every sports market's positions. Between update-contract-metrics runs
+    // (:21 and :42), which refresh the profits it reads.
+    createJob(
+      'update-sports-leaderboards',
+      '0 33 * * * *', // hourly at :33
+      updateSportsLeaderboards
+    ),
+    // The /election page's leaderboards: profit and creators per election
+    // scope. Each run rebuilds only the boards that are due: the cycle boards
+    // hourly, and the US elections and US politics boards every 6 hours,
+    // because the US politics board reads positions on tens of thousands of
+    // markets. After update-contract-metrics at :42, which refreshes the
+    // profits it reads.
+    createJob(
+      'update-election-leaderboards',
+      '0 47 * * * *', // hourly at :47
+      updateElectionLeaderboards
+    ),
+  ])
+  if (jobSet === 'perps' && jobs.length !== PERP_JOB_NAMES.size)
+    throw new Error(
+      `PERP job set mismatch: expected ${PERP_JOB_NAMES.size} jobs but created ${jobs.length} — PERP_JOB_NAMES is out of sync with the job list.`
+    )
+  return jobs
 }

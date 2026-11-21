@@ -5,9 +5,11 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { MapContractsDictionary } from 'web/public/data/elections-data'
-import { currentSenate, senate2024 } from 'web/public/data/senate-state-data'
-import { sortByDemocraticDiff } from './electoral-college-visual'
-import { probToColor } from './state-election-map'
+import {
+  currentSenate2026,
+  senate2026,
+} from 'web/public/data/senate-state-data'
+import { probToColor, sortByDemocraticDiff } from './state-election-map'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
 
 export function SenateBar(props: {
@@ -20,14 +22,14 @@ export function SenateBar(props: {
 }) {
   const sortedContractsDictionary = sortByDemocraticDiff(
     props.mapContractsDictionary,
-    senate2024
+    senate2026
   )
   const { handleClick, onMouseEnter, onMouseLeave, targetState, hoveredState } =
     props
 
   const isMobile = useIsMobile()
   const [republicans, democrats] = partition(
-    currentSenate,
+    currentSenate2026,
     ({ party1 }) => party1 === 'Republican'
   )
 
@@ -58,7 +60,7 @@ export function SenateBar(props: {
           ([stateKey, contract]) => {
             const fill = probToColor(
               contract,
-              senate2024.filter((s) => s.state === stateKey)[0]
+              senate2026.filter((s) => s.state === stateKey)[0]
             )
 
             return (

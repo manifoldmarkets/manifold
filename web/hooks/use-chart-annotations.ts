@@ -48,6 +48,8 @@ export const useAnnotateChartTools = (
   const enableAdd =
     user &&
     (user.id === contract.creatorId || isModId(user.id) || isAdminId(user.id))
+  // Can only annotate because the user is a mod or admin
+  const addIsModAction = !!enableAdd && user?.id !== contract.creatorId
 
   return {
     pointerMode,
@@ -56,5 +58,6 @@ export const useAnnotateChartTools = (
     setHoveredAnnotation: updateHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   }
 }

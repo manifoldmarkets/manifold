@@ -115,7 +115,7 @@ export const getManaSupplyEachDayBetweeen = async (
         ) uph on true
       )
       select
-        sum(balance) as full_mana_balance
+        sum(balance) as full_mana_balance,
         sum(balance) ${filter} as mana_balance,
         sum(spice_balance) as full_spice_balance,
         sum(spice_balance) ${filter} as spice_balance,

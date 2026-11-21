@@ -3,7 +3,12 @@ import { keyBy, last, sum } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { CPMMNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getEndDate,
+  getRightmostVisibleDate,
+  getVisibleNumericYRange,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 import { map, zip } from 'd3-array'
@@ -57,8 +62,17 @@ export const NumberContractChart = (props: {
   height: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
+  const {
+    contract,
+    width,
+    multiPoints,
+    height,
+    zoomParams,
+    showZoomer,
+    zoomY,
+  } = props
   const { min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -78,8 +92,16 @@ export const NumberContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height, 0])
+  const [yMin, yMax] = getVisibleNumericYRange({
+    data: singlePointData,
+    contractMin: min,
+    contractMax: max,
+    zoomY,
+    zoomParams,
+  })
+  const isYZoomed = yMin !== min || yMax !== max
+  const yScale = scaleLinear([yMin, yMax], [height, 0])
+  if (isYZoomed) yScale.nice()
   return (
     <SingleValueHistoryChart
       w={width}

@@ -4,6 +4,19 @@ import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'firebase/auth'
 
+// LOCAL_ONLY mode: set a user ID that will be sent as X-Local-User header.
+// Initialize from env var to avoid race conditions with async auth setup.
+let localOnlyUserId: string | null =
+  typeof process !== 'undefined' && process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    ? process.env.NEXT_PUBLIC_LOCAL_TEST_USER_ID
+    : null
+export function setLocalOnlyUserId(userId: string | null) {
+  localOnlyUserId = userId
+}
+export function getLocalOnlyUserId() {
+  return localOnlyUserId
+}
+
 export function unauthedApi<P extends APIPath>(path: P, params: APIParams<P>) {
   return baseApiCall(
     formatApiUrlWithParams(path, params),
@@ -41,23 +54,37 @@ function appendQuery(url: string, props: Record<string, any>) {
   return `${base}?${params.toString()}`
 }
 
+export type BaseApiCallOptions = {
+  // Browser fetch cache mode. Pass 'no-store' on a refetch that follows a
+  // mutation: cached GET endpoints (max-age + stale-while-revalidate) can
+  // otherwise legally serve the pre-mutation state for several seconds.
+  cache?: RequestCache
+  // Lets typeahead and other superseding reads stop obsolete client work.
+  signal?: AbortSignal
+}
+
 export async function baseApiCall(
   url: string,
   method: 'POST' | 'PUT' | 'GET',
   params: any,
-  user: User | null
+  user: User | null,
+  options?: BaseApiCallOptions
 ) {
   const actualUrl = method === 'POST' ? url : appendQuery(url, params)
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   }
-  if (user) {
+  if (localOnlyUserId) {
+    headers['X-Local-User'] = localOnlyUserId
+  } else if (user) {
     const token = await user.getIdToken()
     headers.Authorization = `Bearer ${token}`
   }
   const req = new Request(actualUrl, {
     headers,
     method: method,
+    cache: options?.cache,
+    signal: options?.signal,
     body:
       params == null || method === 'GET' ? undefined : JSON.stringify(params),
   })

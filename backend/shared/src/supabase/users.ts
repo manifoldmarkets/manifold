@@ -86,11 +86,11 @@ export const updateUser = async (
   id: string,
   update: Partial<User>
 ) => {
-  const { name, username, ...rest } = update
+  const { name, username, isBot, ...rest } = update
 
-  // name and username are top-level columns, not in the data JSONB.
+  // name, username, and is_bot are top-level columns, not in the data JSONB.
   // Set them directly so they don't silently land in the wrong place.
-  if (name !== undefined || username !== undefined) {
+  if (name !== undefined || username !== undefined || isBot !== undefined) {
     const setClauses: string[] = []
     const values: any[] = []
     let idx = 1
@@ -101,6 +101,10 @@ export const updateUser = async (
     if (username !== undefined) {
       setClauses.push(`username = $${idx++}`)
       values.push(username)
+    }
+    if (isBot !== undefined) {
+      setClauses.push(`is_bot = $${idx++}`)
+      values.push(isBot)
     }
     values.push(id)
     await db.none(
@@ -115,6 +119,29 @@ export const updateUser = async (
   }
 
   broadcastUpdatedUser({ id, ...update })
+}
+
+// Record a completed mana purchase on the user row: mark them a purchaser and,
+// if they have no bonusEligibility yet, promote them to 'eligible' (bonuses
+// without prizes). Monotonic — only promotes from an unset state, so it never
+// overrides 'verified'/'grandfathered'/'ineligible'/'requires_verification' and
+// never downgrades anyone. Deliberately leaves prizeEligibility untouched (a
+// purchase never unlocks cash raffles) and never pays the signup/referral lump
+// sum (that stays on the KYC path). Shared by the Stripe and Daimo purchase
+// webhooks so the promotion rule has a single source of truth.
+export const recordManaPurchase = async (
+  tx: SupabaseDirectClient,
+  userId: string
+) => {
+  const row = await tx.oneOrNone<{ bonusEligibility: string | null }>(
+    `select data->>'bonusEligibility' as "bonusEligibility"
+       from users where id = $1`,
+    [userId]
+  )
+  await updateUser(tx, userId, {
+    purchasedMana: true,
+    ...(row?.bonusEligibility ? {} : { bonusEligibility: 'eligible' as const }),
+  })
 }
 
 // private_users has 2 columns that aren't in the data column
@@ -142,8 +169,15 @@ export const incrementBalance = async (
     spiceBalance?: number
     totalDeposits?: number
     totalCashDeposits?: number
+  },
+  options?: {
+    // Pass false inside a transaction that may be retried, and broadcast the
+    // returned user update once it has committed (see AnswerWriteOptions in
+    // ./answers.ts): an attempt that rolls back after the write would
+    // otherwise announce a balance that never existed.
+    broadcast?: boolean
   }
-) => {
+): Promise<(Partial<User> & { id: string }) | undefined> => {
   const updates = [
     ['balance', deltas.balance],
     ['cash_balance', deltas.cashBalance],
@@ -153,7 +187,7 @@ export const incrementBalance = async (
   ].filter(([_, v]) => v) // defined and not 0
 
   if (updates.length === 0) {
-    return
+    return undefined
   }
 
   const result = await db.one(
@@ -164,16 +198,16 @@ export const incrementBalance = async (
     [id]
   )
 
-  broadcastUpdatedUser(
-    removeUndefinedProps({
-      id,
-      balance: result.balance,
-      cashBalance: result.cash_balance,
-      spiceBalance: result.spice_balance,
-      totalDeposits: result.total_deposits,
-      totalCashDeposits: result.total_cash_deposits,
-    })
-  )
+  const userUpdate = removeUndefinedProps({
+    id,
+    balance: result.balance,
+    cashBalance: result.cash_balance,
+    spiceBalance: result.spice_balance,
+    totalDeposits: result.total_deposits,
+    totalCashDeposits: result.total_cash_deposits,
+  })
+  if (options?.broadcast !== false) broadcastUpdatedUser(userUpdate)
+  return userUpdate
 }
 
 export const incrementStreakQuery = (user: User, newBetTime: number) => {

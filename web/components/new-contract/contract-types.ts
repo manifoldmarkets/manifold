@@ -1,4 +1,5 @@
 import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
+import { MarketLinkRelation } from 'common/market-links'
 
 // Type definitions for URL params and contract creation
 export type NewQuestionParams = {
@@ -17,10 +18,16 @@ export type NewQuestionParams = {
   answers?: string[]
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
+  // Starting probability of each answer, in percent, in the same order as
+  // `answers`. Duplicating a cpmm-multi-2 market carries its current odds.
+  answerProbs?: number[]
   precision?: number
   sportsStartTimestamp?: string
   sportsEventId?: string
   sportsLeague?: string
+  // The market this one is about (common/market-links), and how.
+  linkedToContractId?: string
+  linkRelation?: MarketLinkRelation
   unit?: string
   midpoints?: number[]
   rand?: string

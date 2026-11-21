@@ -7,11 +7,13 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
+  ChatAlt2Icon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import {
+  ChatAlt2Icon as ChatAlt2IconSolid,
   MenuAlt3Icon,
   QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
   // SearchIcon as SearchIconSolid,
@@ -24,7 +26,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
 import { FaSearch as SearchIconSolid } from 'react-icons/fa'
-import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import {
@@ -48,8 +49,7 @@ const itemClass =
 const selectedItemClass = 'text-primary-700'
 const touchItemClass = 'touch-press-effect'
 const iconClassName = 'mx-auto my-1 h-[1.6rem] w-[1.6rem]'
-const exploreIconClassName =
-  ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
+const yapIconClassName = ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
 
 // Wrapper components for NotificationsIcon to work with the navigation system
 const NotificationsIconOutline = (props: { className?: string }) => (
@@ -68,11 +68,11 @@ function getNavigation(user: User) {
       solidIcon: SearchIconSolid,
     },
     {
-      name: 'Explore',
-      href: '/explore',
-      icon: IoCompassOutline,
-      solidIcon: IoCompass,
-      iconClassName: exploreIconClassName,
+      name: 'Yap',
+      href: '/yap',
+      icon: ChatAlt2Icon,
+      solidIcon: ChatAlt2IconSolid,
+      iconClassName: yapIconClassName,
     },
     {
       name: 'Profile',
@@ -87,7 +87,7 @@ function getNavigation(user: User) {
   ]
 }
 
-const signedOutNavigation = () => [
+const signedOutNavigation = [
   {
     name: 'Browse',
     href: '/browse',
@@ -95,15 +95,6 @@ const signedOutNavigation = () => [
     solidIcon: SearchIconSolid,
     alwaysShowName: true,
   },
-  {
-    name: 'Explore',
-    href: '/explore',
-    icon: IoCompassOutline,
-    solidIcon: IoCompass,
-    iconClassName: exploreIconClassName,
-    // prefetch: false, // should we not prefetch this?
-  },
-  // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',
@@ -131,32 +122,48 @@ export function BottomNavBar() {
     return null
   }
 
-  const navigationOptions = user ? getNavigation(user) : signedOutNavigation()
+  const navigationOptions = user ? getNavigation(user) : signedOutNavigation
 
   return (
-    <nav className="border-ink-100/30 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t text-xs lg:hidden">
-      {navigationOptions.map((item) => (
-        <NavBarItem
-          key={item.name}
-          item={item}
-          currentPage={currentPage}
-          user={user}
-          className={item.name === 'Politics' ? '-mt-1' : ''}
-        />
-      ))}
+    <nav
+      aria-label="Bottom navigation"
+      className="border-ink-100/30 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t text-xs lg:hidden"
+    >
+      <ul
+        role="list"
+        className="m-0 flex w-full list-none items-center justify-between p-0"
+      >
+        {navigationOptions.map((item) => (
+          <li key={item.name} className="flex-1">
+            <NavBarItem
+              item={item}
+              currentPage={currentPage}
+              user={user}
+              className={item.name === 'Politics' ? '-mt-1' : ''}
+            />
+          </li>
+        ))}
+        {!!user && (
+          <li className="flex-1">
+            <button
+              type="button"
+              aria-label="More menu"
+              aria-expanded={sidebarOpen}
+              className={clsx(
+                itemClass,
+                'relative',
+                sidebarOpen ? selectedItemClass : ''
+              )}
+              onClick={() => setSidebarOpen(true)}
+            >
+              <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
+              More
+            </button>
+          </li>
+        )}
+      </ul>
       {!!user && (
         <>
-          <div
-            className={clsx(
-              itemClass,
-              'relative',
-              sidebarOpen ? selectedItemClass : ''
-            )}
-            onClick={() => setSidebarOpen(true)}
-          >
-            <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
-            More
-          </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
             setSidebarOpen={setSidebarOpen}
@@ -192,6 +199,8 @@ function NavBarItem(props: {
       <Link
         prefetch={item?.prefetch ?? true}
         href={item.href ?? '#'}
+        aria-current={isOnUserProfile ? 'page' : undefined}
+        aria-label={item.name}
         className={clsx(
           itemClass,
           touched && touchItemClass,
@@ -234,7 +243,13 @@ function NavBarItem(props: {
   if (!item.href) {
     return (
       <button
-        className={clsx(itemClass, touched && touchItemClass, className)}
+        type="button"
+        className={clsx(
+          itemClass,
+          touched && touchItemClass,
+          className,
+          item.itemClassName
+        )}
         onClick={() => {
           track()
           item.onClick?.()
@@ -246,7 +261,7 @@ function NavBarItem(props: {
           <item.icon className={clsx(iconClassName, item.iconClassName)} />
         )}
         {children}
-        {item.name}
+        <NavItemLabel name={item.name} subLabel={item.subLabel} />
       </button>
     )
   }
@@ -262,11 +277,13 @@ function NavBarItem(props: {
   return (
     <Link
       href={item.href}
+      aria-current={isCurrentPage ? 'page' : undefined}
       className={clsx(
         itemClass,
         touched && touchItemClass,
         isCurrentPage && selectedItemClass,
-        className
+        className,
+        item.itemClassName
       )}
       onClick={track}
       onTouchStart={() => setTouched(true)}
@@ -276,8 +293,20 @@ function NavBarItem(props: {
         <IconComponent className={clsx(iconClassName, item.iconClassName)} />
       )}
       {children}
-      {item.name}
+      <NavItemLabel name={item.name} subLabel={item.subLabel} />
     </Link>
+  )
+}
+
+function NavItemLabel(props: { name: string; subLabel?: string }) {
+  const { name, subLabel } = props
+  return (
+    <span className="whitespace-nowrap">
+      {name}
+      {subLabel && (
+        <span className="hidden min-[360px]:inline">&nbsp;{subLabel}</span>
+      )}
+    </span>
   )
 }
 

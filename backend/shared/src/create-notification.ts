@@ -1,7 +1,7 @@
 import { Answer } from 'common/answer'
 import { Bet, LimitBet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract, MarketContract, PollContract } from 'common/contract'
+import { Contract, PollContract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { LeagueChangeNotificationData } from 'common/leagues'
 import {
@@ -306,7 +306,12 @@ export const createReferralNotification = async (
   toUserId: string,
   referredUser: User,
   bonusAmount: string,
-  referredByContract?: Contract
+  referredByContract?: Contract,
+  // Suffix the notification id so the legacy split payout (first_bet +
+  // verify) emits two notifications instead of having the second silently
+  // dropped by the ON CONFLICT DO NOTHING insert. Defaults to 'legacy' so
+  // existing callers and backfilled rows keep their stable id.
+  bonusType: 'signup' | 'first_bet' | 'verify' | 'legacy' = 'legacy'
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -317,7 +322,7 @@ export const createReferralNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: referredUser.id + '-signup-referral-bonus',
+    id: `${referredUser.id}-signup-referral-bonus-${bonusType}`,
     userId: toUserId,
     reason:
       referredByContract?.creatorId === toUserId
@@ -466,7 +471,7 @@ export const createCharityChampionEligibleNotification = async (
     sourceUserName: MANIFOLD_USER_NAME,
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-    sourceText: `You're the #1 ticket buyer with ${totalTickets} tickets! Claim the Charity Champion Trophy in the shop.`,
+    sourceText: `You're the #1 entry holder with ${totalTickets} entries! Claim the Charity Champion Trophy on the charity page.`,
     sourceTitle: 'Charity Champion Trophy',
   }
   const pg = createSupabaseDirectClient()
@@ -476,10 +481,12 @@ export const createCharityChampionEligibleNotification = async (
 export const createBettingStreakBonusNotification = async (
   user: User,
   txnId: string,
-  bet: Bet,
+  /** Link target — `/username/slug/bets/betId` for bets, the market page for perps. */
+  sourceSlug: string,
   contract: Contract,
   amount: number,
-  streak: number
+  streak: number,
+  effectiveTier?: string
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -502,7 +509,7 @@ export const createBettingStreakBonusNotification = async (
     sourceUserUsername: user.username,
     sourceUserAvatarUrl: user.avatarUrl,
     sourceText: amount.toString(),
-    sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
+    sourceSlug,
     sourceTitle: 'Betting Streak Bonus',
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
@@ -512,6 +519,7 @@ export const createBettingStreakBonusNotification = async (
       streak: streak,
       bonusAmount: amount,
       cashAmount: 0,
+      effectiveTier,
     } as BettingStreakData,
   }
   const pg = createSupabaseDirectClient()
@@ -674,6 +682,7 @@ export const createLeagueChangedNotifications = async (
       previousLeague: item.previousLeague,
       newLeague: item.newLeague,
       bonusAmount: item.bonusAmount,
+      missedPrizeReason: item.missedPrizeReason,
     }
 
     const notification: Notification = {
@@ -774,6 +783,8 @@ export const createNewBettorNotification = async (
         totalAmountBet: sumBy(bets, 'amount'),
         token: contract.token,
         bonusAmount: txn.amount,
+        effectiveTier: (txn.data as { effectiveTier?: string } | undefined)
+          ?.effectiveTier,
       } as UniqueBettorData),
     }
     await insertNotificationToSupabase(notification, pg)
@@ -837,7 +848,7 @@ export const createNewBettorNotification = async (
 }
 
 export const createContractResolvedNotifications = async (
-  contract: MarketContract,
+  contract: Contract,
   resolver: User,
   creator: User,
   outcome: string,
@@ -846,7 +857,7 @@ export const createContractResolvedNotifications = async (
   answerId: string | undefined,
   resolutionData: {
     userIdToContractMetric: {
-      [userId: string]: Omit<ContractMetric, 'id'>
+      [userId: string]: Pick<ContractMetric, 'invested' | 'profit'>
     }
     userPayouts: { [userId: string]: number }
     creatorPayout: number

@@ -6,8 +6,10 @@ import {
   calculateDailyLoanLimit,
   canClaimDailyFreeLoan,
   calculateTotalFreeLoanAvailable,
+  filterLoanEquityMetrics,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  sumExcludedPerpEquity,
 } from 'common/loans'
 import {
   canAccessMarginLoans,
@@ -20,6 +22,7 @@ import {
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy, sumBy } from 'lodash'
+import { Contract } from 'common/contract'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { type Row } from 'common/supabase/utils'
 
@@ -69,11 +72,14 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const { metrics, contracts } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
   const contractsById = keyBy(contracts, 'id')
+  // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
-    metrics,
+    filterLoanEquityMetrics(metrics, contractsById),
     contractsById
   )
+  // Reported so the UI can explain the gap vs. the sitewide portfolio value.
+  const perpValueExcluded = sumExcludedPerpEquity(metrics, contractsById)
 
   // Total loan includes both free loans and margin loans
   const currentFreeLoan = sumBy(metrics, (m) => m.loan ?? 0)
@@ -119,6 +125,7 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     if (!contract) return false
     if (contract.token !== 'MANA') return false
     if (contract.isResolved) return false
+    if ((contract as Contract).mechanism === 'perp') return false // perps excluded from loans
     if ((m.payout ?? 0) <= 0 && (m.invested ?? 0) <= 0) return false
     return isMarketEligibleForLoan({
       visibility: contract.visibility,
@@ -158,5 +165,6 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     // Equity-based calculation fields (equity = portfolioValue - loans)
     equity,
     portfolioValue,
+    perpValueExcluded,
   }
 }

@@ -13,6 +13,7 @@ import { BanBanner } from '../moderation/ban-banner'
 import { UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
 
+import { ResumePendingBet } from '../bet/resume-pending-bet'
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
 export function Page(props: {
@@ -24,6 +25,12 @@ export function Page(props: {
   hideBottomBar?: boolean
   hideFooter?: boolean
   banner?: ReactNode
+  // Desktop only: a column in the right margin, beside the content, that
+  // stays in view while the page scrolls.
+  rightSidebar?: ReactNode
+  // Skip the Google One Tap sign-in prompt on this page (e.g. a landing page
+  // where it would cover the content on a first visit).
+  hideGoogleOneTap?: boolean
 }) {
   const {
     trackPageView,
@@ -33,6 +40,8 @@ export function Page(props: {
     hideSidebar,
     hideBottomBar,
     banner,
+    rightSidebar,
+    hideGoogleOneTap,
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -64,8 +73,11 @@ export function Page(props: {
   return (
     <>
       <ConfettiOnDemand />
-      <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      {!hideGoogleOneTap && (
+        <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      )}
       <FirstStreakModalManager />
+      <ResumePendingBet />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
@@ -76,6 +88,12 @@ export function Page(props: {
         <Toaster
           position={isMobile ? 'bottom-center' : 'top-center'}
           containerClassName="!bottom-[70px]"
+          toastOptions={{
+            ariaProps: {
+              role: 'status',
+              'aria-live': 'polite',
+            },
+          }}
         />
         {hideSidebar ? (
           <div className="lg:col-span-2 lg:flex" />
@@ -83,6 +101,7 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
         )}
         <main
+          id="main-content"
           className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}
@@ -90,6 +109,11 @@ export function Page(props: {
           {children}
           {!props.hideFooter && <Footer />}
         </main>
+        {rightSidebar && (
+          <aside className="sticky top-0 hidden max-h-screen self-start overflow-y-auto px-4 lg:col-span-3 lg:block">
+            {rightSidebar}
+          </aside>
+        )}
       </Col>
       {!hideBottomBar && <BottomNavBar />}
     </>

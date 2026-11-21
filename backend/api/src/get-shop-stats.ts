@@ -1,6 +1,7 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
+import { getTicketItems } from 'common/shop/items'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -9,6 +10,7 @@ dayjs.extend(timezone)
 
 // Re-use the canonical list from supporter-config
 const SUBSCRIPTION_ITEM_IDS = [...SUPPORTER_ENTITLEMENT_IDS]
+const TICKET_ITEM_IDS = getTicketItems().map((t) => t.id)
 
 export type ShopStats = {
   // Daily subscription sales (supporter tiers)
@@ -18,8 +20,22 @@ export type ShopStats = {
     quantity: number
     revenue: number
   }[]
-  // Daily digital goods sales (non-subscription items)
+  // Daily digital goods sales (non-subscription, non-ticket items)
   digitalGoodsSales: {
+    date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
+  // Ticket sales (all-time, grouped by item)
+  ticketSales: {
+    itemId: string
+    quantity: number
+    revenue: number
+  }[]
+  // Daily merch sales (physical items via Printful — never reach 'COMPLETED'
+  // status, so they're tracked separately from `digitalGoodsSales`).
+  merchSales: {
     date: string
     itemId: string
     quantity: number
@@ -80,7 +96,8 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     [start, SUBSCRIPTION_ITEM_IDS]
   )
 
-  // Get daily digital goods sales (non-subscription items)
+  // Get daily digital goods sales (non-subscription, non-ticket items)
+  const excludeFromGoods = [...SUBSCRIPTION_ITEM_IDS, ...TICKET_ITEM_IDS]
   const digitalGoodsSales = await pg.manyOrNone<{
     date: string
     itemId: string
@@ -88,7 +105,7 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     revenue: number
   }>(
     `
-    select 
+    select
       date_trunc('day', created_time at time zone 'America/Los_Angeles')::date::text as date,
       item_id as "itemId",
       sum(quantity)::int as quantity,
@@ -100,7 +117,52 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     group by date, item_id
     order by date, item_id
     `,
-    [start, SUBSCRIPTION_ITEM_IDS]
+    [start, excludeFromGoods]
+  )
+
+  // Get daily merch sales. Merch orders flow PENDING_FULFILLMENT → SHIPPED;
+  // they never reach 'COMPLETED' so the digitalGoods query above misses them.
+  // Count anything that hasn't been refunded/canceled/failed (CANCELLED,
+  // REFUNDED, FAILED) — those are real sales from the user's perspective.
+  const merchSales = await pg.manyOrNone<{
+    date: string
+    itemId: string
+    quantity: number
+    revenue: number
+  }>(
+    `
+    select
+      date_trunc('day', created_time at time zone 'America/Los_Angeles')::date::text as date,
+      item_id as "itemId",
+      sum(quantity)::int as quantity,
+      sum(price_mana)::bigint as revenue
+    from shop_orders
+    where created_time >= $1
+      and status not in ('CANCELLED', 'REFUNDED', 'FAILED')
+      and item_id like 'merch-%'
+    group by date, item_id
+    order by date, item_id
+    `,
+    [start]
+  )
+
+  // Get ticket sales
+  const ticketSales = await pg.manyOrNone<{
+    itemId: string
+    quantity: number
+    revenue: number
+  }>(
+    `
+    select
+      item_id as "itemId",
+      count(*)::int as quantity,
+      sum(price_mana)::bigint as revenue
+    from shop_orders
+    where status = 'COMPLETED'
+      and item_id = any($1)
+    group by item_id
+    `,
+    [TICKET_ITEM_IDS]
   )
 
   // Get current active subscriber counts by tier
@@ -183,6 +245,8 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
   return {
     subscriptionSales: subscriptionSales ?? [],
     digitalGoodsSales: digitalGoodsSales ?? [],
+    ticketSales: ticketSales ?? [],
+    merchSales: merchSales ?? [],
     subscribersByTier: subscribersByTier ?? [],
     subscriptionsOverTime: subscriptionsOverTime ?? [],
   }

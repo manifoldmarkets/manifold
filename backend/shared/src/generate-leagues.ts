@@ -1,4 +1,4 @@
-import { BOT_USERNAMES, OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
+import { OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
 import {
   getCohortSize,
   getDemotionAndPromotionCount,
@@ -50,9 +50,9 @@ export async function generateNextSeason(
     join users on users.id = user_id
     where coalesce(users.data->>'isBannedFromPosting', 'false') = 'false'
     and coalesce(users.data->>'userDeleted', 'false') = 'false'
-    and users.username not in ($2:csv)
+    and users.is_bot = false
     `,
-    [startDate, BOT_USERNAMES]
+    [startDate]
   )
   const activeUserIdsSet = new Set(activeUserIds.map((u) => u.user_id))
 
@@ -218,7 +218,6 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
 
   // console.log('alreadyAssignedBotIds', alreadyAssignedBotIds)
 
-  const botUsernamesExcludingAcc = BOT_USERNAMES.filter((u) => u !== 'acc')
   const prevBoundaries = await getSeasonStartAndEnd(pg, prevSeason)
   if (!prevBoundaries) {
     log(`Error: Season ${prevSeason} not found in leagues_season_end_times`)
@@ -232,10 +231,11 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
         where contract_bets.created_time > $1
       )
       select id from users
-      where users.username in ($2:csv)
+      where users.is_bot = true
+      and users.username != 'acc'
       and id in (select user_id from active_user_ids)
     `,
-    [startDate, botUsernamesExcludingAcc],
+    [startDate],
     (r) => r.id
   )
 

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { forwardRef, MouseEventHandler, ReactNode, Ref } from 'react'
+import { forwardRef, ReactNode, Ref } from 'react'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
@@ -32,6 +32,11 @@ export type ColorType =
   | 'azure'
   | 'sienna'
   | 'indigo-white'
+
+type NativeButtonProps = Omit<
+  JSX.IntrinsicElements['button'],
+  'className' | 'size' | 'color' | 'type' | 'disabled' | 'ref'
+>
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -112,8 +117,9 @@ export const Button = forwardRef(function Button(
     size?: SizeType
     color?: ColorType
     type?: 'button' | 'reset' | 'submit'
+    disabled?: boolean
     loading?: boolean
-  } & JSX.IntrinsicElements['button'],
+  } & NativeButtonProps,
   ref: Ref<HTMLButtonElement>
 ) {
   const {
@@ -151,21 +157,22 @@ export const Button = forwardRef(function Button(
   )
 })
 
-export function IconButton(props: {
-  className?: string
-  onClick?: MouseEventHandler<any> | undefined
-  children?: ReactNode
-  size?: SizeType
-  type?: 'button' | 'reset' | 'submit'
-  disabled?: boolean
-}) {
+export function IconButton(
+  props: {
+    className?: string
+    children?: ReactNode
+    size?: SizeType
+    type?: 'button' | 'reset' | 'submit'
+    disabled?: boolean
+  } & NativeButtonProps
+) {
   const {
     children,
     className,
-    onClick,
     size = 'md',
     type = 'button',
     disabled = false,
+    ...rest
   } = props
 
   return (
@@ -175,7 +182,7 @@ export function IconButton(props: {
       color="gray-white"
       className={className}
       disabled={disabled}
-      onClick={onClick}
+      {...rest}
     >
       {children}
     </Button>

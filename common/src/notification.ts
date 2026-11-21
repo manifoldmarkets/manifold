@@ -83,6 +83,9 @@ export type notification_source_types =
   | 'bet_reply'
   | 'new_message'
   | 'post'
+  | 'social_reply'
+  | 'social_mention'
+  | 'social_post_like'
   | 'post_like'
   | 'post_comment_like'
   | love_notification_source_types
@@ -92,7 +95,10 @@ export type notification_source_types =
   | 'extra_purchased_mana'
   | 'payment_status'
   | 'membership_subscription'
+  | 'prize_winner'
   | 'charity_champion'
+  | 'merch_order_update'
+  | 'personalized_mana_offer'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -146,6 +152,7 @@ export type notification_reason_types =
   | 'bounty_added'
   | 'bounty_canceled'
   | 'mana_payment_received'
+  | 'prize_winner'
   | 'charity_champion_dethroned'
   | 'charity_champion_eligible'
 
@@ -158,6 +165,11 @@ type notification_descriptions = {
   }
 }
 export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
+  social_replies: {
+    simple: 'Replies on Yap',
+    detailed: 'Someone replied to your post on Yap',
+    verb: 'replied to your post',
+  },
   all_answers_on_my_markets: {
     simple: 'Answers on your questions',
     detailed: 'Answers on your own questions',
@@ -179,6 +191,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   quest_payout: {
     simple: `Quest completion rewards`,
     detailed: `Bonuses paid out for completing quests`,
+  },
+  liquidity_returned: {
+    simple: 'Your liquidity was returned',
+    detailed:
+      'When a question creator withdraws liquidity and your share of it is returned to you',
   },
   contract_from_followed_user: {
     simple: 'New questions from users you follow',
@@ -210,6 +227,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Weekly portfolio updates',
     detailed: 'Weekly portfolio updates',
   },
+  prize_drawings: {
+    simple: 'Prize drawings',
+    detailed: 'New prize drawings and prize drawings closing soon',
+  },
+  charity_giveaways: {
+    simple: 'Charity giveaways',
+    detailed: 'New charity giveaways and charity giveaways closing soon',
+  },
   referral_bonuses: {
     simple: 'Referring new users',
     detailed: 'Bonuses you receive from referring a new user',
@@ -230,6 +255,12 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'A user tagged you',
     detailed: 'When another use tags you',
     verb: 'tagged you',
+  },
+  tagged_all_traders: {
+    simple: 'A question creator tagged all traders (@traders)',
+    detailed:
+      'When a question creator or mod tags everyone who traded on a question with @traders',
+    verb: 'tagged all traders',
   },
   league_changed: {
     simple: 'Your league changed',
@@ -357,6 +388,14 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'Updates when your membership auto-renews or is cancelled due to insufficient balance',
   },
+  merch_order_update: {
+    simple: 'Merch order updates',
+    detailed: 'Updates when your merch order ships or is canceled',
+  },
+  personalized_mana_offer: {
+    simple: 'Personalized mana sales',
+    detailed: 'Time-limited personalized discounts on mana purchases',
+  },
   market_movements: {
     simple: 'Market movements',
     detailed:
@@ -376,12 +415,32 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'All new comments on posts you follow',
     verb: 'commented',
   },
+  perp_liquidation: {
+    simple: 'Perp liquidations',
+    detailed: 'When one of your perpetual futures positions is liquidated',
+  },
+  perp_adl: {
+    simple: 'Perp auto-deleveraging',
+    detailed:
+      'When your perpetual futures position is auto-deleveraged (ADL) because the opposing pool is insolvent',
+  },
+  perp_order_failed: {
+    simple: 'Perp orders that did not fill',
+    detailed:
+      'When a queued perpetual futures order is rejected or expires instead of filling',
+  },
 }
 
 export type BettingStreakData = {
   streak: number
   bonusAmount: number
   cashAmount?: number
+  // Effective tier at the time the bonus was awarded, so the notification's
+  // flagged label and amounts reflect history and don't change if the user's
+  // standing later changes. Optional for notifications created before this.
+  // Older rows may hold the pre-optional-verification tiers 'unverified' /
+  // 'verified' — read through normalizeRecordedTier.
+  effectiveTier?: string
 }
 
 export type StreakFreezeUsedData = {
@@ -392,6 +451,7 @@ export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
   newLeague: { season: number; division: number; cohort: string }
   bonusAmount: number
+  missedPrizeReason?: 'silicon_min_mana_not_met'
 }
 
 export type BetFillData = {
@@ -401,7 +461,7 @@ export type BetFillData = {
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  mechanism: 'cpmm-1' | 'cpmm-multi-1'
+  mechanism: 'cpmm-1' | 'cpmm-multi-1' | 'cpmm-multi-2'
   outcomeType: OutcomeType
   betAnswerId?: string
   expiresAt?: number
@@ -431,6 +491,9 @@ export type UniqueBettorData = {
   totalAmountBet?: number
   token?: ContractToken
   bonusAmount?: number
+  // Creator's effective tier at award time, so the flagged label reflects
+  // history rather than the creator's current tier.
+  effectiveTier?: string
 }
 
 export type ReviewNotificationData = {
@@ -477,6 +540,24 @@ export type PaymentCompletedData = {
   paymentAmountType: string
 }
 
+export type PrizeDrawingNotificationData = {
+  eventType: 'created' | 'ending_soon'
+  sweepstakesNum: number
+  totalPrizeUsd: number
+  closeTime: number
+  // Optional for backward compat — older 'created' notifications didn't
+  // include this. The in-app renderer falls back to a generic format
+  // when missing so historical notifications still render.
+  winnerCount?: number
+}
+
+export type CharityGiveawayNotificationData = {
+  eventType: 'created' | 'ending_soon'
+  giveawayNum: number
+  prizeAmountUsd: number
+  closeTime: number
+}
+
 export type ReferralData = {
   manaAmount: number
   cashAmount: number
@@ -488,6 +569,13 @@ export type MembershipSubscriptionData = {
   type: 'renewed' | 'cancelled' | 'expiring_soon'
   daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
+}
+
+export type PrizeWinnerData = {
+  rank: number
+  prizeLabel: string
+  prizeAmountUsdc: number
+  sweepstakesNum: number
 }
 
 export function getSourceIdForLinkComponent(
@@ -555,6 +643,7 @@ export function getSourceUrl(notification: Notification) {
 export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
+  'social_post_like',
   'post_like',
   'post_comment_like',
 ]
@@ -574,18 +663,18 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'quest_payout',
   'bet_fill',
   'mana_payment_received',
+  'liquidity_returned',
 ]
 
 export const DELETE_PUSH_TOKEN = 'delete'
 
 export function combineReactionNotifications(notifications: Notification[]) {
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) =>
-      `${n.sourceType}-${
-        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
-      }-${n.sourceText}`
-  )
+  const groupedNotificationsBySourceType = groupBy(notifications, (n) => {
+    if (n.sourceType === 'social_post_like')
+      return `${n.sourceType}-${n.sourceId}`
+    const title = n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
+    return `${n.sourceType}-${title}-${n.sourceText}`
+  })
 
   const newNotifications = Object.values(groupedNotificationsBySourceType).map(
     (notifications) => {

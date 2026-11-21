@@ -10,7 +10,8 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
-import { getPrivateUser, getUser } from 'shared/utils'
+import { getPrivateUser, getUser, log } from 'shared/utils'
+import { hasFullBonusAccess } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -29,11 +30,23 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     if (!oldPrivateUser) {
       throw new APIError(404, 'Account not found')
     }
+    // A device's push token must belong to at most one account. If this token
+    // is currently registered to other accounts (e.g. the user previously
+    // logged into multiple accounts on the same device and logged back out),
+    // clear it from them. Otherwise notifications for those logged-out accounts
+    // keep getting delivered to this physical device.
+    await tx.none(
+      `update private_users
+       set data = data - 'pushToken'
+       where id <> $1
+         and data->>'pushToken' = $2`,
+      [auth.uid, pushToken]
+    )
     const updatedRow = await tx.one(
-      `update private_users set data = 
+      `update private_users set data =
       jsonb_set(
-        data, 
-        '{notificationPreferences,opt_out_all}', 
+        data,
+        '{notificationPreferences,opt_out_all}',
         coalesce(data->'notificationPreferences'->'opt_out_all', '[]'::jsonb) - 'mobile'
       )
       - 'rejectedPushNotificationsOn'
@@ -45,12 +58,21 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     )
     const newPrivateUser = convertPrivateUser(updatedRow)
     if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
-      const txn = await payUserPushNotificationsBonus(
-        auth.uid,
-        PUSH_NOTIFICATION_BONUS,
-        tx
-      )
-      return { newPrivateUser, txn }
+      // Only pay push notification bonus to users with full bonus access
+      // (identity-verified, grandfathered, or purchase/admin-'eligible')
+      if (hasFullBonusAccess(user)) {
+        const txn = await payUserPushNotificationsBonus(
+          auth.uid,
+          PUSH_NOTIFICATION_BONUS,
+          tx
+        )
+        return { newPrivateUser, txn }
+      } else {
+        log(
+          `Skipped push notification bonus for user ${auth.uid} - not eligible for bonuses`
+        )
+        return { newPrivateUser, txn: null }
+      }
     }
     return { newPrivateUser: null, txn: null }
   })

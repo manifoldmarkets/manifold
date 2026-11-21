@@ -32,7 +32,7 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
       }
       `
         const result = await promptAI<{ unit: string }>(prompt, {
-          model: aiModels.flash,
+          model: aiModels.haiku,
           system: systemPrompt,
           parseAsJson: true,
           thinkingLevel: 'minimal',

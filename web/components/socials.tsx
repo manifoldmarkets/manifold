@@ -5,7 +5,7 @@ import {
   TbBrandAndroid,
   TbBrandApple,
   TbBrandDiscord,
-  TbBrandTwitter,
+  TbBrandX,
 } from 'react-icons/tb'
 import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
 import { MobileAppsQRCodeDialog } from './buttons/mobile-apps-qr-code-button'
@@ -56,11 +56,11 @@ export function Socials(props: { className?: string; hideTitle?: boolean }) {
           Newsletter
         </SocialLink>
         <SocialLink
-          Icon={TbBrandTwitter}
+          Icon={TbBrandX}
           href="https://twitter.com/ManifoldMarkets"
           target="_blank"
         >
-          Twitter
+          X
         </SocialLink>
         <SocialLink
           Icon={MailIcon}

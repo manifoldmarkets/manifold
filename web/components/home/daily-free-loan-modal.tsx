@@ -1,14 +1,14 @@
-import { User } from 'common/user'
-import { Modal } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { GiTwoCoins, GiOpenChest } from 'react-icons/gi'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { getBenefit } from 'common/supporter-config'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import clsx from 'clsx'
+import { getBenefit } from 'common/supporter-config'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
+import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { Row } from 'web/components/layout/row'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function DailyFreeLoanModal(props: {
   isOpen: boolean
@@ -17,7 +17,9 @@ export function DailyFreeLoanModal(props: {
 }) {
   const { isOpen, setOpen, user } = props
 
-  const { data: freeLoanData } = useAPIGetter('get-free-loan-available', {})
+  const { data: freeLoanData } = useAPIGetter('get-free-loan-available', {
+    userId: user.id,
+  })
 
   if (!freeLoanData) {
     return (
@@ -42,6 +44,10 @@ export function DailyFreeLoanModal(props: {
     freeLoanData.totalLoan >= freeLoanData.maxLoan && freeLoanData.maxLoan > 0
   const noEligiblePositions =
     !alreadyClaimedToday && !atMaxLoanLimit && freeLoanAvailable < 1
+  // Perps don't back loans, so a perp-only portfolio reads as "no positions".
+  // Say why instead of telling them to invest when they already have.
+  const perpValueExcluded = freeLoanData.perpValueExcluded ?? 0
+  const onlyPerpPositions = noEligiblePositions && perpValueExcluded >= 1
 
   return (
     <Modal open={isOpen} setOpen={setOpen} size="md">
@@ -160,6 +166,22 @@ export function DailyFreeLoanModal(props: {
                 <>
                   🔒 Max loan ({formatMoney(freeLoanData.maxLoan)}) reached.
                   Repay some to unlock more.
+                </>
+              ) : onlyPerpPositions ? (
+                <>
+                  📊 Your {formatMoney(perpValueExcluded)} in{' '}
+                  <Tooltip text="Perps are already leveraged and can be liquidated to zero, so they don't earn or back loans.">
+                    <span className="cursor-help underline decoration-dotted">
+                      perps
+                    </span>
+                  </Tooltip>{' '}
+                  doesn't earn daily loans. Trade an{' '}
+                  <Tooltip text="Listed, ranked markets with 10+ traders that are 24+ hours old">
+                    <span className="cursor-help underline decoration-dotted">
+                      eligible market
+                    </span>
+                  </Tooltip>{' '}
+                  to start earning!
                 </>
               ) : noEligiblePositions ? (
                 <>

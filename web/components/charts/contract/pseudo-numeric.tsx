@@ -5,7 +5,12 @@ import { getInitialProbability, getProbability } from 'common/calculate'
 import { formatLargeNumber } from 'common/util/format'
 import { PseudoNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
+import {
+  getEndDate,
+  getRightmostVisibleDate,
+  getVisibleNumericYRange,
+  ZoomParams,
+} from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip, SingleContractPoint } from './single-value'
 
@@ -34,8 +39,9 @@ export const PseudoNumericContractChart = (props: {
   height: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const { contract, width, height, zoomParams, showZoomer } = props
+  const { contract, width, height, zoomParams, showZoomer, zoomY } = props
   const { min, max, isLogScale } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
@@ -59,10 +65,22 @@ export const PseudoNumericContractChart = (props: {
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
-  // clamp log scale to make sure zeroes go to the bottom
+  const [yMin, yMax] = getVisibleNumericYRange({
+    data,
+    contractMin: min,
+    contractMax: max,
+    zoomY,
+    zoomParams,
+  })
+  const isYZoomed = yMin !== min || yMax !== max
+
+  // clamp log scale to make sure zeroes go to the bottom.
+  // Skip .nice() on log scale: it rounds to powers of 10 and would expand
+  // a zoomed range like [10, 14] back out to [10, 100].
   const yScale = isLogScale
-    ? scaleLog([Math.max(min, 1), max], [height, 0]).clamp(true)
-    : scaleLinear([min, max], [height, 0])
+    ? scaleLog([Math.max(yMin, 1), yMax], [height, 0]).clamp(true)
+    : scaleLinear([yMin, yMax], [height, 0])
+  if (isYZoomed && !isLogScale) yScale.nice()
   return (
     <SingleValueHistoryChart
       w={width}
@@ -72,6 +90,7 @@ export const PseudoNumericContractChart = (props: {
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={data}
+      yTickFormat={formatLargeNumber}
       Tooltip={(props) => (
         <SingleContractChartTooltip
           ttProps={props}

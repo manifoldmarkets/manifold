@@ -9,6 +9,7 @@ import {
   InformationCircleIcon,
   LightBulbIcon,
   RefreshIcon,
+  TrendingDownIcon,
   TrendingUpIcon,
   UserIcon,
 } from '@heroicons/react/outline'
@@ -17,6 +18,7 @@ import clsx from 'clsx'
 import { NOTIFICATION_DESCRIPTIONS } from 'common/notification'
 import { PrivateUser } from 'common/user'
 import {
+  getSavedNotificationDestinations,
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
@@ -34,6 +36,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { SwitchSetting } from 'web/components/switch-setting'
+import ShortToggle from 'web/components/widgets/short-toggle'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -60,6 +63,7 @@ const emailsEnabled: Array<notification_preference> = [
   'thank_you_for_purchases',
 
   'tagged_user', // missing tagged on contract description email
+  'tagged_all_traders',
   'contract_from_followed_user',
   'unique_bettors_on_your_contract',
   'profit_loss_updates',
@@ -91,10 +95,14 @@ const mobilePushEnabled: Array<notification_preference> = [
   'all_comments_on_my_markets',
   'all_answers_on_my_markets',
   'tagged_user',
+  'tagged_all_traders',
   'betting_streaks',
   'market_movements',
   'limit_order_fills',
+  'prize_drawings',
+  'charity_giveaways',
   'all_comments_on_followed_posts',
+  'personalized_mana_offer',
   // TODO: add these
   // 'contract_from_followed_user',
   // 'probability_updates_on_watched_markets',
@@ -160,15 +168,26 @@ const bonuses: NotificationSectionData = {
 }
 const otherBalances: NotificationSectionData = {
   label: 'Other',
-  subscriptionTypes: ['loan_income', 'limit_order_fills'],
+  subscriptionTypes: [
+    'loan_income',
+    'limit_order_fills',
+    'liquidity_returned',
+    'personalized_mana_offer',
+  ],
+}
+const perps: NotificationSectionData = {
+  label: 'Perps',
+  subscriptionTypes: ['perp_liquidation', 'perp_adl', 'perp_order_failed'],
 }
 const userInteractions: NotificationSectionData = {
   label: 'Users',
   subscriptionTypes: [
     'tagged_user',
+    'tagged_all_traders',
     'on_new_follow',
     'contract_from_followed_user',
     'user_liked_your_content',
+    'social_replies',
   ],
 }
 const leagues: NotificationSectionData = {
@@ -182,6 +201,8 @@ const generalOther: NotificationSectionData = {
     'thank_you_for_purchases',
     'onboarding_flow',
     'profit_loss_updates',
+    'prize_drawings',
+    'charity_giveaways',
   ],
 }
 
@@ -244,6 +265,10 @@ export function NotificationSettings(props: {
           icon={<CashIcon className={'h-6 w-6'} />}
           data={otherBalances}
         />
+        <NotificationSection
+          icon={<TrendingDownIcon className={'h-6 w-6'} />}
+          data={perps}
+        />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           <span>General</span>
         </Row>
@@ -263,9 +288,62 @@ export function NotificationSettings(props: {
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOutAll}
         />
+        <AppReviewPromptToggle privateUser={privateUser} />
         <FollowMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </SectionRoutingContext.Provider>
+  )
+}
+
+function AppReviewPromptToggle(props: { privateUser: PrivateUser }) {
+  const { privateUser } = props
+  const { isNative } = useNativeInfo()
+  const serverOptedOut = privateUser.optOutAppReviewPrompts === true
+  const [optedOut, setOptedOut] = useState(serverOptedOut)
+  const [saving, setSaving] = useState(false)
+
+  // Re-sync if the prop updates from a websocket push (e.g. user toggled in
+  // another tab) and we're not mid-save.
+  useEffect(() => {
+    if (!saving) setOptedOut(serverOptedOut)
+  }, [serverOptedOut, saving])
+
+  // Web users never see the OS review prompt — hide the toggle so they
+  // aren't presented with a setting that has no observable effect for them.
+  // (Their preference still persists if they later install the native app.)
+  if (!isNative) return null
+
+  const handleChange = async (newOptedOut: boolean) => {
+    setOptedOut(newOptedOut)
+    setSaving(true)
+    try {
+      await api('me/private/update', {
+        optOutAppReviewPrompts: newOptedOut,
+      })
+    } catch (e) {
+      setOptedOut(!newOptedOut)
+      toast.error('Failed to update preference')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Col className="gap-2">
+      <Row className={'text-ink-700 gap-2 text-xl'}>
+        <span>App Store Review</span>
+      </Row>
+      <Row className="ml-3 items-center gap-3 text-sm">
+        <ShortToggle
+          on={!optedOut}
+          setOn={(on) => handleChange(!on)}
+          disabled={saving}
+        />
+        <span className="text-ink-700">
+          Ask me to rate the app on the store occasionally
+        </span>
+      </Row>
+    </Col>
   )
 }
 
@@ -283,6 +361,17 @@ function NotificationSettingLine(props: {
   const [emailEnabled, setEmailEnabled] = useState(previousEmailValue)
   const [mobileEnabled, setMobileEnabled] = useState(previousMobileValue)
   const [error, setError] = useState<string>('')
+
+  useEffect(() => {
+    setInAppEnabled(previousInAppValue)
+  }, [previousInAppValue])
+  useEffect(() => {
+    setEmailEnabled(previousEmailValue)
+  }, [previousEmailValue])
+  useEffect(() => {
+    setMobileEnabled(previousMobileValue)
+  }, [previousMobileValue])
+
   const navigateToSection = useContext(SectionRoutingContext)
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
@@ -601,5 +690,8 @@ export const getUsersSavedPreference = (
   key: notification_preference,
   privateUser: PrivateUser
 ) => {
-  return privateUser.notificationPreferences[key] ?? []
+  return getSavedNotificationDestinations(
+    privateUser.notificationPreferences,
+    key
+  )
 }

@@ -26,6 +26,7 @@ create table if not exists
     user_id text,
     midpoint numeric,
     volume numeric default 0,
+    p numeric default 0.5 not null
   );
 
 -- Row Level Security

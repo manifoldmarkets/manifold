@@ -5,6 +5,9 @@ create table if not exists
     image_url text not null
   );
 
+-- Row Level Security
+alter table stonk_images enable row level security;
+
 -- Indexes
 drop index if exists stonk_images_pkey;
 

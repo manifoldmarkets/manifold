@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMMultiContract,
   isBinaryMulti,
+  isMultiCpmmMechanism,
   isSportsContract,
   MarketContract,
 } from 'common/contract'
@@ -36,6 +37,10 @@ import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import { useUser } from 'hooks/use-user'
 import { getMultiBetPoints } from 'common/contract-params'
 import { APIResponse } from 'common/api/schema'
+import {
+  isPerpApiMarket,
+  PerpMarketPage,
+} from 'components/contract/perp-market-page'
 
 export const LARGE_QUESTION_LENGTH = 95
 
@@ -51,9 +56,44 @@ export default function ContractPage() {
 
 function ContractPageLoadingContent(props: { contractSlug: string }) {
   const { contractSlug } = props
-  const { data } = useAPIGetter('get-market-props', {
-    slug: contractSlug,
-  })
+  const { data: market, error } = useAPIGetter(
+    'slug/:slug',
+    {
+      slug: contractSlug,
+      lite: false,
+    },
+    undefined,
+    `market-summary-${contractSlug}`
+  )
+
+  if (error) {
+    return (
+      <Page>
+        <Col style={{ gap: 8, paddingTop: 16 }}>
+          <ThemedText size="xl" weight="semibold">
+            Market unavailable
+          </ThemedText>
+          <ThemedText>{error.message}</ThemedText>
+        </Col>
+      </Page>
+    )
+  }
+  if (!market || market.slug !== contractSlug) return <ContractPageLoading />
+  if (isPerpApiMarket(market)) return <PerpMarketPage market={market} />
+
+  return <PairedContractPageLoadingContent contractSlug={contractSlug} />
+}
+
+function PairedContractPageLoadingContent(props: { contractSlug: string }) {
+  const { contractSlug } = props
+  const { data } = useAPIGetter(
+    'get-market-props',
+    {
+      slug: contractSlug,
+    },
+    undefined,
+    `market-props-${contractSlug}`
+  )
 
   const { manaContract, cashContract } = data ?? {}
   if (!data || ![manaContract?.slug, cashContract?.slug].includes(contractSlug))
@@ -174,7 +214,7 @@ const useBetData = (props: {
   >([])
   useEffect(() => {
     getBetPoints(contractId, {
-      filterRedemptions: mechanism !== 'cpmm-multi-1',
+      filterRedemptions: !isMultiCpmmMechanism(mechanism),
     }).then(setPoints)
   }, [contractId, mechanism])
 

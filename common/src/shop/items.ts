@@ -16,10 +16,13 @@ export type ShopItemCategory =
   | 'consumable'
   | 'hovercard'
   | 'merch'
+  | 'ticket'
 
-// Merch size variant for clothing items
+// Merch size/colour variant for clothing items. `color` is optional — items
+// like the caps and the AGGC tee that ship in a single colour omit it.
 export type MerchVariant = {
   size: string
+  color?: string
   printfulSyncVariantId: string
 }
 
@@ -100,6 +103,7 @@ export const CATEGORY_LABELS: Record<ShopItemCategory, string> = {
   consumable: 'Consumable',
   hovercard: 'Hovercard',
   merch: 'Merch',
+  ticket: 'Ticket',
 }
 
 // Get all entitlement IDs for items in a given category
@@ -111,11 +115,22 @@ export const getEntitlementIdsForCategory = (
   )
 }
 
+// Filter-pill category an item should appear under, overriding slot-based
+// categorization. Applies only to the 5 standard pills (not all/merch/ticket/seasonal).
+export type ShopItemFilterCategory =
+  | 'hats'
+  | 'avatar'
+  | 'hovercard'
+  | 'buttons'
+  | 'other'
+
 // Achievement requirement types
 export type AchievementRequirementType =
   | 'streak' // currentBettingStreak
   | 'profit' // total profit
   | 'loss' // total loss (absolute value)
+  | 'yesProfit' // profit from contracts where user was net-long YES
+  | 'noProfit' // profit from contracts where user was net-long NO
   | 'volume' // total trading volume
   | 'donations' // $ donated to charity
   | 'referrals' // number of referrals
@@ -172,10 +187,29 @@ export type ShopItem = {
   animationTypes?: AnimationType[]
   // If true, item is hidden from shop unless user owns it
   hidden?: boolean
+  // Global stock cap — total active purchases across all users (optional)
+  maxStock?: number
+  // If true, item is shown in UI but not purchasable (for "coming soon" states)
+  comingSoon?: boolean
+  // Timestamp when this item became user-visible. Drives the "NEW" badge.
+  // Set on add or when unhiding an item; leave undefined to skip the badge.
+  visibleSinceTime?: number
+  // Force the item into a specific filter-pill category, overriding the
+  // default slot-based mapping (e.g. 'unique'-slot items that should appear
+  // under Hats or Avatar instead of Hovercard).
+  filterOverride?: ShopItemFilterCategory
   // Merch-specific fields
   variants?: MerchVariant[]
   // Image carousel for merch cards: [{label, url}, ...]
   merchImages?: { label: string; url: string }[]
+  // Per-colour image carousel for items with multiple colour variants.
+  // Keyed by the same `color` string used in `variants`. When set, the card
+  // swaps the carousel as the user picks a colour. Falls back to merchImages.
+  merchImagesByColor?: Record<string, { label: string; url: string }[]>
+  // Index of the image to show first in the carousel. Lets you keep the
+  // natural Front-then-Back ordering of dots while landing the user on a
+  // different image initially. Also used as the reset target on colour swap.
+  defaultImageIndex?: number
 }
 
 // Get the entitlement ID for a shop item (defaults to item.id)
@@ -240,9 +274,11 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'unique', // Combines with everything
+    filterOverride: 'hats',
   },
   {
     id: 'avatar-graduation-cap',
+    hidden: true,
     name: 'Graduation Cap',
     description: 'A scholarly graduation cap on your avatar',
     price: 10000,
@@ -325,14 +361,14 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'hovercard-oracle',
-    hidden: true,
     name: 'Starfield Background',
     description: 'A mystical starfield background with twinkling stars',
-    price: 100000,
+    price: 6500,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'hovercard',
     slot: 'hovercard-background',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'hovercard-trading-floor',
@@ -377,14 +413,15 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-halo',
-    hidden: true,
     name: 'Halo',
     description: 'A golden halo for the most virtuous forecasters',
-    price: 150000,
+    price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'unique',
+    filterOverride: 'hats',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-propeller-hat',
@@ -402,7 +439,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-wizard-hat',
     name: 'Wizard Hat',
     description: 'A mystical wizard hat for the oracle of markets',
-    price: 20000,
+    price: 12000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -453,25 +490,26 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-devil-horns',
-    hidden: true,
     name: 'Devil Horns',
     description: 'Devilish horns for the market manipulator',
-    price: 100000,
+    price: 45000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-angel-wings',
-    hidden: true,
     name: 'Angel Wings',
     description: 'Feathered wings flanking your avatar',
-    price: 100000,
+    price: 65000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
     slot: 'unique', // Combines with everything
+    filterOverride: 'avatar',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   {
     id: 'avatar-mana-aura',
@@ -499,7 +537,7 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-fire-item',
     name: 'Flames',
     description: 'Blazing flames on your avatar',
-    price: 30000,
+    price: 22000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-accessory',
@@ -513,14 +551,14 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'avatar-bad-aura',
-    hidden: true,
-    name: 'Bad Aura',
+    name: 'Evil Aura',
     description: 'A menacing crimson glow around your avatar',
     price: 25000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-border',
     slot: 'profile-border',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   // Avatar Accessories
   {
@@ -563,7 +601,6 @@ export const SHOP_ITEMS: ShopItem[] = [
       threshold: 100000,
       description: 'Owe at least M$100,000',
     },
-    hidden: true,
   },
   {
     id: 'avatar-thought-yes',
@@ -684,44 +721,45 @@ export const SHOP_ITEMS: ShopItem[] = [
     id: 'avatar-bull-horns',
     hidden: true,
     name: 'Bull Horns',
-    description: 'Mighty bull horns for the profitable trader',
+    description: 'Mighty horns for the bullish trader who profits going long YES',
     price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
     requirement: {
-      type: 'profit',
+      type: 'yesProfit',
       threshold: 100000,
-      description: 'Earn M$100k in total profit',
+      description: 'Earn M$100k profit on YES-side positions',
     },
   },
   {
     id: 'avatar-bear-ears',
     hidden: true,
     name: 'Bear Ears',
-    description: 'Fluffy bear ears for the seasoned trader who has weathered losses',
+    description: 'Fluffy ears for the bearish trader who profits going short NO',
     price: 100000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
     requirement: {
-      type: 'loss',
+      type: 'noProfit',
       threshold: 100000,
-      description: 'Lose M$100k in total (a badge of experience)',
+      description: 'Earn M$100k profit on NO-side positions',
     },
   },
   {
     id: 'avatar-cat-ears',
-    hidden: true,
     name: 'Cat Ears',
-    description: 'Cute pointed cat ears for the curious trader',
+    description:
+      'Cute cat ears - dynamic light/dark mode style. Toggle whiskers from the style picker',
     price: 30000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
     slot: 'hat',
+    visibleSinceTime: new Date('2026-04-20T19:00:00+09:30').getTime(),
   },
   // Seasonal items - only available during their season
   {
@@ -744,7 +782,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     hidden: true,
     name: 'Bunny Ears',
     description: 'Adorable bunny ears for spring celebrations',
-    price: 10000,
+    price: 2500,
+    originalPrice: 10000,
     type: 'permanent-toggleable',
     limit: 'one-time',
     category: 'avatar-overlay',
@@ -754,11 +793,13 @@ export const SHOP_ITEMS: ShopItem[] = [
       daysBuffer: 14, // Mar 18 - Apr 15
     },
   },
-  // Special earned items (not purchasable)
+  // Special earned items (not purchasable) — hidden from shop listing; past
+  // champions who own the entitlement still see them in their inventory.
   {
     id: 'charity-champion-trophy',
+    hidden: true,
     name: 'Charity Champion Trophy',
-    description: 'Exclusive trophy for the #1 ticket buyer in the charity raffle',
+    description: 'Exclusive trophy for the #1 entry holder in the charity giveaway',
     price: 0, // Cannot be purchased
     type: 'earned',
     limit: 'one-time',
@@ -767,6 +808,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'former-charity-champion',
+    hidden: true,
     name: "Champion's Legacy",
     description:
       'A trophy-themed hovercard background for former and current Charity Champions',
@@ -776,10 +818,51 @@ export const SHOP_ITEMS: ShopItem[] = [
     category: 'hovercard',
     slot: 'hovercard-background',
   },
-  // Merch items
+  // Merch items (newest first)
+  {
+    id: 'merch-wordmark-tshirt',
+    name: 'White Wordmark Unisex T-Shirt',
+    description:
+      'White Manifold wordmark print — pick your colour and size.',
+    price: 5000,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'merch',
+    slot: 'consumable',
+    imageUrl: '/merch/White-wordmark-black-t-shirt-front.png',
+    merchImagesByColor: {
+      Black: [
+        { label: 'Front', url: '/merch/White-wordmark-black-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-black-t-shirt-back.png' },
+      ],
+      Navy: [
+        { label: 'Front', url: '/merch/White-wordmark-navy-t-shirt-front.png' },
+        { label: 'Back', url: '/merch/White-wordmark-navy-t-shirt-back.png' },
+      ],
+    },
+    // Bella + Canvas 3001 unisex tee. 4XL / 5XL variants exist on Printful but
+    // are intentionally excluded — their wholesale price pushes margin below
+    // acceptable at the uniform M$5,000 shelf price.
+    variants: [
+      { size: 'XS', color: 'Black', printfulSyncVariantId: '69e70ad8bc1045' },
+      { size: 'S', color: 'Black', printfulSyncVariantId: '69e70ad8bc1202' },
+      { size: 'M', color: 'Black', printfulSyncVariantId: '69e70ad8bc12f9' },
+      { size: 'L', color: 'Black', printfulSyncVariantId: '69e70ad8bc13b5' },
+      { size: 'XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1463' },
+      { size: '2XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc1517' },
+      { size: '3XL', color: 'Black', printfulSyncVariantId: '69e70ad8bc15d1' },
+      { size: 'XS', color: 'Navy', printfulSyncVariantId: '69026b379412e7' },
+      { size: 'S', color: 'Navy', printfulSyncVariantId: '69026b37941355' },
+      { size: 'M', color: 'Navy', printfulSyncVariantId: '69026b379413a7' },
+      { size: 'L', color: 'Navy', printfulSyncVariantId: '69026b37941404' },
+      { size: 'XL', color: 'Navy', printfulSyncVariantId: '69026b37941459' },
+      { size: '2XL', color: 'Navy', printfulSyncVariantId: '69026b379414b6' },
+      { size: '3XL', color: 'Navy', printfulSyncVariantId: '69026b37941505' },
+    ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
+  },
   {
     id: 'merch-aggc-tshirt',
-    hidden: true,
     name: 'AGGC T-Shirt',
     description: 'Embroidered Manifold logo on front, "Anti Gambling Gambling Club" print on back',
     price: 5000,
@@ -787,11 +870,12 @@ export const SHOP_ITEMS: ShopItem[] = [
     limit: 'one-time',
     category: 'merch',
     slot: 'consumable',
-    imageUrl: '/merch/AGGC-front-ghost.png',
+    imageUrl: '/merch/AGGC-back-ghost.png',
     merchImages: [
       { label: 'Front', url: '/merch/AGGC-front-ghost.png' },
       { label: 'Back', url: '/merch/AGGC-back-ghost.png' },
     ],
+    defaultImageIndex: 1,
     variants: [
       { size: 'S', printfulSyncVariantId: '69026b955ba991' },
       { size: 'M', printfulSyncVariantId: '69026b955baa12' },
@@ -800,10 +884,10 @@ export const SHOP_ITEMS: ShopItem[] = [
       { size: '2XL', printfulSyncVariantId: '69026b955bab83' },
       { size: '3XL', printfulSyncVariantId: '69026b955bac08' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-white-logo',
-    hidden: true,
     name: 'White Logo Cap',
     description: 'Black dad cap with white embroidered Manifold logo',
     price: 3000,
@@ -815,14 +899,15 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/White-Logo-Cap-Black.png' },
       { label: 'Angle', url: '/merch/White-Logo-Cap-Black-Tilt.png' },
+      { label: 'Back', url: '/merch/White-Logo-Cap-Black-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c7bf5859673' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
   {
     id: 'merch-cap-purple-logo',
-    hidden: true,
     name: 'Purple Logo Cap',
     description: 'White dad cap with purple embroidered Manifold logo',
     price: 3000,
@@ -834,12 +919,57 @@ export const SHOP_ITEMS: ShopItem[] = [
     merchImages: [
       { label: 'Front', url: '/merch/Purple-Logo-Cap-White.png' },
       { label: 'Angle', url: '/merch/Purple-Logo-Cap-White-Tilt.png' },
+      { label: 'Back', url: '/merch/Purple-Logo-Cap-White-Back.png' },
     ],
     variants: [
       { size: 'One Size', printfulSyncVariantId: '699c786e6c50b2' },
     ],
+    visibleSinceTime: new Date('2026-04-24T00:15:00+09:30').getTime(),
   },
 ]
+
+// Retired products. Deliberately NOT part of the live catalog (SHOP_ITEMS), so
+// they are never rendered in the shop, returned by get-shop-items, or sold (the
+// generic shop-purchase path resolves via getShopItem, which only searches
+// SHOP_ITEMS — a retired id 404s). They are retained ONLY so the admin order
+// record and sales stats can resolve historical `shop_orders.item_id` values
+// back to names. Do not re-add these to SHOP_ITEMS.
+export const RETIRED_SHOP_ITEMS: ShopItem[] = [
+  // Manifest tickets — removed from the shop after Manifest 2026.
+  {
+    id: 'manifest-ticket',
+    hidden: true,
+    name: 'Manifest 2026 — Early Bird Ticket',
+    description:
+      'Claim your spot at Manifest 2026 — Lighthaven, Berkeley · June 12–14. You will receive a 100% off early-bird discount code, redeemable on manifest.is. Limited to the first 10 Manifold early-bird claims — more tickets at standard pricing will be added later. Code is single-use and non-transferable; the email on your manifest.is ticket must match your Manifold email.',
+    price: 55000,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'ticket',
+    slot: 'unique',
+    maxStock: 10,
+  },
+  {
+    id: 'manifest-ticket-standard',
+    name: 'Manifest 2026 — Standard Ticket',
+    description:
+      'Discount code for Manifest 2026 — Lighthaven, Berkeley · June 12–14. Code is single-use and non-transferable; the email on your manifest.is ticket must match your Manifold email.',
+    price: 67500,
+    type: 'instant',
+    limit: 'one-time',
+    category: 'ticket',
+    slot: 'unique',
+    maxStock: 0,
+  },
+]
+
+// Ticket items now live only in the archive — used by the admin record + stats,
+// never by the live shop (which has no ticket-rendering code anymore).
+export const getTicketItems = (): ShopItem[] =>
+  RETIRED_SHOP_ITEMS.filter((item) => item.category === 'ticket')
+
+export const isTicketItem = (item: ShopItem): boolean =>
+  item.category === 'ticket'
 
 // Available options for custom button text
 export const YES_BUTTON_OPTIONS = [
@@ -876,6 +1006,13 @@ export type CrownPosition = 0 | 1 | 2
 
 export const getShopItem = (id: string): ShopItem | undefined =>
   SHOP_ITEMS.find((item) => item.id === id)
+
+// Like getShopItem, but also searches retired/archived products. Use ONLY in
+// admin/record views (order tables, stats) that need to resolve historical
+// item ids to names. Do NOT use in purchase or catalog paths — that would make
+// retired products buyable again.
+export const getShopItemOrRetired = (id: string): ShopItem | undefined =>
+  getShopItem(id) ?? RETIRED_SHOP_ITEMS.find((item) => item.id === id)
 
 export const getMerchItems = (): ShopItem[] =>
   SHOP_ITEMS.filter((item) => item.category === 'merch')
@@ -1091,60 +1228,40 @@ export const userHasCrown = (
   return hasActiveEntitlement(entitlements, 'avatar-crown')
 }
 
-// Get the active avatar overlay (hat) if any
-// Note: This excludes halo and crown since they're unique slot items that combine with other hats
-// Use userHasHalo() and userHasCrown() separately to check for those
+// Item IDs that share a slot but are rendered via dedicated code paths and
+// therefore shouldn't appear in the generic overlay/accessory iteration.
+// Halo and crown render as unique slot items (not 'hat') so they're naturally
+// excluded. Fire item has slot 'profile-accessory' but is rendered by its own
+// `hasFireItem` check, not by `AvatarAccessory`.
+const SPECIAL_RENDERED_DECORATIONS = new Set<string>(['avatar-fire-item'])
+
+/** IDs of items that can occupy the given slot, in catalog order. Filtered
+ *  through SPECIAL_RENDERED_DECORATIONS so items with dedicated rendering
+ *  paths don't accidentally short-circuit the generic render switch. */
+const getDecorationIdsForSlot = (slot: ShopItemSlot): AvatarDecorationId[] =>
+  SHOP_ITEMS.filter(
+    (item) =>
+      item.slot === slot && !SPECIAL_RENDERED_DECORATIONS.has(item.id)
+  ).map((item) => item.id as AvatarDecorationId)
+
+// Get the active avatar overlay (hat) if any.
+// Halo and crown live in the 'unique' slot, not 'hat', so they're excluded
+// automatically — use userHasHalo() / userHasCrown() for those.
 export const getActiveAvatarOverlay = (
   entitlements: UserEntitlement[] | undefined
 ): AvatarDecorationId | null => {
-  const overlays: AvatarDecorationId[] = [
-    // Note: crown excluded here - check separately with userHasCrown()
-    'avatar-graduation-cap',
-    'avatar-top-hat',
-    // Note: halo excluded here - check separately with userHasHalo()
-    'avatar-propeller-hat',
-    'avatar-wizard-hat',
-    'avatar-tinfoil-hat',
-    'avatar-microphone',
-    'avatar-jester-hat',
-    'avatar-fedora',
-    'avatar-devil-horns',
-    'avatar-blue-cap',
-    'avatar-team-red-hat',
-    'avatar-team-green-hat',
-    'avatar-black-cap',
-    'avatar-bull-horns',
-    'avatar-bear-ears',
-    'avatar-cat-ears',
-    'avatar-santa-hat',
-    'avatar-bunny-ears',
-  ]
-  for (const overlay of overlays) {
-    if (hasActiveEntitlement(entitlements, overlay)) {
-      return overlay
-    }
+  for (const overlay of getDecorationIdsForSlot('hat')) {
+    if (hasActiveEntitlement(entitlements, overlay)) return overlay
   }
   return null
 }
 
-// Get the active avatar accessory if any
+// Get the active avatar accessory if any.
 export const getActiveAvatarAccessory = (
   entitlements: UserEntitlement[] | undefined
 ): AvatarDecorationId | null => {
-  const accessories: AvatarDecorationId[] = [
-    'avatar-monocle',
-    'avatar-crystal-ball',
-    'avatar-disguise',
-    'avatar-thought-yes',
-    'avatar-thought-no',
-    'avatar-stonks-up',
-    'avatar-stonks-down',
-    'avatar-stonks-meme',
-  ]
-  for (const accessory of accessories) {
-    if (hasActiveEntitlement(entitlements, accessory)) {
-      return accessory
-    }
+  for (const accessory of getDecorationIdsForSlot('profile-accessory')) {
+    if (hasActiveEntitlement(entitlements, accessory)) return accessory
   }
   return null
 }

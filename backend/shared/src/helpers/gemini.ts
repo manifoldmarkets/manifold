@@ -1,18 +1,39 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
+// Two tiers, cheapest first. Paid-tier prices per 1M tokens as of Oct 2026
+// (https://ai.google.dev/gemini-api/docs/pricing):
+//   flashLite  gemini-3.5-flash-lite  $0.30 in / $2.50 out
+//              yes/no checks, ID lists, short JSON — the bulk of our calls
+//   flash      gemini-3.8-flash       $0.75 / $3.75 until 2026-12-31, then $1.50 / $7.50
+//              grounded (Google Search) generation and the clarification check
+//
+// gemini-3.1-flash-lite retires 2027-05-07 (Google names 3.5 Flash-Lite as the
+// replacement). gemini-3.5-flash is superseded by 3.8 Flash, which Google says
+// to prefer for capacity; 3.5 Flash was returning "high demand" 503s in prod.
 export const models = {
-  flash: 'gemini-3.1-flash-lite-preview' as const,
-  pro: 'gemini-3.1-pro-preview' as const,
+  flashLite: 'gemini-3.5-flash-lite' as const,
+  flash: 'gemini-3.8-flash' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
 
-// Thinking levels for Gemini 3 models
-// 'minimal' and 'medium' are only supported by Gemini 3 Flash
-// Default is 'high' when not specified
+// Thinking levels for Gemini 3 models (https://ai.google.dev/gemini-api/docs/thinking).
+// Defaults when unspecified: flash -> 'medium', flashLite -> 'minimal'.
 export type GeminiThinkingLevel = 'minimal' | 'low' | 'medium' | 'high'
+
+// 3.8 Flash accepts only low / medium / high; 'minimal' is a Flash-Lite level
+// (3.5 Flash supported it, 3.8 rejects it with a 400). Clamp instead of
+// failing so call sites can ask for the cheapest level without knowing which
+// Gemini model the tier currently points at.
+export const resolveGeminiThinkingLevel = (
+  model: model_types,
+  level: GeminiThinkingLevel | undefined
+): GeminiThinkingLevel | undefined => {
+  if (level === 'minimal' && model === models.flash) return 'low'
+  return level
+}
 
 export type GeminiOptions = {
   system?: string
@@ -46,34 +67,28 @@ export const promptGemini = async (
     throw new APIError(500, 'Missing GEMINI_API_KEY')
   }
 
-  const genAI = new GoogleGenerativeAI(apiKey)
+  const ai = new GoogleGenAI({ apiKey })
 
-  // Configure model with optional Google Search grounding and thinking level
-  const modelConfig: any = { model }
+  const config: Record<string, any> = {}
+  if (system) {
+    config.systemInstruction = system
+  }
   if (webSearch) {
-    modelConfig.tools = [{ googleSearch: {} }]
+    config.tools = [{ googleSearch: {} }]
   }
-
-  // Configure thinking level for Gemini 3 models
-  // Note: 'minimal' and 'medium' are only supported by Gemini 3 Flash
-  if (thinkingLevel) {
-    modelConfig.generationConfig = {
-      ...modelConfig.generationConfig,
-      thinkingConfig: {
-        thinkingLevel: thinkingLevel,
-      },
-    }
+  const resolvedThinkingLevel = resolveGeminiThinkingLevel(model, thinkingLevel)
+  if (resolvedThinkingLevel) {
+    config.thinkingConfig = { thinkingLevel: resolvedThinkingLevel }
   }
-
-  const geminiModel = genAI.getGenerativeModel(modelConfig)
 
   try {
-    // Combine system prompt and user prompt if system is provided
-    const fullPrompt = system ? `${system}\n\n${prompt}` : prompt
+    const result = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      ...(Object.keys(config).length > 0 ? { config } : {}),
+    })
 
-    const result = await geminiModel.generateContent(fullPrompt)
-    const response = result.response.text()
-
+    const response = result.text ?? ''
     log('Gemini returned message:', response)
     return response
   } catch (error: any) {

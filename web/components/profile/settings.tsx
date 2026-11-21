@@ -6,20 +6,24 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { Input } from '../widgets/input'
 import ShortToggle from '../widgets/short-toggle'
 import { Title } from '../widgets/title'
-import { PrivateUser, User } from 'common/user'
-import { useState } from 'react'
+import { isIdentityVerified, PrivateUser, User } from 'common/user'
+import { useEffect, useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
 import { api } from 'web/lib/api/api'
+import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verification'
 import { DeleteYourselfButton } from './delete-yourself'
 import { capitalize } from 'lodash'
 import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { useRouter } from 'next/router'
+import { ModActionTag } from '../moderation/mod-action'
 
 export const AccountSettings = (props: {
   user: User
@@ -48,6 +52,9 @@ export const AccountSettings = (props: {
 
   return (
     <Col className="gap-5">
+      {/* Optional KYC entry point for anyone not yet identity-verified — it only
+          unlocks prize drawings and early commenting, so it's never pushed. */}
+      {!isIdentityVerified(user) && <IdentityVerificationSetting />}
       <div>
         <label className="mb-1 block">
           {capitalize(TRADE_TERM)} warnings{' '}
@@ -72,7 +79,7 @@ export const AccountSettings = (props: {
       </div>
       {isAdmin && isNative && (
         <div>
-          Native url
+          Native url <ModActionTag admin />
           <Input value={appUrl} onChange={(e) => setAppUrl(e.target.value)} />
           <Button onClick={sendAppUrl}>Send</Button>
         </div>
@@ -115,18 +122,19 @@ export const AccountSettings = (props: {
             <Col>
               <Title>Are you sure?</Title>
               <div>
-                Updating your API key will break any existing applications
-                connected to your account, <b>including the Twitch bot</b>. You
-                will need to go to the{' '}
-                <Link href="/twitch" className="underline focus:outline-none">
-                  Twitch page
-                </Link>{' '}
-                to relink your account.
+                Updating your API key will break ALL existing applications
+                connected to your account!
               </div>
             </Col>
           </ConfirmationButton>
         </Row>
       </div>
+      {!user.isBot && (
+        <div>
+          <label className="mb-1 block">Bot status</label>
+          <MarkSelfAsBotButton user={user} />
+        </div>
+      )}
       <div>
         <label className="mb-1 block">Delete Account </label>
         <div className="flex  items-center  ">
@@ -134,5 +142,110 @@ export const AccountSettings = (props: {
         </div>
       </div>
     </Col>
+  )
+}
+
+function IdentityVerificationSetting() {
+  const {
+    start: handleVerify,
+    loading,
+    error,
+  } = useStartIdentityVerification(
+    'identity verification: started from settings'
+  )
+
+  return (
+    <div>
+      <label className="mb-1 block">Identity Verification</label>
+      <div className="text-ink-600 mb-2 text-sm">
+        Optional. Verifying lets you enter prize drawings and comment before
+        your account is a week old.
+      </div>
+      {error && <div className="text-scarlet-500 mb-2 text-sm">{error}</div>}
+      <Button onClick={handleVerify} loading={loading} disabled={loading}>
+        Verify Identity
+      </Button>
+    </div>
+  )
+}
+
+function MarkSelfAsBotButton(props: { user: User }) {
+  const { user } = props
+  const router = useRouter()
+  const [showModal, setShowModal] = useState(false)
+  const [countdown, setCountdown] = useState(10)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!showModal) {
+      setCountdown(10)
+      return
+    }
+    if (countdown <= 0) return
+    const timer = setTimeout(() => setCountdown(countdown - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [showModal, countdown])
+
+  const handleConfirm = async () => {
+    setSubmitting(true)
+    try {
+      await api('set-bot-status', { userId: user.id, isBot: true })
+      toast.success('Account marked as bot')
+      router.reload()
+    } catch (e: any) {
+      toast.error(e.message ?? 'Failed to update bot status')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <>
+      <Button color="yellow" size="xs" onClick={() => setShowModal(true)}>
+        Mark my account as a bot
+      </Button>
+      <Modal open={showModal} setOpen={setShowModal} size="md">
+        <Col className="bg-canvas-0 gap-4 rounded-xl p-6">
+          <Title className="!mb-0">Mark account as bot</Title>
+          <div className="text-ink-700 space-y-3 text-sm leading-relaxed">
+            <p>
+              This will <b>permanently</b> mark your account as a bot. This
+              action <b>cannot be undone</b> without contacting a moderator.
+            </p>
+            <p className="font-semibold">Bot accounts:</p>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Display a "Bot" badge next to your name</li>
+              <li>
+                Are excluded from leagues and placed in the Silicon division
+              </li>
+              <li>
+                Do not count toward unique bettor bonuses for market creators
+              </li>
+              <li>Are excluded from importance score calculations</li>
+              <li>Cannot earn bettor bonuses for other users</li>
+            </ul>
+            <p>
+              Only do this if your account is operated by an automated system
+              (trading bot, API script, etc.), not a human.
+            </p>
+          </div>
+          <Row className="mt-2 justify-end gap-3">
+            <Button color="gray" onClick={() => setShowModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              disabled={countdown > 0 || submitting}
+              loading={submitting}
+              onClick={handleConfirm}
+            >
+              {countdown > 0
+                ? `I understand (${countdown}s)`
+                : 'Mark as bot permanently'}
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+    </>
   )
 }

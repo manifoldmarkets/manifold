@@ -1,20 +1,15 @@
-import Head from 'next/head'
+import { JsonLd } from './JsonLd'
 
 export function LogoSEO() {
-  return (
-    <Head>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: `{
-      "@context": "https://schema.org",
-      "@type": "Corporation",
-      "url": "https://manifold.markets",
-      "logo": "https://manifold.markets/logo.svg",
-      "description": "Create your own prediction market. Unfold the future."
-    }`,
-        }}
-      />
-    </Head>
-  )
+  const orgData = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Manifold Markets',
+    url: 'https://manifold.markets',
+    logo: 'https://manifold.markets/logo.svg',
+    description: 'Create your own prediction market. Unfold the future.',
+    sameAs: ['https://twitter.com/ManifoldMarkets'],
+  }
+
+  return <JsonLd data={orgData} id="organization" />
 }

@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import {
@@ -22,12 +23,14 @@ import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { Modal } from 'web/components/layout/modal'
+import { Modal, SCROLLABLE_MODAL_CLASS } from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { getUserById } from 'web/lib/supabase/users'
+import { useAdmin } from 'web/hooks/use-admin'
+import { ModActionTag } from './mod-action'
 
 export function BanModal({
   user,
@@ -40,21 +43,25 @@ export function BanModal({
   isOpen: boolean
   onClose: () => void
 }) {
+  const isAdmin = useAdmin()
   const [banTypes, setBanTypes] = useState({
     posting: false,
     marketControl: false,
     trading: false,
+    purchase: false,
   })
 
   const [tempBanDays, setTempBanDays] = useState<{
     posting?: number
     marketControl?: number
     trading?: number
+    purchase?: number
   }>({})
 
   const [reason, setReason] = useState('')
   const [modAlertOnly, setModAlertOnly] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isIpBanSubmitting, setIsIpBanSubmitting] = useState(false)
   const [showCurrentBans, setShowCurrentBans] = useState(true)
   const [showBanHistory, setShowBanHistory] = useState(false)
   const [modNames, setModNames] = useState<Record<string, string>>({})
@@ -133,12 +140,16 @@ export function BanModal({
       if (tempBanDays.trading) {
         unbanTimes.trading = Date.now() + tempBanDays.trading * DAY_MS
       }
+      if (tempBanDays.purchase) {
+        unbanTimes.purchase = Date.now() + tempBanDays.purchase * DAY_MS
+      }
 
       // Only send ban types that are being added (true)
       const bansToSend: Record<string, boolean> = {}
       if (banTypes.posting) bansToSend.posting = true
       if (banTypes.marketControl) bansToSend.marketControl = true
       if (banTypes.trading) bansToSend.trading = true
+      if (banTypes.purchase) bansToSend.purchase = true
 
       await api('ban-user', {
         userId: user.id,
@@ -238,12 +249,71 @@ export function BanModal({
     }
   }
 
+  const handleIpBan = async () => {
+    const confirmed = window.confirm(
+      `Block future signups from ${user.name}'s signup IP?`
+    )
+    if (!confirmed) return
+
+    setIsIpBanSubmitting(true)
+    try {
+      const result = await api('admin-ip-ban-user', { userId: user.id })
+      toast.success(
+        result.added
+          ? `IP blocked: ${result.ipAddress}`
+          : `IP already blocked: ${result.ipAddress}`
+      )
+    } catch (error) {
+      toast.error(
+        'Failed to IP ban user: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsIpBanSubmitting(false)
+    }
+  }
+
   const anyBanSelected = Object.values(banTypes).some((v) => v)
 
   return (
-    <Modal open={isOpen} setOpen={onClose}>
-      <Col className="bg-canvas-0 max-w-2xl gap-4 rounded-md p-6">
-        <Title>Ban User: {user.name}</Title>
+    <Modal
+      open={isOpen}
+      setOpen={onClose}
+      size="lg"
+      className="bg-canvas-0 rounded-md"
+    >
+      <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'gap-4 p-6')}>
+        <Title>
+          <ModActionTag className="mr-2" />
+          Ban User: {user.name}
+        </Title>
+
+        {/* Bonus Eligibility Section */}
+        <BonusEligibilityControl user={user} />
+
+        {isAdmin && (
+          <div className="border-ink-200 rounded border">
+            <div className="space-y-3 p-3">
+              <div>
+                <span className="font-semibold">Signup IP</span>
+                <ModActionTag admin className="ml-2" />
+                <p className="text-ink-600 mt-1 text-sm">
+                  Admin-only action. Adds this user's recorded signup IP to the
+                  signup blocklist to prevent future account creation.
+                </p>
+              </div>
+              <Button
+                color="yellow-outline"
+                size="xs"
+                loading={isIpBanSubmitting}
+                disabled={isIpBanSubmitting}
+                onClick={handleIpBan}
+              >
+                IP ban
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Current Bans/Alerts Section */}
         {hasCurrentBansOrAlerts && (
@@ -448,6 +518,19 @@ export function BanModal({
                   setTempBanDays({ ...tempBanDays, trading: days })
                 }
               />
+
+              <BanTypeToggle
+                label="Purchase Ban"
+                description="No buying mana"
+                checked={banTypes.purchase}
+                onChange={(checked) =>
+                  setBanTypes({ ...banTypes, purchase: checked })
+                }
+                tempDays={tempBanDays.purchase}
+                onTempDaysChange={(days) =>
+                  setTempBanDays({ ...tempBanDays, purchase: days })
+                }
+              />
             </div>
 
             {/* Username Change Restriction Notice */}
@@ -575,7 +658,9 @@ export function BanModal({
                 ? 'Posting'
                 : unbanBanType === 'marketControl'
                 ? 'Market Control'
-                : 'Trading'}
+                : unbanBanType === 'trading'
+                ? 'Trading'
+                : 'Purchase'}
             </strong>{' '}
             ban from {user.name}?
           </p>
@@ -982,6 +1067,147 @@ function BanHistoryRecord({
           </p>
         )}
       </div>
+    </div>
+  )
+}
+
+function BonusEligibilityControl({ user }: { user: User }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
+  // 'requires_verification' is set via the dedicated flag endpoint on the
+  // user-info page; this control sticks to admin-set-bonus-eligibility's
+  // narrower enum. Normalize the initial value to undefined when flagged so
+  // the local state type matches.
+  const initialEligibility =
+    user.bonusEligibility === 'requires_verification'
+      ? undefined
+      : user.bonusEligibility
+  const [selectedEligibility, setSelectedEligibility] = useState<
+    'verified' | 'grandfathered' | 'eligible' | 'ineligible' | null | undefined
+  >(initialEligibility)
+
+  const eligibilityOptions = [
+    { value: 'verified' as const, label: 'Verified', color: 'text-green-600' },
+    {
+      value: 'grandfathered' as const,
+      label: 'Grandfathered',
+      color: 'text-blue-600',
+    },
+    {
+      value: 'eligible' as const,
+      label: 'Eligible (trusted, no KYC)',
+      color: 'text-teal-600',
+    },
+    {
+      value: 'ineligible' as const,
+      label: 'Ineligible',
+      color: 'text-red-600',
+    },
+    {
+      value: null,
+      label: 'Default (unset)',
+      color: 'text-ink-600',
+    },
+  ] as const
+
+  const currentEligibility = eligibilityOptions.find(
+    (o) => o.value === (user.bonusEligibility ?? null)
+  )
+
+  const handleUpdate = async (newValue: typeof selectedEligibility) => {
+    if (newValue === undefined) return
+    if ((newValue ?? null) === (user.bonusEligibility ?? null)) return
+
+    setIsUpdating(true)
+    try {
+      await api('admin-set-bonus-eligibility', {
+        userId: user.id,
+        bonusEligibility: newValue,
+      })
+      toast.success(
+        newValue === null
+          ? 'Cleared eligibility - back to default'
+          : `Bonus eligibility updated to '${newValue}'`
+      )
+      setSelectedEligibility(newValue)
+      window.location.reload()
+    } catch (error) {
+      toast.error(
+        'Failed to update: ' +
+          (error instanceof Error ? error.message : 'Unknown error')
+      )
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  return (
+    <div className="border-ink-200 rounded border">
+      <button
+        className="flex w-full items-center justify-between p-3 text-left"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <Row className="items-center gap-2">
+          <span className="font-semibold">Bonus Eligibility</span>
+          <ModActionTag admin />
+          <span
+            className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+              user.bonusEligibility === 'verified'
+                ? 'bg-green-100 text-green-800'
+                : user.bonusEligibility === 'grandfathered'
+                ? 'bg-blue-100 text-blue-800'
+                : user.bonusEligibility === 'eligible'
+                ? 'bg-teal-100 text-teal-800'
+                : user.bonusEligibility === 'ineligible'
+                ? 'bg-red-100 text-red-800'
+                : user.bonusEligibility === 'requires_verification'
+                ? 'bg-orange-100 text-orange-800'
+                : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            {user.bonusEligibility === 'eligible'
+              ? 'Eligible (bonuses only)'
+              : user.bonusEligibility === 'requires_verification'
+              ? 'Requires Verification'
+              : currentEligibility?.label ?? 'Not Set'}
+          </span>
+        </Row>
+        {isExpanded ? (
+          <ChevronUpIcon className="h-5 w-5" />
+        ) : (
+          <ChevronDownIcon className="h-5 w-5" />
+        )}
+      </button>
+      {isExpanded && (
+        <div className="border-ink-200 space-y-3 border-t p-3">
+          <p className="text-ink-600 text-sm">
+            Controls whether this user can receive site bonuses (signup bonus,
+            referral bonus, quest rewards, league prizes, etc.)
+          </p>
+          <Row className="flex-wrap gap-2">
+            {eligibilityOptions.map((option) => {
+              const isCurrent = (user.bonusEligibility ?? null) === option.value
+              return (
+                <Button
+                  key={String(option.value)}
+                  onClick={() => handleUpdate(option.value)}
+                  loading={isUpdating && selectedEligibility === option.value}
+                  disabled={isUpdating || isCurrent}
+                  color={isCurrent ? 'indigo' : 'gray-outline'}
+                  size="xs"
+                >
+                  <span className={option.color}>{option.label}</span>
+                </Button>
+              )
+            })}
+          </Row>
+          <p className="text-ink-500 text-xs">
+            <strong>Default</strong> clears eligibility: full bonuses, but prize
+            drawings need iDenfy (useful for ending grandfathered status). To
+            pause bonuses until they verify, flag them from the user-info page.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

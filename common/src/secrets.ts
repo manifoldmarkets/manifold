@@ -1,6 +1,5 @@
 import { readFileSync } from 'fs'
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager'
-import { zip } from 'lodash'
 
 // List of secrets that are available to backend (api, functions, scripts, etc.)
 // Edit them at:
@@ -28,6 +27,7 @@ export const secrets = (
     'TWILIO_AUTH_TOKEN',
     'TWILIO_SID',
     'TWILIO_VERIFY_SID',
+    // DEPRECATED: GIDX replaced by idenfy for identity verification
     'GIDX_API_KEY',
     'GIDX_MERCHANT_ID',
     'GIDX_PRODUCT_TYPE_ID',
@@ -37,14 +37,59 @@ export const secrets = (
     'PERPLEXITY_API_KEY',
     'FIRECRAWL_API_KEY',
     'SPORTSDB_KEY',
+    'FOOTBALL_DATA_API_KEY',
+    'THE_ODDS_API_KEY',
+    'BALLDONTLIE_API_KEY',
     'VERIFIED_PHONE_NUMBER',
     'GEMINI_API_KEY',
+    'OPENROUTER_API_KEY',
+    // Adjacent Markets realtime API (`ak_` key): the MSRY perp oracle feed.
+    'ADJACENT_API_KEY',
+    'IDENFY_API_KEY',
+    'IDENFY_API_SECRET',
+    'IDENFY_CALLBACK_SECRET',
+    'DAIMO_WEBHOOK_SECRET',
+    'DAIMO_API_KEY',
+    'DAIMO_HOT_WALLET_ADDRESS',
+    'IP_API_PRO_KEY',
     'PRINTFUL_API_TOKEN',
+    'PRINTFUL_WEBHOOK_SECRET',
+    // Stripe Product/Coupon IDs for the "20% off 5,000 mana" personalized
+    // offer (M5K for $40 via a $50 Price + 20%-off Coupon). The Coupon is
+    // restricted to the matching Product (applies_to.products) so the
+    // per-offer Promotion Codes can't cross-apply to standard mana tiers.
+    // Test-mode IDs in dev project, live-mode IDs in prod project — same
+    // secret names. Variants for other offer sizes/discounts would get
+    // parallel names (e.g. STRIPE_15_OFF_10K_PRICE_ID).
+    'STRIPE_20_OFF_5K_PRICE_ID',
+    'STRIPE_20_OFF_5K_COUPON_ID',
+    // HMAC key for one-click email unsubscribe links.
+    'UNSUBSCRIBE_SIGNING_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
 
 type SecretId = (typeof secrets)[number]
+
+// Secrets a project may not have yet. A missing one is skipped, so the code
+// that reads it sees it unset, instead of stopping the API and scheduler from
+// starting. Only list integrations that already cope with a missing key.
+const OPTIONAL_SECRETS: ReadonlySet<string> = new Set<SecretId>([
+  // The Odds API sports jobs skip themselves without it.
+  'THE_ODDS_API_KEY',
+  // F1 market creation (admin-sports-create-f1-markets) refuses without it.
+  'BALLDONTLIE_API_KEY',
+  // Without it the MSRY feed's polls fail as provider errors (throttled
+  // warnings, an hourly error) and nothing else is affected; an MSRY market
+  // pauses until the key works.
+  'ADJACENT_API_KEY',
+  // Without it, emails link to the notification settings page instead of a
+  // one-click unsubscribe, and /unsubscribe changes nothing.
+  'UNSUBSCRIBE_SIGNING_KEY',
+])
+
+// gRPC status code for NOT_FOUND.
+const GRPC_NOT_FOUND = 5
 
 // Fetches all secrets from google cloud.
 // For deployed google cloud service, no credential is needed.
@@ -64,23 +109,32 @@ export const getSecrets = async (credentials?: any, ...ids: SecretId[]) => {
 
   const secretIds = ids.length > 0 ? ids : secrets
 
-  const fullSecretNames = secretIds.map(
-    (secret: string) =>
-      `${client.projectPath(projectId)}/secrets/${secret}/versions/latest`
+  const secretValues = await Promise.all(
+    secretIds.map(async (secret: string) => {
+      const name = `${client.projectPath(
+        projectId
+      )}/secrets/${secret}/versions/latest`
+      try {
+        const [response] = await client.accessSecretVersion({ name })
+        return response.payload!.data!.toString()
+      } catch (e) {
+        if (
+          OPTIONAL_SECRETS.has(secret) &&
+          (e as { code?: number })?.code === GRPC_NOT_FOUND
+        ) {
+          console.warn(`Optional secret ${secret} not found; leaving it unset.`)
+          return undefined
+        }
+        throw e
+      }
+    })
   )
-
-  const secretResponses = await Promise.all(
-    fullSecretNames.map((name) =>
-      client.accessSecretVersion({
-        name,
-      })
-    )
-  )
-  const secretValues = secretResponses.map(([response]) =>
-    response.payload!.data!.toString()
-  )
-  const pairs = zip(secretIds, secretValues) as [string, string][]
-  return Object.fromEntries(pairs)
+  const result: { [secret: string]: string } = {}
+  secretIds.forEach((secret, i) => {
+    const value = secretValues[i]
+    if (value !== undefined) result[secret] = value
+  })
+  return result
 }
 
 // Fetches all secrets and loads them into process.env.

@@ -1,4 +1,9 @@
-import { Contract, BinaryContract, CPMMMultiContract } from 'common/contract'
+import {
+  Contract,
+  BinaryContract,
+  CPMMMultiContract,
+  isMultiCpmm,
+} from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -15,6 +20,7 @@ import {
 } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { PollPanel } from '../poll/poll-panel'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
@@ -74,30 +80,43 @@ export function BetButton(props: {
   contract: Contract
   user?: User | null
   initialOutcome?: BinaryOutcomes
+  questionTitle?: string
 }) {
-  const { contract, initialOutcome } = props
+  const { contract, initialOutcome, questionTitle } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract))
   ) {
     return (
       <>
         <Button
           size="2xs"
           color={'indigo-outline'}
+          aria-label={`${capitalize(TRADE_TERM)} on ${
+            questionTitle ?? contract.question
+          }`}
+          aria-haspopup="dialog"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
             track('bet intent', {
               location: 'contract table',
               token: contract.token,
+              contractId: contract.id,
+              outcome: initialOutcome,
+              signedOut: !user,
             })
             if (!user) {
-              firebaseLogin()
+              onSignedOutBetPress({
+                contractId: contract.id,
+                location: 'contract table',
+                surface: 'button',
+                outcome: initialOutcome,
+              })
               return
             }
             if (contract.mechanism === 'cpmm-1') {
@@ -123,6 +142,7 @@ export function BetButton(props: {
             setOpen={setOpen}
             trackingLocation="contract table"
             initialOutcome={initialOutcome}
+            questionPseudonym={questionTitle}
           />
         )}
       </>

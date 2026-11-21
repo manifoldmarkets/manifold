@@ -1,7 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
 import { tsToMillis } from 'common/supabase/utils'
-import { createHash } from 'crypto'
 import { CHARITY_CHAMPION_ENTITLEMENT_ID } from 'common/shop/items'
 
 export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
@@ -18,7 +17,7 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     prize_amount_usd: number
     close_time: string
     winning_ticket_id: string | null
-    nonce: string
+    nonce: string | null
     created_time: string
   }>(
     giveawayNum
@@ -34,11 +33,6 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
   if (!giveaway) {
     return { charityStats: [], totalTickets: 0 }
   }
-
-  // Calculate MD5 hash of the nonce for provably fair verification
-  // IMPORTANT: Only reveal the actual nonce AFTER the winner is selected.
-  // Before that, only the hash should be shared so users can record it for verification.
-  const nonceHash = createHash('md5').update(giveaway.nonce).digest('hex')
 
   // Run all queries in a single round trip using db.multi
   const results = await pg.multi(
@@ -238,8 +232,8 @@ export const getCharityGiveaway: APIHandler<'get-charity-giveaway'> = async (
     yourEntry,
     trophyHolder,
     previousTrophyHolder,
-    // Provably fair: always share hash, only reveal nonce AFTER winner is selected
-    nonceHash,
-    nonce: giveaway.winning_ticket_id ? giveaway.nonce : undefined,
+    // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+    // Only revealed AFTER winner is selected. Users verify by finding first block after closeTime.
+    nonce: giveaway.winning_ticket_id ? giveaway.nonce ?? undefined : undefined,
   }
 }

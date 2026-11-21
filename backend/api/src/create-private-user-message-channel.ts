@@ -5,6 +5,10 @@ import { uniq } from 'lodash'
 import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-message-channels'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { getUser } from 'shared/utils'
 import { getActiveUserBans } from './helpers/rate-limit'
 
@@ -29,18 +33,31 @@ export const createprivateusermessagechannel = authEndpoint(
     const isBannedFromPosting =
       creator.isBannedFromPosting || isUserBanned(creatorBans, 'posting')
 
+    // Check if all recipients are admins (used by both ban and eligibility checks)
+    const otherUserIds = userIds.filter((id) => id !== auth.uid)
+    const allRecipientsAreAdmins =
+      otherUserIds.length > 0 && otherUserIds.every((id) => isAdminId(id))
+
     if (isBannedFromPosting) {
       // Banned users can only create channels with admins
-      const otherUserIds = userIds.filter((id) => id !== auth.uid)
-      const allRecipientsAreAdmins =
-        otherUserIds.length > 0 && otherUserIds.every((id) => isAdminId(id))
-
       if (!allRecipientsAreAdmins) {
         throw new APIError(
           403,
           'You are banned from messaging. You can still message Manifold staff for support.'
         )
       }
+    }
+
+    // Private messaging shares the new-account social gate with comments.
+    if (
+      !allRecipientsAreAdmins &&
+      !(await passesNewAccountGate(createSupabaseDirectClient(), creator))
+    ) {
+      throw new APIError(
+        403,
+        newAccountGateMessage('Messaging') +
+          ' You can still message Manifold staff for support.'
+      )
     }
 
     return await createPrivateUserMessageChannelMain(

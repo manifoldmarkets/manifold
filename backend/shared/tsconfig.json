@@ -2,6 +2,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "composite": true,
+    "skipLibCheck": true,
     "module": "commonjs",
     "moduleResolution": "node",
     "noImplicitReturns": true,
@@ -18,5 +19,6 @@
     }
   },
   "references": [{ "path": "../../common" }],
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

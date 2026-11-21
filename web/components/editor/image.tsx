@@ -1,6 +1,7 @@
 import { Image } from '@tiptap/extension-image'
 import clsx from 'clsx'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export const BasicImage = Image.extend({
   renderReact: (attrs: any) => (
@@ -38,18 +39,20 @@ function ExpandingImage(props: {
         )}
         height={size === 'md' ? 400 : 128}
       />
-      {expanded && (
-        <div
-          className="bg-opacity fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
-          onClick={() => setExpanded(false)}
-        >
-          <img
-            alt={alt ?? ''}
-            {...rest}
-            className="max-h-full cursor-pointer object-contain"
-          />
-        </div>
-      )}
+      {expanded &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+            onClick={() => setExpanded(false)}
+          >
+            <img
+              alt={alt ?? ''}
+              {...rest}
+              className="max-h-full cursor-pointer object-contain"
+            />
+          </div>,
+          document.body
+        )}
     </>
   )
 }

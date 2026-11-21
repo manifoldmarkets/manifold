@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/solid'
 import { TrendingUpIcon } from '@heroicons/react/outline'
@@ -19,10 +19,49 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import { TokenNumber } from '../widgets/token-number'
 import { floatingEqual } from 'common/util/math'
+import { MINUTE_MS } from 'common/util/time'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
+// Matches the server's per-user cache TTL for this endpoint.
+const DAILY_PROFIT_REFRESH_MS = MINUTE_MS
+
+type DailyProfitData = APIResponse<'get-daily-changed-metrics-and-contracts'>
+
+// Module-level so remounts (navigation, StrictMode) share one request per user
+// and the throttle survives them.
+const lastFetchTimeByUserId: Record<string, number> = {}
+const lastResultByUserId: Record<string, DailyProfitData | undefined> = {}
+const inFlightByUserId: Record<string, Promise<DailyProfitData> | undefined> =
+  {}
+
+const fetchDailyProfit = (userId: string, balance: number) => {
+  const pending = inFlightByUserId[userId]
+  if (pending) return pending
+  lastFetchTimeByUserId[userId] = Date.now()
+  const request = api(
+    'get-daily-changed-metrics-and-contracts',
+    { limit: 24, userId, balance },
+    // The server caches this for a minute. The endpoint's 15-minute HTTP
+    // cache would replay a stale snapshot stored under this balance's URL.
+    { cache: 'no-store' }
+  )
+    .then((result) => {
+      lastResultByUserId[userId] = result
+      return result
+    })
+    .finally(() => {
+      delete inFlightByUserId[userId]
+      // Time the next refetch from the response: the server caches the result
+      // from when it finished computing, so a refetch timed from the request
+      // could land inside that cache and get the same snapshot back.
+      lastFetchTimeByUserId[userId] = Date.now()
+    })
+  inFlightByUserId[userId] = request
+  return request
+}
 
 export const DailyProfit = function DailyProfit(props: {
   user: User | null | undefined
@@ -30,32 +69,84 @@ export const DailyProfit = function DailyProfit(props: {
 }) {
   const { user } = props
   const [data, setData] = usePersistentInMemoryState<
-    APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
+    DailyProfitData | undefined
   >(undefined, 'daily-profit-' + user?.id)
+  const userId = user?.id
+  const balance = user ? Math.floor(user.balance) : undefined
+  // The persistent setter switches to the new user's key in a layout effect
+  // (useEvent). This one runs in the same commit, right after it, so a response
+  // for the previous user is dropped rather than written under the new key, and
+  // a render React abandons never changes it.
+  const currentUserIdRef = useRef(userId)
+  useSafeLayoutEffect(() => {
+    currentUserIdRef.current = userId
+  })
 
   useEffect(() => {
-    if (!user) return
-    api('get-daily-changed-metrics-and-contracts', {
-      limit: 24,
-      userId: user.id,
-      balance: Math.floor(user.balance),
-    }).then(setData)
-  }, [user?.balance])
+    if (!userId || balance === undefined) return
+    // A response that landed after an unmount can still fill the widget.
+    const lastResult = lastResultByUserId[userId]
+    if (!data && lastResult) setData(lastResult)
+    // The server recomputes the user's whole portfolio for this, and the
+    // balance changes on every trade. Refetch at most once a minute, only
+    // while the tab is visible, using the latest balance when the wait ends.
+    let timeout: ReturnType<typeof setTimeout> | undefined
+    let fetched = false
+    let cancelled = false
+    const refresh = () => {
+      timeout = undefined
+      if (fetched || cancelled || document.visibilityState === 'hidden') return
+      const lastFetchTime = lastFetchTimeByUserId[userId]
+      // Joining the request in flight costs nothing, and a user's first
+      // request goes out at once. Otherwise wait a minute after the last
+      // response, whatever is on screen.
+      const wait =
+        inFlightByUserId[userId] || lastFetchTime === undefined
+          ? 0
+          : lastFetchTime + DAILY_PROFIT_REFRESH_MS - Date.now()
+      if (wait > 0) {
+        timeout = setTimeout(refresh, wait)
+        return
+      }
+      fetched = true
+      fetchDailyProfit(userId, balance).then(
+        (result) => {
+          if (cancelled || currentUserIdRef.current !== userId) return
+          setData(result)
+          // A cached or shared response can predate this balance. Try again
+          // once the server's cache has expired so the last trade shows up.
+          if (result.balance !== balance) {
+            fetched = false
+            refresh()
+          }
+        },
+        (error) => {
+          if (cancelled) return
+          console.error('Failed to load daily profit', error)
+          // Retry a minute after the failure, while the tab is visible.
+          fetched = false
+          refresh()
+        }
+      )
+    }
+    const onVisibilityChange = () => {
+      if (!timeout) refresh()
+    }
+    refresh()
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+    }
+  }, [userId, balance])
 
   const manaProfit = data?.manaProfit ?? 0
   const manaInvestmentValue = data?.manaInvestmentValue ?? 0
   const manaNetWorth = manaInvestmentValue + (data?.balance ?? 0)
 
+  // The modal shows loading rows until the effect above has data.
   const [openMana, setOpenMana] = useState(false)
-  useEffect(() => {
-    if (openMana && !data && user) {
-      api('get-daily-changed-metrics-and-contracts', {
-        limit: 24,
-        userId: user.id,
-        balance: Math.floor(user.balance),
-      }).then(setData)
-    }
-  }, [user?.id, openMana])
 
   return (
     <>

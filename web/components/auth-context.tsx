@@ -1,11 +1,9 @@
 'use client'
-import { createContext, ReactNode, useEffect, useState } from 'react'
+import { createContext, ReactNode, useEffect, useRef, useState } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
 import { createUser } from 'web/lib/api/api'
-import { randomString } from 'common/util/random'
-import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
 import {
   AUTH_COOKIE_NAME,
@@ -18,18 +16,35 @@ import {
   type User,
   type UserAndPrivateUser,
 } from 'common/user'
-import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
+import {
+  nativePassUsers,
+  nativeSetStreak,
+  nativeSignOut,
+} from 'web/lib/native/native-messages'
+import { clearLocalStoragePreservingNativeInfo } from 'web/lib/native/is-native'
+import { streakBonusPerDay } from 'common/native-message'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { getSupabaseToken } from 'web/lib/api/api'
 
 import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
+import { trackUserChanges } from 'client-common/hooks/use-websocket-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 import toast from 'react-hot-toast'
+import { ensureDeviceToken } from 'web/lib/util/device-token'
 import { Row } from './layout/row'
 import { TokenNumber } from './widgets/token-number'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
+import { setLocalOnlyUserId } from 'common/util/api'
+
+const IS_LOCAL_ONLY =
+  typeof process !== 'undefined' &&
+  process.env.NEXT_PUBLIC_LOCAL_ONLY === 'true'
+const LOCAL_TEST_USER =
+  typeof process !== 'undefined'
+    ? process.env.NEXT_PUBLIC_LOCAL_TEST_USER
+    : undefined
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -38,15 +53,6 @@ export type AuthUser =
   | null
   | (UserAndPrivateUser & { authLoaded: boolean })
 const CACHED_USER_KEY = 'CACHED_USER_KEY_V2'
-
-export const ensureDeviceToken = () => {
-  let deviceToken = safeLocalStorage?.getItem('device-token')
-  if (!deviceToken) {
-    deviceToken = randomString()
-    safeLocalStorage?.setItem('device-token', deviceToken)
-  }
-  return deviceToken
-}
 const getAdminToken = () => {
   const key = 'TEST_CREATE_USER_KEY'
   const cookie = getCookie(key)
@@ -96,6 +102,14 @@ export function AuthProvider(props: {
     PrivateUser | undefined
   >(serverUser ? serverUser.privateUser : undefined)
   const [authLoaded, setAuthLoaded] = useState(false)
+  // Whether this page session has ever observed a signed-in Firebase user. Gates
+  // the sign-out we forward to the native app — see the null branch below.
+  const sawFbUser = useRef(false)
+  // Track observed Firebase identity separately from the asynchronously loaded
+  // profile, so credentials clear as soon as an account switch begins.
+  const supabaseUserId = useRef<string>()
+  const committedUserId = useRef(user?.id)
+  committedUserId.current = user?.id
 
   const authUser = !user
     ? user
@@ -158,46 +172,131 @@ export function AuthProvider(props: {
     fbUser.getIdToken()
   }
 
+  // LOCAL_ONLY mode: fetch user from local API instead of Firebase
   useEffect(() => {
+    if (!IS_LOCAL_ONLY || !LOCAL_TEST_USER) return
+
+    // Set the local user ID immediately so API calls include X-Local-User header
+    const fetchLocalUser = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'localhost:8088'
+        const resp = await fetch(`http://${apiUrl}/v0/user/${LOCAL_TEST_USER}`)
+        if (!resp.ok) {
+          console.error('Failed to fetch local test user:', resp.statusText)
+          setUser(null)
+          setAuthLoaded(true)
+          return
+        }
+        const userData = (await resp.json()) as User
+        setLocalOnlyUserId(userData.id)
+        setUser(userData)
+        setPrivateUser({
+          id: userData.id,
+          notificationPreferences: {},
+        } as PrivateUser)
+        setAuthLoaded(true)
+      } catch (e) {
+        console.error('Error fetching local test user:', e)
+        setUser(null)
+        setAuthLoaded(true)
+      }
+    }
+    fetchLocalUser()
+  }, [])
+
+  useEffect(() => {
+    if (IS_LOCAL_ONLY) return // Skip Firebase auth in LOCAL_ONLY mode
+
     return onIdTokenChanged(
       auth,
       async (fbUser) => {
+        if (auth.currentUser?.uid !== fbUser?.uid) return
+        if (supabaseUserId.current !== fbUser?.uid) {
+          updateSupabaseAuth(undefined)
+          supabaseUserId.current = fbUser?.uid
+        }
+        // Firebase switches its request credential before the profile lookup
+        // below finishes. Mark real identity changes transitional immediately
+        // so requests cannot use the previous app user with the new token.
+        // Ordinary same-user token refreshes should not blank the UI.
+        if (fbUser?.uid !== committedUserId.current) {
+          setAuthLoaded(false)
+          // A known anonymous context does not carry authLoaded, so changing
+          // null to undefined is what makes consumers wait during login.
+          if (fbUser && committedUserId.current === undefined) {
+            setUser(undefined)
+          }
+        }
         if (fbUser) {
+          sawFbUser.current = true
           setUserCookie(fbUser.toJSON())
 
-          const [user, privateUser, supabaseJwt] = await Promise.all([
-            getUserSafe(fbUser.uid),
-            getPrivateUserSafe(),
-            getSupabaseToken().catch((e) => {
-              console.error('Error getting supabase token', e)
-              return null
-            }),
-          ])
-          // When testing on a mobile device, we'll be pointed at a local ip or ngrok address, so this will fail
-          if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
+          // Tracked until the profile is set, so a change landing just as it
+          // loads isn't missed.
+          const changes = trackUserChanges(fbUser.uid)
+          try {
+            const [user, privateUser, supabaseJwt] = await Promise.all([
+              getUserSafe(fbUser.uid),
+              getPrivateUserSafe(),
+              getSupabaseToken().catch((e) => {
+                console.error('Error getting supabase token', e)
+                return null
+              }),
+            ])
+            // The fetches above can outlive the user they were for: a sign-out
+            // or an account switch may have landed while they were in flight.
+            // If so, this callback is stale — drop it BEFORE any global side
+            // effect. updateSupabaseAuth in particular installs a token into
+            // the shared Supabase REST/realtime client, so a stale callback
+            // would otherwise leave Supabase authenticated as the old user
+            // while Firebase/UI are the new one. Committing it would also push
+            // the old user back to the native app (via onAuthLoad -> 'users').
+            if (auth.currentUser?.uid !== fbUser.uid) return
 
-          if (!user || !privateUser) {
-            const deviceToken = ensureDeviceToken()
-            const adminToken = getAdminToken()
+            // A failed same-user refresh must not discard a still-valid JWT.
+            // Logout/account changes already clear credentials above/below.
+            if (supabaseJwt) updateSupabaseAuth(supabaseJwt.jwt)
 
-            const newUser = (await createUser({
-              deviceToken,
-              adminToken,
-              visitedContractIds: getSavedContractVisitsLocally(),
-            })) as UserAndPrivateUser
+            if (!user || !privateUser) {
+              const deviceToken = ensureDeviceToken()
+              const adminToken = getAdminToken()
 
-            onAuthLoad(fbUser, newUser.user, newUser.privateUser)
-          } else {
-            onAuthLoad(fbUser, user, privateUser)
+              const newUser = (await createUser({
+                deviceToken,
+                adminToken,
+                visitedContractIds: getSavedContractVisitsLocally(),
+              })) as UserAndPrivateUser
+
+              if (auth.currentUser?.uid !== fbUser.uid) return
+              onAuthLoad(fbUser, newUser.user, newUser.privateUser)
+            } else {
+              // The profile may have been read before changes made while these
+              // loaded, e.g. a setting saved during a token refresh.
+              onAuthLoad(fbUser, { ...user, ...changes.since }, privateUser)
+            }
+          } finally {
+            changes.stop()
           }
         } else {
+          updateSupabaseAuth(undefined)
           // User logged out; reset to null
           setUserCookie(undefined)
           setUser(null)
           setPrivateUser(undefined)
-          nativeSignOut()
+          // Only propagate a sign-out we actually watched happen. Firebase fires
+          // this observer with null once on init whenever nothing is persisted,
+          // which inside the native WebView usually just means "the native
+          // session hasn't been handed over yet" — and telling native to sign
+          // out there makes it erase its stored credential and bounce the user
+          // to the login screen. Deliberate logouts are unaffected:
+          // firebaseLogout() calls nativeSignOut() itself.
+          if (sawFbUser.current) {
+            sawFbUser.current = false
+            nativeSignOut()
+          }
           // Clear local storage only if we were signed in, otherwise we'll clear referral info
-          if (safeLocalStorage?.getItem(CACHED_USER_KEY)) localStorage.clear()
+          if (safeLocalStorage?.getItem(CACHED_USER_KEY))
+            clearLocalStoragePreservingNativeInfo()
         }
       },
       (e) => {
@@ -208,15 +307,7 @@ export function AuthProvider(props: {
 
   const uid = authUser ? authUser.user.id : authUser
 
-  useEffect(() => {
-    if (uid) {
-      identifyUser(uid)
-    } else if (uid === null) {
-      identifyUser(null)
-    }
-  }, [uid])
-
-  const listenUser = useWebsocketUser(uid ?? undefined)
+  const listenUser = useWebsocketUser(uid ?? undefined, true)
   useEffectCheckEquality(() => {
     if (authLoaded && listenUser) {
       if (user) {
@@ -236,12 +327,27 @@ export function AuthProvider(props: {
     if (authLoaded && listenPrivateUser) setPrivateUser(listenPrivateUser)
   }, [authLoaded, listenPrivateUser])
 
-  const username = authUser?.user.username
+  // Mirror the streak snapshot to the native app for the home/lock-screen
+  // streak widget. Fires on initial load and whenever the live user's streak
+  // fields change (e.g. right after a bet lights up the streak). No-ops on web.
   useEffect(() => {
-    if (username != null) {
-      setUserProperty('username', username)
-    }
-  }, [username])
+    if (!user) return
+    nativeSetStreak({
+      loggedIn: true,
+      streak: user.currentBettingStreak ?? 0,
+      lastBetTime: user.lastBetTime ?? 0,
+      lastStreakFreezeTime: user.lastStreakFreezeTime ?? 0,
+      freezesLeft: user.streakForgiveness ?? 0,
+      streakBonus: streakBonusPerDay(user),
+      updatedAt: Date.now(),
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    user?.currentBettingStreak,
+    user?.lastBetTime,
+    user?.lastStreakFreezeTime,
+    user?.streakForgiveness,
+  ])
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>

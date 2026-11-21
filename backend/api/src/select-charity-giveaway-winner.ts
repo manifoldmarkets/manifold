@@ -2,6 +2,7 @@ import { APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient, SERIAL_MODE } from 'shared/supabase/init'
 import { isAdminId } from 'common/envs/constants'
 import { createHash } from 'crypto'
+import { getFirstBlockAfter } from 'common/bitcoin'
 
 export const selectCharityGiveawayWinner: APIHandler<
   'select-charity-giveaway-winner'
@@ -19,15 +20,13 @@ export const selectCharityGiveawayWinner: APIHandler<
 
   return await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     // Get giveaway and verify it's closed and has no winner yet
-    // Note: nonce is secret until winner is selected, then revealed for verification
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string | Date
       winning_ticket_id: string | null
-      nonce: string
       db_now: string | Date
     }>(
-      `SELECT giveaway_num, close_time, winning_ticket_id, nonce, NOW() AS db_now
+      `SELECT giveaway_num, close_time, winning_ticket_id, NOW() AS db_now
        FROM charity_giveaways 
        WHERE giveaway_num = $1 
        FOR UPDATE`,
@@ -60,41 +59,13 @@ export const selectCharityGiveawayWinner: APIHandler<
       throw new APIError(400, 'No tickets have been purchased')
     }
 
-    // Get the last 10 tickets' timestamps for provably fair seeding
-    // Using multiple timestamps makes it impossible for any single buyer to manipulate the outcome
-    const lastTickets = await tx.manyOrNone<{ created_time_ms: number }>(
-      `SELECT ts_to_millis(created_time) AS created_time_ms
-       FROM charity_giveaway_tickets 
-       WHERE giveaway_num = $1 
-       ORDER BY created_time DESC, id DESC
-       LIMIT 10`,
-      [giveawayNum]
-    )
+    // Get the first Bitcoin block mined after close_time for provably fair seeding
+    const closeTimeSeconds = Math.floor(toMillis(giveaway.close_time) / 1000)
+    const block = await getFirstBlockAfter(closeTimeSeconds)
+    const blockHash = block.id
 
-    // Create seed by XOR-ing nonce with all ticket timestamps
-    const nonceBuffer = Buffer.from(giveaway.nonce, 'hex')
-    const seedBuffer = Buffer.alloc(8)
-
-    // Start with first 8 bytes of nonce
-    for (let i = 0; i < 8; i++) {
-      seedBuffer[i] = nonceBuffer[i]
-    }
-
-    // XOR each ticket's timestamp into the seed
-    for (const ticket of lastTickets) {
-      const timestampBuffer = Buffer.alloc(8)
-      timestampBuffer.writeBigInt64BE(BigInt(ticket.created_time_ms))
-
-      for (let i = 0; i < 8; i++) {
-        seedBuffer[i] ^= timestampBuffer[i]
-      }
-    }
-
-    // Create deterministic random value using SHA256 hash of seed
-    const hash = createHash('sha256')
-      .update(new Uint8Array(seedBuffer))
-      .update(new Uint8Array(nonceBuffer)) // Include full nonce for more entropy
-      .digest()
+    // Create deterministic random value using SHA256 hash of blockHash
+    const hash = createHash('sha256').update(blockHash).digest()
 
     // Convert first 8 bytes of hash to a number between 0 and 1
     const randomValue =
@@ -145,18 +116,20 @@ export const selectCharityGiveawayWinner: APIHandler<
       }
     }
 
-    // Update the giveaway with the winning ticket
+    // Update the giveaway with the winning ticket and Bitcoin block hash
     await tx.none(
       `UPDATE charity_giveaways 
-       SET winning_ticket_id = $1 
-       WHERE giveaway_num = $2`,
-      [winningTicket.id, giveawayNum]
+       SET winning_ticket_id = $1, nonce = $2
+       WHERE giveaway_num = $3`,
+      [winningTicket.id, blockHash, giveawayNum]
     )
 
     return {
       ticketId: winningTicket.id,
       charityId: winningTicket.charityId,
       userId: winningTicket.userId,
+      blockHash,
+      blockHeight: block.height,
     }
   })
 }

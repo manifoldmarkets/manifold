@@ -26,10 +26,10 @@ export const useTheme = () => {
   return context
 }
 
-// NOTE: If you change anything about how this works, make sure init-theme.js is also changed.
+// NOTE: If you change anything about how this works, make sure initThemeScript in _document.tsx is also changed.
 // Here is how the theme works on a fresh load.
 // 1. HTML is sent to the client. An inline <style> sets background & text based on system theme
-// 2. A render-blocking <script> grabs the user preference out of localStorage, and sets "dark" class accordingly
+// 2. An inline, render-blocking <script> in _document.tsx grabs the user preference out of localStorage, and sets "dark" class accordingly
 // 3. Stuff is rendered. React hooks run. User can now change the theme.
 //
 // Without 1, there is a flash of light theme before the tailwind stylesheet loads.

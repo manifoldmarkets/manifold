@@ -6,7 +6,7 @@ create table if not exists
     ship_id text default random_alphanumeric (12) not null,
     target1_id text not null,
     target2_id text not null,
-    constraint primary key (creator_id, ship_id)
+    primary key (creator_id, ship_id)
   );
 
 -- Row Level Security

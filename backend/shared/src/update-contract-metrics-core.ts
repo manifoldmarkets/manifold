@@ -1,6 +1,6 @@
 import { LimitBet } from 'common/bet'
 import { computeElasticity } from 'common/calculate-metrics'
-import { Contract, CPMM } from 'common/contract'
+import { Contract, CPMM, isMultiCpmm } from 'common/contract'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { hasChanges } from 'common/util/object'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -10,9 +10,15 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
+import { computeProbChanges, MonthSource, ProbChanges } from './prob-changes'
 import { bulkUpdateAnswers } from './supabase/answers'
 import { bulkUpdateData } from './supabase/utils'
 
+// Day and week changes are recomputed from bet history on every run. The month
+// change is recomputed only by the daily full run (wholeMonth), which is the
+// one run that looks month-ago probabilities up. Every other run leaves each
+// stored month change exactly as it is, so between full runs the month change
+// is as of the last one.
 export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
@@ -34,9 +40,10 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts
-    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .filter((c) => isMultiCpmm(c) && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
+  const answersByContractId = groupBy(answers, (a) => a.contractId)
   log(`Loaded ${allContracts.length} contracts.`)
   log(`Loaded ${answers.length} answers.`)
   const chunks = chunk(allContracts, 1000)
@@ -70,6 +77,14 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
         ? getBetProbsAt(pg, monthAgo, contractIds, sumToOneContractIds)
         : Promise.resolve({} as { [key: string]: number }),
     ])
+    // Where one market's or answer's month change comes from on this run.
+    const monthSource = (
+      key: string,
+      storedMonthChange: number | undefined
+    ): MonthSource =>
+      wholeMonth
+        ? { kind: 'loaded', monthAgoProb: monthAgoProbs[key] }
+        : { kind: 'kept', storedMonthChange }
 
     log('Loading volume...')
     const volumeAndCount = await getVolumeAndCountSince(pg, dayAgo, contractIds)
@@ -81,14 +96,7 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
 
     const contractUpdates: ({ id: string } & Partial<Contract>)[] = []
 
-    const answerUpdates: {
-      id: string
-      probChanges: {
-        day: number
-        week: number
-        month: number
-      }
-    }[] = []
+    const answerUpdates: { id: string; probChanges: ProbChanges }[] = []
 
     for (const contract of contracts) {
       let cpmmFields: Partial<CPMM> = {}
@@ -96,24 +104,20 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
         const { id } = contract
         const { poolProb, resProb, resTime } = currentContractProbs[id]
         const prob = resProb ?? poolProb
-        const dayAgoProb = dayAgoProbs[id] ?? poolProb
-        const weekAgoProb = weekAgoProbs[id] ?? poolProb
-        const monthAgoProb =
-          (wholeMonth ? monthAgoProbs[id] : contract.probChanges.month) ??
-          poolProb
         cpmmFields = {
           prob,
-          probChanges: {
-            day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
-            week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
-            month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
-          },
+          probChanges: computeProbChanges({
+            now,
+            prob,
+            poolProb,
+            resolutionTime: resTime,
+            dayAgoProb: dayAgoProbs[id],
+            weekAgoProb: weekAgoProbs[id],
+            month: monthSource(id, contract.probChanges?.month),
+          }),
         }
-      } else if (contract.mechanism === 'cpmm-multi-1') {
-        const contractAnswers = answers.filter(
-          (a) => a.contractId === contract.id
-        )
-        for (const answer of contractAnswers) {
+      } else if (isMultiCpmm(contract)) {
+        for (const answer of answersByContractId[contract.id] ?? []) {
           const { poolProb, resProb, resTime } =
             contract.shouldAnswersSumToOne && contract.resolutions
               ? {
@@ -124,18 +128,17 @@ export async function updateContractMetricsCore(wholeMonth: boolean = false) {
               : currentAnswerProbs[answer.id]
           const prob = resProb ?? poolProb
           const key = contract.id + answer.id
-          const dayAgoProb = dayAgoProbs[key] ?? poolProb
-          const weekAgoProb = weekAgoProbs[key] ?? poolProb
-          const monthAgoProb =
-            (wholeMonth ? monthAgoProbs[key] : answer.probChanges.month) ??
-            poolProb
 
           const answerCpmmFields = {
-            probChanges: {
-              day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,
-              week: resTime && resTime <= weekAgo ? 0 : prob - weekAgoProb,
-              month: resTime && resTime <= monthAgo ? 0 : prob - monthAgoProb,
-            },
+            probChanges: computeProbChanges({
+              now,
+              prob,
+              poolProb,
+              resolutionTime: resTime,
+              dayAgoProb: dayAgoProbs[key],
+              weekAgoProb: weekAgoProbs[key],
+              month: monthSource(key, answer.probChanges?.month),
+            }),
           }
           if (hasChanges(answer, answerCpmmFields)) {
             answerUpdates.push({
@@ -195,12 +198,29 @@ const getVolumeAndCountSince = async (
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, sum(abs(amount)) as volume,
-      count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day
-      from contract_bets
-      where created_time >= millis_to_ts($1)
-      and not is_redemption
-      and contract_id = any($2)
+      `with user_trades as (
+         select contract_id, user_id, created_time,
+                abs(amount)::numeric as volume
+         from contract_bets
+         where created_time >= millis_to_ts($1)
+           and not is_redemption
+           and contract_id = any($2)
+
+         union all
+
+         select contract_id, user_id, ts as created_time,
+                abs(original_cost_basis_delta)::numeric as volume
+         from contract_perp_events
+         where ts >= millis_to_ts($1)
+           and event_type in ('open', 'add', 'close')
+           and data->>'reason' is distinct from 'resolve-market'
+           and contract_id = any($2)
+       )
+       select contract_id, sum(volume) as volume,
+              count(distinct case
+                when created_time > now() - interval '1 day' then user_id
+              end)::numeric as count_day
+       from user_trades
        group by contract_id`,
       [since, contractIds],
       (r) => [

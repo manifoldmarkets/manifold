@@ -10,29 +10,87 @@ import {
   useTrendingTopics,
   useUserTrendingTopics,
 } from 'web/components/search/query-topics'
-import { Search } from 'web/components/search'
+import { LoadingContractResults, Search } from 'web/components/search'
+import { useBrowseDefault } from 'web/hooks/use-browse-default'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { DEFAULT_FOR_YOU, Welcome } from 'web/components/onboarding/welcome'
+import { Welcome } from 'web/components/onboarding/welcome'
+import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { BrowseV2 } from 'web/components/browse-v2/browse-v2'
+import {
+  BrowseViewState,
+  useBrowseView,
+} from 'web/components/browse-v2/use-browse-view'
 export default function BrowsePage() {
   const user = useUser()
   useSaveReferral(user)
+  const browseView = useBrowseView()
 
   return (
-    <Page trackPageView={'questions page'} className="lg:px-4">
-      {/* only show logo on mobile, since there's no sidebar */}
-      {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
-      <div className="lg:mb-4"></div>
+    <Page trackPageView={'questions page'} className="min-w-0 lg:px-4">
       <Welcome />
-      <BrowsePageContent />
+      <VerificationResultModal />
+      <BrowsePageContent browseView={browseView} />
     </Page>
   )
 }
 
-export function BrowsePageContent() {
+export function BrowsePageContent(props: {
+  browseView: BrowseViewState
+  hideViewSwitch?: boolean
+}) {
+  const { browseView, hideViewSwitch } = props
   const user = useUser()
+  if (!browseView.ready) return <LoadingContractResults />
+  const isNew = browseView.view === 'new'
+  return (
+    <>
+      {!hideViewSwitch && (
+        <div className="flex min-w-0 items-center justify-between gap-2 px-3 py-0.5 lg:px-0 lg:pt-2">
+          {!user && (
+            <div className="shrink-0 lg:hidden">
+              <ManifoldLogo className="!px-0" />
+            </div>
+          )}
+          <BrowseViewToggle browseView={browseView} />
+        </div>
+      )}
+      {isNew ? <BrowseV2 /> : <LegacyBrowseContent />}
+    </>
+  )
+}
+
+export function BrowseViewToggle(props: { browseView: BrowseViewState }) {
+  const { browseView } = props
+  if (!browseView.ready) return null
+  const isNew = browseView.view === 'new'
+  return (
+    <button
+      type="button"
+      onClick={() => browseView.setView(isNew ? 'legacy' : 'new')}
+      aria-label={isNew ? 'Switch to classic browse' : 'Try the new browse'}
+      data-browse-cohort={browseView.cohort}
+      data-browse-variant={browseView.variant ?? 'not-randomized'}
+      data-browse-choice={browseView.choiceSource}
+      className="text-primary-700 hover:text-primary-800 ml-auto shrink-0 py-0.5 text-xs font-medium"
+    >
+      {isNew ? (
+        '← Classic'
+      ) : (
+        <>
+          <span className="sm:hidden">Try the new browse →</span>
+          <span className="hidden sm:inline">Try the new browse →</span>
+        </>
+      )}
+    </button>
+  )
+}
+
+function LegacyBrowseContent() {
+  const user = useUser()
+  const browseDefault = useBrowseDefault(user)
   const isMobile = useIsMobile()
   const router = useRouter()
   const { q } = router.query
@@ -55,12 +113,17 @@ export function BrowsePageContent() {
 
   const initialTopics = topicsByImportance
 
+  if (!browseDefault.ready) return <LoadingContractResults />
+
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
+        key={browseDefault.persistPrefix}
         showTopicsFilterPills
         showHotTopics
-        persistPrefix="search"
+        persistPrefix={browseDefault.persistPrefix}
+        discoverySourceComponent="search"
+        onBrowseModeChange={browseDefault.rememberMode}
         autoFocus={autoFocus}
         additionalFilter={{
           excludeContractIds: privateUser?.blockedContractIds,
@@ -77,7 +140,7 @@ export function BrowsePageContent() {
         headerClassName={'pt-0 px-2'}
         defaultFilter="all"
         defaultSort="score"
-        defaultForYou={DEFAULT_FOR_YOU ? '1' : '0'}
+        defaultForYou={browseDefault.defaultForYou}
         initialTopics={initialTopics}
       />
     </Col>

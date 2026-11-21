@@ -1,10 +1,22 @@
 // Adopted from https://github.com/ueberdosis/tiptap/blob/main/demos/src/Experiments/Embeds/Vue/iframe.ts
 
 import { Node, mergeAttributes } from '@tiptap/core'
+import { getMarketUrlFromManifoldEmbedUrl } from './manifold-url'
 
 export interface IframeOptions {
   HTMLAttributes: {
     [key: string]: any
+  }
+}
+
+/** Returns true if the URL uses a safe protocol (http or https). */
+function isSafeUrl(url: string | null | undefined): boolean {
+  if (!url) return false
+  try {
+    const parsed = new URL(url, 'https://placeholder.invalid')
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
   }
 }
 
@@ -39,6 +51,9 @@ export default Node.create<IframeOptions>({
       src: {
         default: null,
       },
+      title: {
+        default: 'Embedded content',
+      },
       frameBorder: {
         default: 0,
       },
@@ -56,19 +71,35 @@ export default Node.create<IframeOptions>({
       this.options.HTMLAttributes
     )
 
-    const blacklistedAttributes = ['srcdoc']
-    const keysToRemove = Object.keys(iframeAttributes).filter((key) =>
-      blacklistedAttributes.includes(key.toLowerCase())
-    )
-    for (const key of keysToRemove) {
-      delete iframeAttributes[key]
+    const allowedAttributes = [
+      'src',
+      'frameborder',
+      'class',
+      'width',
+      'height',
+      'title',
+      'sandbox',
+      'style',
+      'allowfullscreen',
+      'allow',
+    ]
+    for (const key of Object.keys(iframeAttributes)) {
+      if (!allowedAttributes.includes(key.toLowerCase())) {
+        delete iframeAttributes[key]
+      }
     }
 
     const { src } = HTMLAttributes
 
+    // Block dangerous protocols (javascript:, data:, vbscript:, etc.)
+    if (!isSafeUrl(src)) {
+      return ['div', { class: 'iframe-blocked' }]
+    }
+
     // This is a hack to prevent native from opening the iframe in an in-app browser
     // and mobile in another tab. In native, links with target='_blank' open in the in-app browser.
-    if (src.includes('manifold.markets/embed/')) {
+    const manifoldMarketUrl = getMarketUrlFromManifoldEmbedUrl(src)
+    if (manifoldMarketUrl) {
       return [
         'div',
         {
@@ -80,7 +111,7 @@ export default Node.create<IframeOptions>({
         [
           'a',
           {
-            href: src.replace('embed/', ''),
+            href: manifoldMarketUrl,
             target: '_self',
             style: {
               position: 'absolute',

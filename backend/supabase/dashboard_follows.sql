@@ -4,8 +4,18 @@ create table if not exists
     created_time timestamp with time zone default now(),
     dashboard_id text not null,
     follower_id text not null,
-    constraint primary key (dashboard_id, follower_id)
+    primary key (dashboard_id, follower_id)
   );
+
+-- Row Level Security
+alter table dashboard_follows enable row level security;
+
+-- Policies
+drop policy if exists "own read" on dashboard_follows;
+
+create policy "own read" on dashboard_follows for
+select
+  using ((firebase_uid () = follower_id));
 
 -- Indexes
 drop index if exists dashboard_follows_pkey;

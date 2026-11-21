@@ -29,6 +29,9 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import Link from 'next/link'
 
+const PERP_EQUITY_TOOLTIP =
+  "Perps are already leveraged and can be liquidated to zero, so they don't back loans. Your portfolio value elsewhere on the site still counts them."
+
 export function LoansModal(props: {
   user: User
   isOpen: boolean
@@ -56,6 +59,10 @@ export function LoansModal(props: {
   const availableToday = loanData?.availableToday ?? 0
   const hasOutstandingLoan = (latestPortfolio?.loanTotal ?? 0) > 0
   const hasMarginLoanAccess = loanData?.hasMarginLoanAccess ?? false
+  // Perps don't back loans, so the equity here is lower than the portfolio
+  // value shown elsewhere. Call the difference out rather than let it look
+  // like a bug.
+  const perpValueExcluded = loanData?.perpValueExcluded ?? 0
 
   const requestLoan = async (
     amountOverride?: number,
@@ -359,9 +366,36 @@ export function LoansModal(props: {
                             (loanData?.currentMarginLoan ?? 0)
                         )}
                         )
+                        {perpValueExcluded >= 1 && (
+                          <>
+                            <br />
+                            Excludes{' '}
+                            <Tooltip text={PERP_EQUITY_TOOLTIP}>
+                              <span className="cursor-help underline decoration-dotted">
+                                {formatMoney(perpValueExcluded)} in perps
+                              </span>
+                            </Tooltip>
+                          </>
+                        )}
                       </span>
                     </>
                   )}
+                  {!(loanData?.equity && loanData.equity > 0) &&
+                    perpValueExcluded >= 1 && (
+                      <>
+                        <br />
+                        <span className="text-ink-500 text-xs">
+                          Your{' '}
+                          <Tooltip text={PERP_EQUITY_TOOLTIP}>
+                            <span className="cursor-help underline decoration-dotted">
+                              {formatMoney(perpValueExcluded)} in perps
+                            </span>
+                          </Tooltip>{' '}
+                          doesn't count toward loan equity — hold a regular
+                          position to borrow
+                        </span>
+                      </>
+                    )}
                   .{' '}
                   {(() => {
                     const equity = loanData?.equity ?? 0

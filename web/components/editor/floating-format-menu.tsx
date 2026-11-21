@@ -57,6 +57,7 @@ export function FloatingFormatMenu(props: {
             <>
               <IconButton
                 icon={TypeIcon}
+                label="Toggle heading level 1"
                 onClick={() =>
                   editor.chain().focus().toggleHeading({ level: 1 }).run()
                 }
@@ -64,6 +65,7 @@ export function FloatingFormatMenu(props: {
               />
               <IconButton
                 icon={TypeIcon}
+                label="Toggle heading level 2"
                 onClick={() =>
                   editor.chain().focus().toggleHeading({ level: 2 }).run()
                 }
@@ -75,21 +77,25 @@ export function FloatingFormatMenu(props: {
           )}
           <IconButton
             icon={BoldIcon}
+            label="Toggle bold"
             onClick={() => editor.chain().focus().toggleBold().run()}
             isActive={editor.isActive('bold')}
           />
           <IconButton
             icon={ItalicIcon}
+            label="Toggle italic"
             onClick={() => editor.chain().focus().toggleItalic().run()}
             isActive={editor.isActive('italic')}
           />
           <IconButton
             icon={LinkIcon}
+            label={editor.isActive('link') ? 'Remove link' : 'Add link'}
             onClick={() => (editor.isActive('link') ? unsetLink() : setUrl(''))}
             isActive={editor.isActive('link')}
           />
           <IconButton
             icon={EyeOffIcon}
+            label="Toggle spoiler"
             onClick={() => editor.chain().focus().toggleSpoiler().run()}
             isActive={editor.isActive('spoiler')}
           />
@@ -103,10 +109,18 @@ export function FloatingFormatMenu(props: {
             placeholder="Type or paste a link"
             onChange={(e) => setUrl(e.target.value)}
           />
-          <button onClick={() => (setLink(), setUrl(null))}>
+          <button
+            type="button"
+            aria-label="Save link"
+            onClick={() => (setLink(), setUrl(null))}
+          >
             <CheckIcon className="h-5 w-5" />
           </button>
-          <button onClick={() => (unsetLink(), setUrl(null))}>
+          <button
+            type="button"
+            aria-label="Remove link"
+            onClick={() => (unsetLink(), setUrl(null))}
+          >
             <TrashIcon className="h-5 w-5" />
           </button>
         </>
@@ -120,10 +134,11 @@ const IconButton = (props: {
   onClick: () => any
   isActive?: boolean
   className?: string
+  label: string
 }) => {
-  const { icon: Icon, onClick, isActive, className } = props
+  const { icon: Icon, onClick, isActive, className, label } = props
   return (
-    <button onClick={onClick} type="button">
+    <button onClick={onClick} type="button" aria-label={label}>
       <Icon
         className={clsx('h-5', isActive && 'text-primary-200', className)}
       />

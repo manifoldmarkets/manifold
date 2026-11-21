@@ -2,13 +2,15 @@ import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
   getUserBalancesAndMetrics,
+  lockContractAndGetBetData,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { MS_PER_DAY } from 'common/loans'
-import { MarketContract } from 'common/contract'
+import { MarketContract, isMultiCpmm } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { isCpmmDegenerateStateError } from 'common/calculate-cpmm'
 import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
 import { floatingLesserEqual } from 'common/util/math'
 import { randomString } from 'common/util/random'
@@ -46,13 +48,18 @@ const calculateSellResult = (
   const maxShares = sharesByOutcome[outcome]
   const sharesToSell = shares ?? maxShares
 
-  if (!maxShares)
+  // A dust or floating-point-negative position (e.g. -4.44e-16) is not a real
+  // holding; feeding it into the sum-to-one arbitrage produces a NaN probability.
+  if (!maxShares || floatingLesserEqual(maxShares, 0))
     throw new APIError(403, `You don't have any ${outcome} shares to sell.`)
 
   if (!floatingLesserEqual(sharesToSell, maxShares))
     throw new APIError(400, `You can only sell up to ${maxShares} shares.`)
 
   const soldShares = Math.min(sharesToSell, maxShares)
+
+  if (floatingLesserEqual(soldShares, 0))
+    throw new APIError(400, `Must sell a positive number of ${outcome} shares.`)
   const saleFrac = soldShares / maxShares
   let loanPaid = saleFrac * loanAmount
   if (!isFinite(loanPaid)) loanPaid = 0
@@ -60,7 +67,7 @@ const calculateSellResult = (
   let answer
   if (
     mechanism === 'cpmm-1' ||
-    (mechanism === 'cpmm-multi-1' && !contract.shouldAnswersSumToOne)
+    (isMultiCpmm(contract) && !contract.shouldAnswersSumToOne)
   ) {
     if (answerId) {
       answer = answers?.find((a) => a.id === answerId)
@@ -94,9 +101,9 @@ const calculateSellResult = (
         'Cannot bet until at least two answers are added.'
       )
 
-    return {
-      newP: 0.5,
-      ...getCpmmMultiSellBetInfo(
+    let multiSellInfo
+    try {
+      multiSellInfo = getCpmmMultiSellBetInfo(
         contract,
         answers,
         answer,
@@ -106,7 +113,43 @@ const calculateSellResult = (
         unfilledBets,
         balanceByUserId,
         loanPaid
-      ),
+      )
+    } catch (e) {
+      // On a NaN-probability failure in the sum-to-one arbitrage, log the full
+      // read-time pool state for diagnosis, then rethrow unchanged.
+      if (isCpmmDegenerateStateError(e)) {
+        log.error('Sell arbitrage failed on degenerate pool state', {
+          contractId: contract.id,
+          mechanism: contract.mechanism,
+          answerId,
+          outcome,
+          requestedShares: shares,
+          soldShares,
+          maxShares,
+          userTotalShares: sharesByOutcome,
+          unfilledBetCount: unfilledBets.length,
+          error: e.message,
+          answers: answers.map((a) => ({
+            id: a.id,
+            poolYes: a.poolYes,
+            poolNo: a.poolNo,
+            prob: a.prob,
+            resolution: a.resolution,
+            totalLiquidity: a.totalLiquidity,
+            degenerate:
+              !(a.poolYes > 0) ||
+              !(a.poolNo > 0) ||
+              !isFinite(a.poolYes) ||
+              !isFinite(a.poolNo),
+          })),
+        })
+      }
+      throw e
+    }
+
+    return {
+      newP: 0.5,
+      ...multiSellInfo,
     }
   }
 }
@@ -152,7 +195,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     balanceByUserId,
     unfilledBets,
     contractMetrics,
-    unfilledBetUserIds,
   } = await fetchContractBetDataAndValidate(
     pg,
     { ...props, amount: undefined, outcome: oppositeOutcome },
@@ -160,6 +202,11 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     isApi,
     !!sellForUserId
   )
+  const contractMetric = contractMetrics.find(
+    (m) => m.answerId == answerId && m.userId === uid
+  )
+  if (!contractMetric)
+    throw new APIError(403, `You don't have any ${outcome} shares to sell.`)
   const simulatedResult = calculateSellResult(
     contract,
     answers,
@@ -168,7 +215,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    contractMetrics.find((m) => m.answerId == answerId && m.userId === uid)!
+    contractMetric
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -176,33 +223,47 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     log(
       `Inside main transaction for user ${uid} selling ${shares} shares on contract id ${contractId}.`
     )
+    // Re-read pool/answers/open limit orders under a FOR UPDATE lock on the
+    // contract row, so each retry recomputes against current state rather than the
+    // possibly-stale pre-transaction read.
+    const {
+      contract: lockedContract,
+      answers: lockedAnswers,
+      unfilledBets: lockedUnfilledBets,
+      balanceByUserId: lockedMakerBalances,
+    } = await lockContractAndGetBetData(
+      pgTrans,
+      { ...props, outcome: oppositeOutcome },
+      uid
+    )
     const { balanceByUserId, contractMetrics } =
       await getUserBalancesAndMetrics(
         pgTrans,
         [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract,
+        lockedContract,
         answerId
       )
     user.balance = balanceByUserId[uid]
 
-    for (const userId of unfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
+    // As in placeBetMain: the other makers keep the balances read with their
+    // orders, so the sale is worked out here as it was simulated.
+    for (const [userId, balance] of Object.entries(lockedMakerBalances)) {
+      if (!(userId in balanceByUserId)) balanceByUserId[userId] = balance
     }
 
     const userMetric = contractMetrics.find(
       (m) => m.answerId == answerId && m.userId === uid
-    )!
+    )
+    if (!userMetric)
+      throw new APIError(403, `You don't have any ${outcome} shares to sell.`)
 
     // Capture margin loan before selling for loan tracking update
     const marginLoanBefore = userMetric.marginLoan ?? 0
 
     const newBetResult = calculateSellResult(
-      contract,
-      answers,
-      unfilledBets,
+      lockedContract,
+      lockedAnswers,
+      lockedUnfilledBets,
       balanceByUserId,
       answerId,
       outcome,
@@ -225,8 +286,9 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     const betResult = await executeNewBetResult(
       pgTrans,
       newBetResult,
-      contract,
+      lockedContract,
       user,
+      undefined, // creator - not needed for sells (no unique bettor bonus)
       isApi,
       contractMetrics,
       balanceByUserId,

@@ -5,7 +5,7 @@ create table if not exists
     score_id text not null,
     score_value numeric not null,
     user_id text not null,
-    constraint primary key (user_id, score_id)
+    primary key (user_id, score_id)
   );
 
 -- Row Level Security

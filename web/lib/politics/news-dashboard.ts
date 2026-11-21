@@ -1,3 +1,4 @@
+import { Contract } from 'common/contract'
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { getContracts } from 'common/supabase/contracts'
@@ -6,11 +7,12 @@ import { capitalize, omit } from 'lodash'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
+import { NewsDashboardPageProps } from 'web/public/data/elections-data'
 
 export const getDashboardProps = async (
   slug: string,
   endpointProps?: { slug: DashboardEndpoints; topSlug: string }
-) => {
+): Promise<NewsDashboardPageProps> => {
   const dashboard = await api('get-dashboard-from-slug', {
     dashboardSlug: slug,
   })
@@ -48,7 +50,9 @@ export const getDashboardProps = async (
     initialDashboard: dashboard,
     headlines,
     previews,
-    initialContracts: contracts,
+    // Heavy fields (description, coverImageUrl) are stripped above for the
+    // cards; the cast keeps the public type as Contract[].
+    initialContracts: contracts as Contract[],
     slug,
   }
 }

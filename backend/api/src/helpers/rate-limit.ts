@@ -1,9 +1,10 @@
 import { APIError, APIHandler, AuthedUser } from 'api/helpers/endpoint'
 import { APIPath, APISchema, ValidatedAPIParams } from 'common/api/schema'
-import { HOUR_MS } from 'common/util/time'
-import { Request } from 'express'
+import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { Request, RequestHandler } from 'express'
 import { getIp } from 'shared/analytics'
-import { log } from 'shared/utils'
+import { log, metrics } from 'shared/utils'
+import type { MetricType } from 'shared/monitoring/metrics'
 import { createSupabaseDirectClient, SupabaseDirectClient } from 'shared/supabase/init'
 import { UserBan } from 'common/user'
 import { convertUser } from 'common/supabase/users'
@@ -131,6 +132,61 @@ export const rateLimitByIp = <N extends APIPath>(
     limitData.count++
 
     return f(props, auth, req)
+  }
+}
+
+// Express middleware version of rateLimitByIp for use on raw routes that
+// don't go through typedEndpoint (e.g. /v0/mcp). Stores timestamps per IP in
+// memory; opportunistically evicts stale entries to bound memory growth.
+export const ipRateLimitMiddleware = (
+  options: RateLimitOptions & { metricName?: MetricType } = {}
+): RequestHandler => {
+  const { maxCalls = 60, windowMs = MINUTE_MS, metricName } = options
+  const buckets = new Map<string, number[]>()
+
+  // Periodic cleanup so abandoned IPs don't accumulate forever. unref() so the
+  // timer doesn't keep the process alive on its own.
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now()
+    for (const [ip, timestamps] of buckets) {
+      const fresh = timestamps.filter((t) => now - t < windowMs)
+      if (fresh.length === 0) buckets.delete(ip)
+      else buckets.set(ip, fresh)
+    }
+  }, windowMs)
+  cleanupTimer.unref?.()
+
+  return (req, res, next) => {
+    const ip = getIp(req) ?? 'unknown'
+    const now = Date.now()
+    const fresh = (buckets.get(ip) ?? []).filter((t) => now - t < windowMs)
+
+    if (fresh.length >= maxCalls) {
+      const oldest = fresh[0]
+      const retryAfterSec = Math.max(
+        1,
+        Math.ceil((oldest + windowMs - now) / 1000)
+      )
+      buckets.set(ip, fresh)
+      if (metricName) metrics.inc(metricName, { result: 'limited' })
+      res.setHeader('Retry-After', String(retryAfterSec))
+      // JSON-RPC shaped error so MCP clients surface it cleanly; plain HTTP
+      // clients still see a 429 + Retry-After header.
+      res.status(429).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: `Rate limit exceeded. Please wait ${retryAfterSec} seconds before trying again.`,
+        },
+        id: null,
+      })
+      return
+    }
+
+    fresh.push(now)
+    buckets.set(ip, fresh)
+    if (metricName) metrics.inc(metricName, { result: 'allowed' })
+    next()
   }
 }
 

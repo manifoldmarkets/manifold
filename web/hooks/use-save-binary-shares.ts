@@ -1,11 +1,12 @@
 import {
   BinaryContract,
   CPMMMultiContract,
-  getMainBinaryMCAnswer,
+  isBinaryMulti,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
 import { Bet } from 'common/bet'
+import { partitionVersusBets } from 'common/versus'
 import { partition, sumBy } from 'lodash'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { useEffectCheckEquality } from './use-effect-check-equality'
@@ -23,14 +24,11 @@ export const useSaveBinaryShares = (
     yesShares: 0,
     noShares: 0,
   })
-  const mcAnswer = getMainBinaryMCAnswer(contract)
-
-  const [yesBets, noBets] = partition(userBets ?? [], (bet) =>
-    !mcAnswer
-      ? bet.outcome === 'YES'
-      : (bet.answerId === mcAnswer.id && bet.outcome === 'YES') ||
-        (bet.answerId !== mcAnswer.id && bet.outcome === 'NO')
-  )
+  // On a versus market a bet backs the main answer either as YES on it or as
+  // NO on the other answer; `partitionVersusBets` handles both.
+  const [yesBets, noBets] = isBinaryMulti(contract)
+    ? partitionVersusBets(contract, userBets ?? [])
+    : partition(userBets ?? [], (bet) => bet.outcome === 'YES')
   const [yesShares, noShares] = userBets
     ? [sumBy(yesBets, (bet) => bet.shares), sumBy(noBets, (bet) => bet.shares)]
     : [savedShares.yesShares, savedShares.noShares]

@@ -20,6 +20,7 @@ import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
 import { PointerMode } from './helpers'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { MOD_ACTION_TEXT_CLASS } from '../moderation/mod-action'
 
 export const ChartAnnotations = (props: {
   annotations: ChartAnnotation[]
@@ -168,8 +169,10 @@ const ChartAnnotation = (props: {
 export const EditChartAnnotationsButton = (props: {
   pointerMode: PointerMode
   setPointerMode: (mode: PointerMode) => void
+  // Can only annotate because the user is a mod or admin
+  modAction?: boolean
 }) => {
-  const { pointerMode, setPointerMode } = props
+  const { pointerMode, setPointerMode, modAction } = props
   return (
     <Button
       color={pointerMode === 'annotate' ? 'yellow' : 'gray-white'}
@@ -182,7 +185,12 @@ export const EditChartAnnotationsButton = (props: {
       }}
       size={'xs'}
     >
-      <TbPencilPlus className={clsx('h-[1.2rem] w-[1.2rem]')} />
+      <TbPencilPlus
+        className={clsx(
+          'h-[1.2rem] w-[1.2rem]',
+          modAction && pointerMode !== 'annotate' && MOD_ACTION_TEXT_CLASS
+        )}
+      />
     </Button>
   )
 }

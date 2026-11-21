@@ -8,3 +8,12 @@ export const HOUR_SECONDS = 60 * 60
 
 export const sleep = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms))
+
+export const isAprilFools = (): boolean => {
+  const sf = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/Los_Angeles',
+    month: 'numeric',
+    day: 'numeric',
+  })
+  return sf === '4/1'
+}

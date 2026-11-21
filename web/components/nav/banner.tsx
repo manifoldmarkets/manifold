@@ -39,6 +39,7 @@ export function Banner(props: {
 
       {setShowBanner && (
         <IconButton
+          aria-label="Dismiss banner"
           className={'h-8'}
           size={'sm'}
           onClick={() => {
@@ -102,15 +103,16 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
   )
 }
 
-export function Manifest2025Banner(props: { hideBanner: () => void }) {
-  const { hideBanner } = props
+export function Manifest2026Banner() {
+  const [showBanner, hideBanner] = useBanner('manifest-2026')
+  if (!showBanner) return null
   return (
     <Banner
-      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
-      link="https://www.manifest.is/"
+      className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
+      link="https://manifest.is"
       setShowBanner={hideBanner}
     >
-      <Row className="gap-2 py-1">
+      <Row className="items-center gap-2 py-1">
         <LogoIcon
           className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
           height={24}
@@ -119,10 +121,10 @@ export function Manifest2025Banner(props: { hideBanner: () => void }) {
           strokeWidth={1}
         />
         <div>
-          <span className="font-semibold">
-            Manifest 2025 tickets available! 🎉
-          </span>
+          <span className="font-semibold">Manifest 2026</span> is June 12-14th
+          in Berkeley! Get tickets now!
         </div>
+        <ArrowRightIcon className="ml-1 h-4 w-4" />
       </Row>
     </Banner>
   )
@@ -315,17 +317,17 @@ export const CharityGiveawayBanner = () => {
 }
 
 export const ShopBanner = () => {
-  const [showBanner, hideBanner] = useBanner('shop-launch-2026')
+  const [showBanner, hideBanner] = useBanner('prize-drawing-2026')
   if (!showBanner) return null
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-violet-100 to-amber-100 py-2 transition-colors hover:from-violet-200 hover:to-amber-200 dark:from-violet-900/30 dark:to-amber-900/30 dark:hover:from-violet-900/50 dark:hover:to-amber-900/50"
-      link="/shop"
+      className="items-center bg-gradient-to-r from-amber-100 to-green-100 py-2 transition-colors hover:from-amber-200 hover:to-green-200 dark:from-amber-900/30 dark:to-green-900/30 dark:hover:from-amber-900/50 dark:hover:to-green-900/50"
+      link="/prize"
       target="_self"
       setShowBanner={hideBanner}
     >
       <Row className="items-center gap-2">
-        <span>✨</span>
+        <span>🎉</span>
         <div className="text-ink-700">
           <span className="font-semibold">Mana Shop is live!</span> Get
           membership perks, cosmetics & merch
@@ -335,3 +337,75 @@ export const ShopBanner = () => {
     </Banner>
   )
 }
+
+export const PrizeDrawingBanner = () => {
+  const [showBanner, hideBanner] = useBanner('prize-drawing-banner-2026')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:to-indigo-200 dark:from-amber-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:to-indigo-900/50"
+      link="/prize"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>🎁</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Prize Drawing!</span> Enter for a
+          chance to win USDC prizes
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+
+// Disabled while we run bigger non-daily prize drawings. Keep around so we
+// can re-enable / fork into a new campaign banner without re-writing the
+// gradient + copy each time. To re-enable: uncomment and re-import in
+// web/pages/home/index.tsx alongside <DowntimeBanner />.
+/*
+export const DailyPrizeDrawingBanner = () => {
+  const [showBanner, hideBanner] = useBanner('daily-prize-drawing-100')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-emerald-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-emerald-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-emerald-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
+      link="/prize"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>💰</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Daily $100 Prize Drawing!</span> Enter
+          every day for a chance to win
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+
+export const PrizeDrawing2Banner = () => {
+  const [showBanner, hideBanner] = useBanner('prize-drawing-2-banner')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-amber-100 via-yellow-100 to-indigo-100 py-2 transition-colors hover:from-amber-200 hover:via-yellow-200 hover:to-indigo-200 dark:from-amber-900/30 dark:via-yellow-900/30 dark:to-indigo-900/30 dark:hover:from-amber-900/50 dark:hover:via-yellow-900/50 dark:hover:to-emerald-900/50"
+      link="/prize/2"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>🎁</span>
+        <div className="text-ink-700">
+          <span className="font-semibold">Prize Drawing #2 is live!</span> Win
+          $10,000 in prizes
+        </div>
+        <ArrowRightIcon className="text-ink-600 ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
+*/

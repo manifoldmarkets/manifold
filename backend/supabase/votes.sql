@@ -8,7 +8,7 @@ create table if not exists
     -- For ranked-choice voting: 1 = first choice, 2 = second, etc.
     -- Null for single-vote and multi-select polls
     rank smallint,
-    constraint primary key (id, contract_id, user_id)
+    primary key (id, contract_id, user_id)
   );
 
 -- Row Level Security

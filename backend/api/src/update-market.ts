@@ -1,7 +1,9 @@
 import { JSONContent } from '@tiptap/core'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { Contract } from 'common/contract'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { ENV, isAdminId, isModId } from 'common/envs/constants'
+import { isMnxOwnedPerp } from 'common/perps/creator-accounts'
+import { getPerpFeedTicker } from 'common/perps/ticker'
 import { DAY_MS } from 'common/util/time'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
@@ -9,6 +11,7 @@ import { isEmpty } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { trackAuditEvent } from 'shared/audit-events'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { ALL_PERP_LAUNCH_MARKETS } from 'shared/perps/launch-manifest'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import {
   updateContract,
@@ -36,6 +39,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       display,
       homePageScoreAdjustment,
       homePageScoreAdjustmentDays,
+      creatorBannedFromBetting,
+      ticker,
 
       description: raw,
       descriptionHtml: html,
@@ -48,6 +53,44 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
     const contract = await getContract(pg, contractId)
     if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
     if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+    if (contract.deleted && !isAdminId(auth.uid))
+      throw new APIError(403, 'Deleted markets cannot be edited')
+
+    const launchDefinition =
+      contract.outcomeType === 'PERP'
+        ? ALL_PERP_LAUNCH_MARKETS.find(
+            (market) => market.feedId === contract.oracleFeedId
+          )
+        : undefined
+    if (
+      launchDefinition &&
+      // MNX owns its display copy. The creator/mod permission check above
+      // still applies; oracle feed and ticker cannot be changed by the partner.
+      !isMnxOwnedPerp(contract, ENV) &&
+      question !== undefined &&
+      question !== launchDefinition.question
+    )
+      throw new APIError(
+        400,
+        `The launch title for ${launchDefinition.feedId} must be "${launchDefinition.question}". The ticker and market type are shown separately.`
+      )
+
+    if (ticker !== undefined) {
+      if (contract.outcomeType !== 'PERP')
+        throw new APIError(400, 'Only perpetual markets have a ticker')
+      // Perps are admin-created, and the ticker is how search and the /perps
+      // hub identify the market — not a creator-editable title.
+      if (!isAdminId(auth.uid))
+        throw new APIError(403, 'Only admins can change a perp market ticker')
+      // Same rule as create-perp: a feed named in PERP_FEED_TICKERS has one
+      // ticker for every market on it.
+      const canonicalTicker = getPerpFeedTicker(contract.oracleFeedId)
+      if (canonicalTicker && ticker !== canonicalTicker)
+        throw new APIError(
+          400,
+          `The ticker for ${contract.oracleFeedId} must be "${canonicalTicker}" (PERP_FEED_TICKERS in common/perps/ticker.ts). Change it there if the feed should be renamed.`
+        )
+    }
 
     const isUpdatingHomePageScoreAdjustment =
       homePageScoreAdjustment !== undefined ||
@@ -86,6 +129,32 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       }
     }
 
+    if (creatorBannedFromBetting !== undefined) {
+      // Only the creator or a mod/admin can set this flag
+      if (
+        contract.creatorId !== auth.uid &&
+        !isAdminId(auth.uid) &&
+        !isModId(auth.uid)
+      ) {
+        throw new APIError(
+          403,
+          'Only the creator or a moderator can set the creator betting ban'
+        )
+      }
+      // Only a mod/admin can unset it
+      if (
+        !creatorBannedFromBetting &&
+        contract.creatorId === auth.uid &&
+        !isAdminId(auth.uid) &&
+        !isModId(auth.uid)
+      ) {
+        throw new APIError(
+          403,
+          'Only a moderator or admin can reverse the creator betting ban'
+        )
+      }
+    }
+
     if (contract.isResolved && closeTime !== undefined) {
       throw new APIError(403, 'Cannot update closeTime for resolved contracts')
     }
@@ -112,6 +181,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       sort,
       description,
       display,
+      creatorBannedFromBetting,
+      ticker,
       lastUpdatedTime: Date.now(),
     })
     await updateContract(pg, contractId, {
@@ -135,6 +206,33 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
       })
     }
 
+    // Cancel creator's open limit orders when banning from betting
+    if (creatorBannedFromBetting === true) {
+      const { convertBet } = await import('common/supabase/bets')
+      const { cancelLimitOrdersQuery } = await import('shared/supabase/bets')
+      const { broadcastOrders } = await import('shared/websockets/helpers')
+      const creatorLimitOrders = await pg.map(
+        `select * from contract_bets
+         where contract_id = $1
+           and user_id = $2
+           and not is_filled
+           and not is_cancelled
+           and (expires_at is null or expires_at > now())`,
+        [contractId, contract.creatorId],
+        convertBet
+      )
+      if (creatorLimitOrders.length > 0) {
+        const { query, bets } = cancelLimitOrdersQuery(
+          creatorLimitOrders as any[]
+        )
+        await pg.none(query)
+        broadcastOrders(bets)
+        log(
+          `Cancelled ${creatorLimitOrders.length} limit orders for creator ${contract.creatorId} on contract ${contractId}`
+        )
+      }
+    }
+
     log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
     return {
@@ -150,7 +248,8 @@ export const updateMarket: APIHandler<'market/:contractId/update'> =
           description,
           isUpdatingHomePageScoreAdjustment,
           homePageScoreAdjustment,
-          homePageScoreAdjustmentExpiresAt ?? undefined
+          homePageScoreAdjustmentExpiresAt ?? undefined,
+          creatorBannedFromBetting
         ),
     }
   })
@@ -166,7 +265,8 @@ export const updateMarketContinuation = async (
   description: JSONContent | undefined,
   isUpdatingHomePageScoreAdjustment: boolean,
   homePageScoreAdjustment: number | null | undefined,
-  homePageScoreAdjustmentExpiresAt: number | undefined
+  homePageScoreAdjustmentExpiresAt: number | undefined,
+  creatorBannedFromBetting: boolean | undefined
 ) => {
   log(`Revalidating contract ${contract.id}.`)
   await revalidateContractStaticProps(contract)
@@ -194,7 +294,13 @@ export const updateMarketContinuation = async (
       })
     )
   }
-  if (question || closeTime || visibility || description) {
+  if (
+    question ||
+    closeTime ||
+    visibility ||
+    description ||
+    creatorBannedFromBetting !== undefined
+  ) {
     await recordContractEdit(
       contract,
       userId,
@@ -203,6 +309,7 @@ export const updateMarketContinuation = async (
         closeTime && 'closeTime',
         visibility && 'visibility',
         description && 'description',
+        creatorBannedFromBetting !== undefined && 'creatorBannedFromBetting',
       ])
     )
   }

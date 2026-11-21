@@ -1,7 +1,7 @@
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
 import clsx from 'clsx'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { MAX_DESCRIPTION_LENGTH, Contract } from 'common/contract'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -13,14 +13,26 @@ import { LogoIcon } from '../icons/logo-icon'
 import { Row } from '../layout/row'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PendingClarifications } from './pending-clarifications'
+import { CreatorBannedFromBettingInfo } from './creator-banned-from-betting-info'
+import { MnxTradeCta } from '../perps/mnx-cta'
+import { ModActionBadge } from '../moderation/mod-action'
 
 export function ContractDescription(props: {
   contractId: string // the description is stored on this contract
   creatorId: string
   isSweeps: boolean
   description: string | JSONContent
+  creatorBannedFromBetting?: boolean
+  contract: Contract
 }) {
-  const { contractId, creatorId, isSweeps, description } = props
+  const {
+    contractId,
+    creatorId,
+    isSweeps,
+    description,
+    creatorBannedFromBetting,
+    contract,
+  } = props
 
   const isModOrAdmin = useAdminOrMod()
   const user = useUser()
@@ -33,6 +45,7 @@ export function ContractDescription(props: {
           <EditableDescription
             contractId={contractId}
             description={description}
+            modAction={!isCreator}
           />
         ) : (
           <CollapsibleContent
@@ -55,6 +68,20 @@ export function ContractDescription(props: {
           <span>This question is managed and resolved by Manifold.</span>
           <LogoIcon className="h-5 w-5 text-indigo-600" />
         </div>
+
+        {creatorBannedFromBetting && (
+          <CreatorBannedFromBettingInfo
+            contract={contract}
+            creatorId={creatorId}
+          />
+        )}
+        {contract.mechanism === 'perp' && (
+          <MnxTradeCta
+            contract={contract}
+            location="market page cta"
+            className="mt-4"
+          />
+        )}
       </div>
     </>
   )
@@ -63,8 +90,9 @@ export function ContractDescription(props: {
 function EditableDescription(props: {
   contractId: string
   description: string | JSONContent
+  modAction?: boolean
 }) {
-  const { contractId, description } = props
+  const { contractId, description, modAction } = props
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
@@ -132,13 +160,14 @@ function EditableDescription(props: {
       )}
       <Row className="justify-end">
         <Button
-          color="gray-white"
+          color={modAction ? 'purple-outline' : 'gray-white'}
           size="2xs"
           onClick={() => {
             setEditing(true)
             editor?.commands.focus('end')
           }}
         >
+          {modAction && <ModActionBadge className="mr-1" />}
           {isDescriptionEmpty ? (
             <>
               <PlusIcon className="mr-1 inline h-4 w-4" /> Add description

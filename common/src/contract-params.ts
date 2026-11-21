@@ -4,7 +4,13 @@ import {
   getInitialProbability,
 } from 'common/calculate'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
-import { Contract, ContractParams, MultiContract } from 'common/contract'
+import {
+  Contract,
+  ContractParams,
+  isMultiCpmm,
+  MultiContract,
+} from 'common/contract'
+import { getContractOGProps } from 'common/contract-seo'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
   getPinnedComments,
@@ -15,10 +21,11 @@ import {
   getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
+import { getPerpPositionCount, getPerpTradeCount } from 'common/supabase/perps'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64 } from 'common/util/og'
+import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
 import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
 import { getNumContractComments } from 'web/lib/supabase/comments'
 import {
@@ -27,7 +34,7 @@ import {
   getSortedAnswers,
   sortAnswers,
 } from './answer'
-import { getBetPointsBetween, getTotalBetCount } from './bets'
+import { getBetPointsAndLatestBetTime, getTotalBetCount } from './bets'
 import { MarketContract } from './contract'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { unauthedApi } from './util/api'
@@ -71,8 +78,9 @@ export async function getContractParams(
   const contractSlug = contract.slug
   const isCpmm1 = contract.mechanism === 'cpmm-1'
   const hasMechanism = contract.mechanism !== 'none'
-  const isMulti = contract.mechanism === 'cpmm-multi-1'
+  const isMulti = isMultiCpmm(contract)
   const isNumber = contract.outcomeType === 'NUMBER'
+  const isPerp = contract.mechanism === 'perp'
   const numberContractBetCount = async () =>
     retryUnAuthedApi(contractSlug, 'unique-bet-group-count', async () =>
       unauthedApi('unique-bet-group-count', {
@@ -80,11 +88,11 @@ export async function getContractParams(
       }).then((res) => res.count)
     )
   const includeRedemptions =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const [
     totalBets,
     lastBetArray,
-    allBetPoints,
+    betPoints,
     comments,
     pinnedComments,
     totalComments,
@@ -98,6 +106,10 @@ export async function getContractParams(
     hasMechanism
       ? isNumber
         ? numberContractBetCount()
+        : isPerp
+        ? // Perp trades live in contract_perp_events, not contract_bets, so
+          // the regular count is always 0 for them.
+          getPerpTradeCount(contract.id, db)
         : getTotalBetCount(contract.id)
       : 0,
     hasMechanism
@@ -111,28 +123,29 @@ export async function getContractParams(
         )
       : ([] as Bet[]),
     hasMechanism && !shouldHideGraph(contract)
-      ? getBetPointsBetween(contract as MarketContract, {
+      ? getBetPointsAndLatestBetTime(contract as MarketContract, {
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
           beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
           afterTime: contract.createdTime,
         })
-      : [],
+      : { points: [], latestBetTime: undefined },
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     getPinnedComments(db, contract.id),
     getNumContractComments(contract.id),
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
-    isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
-    retryUnAuthedApi(
-      contractSlug,
-      'get-related-markets',
-      () =>
-        unauthedApi('get-related-markets', {
-          contractId: contract.id,
-          limit: 10,
-          question: contract.question,
-          uniqueBettorCount: contract.uniqueBettorCount,
-        })
+    isCpmm1 || isMulti
+      ? getContractMetricsCount(contract.id, db)
+      : isPerp
+      ? getPerpPositionCount(contract.id, db)
+      : 0,
+    retryUnAuthedApi(contractSlug, 'get-related-markets', () =>
+      unauthedApi('get-related-markets', {
+        contractId: contract.id,
+        limit: 10,
+        question: contract.question,
+        uniqueBettorCount: contract.uniqueBettorCount,
+      })
     ),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
@@ -140,17 +153,26 @@ export async function getContractParams(
   ])
 
   // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
+  const allBetPoints = betPoints.points
   const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = isMulti ? [] : binAvg(allBetPoints)
-  // Non-numeric markets don't need as much precision
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+  const serializedPoints = ogPoints.map((p) => [p.x, p.y] as const)
+  const pointsString = pointsToBase64(serializedPoints)
+  // The social image doesn't need full precision, and its URL should stay short
+  const ogPointsString = pointsToBase64Float32(serializedPoints)
+  // Built before answers are truncated below so big markets rank all of them
+  const ogCardProps = removeUndefinedProps({
+    ...getContractOGProps(contract),
+    points: ogPointsString,
+  })
 
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  // Counted before the truncation below. The page loads the rest with the live
+  // contract, and until then knows from the count that it doesn't hold them all
+  const totalAnswers =
+    'answers' in contract ? contract.answers.length : undefined
+  if (contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)) {
     contract.answers = sortAnswers(contract, contract.answers)
       .slice(0, 20)
       .map((a) => omit(a, ['textFts', 'fsUpdatedTime']) as any)
@@ -163,11 +185,16 @@ export async function getContractParams(
     contract,
     lastBetTime,
     pointsString,
+    ogCardProps,
     multiPointsString,
+    // What the points are known to hold: the response they were made from can
+    // be older than the contract above.
+    pointsLatestBetTime: betPoints.latestBetTime,
     comments,
     totalComments,
     totalPositions,
     totalBets,
+    totalAnswers,
     topContractMetrics,
     relatedContracts: relatedContracts.marketsFromEmbeddings as Contract[],
     chartAnnotations,
@@ -225,46 +252,62 @@ export const getAnswerProbAtEveryBetTime = (
   const sortedTimestamps = Array.from(allUniqueProbChangeTimes).sort(
     (a, b) => a - b
   )
-  const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
-  answers.forEach((ans) => {
+
+  const answerInfo = answers.map((ans) => {
     const startingProb = getInitialAnswerProbability(contract, ans) ?? 0
-    const rawPoints = [
-      { x: createdTime, y: startingProb, answerId: ans.id },
-      ...(pointsByAnswerId[ans.id] ?? []),
-    ]
+    const probByTime = new Map<number, number>([
+      [createdTime, startingProb],
+      ...(pointsByAnswerId[ans.id] ?? []).map(
+        (p) => [p.x, p.y] as [number, number]
+      ),
+    ])
+    return { id: ans.id, startingProb, probByTime }
+  })
 
-    const pointsByTime = new Map(rawPoints.map((p) => [p.x, p]))
+  const currentProb: { [id: string]: number } = {}
+  const pointsByAns: { [id: string]: { x: number; y: number }[] } = {}
+  for (const ans of answerInfo) {
+    currentProb[ans.id] = ans.startingProb
+    pointsByAns[ans.id] = []
+  }
 
-    const normalizedPoints = sortedTimestamps.map((timestamp) => {
-      // If we have a point at this exact timestamp, use it
-      if (pointsByTime.has(timestamp)) {
-        return {
-          x: timestamp,
-          y: pointsByTime.get(timestamp)!.y,
+  for (const t of sortedTimestamps) {
+    for (const ans of answerInfo) {
+      if (ans.probByTime.has(t)) {
+        currentProb[ans.id] = ans.probByTime.get(t)!
+      }
+    }
+
+    if (contract.shouldAnswersSumToOne) {
+      let realSum = 0
+      let staleSum = 0
+      for (const ans of answerInfo) {
+        if (ans.probByTime.has(t)) realSum += currentProb[ans.id]
+        else staleSum += currentProb[ans.id]
+      }
+      if (staleSum > 0 && realSum < 1) {
+        const scale = (1 - realSum) / staleSum
+        for (const ans of answerInfo) {
+          if (!ans.probByTime.has(t)) currentProb[ans.id] *= scale
+        }
+      } else {
+        const total = realSum + staleSum
+        if (total > 0) {
+          for (const id in currentProb) currentProb[id] /= total
         }
       }
+    }
 
-      // Otherwise find the closest previous point
-      const prevPoints = rawPoints
-        .filter((p) => p.x <= timestamp)
-        .sort((a, b) => b.x - a.x)
-
-      const closestPoint = prevPoints[0]
-
-      return {
-        x: timestamp,
-        y: closestPoint ? closestPoint.y : startingProb,
-      }
-    })
-
-    pointsByAns[ans.id] = normalizedPoints
-  })
+    for (const ans of answerInfo) {
+      pointsByAns[ans.id].push({ x: t, y: currentProb[ans.id] })
+    }
+  }
 
   return pointsByAns
 }
 
 export const shouldHideGraph = (contract: Contract) => {
-  if (contract.mechanism !== 'cpmm-multi-1') return false
+  if (!isMultiCpmm(contract)) return false
   if (
     contract.outcomeType == 'NUMBER' ||
     contract.outcomeType == 'MULTI_NUMERIC' ||

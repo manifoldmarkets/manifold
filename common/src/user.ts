@@ -2,10 +2,20 @@ import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { UserEntitlement } from './shop/types'
 import { DAY_MS, HOUR_MS } from './util/time'
+import {
+  EffectiveTier,
+  isSupporter,
+  resolveEffectiveTier,
+} from './supporter-config'
 
 // New normalized user_bans table schema
 // modAlert is stored in user_bans for audit history but doesn't block any actions
-export type BanType = 'posting' | 'marketControl' | 'trading' | 'modAlert'
+export type BanType =
+  | 'posting'
+  | 'marketControl'
+  | 'trading'
+  | 'purchase'
+  | 'modAlert'
 
 export type UserBan = {
   id: number
@@ -16,8 +26,9 @@ export type UserBan = {
   created_by: string | null // mod user ID
   // Scheduled expiry for temp bans (null = permanent)
   end_time: string | null
-  ended_by: string | null // mod user ID who ended the ban
-  // When manually lifted by mod (null = still active or expired naturally)
+  // Mod user ID, the user themself (modAlert dismissal), or 'system' (auto-expired temp ban)
+  ended_by: string | null
+  // When the ban was lifted, by a mod or by auto-expiry (null = still active)
   ended_at: string | null
 }
 
@@ -90,6 +101,11 @@ export type User = {
   referredByUserId?: string
   referredByContractId?: string
   referredByGroupId?: string
+  // Set together with referredByUserId when the referral is recorded under
+  // signup-time referral payouts — whether or not the referrer's tier paid
+  // anything — so the legacy first-bet/verify halves never apply to it. See
+  // paysLegacyReferralHalves.
+  referralPayoutAtSignup?: boolean
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
@@ -97,7 +113,13 @@ export type User = {
   lastStreakFreezeTime?: number // timestamp when a streak freeze was last used
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
+  // Set when a reader closes the /perps explainer. Until then the page opens
+  // it for them on arrival unless they hold a perp position — the one signal
+  // the hub already has for "has done this before" — so a newcomer meets the
+  // mechanism and nobody else is nagged.
+  hasSeenPerpsExplainer?: boolean
   seenStreakModal?: boolean
+  lastShopVisitTime?: number // timestamp of user's most recent /shop visit; drives the NEW badge dismissal
   /** @deprecated Use user_bans table instead */
   isBannedFromPosting?: boolean
   /** @deprecated Use user_bans table instead */
@@ -107,14 +129,70 @@ export type User = {
   // When false, user cannot change their @username
   // Automatically set to false when any ban is applied (unless mod opts out)
   // Must be manually re-enabled by a mod
-  canChangeUsername?: boolean  // undefined = allowed, false = restricted
+  canChangeUsername?: boolean // undefined = allowed, false = restricted
 
   userDeleted?: boolean
   optOutBetWarnings?: boolean
+  // Last state of the "Hide API trades" toggle on trade lists, saved so it
+  // sticks across markets and devices (see useHideApiTrades).
+  hideApiTrades?: boolean
+  // Whether trade tickets open with the order book expanded, saved so it
+  // sticks across markets and devices (see useShowOrderBook).
+  showOrderBook?: boolean
   signupBonusPaid?: number
+  isBot?: boolean
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
+
+  // Bonus eligibility / account standing for site bonuses (referral, quests,
+  // leagues, streaks, loans, etc.). Identity verification is optional: every
+  // state except the two explicit deny states earns full bonuses.
+  // undefined = default — full bonuses, never identity-verified
+  // 'verified' = passed identity verification (iDenfy); also unlocks prizes
+  // 'grandfathered' = existing user before cash raffles launched; also prizes
+  // 'eligible' = made a mana purchase (any rail) or hand-granted by an admin
+  //   ("people we know"). Same bonuses as default, and counts as an account
+  //   trust signal (skips the new-account social gate). Does NOT unlock prize
+  //   drawings: those still require KYC (see isIdentityVerified /
+  //   canEnterPrizeDrawings).
+  // 'ineligible' = bonus-blocked (super-ban, admin) — reduced bonuses
+  // 'requires_verification' = admin/system has flagged this user; they earn
+  //   no farmable bonuses until they complete identity verification (e.g.
+  //   suspected alt, suspicious signup, manual review).
+  bonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+    | 'requires_verification'
+
+  // Free-text note set when an admin (or iDenfy) flags this user — e.g.
+  // "suspected alt of @other-user", "iDenfy: underage", "manual review
+  // requested". Surfaced in admin UI for audit/context only; never shown
+  // to the user themselves.
+  verificationFlagReason?: string
+
+  // Snapshot of the bonusEligibility a user had immediately before an admin
+  // flagged them 'requires_verification', so clearing the flag restores it —
+  // including 'ineligible', since unset now means full default bonuses rather
+  // than a reduced tier. Absent when the user was unset before the flag. Only
+  // set while a flag is active; cleared when the flag is cleared or an admin
+  // sets eligibility directly.
+  previousBonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+
+  // Prize-drawing (cash raffle) eligibility — independent of bonusEligibility so
+  // a user can be eligible for one but not the other (e.g. eligible for bonuses
+  // but barred from prize drawings, or vice versa).
+  // 'eligible' = may enter prize drawings
+  // 'ineligible' = barred from prize drawings
+  // undefined = derive from identity verification (default; preserves prior behavior
+  //   where entering a drawing required verification)
+  prizeEligibility?: 'eligible' | 'ineligible'
 
   // Entitlements - digital goods owned by this user (from user_entitlements table)
   entitlements?: UserEntitlement[]
@@ -152,6 +230,8 @@ export type PrivateUser = {
   paymentInfo?: string
   // Timestamp of the last time the user was prompted for an app review or successfully reviewed.
   lastAppReviewTime?: number
+  // If true, suppress all in-app store-review prompts.
+  optOutAppReviewPrompts?: boolean
 
   /** @deprecated */
   kycFlags?: string[]
@@ -183,6 +263,14 @@ export function getCurrentUtcTime(): Date {
 
 export const MINUTES_ALLOWED_TO_REFER = 60
 
+// Referrals recorded before signup-time referral payouts still pay the legacy
+// first-bet and verify halves (LEGACY_REFERRAL_*). One recorded since never
+// does, even if the referrer's tier paid nothing at signup (a flagged
+// referrer) and is unflagged by the time the referred user bets or verifies.
+export const paysLegacyReferralHalves = (
+  user: Pick<User, 'referredByUserId' | 'referralPayoutAtSignup'>
+) => !!user.referredByUserId && !user.referralPayoutAtSignup
+
 // note this is not exactly same as the function for stats page
 export const isUserLikelySpammer = (
   user: Pick<User, 'bio' | 'isBannedFromPosting'>,
@@ -195,8 +283,87 @@ export const isUserLikelySpammer = (
   )
 }
 
-// This grandfathers in older users who have not yet verified their phone
+/**
+ * @deprecated Phone verification is no longer the primary identity/trust gate.
+ * Use isIdentityVerified(), hasFullBonusAccess(), or hasAccountTrustSignal()
+ * depending on the product capability being checked.
+ */
 export const humanish = (user: User) => user.verifiedPhone !== false
+
+// Identity-verified (KYC via iDenfy) or grandfathered. This is the
+// prize-worthy set: only these users may enter cash raffles.
+export const isIdentityVerified = (user: User) =>
+  user.bonusEligibility === 'verified' ||
+  user.bonusEligibility === 'grandfathered'
+
+// Admin/system flag requiring identity verification before bonuses are
+// restored.
+export const isBonusVerificationRequired = (user: User) =>
+  user.bonusEligibility === 'requires_verification'
+
+// Explicitly blocked from full bonus access. Use getEffectiveTier() for scaled
+// bonus payouts, because the blocked states still receive a reduced or zero
+// tier-specific amount depending on bonus type.
+export const isBonusBlocked = (user: User) =>
+  user.bonusEligibility === 'ineligible' || isBonusVerificationRequired(user)
+
+// Full bonus/perk access: every account that hasn't been explicitly flagged or
+// bonus-blocked — verification is not required. This is for binary bonus/perk
+// gates (push bonus, league prizes, perp bonuses), not prize drawings and not
+// social anti-spam gates.
+export const hasFullBonusAccess = (user: User) => !isBonusBlocked(user)
+
+// Explicit account trust signal: identity-verified/grandfathered, purchase- or
+// admin-granted ('eligible'), purchased mana, or an active subscription. Lets a
+// new account skip the new-account social gate (canPostSocially). Not a bonus
+// gate and not a prize gate.
+export const hasAccountTrustSignal = (user: User) =>
+  isIdentityVerified(user) ||
+  user.bonusEligibility === 'eligible' ||
+  user.purchasedMana === true ||
+  isSupporter(user.entitlements)
+
+/**
+ * @deprecated Use hasFullBonusAccess(), isIdentityVerified(),
+ * canEnterPrizeDrawings(), getEffectiveTier(), or hasAccountTrustSignal()
+ * depending on the capability being checked.
+ */
+export const canReceiveBonuses = hasFullBonusAccess
+
+// Check if user can enter prize drawings (cash raffles) — the one surface that
+// still requires identity verification. Independent of bonus eligibility: an
+// explicit prizeEligibility overrides, otherwise it derives from IDENTITY
+// VERIFICATION (not full bonus access, which every account has by default).
+export const canEnterPrizeDrawings = (user: User) =>
+  user.prizeEligibility === 'eligible'
+    ? true
+    : user.prizeEligibility === 'ineligible'
+    ? false
+    : isIdentityVerified(user)
+
+// Resolve a user's effective tier (restricted | reduced | free | basic | plus | premium).
+// Subscribers always get their subscription tier regardless of KYC status.
+export const getEffectiveTier = (user: User): EffectiveTier =>
+  resolveEffectiveTier({
+    entitlements: user.entitlements,
+    bonusEligibility: user.bonusEligibility,
+  })
+
+// New-account social gate: how long after signup before an account without a
+// trust signal can comment on other people's markets and posts, create posts,
+// send DMs, or create unlisted markets. Verifying, buying mana, or subscribing
+// unlocks these early — besides prize drawings, the only thing verification
+// still unlocks.
+export const NEW_USER_COMMENT_GATE_MS = 7 * DAY_MS
+
+// Users past the new-account social gate. Pass-through for:
+//   - users with a trust signal (identity/grandfathered, bonus-granted,
+//     purchased mana, or active subscription)
+//   - accounts ≥ NEW_USER_COMMENT_GATE_MS old
+// Market creators commenting on their own markets bypass this check (handled at call site).
+export const canPostSocially = (user: User) =>
+  hasAccountTrustSignal(user) ||
+  Date.now() - user.createdTime >= NEW_USER_COMMENT_GATE_MS
 
 // expires: sep 26th, ~530pm PT
 const LIMITED_TIME_DEAL_END = 1727311753233 + DAY_MS

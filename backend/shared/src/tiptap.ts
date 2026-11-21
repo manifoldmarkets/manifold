@@ -1,6 +1,6 @@
 import { type JSONContent } from '@tiptap/core'
 import { marked } from 'marked'
-import { htmlToRichText } from 'shared/utils'
+import { htmlToRichText, sanitizeJsonContent } from 'shared/utils'
 
 export function anythingToRichText(props: {
   html?: string
@@ -15,7 +15,7 @@ export function anythingToRichText(props: {
   } else if (markdown) {
     return htmlToRichText(marked.parse(markdown))
   } else if (jsonString) {
-    return JSON.parse(jsonString)
+    return sanitizeJsonContent(JSON.parse(jsonString))
   } else if (raw) {
     return htmlToRichText(`<p>${raw}</p>`)
   } else {

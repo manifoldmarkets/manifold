@@ -8,12 +8,19 @@ import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
   CPMMMultiContract,
-  getBinaryMCProb,
+  getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import {
+  showsSideProbability,
+  toMainAnswerOrder,
+  versusSideOutcome,
+  versusSideProb,
+} from 'common/versus'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
@@ -135,7 +142,7 @@ export function OrderTable(props: {
 }) {
   const { limitBets, contract, isYou, showAnswers } = props
   const answers =
-    showAnswers && contract.mechanism === 'cpmm-multi-1'
+    showAnswers && isMultiCpmm(contract)
       ? contract.answers.filter((a) =>
           limitBets.map((b) => b.answerId).includes(a.id)
         )
@@ -282,6 +289,9 @@ function OrderRow(props: {
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
+  // On a versus market the order may be stored on either answer; show the
+  // side it backs and that side's price.
+  const sideOutcome = versusSideOutcome(contract, bet) ?? outcome
   const user = useDisplayUserById(bet.userId)
 
   const [isCancelling, setIsCancelling] = useState(false)
@@ -320,7 +330,7 @@ function OrderRow(props: {
           <OutcomeLabel
             pseudonym={getPseudonym(contract)}
             contract={contract}
-            outcome={outcome}
+            outcome={sideOutcome}
             truncate={'short'}
           />
         ) : (
@@ -331,7 +341,7 @@ function OrderRow(props: {
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
           : isBinaryMC
-          ? formatPercent(getBinaryMCProb(limitProb, outcome))
+          ? formatPercent(versusSideProb(outcome, limitProb))
           : formatPercent(limitProb)}
       </td>
       <td className="text-ink-900 py-3 font-medium">
@@ -410,182 +420,6 @@ export function calculateOrderFillParams(clickedOrder: OrderClickData) {
   }
 }
 
-export function CollatedOrderTable(props: {
-  limitBets: LimitBet[]
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | MultiContract
-  side: 'YES' | 'NO'
-  pseudonym?: {
-    YES: {
-      pseudonymName: string
-      pseudonymColor: string
-    }
-    NO: {
-      pseudonymName: string
-      pseudonymColor: string
-    }
-  }
-  onOrderClick?: (data: OrderClickData) => void
-}) {
-  const { contract, side, pseudonym, onOrderClick } = props
-  const limitBets = props.limitBets.filter(
-    (b) => !b.expiresAt || b.expiresAt > Date.now()
-  )
-  const isBinaryMC = isBinaryMulti(contract)
-  const groupedBets = groupBy(limitBets, (b) => b.limitProb)
-
-  return (
-    <div>
-      <Row>
-        <span className="mr-2">Buy</span>
-        {isBinaryMC || !!pseudonym ? (
-          <OutcomeLabel
-            contract={contract}
-            outcome={side}
-            truncate={'short'}
-            pseudonym={pseudonym}
-          />
-        ) : side === 'YES' ? (
-          <YesLabel />
-        ) : (
-          <NoLabel />
-        )}
-      </Row>
-
-      <div className="grid grid-cols-[32px_auto_1fr] gap-1">
-        {Object.entries(groupedBets).map(([prob, bets]) => (
-          <CollapsedOrderRow
-            contract={contract}
-            key={prob}
-            limitProb={Number(prob)}
-            bets={bets}
-            onOrderClick={onOrderClick}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function CollapsedOrderRow(props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | MultiContract
-  limitProb: number
-  bets: LimitBet[]
-  onOrderClick?: (data: OrderClickData) => void
-}) {
-  const { contract, limitProb, bets, onOrderClick } = props
-  const { outcome } = bets[0]
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const isBinaryMC = isBinaryMulti(contract)
-
-  const total = sumBy(bets, (b) => b.orderAmount - b.amount)
-
-  const allUsers = useUsers(uniq(bets.map((b) => b.userId)))?.filter(
-    (a) => a != null
-  ) as DisplayUser[] | undefined
-  const usersById = keyBy(allUsers, (u) => u.id)
-
-  // find 3 largest users
-  const userBets = groupBy(bets, (b) => b.userId)
-  const userSums = Object.entries(userBets).map(
-    ([userId, bets]) =>
-      [userId, sumBy(bets, (b) => b.orderAmount - b.amount)] as const
-  )
-  const largest = sortBy(userSums, ([, sum]) => -sum)
-    .slice(0, 3)
-    .map(([userId]) => usersById[userId])
-    .filter((u) => u != null)
-    .reverse()
-
-  const [collapsed, setCollapsed] = useState(true)
-
-  const handleOrderClick = () => {
-    if (onOrderClick) {
-      onOrderClick({
-        outcome: outcome as 'YES' | 'NO',
-        limitProb,
-        amount: total,
-      })
-    }
-  }
-
-  const isClickable = !!onOrderClick
-
-  return (
-    <>
-      <div className="self-center">
-        {isPseudoNumeric
-          ? getFormattedMappedValue(contract, limitProb)
-          : isBinaryMC
-          ? formatPercent(getBinaryMCProb(limitProb, outcome))
-          : formatPercent(limitProb)}
-      </div>
-
-      <div className="relative justify-start p-1">
-        <MultipleOrSingleAvatars
-          className="!items-end"
-          avatars={largest}
-          total={userSums.length}
-          size="xs"
-          spacing={0.3}
-          startLeft={0.6}
-          onClick={() => setCollapsed((c) => !c)}
-        />
-      </div>
-
-      <div
-        className={clsx(
-          'self-center pr-1 text-right',
-          isClickable &&
-            'hover:bg-primary-100 cursor-pointer rounded px-1 py-0.5'
-        )}
-        onClick={handleOrderClick}
-      >
-        <MoneyDisplay
-          amount={total}
-          numberType="short"
-          isCashContract={contract.token === 'CASH'}
-        />
-      </div>
-
-      {!collapsed &&
-        bets.map((b) => {
-          const u = usersById[b.userId] as DisplayUser | undefined
-          return (
-            <div
-              className="bg-canvas-50 col-span-3 flex justify-between p-1"
-              key={b.id}
-            >
-              <div className="flex items-center gap-2">
-                <Avatar
-                  avatarUrl={u?.avatarUrl}
-                  username={u?.username}
-                  size="xs"
-                />
-                <UserLink user={u} short />
-              </div>
-              <div className="text-right">
-                <MoneyDisplay
-                  amount={b.orderAmount - b.amount}
-                  isCashContract={contract.token === 'CASH'}
-                />
-              </div>
-            </div>
-          )
-        })}
-    </>
-  )
-}
-
 export function OrderBookButton(props: {
   limitBets: LimitBet[]
   contract:
@@ -647,9 +481,19 @@ export function OrderBookPanel(props: {
   onOrderClick?: (data: OrderClickData) => void
 }) {
   const { contract, answer, showTitle, pseudonym, onOrderClick } = props
-  const limitBets = props.limitBets.filter(
-    (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
-  )
+  const isBinaryMC = isBinaryMulti(contract)
+  // On a versus market orders can be stored on either answer. Express them
+  // all relative to the main answer so the two columns, the prices, the
+  // depth chart and click-to-fill line up: an order on the second answer is
+  // mirrored (YES on it at p == NO on the main answer at 1 - p).
+  const limitBets = props.limitBets
+    .filter((b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent)
+    .map((b) => {
+      const mirrored = isBinaryMC ? toMainAnswerOrder(contract, b) : undefined
+      return mirrored ? { ...b, ...mirrored } : b
+    })
+  // Show the price of the side being bought when NO is a named opponent.
+  const showsSideProb = showsSideProbability(contract, pseudonym)
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),
@@ -662,7 +506,7 @@ export function OrderBookPanel(props: {
     (bet) => bet.createdTime
   )
 
-  const isCPMMMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCPMMMulti = isMultiCpmm(contract)
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   if (limitBets.length === 0) return <></>
@@ -691,6 +535,7 @@ export function OrderBookPanel(props: {
             contract={contract}
             side="YES"
             pseudonym={pseudonym}
+            showsSideProb={showsSideProb}
             onOrderClick={onOrderClick}
           />
         </div>
@@ -700,6 +545,7 @@ export function OrderBookPanel(props: {
             contract={contract}
             side="NO"
             pseudonym={pseudonym}
+            showsSideProb={showsSideProb}
             onOrderClick={onOrderClick}
           />
         </div>
@@ -715,7 +561,9 @@ export function OrderBookPanel(props: {
             {(w, h) => (
               <DepthChart
                 contract={contract as any}
-                answer={answer}
+                // Versus prices above are the main answer's, so mark its
+                // price even when the ticket is for the other answer.
+                answer={isBinaryMC ? getMainBinaryMCAnswer(contract) : answer}
                 yesBets={yesBets}
                 noBets={noBets}
                 width={w}
@@ -743,9 +591,11 @@ function OrderBookSide(props: {
     YES: { pseudonymName: string; pseudonymColor: string }
     NO: { pseudonymName: string; pseudonymColor: string }
   }
+  // Show each order at the price of the side being bought (NO at 1 - p).
+  showsSideProb: boolean
   onOrderClick?: (data: OrderClickData) => void
 }) {
-  const { contract, side, pseudonym, onOrderClick } = props
+  const { contract, side, pseudonym, showsSideProb, onOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => !b.expiresAt || b.expiresAt > Date.now()
   )
@@ -784,6 +634,7 @@ function OrderBookSide(props: {
               contract={contract}
               limitProb={Number(prob)}
               bets={bets}
+              showsSideProb={showsSideProb}
               onOrderClick={onOrderClick}
               sideBgHover={sideBgHover}
             />
@@ -803,13 +654,20 @@ function OrderBookRow(props: {
     | MultiContract
   limitProb: number
   bets: LimitBet[]
+  showsSideProb: boolean
   onOrderClick?: (data: OrderClickData) => void
   sideBgHover: string
 }) {
-  const { contract, limitProb, bets, onOrderClick, sideBgHover } = props
+  const {
+    contract,
+    limitProb,
+    bets,
+    showsSideProb,
+    onOrderClick,
+    sideBgHover,
+  } = props
   const { outcome } = bets[0]
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const isBinaryMC = isBinaryMulti(contract)
 
   const total = sumBy(bets, (b) => b.orderAmount - b.amount)
 
@@ -857,8 +715,8 @@ function OrderBookRow(props: {
           <span className="text-ink-600 w-10 text-sm font-medium">
             {isPseudoNumeric
               ? getFormattedMappedValue(contract, limitProb)
-              : isBinaryMC
-              ? formatPercent(getBinaryMCProb(limitProb, outcome))
+              : showsSideProb
+              ? formatPercent(versusSideProb(outcome, limitProb))
               : formatPercent(limitProb)}
           </span>
           <div

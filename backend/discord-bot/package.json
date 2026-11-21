@@ -15,7 +15,6 @@
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/discord-bot/lib && cp ../../yarn.lock dist && cp package.json dist"
   },
   "dependencies": {
-    "@amplitude/node": "1.10.2",
     "@supabase/supabase-js": "2.38.5",
     "discord.js": "^14.10.2"
   },

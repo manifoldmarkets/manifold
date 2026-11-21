@@ -1,16 +1,19 @@
-import { GiftIcon, StarIcon } from '@heroicons/react/solid'
+import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
 import {
   AirdropData,
   BetFillData,
   BetReplyNotificationData,
+  CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
   getSourceUrl,
   MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
+  PrizeDrawingNotificationData,
+  PrizeWinnerData,
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
@@ -20,6 +23,7 @@ import {
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
 import { formatMoney, formatMoneyUSD } from 'common/util/format'
+import { OFFER_MAX_DISCOUNT_PCT } from 'common/personalized-mana-offer'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
@@ -28,13 +32,19 @@ import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 import { BsBank } from 'react-icons/bs'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import {
+  FaArrowTrendDown,
+  FaArrowTrendUp,
+  FaBolt,
+  FaScaleUnbalanced,
+} from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
 import {
   BettingStreakBonusIncomeNotification,
   BettingStreakExpiringNotification,
+  BettingStreakFreezeUsedNotification,
   LeagueChangedNotification,
   LoanIncomeNotification,
   CharityChampionDethronedNotification,
@@ -141,6 +151,14 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (sourceType === 'betting_streak_freeze_used') {
+    return (
+      <BettingStreakFreezeUsedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'loan_income') {
     return (
       <LoanIncomeNotification
@@ -176,6 +194,38 @@ export function NotificationItem(props: {
   } else if (reason === 'payment_status') {
     return (
       <PaymentSuccessNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'prize_drawings') {
+    return (
+      <PrizeDrawingCampaignNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'charity_giveaways') {
+    return (
+      <CharityGiveawayCampaignNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'merch_order_update') {
+    return (
+      <MerchOrderNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'personalized_mana_offer') {
+    return (
+      <PersonalizedManaOfferNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -259,7 +309,11 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (sourceType === 'comment' || sourceType === 'love_comment') {
+  } else if (
+    sourceType === 'social_reply' ||
+    sourceType === 'comment' ||
+    sourceType === 'love_comment'
+  ) {
     return (
       <CommentNotification
         notification={notification}
@@ -317,6 +371,22 @@ export function NotificationItem(props: {
         highlighted={highlighted}
         setHighlighted={setHighlighted}
         isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (
+    reason === 'perp_liquidation' ||
+    reason === 'perp_adl' ||
+    reason === 'perp_order_failed'
+  ) {
+    // Must come before the contract/updated suppressor below — perp engine
+    // notifications carry sourceType 'contract' + sourceUpdateType 'updated'
+    // and were being swallowed into blank rows.
+    return (
+      <PerpEngineNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
       />
     )
   } else if (
@@ -396,6 +466,15 @@ export function NotificationItem(props: {
   } else if (reason === 'subsidized_your_market') {
     return (
       <LiquidityNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'liquidity_returned') {
+    return (
+      <LiquidityReturnedNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -503,6 +582,15 @@ export function NotificationItem(props: {
   } else if (sourceType === 'membership_subscription') {
     return (
       <MembershipSubscriptionNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'prize_winner') {
+    return (
+      <PrizeWinnerNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1267,7 +1355,9 @@ function CommentNotification(props: {
   } = notification
 
   const reasonText =
-    reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
+    reason === 'social_replies' ||
+    reason === 'reply_to_users_answer' ||
+    reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
 
@@ -1305,7 +1395,7 @@ function CommentNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
@@ -1435,11 +1525,13 @@ function TaggedUserNotification(props: {
     >
       <div className="line-clamp-3">
         <NotificationUserLink
-          userId={sourceId}
+          userId={notification.data?.sourceUserId ?? sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        tagged you{' '}
+        {notification.sourceType === 'social_mention'
+          ? 'mentioned you '
+          : 'tagged you '}
         {!isChildOfGroup && (
           <span>
             on <PrimaryNotificationLink text={sourceTitle} />
@@ -1494,10 +1586,20 @@ export function MultipleAvatarIcons(props: {
 
   return (
     <div
+      data-stop-notification-click
+      role="button"
+      tabIndex={relatedNotifications.length > 1 ? 0 : -1}
       onClick={(event) => {
         if (relatedNotifications.length === 1) return
         event.preventDefault()
         setOpen(true)
+      }}
+      onKeyDown={(event) => {
+        if (relatedNotifications.length === 1) return
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          setOpen(true)
+        }
       }}
     >
       {relatedNotifications.length > 1 ? (
@@ -1547,7 +1649,9 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+        sourceType === 'social_post_like' ||
+        sourceType === 'comment_like' ||
+        sourceType === 'post_comment_like' ? (
           <Linkify text={sourceText} />
         ) : (
           <></>
@@ -1558,7 +1662,7 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : sourceType === 'post_like'
+        : sourceType === 'post_like' || sourceType === 'social_post_like'
         ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
@@ -1691,6 +1795,56 @@ function LiquidityNotification(props: {
             to <PrimaryNotificationLink text={sourceContractTitle} />
           </span>
         )}
+      </div>
+    </NotificationFrame>
+  )
+}
+
+function LiquidityReturnedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const {
+    sourceId,
+    sourceUserName,
+    sourceUserUsername,
+    sourceText,
+    sourceContractTitle,
+    data,
+  } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'💧'} />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        withdrew liquidity
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            from <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+        , returning{' '}
+        {sourceText && (
+          <span>{formatMoney(parseFloat(sourceText), data?.token)} of</span>
+        )}{' '}
+        your liquidity to your balance. You can add it back to the market if you
+        want to keep it there.
       </div>
     </NotificationFrame>
   )
@@ -2236,6 +2390,164 @@ export function PaymentSuccessNotification(props: {
   )
 }
 
+function PrizeDrawingCampaignNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as PrizeDrawingNotificationData
+  const prizeAmount = formatMoneyUSD(data.totalPrizeUsd)
+  const msUntilClose = data.closeTime - Date.now()
+  const hasEnded = msUntilClose <= 0
+  const timeLeft = formatDuration(msUntilClose)
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      link={getSourceUrl(notification)}
+      subtitle={<></>}
+    >
+      {data.eventType === 'created' ? (
+        <span>
+          New prize drawing is live: <b>{prizeAmount}</b>
+          {data.winnerCount === 1
+            ? ' to one winner.'
+            : data.winnerCount && data.winnerCount > 1
+            ? ` across ${data.winnerCount} winners.`
+            : ' in prizes.'}
+        </span>
+      ) : hasEnded ? (
+        <span>
+          Prize Drawing #{data.sweepstakesNum} has ended. <b>{prizeAmount}</b>{' '}
+          in prizes.
+        </span>
+      ) : (
+        <span>
+          Prize Drawing #{data.sweepstakesNum} ends in {timeLeft}.{' '}
+          <b>{prizeAmount}</b> in prizes.
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
+function CharityGiveawayCampaignNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as CharityGiveawayNotificationData
+  const prizeAmount = formatMoneyUSD(data.prizeAmountUsd)
+  const msUntilClose = data.closeTime - Date.now()
+  const hasEnded = msUntilClose <= 0
+  const timeLeft = formatDuration(msUntilClose)
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      link={getSourceUrl(notification)}
+      subtitle={<></>}
+    >
+      {data.eventType === 'created' ? (
+        <span>
+          New charity giveaway with <b>{prizeAmount}</b> prize amount.
+        </span>
+      ) : hasEnded ? (
+        <span>
+          Charity Giveaway #{data.giveawayNum} has ended. <b>{prizeAmount}</b>{' '}
+          prize amount.
+        </span>
+      ) : (
+        <span>
+          Charity Giveaway #{data.giveawayNum} ends in {timeLeft}.{' '}
+          <b>{prizeAmount}</b> prize amount.
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
+function PersonalizedManaOfferNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  // The stored text bakes in the discount on offer at send time ("up to 30%
+  // off" while crypto was on). Show today's best discount instead: an offer
+  // stays redeemable until 72h after it's opened, so an old notification
+  // could otherwise promise a price checkout no longer has.
+  const text = (notification.sourceText ?? '').replace(
+    /up to \d+% off/,
+    `up to ${OFFER_MAX_DISCOUNT_PCT}% off`
+  )
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<SparklesIcon className="h-8 w-8 text-amber-500" />}
+      // ?showOffer=1 forces the offer card to render even if the user has
+      // previously dismissed it — clicking the notification is an explicit
+      // request to view the offer.
+      link="/checkout?showOffer=1"
+      subtitle={
+        <span className="text-ink-600 text-xs">
+          Limited-time discount on a mana bundle — tap to view.
+        </span>
+      }
+    >
+      <span>{text}</span>
+    </NotificationFrame>
+  )
+}
+
+function MerchOrderNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const data = notification.data as {
+    itemName?: string
+    event?: string
+    refundAmount?: number
+  }
+  const isShipped = data?.event === 'shipped'
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <GiftIcon
+          className={
+            isShipped ? 'text-primary-500 h-8 w-8' : 'text-ink-500 h-8 w-8'
+          }
+        />
+      }
+      link="/shop"
+    >
+      <span>{notification.sourceText}</span>
+      {data?.refundAmount != null && (
+        <span className="text-ink-600">
+          {' '}
+          ({formatMoney(data.refundAmount)} refunded)
+        </span>
+      )}
+    </NotificationFrame>
+  )
+}
+
 function MarketMovementNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -2312,6 +2624,40 @@ function MarketMovementNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+    </NotificationFrame>
+  )
+}
+
+// Liquidation and ADL events from the perp engine. The backend composes the
+// full sentence in sourceText (margin lost / before→after notional); render
+// it verbatim so copy iterations stay a backend-only change.
+function PerpEngineNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceText, reason } = notification
+  const isLiquidation = reason === 'perp_liquidation'
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <div className="flex h-full w-full items-center justify-center">
+          {isLiquidation ? (
+            <FaBolt className="text-scarlet-500 h-6 w-6" />
+          ) : (
+            <FaScaleUnbalanced className="h-6 w-6 text-amber-500" />
+          )}
+        </div>
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-4">{sourceText}</div>
     </NotificationFrame>
   )
 }
@@ -2473,6 +2819,42 @@ function MembershipSubscriptionNotification(props: {
           <span className="font-semibold">{formatMoney(amount)}</span> needed)
         </span>
       )}
+    </NotificationFrame>
+  )
+}
+
+function PrizeWinnerNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const data = notification.data as PrizeWinnerData | undefined
+  const prizeLabel = data?.prizeLabel ?? '1st'
+  const prizeAmount = data?.prizeAmountUsdc ?? 0
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link="/prize"
+      icon={
+        <NotificationIcon
+          symbol={'🎉'}
+          symbolBackgroundClass="bg-gradient-to-br from-teal-400 to-cyan-400"
+        />
+      }
+      subtitle="You'll receive your USDC prize via crypto wallet"
+    >
+      <span>
+        Congratulations! You won{' '}
+        <span className="font-semibold">{prizeLabel} place</span> in the Prize
+        Drawing:{' '}
+        <span className="font-semibold text-teal-600">${prizeAmount} USDC</span>
+      </span>
     </NotificationFrame>
   )
 }

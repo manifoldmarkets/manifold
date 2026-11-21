@@ -72,6 +72,7 @@ export const generateReact = (doc: JSONContent, extensions: Extensions) => {
   const exts = keyBy(extensionsIncludingStarterKit, 'name')
 
   const recurse = (content: JSONContent): ReactNode => {
+    if (!content) return null
     if (!content.type) {
       return content.text
     }

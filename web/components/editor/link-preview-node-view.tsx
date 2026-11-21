@@ -5,6 +5,23 @@ import { Editor } from '@tiptap/react'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
 import { api } from 'web/lib/api/api'
+import {
+  matchManifoldMarketUrl,
+  replaceManifoldUrlWithMention,
+  replaceUrlWithTitleLink,
+} from 'web/components/editor/insert-manifold-mention'
+import { isFaviconAllowed } from 'common/favicon-allowlist'
+
+// Title-replacement is only safe when we recognise the destination host —
+// otherwise an attacker could host a page with a misleading `<title>` and the
+// inline visible text would diverge from the actual link href.
+const isHostTrustedForTitleSwap = (url: string) => {
+  try {
+    return isFaviconAllowed(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {
@@ -70,16 +87,37 @@ export const insertLinkPreviews = async (
       .filter((link) => !linkPreviewDismissed[key + link])
       .map(async (link) => {
         try {
+          // Manifold market URLs become inline contract-mention widgets
+          // (same as typing % and picking from the dropdown).
+          const manifold = matchManifoldMarketUrl(link)
+          if (manifold) {
+            await replaceManifoldUrlWithMention(editor, link, manifold.slug)
+            // Don't re-process this URL on future transactions (e.g. if the
+            // user undoes our replacement they shouldn't see it re-trigger).
+            linkPreviewDismissed[key + link] = true
+            return
+          }
+
           const preview = link
             ? await api('fetch-link-preview', { url: link.trim() })
             : null
           if (!preview) return
-          // Another fetch may have added a preview, so check again
+
+          // 1) Replace the raw URL inline with the page title as a hyperlink —
+          // but only for allowlisted hosts, so a hostile site can't pick its
+          // own visible link text (link-text/href phishing).
+          if (preview.title && isHostTrustedForTitleSwap(link)) {
+            replaceUrlWithTitleLink(editor, link, preview.title)
+          }
+          // Mark URL as processed so undoing doesn't re-trigger replacement.
+          linkPreviewDismissed[key + link] = true
+
+          // 2) Append a rich preview card at the end of the doc (one per doc).
           const content = editor.getJSON()
-          const containsLinkPreview = content.content?.some(
+          const hasCard = content.content?.some(
             (node) => node.type === 'linkPreview'
           )
-          if (containsLinkPreview) return
+          if (hasCard) return
           const linkPreviewNodeJSON = {
             type: 'linkPreview',
             attrs: {
@@ -90,7 +128,6 @@ export const insertLinkPreviews = async (
               inputKey: key ?? '',
             },
           }
-          // Append to very end of doc
           const docLength = editor.state.doc.content.size
           editor
             .chain()
@@ -105,17 +142,14 @@ export const insertLinkPreviews = async (
 }
 
 export const findLinksInContent = (content: JSONContent) => {
-  const linkRegExp = /(?:https?:\/\/|www\.)[\w-]+(?:\.[\w-]+)+(?:\/[^\s]*)?/g
+  const linkRegExp =
+    /(?:https?:\/\/(?:localhost|[\w-]+(?:\.[\w-]+)+)(?::\d+)?|www\.[\w-]+(?:\.[\w-]+)+)(?:\/[^\s]*)?/g
 
   const linkMatches = content.content?.flatMap((node) => {
     const contents = node.content?.flat()
-    return contents?.flatMap((n, i) => {
-      const next = contents[i + 1]
+    return contents?.flatMap((n) => {
       const { text } = n
-      const spaceFollows = next?.text?.startsWith(' ') || text?.endsWith(' ')
-      return text !== undefined && spaceFollows
-        ? Array.from(text.matchAll(linkRegExp))
-        : []
+      return text !== undefined ? Array.from(text.matchAll(linkRegExp)) : []
     })
   })
   return filterDefined(linkMatches?.map((m) => m?.[0]) ?? [])

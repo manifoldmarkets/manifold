@@ -40,5 +40,8 @@ export const adminGetUserInfo: APIHandler<'get-user-info'> = async (
     firebaseEmail,
     initialDeviceToken: privateUser.initialDeviceToken,
     initialIpAddress: privateUser.initialIpAddress,
+    // Admin-only: surfaced here (admin-gated) since it's stripped from the
+    // public User response by toUserAPIResponse.
+    verificationFlagReason: user.verificationFlagReason,
   }
 }

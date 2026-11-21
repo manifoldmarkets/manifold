@@ -2,11 +2,13 @@ import clsx from 'clsx'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
 import { BinaryContract, StonkContract } from 'common/contract'
-import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { User } from 'web/lib/firebase/users'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import {
@@ -20,8 +22,20 @@ export function BetButton(props: {
   feedReason?: string
   className?: string
   labels?: { yes: string; no: string }
+  questionTitle?: string
+  // Analytics location for the bet. 'feed card' bets count toward the home
+  // feed conversion rate, so callers outside the feed must pass their own.
+  location?: string
 }) {
-  const { contract, labels, user, className, feedReason } = props
+  const {
+    contract,
+    labels,
+    user,
+    className,
+    feedReason,
+    questionTitle,
+    location = 'feed card',
+  } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
   const customYesText = getCustomYesButtonText(user?.entitlements)
@@ -34,13 +48,19 @@ export function BetButton(props: {
 
   const handleBetButtonClick = (outcome: 'YES' | 'NO') => {
     if (!user) {
-      firebaseLogin()
+      onSignedOutBetPress({
+        contractId: contract.id,
+        location,
+        surface: 'button',
+        outcome,
+      })
       return
     }
     track('bet intent', {
-      location: 'feed card',
+      location,
       outcome,
       token: contract.token,
+      contractId: contract.id,
     })
     setDialogueThatIsOpen(outcome)
   }
@@ -50,6 +70,10 @@ export function BetButton(props: {
       <Button
         color="green-outline"
         size="xs"
+        aria-label={`${
+          labels?.yes ?? customYesText ?? `${capitalize(TRADE_TERM)} Yes`
+        } on ${questionTitle ?? contract.question}`}
+        aria-haspopup="dialog"
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
@@ -59,6 +83,10 @@ export function BetButton(props: {
       <Button
         color="red-outline"
         size="xs"
+        aria-label={`${
+          labels?.no ?? customNoText ?? `${capitalize(TRADE_TERM)} No`
+        } on ${questionTitle ?? contract.question}`}
+        aria-haspopup="dialog"
         onClick={() => handleBetButtonClick('NO')}
       >
         {labels?.no ?? customNoText ?? `${capitalize(TRADE_TERM)} No`}
@@ -67,6 +95,7 @@ export function BetButton(props: {
       {open && (
         <Modal
           open={open}
+          ariaLabel={`Bet on ${questionTitle ?? contract.question}`}
           setOpen={(open) => {
             setDialogueThatIsOpen(open ? dialogueThatIsOpen : undefined)
           }}
@@ -76,17 +105,28 @@ export function BetButton(props: {
           )}
         >
           <Col>
-            <div className="mb-4 mt-0 text-xl">{contract.question}</div>
+            <h2 className="mb-4 mt-0 text-xl">
+              {questionTitle ?? contract.question}
+            </h2>
             <BuyPanel
               contract={contract}
               initialOutcome={dialogueThatIsOpen === 'YES' ? 'YES' : 'NO'}
               onBuySuccess={() =>
                 setTimeout(() => setDialogueThatIsOpen(undefined), 500)
               }
-              location={'feed card'}
+              location={location}
               inModal={true}
               feedReason={feedReason}
             />
+            <Row className="mt-3 justify-end">
+              <a
+                href={`/${contract.creatorUsername}/${contract.slug}`}
+                className="text-ink-400 hover:text-ink-600 text-[13px] transition-colors"
+                onClick={() => setDialogueThatIsOpen(undefined)}
+              >
+                View market →
+              </a>
+            </Row>
           </Col>
         </Modal>
       )}

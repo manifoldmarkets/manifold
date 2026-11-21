@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { User } from 'common/user'
+import { getEffectiveTier, User } from 'common/user'
 import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
@@ -21,12 +21,15 @@ import {
   BETTING_STREAK_BONUS_MAX,
 } from 'common/economy'
 import { QUEST_DETAILS } from 'common/quest'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
 import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
 import { StreakProgressBar } from '../profile/streak-progress-bar'
+import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
+import { AddWidgetPrompt } from 'web/components/home/add-widget-prompt'
+import { PollsDontCountNotice } from 'web/components/home/polls-dont-count-notice'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -45,28 +48,32 @@ export const QuestsOrStreak = memo(function DailyProfit(props: {
   }, [showQuestsModal])
   if (!user) return <></>
 
+  const handleQuestsClick = () => {
+    setShowQuestsModal(true)
+  }
+
   // Preview mode: ?previewFrozen=true forces frozen state
   const previewFrozen = router.query.previewFrozen === 'true'
 
-  const missingStreak = user && !hasCompletedStreakToday(user)
-  const wasFrozen = previewFrozen || (user && wasStreakFrozenRecently(user))
+  const missingStreak = !hasCompletedStreakToday(user)
+  const wasFrozen = previewFrozen || wasStreakFrozenRecently(user)
 
   // Determine visual state:
   // - Normal (colored): streak completed today
-  // - Frozen: streak not completed but freeze was used (or previewFrozen) - show ice cube, no filter
+  // - Frozen: streak not completed but freeze was used (or previewFrozen)
   // - Grayscale: streak not completed, no freeze used
   const showFrozen = previewFrozen || (missingStreak && wasFrozen)
   const getStyle = () => {
-    if (showFrozen) return '' // Ice cube emoji is already blue, no filter needed
-    if (!missingStreak) return '' // Normal
-    return 'grayscale' // Gray
+    if (showFrozen) return ''
+    if (!missingStreak) return ''
+    return 'grayscale'
   }
 
   return (
     <>
       <button
         className={clsx('cursor-pointer', dailyStatsClass)}
-        onClick={() => setShowQuestsModal(true)}
+        onClick={handleQuestsClick}
       >
         <Col className={clsx(getStyle(), 'items-center')}>
           <span>
@@ -110,9 +117,21 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
+  const createThreeStatus = questToCompletionStatus['MARKETS_CREATED_3']
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user.entitlements, 'questMultiplier')
+  // Effective tier (account standing + subscription) drives the bonus
+  // multiplier. Free: 1x, subscribers higher, flagged/blocked accounts less.
+  const effectiveTier = getEffectiveTier(user)
+  const questMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+
+  // Preview the streak bonus for the next-day streak.
+  const previewStreakAmount = Math.floor(
+    Math.min(
+      BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
+      BETTING_STREAK_BONUS_MAX
+    ) * streakMultiplier
+  )
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -127,6 +146,11 @@ export function QuestsModal(props: {
             max={1}
             className={'mb-1 w-1/2'}
           />
+          <BonusStandingNotice
+            tier={effectiveTier}
+            kind="quest"
+            className="mx-auto max-w-md"
+          />
         </Col>
         <Col className={'mb-4 gap-6'}>
           <Row className={'text-primary-700 '}>Daily</Row>
@@ -139,19 +163,14 @@ export function QuestsModal(props: {
             }
             complete={streakStatus.currentCount >= streakStatus.requiredCount}
             status={`(${streakStatus.currentCount}/${streakStatus.requiredCount})`}
-            reward={Math.floor(
-              Math.min(
-                BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
-                BETTING_STREAK_BONUS_MAX
-              ) * questMultiplier
-            )}
+            reward={previewStreakAmount}
             onClick={() => setShowStreakModal(true)}
           />
           {(user?.currentBettingStreak ?? 0) <= 5 && (
             <Row className="-mt-2 w-full px-2 pl-12">
               <StreakProgressBar
                 currentStreak={user?.currentBettingStreak ?? 0}
-                questMultiplier={questMultiplier}
+                questMultiplier={streakMultiplier}
               />
             </Row>
           )}
@@ -165,7 +184,10 @@ export function QuestsModal(props: {
             )}
             info={'Share a question with a friend!'}
           />
-          <Row className={'text-primary-700'}>Weekly</Row>
+          <Col className="gap-2">
+            <Row className={'text-primary-700'}>Weekly</Row>
+            <PollsDontCountNotice />
+          </Col>
           <QuestRow
             emoji={'📈'}
             title={`Create a market this week`}
@@ -173,6 +195,18 @@ export function QuestsModal(props: {
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={Math.floor(
               QUEST_DETAILS.MARKETS_CREATED.rewardAmount * questMultiplier
+            )}
+            href={'/create'}
+          />
+          <QuestRow
+            emoji={'🏗️'}
+            title={`Create ${createThreeStatus.requiredCount} markets this week`}
+            complete={
+              createThreeStatus.currentCount >= createThreeStatus.requiredCount
+            }
+            status={`(${createThreeStatus.currentCount}/${createThreeStatus.requiredCount})`}
+            reward={Math.floor(
+              QUEST_DETAILS.MARKETS_CREATED_3.rewardAmount * questMultiplier
             )}
             href={'/create'}
           />
@@ -190,6 +224,7 @@ export function QuestsModal(props: {
             href={'/referrals'}
           /> */}
         </Col>
+        <AddWidgetPrompt />
       </div>
       <BettingStreakModal
         isOpen={showStreakModal}

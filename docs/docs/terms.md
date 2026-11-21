@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated January 19th, 2026
+Last updated January 31st, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -22,7 +22,7 @@ Provided that you are eligible to use the Site, you are granted a limited licens
 
 **3. USER REPRESENTATIONS**
 
-By using the Site, you represent and warrant that: (1) all registration information you submit will be true, accurate, current, and complete; (2) you will maintain the accuracy of such information and promptly update such registration information as necessary; (3) you have the legal capacity and you agree to comply with these Terms of Use; (4) you are not under the age of 13; (5) you are not a minor in the jurisdiction in which you reside, or if a minor, you have received parental permission to use the Site; (6) if you access the Site through automated means, bots, or scripts, you will do so only through our public API in accordance with our API terms and rate limits; (7) you will not use the Site for any illegal or unauthorized purpose; and (8) your use of the Site will not violate any applicable law or regulation.
+By using the Site, you represent and warrant that: (1) all registration information you submit will be true, accurate, current, and complete; (2) you will maintain the accuracy of such information and promptly update such registration information as necessary; (3) you have the legal capacity and you agree to comply with these Terms of Use; (4) you are not under the age of 13; (5) you are not a minor in the jurisdiction in which you reside, or if a minor, you have received parental permission to use the Site; (6) if you access the Site through automated means, bots, or scripts, you will do so only through our public API in accordance with our API terms and rate limits; (7) you will not use the Site for any illegal or unauthorized purpose; (8) your use of the Site will not violate any applicable law or regulation; (9) if identity verification is required for any feature or activity on the Site, you will provide accurate, authentic, and current identity documents and information, and you will not submit forged, altered, or fraudulent documentation; and (10) you will complete identity verification promptly when requested as a condition of using certain features or claiming prizes.
 
 If you provide any information that is untrue, inaccurate, not current, or incomplete, we have the right to suspend or terminate your account and refuse any and all current or future use of the Site (or any portion thereof).
 
@@ -36,21 +36,25 @@ All services and virtual currency offerings on the Site are subject to availabil
 
 **6. PURCHASES AND PAYMENT**
 
-We accept the following forms of payment:
+We accept payments in USDC (USD Coin) and other supported cryptocurrencies via blockchain networks.
 
-● Visa
+**6.1 Cryptocurrency Payments**
 
-● Mastercard
+1. **Accepted Payment Methods.** Purchases on the Site are made using USDC or other supported cryptocurrencies via compatible blockchain networks. The specific cryptocurrencies and networks accepted may change at our discretion.
 
-● Discover
+2. **Wallet Responsibility.** You are solely responsible for maintaining secure access to your cryptocurrency wallet and for ensuring that you send payments from a wallet you control. We are not responsible for any loss of funds due to compromised wallets, lost private keys, or unauthorized access to your wallet.
 
-● American Express
+3. **Network and Gas Fees.** You are solely responsible for all blockchain network fees, gas fees, and any other transaction fees associated with your cryptocurrency payments. These fees are determined by the blockchain network and are not controlled by or paid to us. We recommend reviewing current network conditions before initiating a transaction.
 
-You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. You further agree to promptly update account and payment information, including email address, payment method, and payment card expiration date, so that we can complete your transactions and contact you as needed. Sales tax will be added to the price of purchases as deemed required by us. We may change prices at any time. All payments shall be in U.S. dollars.
+4. **Transaction Finality.** Cryptocurrency transactions are irreversible once confirmed on the blockchain. You acknowledge that once a transaction is broadcast to the network, it cannot be cancelled, reversed, or modified by us.
 
-You agree to pay all charges at the prices then in effect for your purchases, and you authorize us to charge your chosen payment provider for any such amounts upon placing your order. We reserve the right to correct any errors or mistakes in pricing, even if we have already requested or received payment.
+5. **Technical Issues and Payment Failures.** We are not responsible for any technical issues, delays, or failures in receiving your payment, including but not limited to: blockchain network congestion, smart contract failures, oracle malfunctions, bridge failures, wallet compatibility issues, incorrect wallet addresses, insufficient gas fees causing failed transactions, or any other technical problems with blockchain infrastructure or third-party payment processors. If your payment fails or is not received due to any technical issue, you are solely responsible for any resulting loss of funds.
 
-We reserve the right to refuse any order placed through the Site. We may, in our sole discretion, limit or cancel quantities purchased per person, per household, or per order. These restrictions may include orders placed by or under the same customer account, the same payment method, and/or orders that use the same billing or shipping address. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers, or distributors.
+6. **Exchange Rate Risk.** If you are converting other cryptocurrencies or fiat currency to USDC or other accepted payment methods, you bear all exchange rate risk associated with such conversions.
+
+You agree to provide current, complete, and accurate purchase and account information for all purchases made via the Site. We may change prices at any time. All prices are denominated in U.S. dollars, with cryptocurrency payments calculated at the applicable exchange rate at the time of transaction.
+
+We reserve the right to refuse any order placed through the Site. We may, in our sole discretion, limit or cancel quantities purchased per person, per household, or per order. These restrictions may include orders placed by or under the same customer account or the same wallet address. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers, or distributors.
 
 **6.5 Virtual Currency (Mana)**
 
@@ -98,9 +102,47 @@ We reserve the right to refuse any order placed through the Site. We may, in our
 
 4. **API Usage.** Use of our public API is subject to additional terms, rate limits, and usage guidelines. For more information on API usage, authentication, and acceptable use, please refer to our API documentation at **[https://docs.manifold.markets/api](https://docs.manifold.markets/api)**. We reserve the right to modify, suspend, or terminate API access at any time, with or without notice, for any reason including but not limited to abuse, excessive usage, or violation of these Terms.
 
+**6.9 Prize Drawings**
+
+1. **Separate Rules Apply.** The Site may offer prize drawings ("Prize Drawings") in which eligible participants can enter for a chance to win prizes. All Prize Drawings are governed by the Manifold Prize Drawing Official Rules, available at **[https://docs.manifold.markets/prize-rules](https://docs.manifold.markets/prize-rules)**, which are incorporated herein by reference.
+
+2. **No Purchase Necessary.** No purchase is necessary to enter or win any Prize Drawing. A purchase will not improve your chances of winning. Prize Drawings are void where prohibited by law.
+
+3. **Eligibility Restrictions.** Prize Drawings are subject to geographic and other eligibility restrictions as set forth in the Prize Drawing Official Rules. You are solely responsible for determining whether you are eligible to participate based on the laws of your jurisdiction.
+
+4. **Acceptance of Rules.** By entering any Prize Drawing, you agree to be bound by the Prize Drawing Official Rules and the decisions of the Sponsor, which are final and binding in all respects. In the event of any conflict between these Terms of Use and the Prize Drawing Official Rules, the Prize Drawing Official Rules shall govern with respect to the applicable Prize Drawing.
+
+5. **Identity Verification for Prize Winners.** Winners of Prize Drawings may be required to complete identity verification before receiving their prize. See Section 6.10 (Identity Verification) for details.
+
+**6.10 Identity Verification (KYC/AML)**
+
+1. **When Verification Is Required.** We may require you to verify your identity in connection with certain activities on the Site, including but not limited to: claiming prizes from Prize Drawings, participating in promotions with monetary prizes, high-value transactions, or as otherwise required to comply with applicable Know Your Customer (KYC), Anti-Money Laundering (AML), or other legal and regulatory requirements. We reserve the right to require identity verification at any time in our sole discretion.
+
+2. **Third-Party Verification Providers.** Identity verification is performed by third-party service providers, including **Idenfy**. By submitting identity verification, you consent to the collection, processing, and storage of your identity documents, photographs, biometric data (including facial images for liveness detection), and related information by us and our verification providers. Our verification providers process your data in accordance with their own privacy policies. For more information about how we handle your identity verification data, please see our Privacy Policy.
+
+3. **Your Obligations.** When identity verification is required, you agree to: (a) provide accurate, authentic, and current identity documents and information; (b) submit clear, legible images or scans of requested documents; (c) complete any liveness checks or additional verification steps as requested; and (d) respond promptly to any requests for additional information or documentation.
+
+4. **Prohibited Conduct.** You may not: (a) submit forged, altered, stolen, or fraudulent identity documents; (b) use another person's identity or documents; (c) attempt to circumvent or manipulate the verification process; or (d) provide false or misleading information during verification. Violation of this section may result in immediate account termination, forfeiture of any prizes or Mana balances, and referral to law enforcement authorities.
+
+5. **Consequences of Non-Verification.** If you fail to complete identity verification when required, or if your verification is unsuccessful, we may: (a) restrict or suspend your access to certain features of the Site; (b) withhold or forfeit prizes you have won; (c) limit your account functionality; or (d) terminate your account. We are not liable for any losses or damages resulting from your failure to complete verification.
+
+6. **Data Retention.** Identity verification data is retained in accordance with our Privacy Policy and applicable legal requirements. For more information, see Section 9 of our Privacy Policy.
+
 **7. REFUNDS POLICY**
 
-All sales are final and no refund will be issued.
+**All sales are final. No refunds, returns, chargebacks, or credits will be issued under any circumstances.**
+
+1. **No Refunds.** Due to the nature of cryptocurrency transactions and digital goods, all purchases of Mana, Memberships, or any other products or services on the Site are final and non-refundable. Once a transaction is confirmed on the blockchain and Mana or other items have been credited to your account, no refund will be provided.
+
+2. **Technical Issues.** No refunds will be issued for any technical issues, including but not limited to: failed transactions, network delays, smart contract errors, payment processing failures, wallet issues, incorrect amounts received, or any other technical problems. You assume all risk associated with cryptocurrency payments.
+
+3. **Network and Gas Fees.** Network fees, gas fees, and other blockchain transaction costs are non-refundable under all circumstances, regardless of whether your purchase was successful.
+
+4. **User Error.** No refunds will be issued for user error, including but not limited to: sending funds to the wrong address, sending incorrect amounts, using unsupported cryptocurrencies or networks, or any other mistakes made during the payment process.
+
+5. **Account Termination.** If your account is terminated or suspended for any reason, including violation of these Terms, you will not receive any refund for any Mana, Membership time, or other purchases associated with your account.
+
+6. **Disputes.** You agree not to dispute or "chargeback" any cryptocurrency transaction made to us. In the event you initiate a dispute through any third party, we reserve the right to immediately suspend your account and pursue all available legal remedies.
 
 **8. PROHIBITED ACTIVITIES**
 

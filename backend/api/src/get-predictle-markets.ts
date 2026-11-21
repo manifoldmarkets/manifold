@@ -57,7 +57,7 @@ Input: "${question}"
 Output: `
 
     const response = await promptAI(prompt, {
-      model: aiModels.flash,
+      model: aiModels.haiku,
       thinkingLevel: 'minimal',
     })
 

@@ -5,6 +5,107 @@ import { useId } from 'react'
 type SvgProps = { className?: string; style?: React.CSSProperties }
 
 // =============================================================================
+// HALO — dual-stroke ellipse (white inner + amber outer), rotated -8deg.
+// Renders light + dark mode SVGs side-by-side; the `dark:` media classes
+// toggle which is shown. Supports splitting into upper/lower arcs when a hat
+// is equipped and the halo needs to render around it.
+// =============================================================================
+
+const HALO_WHITE_STROKE = 'rgba(255, 252, 240, 0.95)'
+const HALO_AMBER_STROKE = 'rgba(217, 170, 50, 0.7)'
+const HALO_AMBER_STROKE_DARK = 'rgba(200, 160, 60, 0.5)'
+const HALO_LIGHT_FILTER =
+  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))'
+const HALO_DARK_FILTER =
+  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))'
+
+export const HALO_BACK_ARC = 'M 2,6 A 18,5 0 0,0 38,6' // behind the hat
+export const HALO_FRONT_ARC = 'M 2,6 A 18,5 0 0,1 38,6' // in front of the hat
+
+/** Halo SVG pair (light + dark). Pass `arcPath` to render one half only. */
+export function HaloSvg(props: {
+  width: string | number
+  height: string | number
+  /** If provided, draws a path arc instead of the full ellipse. Use the
+   *  HALO_BACK_ARC / HALO_FRONT_ARC constants for hat-split rendering. */
+  arcPath?: string | null
+}) {
+  const { width, height, arcPath } = props
+  return (
+    <>
+      {/* Light mode */}
+      <svg
+        className="dark:hidden"
+        width={width}
+        height={height}
+        viewBox="0 0 40 12"
+        overflow="visible"
+        style={{ transform: 'rotate(-8deg)', filter: HALO_LIGHT_FILTER }}
+      >
+        <HaloStrokes
+          arcPath={arcPath}
+          outerStroke={HALO_AMBER_STROKE}
+          innerStroke={HALO_WHITE_STROKE}
+        />
+      </svg>
+      {/* Dark mode */}
+      <svg
+        className="hidden dark:block"
+        width={width}
+        height={height}
+        viewBox="0 0 40 12"
+        overflow="visible"
+        style={{ transform: 'rotate(-8deg)', filter: HALO_DARK_FILTER }}
+      >
+        <HaloStrokes
+          arcPath={arcPath}
+          outerStroke={HALO_AMBER_STROKE_DARK}
+          innerStroke={HALO_WHITE_STROKE}
+        />
+      </svg>
+    </>
+  )
+}
+
+function HaloStrokes(props: {
+  arcPath: string | null | undefined
+  outerStroke: string
+  innerStroke: string
+}) {
+  const { arcPath, outerStroke, innerStroke } = props
+  if (arcPath) {
+    return (
+      <>
+        <path d={arcPath} stroke={outerStroke} strokeWidth="3.5" fill="none" />
+        <path d={arcPath} stroke={innerStroke} strokeWidth="1.5" fill="none" />
+      </>
+    )
+  }
+  return (
+    <>
+      <ellipse
+        cx="20"
+        cy="6"
+        rx="18"
+        ry="5"
+        stroke={outerStroke}
+        strokeWidth="3.5"
+        fill="none"
+      />
+      <ellipse
+        cx="20"
+        cy="6"
+        rx="18"
+        ry="5"
+        stroke={innerStroke}
+        strokeWidth="1.5"
+        fill="none"
+      />
+    </>
+  )
+}
+
+// =============================================================================
 // BORDERS & EFFECTS
 // =============================================================================
 
@@ -294,48 +395,95 @@ export function CrystalBallSvg(props: SvgProps) {
   )
 }
 
-/** Disguise — Groucho Marx glasses with big nose and bushy brows. */
+/** Disguise — full-on Groucho Marx getup: bushy brows that twitch on hover,
+ *  oversized round glasses with earpieces extending out past the frame, the
+ *  iconic hooked Groucho nose, and a thick black painted-on mustache. */
 export function DisguiseSvg(props: SvgProps) {
   return (
-    <svg className={props.className} style={props.style} viewBox="0 0 32 22">
-      <circle
-        cx="8"
-        cy="8"
-        r="6"
-        fill="rgba(200,220,255,0.2)"
+    <svg className={props.className} style={props.style} viewBox="0 0 50 34">
+      {/* Bushy black left eyebrow — twitches up on hover */}
+      <g className="origin-center transition-transform duration-150 group-hover:-translate-y-[1.5px]">
+        <path
+          d="M5 7 Q 12 2, 20 6 Q 19 10, 13 9 Q 8 10, 5 7 Z"
+          fill="#0A0A0A"
+        />
+      </g>
+      {/* Bushy black right eyebrow — twitches up on hover */}
+      <g className="origin-center transition-transform duration-150 group-hover:-translate-y-[1.5px]">
+        <path
+          d="M45 7 Q 38 2, 30 6 Q 31 10, 37 9 Q 42 10, 45 7 Z"
+          fill="#0A0A0A"
+        />
+      </g>
+      {/* Earpieces — extend only slightly past the avatar edge */}
+      <line
+        x1="9"
+        y1="16"
+        x2="2"
+        y2="13"
         stroke="#1F2937"
         strokeWidth="2"
+        strokeLinecap="round"
       />
-      <circle
-        cx="24"
-        cy="8"
-        r="6"
-        fill="rgba(200,220,255,0.2)"
+      <line
+        x1="41"
+        y1="16"
+        x2="48"
+        y2="13"
         stroke="#1F2937"
         strokeWidth="2"
-      />
-      <path d="M14 8 Q16 6 18 8" stroke="#1F2937" strokeWidth="2" fill="none" />
-      <line x1="2" y1="8" x2="0" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-      <line x1="30" y1="8" x2="32" y2="7" stroke="#1F2937" strokeWidth="1.5" />
-      <ellipse cx="16" cy="15" rx="4" ry="5" fill="#FBBF8E" />
-      <ellipse cx="16" cy="16" rx="3.5" ry="4" fill="#F5A67A" />
-      <ellipse cx="14.5" cy="13" rx="1.5" ry="2" fill="rgba(255,255,255,0.3)" />
-      <ellipse cx="14.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-      <ellipse cx="17.5" cy="18" rx="1" ry="0.8" fill="#E08B65" />
-      <path
-        d="M3 3 Q8 1 13 4"
-        stroke="#4B3621"
-        strokeWidth="2"
         strokeLinecap="round"
+      />
+      {/* Glasses lenses — pulled further toward centre */}
+      <circle
+        cx="16"
+        cy="16"
+        r="7"
+        fill="rgba(200,220,255,0.2)"
+        stroke="#1F2937"
+        strokeWidth="2.5"
+      />
+      <circle
+        cx="34"
+        cy="16"
+        r="7"
+        fill="rgba(200,220,255,0.2)"
+        stroke="#1F2937"
+        strokeWidth="2.5"
+      />
+      {/* Bridge across the nose */}
+      <path
+        d="M23 15 Q 25 12 27 15"
+        stroke="#1F2937"
+        strokeWidth="2.5"
         fill="none"
       />
+      {/* Thick black painted-on mustache — condensed width, extra vertical heft */}
       <path
-        d="M19 4 Q24 1 29 3"
-        stroke="#4B3621"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
+        d="M16 27 Q20 22, 25 27 Q30 22, 34 27 Q33.5 31.5, 28.5 31.7 Q27 31.4, 25 30.3 Q23 31.4, 21.5 31.7 Q16.5 31.5, 16 27 Z"
+        fill="#0A0A0A"
       />
+      {/* Iconic Groucho nose — rendered above mustache so it drapes over it */}
+      <path
+        d="M24 15 Q22 17, 21.5 19 Q20.5 24, 22.5 26 Q25 28, 27.5 26 Q29.5 24, 28.5 19 Q28 17, 26 15 Z"
+        fill="#FBBF8E"
+      />
+      {/* Shadow/depth on lower half of nose */}
+      <path
+        d="M22.5 21 Q21 24, 22.5 26 Q25 28, 27.5 26 Q29 24, 27.5 21 Q25 22, 22.5 21 Z"
+        fill="#F5A67A"
+      />
+      {/* Highlight along the upper-left ridge */}
+      <path
+        d="M23 16 Q22 19, 22 22"
+        stroke="rgba(255,255,255,0.45)"
+        strokeWidth="1.3"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {/* Nostrils */}
+      <ellipse cx="23.5" cy="25" rx="0.9" ry="0.7" fill="#C46B45" />
+      <ellipse cx="26.5" cy="25" rx="0.9" ry="0.7" fill="#C46B45" />
     </svg>
   )
 }
@@ -454,76 +602,91 @@ export function BullHornSvg(props: SvgProps) {
   )
 }
 
-/** Single bear ear with fur texture. Use side prop for gradient direction. */
-export function BearEarSvg({
-  side = 'left',
-  ...props
-}: SvgProps & { side?: 'left' | 'right' }) {
+/** Single bear ear — rounded furry dome with pink inner. Designed in
+ *  "left ear" orientation: outer-bottom corner low (sits down on the avatar
+ *  edge), inner-bottom corner high (clears the avatar circle), base concave
+ *  to hug the curve. Apply `scaleX(-1)` for the right ear. */
+export function BearEarSvg(props: SvgProps) {
   const uid = useId().replace(/:/g, '')
-  const isLeft = side === 'left'
   return (
     <svg className={props.className} style={props.style} viewBox="0 0 24 24">
       <defs>
-        <radialGradient
-          id={`bear-fur-${uid}`}
-          cx={isLeft ? '40%' : '60%'}
-          cy="30%"
-          r="60%"
-        >
-          <stop offset="0%" stopColor="#92400E" />
-          <stop offset="70%" stopColor="#78350F" />
-          <stop offset="100%" stopColor="#451A03" />
+        <radialGradient id={`bear-fur-${uid}`} cx="38%" cy="32%" r="70%">
+          <stop offset="0%" stopColor="#A0522D" />
+          <stop offset="55%" stopColor="#6B3410" />
+          <stop offset="100%" stopColor="#2C1408" />
         </radialGradient>
-        <radialGradient id={`bear-inner-${uid}`} cx="50%" cy="40%" r="50%">
-          <stop offset="0%" stopColor="#FECACA" />
-          <stop offset="60%" stopColor="#F5B7B1" />
-          <stop offset="100%" stopColor="#E5A39A" />
+        <radialGradient id={`bear-inner-${uid}`} cx="50%" cy="45%" r="55%">
+          <stop offset="0%" stopColor="#FBCFE8" />
+          <stop offset="60%" stopColor="#E89BAA" />
+          <stop offset="100%" stopColor="#B86E7A" />
         </radialGradient>
       </defs>
-      <ellipse cx="12" cy="13" rx="10" ry="9" fill={`url(#bear-fur-${uid})`} />
-      <ellipse cx="5" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-      <ellipse cx="19" cy="11" rx="2.5" ry="2" fill="#92400E" opacity="0.7" />
-      <ellipse cx="12" cy="6" rx="3" ry="2" fill="#92400E" opacity="0.6" />
-      <ellipse
-        cx="12"
-        cy="13"
-        rx="5.5"
-        ry="5"
+      {/* Outer ear — steeper slanted base + deeper concave so the ear can be
+          pushed further down onto the avatar without the inner side dipping
+          too deeply into the circle. */}
+      <path
+        d="M3 22 C2 13, 5 4, 12 3 C19 4, 20 11, 21 12 Q10 16, 3 22 Z"
+        fill={`url(#bear-fur-${uid})`}
+        stroke="#1A0A03"
+        strokeWidth="0.5"
+        strokeLinejoin="round"
+      />
+      {/* Fur tufts — small darker bumps along the edge for texture */}
+      <ellipse cx="5" cy="11" rx="1.5" ry="2" fill="rgba(0,0,0,0.25)" />
+      <ellipse cx="19" cy="11" rx="1.5" ry="2" fill="rgba(0,0,0,0.25)" />
+      <ellipse cx="12" cy="4" rx="2.5" ry="1.5" fill="rgba(0,0,0,0.2)" />
+      {/* Inner ear — pink, slanted base matches outer */}
+      <path
+        d="M7 19 C6 13, 8 7, 12 7 C16 7, 17 11, 17 13 Q11 16, 7 19 Z"
         fill={`url(#bear-inner-${uid})`}
       />
+      {/* Highlight on outer (left) side */}
       <ellipse
-        cx={isLeft ? 10 : 14}
+        cx="10"
         cy="11"
-        rx="2"
-        ry="1.5"
-        fill="rgba(255,255,255,0.3)"
+        rx="1.8"
+        ry="2.2"
+        fill="rgba(255,255,255,0.35)"
       />
     </svg>
   )
 }
 
-/** Single cat ear. Render twice (second mirrored) for a pair. */
+/**
+ * Flat, wide kawaii cat ear — short triangular silhouette with a soft apex.
+ * Designed to sit tilted steeply outward at the top-left / top-right of the
+ * avatar. Render two with opposite rotations for a pair.
+ */
 export function CatEarSvg(props: SvgProps) {
   return (
-    <svg className={props.className} style={props.style} viewBox="0 0 24 18">
+    <svg className={props.className} style={props.style} viewBox="0 0 20 12">
+      {/* Outer ear — asymmetric silhouette with a softened apex so the point
+          reads as a gentle peak rather than a sharp spike. Base curves
+          concave to hug the avatar. */}
       <path
-        d="M3 18 C3 10, 8 5, 12 0 C16 5, 21 10, 21 18 Q12 15 3 18 Z"
-        fill="#4B5563"
-        stroke="#374151"
-        strokeWidth="0.8"
+        className="fill-[#36393F] dark:fill-white"
+        d="M2 11 C4 6, 11 1, 14 0.3 C17 1, 18 7, 18 11 Q10 8, 2 11 Z"
       />
+      {/* Inner pink — wide base; apex softened and aligned under outer apex.
+          Base Q control raised so pink reaches outer's base curve (no white strip below pink). */}
       <path
-        d="M6 17 C6 10, 9 5, 12 4 C15 5, 18 10, 18 17 Q12 16 6 17 Z"
-        fill="#F472B6"
+        d="M5 10 C7 5.5, 11 3, 14 3.2 C16 3, 15 7, 15 10 Q10 9, 5 10 Z"
+        fill="#F9A8D4"
       />
-      <path
-        d="M10 14 Q11 9 12 5"
-        stroke="#FBCFE8"
-        strokeWidth="1.2"
-        fill="none"
-        strokeLinecap="round"
-        opacity="0.5"
-      />
+    </svg>
+  )
+}
+
+/** Cat whiskers for one side. Mirror (scaleX(-1)) for the other side. */
+export function CatWhiskersSvg(props: SvgProps) {
+  return (
+    <svg className={props.className} style={props.style} viewBox="0 0 24 12">
+      <g stroke="#1F2225" strokeWidth="1.1" fill="none" strokeLinecap="round">
+        <path d="M0 3 Q12 2 24 0" />
+        <path d="M0 6 L24 6" />
+        <path d="M0 9 Q12 10 24 12" />
+      </g>
     </svg>
   )
 }

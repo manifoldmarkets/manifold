@@ -1,4 +1,5 @@
 import { signInWithCredential } from '@firebase/auth'
+import * as Sentry from '@sentry/react-native'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { log } from 'components/logger'
 import { Text } from 'components/text'
@@ -33,10 +34,7 @@ import {
 import WebView from 'react-native-webview'
 import { auth } from '../init'
 
-export const AuthPage = (props: {
-  webview: React.RefObject<WebView | undefined>
-}) => {
-  const { webview } = props
+export const AuthPage = () => {
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
@@ -46,21 +44,24 @@ export const AuthPage = (props: {
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
-    try {
-      if (response?.type === 'success') {
-        const { id_token } = response.params
-        const credential = GoogleAuthProvider.credential(id_token)
-        signInWithCredential(auth, credential).then((result) => {
-          const fbUser = result.user.toJSON()
-          if (webview.current) {
-            webview.current.postMessage(
-              JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-            )
-          }
-        })
-      }
-    } catch (err) {
-      log('[google sign in] Error : ', err)
+    if (response?.type === 'success') {
+      const { id_token } = response.params
+      const credential = GoogleAuthProvider.credential(id_token)
+      // Success needs nothing more here: App.tsx observes the auth state change
+      // and hands the user to the web client, with retries. Failures are async
+      // rejections (auth/user-disabled for a banned account, network failures,
+      // account-exists-with-different-credential), so only a .catch sees them.
+      signInWithCredential(auth, credential).catch((err) =>
+        reportSignInFailure('google sign in', err)
+      )
+    } else if (response?.type === 'error') {
+      // Backing out of Google's consent screen comes back as an OAuth
+      // access_denied error rather than a 'cancel'/'dismiss' result.
+      if (response.error?.code !== 'access_denied')
+        reportSignInFailure(
+          'google auth request',
+          response.error ?? new Error('Google sign-in failed')
+        )
     }
     setLoading(false)
   }, [response])
@@ -69,22 +70,25 @@ export const AuthPage = (props: {
     setLoading(true)
     try {
       const { credential, data } = await loginWithApple()
-      log('credential', credential)
-      log('data', data)
       const { user } = await signInWithCredential(auth, credential)
-      log('user', user)
-      if (data?.email && !user.email) {
-        await updateEmail(user, data.email)
+      // Signed in from here on (App.tsx picks up the auth state change and
+      // hands the user to the web). Filling in the profile fields Apple only
+      // provides on the first sign-in is best-effort and must not be reported
+      // as a failed sign-in.
+      try {
+        if (data?.email && !user.email) await updateEmail(user, data.email)
+        if (data?.displayName && !user.displayName)
+          await updateProfile(user, { displayName: data.displayName })
+      } catch (error) {
+        log('[apple profile update] Error:', error)
+        Sentry.captureException(error, {
+          tags: { authFlow: 'apple profile update' },
+        })
       }
-      if (data?.displayName && !user.displayName) {
-        await updateProfile(user, { displayName: data.displayName })
-      }
-      const fbUser = user.toJSON()
-      webview.current?.postMessage(
-        JSON.stringify({ type: 'nativeFbUser', data: fbUser })
-      )
-    } catch (error: any) {
-      log('login with apple error:', error)
+    } catch (error) {
+      // Backing out of the Apple sheet isn't a failure worth reporting.
+      if (errorCode(error) !== 'ERR_REQUEST_CANCELED')
+        reportSignInFailure('apple sign in', error)
     }
     setLoading(false)
   }
@@ -197,6 +201,46 @@ export const AuthPage = (props: {
       </View>
     </View>
   )
+}
+
+// `log()` is a no-op in prod builds, so a sign-in failure must be surfaced to
+// the user and to Sentry explicitly or it vanishes.
+function reportSignInFailure(context: string, error: unknown) {
+  log(`[${context}] Error:`, error)
+  Sentry.captureException(error, { tags: { authFlow: context } })
+  Alert.alert('Could not sign in', signInErrorMessage(error))
+}
+
+// Firebase and expo errors carry a machine-readable `code`; read it without
+// assuming the shape of whatever was thrown.
+function errorCode(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code: unknown }).code)
+    : undefined
+}
+
+function signInErrorMessage(error: unknown) {
+  const code = errorCode(error)
+  switch (code) {
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Email info@manifold.markets if you think that is a mistake.'
+    case 'auth/network-request-failed':
+      return "We couldn't reach Manifold. Check your connection and try again."
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method. Try the other sign-in option.'
+    default: {
+      const message = error instanceof Error ? error.message : String(error)
+      // Firebase's stock messages are developer-facing ("Firebase: Error
+      // (auth/invalid-credential)."); show the code instead of that string.
+      const text =
+        !message ||
+        message.startsWith('Firebase: ') ||
+        message === '[object Object]'
+          ? `Something went wrong${code ? ` (${code})` : ''}.`
+          : message
+      return `${text}\n\nIf this keeps happening, email info@manifold.markets.`
+    }
+  }
 }
 
 function useAppleAuthentication() {

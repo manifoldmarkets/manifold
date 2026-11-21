@@ -1,7 +1,7 @@
 import { Group, GroupRole, PrivacyStatusType } from 'common/group'
 import { User } from 'common/user'
 import { useState } from 'react'
-import { useGroupRole } from 'web/hooks/use-group-supabase'
+import { useGroupRoleInfo } from 'web/hooks/use-group-supabase'
 import { buildArray } from 'common/util/array'
 import {
   DotsVerticalIcon,
@@ -42,7 +42,13 @@ export function TopicOptions(props: {
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
-  const userRole = useGroupRole(group.id, user)
+  const {
+    role: userRole,
+    topicRole,
+    isSiteMod,
+  } = useGroupRoleInfo(group.id, user)
+  // Site mods get topic admin powers on every topic
+  const modAction = isSiteMod && topicRole !== 'admin'
   const isMobile = useIsMobile()
 
   const hasAbout = !!group.about && !JSONEmpty(group.about)
@@ -58,12 +64,14 @@ export function TopicOptions(props: {
       name: 'Edit name',
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setEditingName(true),
+      modAction,
     },
     userRole === 'admin' &&
       !hasAbout && {
         name: 'Add description',
         icon: <PlusIcon className="h-5 w-5" />,
         onClick: addAbout,
+        modAction,
       },
     !isMember &&
       privateUser && {
@@ -78,8 +86,13 @@ export function TopicOptions(props: {
       },
     userRole === 'admin' && {
       name: 'Delete',
-      icon: <TrashIcon className="text-scarlet-500 h-5 w-5" />,
+      icon: (
+        <TrashIcon
+          className={clsx('h-5 w-5', !modAction && 'text-scarlet-500')}
+        />
+      ),
       onClick: () => setShowDelete(true),
+      modAction,
     }
   ) as DropdownItem[]
   return (

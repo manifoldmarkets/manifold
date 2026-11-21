@@ -14,6 +14,7 @@ import { Content } from 'web/components/widgets/editor'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { api } from 'web/lib/api/api'
@@ -138,7 +139,10 @@ export default function SpamAdmin() {
   return (
     <Page trackPageView={false} className="px-2">
       <NoSEO />
-      <Title>Spam Detection</Title>
+      <Title>
+        Spam Detection
+        <ModActionTag admin className="ml-2 align-middle" />
+      </Title>
 
       <Col className="gap-4">
         <Row className="flex-wrap items-end gap-4">

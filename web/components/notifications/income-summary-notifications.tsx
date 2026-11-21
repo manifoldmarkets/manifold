@@ -1,5 +1,9 @@
 import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import { getBenefit } from 'common/supporter-config'
+import {
+  getEffectiveBonusMultiplier,
+  EffectiveTier,
+  normalizeRecordedTier,
+} from 'common/supporter-config'
 import {
   BettingStreakData,
   getSourceUrl,
@@ -7,13 +11,17 @@ import {
   ManaPaymentData,
   Notification,
   ReferralData,
+  StreakFreezeUsedData,
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
+import { STREAK_MILESTONES } from 'common/store-review'
+import { DAY_MS } from 'common/util/time'
 import { UserLink } from 'web/components/widgets/user-link'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useUser } from 'web/hooks/use-user'
 import { BettingStreakModal } from '../profile/betting-streak-modal'
 import { LoansModal } from '../profile/loans-modal'
@@ -27,7 +35,7 @@ import {
 } from './notification-helpers'
 import { MultipleAvatarIcons } from './notification-types'
 import { QuestRewardTxn } from 'common/txn'
-import { QUEST_DETAILS } from 'common/quest'
+import { fromNotificationQuestType, QUEST_DETAILS } from 'common/quest'
 import { QuestsModal } from '../home/quests-or-streak'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -35,18 +43,51 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { BetOutcomeLabel } from 'web/components/outcome-label'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { DIVISION_NAMES } from 'common/leagues'
+import { DIVISION_NAMES, SILICON_PRIZE_MIN_MANA_EARNED } from 'common/leagues'
 import { Linkify } from 'web/components/widgets/linkify'
 import {
   PARTNER_UNIQUE_TRADER_BONUS,
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { humanish } from 'common/user'
+import { getEffectiveTier } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
 import { BettingStreakProgressModal } from '../profile/first-streak-modal'
+import { useStartIdentityVerification } from 'web/hooks/use-start-identity-verification'
+
+// Shown in place of a "come back for a bonus" subtitle when the user is
+// admin-flagged (effective tier 'restricted'): they earn ZERO bonuses until
+// they verify, so the messaging must say so rather than nudge them toward a
+// bonus they won't receive.
+function FlaggedBonusSubtitle() {
+  const { start, loading, error } = useStartIdentityVerification(
+    'flagged bonus notification: verify clicked'
+  )
+  // Forward-looking wording on purpose: this renders on the current user's whole
+  // bonus-notification history (it keys off their live effective tier), so it
+  // must NOT claim a past bonus "wasn't received" — only that new bonuses are
+  // paused while the account is flagged.
+  return (
+    <span>
+      Your account is flagged for verification, so new bonuses are paused.{' '}
+      <button
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          start()
+        }}
+        disabled={loading}
+        className="text-primary-700 font-semibold hover:underline disabled:opacity-50"
+      >
+        Verify your identity
+      </button>{' '}
+      to restore them.
+      {error && <span className="text-scarlet-600 block">{error}</span>}
+    </span>
+  )
+}
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -56,6 +97,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
+  const user = useUser()
   const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
     myData && 'relatedNotifications' in myData
@@ -76,12 +118,21 @@ export function UniqueBettorBonusIncomeNotification(props: {
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
   const showBet = data?.bet && data?.outcomeType
+  // Use the creator's tier at award time (embedded in the txn/notification) so
+  // the flagged label is historically accurate; fall back to current tier for
+  // notifications created before effectiveTier was recorded.
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={isFlagged ? <FlaggedBonusSubtitle /> : undefined}
       icon={
         <MultipleAvatarIcons
           notification={notification}
@@ -251,15 +302,26 @@ export function QuestIncomeNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { data } = notification
-  const { questType } = data as QuestRewardTxn['data']
+  const { questType: notifiedQuestType, questCount } =
+    data as QuestRewardTxn['data']
+  const questType = fromNotificationQuestType(notifiedQuestType, questCount)
   const user = useUser()
   const [open, setOpen] = useState(false)
+  // The bonus award embeds effectiveTier in the txn data — use it if present,
+  // otherwise fall back to the current user's tier (notifications can outlive
+  // tier transitions).
+  const txnTier = normalizeRecordedTier(
+    (data as { effectiveTier?: string } | undefined)?.effectiveTier
+  )
+  const userTier = user ? getEffectiveTier(user) : undefined
+  const isFlagged = (txnTier ?? userTier) === 'restricted'
   return (
     <NotificationFrame
       notification={notification}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
+      subtitle={isFlagged ? <FlaggedBonusSubtitle /> : undefined}
       icon={
         <NotificationIcon
           symbol={'🧭'}
@@ -273,7 +335,9 @@ export function QuestIncomeNotification(props: {
       <span className="line-clamp-3">
         <IncomeNotificationLabel notification={notification} /> Bonus for{' '}
         <PrimaryNotificationLink
-          text={`completing the ${QUEST_DETAILS[questType].title} quest`}
+          text={`completing the ${
+            QUEST_DETAILS[questType]?.title ?? 'weekly'
+          } quest`}
         />
       </span>
       {user && <QuestsModal open={open} setOpen={setOpen} user={user} />}
@@ -287,19 +351,43 @@ export function BettingStreakBonusIncomeNotification(props: {
   setHighlighted: (highlighted: boolean) => void
 }) {
   const { notification, highlighted, setHighlighted } = props
-  const { sourceText } = notification
+  const { sourceText, createdTime } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('streak-bonus-modal')
   const {
     streak: streakInDays,
     cashAmount,
     bonusAmount,
+    effectiveTier: txnTier,
   } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
 
-  // Get quest multiplier from membership tier (1x for non-supporters)
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
-  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * questMultiplier)
+  const handleOpen = () => {
+    setOpen(true)
+    // Only nudge on a fresh milestone — clicking a year-old streak-7 notification
+    // should not arm the prompt.
+    const isFresh = Date.now() - createdTime < DAY_MS
+    if (
+      isFresh &&
+      !noBonus &&
+      streakInDays &&
+      (STREAK_MILESTONES as readonly number[]).includes(streakInDays)
+    ) {
+      // Let the celebration modal land before the OS review prompt overlays it.
+      setTimeout(tryOfferReview, 2500)
+    }
+  }
+
+  // Streak multiplier driven by effective tier (account standing +
+  // subscription). Prefer the tier embedded at award time so the flagged label
+  // and amounts reflect history; fall back to current tier for older
+  // notifications.
+  const effectiveTier: EffectiveTier =
+    normalizeRecordedTier(txnTier) ?? (user ? getEffectiveTier(user) : 'free')
+  const streakMultiplier = getEffectiveBonusMultiplier(effectiveTier, 'streak')
+  const maxBonus = Math.floor(BETTING_STREAK_BONUS_MAX * streakMultiplier)
+  const isFlagged = effectiveTier === 'restricted'
 
   return (
     <NotificationFrame
@@ -308,16 +396,10 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !humanish(user) ? (
-          <span>
-            Verify your phone number to get up to{' '}
-            <TokenNumber amount={maxBonus} className={'font-bold'} isInline />{' '}
-            per streak day!
-          </span>
+        isFlagged ? (
+          <FlaggedBonusSubtitle />
         ) : (
-          noBonus &&
-          user &&
-          humanish(user) && (
+          noBonus && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )
@@ -330,7 +412,7 @@ export function BettingStreakBonusIncomeNotification(props: {
           }
         />
       }
-      onClick={() => setOpen(true)}
+      onClick={handleOpen}
     >
       {noBonus ? (
         <span className="line-clamp-3">
@@ -356,7 +438,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         open={open}
         setOpen={setOpen}
         currentStreak={user?.currentBettingStreak ?? 0}
-        questMultiplier={questMultiplier}
+        questMultiplier={streakMultiplier}
       />
     </NotificationFrame>
   )
@@ -390,6 +472,47 @@ export function BettingStreakExpiringNotification(props: {
       <span className="line-clamp-3">
         Don't let your <span>🔥 {streakInDays} day</span>{' '}
         <PrimaryNotificationLink text="Prediction Streak" /> expire!
+      </span>
+      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+    </NotificationFrame>
+  )
+}
+
+export function BettingStreakFreezeUsedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+}) {
+  const { notification, highlighted, setHighlighted } = props
+  const [open, setOpen] = useState(false)
+  const user = useUser()
+  const data = notification.data as StreakFreezeUsedData | undefined
+  const streak = data?.streak ?? 0
+  const freezesRemaining = data?.freezesRemaining ?? 0
+  return (
+    <NotificationFrame
+      notification={notification}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      isChildOfGroup={true}
+      icon={
+        <NotificationIcon
+          symbol={'🧊'}
+          symbolBackgroundClass={'bg-gradient-to-br from-blue-400 to-cyan-300'}
+        />
+      }
+      onClick={() => setOpen(true)}
+      subtitle={
+        freezesRemaining > 0
+          ? `You have ${freezesRemaining} streak freeze${
+              freezesRemaining === 1 ? '' : 's'
+            } remaining.`
+          : 'You have no streak freezes left — predict today to keep your streak!'
+      }
+    >
+      <span className="line-clamp-3">
+        A <PrimaryNotificationLink text="Streak Freeze" /> was used to save your{' '}
+        <span>🔥 {streak} day</span> prediction streak!
       </span>
       <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
     </NotificationFrame>
@@ -481,7 +604,7 @@ export function CharityChampionDethronedNotification(props: {
       icon={
         <AvatarNotificationIcon notification={notification} symbol={'🏆'} />
       }
-      link="/shop"
+      link="/charity"
     >
       <span>
         <NotificationUserLink
@@ -515,10 +638,10 @@ export function CharityChampionEligibleNotification(props: {
           symbolBackgroundClass="bg-gradient-to-br from-amber-500 to-yellow-300"
         />
       }
-      link="/shop"
+      link="/charity"
     >
       <span>
-        You're the <span className="font-semibold">#1 ticket buyer</span>!{' '}
+        You're the <span className="font-semibold">#1 entry holder</span>!{' '}
         <PrimaryNotificationLink text="Claim the Charity Champion Trophy" />
       </span>
     </NotificationFrame>
@@ -540,8 +663,20 @@ export function ReferralNotification(props: {
     sourceUserUsername,
     sourceText,
     data,
+    createdTime,
   } = notification
   const user = useUser()
+  const tryOfferReview = useStoreReviewNudge('referral-bonus')
+
+  // Fire once on mount when the user is viewing a fresh referral bonus.
+  // Multiple fresh referrals rendering at once are de-duped by the hook's
+  // module-level localLastFireTime + cooldown; stale referrals (>1d old) skip.
+  const isFresh = Date.now() - createdTime < DAY_MS
+  useEffect(() => {
+    if (!isFresh) return
+    const t = setTimeout(tryOfferReview, 1500)
+    return () => clearTimeout(t)
+  }, [isFresh, tryOfferReview])
   const isYourMarket = sourceContractCreatorUsername === user?.username
   // Use data.manaAmount if available, fall back to sourceText for old notifications
   const referralData = data as ReferralData | undefined
@@ -589,7 +724,8 @@ export function LeagueChangedNotification(props: {
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
   const { data } = notification
-  const { previousLeague, newLeague, bonusAmount } = data as LeagueChangeData
+  const { previousLeague, newLeague, bonusAmount, missedPrizeReason } =
+    data as LeagueChangeData
   const newlyAdded = previousLeague === undefined
   const promoted =
     previousLeague && previousLeague.division < newLeague.division
@@ -616,6 +752,13 @@ export function LeagueChangedNotification(props: {
             {previousLeague &&
               ` for placing Rank ${previousLeague.rank} this season`}
             .
+          </span>
+        ) : missedPrizeReason === 'silicon_min_mana_not_met' &&
+          previousLeague ? (
+          <span>
+            You placed Rank {previousLeague.rank} this season but didn't earn
+            the {formatMoney(SILICON_PRIZE_MIN_MANA_EARNED)} minimum required
+            for a Silicon prize.
           </span>
         ) : previousLeague ? (
           <span>You placed Rank {previousLeague.rank} this season.</span>

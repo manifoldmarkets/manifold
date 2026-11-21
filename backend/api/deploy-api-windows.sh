@@ -22,19 +22,103 @@ SERVICE_GROUP="${SERVICE_NAME}-group-east"
 REGION="us-east4" # Ashburn, Virginia
 ZONE="us-east4-a"
 ENV=${1:-dev}
+PERP_TRADING_MODE=${PERP_TRADING_MODE:-}
+
+# The trading mode the live deployment is currently running. Deploys replace
+# the container env wholesale, and the runtime treats a missing var as
+# 'enabled' (common/perps/trading-mode.ts), so a deploy that omitted
+# PERP_TRADING_MODE used to be able to silently reset an incident stance
+# (reduce-only / halted) back to enabled. Instead of making the operator
+# retype the mode on every prod deploy, read it off the live template and
+# carry it forward: a deploy never changes the kill switch unless told to.
+get_deployed_perp_trading_mode() {
+    local template
+    template=$(gcloud compute instance-groups managed describe ${SERVICE_GROUP} \
+        --project ${GCLOUD_PROJECT} --zone ${ZONE} \
+        --format="value(instanceTemplate)" 2>/dev/null) || return 1
+    template=${template##*/}
+    [ -n "${template}" ] || return 1
+    # The container env lives in the template's `container-env` metadata key,
+    # one KEY=VALUE per line (see backend/deploy/cos-container-startup.sh). The
+    # value arrives with escaped newlines on some platforms (observed \\n on
+    # Windows gcloud); normalize before parsing.
+    local mode
+    mode=$(gcloud compute instance-templates describe "${template}" \
+        --project ${GCLOUD_PROJECT} \
+        --format="value(properties.metadata.items.filter(\"key='container-env'\").extract(value))" \
+        2>/dev/null \
+      | sed 's/\\\\n/\n/g; s/\\n/\n/g' \
+      | tr -d '\r' \
+      | grep '^PERP_TRADING_MODE=' | head -1 \
+      | cut -d= -f2- \
+      | tr -d "[:space:]'\"")
+    if [ -n "${mode}" ]; then
+        echo "${mode}"
+        return 0
+    fi
+    # Legacy fallback: templates made before the move off the container
+    # startup agent keep the env in `gce-container-declaration`. Only needed
+    # for the first deploy after the switch; safe to delete afterwards.
+    gcloud compute instance-templates describe "${template}" \
+        --project ${GCLOUD_PROJECT} \
+        --format="value(properties.metadata.items.filter(\"key='gce-container-declaration'\").extract(value))" \
+        2>/dev/null \
+      | sed 's/\\\\n/\n/g; s/\\n/\n/g' \
+      | grep -A1 'name: PERP_TRADING_MODE' \
+      | grep 'value:' | head -1 \
+      | sed 's/.*value: *//' \
+      | tr -d "[:space:]'\""
+}
 
 case $ENV in
     dev)
+        PERP_TRADING_MODE=${PERP_TRADING_MODE:-enabled}
         NEXT_PUBLIC_FIREBASE_ENV=DEV
+        REDIS_URL=
+        DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=dev-mantic-markets
         MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
+        # Private Memorystore instance. Passed at the container level so both
+        # the main API process and PM2 read replicas inherit it.
+        # Disabled since we scaled back down to one instance.
+        # REDIS_URL=redis://10.215.204.211:6379
+        # DISABLE_REDIS_CACHE=false
+        REDIS_URL=
+        DISABLE_REDIS_CACHE=true
         GCLOUD_PROJECT=mantic-markets
         MACHINE_TYPE=c2-standard-4 ;;
     *)
         echo "Invalid environment; must be dev or prod."
         exit 1
+esac
+
+# Prod inherits the live mode when not explicitly overridden, so a routine
+# deploy can never flip the kill switch by accident.
+if [ "$ENV" = "prod" ] && [ -z "${PERP_TRADING_MODE}" ]; then
+    echo "PERP_TRADING_MODE not set; reading the live prod mode so this deploy keeps it..."
+    DEPLOYED_MODE=$(get_deployed_perp_trading_mode || true)
+    case $DEPLOYED_MODE in
+        enabled)
+            PERP_TRADING_MODE=enabled
+            echo "Prod is currently 'enabled'; keeping it." ;;
+        reduce-only|halted)
+            PERP_TRADING_MODE=${DEPLOYED_MODE}
+            echo "NOTE: prod is currently '${DEPLOYED_MODE}' (incident stance). This deploy KEEPS it."
+            echo "Pass PERP_TRADING_MODE=enabled explicitly when the incident is over." ;;
+        *)
+            echo "Could not read the live PERP_TRADING_MODE from ${SERVICE_GROUP} (got '${DEPLOYED_MODE:-nothing}')."
+            echo "Refusing to guess on prod: pass PERP_TRADING_MODE=enabled, reduce-only, or halted explicitly."
+            exit 1 ;;
+    esac
+fi
+
+case $PERP_TRADING_MODE in
+    enabled|reduce-only|halted) ;;
+    *)
+        echo "Invalid PERP_TRADING_MODE; expected enabled, reduce-only, or halted."
+        exit 1 ;;
 esac
 
 echo "Deploy start time: $(date "+%Y-%m-%d %I:%M:%S %p")"
@@ -92,51 +176,41 @@ fi
 TEMPLATE_NAME="${SERVICE_NAME}-${IMAGE_TAG}"
 GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/${ZONE}/${SERVICE_GROUP}?project=${GCLOUD_PROJECT}"
 
-# ian: GambleId requires a static IP address for the API
-STATIC_IP_NAME="${SERVICE_NAME}-static-ip"
-MAX_IPS=4  # Maximum number of static IPs to cycle through
+# The template no longer uses `create-with-container`: the GCE container
+# startup agent behind it is deprecated and shut down for new VMs as of
+# 2026-07-31.
+#   https://cloud.google.com/compute/docs/deprecations/container-startup-agent-on-compute
+#   https://cloud.google.com/compute/docs/containers/migrate-containers
+# Instead the VM boots stock Container-Optimized OS and runs
+# backend/deploy/cos-container-startup.sh as its startup script, which reads
+# the image + env from the metadata keys set below and does the `docker run`.
+#   https://cloud.google.com/compute/docs/instances/startup-scripts/linux
+#   https://cloud.google.com/sdk/gcloud/reference/compute/instance-templates/create
+STARTUP_SCRIPT="../deploy/cos-container-startup.sh"
+# Container env, one KEY=VALUE per line. It goes through a file because
+# gcloud's --metadata flag splits values on commas; --metadata-from-file
+# does not.
+ENV_FILE="dist/container-env"
+printf '%s\n' \
+    "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV}" \
+    "GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}" \
+    "REDIS_URL=${REDIS_URL}" \
+    "DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE}" \
+    "PERP_TRADING_MODE=${PERP_TRADING_MODE}" > "${ENV_FILE}"
 
-for i in $(seq 1 $MAX_IPS); do
-    CURRENT_IP_NAME="${STATIC_IP_NAME}-${i}"
-    STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)' 2>/dev/null || echo "")
-
-    if [ -z "${STATIC_IP_ADDRESS}" ]; then
-        echo "Creating new static IP address ${CURRENT_IP_NAME}..."
-        gcloud compute addresses create ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT}
-        STATIC_IP_ADDRESS=$(gcloud compute addresses describe ${CURRENT_IP_NAME} --region=${REGION} --project=${GCLOUD_PROJECT} --format='get(address)')
-    fi
-
-    # Check if any instance is using this IP
-    INSTANCE_USING_IP=$(gcloud compute instances list --project=${GCLOUD_PROJECT} --filter="networkInterfaces.accessConfigs.natIP:${STATIC_IP_ADDRESS}" --format="value(name)")
-
-    if [ -z "${INSTANCE_USING_IP}" ]; then
-        echo "Using available static IP address: ${STATIC_IP_ADDRESS}"
-        break
-    else
-        echo "IP ${STATIC_IP_ADDRESS} is currently in use by instance ${INSTANCE_USING_IP}. Trying next IP."
-    fi
-done
-
-if [ -z "${STATIC_IP_ADDRESS}" ]; then
-    echo "Error: No available static IPs found. Are there too many concurrent deploys? Check your GCP virtual machine dashboard."
-    exit 1
-fi
-
-echo "Using static IP address: ${STATIC_IP_ADDRESS}"
-echo
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
-gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
+gcloud compute instance-templates create ${TEMPLATE_NAME} \
        --project ${GCLOUD_PROJECT} \
        --image-project "cos-cloud" \
        --image-family "cos-121-lts" \
-       --container-image ${IMAGE_URL} \
        --machine-type ${MACHINE_TYPE} \
        --boot-disk-size=100GB \
-       --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
+       --metadata container-image=${IMAGE_URL},container-name=${SERVICE_NAME},google-logging-enabled=true \
+       --metadata-from-file startup-script=${STARTUP_SCRIPT},container-env=${ENV_FILE} \
        --no-user-output-enabled \
        --scopes default,cloud-platform \
-       --tags lb-health-check \
-       --address ${STATIC_IP_ADDRESS}
+       --tags lb-health-check
+rm -f "${ENV_FILE}"
 
 echo "Updating ${SERVICE_GROUP} to ${TEMPLATE_NAME}. See status here: ${GROUP_PAGE_URL}"
 gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GROUP} \
@@ -144,7 +218,8 @@ gcloud compute instance-groups managed rolling-action start-update ${SERVICE_GRO
        --zone ${ZONE} \
        --version template=${TEMPLATE_NAME} \
        --no-user-output-enabled \
-       --max-unavailable 0 # don't kill old one until new one is healthy
+       --max-unavailable 0 \
+       --max-surge 1 # don't kill old one until new one is healthy
 
 echo "Rollout underway. Waiting for update to finish rolling out"
 echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"

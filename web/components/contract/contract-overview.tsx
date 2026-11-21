@@ -1,6 +1,7 @@
 import clsx from 'clsx'
-import { ReactNode, memo, useEffect, useState } from 'react'
+import { ReactNode, memo, useEffect, useMemo, useRef, useState } from 'react'
 
+import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { DisplayUser } from 'common/api/user-types'
@@ -8,6 +9,7 @@ import { Bet } from 'common/bet'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { getAnswerProbability } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
 import {
   BinaryContract,
   BinaryOrPseudoNumericContract,
@@ -22,16 +24,19 @@ import {
   dayProbChange,
   getMainBinaryMCAnswer,
   isBinaryMulti,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { getDefaultGraphedAnswerIds } from 'common/multi-chart'
 import { Period, periodDurations } from 'common/period'
 import { getIsLive } from 'common/sports-info'
 import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
-import { orderBy } from 'lodash'
+import { searchInAny } from 'common/util/parse'
+import { isEqual, orderBy } from 'lodash'
 import { FaArrowDown, FaArrowUp, FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
@@ -55,12 +60,18 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
+  ValueStore,
+  createValueStore,
+  useValueStore,
+} from 'web/hooks/use-value-store'
+import {
   AnswersResolvePanel,
   IndependentAnswersResolvePanel,
   IndependentAnswersUnresolvePanel,
 } from '../answers/answer-resolve-panel'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
+import { NextMarketPrompt } from '../bet/next-market-prompt'
 import { UserBetsSummary } from '../bet/user-bet-summary'
 import {
   ChartAnnotations,
@@ -82,6 +93,7 @@ import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { CancelLabel } from '../outcome-label'
+import { PerpOverview } from '../perps/perp-overview'
 import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
 import { GradientContainer } from '../widgets/gradient-container'
@@ -92,6 +104,17 @@ export const ContractOverview = memo(
   (props: {
     contract: Contract
     betPoints: HistoryPoint<Partial<Bet>>[] | MultiPoints
+    // The time of the latest bet among the rows the server-rendered part of
+    // betPoints was made from.
+    serverLastBetTime?: number
+    // The answers the page was rendered with chart points for.
+    serverPointAnswerIds?: string[]
+    // The time of the newest bet in the page's own feed that moved a
+    // probability, if there is one.
+    latestPageBetTime?: number
+    // Whether the contract is the live one, loaded since the page opened, or
+    // still the one the page was rendered with. Taken as live if not given.
+    hasLiveContract?: boolean
     showResolver: boolean
     showUnresolver: boolean
     resolutionRating?: ReactNode
@@ -162,6 +185,10 @@ export const ContractOverview = memo(
           <ChoiceOverview
             contract={contract}
             points={betPoints as MultiPoints}
+            serverLastBetTime={props.serverLastBetTime}
+            serverPointAnswerIds={props.serverPointAnswerIds ?? NO_ANSWER_IDS}
+            latestPageBetTime={props.latestPageBetTime}
+            hasLiveContract={props.hasLiveContract ?? true}
             showResolver={showResolver}
             showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
@@ -182,7 +209,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
+            showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
+            setShowUnresolver={setShowUnresolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
           />
@@ -193,7 +222,9 @@ export const ContractOverview = memo(
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
+            showUnresolver={showUnresolver}
             setShowResolver={setShowResolver}
+            setShowUnresolver={setShowUnresolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
           />
@@ -218,6 +249,8 @@ export const ContractOverview = memo(
         return <BountyPanel contract={contract} />
       case 'POLL':
         return <PollPanel contract={contract} />
+      case 'PERP':
+        return <PerpOverview contract={contract} />
       default:
         return <AlertBox title="Invalid contract" />
     }
@@ -252,6 +285,7 @@ export const BinaryOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const currentUser = useUser()
@@ -306,6 +340,7 @@ export const BinaryOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker
@@ -338,8 +373,24 @@ export const BinaryOverview = (props: {
   )
 }
 
+const NO_ANSWER_IDS: string[] = []
+
+// How long the pointer must rest on an answer that is not on the chart before
+// the chart previews it. Previewing adds a line and can rescale the chart, so
+// it should not happen for every row the pointer crosses.
+const HOVER_PREVIEW_DELAY_MS = 150
+
 const ChoiceOverview = (props: {
   points: MultiPoints
+  // The time of the latest bet among the rows `points` was made from.
+  serverLastBetTime: number | undefined
+  // The answers the page was rendered with chart points for.
+  serverPointAnswerIds: string[]
+  // The time of the newest bet in the page's own feed that moved a
+  // probability, if there is one.
+  latestPageBetTime: number | undefined
+  // Whether the contract is the live one, loaded since the page opened.
+  hasLiveContract: boolean
   contract: CPMMMultiContract
   showResolver: boolean
   showUnresolver: boolean
@@ -375,11 +426,14 @@ const ChoiceOverview = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const [hoverAnswerId, setHoverAnswerId] = useState<string>()
+  // The answer the pointer is on. It is kept outside React state so that
+  // moving the pointer over the answer list re-renders the chart and nothing
+  // else.
+  const hoverStore = useMemo(
+    () => createValueStore<string | undefined>(undefined),
+    []
+  )
   const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([])
-  const [defaultAnswerIdsToGraph, setDefaultAnswerIdsToGraph] = useState<
-    string[]
-  >([])
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
@@ -387,6 +441,54 @@ const ChoiceOverview = (props: {
     '',
     'create-answer-text' + contract.id
   )
+
+  // Until the user picks answers, the chart draws the likeliest ones (the
+  // likeliest matches while searching), whatever order the list is sorted in.
+  // It follows the live market, but an answer already drawn keeps its place
+  // until another clearly outranks it, so lines don't swap with every bet.
+  // A search with no match leaves the chart as it was: the same box is where a
+  // new answer is typed, and the chart should not empty while one is.
+  //
+  // What the last render to reach the screen drew by default.
+  const previousDefaults = useRef<{ query: string; ids: string[] }>()
+  const defaultAnswerIdsToGraph = useMemo(() => {
+    const matches = query
+      ? contract.answers.filter((a) => searchInAny(query, a.text))
+      : []
+    const previous = previousDefaults.current
+    const sameSearch = previous?.query === query
+    const ids = getDefaultGraphedAnswerIds(
+      contract,
+      matches.length ? matches : contract.answers,
+      sameSearch ? previous.ids : undefined
+    )
+    // The same array while the choice is the same, so the chart can skip work.
+    return sameSearch && isEqual(previous.ids, ids) ? previous.ids : ids
+  }, [contract, query])
+  // Recorded in an effect, not while rendering, so a render that React runs
+  // twice or throws away leaves nothing behind.
+  useEffect(() => {
+    previousDefaults.current = { query, ids: defaultAnswerIdsToGraph }
+  }, [query, defaultAnswerIdsToGraph])
+  const graphedAnswerIds = selectedAnswerIds.length
+    ? selectedAnswerIds
+    : defaultAnswerIdsToGraph
+
+  // An answer already on the chart is highlighted at once. One that isn't is
+  // previewed only once the pointer rests on its row.
+  const hoverTimer = useRef<ReturnType<typeof setTimeout>>()
+  const onAnswerHover = useEvent((answer: Answer | undefined) => {
+    clearTimeout(hoverTimer.current)
+    if (!answer || graphedAnswerIds.includes(answer.id)) {
+      hoverStore.set(answer?.id)
+    } else {
+      hoverTimer.current = setTimeout(
+        () => hoverStore.set(answer.id),
+        HOVER_PREVIEW_DELAY_MS
+      )
+    }
+  })
+  useEffect(() => () => clearTimeout(hoverTimer.current), [])
 
   const defaultSort = getDefaultSort(contract)
   const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
@@ -413,6 +515,7 @@ const ChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
   const {
     chartPositions,
@@ -433,12 +536,27 @@ const ChoiceOverview = (props: {
         : [...answers, answer.id]
     )
   }
+  // The same function from render to render, so the answer list can skip
+  // renders that change nothing it shows.
+  const onAnswerClick = useEvent((answer: Answer) => {
+    if (hideGraph) {
+      setSelectedAnswerIds([answer.id])
+      setHideGraph(false)
+    } else addAnswerToGraph(answer)
+  })
   const { points, loading } = useMultiChoiceDataZoomFetcher({
     contract,
     viewXScale: zoomParams?.viewXScale,
     points: props.points,
     createdTime: contract.createdTime,
-    lastBetTime: contract.lastBetTime ?? contract.createdTime,
+    serverLastBetTime: props.serverLastBetTime,
+    serverPointAnswerIds: props.serverPointAnswerIds,
+    latestPageBetTime: props.latestPageBetTime,
+    hasLiveContract: props.hasLiveContract,
+    isShown: !hideGraph,
+    isZoomed: currentTimePeriod !== 'allTime',
+    graphedAnswerIds,
+    previewStore: hoverStore,
   })
   return (
     <>
@@ -467,6 +585,7 @@ const ChoiceOverview = (props: {
                 <EditChartAnnotationsButton
                   pointerMode={pointerMode}
                   setPointerMode={setPointerMode}
+                  modAction={addIsModAction}
                 />
               )}
               <TimeRangePicker
@@ -479,43 +598,24 @@ const ChoiceOverview = (props: {
           </>
         )}
       </Row>
-      {contract.mechanism == 'cpmm-multi-1' && !hideGraph && (
-        <SizedContainer
-          className={clsx(
-            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-            showZoomer && 'mb-12'
-          )}
-        >
-          {(w, h) => (
-            <ChoiceContractChart
-              showZoomer={showZoomer}
-              zoomParams={zoomParams}
-              width={w}
-              height={h}
-              multiPoints={points}
-              contract={contract}
-              highlightAnswerId={hoverAnswerId}
-              selectedAnswerIds={
-                selectedAnswerIds.length
-                  ? selectedAnswerIds
-                  : defaultAnswerIdsToGraph
-              }
-              pointerMode={pointerMode}
-              setHoveredAnnotation={setHoveredAnnotation}
-              hoveredAnnotation={hoveredAnnotation}
-              chartAnnotations={chartAnnotations}
-              chartPositions={chartPositions?.filter((cp) =>
-                hoverAnswerId
-                  ? cp.answerId === hoverAnswerId
-                  : selectedAnswerIds.length === 0 ||
-                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
-              )}
-              hoveredChartPosition={hoveredChartPosition}
-              setHoveredChartPosition={setHoveredChartPosition}
-              zoomY={zoomY}
-            />
-          )}
-        </SizedContainer>
+      {isMultiCpmm(contract) && !hideGraph && (
+        <ChoiceChart
+          hoverStore={hoverStore}
+          contract={contract}
+          points={points}
+          graphedAnswerIds={graphedAnswerIds}
+          selectedAnswerIds={selectedAnswerIds}
+          showZoomer={showZoomer}
+          zoomParams={zoomParams}
+          pointerMode={pointerMode}
+          setHoveredAnnotation={setHoveredAnnotation}
+          hoveredAnnotation={hoveredAnnotation}
+          chartAnnotations={chartAnnotations}
+          chartPositions={chartPositions}
+          hoveredChartPosition={hoveredChartPosition}
+          setHoveredChartPosition={setHoveredChartPosition}
+          zoomY={zoomY}
+        />
       )}
       {chartAnnotations?.length && !hideGraph ? (
         <ChartAnnotations
@@ -536,15 +636,13 @@ const ChoiceOverview = (props: {
           answers={contract.answers}
         />
       ) : null}
-      {!shouldAnswersSumToOne &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      showUnresolver ? (
+      {!shouldAnswersSumToOne && isMultiCpmm(contract) && showUnresolver ? (
         <IndependentAnswersUnresolvePanel
           contract={contract}
           onClose={() => setShowUnresolver(false)}
           show={showUnresolver}
         />
-      ) : !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      ) : !shouldAnswersSumToOne && isMultiCpmm(contract) ? (
         <IndependentAnswersResolvePanel
           contract={contract}
           onClose={() => setShowResolver(false)}
@@ -562,19 +660,11 @@ const ChoiceOverview = (props: {
         <>
           {resolutionRating}
           <AnswersPanel
-            setDefaultAnswerIdsToGraph={setDefaultAnswerIdsToGraph}
             selectedAnswerIds={selectedAnswerIds}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
-            onAnswerHover={(ans) => setHoverAnswerId(ans?.id)}
-            onAnswerClick={
-              hideGraph
-                ? (ans) => {
-                    setSelectedAnswerIds([ans.id])
-                    setHideGraph(false)
-                  }
-                : addAnswerToGraph
-            }
+            onAnswerHover={onAnswerHover}
+            onAnswerClick={onAnswerClick}
             sort={sort}
             setSort={setSort}
             query={query}
@@ -587,6 +677,71 @@ const ChoiceOverview = (props: {
     </>
   )
 }
+// The chart of a multiple choice market, in a component of its own so that it
+// alone re-renders as the pointer moves over the answer list.
+const ChoiceChart = (
+  props: Omit<
+    Parameters<typeof ChoiceContractChart>[0],
+    | 'width'
+    | 'height'
+    | 'multiPoints'
+    | 'highlightAnswerId'
+    | 'selectedAnswerIds'
+    | 'chartPositions'
+  > & {
+    hoverStore: ValueStore<string | undefined>
+    points: MultiPoints
+    // The answers to draw, and the ones the user picked (none: the defaults).
+    graphedAnswerIds: string[]
+    selectedAnswerIds: string[]
+    chartPositions: ChartPosition[]
+  }
+) => {
+  const {
+    hoverStore,
+    points,
+    graphedAnswerIds,
+    selectedAnswerIds,
+    chartPositions,
+    showZoomer,
+    ...chartProps
+  } = props
+  const hoverAnswerId = useValueStore(hoverStore)
+  const shownPositions = useMemo(
+    () =>
+      chartPositions?.filter((cp) =>
+        hoverAnswerId
+          ? cp.answerId === hoverAnswerId
+          : selectedAnswerIds.length === 0 ||
+            (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+      ),
+    [chartPositions, hoverAnswerId, selectedAnswerIds]
+  )
+
+  return (
+    <SizedContainer
+      className={clsx(
+        // mt-2 keeps the top axis label clear of the controls above.
+        'mt-2 h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+        showZoomer && 'mb-12'
+      )}
+    >
+      {(w, h) => (
+        <ChoiceContractChart
+          {...chartProps}
+          showZoomer={showZoomer}
+          width={w}
+          height={h}
+          multiPoints={points}
+          highlightAnswerId={hoverAnswerId}
+          selectedAnswerIds={graphedAnswerIds}
+          chartPositions={shownPositions}
+        />
+      )}
+    </SizedContainer>
+  )
+}
+
 const NumberOverview = (props: {
   points: MultiPoints
   contract: CPMMNumericContract
@@ -615,6 +770,7 @@ const NumberOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   return (
@@ -627,6 +783,7 @@ const NumberOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <button
@@ -662,7 +819,7 @@ const NumberOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -689,6 +846,7 @@ const NumberOverview = (props: {
                   zoomParams={zoomParams}
                   contract={contract}
                   showZoomer={true}
+                  zoomY
                 />
               </div>
             </>
@@ -723,16 +881,20 @@ const MultiNumericOverview = (props: {
   points: MultiPoints
   contract: MultiNumericContract
   showResolver: boolean
+  showUnresolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  setShowUnresolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
 }) => {
   const {
     points,
     contract,
     showResolver,
+    showUnresolver,
     resolutionRating,
     setShowResolver,
+    setShowUnresolver,
     onAnswerCommentClick,
   } = props
 
@@ -765,10 +927,17 @@ const MultiNumericOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>
-      {!contract.shouldAnswersSumToOne ? (
+      {!contract.shouldAnswersSumToOne && showUnresolver ? (
+        <IndependentAnswersUnresolvePanel
+          contract={contract}
+          onClose={() => setShowUnresolver(false)}
+          show={showUnresolver}
+        />
+      ) : !contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -782,7 +951,7 @@ const MultiNumericOverview = (props: {
           />
         </GradientContainer>
       ) : null}
-      {!showResolver && (
+      {!showResolver && !showUnresolver && (
         <>
           {resolutionRating}
           <AnswersPanel
@@ -804,16 +973,20 @@ const MultiDateOverview = (props: {
   points: MultiPoints
   contract: MultiDateContract
   showResolver: boolean
+  showUnresolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
+  setShowUnresolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
 }) => {
   const {
     points,
     contract,
     showResolver,
+    showUnresolver,
     resolutionRating,
     setShowResolver,
+    setShowUnresolver,
     onAnswerCommentClick,
   } = props
 
@@ -846,10 +1019,17 @@ const MultiDateOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>
-      {!contract.shouldAnswersSumToOne ? (
+      {!contract.shouldAnswersSumToOne && showUnresolver ? (
+        <IndependentAnswersUnresolvePanel
+          contract={contract}
+          onClose={() => setShowUnresolver(false)}
+          show={showUnresolver}
+        />
+      ) : !contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -863,7 +1043,7 @@ const MultiDateOverview = (props: {
           />
         </GradientContainer>
       ) : null}
-      {!showResolver && (
+      {!showResolver && !showUnresolver && (
         <>
           {resolutionRating}
           <AnswersPanel
@@ -917,6 +1097,7 @@ const BinaryChoiceOverview = (props: {
     setHoveredAnnotation,
     chartAnnotations,
     enableAdd,
+    addIsModAction,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
 
   const mainAnswer = getMainBinaryMCAnswer(contract)!
@@ -952,6 +1133,7 @@ const BinaryChoiceOverview = (props: {
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
               setPointerMode={setPointerMode}
+              modAction={addIsModAction}
             />
           )}
           <TimeRangePicker
@@ -962,7 +1144,7 @@ const BinaryChoiceOverview = (props: {
           />
         </Row>
       </Row>
-      {!!Object.keys(points).length && contract.mechanism == 'cpmm-multi-1' && (
+      {!!Object.keys(points).length && isMultiCpmm(contract) && (
         <SizedContainer
           className={clsx(
             'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
@@ -1090,6 +1272,7 @@ const PseudoNumericOverview = (props: {
             zoomParams={zoomParams}
             contract={contract}
             showZoomer={showZoomer}
+            zoomY
           />
         )}
       </SizedContainer>
@@ -1150,6 +1333,12 @@ export function BinaryBetPanel(props: {
   return (
     <Col className="mt-2 w-full">
       <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
+      {/* Sits right under "Trade placed", where the user just clicked. */}
+      <NextMarketPrompt
+        contract={contract}
+        placement="panel"
+        className="mt-2"
+      />
     </Col>
   )
 }

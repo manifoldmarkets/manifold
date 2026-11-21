@@ -24,6 +24,10 @@ import { DisplayUser } from 'common/api/user-types'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserLink } from 'web/components/widgets/user-link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { getEffectiveTier } from 'common/user'
+import { BonusStandingNotice } from 'web/components/upsell/bonus-standing-notice'
 
 export const getServerSideProps = redirectIfLoggedOut('/')
 
@@ -39,19 +43,35 @@ export default function ReferralsPage() {
     }
   }, [user?.id])
 
+  const { data: earnings } = useAPIGetter(
+    'get-referral-earnings',
+    user ? {} : undefined
+  )
+
   const url = `https://${ENV_CONFIG.domain}${referralQuery(
     user?.username ?? ''
   )}`
 
   const referralCount = referredUsers?.length ?? 0
+  const totalEarned = earnings?.total ?? 0
+  const earnedByUserId: Record<
+    string,
+    {
+      amount: number
+      maxMultiplier: number
+      bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
+    }
+  > = earnings?.byReferredUserId ?? {}
+
+  const tier = user ? getEffectiveTier(user) : 'free'
 
   return (
     <Page trackPageView={'referrals'} className="p-3">
       <SEO
         title="Refer a friend"
-        description={`Invite new users to Manifold and get ${formatMoney(
+        description={`Invite new users to Manifold and earn ${formatMoney(
           REFERRAL_AMOUNT
-        )} if they sign up and place a trade!`}
+        )} for every friend who signs up.`}
         url="/referrals"
       />
 
@@ -75,7 +95,7 @@ export default function ReferralsPage() {
               <span className="font-semibold text-white">
                 {formatMoney(REFERRAL_AMOUNT)}
               </span>{' '}
-              for each friend who signs up and places their first trade.
+              as soon as they sign up with your link.
             </p>
 
             {/* Stats row */}
@@ -88,13 +108,15 @@ export default function ReferralsPage() {
               </div>
               <div className="bg-white/15 rounded-xl px-4 py-3 backdrop-blur-sm">
                 <div className="text-2xl font-bold">
-                  {formatMoney(referralCount * REFERRAL_AMOUNT)}
+                  {formatMoney(totalEarned)}
                 </div>
                 <div className="text-sm text-white/80">Total earned</div>
               </div>
             </Row>
           </div>
         </div>
+
+        <BonusStandingNotice tier={tier} kind="referral" />
 
         {/* Share Section */}
         <div className="bg-canvas-0 border-ink-200 dark:border-ink-300 rounded-xl border p-5 shadow-sm sm:p-6">
@@ -138,12 +160,9 @@ export default function ReferralsPage() {
             <HowItWorksStep
               number={2}
               title="Friend signs up"
-              description="Your friend creates a Manifold account using your link."
-            />
-            <HowItWorksStep
-              number={3}
-              title="They place a trade"
-              description="Once they make their first prediction, you both get rewarded!"
+              description={`Earn ${formatMoney(
+                REFERRAL_AMOUNT
+              )} as soon as your friend creates a Manifold account using your link.`}
             />
           </div>
         </div>
@@ -185,7 +204,10 @@ export default function ReferralsPage() {
           ) : referredUsers.length === 0 ? (
             <EmptyReferralsState />
           ) : (
-            <ReferralsList users={referredUsers} />
+            <ReferralsList
+              users={referredUsers}
+              earnedByUserId={earnedByUserId}
+            />
           )}
         </div>
       </Col>
@@ -226,33 +248,72 @@ function EmptyReferralsState() {
   )
 }
 
-function ReferralsList(props: { users: DisplayUser[] }) {
-  const { users } = props
+function ReferralsList(props: {
+  users: DisplayUser[]
+  earnedByUserId: Record<
+    string,
+    {
+      amount: number
+      maxMultiplier: number
+      bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
+    }
+  >
+}) {
+  const { users, earnedByUserId } = props
   return (
     <Col className="divide-ink-100 dark:divide-ink-300 -mx-2 max-h-64 divide-y overflow-y-auto">
-      {users.map((user) => (
-        <Row
-          key={user.id}
-          className="hover:bg-canvas-50 items-center gap-3 rounded-lg px-2 py-3 transition-colors"
-        >
-          <Avatar
-            username={user.username}
-            avatarUrl={user.avatarUrl}
-            size="sm"
-          />
-          <Col className="min-w-0 flex-1">
-            <UserLink user={user} className="font-medium" />
-            <span className="text-ink-500 text-xs">@{user.username}</span>
-          </Col>
-          <div className="text-ink-500 flex-shrink-0 text-xs">
-            <TokenNumber
-              coinType="MANA"
-              amount={REFERRAL_AMOUNT}
-              className="text-teal-600"
+      {users.map((user) => {
+        const entry = earnedByUserId[user.id]
+        const amount = entry?.amount ?? 0
+        const multiplier = entry?.maxMultiplier ?? 1
+        return (
+          <Row
+            key={user.id}
+            className="hover:bg-canvas-50 items-center gap-3 rounded-lg px-2 py-3 transition-colors"
+          >
+            <Avatar
+              username={user.username}
+              avatarUrl={user.avatarUrl}
+              size="sm"
             />
-          </div>
-        </Row>
-      ))}
+            <Col className="min-w-0 flex-1">
+              <UserLink user={user} className="font-medium" />
+              <span className="text-ink-500 text-xs">@{user.username}</span>
+            </Col>
+            <Row className="flex-shrink-0 items-center justify-end gap-1.5 text-xs">
+              {amount > 0 && multiplier > 1 && (
+                <Tooltip
+                  text={`Boosted by your supporter membership at payout time (${multiplier}× referral multiplier).`}
+                >
+                  <span className="cursor-default rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                    {multiplier}×
+                  </span>
+                </Tooltip>
+              )}
+              {amount === 0 && (
+                <Tooltip text="No referral bonus has been paid for this referral. Referrals made while your account was flagged for verification don't pay out; referrals from before Oct 2026 pay when your friend first trades or verifies.">
+                  <span className="bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400 cursor-default rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                    ?
+                  </span>
+                </Tooltip>
+              )}
+              <div className="w-20">
+                {amount > 0 ? (
+                  <div className="text-right">
+                    <TokenNumber
+                      coinType="MANA"
+                      amount={amount}
+                      className="text-teal-600"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-ink-400 italic">None</span>
+                )}
+              </div>
+            </Row>
+          </Row>
+        )
+      })}
     </Col>
   )
 }

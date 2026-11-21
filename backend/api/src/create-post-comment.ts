@@ -1,8 +1,17 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getPrivateUser, revalidateStaticProps } from 'shared/utils'
+import {
+  getUser,
+  getPrivateUser,
+  revalidateStaticProps,
+  sanitizeJsonContent,
+} from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
@@ -22,9 +31,32 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     if (!creator) throw new APIError(401, 'Your account was not found')
     if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
 
+    // Forum comments share the new-account social gate with market comments.
+    if (!(await passesNewAccountGate(createSupabaseDirectClient(), creator))) {
+      throw new APIError(403, newAccountGateMessage('Commenting on posts'))
+    }
+
     const pg = createSupabaseDirectClient()
     const post = await getPost(pg, postId)
     if (!post) throw new APIError(404, 'Post not found')
+
+    if (replyToCommentId) {
+      const repliedComment = await pg.oneOrNone<{
+        comment_id: string
+        reply_to_comment_id: string | null
+      }>(
+        `select comment_id, data->>'replyToCommentId' as reply_to_comment_id
+         from old_post_comments
+         where comment_id = $1 and post_id = $2`,
+        [replyToCommentId, postId]
+      )
+      if (!repliedComment) {
+        throw new APIError(404, 'Comment to reply to not found')
+      }
+      if (repliedComment.reply_to_comment_id) {
+        throw new APIError(400, 'Can only reply to top-level comments')
+      }
+    }
 
     // Check if commenter is blocked by post creator or has blocked post creator
     const privateUser = await getPrivateUser(auth.uid)
@@ -43,7 +75,7 @@ export const createPostComment: APIHandler<'create-post-comment'> =
     const commentObjectForDataColumn: Omit<PostComment, 'createdTime'> = {
       id: nanoid(8),
       userId: creator.id,
-      content,
+      content: sanitizeJsonContent(content),
       userName: creator.name,
       userUsername: creator.username,
       userAvatarUrl: creator.avatarUrl,

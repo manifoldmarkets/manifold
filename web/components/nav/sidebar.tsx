@@ -1,6 +1,10 @@
 import {
+  BriefcaseIcon,
   ChatIcon,
+  ChatAlt2Icon,
   DeviceMobileIcon,
+  DotsHorizontalIcon,
+  GiftIcon,
   HeartIcon,
   LoginIcon,
   LogoutIcon,
@@ -13,13 +17,14 @@ import {
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
-import { DAY_MS } from 'common/util/time'
+import { SHOP_ITEMS } from 'common/shop/items'
+import { getTotalPrizePool, SweepstakesPrize } from 'common/sweepstakes'
+import { DAY_MS, isAprilFools } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
 import { IoCompassOutline } from 'react-icons/io5'
@@ -27,6 +32,7 @@ import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-ge
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
@@ -34,6 +40,7 @@ import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { Col } from '../layout/col'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { ReportsIcon } from '../reports-icon'
 import { LiveTVIcon } from '../tv-icon'
@@ -42,11 +49,95 @@ import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
 
+function formatPrizePoolLabel(
+  prizes: SweepstakesPrize[] | undefined
+): string | undefined {
+  if (!prizes) return undefined
+  const total = getTotalPrizePool(prizes)
+  if (!Number.isFinite(total) || total <= 0) return undefined
+  if (total < 1000) return `$${total}`
+  const thousands = total / 1000
+  return `$${thousands.toLocaleString(undefined, {
+    maximumFractionDigits: 1,
+  })}k`
+}
+
 export const SPEND_MANA_ENABLED = true
 
-// Bump this number to re-show the NEW badge on Shop for all users
-const SHOP_NEW_VERSION = 1
-const SHOP_SEEN_KEY = 'shop-new-seen-version'
+// Newest visibleSinceTime across all visible items. The sidebar NEW badge
+// fires when this exceeds the current user's lastShopVisitTime.
+const NEWEST_SHOP_ITEM_TIME = Math.max(
+  0,
+  ...SHOP_ITEMS.filter((i) => !i.hidden).map((i) => i.visibleSinceTime ?? 0)
+)
+
+const BADGE_COLORS = [
+  'bg-red-500 text-white',
+  'bg-amber-400 text-amber-900',
+  'bg-green-500 text-white',
+  'bg-blue-500 text-white',
+  'bg-purple-500 text-white',
+  'bg-pink-500 text-white',
+  'bg-cyan-400 text-cyan-900',
+  'bg-orange-500 text-white',
+  'bg-indigo-500 text-white',
+  'bg-emerald-500 text-white',
+  'bg-rose-500 text-white',
+  'bg-yellow-300 text-yellow-900',
+  'bg-lime-400 text-lime-900',
+  'bg-fuchsia-500 text-white',
+  'bg-teal-500 text-white',
+  'bg-sky-400 text-sky-900',
+  'bg-violet-500 text-white',
+  'bg-red-400 text-white',
+  'bg-amber-500 text-white',
+  'bg-green-400 text-white',
+]
+
+// Deterministic pseudo-random from seed
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000
+  return x - Math.floor(x)
+}
+
+function AprilFoolsBadgeExplosion() {
+  // Distribute badges in an elliptical spread around the button center,
+  // evenly spaced by angle with some randomized jitter for personality.
+  const cx = 70 // approx center of Shop button
+  const cy = 16
+  const count = BADGE_COLORS.length
+  return (
+    <>
+      {BADGE_COLORS.map((color, i) => {
+        const r = (n: number) => seededRandom(i * 7 + n)
+        const angle = (i / count) * Math.PI * 2 + (r(1) - 0.5) * 0.5
+        const radiusX = 55 + r(2) * 40
+        const radiusY = 22 + r(3) * 16
+        const x = cx + Math.cos(angle) * radiusX
+        const y = cy + Math.sin(angle) * radiusY
+        const rotation = r(4) * 40 - 20
+        const scale = 0.65 + r(5) * 0.5
+        return (
+          <span
+            key={i}
+            className={clsx(
+              'pointer-events-none absolute whitespace-nowrap rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+              color
+            )}
+            style={{
+              left: `${x}px`,
+              top: `${y}px`,
+              transform: `rotate(${rotation}deg) scale(${scale})`,
+              zIndex: i,
+            }}
+          >
+            NEW
+          </span>
+        )
+      })}
+    </>
+  )
+}
 
 export default function Sidebar(props: {
   className?: string
@@ -58,7 +149,6 @@ export default function Sidebar(props: {
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false)
 
   const { theme, setTheme } = useTheme()
 
@@ -70,30 +160,32 @@ export default function Sidebar(props: {
 
   const isLiveTV = useTVIsLive(10)
 
-  const [showShopBadge, setShowShopBadge] = useState(false)
-  useEffect(() => {
-    const seen = parseInt(localStorage.getItem(SHOP_SEEN_KEY) ?? '0', 10)
-    setShowShopBadge(seen < SHOP_NEW_VERSION)
-  }, [])
-  const onShopClick = () => {
-    localStorage.setItem(SHOP_SEEN_KEY, String(SHOP_NEW_VERSION))
-    setShowShopBadge(false)
-  }
+  // Per-user NEW badge: shows once user data is loaded AND any visible shop
+  // item became visible since the user last visited /shop. Default-to-hide
+  // while user is loading prevents the badge from flashing in then out.
+  const lastShopVisit = user?.lastShopVisitTime ?? user?.createdTime ?? 0
+  const showShopNewBadge = !!user && NEWEST_SHOP_ITEM_TIME > lastShopVisit
+
+  const { data: sweepstakesData } = useAPIGetter('get-sweepstakes', {})
+  const prizeCloseTime = sweepstakesData?.sweepstakes?.closeTime
+  const prizePoolLabel =
+    prizeCloseTime && prizeCloseTime > Date.now()
+      ? formatPrizePoolLabel(sweepstakesData?.sweepstakes?.prizes)
+      : undefined
 
   const navOptions = isMobile
-    ? getMobileNav(!!user, () => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
+    ? getMobileNav(!!user, {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
+        showShopNewBadge,
+        prizePoolLabel,
       })
     : getDesktopNav(!!user, () => setIsModalOpen(true), {
         isNewUser,
         isLiveTV,
         isAdminOrMod: isAdminOrMod,
-        showShopBadge,
-        onShopClick,
+        showShopNewBadge,
       })
 
   const bottomNavOptions = bottomNav(
@@ -128,32 +220,98 @@ export default function Sidebar(props: {
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
-      <div className="mb-4 flex flex-col gap-1">
+      <MobileAppsQRCodeDialog
+        key="mobile-apps-qr-code"
+        isModalOpen={isModalOpen}
+        setIsModalOpen={setIsModalOpen}
+      />
+      <ul className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
         {navOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
+          <li key={item.name}>
+            {item.name === 'Shop' && isAprilFools() ? (
+              <div className="relative">
+                <SidebarItem item={item} currentPage={currentPage} />
+                <AprilFoolsBadgeExplosion />
+              </div>
+            ) : (
+              <SidebarItem item={item} currentPage={currentPage} />
+            )}
+          </li>
         ))}
-
-        <MobileAppsQRCodeDialog
-          key="mobile-apps-qr-code"
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-        />
-
-        {!user && <SidebarSignUpButton />}
-
-        <Col className="gap-2">
-          {createMarketButton}
-          {addFundsButton}
-        </Col>
-      </div>
-      <div
-        className={clsx('mb-6 mt-auto flex flex-col gap-1', isMobile && 'pb-8')}
+        {!user && (
+          <li>
+            <SidebarSignUpButton />
+          </li>
+        )}
+        {(createMarketButton || addFundsButton) && (
+          <li>
+            <Col className="gap-2">
+              {createMarketButton}
+              {addFundsButton}
+            </Col>
+          </li>
+        )}
+      </ul>
+      <ul
+        className={clsx(
+          'm-0 mb-6 mt-auto flex list-none flex-col gap-1 p-0',
+          isMobile && 'pb-8'
+        )}
       >
-        {!!user && <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />}
-        {bottomNavOptions.map((item) => (
-          <SidebarItem key={item.name} item={item} currentPage={currentPage} />
-        ))}
-      </div>
+        {!!user && (
+          <li className="list-none">
+            <AppBadgesOrGetAppButton hideOnDesktop className="mb-2" />
+          </li>
+        )}
+        {/* On mobile (drawer) the bottom items are flat. On desktop they live
+            behind a "More" popover that floats up and overlaps the buttons
+            above it, so the menu can grow without crowding short viewports. */}
+        {isMobile ? (
+          bottomNavOptions.map((item) => (
+            <li key={item.name}>
+              <SidebarItem item={item} currentPage={currentPage} />
+            </li>
+          ))
+        ) : (
+          <li>
+            <DropdownMenu
+              className="w-full"
+              buttonClass="w-full"
+              anchor={{ to: 'top start', gap: 8 }}
+              menuWidth="w-56"
+              buttonContent={(open) => (
+                <div
+                  className={clsx(
+                    'group flex w-full items-center rounded-md px-3 py-2 text-sm font-medium',
+                    open
+                      ? 'bg-ink-200 text-ink-900'
+                      : 'text-ink-600 hover:bg-primary-100 hover:text-ink-700'
+                  )}
+                >
+                  <DotsHorizontalIcon
+                    className="text-ink-500 group-hover:text-ink-600 -ml-1 mr-3 h-6 w-6 flex-shrink-0"
+                    aria-hidden="true"
+                  />
+                  <span className="truncate">More</span>
+                </div>
+              )}
+              items={bottomNavOptions.map((item) => ({
+                name: item.name,
+                buttonContent: item.children ?? item.name,
+                icon: item.icon ? <item.icon className="h-5 w-5" /> : undefined,
+                isLink: !!item.href,
+                linkProps: item.href
+                  ? {
+                      href: item.href,
+                      target: item.href.startsWith('/') ? undefined : '_blank',
+                    }
+                  : undefined,
+                onClick: item.onClick,
+              }))}
+            />
+          </li>
+        )}
+      </ul>
     </nav>
   )
 }
@@ -163,10 +321,9 @@ const getDesktopNav = (
   openDownloadApp: () => void,
   options: {
     isNewUser: boolean
+    showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
   }
 ) => {
   const { isLiveTV } = options
@@ -174,9 +331,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Explore',
-        href: '/explore',
-        icon: IoCompassOutline,
+        name: 'Yap',
+        href: '/yap',
+        icon: ChatAlt2Icon,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
       isLiveTV && {
@@ -190,18 +347,13 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-      {
-        name: 'Forum',
-        href: '/posts',
-        icon: ChatIcon,
-      },
       // Show shop when enabled OR for admins (testing)
       (SPEND_MANA_ENABLED || options.isAdminOrMod) && {
         name: 'Shop',
         href: '/shop',
         icon: LuGem,
-        onClick: options.onShopClick,
-        children: options.showShopBadge ? (
+        modAction: !SPEND_MANA_ENABLED,
+        children: options.showShopNewBadge ? (
           <>
             Shop
             <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
@@ -214,6 +366,7 @@ const getDesktopNav = (
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
+        modAction: true,
       }
     )
 
@@ -227,20 +380,34 @@ const getDesktopNav = (
 
 const getMobileNav = (
   loggedIn: boolean,
-  toggleModal: () => void,
   options: {
     isNewUser: boolean
+    showShopNewBadge: boolean
     isLiveTV?: boolean
     isAdminOrMod: boolean
-    showShopBadge: boolean
-    onShopClick: () => void
+    prizePoolLabel?: string
   }
 ) => {
-  const { isAdminOrMod, isLiveTV } = options
+  const { isAdminOrMod, isLiveTV, showShopNewBadge, prizePoolLabel } = options
 
   return buildArray<NavItem>(
+    loggedIn && {
+      name: 'Prize Drawing',
+      href: '/prize',
+      icon: GiftIcon,
+      children: prizePoolLabel ? (
+        <>
+          Prize Drawing
+          <span className="ml-2 rounded-full bg-green-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+            {prizePoolLabel}
+          </span>
+        </>
+      ) : undefined,
+    },
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Explore', href: '/explore', icon: IoCompassOutline },
     { name: 'Forum', href: '/posts', icon: ChatIcon },
+    { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     { name: 'Charity', href: '/charity', icon: HeartIcon },
     loggedIn && {
       name: 'Referrals',
@@ -256,14 +423,15 @@ const getMobileNav = (
       name: 'Reports',
       href: '/reports',
       icon: ReportsIcon,
+      modAction: true,
     },
-    // Show shop when enabled OR for admins (testing)
+    // Show shop when enabled OR for admins (testing).
     (SPEND_MANA_ENABLED || isAdminOrMod) && {
       name: 'Shop',
       href: '/shop',
       icon: LuGem,
-      onClick: options.onShopClick,
-      children: options.showShopBadge ? (
+      modAction: !SPEND_MANA_ENABLED,
+      children: showShopNewBadge ? (
         <>
           Shop
           <span className="ml-2 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900">
@@ -283,13 +451,23 @@ const bottomNav = (
   isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
-    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    loggedIn &&
+      !isMobile && {
+        name: 'Explore',
+        href: '/explore',
+        icon: IoCompassOutline,
+      },
+    loggedIn && !isMobile && { name: 'Forum', href: '/posts', icon: ChatIcon },
+    // Jobs only belongs in the bottom section on desktop (behind "More"). On
+    // mobile it lives higher up in the main nav list (see getMobileNav).
+    !isMobile && { name: 'Jobs', href: '/jobs', icon: BriefcaseIcon },
     loggedIn &&
       !isMobile && {
         name: 'Referrals',
         href: '/referrals',
         icon: StarIcon,
       },
+    loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     {
       name: theme ?? 'auto',
       children:

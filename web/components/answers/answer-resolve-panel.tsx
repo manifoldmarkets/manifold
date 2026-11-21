@@ -34,6 +34,7 @@ import { YesNoCancelSelector } from '../bet/yes-no-selector'
 import { resolution } from 'common/contract'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { GradientContainer } from '../widgets/gradient-container'
+import { ModActionTag } from '../moderation/mod-action'
 
 function ResolutionSearchInput(props: {
   query: string
@@ -359,7 +360,7 @@ export const AnswersResolvePanel = (props: {
               </div>
             )}
           </Col>
-          <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+          <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] z-10 border-t pt-3 lg:bottom-0">
             <AnswersResolveOptions
               contract={contract}
               resolveOption={resolveOption}
@@ -828,7 +829,7 @@ export const IndependentAnswersResolvePanel = (props: {
         </Col>
         <ResolutionExplainer independentMulti />
 
-        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+        <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] z-10 border-t pt-3 lg:bottom-0">
           <Row className="bg-primary-50 items-center justify-between rounded p-3">
             <div>
               <span className="font-medium">{selectedCount}</span> answer
@@ -1036,6 +1037,9 @@ export const IndependentAnswersUnresolvePanel = (props: {
           </Button>
         </Row>
         <div className="text-lg">
+          {user?.id !== contract.creatorId && (
+            <ModActionTag admin={contract.token === 'CASH'} className="mr-2" />
+          )}
           Unresolve answers for &ldquo;{contract.question}&rdquo;
         </div>
         <div className="text-ink-600 text-sm">
@@ -1066,7 +1070,7 @@ export const IndependentAnswersUnresolvePanel = (props: {
           )}
         </Col>
 
-        <div className="bg-canvas-0 border-ink-200 sticky bottom-0 z-10 border-t pt-3">
+        <div className="bg-canvas-0 border-ink-200 sticky -bottom-[58px] z-10 border-t pt-3 lg:bottom-0">
           <Row className="bg-primary-50 items-center justify-between rounded p-3">
             <div>
               <span className="font-medium">{selectedAnswerIds.length}</span>{' '}
@@ -1228,9 +1232,7 @@ function IndependentResolutionAnswerItem(props: {
       <div className="mt-2">
         <Row className="flex-wrap gap-4">
           {isAdmin && !isCreator && (
-            <div className="bg-scarlet-50 text-scarlet-500 self-start rounded p-1 text-xs">
-              ADMIN
-            </div>
+            <ModActionTag admin className="self-start" />
           )}
           <YesNoCancelSelector
             selected={selectedResolution as resolution | undefined}

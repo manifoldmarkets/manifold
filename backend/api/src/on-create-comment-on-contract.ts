@@ -2,6 +2,7 @@ import { followContractInternal } from 'api/follow-contract'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
+import { MODS_USER_ID } from 'common/envs/constants'
 import { PendingClarification } from 'common/pending-clarification'
 import { User } from 'common/user'
 import {
@@ -129,9 +130,8 @@ export const handleCommentNotifications = async (
 ) => {
   const replyInfo = await getReplyInfo(pg, comment, contract)
 
-  const modsId = 'WQJ92QkoqDPuyj6DAZ5lR6g1x573'
   const mentionedUsers = compact(parseMentions(comment.content))
-  const mentionedMods = mentionedUsers.includes(modsId)
+  const mentionedMods = mentionedUsers.includes(MODS_USER_ID)
 
   const repliedUsers: replied_users_info = {}
   if (replyInfo) {
@@ -207,7 +207,7 @@ export const handleCommentNotifications = async (
       : `User ${commentCreator.id.substring(0, 4)}`
   }: ${richTextToString(comment.content)}`
 
-  // Check if comment needs response using Gemini, now with context
+  // Check if comment needs response using the cheap AI tier, with context
   const checkResult =
     comment.userId === contract.creatorId
       ? { needsResponse: false }
@@ -345,9 +345,9 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
 
   try {
     const clarification = await promptAI<ClarificationResponse>(prompt, {
-      model: aiModels.sonnet45,
+      model: aiModels.flash,
       parseAsJson: true,
-      reasoning: { effort: 'high' },
+      thinkingLevel: 'high',
     })
     log('Clarification response:', {
       question: contract.question,
@@ -455,7 +455,7 @@ export const checkCommentNeedsResponse = async (
   try {
     const result = await promptAI<{ needsResponse: boolean; reason: string }>(
       prompt,
-      { model: aiModels.flash, parseAsJson: true }
+      { model: aiModels.haiku, parseAsJson: true }
     )
     return result
   } catch (error) {
@@ -473,7 +473,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
-- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+- Check out the [resolution section in the community guidelines](https://manifold.markets/community-guidelines/resolving-markets).
 
 ### How should I resolve a market?
 

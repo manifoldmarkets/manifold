@@ -6,7 +6,7 @@ create table if not exists
     liquidity_id text not null,
     created_time timestamp with time zone default now(),
     user_id text not null,
-    constraint primary key (contract_id, liquidity_id)
+    primary key (contract_id, liquidity_id)
   );
 
 -- Triggers

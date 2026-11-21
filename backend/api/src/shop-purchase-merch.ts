@@ -2,8 +2,12 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { getUser } from 'shared/utils'
+import { getUser, isProd } from 'shared/utils'
 import { getShopItem, isMerchItem, PRINTFUL_API_URL } from 'common/shop/items'
+import {
+  requiresPostalCode,
+  requiresRecipientEmail,
+} from 'common/shop/printful-address'
 import { getBenefit } from 'common/supporter-config'
 import { convertEntitlement } from 'common/shop/types'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -12,6 +16,12 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   { itemId, variantId, shippingCost, shipping },
   auth
 ) => {
+  // Merch orders create real Printful drafts that staff have to clean up.
+  // Block outside prod so test users can't pollute the orders list.
+  if (!isProd()) {
+    throw new APIError(403, 'Merch ordering is disabled outside of production')
+  }
+
   const item = getShopItem(itemId)
   if (!item) {
     throw new APIError(404, 'Item not found')
@@ -31,12 +41,40 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     throw new APIError(401, 'Must be logged in')
   }
 
+  // Per-country zip enforcement — schema lets zip be omitted, this catches
+  // the case where the country actually requires one.
+  if (requiresPostalCode(shipping.country) && !shipping.zip?.trim()) {
+    throw new APIError(400, 'Postal code is required for this country')
+  }
+
+  // Per-country email enforcement — Brazilian customs notifies recipients
+  // by email about CPF/duty resolution. Schema keeps email optional so most
+  // checkouts skip it; this catches the case where it's actually required.
+  if (requiresRecipientEmail(shipping.country) && !shipping.email?.trim()) {
+    throw new APIError(400, 'Email is required for this country')
+  }
+
   const printfulToken = process.env.PRINTFUL_API_TOKEN
   if (!printfulToken) {
     throw new APIError(500, 'Printful API not configured')
   }
 
   const pg = createSupabaseDirectClient()
+
+  // Check if item is out of stock (fail-closed: if table doesn't exist, block purchase)
+  try {
+    const stockStatus = await pg.oneOrNone(
+      `SELECT out_of_stock FROM merch_stock_status WHERE item_id = $1`,
+      [itemId]
+    )
+    if (!stockStatus || stockStatus.out_of_stock) {
+      throw new APIError(400, 'This item is currently out of stock')
+    }
+  } catch (e) {
+    if (e instanceof APIError) throw e
+    console.warn('merch_stock_status check failed (blocking purchase):', e)
+    throw new APIError(400, 'This item is currently out of stock')
+  }
 
   // Pre-phase: Verify shipping cost against Printful's actual rates.
   // We don't trust the client-provided shippingCost — always validate server-side.
@@ -51,9 +89,10 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       recipient: {
         address1: shipping.address1,
         city: shipping.city,
-        state_code: shipping.state,
+        state_code: shipping.state || undefined,
         country_code: shipping.country,
-        zip: shipping.zip,
+        zip: shipping.zip || undefined,
+        tax_number: shipping.taxNumber || undefined,
       },
       items: [{ external_variant_id: variantId, quantity: 1 }],
     }),
@@ -117,9 +156,17 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
           throw new APIError(403, 'Insufficient balance')
         }
 
-        // Create transaction to deduct mana (item price + shipping)
+        // Create transaction to deduct mana (item price + shipping).
+        // Description deliberately OMITS the size — the balance log is public
+        // and a user's t-shirt size shouldn't be. Colour is included when
+        // present (low-sensitivity, useful context). The variantId stays on
+        // txn.data for refund/audit lookups (opaque Printful hex, not
+        // human-readable). Full size/colour/variant lives on shop_orders
+        // .metadata below for admin-only lookup.
         const discountPercent = Math.round(shopDiscount * 100)
-        const descriptionParts = [`Purchased ${item.name} (${variant.size})`]
+        const descriptionParts = [
+          `Purchased ${item.name}${variant.color ? ` (${variant.color})` : ''}`,
+        ]
         if (discountPercent > 0) {
           descriptionParts.push(`(${discountPercent}% supporter discount)`)
         }
@@ -140,11 +187,18 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
 
         const txn = await runTxnOutsideBetQueue(tx, txnData)
 
-        // Insert order record as PENDING_FULFILLMENT — Printful details added after tx
+        // Insert order record as PENDING_FULFILLMENT — Printful details added
+        // after tx. metadata captures what was actually ordered so /admin/merch
+        // can render the variant inline without joining txns or Printful.
+        const orderMetadata = {
+          size: variant.size,
+          ...(variant.color ? { color: variant.color } : {}),
+          variantId,
+        }
         await tx.none(
-          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status)
-           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT')`,
-          [auth.uid, itemId, totalCharge, txn.id]
+          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status, metadata)
+           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT', $5)`,
+          [auth.uid, itemId, totalCharge, txn.id, orderMetadata]
         )
 
         return { txnId: txn.id, price: totalCharge, username: user.username }
@@ -190,13 +244,32 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     throw err
   }
 
-  // Phase 3: Update the order record with Printful details
-  await pg.none(
-    `UPDATE shop_orders
-     SET printful_order_id = $1, printful_status = $2
-     WHERE txn_id = $3`,
-    [printfulOrder.id.toString(), printfulOrder.status, txnId]
-  )
+  // Phase 3: Link the Printful order back to our order row.
+  // The mana is already debited AND Printful has the draft order, so from the
+  // customer's perspective the purchase has succeeded. If this UPDATE fails
+  // (DB blip, connection loss), we do NOT surface an error — surfacing it
+  // would imply the order failed, when really it just means our audit row is
+  // stale. Log loudly instead so admin can reconcile via /admin/merch (the
+  // order shows up in Printful with the external_id `manifold-<txnId>`).
+  try {
+    await pg.none(
+      `UPDATE shop_orders
+       SET printful_order_id = $1, printful_status = $2
+       WHERE txn_id = $3`,
+      [printfulOrder.id.toString(), printfulOrder.status, txnId]
+    )
+  } catch (err) {
+    console.error(
+      `[shop-purchase-merch] Failed to link printful order to shop_orders row`,
+      {
+        txnId,
+        printfulOrderId: printfulOrder.id,
+        userId: auth.uid,
+        itemId,
+        err,
+      }
+    )
+  }
 
   return {
     success: true as const,
@@ -215,9 +288,11 @@ async function createPrintfulOrder(
       address1: string
       address2?: string
       city: string
-      state: string
-      zip: string
+      state?: string
+      zip?: string
       country: string
+      taxNumber?: string
+      email?: string
     }
     externalId: string
     confirm: boolean
@@ -237,9 +312,11 @@ async function createPrintfulOrder(
         address1: params.shipping.address1,
         address2: params.shipping.address2 || undefined,
         city: params.shipping.city,
-        state_code: params.shipping.state,
+        state_code: params.shipping.state || undefined,
         country_code: params.shipping.country,
-        zip: params.shipping.zip,
+        zip: params.shipping.zip || undefined,
+        tax_number: params.shipping.taxNumber || undefined,
+        email: params.shipping.email || undefined,
       },
       items: [
         {

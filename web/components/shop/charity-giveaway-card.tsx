@@ -1,13 +1,23 @@
 import clsx from 'clsx'
-import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { FaGift, FaTrophy } from 'react-icons/fa6'
+import { FaHeart, FaGift } from 'react-icons/fa6'
 import { User } from 'common/user'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Button } from '../buttons/button'
 import { charities } from 'common/charity'
+import {
+  ENDED_PILL,
+  GiveawayPromoCard,
+  promoStatSizeClass,
+} from './giveaway-promo-card'
+
+// Shared entry formatter: always whole-number entries for a cleaner display.
+// Sub-1 counts still round to 0 (they shouldn't appear in prod since partial
+// entries are contract-level, not user-facing in these summary tiles).
+export function formatEntries(entries: number): string {
+  return Math.round(entries).toLocaleString()
+}
 
 // Export the data type for use by other components
 export type CharityGiveawayData = {
@@ -94,8 +104,6 @@ export function CharityGiveawayCard(props: {
   const winningCharity = data?.winningCharity
   const winner = data?.winner
   const champion = data?.champion
-  const topUsers = data?.topUsers
-  const yourEntry = data?.yourEntry
 
   // Time remaining countdown
   const [timeRemaining, setTimeRemaining] = useState<string>('')
@@ -168,277 +176,127 @@ export function CharityGiveawayCard(props: {
   // Active giveaway card (still open for tickets)
   if (!hasWinner && !isClosed) {
     return (
-      <Link href="/charity" className={clsx('block', className)}>
-        <div
-          className={clsx(
-            'group relative overflow-hidden rounded-xl p-1 transition-all duration-200',
-            'bg-gradient-to-br from-emerald-400 via-teal-400 to-cyan-500',
-            'hover:shadow-lg hover:shadow-teal-200/50 dark:hover:shadow-teal-900/30',
-            'hover:-translate-y-1'
-          )}
-        >
-          {/* Inner card content */}
-          <div className="rounded-lg bg-white p-4 dark:bg-gray-900">
-            {/* Header */}
-            <Row className="mb-3 items-center gap-2">
-              <FaGift className="h-5 w-5 text-emerald-500" />
-              <span className="text-lg font-semibold">Charity Giveaway</span>
-              <span className="ml-auto rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                LIVE
-              </span>
-            </Row>
-
-            {/* Stats row */}
-            <Row className="mb-3 gap-2 text-center">
-              <Col className="flex-1">
-                <div className="text-lg font-bold text-emerald-600 sm:text-xl">
-                  {prizeDisplay}
-                </div>
-                <div className="text-ink-500 text-[10px]">Prize Pool</div>
-              </Col>
-              <Col className="flex-1">
-                <div className="whitespace-nowrap text-lg font-bold text-teal-600 sm:text-xl">
-                  {timeRemaining || '...'}
-                </div>
-                <div className="text-ink-500 text-[10px]">Time Left</div>
-              </Col>
-              <Col className="flex-1">
-                <div className="text-lg font-bold text-cyan-600 sm:text-xl">
-                  {Math.floor(totalTickets).toLocaleString()}
-                </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
-              </Col>
-            </Row>
-
-            {/* Mini leaderboard */}
-            {topUsers && topUsers.length > 0 && (
-              <MiniLeaderboard
-                topUsers={topUsers}
-                yourEntry={yourEntry}
-                user={user}
-              />
-            )}
-
-            {/* CTA */}
-            <Button
-              color="green"
-              size="sm"
-              className="w-full group-hover:shadow-md"
-            >
-              View Giveaway →
-            </Button>
-          </div>
-        </div>
-      </Link>
+      <GiveawayPromoCard
+        href="/charity"
+        className={className}
+        gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
+        icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
+        title="Charity Giveaway"
+        pill={{
+          text: 'LIVE',
+          className:
+            'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+        }}
+        stats={[
+          {
+            value: prizeDisplay,
+            label: 'Prize Pool',
+            valueClassName: clsx(
+              'font-bold text-emerald-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+          {
+            value: timeRemaining || '...',
+            label: 'Time Left',
+            valueClassName: clsx(
+              'font-bold text-teal-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+            extraClassName: 'whitespace-nowrap',
+          },
+          {
+            value: formatEntries(totalTickets),
+            label: 'Entries',
+            valueClassName: clsx(
+              'font-bold text-cyan-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+        ]}
+        ctaText="View Giveaway →"
+        ctaColor="green"
+      />
     )
   }
 
   // Closed but winner not yet drawn — awaiting draw
   if (!hasWinner && isClosed) {
     return (
-      <Link href="/charity" className={clsx('block', className)}>
-        <div
-          className={clsx(
-            'group relative overflow-hidden rounded-xl p-1 transition-all duration-200',
-            'bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-400',
-            'hover:shadow-lg hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
-            'hover:-translate-y-1'
-          )}
-        >
-          <div className="flex flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
-            {/* Header */}
-            <Row className="mb-3 items-center gap-2">
-              <FaGift className="h-5 w-5 text-amber-500" />
-              <span className="text-lg font-semibold">Charity Giveaway</span>
-              <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-                ENDED
-              </span>
-            </Row>
-
-            {/* Stats */}
-            <Row className="mb-3 gap-2 text-center">
-              <Col className="flex-1">
-                <div className="text-lg font-bold text-amber-600 sm:text-xl">
-                  {prizeDisplay}
-                </div>
-                <div className="text-ink-500 text-[10px]">Prize Pool</div>
-              </Col>
-              <Col className="flex-1">
-                <div className="text-lg font-bold text-amber-600 sm:text-xl">
-                  {Math.floor(totalTickets).toLocaleString()}
-                </div>
-                <div className="text-ink-500 text-[10px]">Tickets</div>
-              </Col>
-            </Row>
-
-            {/* Mini leaderboard */}
-            {topUsers && topUsers.length > 0 && (
-              <MiniLeaderboard
-                topUsers={topUsers}
-                yourEntry={yourEntry}
-                user={user}
-              />
-            )}
-
-            <p className="text-ink-500 mb-3 text-xs">
-              Giveaway has ended. Winner will be drawn soon!
-            </p>
-
-            {/* CTA */}
-            <Button
-              color="amber"
-              size="sm"
-              className="mt-auto w-full group-hover:shadow-md"
-            >
-              View Results →
-            </Button>
-          </div>
-        </div>
-      </Link>
+      <GiveawayPromoCard
+        href="/charity"
+        className={className}
+        gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
+        icon={<FaGift className="h-5 w-5 text-emerald-500" />}
+        title="Charity Giveaway"
+        pill={ENDED_PILL}
+        stats={[
+          {
+            value: prizeDisplay,
+            label: 'Prize Pool',
+            valueClassName: clsx(
+              'font-bold text-emerald-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+          {
+            value: formatEntries(totalTickets),
+            label: 'Entries',
+            valueClassName: clsx(
+              'font-bold text-cyan-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+        ]}
+        message="Giveaway has ended. Winner will be drawn soon!"
+        ctaText="View Results →"
+        ctaColor="green"
+      />
     )
   }
 
-  // Winner selected - show results with leaderboard
+  // Winner selected — uses the same header / 2-stat / message / CTA layout
+  // as the prize-drawing ended card so the two cards align side-by-side. The
+  // charity and winner are moved into the message line.
+  const charityName = winningCharityInfo?.name ?? winningCharity
   return (
-    <Link href="/charity" className={clsx('block', className)}>
-      <div
-        className={clsx(
-          'group relative overflow-hidden rounded-xl p-1 transition-all duration-200',
-          'bg-gradient-to-br from-amber-400 via-yellow-400 to-orange-400',
-          'hover:shadow-lg hover:shadow-amber-200/50 dark:hover:shadow-amber-900/30',
-          'hover:-translate-y-1'
-        )}
-      >
-        {/* Inner card content */}
-        <div className="flex flex-col rounded-lg bg-white p-4 dark:bg-gray-900">
-          {/* Header */}
-          <Row className="mb-3 items-center gap-2">
-            <FaGift className="h-5 w-5 text-amber-500" />
-            <span className="text-lg font-semibold">Charity Giveaway</span>
-            <span className="ml-auto rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
-              ENDED
-            </span>
-          </Row>
-
-          {/* Winner info */}
-          <Col className="mb-3">
-            <div className="font-semibold text-amber-600">
-              {winningCharityInfo?.name ?? winningCharity}
-            </div>
-            <Row className="items-baseline gap-2">
-              <div className="text-2xl font-bold text-amber-600">
-                {prizeDisplay}
-              </div>
-              <div className="text-ink-500 text-xs">donated</div>
-            </Row>
-            {winner && (
-              <div className="text-ink-500 mt-1 text-sm">
-                Winning ticket by @{winner.username}
-              </div>
-            )}
-          </Col>
-
-          {/* Mini leaderboard */}
-          {topUsers && topUsers.length > 0 && (
-            <MiniLeaderboard
-              topUsers={topUsers}
-              yourEntry={yourEntry}
-              user={user}
-            />
-          )}
-
-          {/* CTA */}
-          <Button
-            color="amber"
-            size="sm"
-            className="mt-auto w-full group-hover:shadow-md"
-          >
-            See Results & Next Giveaway →
-          </Button>
-        </div>
-      </div>
-    </Link>
-  )
-}
-
-function MiniLeaderboard(props: {
-  topUsers: NonNullable<CharityGiveawayData['topUsers']>
-  yourEntry?: CharityGiveawayData['yourEntry']
-  user?: User | null
-}) {
-  const { topUsers, yourEntry, user } = props
-
-  // Always show top 3, then show the user's row below if they're not already visible
-  const visibleUsers = topUsers.slice(0, 3)
-  const userAlreadyShown = user && visibleUsers.some((u) => u.id === user.id)
-  const showYourRow = user && yourEntry && !userAlreadyShown
-
-  return (
-    <Col className="mb-3 gap-0.5 rounded-lg bg-amber-50/80 px-3 py-2 dark:bg-amber-900/20">
-      {visibleUsers.map((u) => {
-        const isYou = user && u.id === user.id
-        return (
-          <LeaderboardRow
-            key={u.id}
-            rank={u.rank}
-            name={isYou ? 'You' : u.name}
-            tickets={u.totalTickets}
-            isLeader={u.rank === 1}
-            isYou={!!isYou}
-          />
-        )
-      })}
-      {showYourRow && (
+    <GiveawayPromoCard
+      href="/charity"
+      className={className}
+      gradientClassName="from-emerald-400 via-teal-400 to-cyan-500"
+      hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
+      icon={<FaHeart className="h-5 w-5 text-emerald-500" />}
+      title="Charity Giveaway"
+      pill={ENDED_PILL}
+      stats={[
+        {
+          value: prizeDisplay,
+          label: 'Donated',
+          valueClassName: clsx(
+            'font-bold text-emerald-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+        {
+          value: formatEntries(totalTickets),
+          label: 'Entries',
+          valueClassName: clsx(
+            'font-bold text-cyan-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+      ]}
+      message={
         <>
-          <div className="text-ink-400 px-1 text-xs leading-tight">···</div>
-          <LeaderboardRow
-            rank={yourEntry.rank}
-            name="You"
-            tickets={yourEntry.totalTickets}
-            isLeader={false}
-            isYou
-          />
+          To{' '}
+          <span className="font-semibold text-emerald-600">{charityName}</span>
+          {winner && <> · Won by @{winner.username}</>}
         </>
-      )}
-    </Col>
-  )
-}
-
-function LeaderboardRow(props: {
-  rank: number
-  name: string
-  tickets: number
-  isLeader: boolean
-  isYou: boolean
-}) {
-  const { rank, name, tickets, isLeader, isYou } = props
-  return (
-    <Row className="items-center gap-1.5 text-sm">
-      {isLeader ? (
-        <FaTrophy
-          className="h-3 w-3 shrink-0 text-amber-500"
-          style={{ filter: 'drop-shadow(0 0 2px rgba(245, 158, 11, 0.4))' }}
-        />
-      ) : (
-        <span className="text-ink-400 w-3 shrink-0 text-center text-xs">
-          {rank}
-        </span>
-      )}
-      <span
-        className={clsx(
-          'min-w-0 truncate',
-          isYou
-            ? 'font-bold text-teal-700 dark:text-teal-400'
-            : isLeader
-            ? 'font-semibold text-amber-700 dark:text-amber-400'
-            : 'text-ink-600'
-        )}
-      >
-        {name}
-      </span>
-      <span className="text-ink-400 ml-auto shrink-0 text-xs">
-        {Math.floor(tickets).toLocaleString()}
-      </span>
-    </Row>
+      }
+      ctaText="See Results & Next Giveaway →"
+      ctaColor="green"
+    />
   )
 }

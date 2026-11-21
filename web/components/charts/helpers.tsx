@@ -622,6 +622,72 @@ export const getRightmostVisibleDate = (
   }
 }
 
+// Numeric analogue of binary.tsx's getVisibleYRange. Returns the full contract
+// range by default; when the user has zoomed the x-axis (e.g. by clicking 1D /
+// 1W), returns a padded y-range fit to the visible-window data, clamped to
+// [contractMin, contractMax]. Mirrors binary's "only auto-scale-Y when zoomed"
+// behavior so the default view of a numeric market is unchanged.
+export const getVisibleNumericYRange = (params: {
+  data: { x: number; y: number }[]
+  contractMin: number
+  contractMax: number
+  zoomY?: boolean
+  zoomParams?: ZoomParams
+  paddingFraction?: number
+}): [number, number] => {
+  const {
+    data,
+    contractMin,
+    contractMax,
+    zoomY,
+    zoomParams,
+    paddingFraction = 0.1,
+  } = params
+
+  if (!zoomY || !zoomParams?.xScale) return [contractMin, contractMax]
+
+  const [minXDate, maxXDate] = zoomParams.viewXScale.domain() ?? [null, null]
+  const [fullMin, fullMax] = zoomParams.xScale.domain()
+  if (
+    !minXDate ||
+    !maxXDate ||
+    (minXDate.getTime() === fullMin.getTime() &&
+      maxXDate.getTime() === fullMax.getTime())
+  ) {
+    return [contractMin, contractMax]
+  }
+
+  const minXMs = minXDate.getTime()
+  const maxXMs = maxXDate.getTime()
+
+  let dataMin = Infinity
+  let dataMax = -Infinity
+  for (const { x, y } of data) {
+    if (x < minXMs || x > maxXMs) continue
+    if (!Number.isFinite(y)) continue
+    if (y < dataMin) dataMin = y
+    if (y > dataMax) dataMax = y
+  }
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) {
+    return [contractMin, contractMax]
+  }
+
+  const contractRange = contractMax - contractMin
+  if (dataMin === dataMax) {
+    const flatPad = Number.isFinite(contractRange) ? contractRange * 0.05 : 0
+    return [
+      Math.max(dataMin - flatPad, contractMin),
+      Math.min(dataMax + flatPad, contractMax),
+    ]
+  }
+
+  const padding = (dataMax - dataMin) * paddingFraction
+  return [
+    Math.max(dataMin - padding, contractMin),
+    Math.min(dataMax + padding, contractMax),
+  ]
+}
+
 export const formatPct = (n: number) => {
   return `${(n * 100).toFixed(0)}%`
 }

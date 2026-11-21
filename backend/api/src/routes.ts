@@ -1,3 +1,11 @@
+import {
+  createSocialPost,
+  editSocialPost,
+  deleteSocialPost,
+  getSocialPosts,
+  getSocialPost,
+  getSocialLikers,
+} from './social-posts'
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
 import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
@@ -5,6 +13,7 @@ import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getBoostHistory } from 'api/get-boost-history'
+import { getBrowsePersonalization } from 'api/get-browse-personalization'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
@@ -31,6 +40,10 @@ import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { register } from 'api/gidx/register'
 import { uploadDocument } from 'api/gidx/upload-document'
+import { createIdenfySession } from 'api/idenfy/create-session'
+import { getIdenfyStatus } from 'api/idenfy/get-status'
+import { getIdenfyStats } from './get-idenfy-stats'
+import { getSurfaceFunnels } from './get-surface-funnels'
 import { getMarkets } from 'api/markets'
 import { multiSell } from 'api/multi-sell'
 import { placeMultiBet } from 'api/place-multi-bet'
@@ -51,6 +64,7 @@ import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
 import { banuser } from './ban-user'
+import { setbotstatus } from './set-bot-status'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -66,6 +80,37 @@ import { createAnswerCPMM } from './create-answer-cpmm'
 import { createComment } from './create-comment'
 import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
+import { createPerp } from './create-perp'
+import { internalPerpOrderEffects } from './internal-perp-order-effects'
+import { getPerpOrder } from './get-perp-order'
+import { placePerpTrade } from './place-perp-trade'
+import { closePerpPosition } from './close-perp-position'
+import { updatePerpConfig } from './update-perp-config'
+import { addPerpSubsidy } from './add-perp-subsidy'
+import { getMnxDashboard } from './get-mnx-dashboard'
+import {
+  getModelClassifications,
+  setModelClassification,
+} from './model-classifications'
+import {
+  getOpenRouterLabClassifications,
+  setOpenRouterLabClassification,
+} from './openrouter-lab-classifications'
+import { getOraclePrice, getOraclePriceSeries } from './get-oracle-price'
+import { getKnownOracleFeeds } from './get-known-oracle-feeds'
+import { internalWriteOraclePrice } from './internal-write-oracle-price'
+import { getPerpPositions } from './get-perp-positions'
+import { getPerpQuote } from './get-perp-quote'
+import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalSportsBroadcast } from './internal-sports-broadcast'
+import { getPerpFundingEvents } from './get-perp-funding-events'
+import { getPerpEvents } from './get-perp-events'
+import {
+  createPerpSuggestion,
+  getPerpSuggestions,
+  hidePerpSuggestion,
+  votePerpSuggestion,
+} from './perp-suggestions'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
 import { dismissmodalert } from './dismiss-mod-alert'
@@ -105,13 +150,13 @@ import { getMarketContext } from './get-market-context'
 import { getMarketLoanMax } from './get-market-loan-max'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
+import { getMarketProbsHistory } from './get-market-probs-history'
 import { getMarketsByIds } from './get-markets'
 import { getmaxminprofit2025 } from './get-max-min-profit-2025'
 import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
 import { getPredictlePercentile } from './get-predictle-percentile'
@@ -139,6 +184,7 @@ import { placeBet } from './place-bet'
 import { setPushToken } from './push-token'
 import { addOrRemoveReaction } from './reaction'
 import { refreshAllClients } from './refresh-all-clients'
+import { removeBoost } from './remove-boost'
 import { removeLiquidity } from './remove-liquidity'
 import { resolveMarket } from './resolve-market'
 import { savePredicleResult } from './save-predictle-result'
@@ -150,6 +196,7 @@ import {
 } from './search-contracts'
 import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
+import { rebalancePosition } from './rebalance-position'
 import { sellShares } from './sell-shares'
 import { setnews } from './set-news'
 import { superBanUser } from './super-ban-user'
@@ -159,6 +206,9 @@ import { updateMe } from './update-me'
 import { updateModReport } from './update-mod-report'
 import { updateNotifSettings } from './update-notif-settings'
 import { updatePrivateUser } from './update-private-user'
+import { setJobInterest } from './set-job-interest'
+import { getJobInterest } from './get-job-interest'
+import { getMnxInviteLink } from './get-mnx-invite-link'
 
 import { createCategory } from './create-category'
 import { createTask } from './create-task'
@@ -170,11 +220,65 @@ import { updateTask } from './update-task'
 import { adminDeleteUser } from './admin-delete-user'
 import { adminGetRelatedUsers } from './admin-get-related-users'
 import { adminGetUserInfo } from './admin-get-user-info'
+import { adminIpBanUser } from './admin-ip-ban-user'
 import { adminRecoverUser } from './admin-recover-user'
+import { adminSetBonusEligibility } from './admin-set-bonus-eligibility'
+import { adminSetPrizeEligibility } from './admin-set-prize-eligibility'
+import { adminFlagForVerification } from './admin-flag-for-verification'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { buyCharityGiveawayTickets } from './buy-charity-giveaway-tickets'
 import { claimCharityChampion } from './claim-charity-champion'
+import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
+import { getSweepstakes } from './get-sweepstakes'
+import { buySweepstakesTickets } from './buy-sweepstakes-tickets'
+import { claimFreeSweepstakesTicket } from './claim-free-sweepstakes-ticket'
+import { getSweepstakesSales } from './get-sweepstakes-sales'
+import { selectSweepstakesWinners } from './select-sweepstakes-winners'
+import { checkBitcoinBlock } from './check-bitcoin-block'
+import { claimSweepstakesPrize } from './claim-sweepstakes-prize'
+import { getSweepstakesPrizeClaim } from './get-sweepstakes-prize-claim'
+import { adminGetPrizeClaims } from './admin-get-prize-claims'
+import { adminUpdatePrizePayment } from './admin-update-prize-payment'
+import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
+import { adminGetManaSales } from './admin-get-mana-sales'
+import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
+import { adminGetNewUsers } from './admin-get-new-users'
+import { adminSportsFixtures } from './admin-sports-fixtures'
+import { adminSportsCreateMarkets } from './admin-sports-create-markets'
+import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
+import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
+import { linkMarket, unlinkMarket } from './link-market'
+import { getMarketLinksHandler } from './get-market-links'
+import {
+  adminSportsCompetitionSwitches,
+  adminSportsSetCompetitionSwitch,
+} from './admin-sports-competition-switches'
+import {
+  adminSportsScorePolling,
+  adminSportsSetScorePolling,
+} from './admin-sports-score-polling'
+import { sportsMarkets } from './sports-markets'
+import { sportsSchedule } from './sports-schedule'
+import { sportsIndex } from './sports-index'
+import { sportsLeaderboards } from './sports-leaderboards'
+import { electionLeaderboards } from './election-leaderboards'
+import { adminSportsResolve } from './admin-sports-resolve'
+import { adminSportsCommunityMarket } from './admin-sports-community-market'
+import { adminSportsInitCommunity } from './admin-sports-init-community'
+import { getSweepstakesList } from './get-sweepstakes-list'
+import { adminAnnouncePrizeDrawing } from './admin-announce-prize-drawing'
+import { checkSweepstakesGeo } from './check-sweepstakes-geo'
+import { adminCreateSweepstakes } from './admin-create-sweepstakes'
+import { getCharityGiveawayList } from './get-charity-giveaway-list'
+import { getCryptoPurchaseStatus } from './get-crypto-purchase-status'
+import { createDaimoSession } from './create-daimo-session'
+import { getPersonalizedManaOffers } from './get-personalized-mana-offers'
+import { activatePersonalizedManaOffers } from './activate-personalized-mana-offers'
+import { releasePersonalizedManaOfferLock } from './release-personalized-mana-offer-lock'
+import { dismissPersonalizedManaOffer } from './dismiss-personalized-mana-offer'
+import { adminCreateCharityGiveaway } from './admin-create-charity-giveaway'
+import { adminUpdateCharityGiveawayPrize } from './admin-update-charity-giveaway-prize'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { deleteSpamComments } from './delete-spam-comments'
@@ -232,10 +336,17 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
-import { selectCharityGiveawayWinner } from './select-charity-giveaway-winner'
+import { getReferralEarnings } from './get-referral-earnings'
+import { cancelMerchOrder } from './cancel-merch-order'
+import { getMerchOrders } from './get-merch-orders'
+import { getMerchStockStatus } from './get-merch-stock-status'
+import { getUserMerchOrders } from './get-user-merch-orders'
+import { toggleMerchStock } from './toggle-merch-stock'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
+import { getTicketStock } from './get-ticket-stock'
+import { getTicketOrders } from './get-ticket-orders'
 import { shopResetAll } from './shop-reset-all'
 import { shopShippingRates } from './shop-shipping-rates'
 import { shopToggle } from './shop-toggle'
@@ -248,6 +359,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'recover-user': adminRecoverUser,
   'get-user-info': adminGetUserInfo,
   'admin-delete-user': adminDeleteUser,
+  'admin-ip-ban-user': adminIpBanUser,
+  'admin-set-bonus-eligibility': adminSetBonusEligibility,
+  'admin-set-prize-eligibility': adminSetPrizeEligibility,
+  'admin-flag-for-verification': adminFlagForVerification,
   'admin-get-related-users': adminGetRelatedUsers,
   'admin-search-users-by-email': adminSearchUsersByEmail,
   'anonymize-user': anonymizeUser,
@@ -256,6 +371,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-contract': followContract,
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
+  'market/:contractId/rebalance': rebalancePosition,
   bets: getBets,
   'bet-points': getBetPointsBetween,
   'get-bettors-from-bet-ids': getBettorsFromBetIds,
@@ -293,6 +409,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
   'market-probs': getMarketProbs,
+  'market-probs-history': getMarketProbsHistory,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
@@ -342,6 +459,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-twitch': saveTwitchCredentials,
   'set-push-token': setPushToken,
   'update-notif-settings': updateNotifSettings,
+  'set-job-interest': setJobInterest,
+  'get-job-interest': getJobInterest,
+  'get-mnx-invite-link': getMnxInviteLink,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
   post: post,
@@ -352,6 +472,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
+  'set-bot-status': setbotstatus,
   'ban-user': banuser,
   'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,
@@ -363,7 +484,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-my-groups': searchMyGroups,
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
-  'get-partner-stats': getPartnerStats,
   'get-posts': getPosts,
   'get-post-tip-info': getPostTipInfo,
   'get-seen-market-ids': getSeenMarketIds,
@@ -371,6 +491,32 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-dashboard-from-slug': getDashboardFromSlug,
   'create-public-chat-message': createPublicChatMessage,
   unresolve: unresolve,
+  'create-perp': createPerp,
+  'internal-perp-order-effects': internalPerpOrderEffects,
+  'get-perp-order': getPerpOrder,
+  'place-perp-trade': placePerpTrade,
+  'close-perp-position': closePerpPosition,
+  'update-perp-config': updatePerpConfig,
+  'add-perp-subsidy': addPerpSubsidy,
+  'get-mnx-dashboard': getMnxDashboard,
+  'get-model-classifications': getModelClassifications,
+  'set-model-classification': setModelClassification,
+  'get-openrouter-lab-classifications': getOpenRouterLabClassifications,
+  'set-openrouter-lab-classification': setOpenRouterLabClassification,
+  'get-oracle-price': getOraclePrice,
+  'get-oracle-price-series': getOraclePriceSeries,
+  'get-known-oracle-feeds': getKnownOracleFeeds,
+  'internal-write-oracle-price': internalWriteOraclePrice,
+  'get-perp-positions': getPerpPositions,
+  'get-perp-quote': getPerpQuote,
+  'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-sports-broadcast': internalSportsBroadcast,
+  'get-perp-funding-events': getPerpFundingEvents,
+  'get-perp-events': getPerpEvents,
+  'get-perp-suggestions': getPerpSuggestions,
+  'create-perp-suggestion': createPerpSuggestion,
+  'vote-perp-suggestion': votePerpSuggestion,
+  'hide-perp-suggestion': hidePerpSuggestion,
   'get-followed-groups': getFollowedGroups,
   'get-watched-markets': getWatchedMarkets,
   'unique-bet-group-count': getUniqueBetGroupCount,
@@ -382,6 +528,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-otp': requestOTP,
   'multi-sell': multiSell,
   'get-feed': getFeed,
+  'get-browse-personalization': getBrowsePersonalization,
   'get-unified-feed': getUnifiedFeed,
   'get-mana-supply': getManaSupply,
   'update-mod-report': updateModReport,
@@ -400,6 +547,11 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'upload-document-gidx': uploadDocument,
   'get-verification-documents-gidx': getVerificationDocuments,
   'get-monitor-status-gidx': getMonitorStatus,
+  // iDenfy identity verification
+  'create-idenfy-session': createIdenfySession,
+  'get-idenfy-status': getIdenfyStatus,
+  'get-idenfy-stats': getIdenfyStats,
+  'get-surface-funnels': getSurfaceFunnels,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
@@ -434,6 +586,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
   'purchase-boost': purchaseContractBoost,
+  'remove-boost': removeBoost,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,
@@ -442,7 +595,14 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'get-referral-earnings': getReferralEarnings,
   'create-post-comment': createPostComment,
+  'create-social-post': createSocialPost,
+  'edit-social-post': editSocialPost,
+  'delete-social-post': deleteSocialPost,
+  'get-social-posts': getSocialPosts,
+  'get-social-post': getSocialPost,
+  'get-social-likers': getSocialLikers,
   'create-post': createPost,
   'update-post': updatePost,
   'update-post-comment': updatePostComment,
@@ -471,14 +631,62 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
   'get-charity-giveaway': getCharityGiveaway,
+  'get-charity-giveaway-list': getCharityGiveawayList,
+  'get-crypto-purchase-status': getCryptoPurchaseStatus,
+  'create-daimo-session': createDaimoSession,
+  'get-personalized-mana-offers': getPersonalizedManaOffers,
+  'activate-personalized-mana-offers': activatePersonalizedManaOffers,
+  'release-personalized-mana-offer-lock': releasePersonalizedManaOfferLock,
+  'dismiss-personalized-mana-offer': dismissPersonalizedManaOffer,
   'buy-charity-giveaway-tickets': buyCharityGiveawayTickets,
   'get-charity-giveaway-sales': getCharityGiveawaySales,
   'select-charity-giveaway-winner': selectCharityGiveawayWinner,
+  'get-sweepstakes': getSweepstakes,
+  'buy-sweepstakes-tickets': buySweepstakesTickets,
+  'claim-free-sweepstakes-ticket': claimFreeSweepstakesTicket,
+  'get-sweepstakes-sales': getSweepstakesSales,
+  'get-sweepstakes-list': getSweepstakesList,
+  'select-sweepstakes-winners': selectSweepstakesWinners,
+  'check-bitcoin-block': checkBitcoinBlock,
+  'claim-sweepstakes-prize': claimSweepstakesPrize,
+  'get-sweepstakes-prize-claim': getSweepstakesPrizeClaim,
+  'admin-create-sweepstakes': adminCreateSweepstakes,
+  'admin-announce-prize-drawing': adminAnnouncePrizeDrawing,
+  'check-sweepstakes-geo': checkSweepstakesGeo,
+  'admin-create-charity-giveaway': adminCreateCharityGiveaway,
+  'admin-update-charity-giveaway-prize': adminUpdateCharityGiveawayPrize,
+  'admin-get-prize-claims': adminGetPrizeClaims,
+  'admin-update-prize-payment': adminUpdatePrizePayment,
+  'admin-delete-prize-claim': adminDeletePrizeClaim,
+  'admin-get-mana-sales': adminGetManaSales,
+  'admin-get-top-whale-users': adminGetTopWhaleUsers,
+  'admin-get-new-users': adminGetNewUsers,
+  'admin-sports-fixtures': adminSportsFixtures,
+  'admin-sports-create-markets': adminSportsCreateMarkets,
+  'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
+  'admin-sports-create-f1-markets': adminSportsCreateF1Markets,
+  'link-market': linkMarket,
+  'unlink-market': unlinkMarket,
+  'get-market-links': getMarketLinksHandler,
+  'admin-sports-competition-switches': adminSportsCompetitionSwitches,
+  'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
+  'admin-sports-score-polling': adminSportsScorePolling,
+  'admin-sports-set-score-polling': adminSportsSetScorePolling,
+  'sports-markets': sportsMarkets,
+  'sports-schedule': sportsSchedule,
+  'sports-index': sportsIndex,
+  'sports-leaderboards': sportsLeaderboards,
+  'election-leaderboards': electionLeaderboards,
+  'admin-sports-resolve': adminSportsResolve,
+  'admin-sports-community-market': adminSportsCommunityMarket,
+  'admin-sports-init-community': adminSportsInitCommunity,
   'get-predictle-percentile': getPredictlePercentile,
   'get-shop-items': getShopItems,
   'get-shop-stats': getShopStats,
   'shop-purchase': shopPurchase,
   'shop-purchase-merch': shopPurchaseMerch,
+  'get-ticket-stock': getTicketStock,
+  'get-ticket-orders': getTicketOrders,
   'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
@@ -487,4 +695,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'claim-charity-champion': claimCharityChampion,
   'get-suspected-spam-comments': getSuspectedSpamComments,
   'delete-spam-comments': deleteSpamComments,
+  'get-merch-orders': getMerchOrders,
+  'get-merch-stock-status': getMerchStockStatus,
+  'toggle-merch-stock': toggleMerchStock,
+  'cancel-merch-order': cancelMerchOrder,
+  'get-user-merch-orders': getUserMerchOrders,
 } as const

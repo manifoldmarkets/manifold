@@ -33,7 +33,8 @@ function validateItemMetadata(itemId: string, metadata: Record<string, string | 
     case 'avatar-blue-cap':
     case 'avatar-team-red-hat':
     case 'avatar-team-green-hat':
-    case 'avatar-black-cap': {
+    case 'avatar-black-cap':
+    case 'avatar-cat-ears': {
       if (Object.keys(metadata).length !== 1 || !('style' in metadata)) {
         throw new APIError(400, `${itemId} metadata must contain only "style"`)
       }

@@ -1,6 +1,6 @@
 import { SetStateAction } from 'react'
 import { useApiSubscription } from './use-api-subscription'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmmMechanism } from 'common/contract'
 import { Answer } from 'common/answer'
 import { uniqBy } from 'lodash'
 export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
@@ -9,7 +9,7 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
 ) => {
   useApiSubscription({
     topics: [`contract/${initial.id}/new-answer`],
-    enabled: 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
+    enabled: 'mechanism' in initial && isMultiCpmmMechanism(initial.mechanism),
     onBroadcast: ({ data }) => {
       setContract((contract) => {
         return {
@@ -28,7 +28,7 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
 
   useApiSubscription({
     topics: [`contract/${initial.id}/updated-answers`],
-    enabled: 'mechanism' in initial && initial.mechanism === 'cpmm-multi-1',
+    enabled: 'mechanism' in initial && isMultiCpmmMechanism(initial.mechanism),
     onBroadcast: ({ data }) => {
       const newAnswerUpdates = data.answers as (Partial<Answer> & {
         id: string

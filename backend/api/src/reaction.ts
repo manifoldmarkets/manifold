@@ -1,3 +1,4 @@
+import { reactToSocialPost } from './social-posts'
 import { assertUnreachable } from 'common/util/types'
 import { createLikeNotification } from 'shared/notifications/create-new-like-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -6,7 +7,13 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { revalidatePost } from './create-post-comment'
 import { getPost } from 'shared/supabase/posts'
 
-export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
+export const addOrRemoveReaction: APIHandler<'react'> = async (
+  props,
+  auth,
+  req
+) => {
+  if (props.contentType === 'social_post')
+    return reactToSocialPost(props, auth, req)
   const {
     contentId,
     contentType,

@@ -3,6 +3,7 @@ import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
 import {
   Contract,
   contractPath,
+  isMultiCpmm,
   MarketContract,
   nativeContractColumnsArray,
 } from 'common/contract'
@@ -41,7 +42,42 @@ export const logMemory = () => {
 }
 
 export function htmlToRichText(html: string) {
-  return generateJSON(html, extensions)
+  return sanitizeJsonContent(generateJSON(html, extensions))
+}
+
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url, 'https://placeholder.invalid')
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
+/** Recursively sanitize JSONContent: strip unsafe iframe nodes and link marks */
+export function sanitizeJsonContent(node: any): any {
+  if (!node) return node
+  if (node.type === 'iframe') {
+    const src = node.attrs?.src
+    if (!src || !isSafeUrl(src)) {
+      return null
+    }
+  }
+  // Sanitize link marks (blocks javascript: hrefs via crafted JSONContent)
+  if (node.marks) {
+    node.marks = node.marks.filter((mark: any) => {
+      if (mark.type === 'link' && mark.attrs?.href) {
+        return isSafeUrl(mark.attrs.href)
+      }
+      return true
+    })
+  }
+  if (node.content) {
+    node.content = node.content
+      .map((child: any) => sanitizeJsonContent(child))
+      .filter(Boolean)
+  }
+  return node
 }
 
 export const invokeFunction = async (name: string, body?: unknown) => {
@@ -107,10 +143,29 @@ export async function revalidateContractStaticProps(contract: {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
+
+/**
+ * Auto-detected and set when running locally but still connecting to remote Supabase/Firebase.
+ * Uses local service account credentials.
+ */
 export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
-// TODO: deprecate in favor of common/src/envs/is-prod.ts
+/**
+ * Set via `.env.local` for running the entire stack locally, including Supabase.
+ * This is mainly for external contributors who don't have access to Supabase/Firebase.
+ * Also useful for testing major backend changes.
+ */
+export const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
+if (LOCAL_ONLY && !LOCAL_DEV) {
+  throw new Error('LOCAL_ONLY cannot be true in a deployed environment')
+}
+
+/** @deprecated in favor of common/src/envs/is-prod.ts */
 export const isProd = () => {
+  if (LOCAL_ONLY) {
+    return false
+  }
   // ian: The first clause is for the API server, and the
   // second clause is for local scripts and cloud functions
   if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
@@ -149,8 +204,8 @@ export const getContractAndMetricsAndLiquidities = async (
   unresolvedContract: MarketContract,
   answerId: string | undefined
 ) => {
-  const { id: contractId, mechanism } = unresolvedContract
-  const isMulti = mechanism === 'cpmm-multi-1'
+  const { id: contractId } = unresolvedContract
+  const isMulti = isMultiCpmm(unresolvedContract)
   const sumsToOne = isMulti && unresolvedContract.shouldAnswersSumToOne
   const metricsQuery = sumsToOne
     ? `

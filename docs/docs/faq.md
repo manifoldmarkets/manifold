@@ -67,15 +67,18 @@ Mana can be earned by making correct predictions, successful trades, creating po
 - **Prediction streaks** - Make at least one prediction per day to maintain your streak. The reward starts at M5 and increases by M5 for each consecutive day, up to a maximum of M25 per day. Your streak can be viewed on your profile page.
 - **Share a market** - Share a market with others to earn M5.
 
-**Weekly quests:**
+**Weekly quests** (each week starts Monday at midnight Pacific time):
 
 - **Create a market** - Create a market to earn M100.
+- **Create 3 markets** - Create 3 markets in the same week to earn another M100.
+
+Polls don't count toward the weekly quests.
 
 - **Referrals** -
   Refer new users to Manifold and earn M1000 when they sign up using your referral link.
 
-- **Phone verification** -
-  Verify your phone number to receive a one-time bonus of M1000.
+- **Signup bonus** -
+  Every new account starts with M1000. No verification is needed — identity verification is optional and only required to enter prize drawings.
 
 You can find all available quests by navigating to your profile page and clicking on the streak/quest button.
 
@@ -83,7 +86,7 @@ You can find all available quests by navigating to your profile page and clickin
 
 There are loads of different ways you can use our markets to answer your questions. Most of our users tend to interact with a whole mixture of markets.
 
-Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+Some markets may be unranked, unlisted, cancelled, or have their resolutions overruled if they do not comply with the [Community Guidelines](https://manifold.markets/community-guidelines).
 
 Here are some of the top use cases for our markets, with corresponding examples.
 
@@ -178,7 +181,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 - The creator is free to use their judgment.
   - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
 - Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
-- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+- Check out the [resolution section in the community guidelines](https://manifold.markets/community-guidelines/resolving-markets).
 
 ### How should I resolve a market?
 
@@ -291,7 +294,8 @@ The liquidity in a market is the amount of capital available for traders to trad
 ### How much mana will I get back from subsidising a market?
 
 - You should always expect to lose mana from subsidising a market.
-- Liquidity providers cannot withdraw the mana they have spent to subsidise a market, however, they will receive back some of their mana when the market resolves, if there's any left over.
+- The market creator can withdraw liquidity they have added to their own markets.
+- Liquidity providers who did not create the market, cannot withdraw the mana they have spent to subsidise a market. However, they will receive back some of their mana when the market resolves, if there's any left over.
 - The amount of mana you will get back depends on how much the probability has moved from when you subsidised the market. The more it has moved, the less you will get back.
 
 ### What are loans?
@@ -385,7 +389,7 @@ Be warned that when deleting an account your markets and comments are not delete
 
 ### Does Manifold have a content moderation policy or account rules?
 
-For moderation policies and rules, please see our [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+For moderation policies and rules, please see our [Community Guidelines](https://manifold.markets/community-guidelines/moderation).
 
 ### How do I report misconduct on Manifold Markets?
 
@@ -394,7 +398,7 @@ To get the fastest possible response, all user reports should include:
 1. What happened?
 2. When did it happen?
 3. Where on the site did it occur?
-4. How does it violate the [Community Guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400)?
+4. How does it violate the [Community Guidelines](https://manifold.markets/community-guidelines)?
 5. Potential causes (if known)
 6. Evidence of 1-5, submitted to DavidChee/SirSalty via [Discord](https://discord.com/invite/eHQBNBqXuh) or [email](mailto:info@manifold.markets).
 
@@ -422,7 +426,7 @@ You can make predictions on everything on Manifold Markets - from sports scores,
 
 ### How does Manifold Markets ensure fair play?
 
-Manifold Markets believes users should have autonomy over their own markets as much as possible, and tries to keep moderation to a minimum and empower users with tools to control the content that they want to see. Manifold Markets ensures fair play through its [community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400); content moderation; bug abuse detection; auditing user activity; and careful game design.
+Manifold Markets believes users should have autonomy over their own markets as much as possible, and tries to keep moderation to a minimum and empower users with tools to control the content that they want to see. Manifold Markets ensures fair play through its [community guidelines](https://manifold.markets/community-guidelines); content moderation; bug abuse detection; auditing user activity; and careful game design.
 
 ### Can you play Manifold Markets for free?
 

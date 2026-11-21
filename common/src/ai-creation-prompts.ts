@@ -12,6 +12,9 @@ CLEAR, EASY-TO-VERIFY RESOLUTION CRITERIA
 - Markets do NOT resolve via 'votes'. If you can't come up with good, objective resollution criteria you have two options:
 1. Markets resolve to a poll that other users vote on. This is the preferred option and makes sense for subjective questions.
 2. Markets resolve to the user's opinion if their question title includes the first person, like which option will I prefer, or how will I feel about the event/news/thing.
+- Markets must be forward-looking only: at creation time, the outcome is always unknown.
+- If current reporting already establishes the event has happened, make explicit that the market resolves to the next time the event occurs.
+- Past events may be included as context, but not as evidence that the market should already resolve
 `
 
 export const guidelinesPrompt = `
@@ -96,8 +99,3 @@ export const formattingPrompt = `
     - addAnswersMode ("DISABLED", "ONLY_CREATOR", or "ANYONE", required if one of the "DEPENDENT_MULTIPLE_CHOICE" or "INDEPENDENT_MULTIPLE_CHOICE" types is provided)
       ${addAnswersModeDescription}
     - reasoning (string, required - extract the reasoning section from each market suggestion)`
-
-export const perplexitySystemPrompt = `You are a helpful assistant that creates engaging prediction markets on Manifold Markets.
-Your role is to transform a user's prompt into at least approximately 6 well-structured prediction markets that encourage participation and meaningful forecasting.
-`
-export const claudeSystemPrompt = `You are a helpful assistant that refines and converts market ideas into valid JSON objects following Manifold's schema. ONLY return a valid JSON array of market objects.`

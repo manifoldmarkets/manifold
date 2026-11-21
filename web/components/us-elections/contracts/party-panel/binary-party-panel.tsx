@@ -2,7 +2,7 @@ import { track } from 'web/lib/service/analytics'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { getDisplayProbability, getProbability } from 'common/calculate'
-import { BinaryContract, Contract } from 'common/contract'
+import { BinaryContract, Contract, isMultiCpmm } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
@@ -26,7 +26,10 @@ import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
 import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { BubblePercentChange } from '../candidates-panel/candidate-bar'
+import {
+  BubblePercentChange,
+  PercentChangeToday,
+} from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 import { sliderColors } from 'web/components/widgets/slider'
@@ -42,6 +45,124 @@ const politicsBinaryPseudonym = {
     pseudonymName: 'HARRIS',
     pseudonymColor: 'azure' as keyof typeof sliderColors,
   },
+}
+
+import { binaryElectionLabels } from 'web/components/usa-map/audited-sources'
+
+// Party bars for a binary state market (e.g. the FL Senate special, "Will a
+// Republican win ...?"). NO includes Democrats, independents and other winners.
+export function StateBinaryPartyPanel(props: {
+  contract: BinaryContract
+  compact?: boolean
+}) {
+  const { contract, compact } = props
+  const user = useUser()
+
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
+  const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
+
+  return (
+    <Col className="gap-2">
+      {(['YES', 'NO'] as const).map((outcome) => (
+        <StateBinaryPartyBar
+          key={outcome}
+          contract={contract}
+          outcome={outcome}
+          userBets={userBets}
+          user={user}
+          showPosition={sharesOutcome === outcome}
+          compact={compact}
+        />
+      ))}
+    </Col>
+  )
+}
+
+function StateBinaryPartyBar(props: {
+  contract: BinaryContract
+  outcome: 'YES' | 'NO'
+  userBets?: Bet[]
+  user?: User | null
+  showPosition: boolean
+  compact?: boolean
+}) {
+  const { contract, outcome, userBets, user, showPosition, compact } = props
+  const { resolution } = contract
+
+  const isYes = outcome === 'YES'
+  const statePartyBinaryPseudonym = binaryElectionLabels(contract)
+  const partyName = statePartyBinaryPseudonym[outcome].pseudonymName
+  const yesProb = getDisplayProbability(contract)
+  const prob = isYes ? yesProb : 1 - yesProb
+  const resolvedProb =
+    resolution === 'YES'
+      ? isYes
+        ? 1
+        : 0
+      : resolution === 'NO'
+      ? isYes
+        ? 0
+        : 1
+      : resolution === 'MKT'
+      ? prob
+      : undefined
+  const probChange = isYes
+    ? contract.probChanges.day
+    : -contract.probChanges.day
+
+  return (
+    <AnswerBar
+      color={getPartyColor(partyName)}
+      prob={prob}
+      resolvedProb={resolvedProb}
+      className={clsx('cursor-pointer', compact ? 'py-1' : 'py-1.5')}
+      label={
+        <Row className={clsx('relative', compact ? 'min-h-6' : 'h-8')}>
+          <Col>
+            <CreatorAndAnswerLabel
+              text={partyName}
+              createdTime={contract.createdTime}
+              className={clsx('items-center !leading-none')}
+            />
+            {!resolution && showPosition && user && !!userBets && (
+              <BinaryUserPosition
+                contract={contract}
+                userBets={userBets}
+                user={user}
+                className="text-ink-700 dark:text-ink-800 text-left text-xs hover:underline"
+                binaryPseudonym={statePartyBinaryPseudonym}
+              />
+            )}
+          </Col>
+        </Row>
+      }
+      end={
+        <Row className={'items-center gap-1 sm:gap-2'}>
+          <div className="relative">
+            <div className={clsx('font-bold', compact ? 'text-sm' : 'text-lg')}>
+              {formatPercent(prob)}
+            </div>
+            {!compact && (
+              <PercentChangeToday
+                probChange={probChange}
+                className="absolute right-1 top-6 whitespace-nowrap text-xs"
+              />
+            )}
+          </div>
+          <BinaryBetButton
+            contract={contract}
+            initialOutcome={outcome}
+            binaryPseudonym={statePartyBinaryPseudonym}
+          />
+        </Row>
+      }
+    />
+  )
 }
 
 // just the bars
@@ -390,7 +511,7 @@ export function BinaryBetButton(props: {
   if (
     !isClosed(contract) &&
     !contract.isResolved &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
+    (contract.mechanism === 'cpmm-1' || isMultiCpmm(contract))
   ) {
     return (
       <>

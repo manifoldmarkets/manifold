@@ -12,7 +12,8 @@ We use [@vercel/og](https://vercel.com/docs/functions/og-image-generation) which
 
 ## Key Concepts
 
-- All OG images are 600x315 pixels (Twitter/Discord standard)
+- All OG cards are laid out at 600x315 (`OG_CARD_WIDTH/HEIGHT` in `common/edge/og`). The market card is rasterized at 2x (1200x630) by wrapping it in `scaleCard`, so text stays crisp where platforms show it larger
+- The market image URL carries `v` (`OG_CARD_VERSION` in `common/contract-seo`). Bump it when the layout or param encoding changes, since responses are cached for a year. Chart `points` are float32-encoded when `v` is set and float64 on older URLs
 - Components must use tailwind classes for styling
 - Use Figtree font family
 - Cannot use certain CSS features due to Satori engine limitations:
@@ -28,6 +29,7 @@ Use the test pages to preview OG images:
 
 - `/og-test/[username]/[contractSlug]` - Preview market OG images
 - `/og-test/topic/[topicSlug]` - Preview topic OG images
+- `/og-test/election` - Preview the elections page (Senate map) OG image
 
 ## Component Structure
 

@@ -7,11 +7,19 @@ import { createCharityChampionEligibleNotification } from 'shared/create-notific
 import { charities } from 'common/charity'
 import { calculateGiveawayTicketCost } from 'common/charity-giveaway'
 import { CHARITY_CHAMPION_ENTITLEMENT_ID } from 'common/shop/items'
+import { isAdminId } from 'common/envs/constants'
 
 export const buyCharityGiveawayTickets: APIHandler<
   'buy-charity-giveaway-tickets'
 > = async (props, auth) => {
   const { giveawayNum, charityId, numTickets } = props
+
+  if (isAdminId(auth.uid)) {
+    throw new APIError(
+      403,
+      'Admins are not eligible to participate in the charity giveaway.'
+    )
+  }
 
   // Validate charity exists
   const charity = charities.find((c) => c.id === charityId)
@@ -26,8 +34,9 @@ export const buyCharityGiveawayTickets: APIHandler<
     const giveaway = await tx.oneOrNone<{
       giveaway_num: number
       close_time: string
+      prize_amount_usd: number
     }>(
-      `SELECT giveaway_num, close_time FROM charity_giveaways WHERE giveaway_num = $1 FOR UPDATE`,
+      `SELECT giveaway_num, close_time, prize_amount_usd FROM charity_giveaways WHERE giveaway_num = $1 FOR UPDATE`,
       [giveawayNum]
     )
 
@@ -49,12 +58,7 @@ export const buyCharityGiveawayTickets: APIHandler<
     const currentTickets = parseFloat(ticketStats?.total_tickets ?? '0')
 
     // Calculate cost
-    const manaSpent = calculateGiveawayTicketCost(currentTickets, numTickets)
-
-    // Minimum purchase of 1 mana
-    if (manaSpent < 1) {
-      throw new APIError(400, 'Minimum purchase is 1 mana')
-    }
+    const manaSpent = calculateGiveawayTicketCost(currentTickets, numTickets, giveaway.prize_amount_usd)
 
     // Check user balance
     const user = await getUser(auth.uid, tx)

@@ -110,7 +110,11 @@ export function CandidatePanel(props: {
             )}
           </Row>
 
+          {/* Arrows on hover only: on phones there is no hover, so swiping
+              does the work and the right arrow no longer sits on top of the
+              last visible candidate's photo. */}
           <Carousel
+            showArrowsOnHover
             className={clsx(
               'w-full gap-2',
               shownAnswersLength < 5 ? 'sm:hidden' : ''

@@ -1,29 +1,21 @@
 import { XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import {
-  MANA_MIN_BET,
-  PHONE_VERIFICATION_BONUS,
-  SWEEPS_MIN_BET,
-} from 'common/economy'
+import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { humanish, User } from 'common/user'
-import {
-  formatMoney,
-  formatWithToken,
-  InputTokenType,
-} from 'common/util/format'
+import { User } from 'common/user'
+import { formatWithToken, InputTokenType } from 'common/util/format'
+import Link from 'next/link'
 import { ReactNode, useEffect, useState } from 'react'
-import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
-import { sliderColors } from './slider'
+import { LiveRegion } from './live-region'
+import { SliderColor } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { buildArray } from 'common/util/array'
 
@@ -43,6 +35,7 @@ export function AmountInput(
     allowFloat?: boolean
     allowNegative?: boolean
     disableClearButton?: boolean
+    ariaLabel?: string
   } & JSX.IntrinsicElements['input']
 ) {
   const {
@@ -58,6 +51,7 @@ export function AmountInput(
     quickAddMoreButton,
     allowNegative,
     disableClearButton,
+    ariaLabel,
     ...rest
   } = props
 
@@ -98,6 +92,7 @@ export function AmountInput(
       >
         <Input
           {...rest}
+          aria-label={ariaLabel ?? 'Bet amount'}
           className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
           style={inputStyle}
           ref={inputRef}
@@ -128,6 +123,8 @@ export function AmountInput(
           : !disableClearButton &&
             amount !== undefined && (
               <button
+                type="button"
+                aria-label="Clear bet amount"
                 className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
                 onClick={() => onChangeAmount(undefined)}
               >
@@ -156,6 +153,7 @@ export function BuyAmountInput(props: {
   parentClassName?: string
   binaryOutcome?: 'YES' | 'NO'
   showSlider?: boolean
+  showSliderMarks?: boolean
   className?: string
   inputClassName?: string
   // Needed to focus the amount input
@@ -164,7 +162,9 @@ export function BuyAmountInput(props: {
   quickButtonAmountSize?: 'large' | 'small'
   disableQuickButtons?: boolean
   token?: InputTokenType
-  sliderColor?: keyof typeof sliderColors
+  sliderColor?: SliderColor
+  fieldLabel?: string
+  compact?: boolean
 }) {
   const {
     amount,
@@ -175,6 +175,7 @@ export function BuyAmountInput(props: {
     binaryOutcome,
     showBalance,
     showSlider,
+    showSliderMarks,
     parentClassName,
     className,
     inputClassName,
@@ -186,6 +187,8 @@ export function BuyAmountInput(props: {
     disableQuickButtons,
     token = 'M$',
     sliderColor,
+    fieldLabel = 'Bet amount',
+    compact = false,
   } = props
   const user = useUser()
 
@@ -258,9 +261,20 @@ export function BuyAmountInput(props: {
   return (
     <>
       <Col className={clsx('relative w-full max-w-[350px]', parentClassName)}>
+        <LiveRegion
+          message={
+            amount == undefined
+              ? ''
+              : `${fieldLabel} ${formatWithToken({ amount, token })}`
+          }
+        />
         <AmountInput
           className={className}
-          inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
+          inputClassName={clsx(
+            'w-full !text-xl',
+            compact ? 'h-12' : 'h-[60px]',
+            inputClassName
+          )}
           label={
             token === 'SPICE' ? (
               <SpiceCoin />
@@ -277,11 +291,23 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           disableClearButton={!disableQuickButtons}
+          ariaLabel={fieldLabel}
         />
         {!disableQuickButtons && (
-          <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+          <Row
+            className={clsx(
+              'absolute right-2 gap-1.5 sm:gap-2',
+              compact ? 'top-2' : 'top-3.5'
+            )}
+          >
             {values.map((v) => (
               <button
+                type="button"
+                aria-label={
+                  v > 0
+                    ? `Increase ${fieldLabel.toLowerCase()} by ${v}`
+                    : `Decrease ${fieldLabel.toLowerCase()} by ${Math.abs(v)}`
+                }
                 className={incrementButtonsClassName}
                 key={v}
                 onClick={() => incrementBy(v)}
@@ -293,7 +319,7 @@ export function BuyAmountInput(props: {
         )}
         {showSlider && (
           <BetSlider
-            className="mt-3"
+            className={compact ? 'mt-2' : 'mt-3'}
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
@@ -301,10 +327,12 @@ export function BuyAmountInput(props: {
             smallAmounts={!hasLotsOfMoney}
             token={token}
             sliderColor={sliderColor}
+            ariaLabel={fieldLabel}
+            showMarks={showSliderMarks}
           />
         )}
         {error ? (
-          <div className="text-scarlet-500 mt-2 flex-wrap text-sm">
+          <div className="text-scarlet-500 mt-2 flex-wrap text-sm" role="alert">
             {error === 'Insufficient balance' ? (
               <BuyMoreFunds user={user} />
             ) : (
@@ -327,29 +355,16 @@ export function BuyAmountInput(props: {
   )
 }
 
-const BuyMoreFunds = (props: { user: User | null | undefined }) => {
-  const { user } = props
-  const [addFundsModalOpen, setAddFundsModalOpen] = useState(false)
-  const [showVerifyPhone, setShowVerifyPhone] = useState(false)
+const BuyMoreFunds = (_props: { user: User | null | undefined }) => {
   return (
     <>
       Not enough funds.
-      <button
+      <Link
+        href="/checkout"
         className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-        onClick={() => setAddFundsModalOpen(true)}
       >
         Buy more?
-      </button>
-      {user && !humanish(user) && (
-        <button
-          className="text-primary-500 hover:decoration-primary-400 ml-1 hover:underline"
-          onClick={() => setShowVerifyPhone(true)}
-        >
-          Verify your phone number for {formatMoney(PHONE_VERIFICATION_BONUS)}
-        </button>
-      )}
-      <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
-      <AddFundsModal open={addFundsModalOpen} setOpen={setAddFundsModalOpen} />
+      </Link>
     </>
   )
 }

@@ -1,7 +1,9 @@
 import { XIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { formatMoney } from 'common/util/format'
 import { last } from 'lodash'
+import { useEffect, useState } from 'react'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -292,6 +294,57 @@ export const AnswerInput = (props: {
     />
   )
 }
+
+// Compact percent field for setting an answer's starting probability. Keeps its
+// own text while you type so half-finished values like "1" or "12." don't get
+// clobbered by the number we hand back to the parent.
+export const AnswerProbInput = (props: {
+  prob: number
+  onChange: (prob: number) => void
+  disabled?: boolean
+  className?: string
+}) => {
+  const { prob, onChange, disabled, className } = props
+  const [text, setText] = useState(formatAnswerProb(prob))
+
+  useEffect(() => {
+    if (parseFloat(text) !== prob) setText(formatAnswerProb(prob))
+    // Only resync when the parent changes the value out from under us.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prob])
+
+  return (
+    <label
+      className={clsx(
+        'border-ink-300 bg-canvas-0 focus-within:border-primary-500 focus-within:ring-primary-500 text-ink-900 flex items-center rounded-md border pr-1.5 text-base focus-within:ring-1',
+        disabled && 'text-ink-500 bg-canvas-50',
+        className
+      )}
+    >
+      <input
+        type="text"
+        inputMode="decimal"
+        disabled={disabled}
+        value={text}
+        onChange={(e) => {
+          const value = e.target.value
+          if (value !== '' && !/^\d{0,3}(\.\d{0,2})?$/.test(value)) return
+          setText(value)
+          const parsed = parseFloat(value)
+          if (isFinite(parsed)) onChange(parsed)
+        }}
+        onBlur={() => setText(formatAnswerProb(prob))}
+        className="w-9 border-none bg-transparent p-0 text-right font-semibold focus:outline-none focus:ring-0"
+        aria-label="Starting probability"
+      />
+      <span className="text-ink-500 font-semibold">%</span>
+    </label>
+  )
+}
+
+// Trims the float noise that comes out of rescaling an even split.
+const formatAnswerProb = (prob: number) =>
+  isFinite(prob) ? `${Math.round(prob * 10) / 10}` : ''
 
 const setElement = <T,>(array: T[], i: number, elem: T) => {
   const newArray = array.concat()

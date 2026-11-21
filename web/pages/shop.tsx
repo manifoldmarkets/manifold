@@ -17,13 +17,16 @@ import {
   YesButtonOption,
   NoButtonOption,
   SLOT_LABELS,
-  getCompatibleSlots,
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
   CROWN_POSITION_OPTIONS,
   getMerchItems,
 } from 'common/shop/items'
 import { UserEntitlement } from 'common/shop/types'
+import {
+  requiresPostalCode,
+  requiresRecipientEmail,
+} from 'common/shop/printful-address'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import {
@@ -38,10 +41,11 @@ import {
 } from 'common/supporter-config'
 import clsx from 'clsx'
 import Link from 'next/link'
+import Router from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaStar } from 'react-icons/fa'
-import { FaGem, FaLock } from 'react-icons/fa6'
+import { FaGem, FaGift, FaLock } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
 import { GiTopHat, GiDunceCap } from 'react-icons/gi'
 import {
@@ -50,12 +54,12 @@ import {
   AngelWingSvg,
   MonocleSvg,
   CrystalBallSvg,
-  DisguiseSvg,
   ArrowBadgeSvg,
   StonksMemeArrowSvg,
   BullHornSvg,
   BearEarSvg,
   CatEarSvg,
+  CatWhiskersSvg,
   SantaHatSvg,
   BunnyEarSvg,
   WizardHatSvg,
@@ -63,10 +67,12 @@ import {
   JesterHatSvg,
   FedoraSvg,
   DevilHornSvg,
+  HaloSvg,
 } from 'web/components/shop/item-svgs'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
+import { MerchCheckoutModal } from 'web/components/shop/merch-checkout-modal'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
@@ -77,9 +83,12 @@ import {
   RedCapSvg,
   GreenCapSvg,
   BlackCapSvg,
+  DisguiseOnAvatar,
 } from 'web/components/widgets/avatar'
 import { Card } from 'web/components/widgets/card'
+import { SelectDropdown } from 'web/components/widgets/select-dropdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
@@ -96,10 +105,19 @@ import {
 import {
   CharityGiveawayCard,
   CharityGiveawayData,
+  formatEntries,
 } from 'web/components/shop/charity-giveaway-card'
 import { CharityChampionCard } from 'web/components/shop/charity-champion-card'
+import {
+  ENDED_PILL,
+  GiveawayPromoCard,
+  promoStatSizeClass,
+} from 'web/components/shop/giveaway-promo-card'
+import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { getAnimationLocationText } from 'common/shop/display-config'
+import { getTotalPrizePool } from 'common/sweepstakes'
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -110,6 +128,9 @@ const isEntitlementOwned = (e: UserEntitlement) => {
 // Default item order (manual curation)
 const ITEM_ORDER: Record<string, number> = {
   'streak-forgiveness': 1,
+  // 1.6 keeps the former-champion legacy in its default position
+  // (lands in the 'hovercard' category pill via its slot).
+  'former-charity-champion': 1.6,
   'avatar-tinfoil-hat': 2,
   'avatar-golden-border': 3,
   'avatar-crown': 4,
@@ -140,6 +161,7 @@ const ITEM_ORDER: Record<string, number> = {
 
 type SortOption =
   | 'default'
+  | 'category'
   | 'price-asc'
   | 'price-desc'
   | 'name-asc'
@@ -147,6 +169,7 @@ type SortOption =
 
 type FilterOption =
   | 'all'
+  | 'owned'
   | 'hats'
   | 'avatar'
   | 'hovercard'
@@ -160,6 +183,7 @@ const FILTER_CONFIG: Record<
   { label: string; slots: string[]; special?: boolean }
 > = {
   all: { label: 'All', slots: [] },
+  owned: { label: 'Owned', slots: [], special: true },
   hats: { label: 'Hats', slots: ['hat'] },
   avatar: { label: 'Avatar', slots: ['profile-border', 'profile-accessory'] },
   hovercard: {
@@ -172,13 +196,30 @@ const FILTER_CONFIG: Record<
   seasonal: { label: 'Seasonal', slots: [], special: true },
 }
 
-const filterItems = (items: ShopItem[], filter: FilterOption): ShopItem[] => {
+const filterItems = (
+  items: ShopItem[],
+  filter: FilterOption,
+  ownedItemIds?: Set<string>
+): ShopItem[] => {
   if (filter === 'all') return items
   if (filter === 'seasonal')
     return items.filter((item) => item.seasonalAvailability)
   if (filter === 'merch') return [] // merch handled by separate section
+  if (filter === 'owned') {
+    // Items the user actively manages — owned toggleable goods.
+    // Merch is excluded by the regular-grid filter upstream.
+    return items.filter((item) =>
+      ownedItemIds ? ownedItemIds.has(getEntitlementId(item)) : false
+    )
+  }
   const allowedSlots = FILTER_CONFIG[filter].slots
-  return items.filter((item) => allowedSlots.includes(item.slot))
+  return items.filter((item) => {
+    // filterOverride takes precedence over slot-based categorization so that
+    // e.g. `slot: 'unique'` items (Halo, Angel Wings, Crown) can appear under
+    // Hats / Avatar instead of being dumped into Hovercard.
+    if (item.filterOverride) return item.filterOverride === filter
+    return allowedSlots.includes(item.slot)
+  })
 }
 
 // Check if a filter tab has any visible items (for dynamic tab visibility)
@@ -186,24 +227,62 @@ const hasVisibleItems = (
   filter: FilterOption,
   allItems: ShopItem[],
   visibleItemIds: Set<string>,
-  showHidden: boolean
+  showHidden: boolean,
+  ownedItemIds?: Set<string>
 ): boolean => {
   if (filter === 'all') return true
+  if (filter === 'owned') {
+    // Tab only appears once the user owns at least one toggleable item
+    // (excluding merch, which isn't toggleable).
+    if (!ownedItemIds || ownedItemIds.size === 0) return false
+    return allItems.some(
+      (item) =>
+        item.category !== 'merch' && ownedItemIds.has(getEntitlementId(item))
+    )
+  }
   if (filter === 'merch') {
     return getMerchItems().some((item) => !item.hidden || showHidden)
   }
   if (filter === 'seasonal') {
+    // Only surface the Seasonal tab when there's at least one non-hidden
+    // seasonal item — owned/in-season hidden items don't pull the tab back.
     return allItems.some(
-      (item) =>
-        item.seasonalAvailability && (visibleItemIds.has(item.id) || showHidden)
+      (item) => item.seasonalAvailability && (!item.hidden || showHidden)
     )
   }
   const allowedSlots = FILTER_CONFIG[filter].slots
   return allItems.some(
     (item) =>
-      allowedSlots.includes(item.slot) &&
+      // filterOverride takes precedence over slot-based matching
+      (item.filterOverride
+        ? item.filterOverride === filter
+        : allowedSlots.includes(item.slot)) &&
       (visibleItemIds.has(item.id) || showHidden)
   )
+}
+
+// Order in which non-special category pills appear; drives the 'category' sort
+const CATEGORY_PILL_ORDER: FilterOption[] = [
+  'hats',
+  'avatar',
+  'hovercard',
+  'buttons',
+  'other',
+]
+
+const getCategoryRank = (item: ShopItem): number => {
+  // filterOverride takes precedence so Halo / Crown / Angel Wings sort with
+  // their intended category instead of being pushed to Hovercard by slot.
+  if (item.filterOverride) {
+    const idx = CATEGORY_PILL_ORDER.indexOf(item.filterOverride)
+    if (idx >= 0) return idx
+  }
+  for (let i = 0; i < CATEGORY_PILL_ORDER.length; i++) {
+    if (FILTER_CONFIG[CATEGORY_PILL_ORDER[i]].slots.includes(item.slot)) {
+      return i
+    }
+  }
+  return CATEGORY_PILL_ORDER.length // unknown / falls to the end
 }
 
 const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
@@ -217,6 +296,14 @@ const sortItems = (items: ShopItem[], sort: SortOption): ShopItem[] => {
       return sorted.sort((a, b) => a.name.localeCompare(b.name))
     case 'name-desc':
       return sorted.sort((a, b) => b.name.localeCompare(a.name))
+    case 'category':
+      return sorted.sort((a, b) => {
+        const ra = getCategoryRank(a)
+        const rb = getCategoryRank(b)
+        if (ra !== rb) return ra - rb
+        // Within a category, fall back to the default curated order
+        return (ITEM_ORDER[a.id] ?? 99) - (ITEM_ORDER[b.id] ?? 99)
+      })
     case 'default':
     default:
       return sorted.sort(
@@ -230,11 +317,37 @@ export default function ShopPage() {
   const isAdminOrMod = useAdminOrMod()
   const optimisticContext = useOptimisticEntitlements()
 
-  // Fetch charity giveaway data once for both cards
-  const { data: charityData, refresh: refreshCharityData } = useAPIGetter(
-    'get-charity-giveaway',
-    { userId: user?.id }
+  // Mark /shop as visited so the NEW badge on the sidebar + per-card stickers
+  // clear for this user. Fire-and-forget; next visit retries on failure.
+  useEffect(() => {
+    if (!user) return
+    api('me/update', { lastShopVisitTime: Date.now() }).catch(() => {})
+  }, [user?.id])
+
+  // Fetch user's merch orders to show "Already purchased" state
+  const { data: userMerchData, refresh: refreshMerchOrders } = useAPIGetter(
+    'get-user-merch-orders',
+    {},
+    undefined,
+    undefined,
+    !!user
   )
+  const purchasedMerchIds = useMemo(
+    () => new Set((userMerchData?.orders ?? []).map((o) => o.itemId)),
+    [userMerchData]
+  )
+
+  // Fetch merch stock status
+  const { data: stockData } = useAPIGetter('get-merch-stock-status', {})
+  const outOfStockIds = useMemo(
+    () => new Set(stockData?.outOfStockItems ?? []),
+    [stockData]
+  )
+
+  // Fetch charity giveaway data once for both cards
+  const { data: charityData } = useAPIGetter('get-charity-giveaway', {
+    userId: user?.id,
+  })
   const charityGiveawayData = charityData as CharityGiveawayData | undefined
   const isCharityLoading = charityData === undefined
 
@@ -307,6 +420,29 @@ export default function ShopPage() {
       .map((e) => e.entitlementId)
   )
 
+  // "NEW to user" predicate. Falls back to createdTime so fresh signups don't
+  // see every historically-added item flagged. Suppresses NEW for items the
+  // user already owns (nothing "new to discover" there).
+  //
+  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
+  // stays stable for the duration of the page visit — otherwise the WebSocket
+  // update triggered by our own me/update call below would collapse the NEW
+  // section mid-view, and stickers would vanish while the user is still
+  // looking. The snapshot only refreshes on login/logout.
+  //
+  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
+  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const lastShopVisit = useMemo(
+    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
+    [user?.id]
+  )
+  const isItemNewToUser = (item: ShopItem): boolean =>
+    !!user && // logged-out visitors never see NEW (matches the sidebar badge)
+    !!item.visibleSinceTime &&
+    item.visibleSinceTime > lastShopVisit &&
+    !ownedItemIds.has(getEntitlementId(item))
+
   // Set of item IDs that are visible in the shop (for dynamic filter tab visibility)
   const visibleShopItemIds = new Set(
     SHOP_ITEMS.filter(
@@ -314,7 +450,6 @@ export default function ShopPage() {
         !SUPPORTER_ENTITLEMENT_IDS.includes(
           item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
         ) &&
-        item.id !== 'charity-champion-trophy' &&
         item.category !== 'merch' &&
         (!item.hidden ||
           ownedItemIds.has(getEntitlementId(item)) ||
@@ -526,8 +661,96 @@ export default function ShopPage() {
   // Get current toggle version for passing to API calls
   const getToggleVersion = () => toggleVersionRef.current
 
+  // Filtered + sorted regular shop items (excludes merch/supporter).
+  // Computed once so we can split into the NEW section and the main grid.
+  const sortedRegularItems =
+    filterOption === 'merch'
+      ? []
+      : sortItems(
+          filterItems(
+            SHOP_ITEMS.filter(
+              (item) =>
+                !SUPPORTER_ENTITLEMENT_IDS.includes(
+                  item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+                ) &&
+                item.category !== 'merch' &&
+                (!item.hidden ||
+                  showHidden ||
+                  ownedItemIds.has(getEntitlementId(item)) ||
+                  (item.seasonalAvailability && isSeasonalItemAvailable(item)))
+            ),
+            filterOption,
+            ownedItemIds
+          ),
+          sortOption
+        )
+
+  // On the 'all' filter, pull NEW-to-user items out into a dedicated section
+  // above the main grid. On narrower filters, NEW items stay in place and
+  // get the per-card sticker only.
+  const newRegularItems =
+    filterOption === 'all' ? sortedRegularItems.filter(isItemNewToUser) : []
+  const mainRegularItems =
+    filterOption === 'all'
+      ? sortedRegularItems.filter((i) => !isItemNewToUser(i))
+      : sortedRegularItems
+
+  // When merch has launched and at least one merch item is NEW to this user,
+  // promote the merch section to the top of the page so first-time visitors
+  // see it before scrolling. Once they visit /shop and clear the NEW state,
+  // merch falls back to its usual position below the regular grid.
+  const merchHasNewItems =
+    filterOption === 'all' &&
+    getMerchItems().some(
+      (item) => (!item.hidden || showHidden) && isItemNewToUser(item)
+    )
+
+  // Shared render so the NEW section + main grid handle items identically.
+  const renderShopItem = (item: ShopItem) => {
+    const entitlementId = getEntitlementId(item)
+    const entitlement = effectiveEntitlements.find(
+      (e) => e.entitlementId === entitlementId && isEntitlementOwned(e)
+    )
+    // Trophy: owners see the rich CharityChampionCard (floating trophy
+    // decoration + leaderboard) so they can manage it from the shop too.
+    // Claiming/dethroning still happens on the charity page.
+    if (item.id === 'charity-champion-trophy' && entitlement) {
+      return (
+        <CharityChampionCard
+          key={item.id}
+          data={charityGiveawayData}
+          isLoading={isCharityLoading}
+          user={user}
+          entitlements={effectiveEntitlements}
+          isNew={isItemNewToUser(item)}
+          showHiddenBadge={item.hidden}
+          onEntitlementsChange={(newEntitlements) =>
+            setLocalEntitlements(newEntitlements)
+          }
+        />
+      )
+    }
+    return (
+      <ShopItemCard
+        key={item.id}
+        item={item}
+        user={user}
+        owned={ownedItemIds.has(entitlementId)}
+        entitlement={entitlement}
+        allEntitlements={effectiveEntitlements}
+        justPurchased={justPurchased === item.id}
+        isNew={isItemNewToUser(item)}
+        onPurchaseComplete={handlePurchaseComplete}
+        onToggleComplete={handleToggleComplete}
+        onMetadataChange={handleMetadataChange}
+        getToggleVersion={getToggleVersion}
+        localStreakBonus={localStreakBonus}
+      />
+    )
+  }
+
   return (
-    <Page trackPageView="shop page" className="p-3">
+    <Page trackPageView="shop page" className="!col-span-7">
       <SEO
         title="Shop"
         description="Spend your mana in the Manifold shop"
@@ -541,12 +764,12 @@ export default function ShopPage() {
         />
       )}
 
-      <Col className="mx-auto max-w-xl">
+      <Col className="mx-auto w-full max-w-3xl p-4">
         <Row className="mb-2 items-center gap-2 text-2xl font-semibold">
           <FaGem className="h-6 w-6 text-violet-500" />
           Mana Shop
         </Row>
-        {user && (
+        {user ? (
           <Row className="text-ink-700 mb-6 items-center gap-4 text-sm">
             <span>
               Your balance:{' '}
@@ -561,6 +784,12 @@ export default function ShopPage() {
               Buy mana →
             </Link>
           </Row>
+        ) : (
+          // Skeleton placeholder so the page doesn't shift when the user loads
+          <Row className="mb-6 animate-pulse items-center gap-4">
+            <div className="h-4 w-40 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
         )}
 
         {/* Featured supporter card */}
@@ -569,20 +798,33 @@ export default function ShopPage() {
           onPurchaseComplete={handlePurchaseComplete}
         />
 
+        {/* Prize Drawing + Charity Giveaway row */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <PrizeDrawingCard />
+          <CharityGiveawayCard
+            data={charityGiveawayData}
+            isLoading={isCharityLoading}
+            user={user}
+          />
+        </div>
+
         {/* Header and sort dropdown */}
         <Row className="mb-2 mt-8 items-center justify-between">
-          <span className="text-lg font-semibold">Cosmetics & goods</span>
-          <select
+          <span className="text-lg font-semibold">Digital goods & more</span>
+          <SelectDropdown<SortOption>
+            aria-label="Sort items"
             value={sortOption}
-            onChange={(e) => setSortOption(e.target.value as SortOption)}
-            className="bg-canvas-0 border-ink-300 text-ink-700 rounded-md border px-2 py-1 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-          >
-            <option value="default">Default order</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="name-asc">Name: A to Z</option>
-            <option value="name-desc">Name: Z to A</option>
-          </select>
+            onChange={setSortOption}
+            options={[
+              { value: 'default', label: 'Default order' },
+              { value: 'category', label: 'Category' },
+              { value: 'price-asc', label: 'Price: Low to High' },
+              { value: 'price-desc', label: 'Price: High to Low' },
+              { value: 'name-asc', label: 'Name: A to Z' },
+              { value: 'name-desc', label: 'Name: Z to A' },
+            ]}
+            anchor={{ to: 'bottom end', gap: 4, padding: 4 }}
+          />
         </Row>
 
         {/* Category filter pills — only show tabs that have visible items */}
@@ -593,11 +835,14 @@ export default function ShopPage() {
                 filter,
                 SHOP_ITEMS,
                 visibleShopItemIds,
-                showHidden
+                showHidden,
+                ownedItemIds
               )
             )
               return null
             const isSeasonal = filter === 'seasonal'
+            const isMerch = filter === 'merch'
+            const isOwned = filter === 'owned'
             const isActive = filterOption === filter
             return (
               <button
@@ -607,10 +852,18 @@ export default function ShopPage() {
                   'rounded-full px-3 py-1 text-sm font-medium transition-colors',
                   isActive && isSeasonal
                     ? 'bg-gradient-to-r from-pink-500 to-rose-400 text-white shadow-sm'
+                    : isActive && isMerch
+                    ? 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-white shadow-sm ring-1 ring-amber-300/60'
+                    : isActive && isOwned
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm'
                     : isActive
                     ? 'bg-primary-500 text-white'
                     : isSeasonal
                     ? 'bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 hover:from-pink-200 hover:to-rose-200 dark:from-pink-900/30 dark:to-rose-900/30 dark:text-pink-300'
+                    : isMerch
+                    ? 'bg-gradient-to-r from-amber-100 via-yellow-100 to-amber-200 text-amber-800 shadow-sm ring-1 ring-amber-300/50 hover:from-amber-200 hover:via-yellow-200 hover:to-amber-300 dark:from-amber-900/40 dark:via-yellow-900/30 dark:to-amber-900/50 dark:text-amber-200 dark:ring-amber-500/40'
+                    : isOwned
+                    ? 'bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 hover:from-emerald-200 hover:to-teal-200 dark:from-emerald-900/30 dark:to-teal-900/30 dark:text-emerald-300'
                     : 'bg-canvas-50 text-ink-600 hover:bg-canvas-100'
                 )}
               >
@@ -620,106 +873,68 @@ export default function ShopPage() {
           })}
         </Row>
 
-        {/* Shop items grid — hidden when merch filter is active */}
+        {/* NEW section — only on the 'all' filter, when user has unseen items */}
+        {filterOption === 'all' && newRegularItems.length > 0 && (
+          <>
+            <Row className="mb-4 mt-2 items-center gap-2">
+              <NewBadge variant="inline" />
+              <span className="text-lg font-semibold">Just added</span>
+            </Row>
+            <div className="mb-2 grid grid-cols-1 gap-4 pt-3 min-[480px]:grid-cols-2 lg:grid-cols-3">
+              {newRegularItems.map(renderShopItem)}
+            </div>
+          </>
+        )}
+
+        {/* Promote merch above the regular grid on first visit after launch
+            (any merch item is NEW to this user). Falls back to its usual
+            position below the regular grid once they've cleared the NEW state. */}
+        {merchHasNewItems && (
+          <MerchSection
+            user={user}
+            entitlements={effectiveEntitlements}
+            purchasedMerchIds={purchasedMerchIds}
+            outOfStockIds={outOfStockIds}
+            isItemNewToUser={isItemNewToUser}
+            showHidden={showHidden}
+            filterOption={filterOption}
+            onPurchased={refreshMerchOrders}
+          />
+        )}
+
+        {/* Regular shop items — hidden when merch filter is active.
+            On 'all' filter, NEW items are already rendered above, so
+            mainRegularItems has them filtered out. */}
         {filterOption !== 'merch' && (
-          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
-            {sortItems(
-              filterItems(
-                SHOP_ITEMS.filter(
-                  (item) =>
-                    !SUPPORTER_ENTITLEMENT_IDS.includes(
-                      item.id as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-                    ) &&
-                    item.id !== 'charity-champion-trophy' &&
-                    item.category !== 'merch' &&
-                    (!item.hidden ||
-                      showHidden ||
-                      ownedItemIds.has(getEntitlementId(item)) ||
-                      (item.seasonalAvailability &&
-                        isSeasonalItemAvailable(item)))
-                ),
-                filterOption
-              ),
-              sortOption
-            ).map((item) => {
-              const entitlementId = getEntitlementId(item)
-              const entitlement = effectiveEntitlements.find(
-                (e) =>
-                  e.entitlementId === entitlementId && isEntitlementOwned(e)
-              )
-              return (
-                <ShopItemCard
-                  key={item.id}
-                  item={item}
-                  user={user}
-                  owned={ownedItemIds.has(entitlementId)}
-                  entitlement={entitlement}
-                  allEntitlements={effectiveEntitlements}
-                  justPurchased={justPurchased === item.id}
-                  onPurchaseComplete={handlePurchaseComplete}
-                  onToggleComplete={handleToggleComplete}
-                  onMetadataChange={handleMetadataChange}
-                  getToggleVersion={getToggleVersion}
-                  localStreakBonus={localStreakBonus}
-                />
-              )
-            })}
+          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3">
+            {mainRegularItems.map(renderShopItem)}
           </div>
         )}
 
-        {/* Merch section — shown on 'all' and 'merch' filters */}
-        {(filterOption === 'all' || filterOption === 'merch') &&
-          getMerchItems().filter((item) => !item.hidden || showHidden).length >
-            0 && (
-            <>
-              {filterOption !== 'merch' && (
-                <Row className="mb-4 mt-8 items-center gap-2">
-                  <span className="text-lg font-semibold">Merch</span>
-                  <span className="text-ink-500 text-sm">
-                    (Ships worldwide)
-                  </span>
-                </Row>
-              )}
-              <div
-                className={clsx(
-                  'grid grid-cols-1 gap-4 min-[360px]:grid-cols-2',
-                  filterOption === 'merch' && 'mt-0'
-                )}
-              >
-                {getMerchItems()
-                  .filter((item) => !item.hidden || showHidden)
-                  .map((item) => (
-                    <MerchItemCard
-                      key={item.id}
-                      item={item}
-                      user={user}
-                      allEntitlements={effectiveEntitlements}
-                    />
-                  ))}
-              </div>
-            </>
-          )}
-
-        {/* Charity giveaway and champion cards */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <CharityGiveawayCard
-            data={charityGiveawayData}
-            isLoading={isCharityLoading}
-            user={user}
-          />
-          <CharityChampionCard
-            data={charityGiveawayData}
-            isLoading={isCharityLoading}
+        {/* Merch section in its default position. Skipped when already
+            promoted above so we don't render the cards twice. */}
+        {!merchHasNewItems && (
+          <MerchSection
             user={user}
             entitlements={effectiveEntitlements}
-            onEntitlementsChange={(newEntitlements) => {
-              setLocalEntitlements(newEntitlements)
-              refreshCharityData()
-            }}
+            purchasedMerchIds={purchasedMerchIds}
+            outOfStockIds={outOfStockIds}
+            isItemNewToUser={isItemNewToUser}
+            showHidden={showHidden}
+            filterOption={filterOption}
+            onPurchased={refreshMerchOrders}
           />
-        </div>
+        )}
 
-        {/* {isAdminOrMod && <AdminTestingTools user={user} showHidden={showHidden} setShowHidden={setShowHidden} />} */}
+        {/* Admin testing tools — hidden for the merch launch. Uncomment to
+            re-enable for admin/mod debugging. */}
+        {/* {isAdminOrMod && (
+          <AdminTestingTools
+            user={user}
+            showHidden={showHidden}
+            setShowHidden={setShowHidden}
+          />
+        )} */}
       </Col>
     </Page>
   )
@@ -772,6 +987,43 @@ const COUNTRIES = [
   { code: 'SA', name: 'Saudi Arabia' },
 ].sort((a, b) => a.name.localeCompare(b.name))
 
+// Countries where the destination's customs authority requires a personal tax
+// ID on the parcel. Brazil rejects orders at Printful's API without it; Korea
+// rejects at customs (parcel returned/destroyed) — both surface to the user as
+// a failed delivery, so we collect upfront. Keep this list narrow to what's
+// actually enforced — adding non-mandatory countries just adds friction.
+const TAX_ID_COUNTRIES: Record<
+  string,
+  {
+    label: string
+    placeholder: string
+    helpText: string
+    validate: (s: string) => boolean
+    formatError: string
+  }
+> = {
+  BR: {
+    label: 'CPF or CNPJ',
+    placeholder: '000.000.000-00 or 00.000.000/0000-00',
+    helpText:
+      'Brazilian customs requires a CPF (individual, 11 digits) or CNPJ (company, 14 digits) on the shipping label.',
+    // Accept either punctuated or digits-only; CPF=11 digits, CNPJ=14 digits.
+    validate: (s) => {
+      const d = s.replace(/\D/g, '')
+      return d.length === 11 || d.length === 14
+    },
+    formatError: 'Enter a valid CPF (11 digits) or CNPJ (14 digits).',
+  },
+  KR: {
+    label: 'PCCC',
+    placeholder: 'P123456789012',
+    helpText:
+      'Korean customs requires a Personal Customs Clearance Code: the letter P followed by 12 digits.',
+    validate: (s) => /^P\d{12}$/i.test(s.trim()),
+    formatError: 'PCCC must be the letter P followed by 12 digits.',
+  },
+}
+
 type ShippingRate = {
   id: string
   name: string
@@ -781,24 +1033,132 @@ type ShippingRate = {
   maxDeliveryDays: number
 }
 
+/** Renders the merch grid plus its "Merch" heading (heading hidden on the
+ *  merch filter, since the page header already names the section). Pulled out
+ *  so the shop page can render it in two positions: promoted above the regular
+ *  grid when any merch item is NEW to the user, or in its default spot below. */
+function MerchSection(props: {
+  user: User | null | undefined
+  entitlements: UserEntitlement[]
+  purchasedMerchIds: Set<string>
+  outOfStockIds: Set<string>
+  isItemNewToUser: (item: ShopItem) => boolean
+  showHidden: boolean
+  filterOption: string
+  onPurchased: () => void
+}) {
+  const {
+    user,
+    entitlements,
+    purchasedMerchIds,
+    outOfStockIds,
+    isItemNewToUser,
+    showHidden,
+    filterOption,
+    onPurchased,
+  } = props
+  if (filterOption !== 'all' && filterOption !== 'merch') return null
+  const items = getMerchItems().filter((item) => !item.hidden || showHidden)
+  if (items.length === 0) return null
+  return (
+    <>
+      {filterOption !== 'merch' && (
+        <Row className="mb-4 mt-8 items-center gap-2">
+          <span className="text-lg font-semibold">Merch</span>
+          <span className="text-ink-500 text-sm">(Ships worldwide)</span>
+        </Row>
+      )}
+      <div
+        className={clsx(
+          'mb-8 grid grid-cols-1 gap-4 min-[360px]:grid-cols-2 lg:grid-cols-3',
+          filterOption === 'merch' && 'mt-0'
+        )}
+      >
+        {items.map((item) => (
+          <MerchItemCard
+            key={item.id}
+            item={item}
+            user={user}
+            allEntitlements={entitlements}
+            alreadyPurchased={purchasedMerchIds.has(item.id)}
+            outOfStock={outOfStockIds.has(item.id)}
+            isNew={isItemNewToUser(item)}
+            onPurchased={onPurchased}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
   allEntitlements?: UserEntitlement[]
+  alreadyPurchased?: boolean
+  outOfStock?: boolean
+  isNew?: boolean
+  onPurchased?: () => void
 }) {
-  const { item, user, allEntitlements } = props
+  const {
+    item,
+    user,
+    allEntitlements,
+    alreadyPurchased,
+    outOfStock,
+    isNew,
+    onPurchased,
+  } = props
+  const tryOfferReview = useStoreReviewNudge('shop-order')
   const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
   const discountedPrice =
     shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
   const hasDiscount = shopDiscount > 0
-  const singleVariant = (item.variants ?? []).length === 1
-  const [selectedSize, setSelectedSize] = useState<string | null>(
-    singleVariant ? item.variants![0].size : null
+  // Distinct colours offered by this item (in catalog order). Empty for
+  // single-colour items (caps, AGGC tee) — colour selector hides when empty.
+  const colors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (item.variants ?? [])
+            .map((v) => v.color)
+            .filter((c): c is string => !!c)
+        )
+      ),
+    [item.variants]
   )
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const hasColors = colors.length > 0
+  const [selectedColor, setSelectedColor] = useState<string | null>(
+    hasColors ? colors[0] : null
+  )
+  // Sizes available for the current colour selection (or all sizes if the
+  // item is single-colour).
+  const sizesForSelection = (item.variants ?? []).filter(
+    (v) => !hasColors || v.color === selectedColor
+  )
+  const singleVariant = sizesForSelection.length === 1
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    singleVariant ? sizesForSelection[0].size : null
+  )
+  // If the user picks a colour where their previously-selected size doesn't
+  // exist, drop the selection so they re-pick.
+  useEffect(() => {
+    if (
+      selectedSize &&
+      !sizesForSelection.some((v) => v.size === selectedSize)
+    ) {
+      setSelectedSize(singleVariant ? sizesForSelection[0].size : null)
+    }
+    // sizesForSelection rebuilds every render — depend on selectedColor instead
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor])
+  const [currentImageIndex, setCurrentImageIndex] = useState(
+    item.defaultImageIndex ?? 0
+  )
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [showShippingModal, setShowShippingModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
   const [shippingRates, setShippingRates] = useState<ShippingRate[] | null>(
     null
@@ -814,6 +1174,8 @@ function MerchItemCard(props: {
     state: '',
     zip: '',
     country: 'US',
+    taxNumber: '',
+    email: '',
   })
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
   const [countdown, setCountdown] = useState(5)
@@ -831,9 +1193,97 @@ function MerchItemCard(props: {
   const canPurchase = user && user.balance >= discountedPrice
   const variants = item.variants ?? []
 
-  const images = item.merchImages ?? [
-    { label: 'Front', url: item.imageUrl || '' },
-  ]
+  // Per-colour image carousel takes precedence when set; falls back to the
+  // shared `merchImages` for single-colour items.
+  const images = (hasColors &&
+    selectedColor &&
+    item.merchImagesByColor?.[selectedColor]) ||
+    item.merchImages || [{ label: 'Front', url: item.imageUrl || '' }]
+  // Reset the carousel when the user swaps colours so they always start on
+  // the new colour's default image (or the first image when no default set).
+  useEffect(() => {
+    setCurrentImageIndex(item.defaultImageIndex ?? 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedColor])
+
+  // Touch-swipe gestures for the image carousel. The image translates with
+  // the finger in real time for tactile feedback; on release we either commit
+  // (if dragged past the threshold) or snap back with a transition.
+  // Direction is locked after 8px of motion — mostly-vertical motion is
+  // ignored so page scroll still works when the finger starts on the image.
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null)
+  const [dragOffset, setDragOffset] = useState(0)
+  const [isSwipeActive, setIsSwipeActive] = useState(false)
+  const SWIPE_COMMIT_THRESHOLD = 40
+  const SWIPE_DIRECTION_LOCK = 8
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0]
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+    setIsSwipeActive(false)
+  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const start = touchStartRef.current
+    if (!start || images.length <= 1) return
+    const t = e.touches[0]
+    const dx = t.clientX - start.x
+    const dy = t.clientY - start.y
+    if (!isSwipeActive) {
+      if (
+        Math.abs(dx) < SWIPE_DIRECTION_LOCK &&
+        Math.abs(dy) < SWIPE_DIRECTION_LOCK
+      )
+        return
+      if (Math.abs(dx) <= Math.abs(dy)) {
+        // User is scrolling vertically — abandon this gesture for the carousel.
+        touchStartRef.current = null
+        return
+      }
+      setIsSwipeActive(true)
+    }
+    setDragOffset(dx)
+  }
+  const handleTouchEnd = () => {
+    const dx = dragOffset
+    const wasActive = isSwipeActive
+    touchStartRef.current = null
+    if (!wasActive) {
+      setDragOffset(0)
+      setIsSwipeActive(false)
+      return
+    }
+    if (Math.abs(dx) < SWIPE_COMMIT_THRESHOLD) {
+      // Below threshold: snap back with the transition.
+      setDragOffset(0)
+      setIsSwipeActive(false)
+      return
+    }
+    // Above threshold: flip index, then let the strip's transition slide it
+    // to the new resting position. Wrap-around (last → first or first → last)
+    // would slide the strip across every image in between, so for those we
+    // suppress the transition for one frame and snap to the target instead.
+    const isWrap =
+      (dx < 0 && currentImageIndex === images.length - 1) ||
+      (dx > 0 && currentImageIndex === 0)
+    if (dx < 0) {
+      setCurrentImageIndex((i) => (i === images.length - 1 ? 0 : i + 1))
+    } else {
+      setCurrentImageIndex((i) => (i === 0 ? images.length - 1 : i - 1))
+    }
+    setDragOffset(0)
+    if (isWrap) {
+      requestAnimationFrame(() => setIsSwipeActive(false))
+    } else {
+      setIsSwipeActive(false)
+    }
+  }
+
+  // Pick the variant matching the user's colour + size selection.
+  const findSelectedVariant = () =>
+    variants.find(
+      (v) =>
+        v.size === selectedSize && (!hasColors || v.color === selectedColor)
+    )
 
   const handleBuyClick = () => {
     if (!selectedSize) {
@@ -851,7 +1301,7 @@ function MerchItemCard(props: {
   }
 
   const handleGetShippingRates = async () => {
-    const variant = variants.find((v) => v.size === selectedSize)
+    const variant = findSelectedVariant()
     if (!variant) return
 
     setFetchingRates(true)
@@ -867,6 +1317,7 @@ function MerchItemCard(props: {
           state: shippingInfo.state || undefined,
           zip: shippingInfo.zip,
           country: shippingInfo.country,
+          taxNumber: shippingInfo.taxNumber || undefined,
         },
       })
       setShippingRates(result.rates)
@@ -882,17 +1333,21 @@ function MerchItemCard(props: {
 
   const handleSubmitOrder = async () => {
     if (!user || !selectedSize || !selectedShipping) return
-    const variant = variants.find((v) => v.size === selectedSize)
+    const variant = findSelectedVariant()
     if (!variant) return
 
     setPurchasing(true)
     try {
       const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
+      const { email, ...restShipping } = shippingInfo
+      const shippingPayload = email.trim()
+        ? { ...restShipping, email: email.trim() }
+        : restShipping
       const result = await api('shop-purchase-merch', {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
-        shipping: shippingInfo,
+        shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
       setShowConfirmOrderModal(false)
@@ -908,7 +1363,12 @@ function MerchItemCard(props: {
         state: '',
         zip: '',
         country: 'US',
+        taxNumber: '',
+        email: '',
       })
+      onPurchased?.()
+      // Let the success toast land before the OS modal pops over it.
+      setTimeout(tryOfferReview, 3000)
     } catch (e: any) {
       toast.error(e.message || 'Failed to place order')
       setShowConfirmOrderModal(false)
@@ -917,82 +1377,201 @@ function MerchItemCard(props: {
     }
   }
 
+  const zipRequired = requiresPostalCode(shippingInfo.country)
+  const emailRequired = requiresRecipientEmail(shippingInfo.country)
+  // Loose check: must contain an @ and a dot in the domain. Server-side
+  // schema does the strict RFC validation; this is just to gate the UI.
+  const emailLooksValid =
+    !shippingInfo.email || /^\S+@\S+\.\S+$/.test(shippingInfo.email.trim())
+  const emailFieldOk =
+    (!emailRequired || !!shippingInfo.email.trim()) && emailLooksValid
+  const taxIdConfig = TAX_ID_COUNTRIES[shippingInfo.country]
+  const taxIdValid = taxIdConfig
+    ? taxIdConfig.validate(shippingInfo.taxNumber)
+    : true
   const canGetRates =
-    shippingInfo.address1 && shippingInfo.city && shippingInfo.zip
+    shippingInfo.address1 &&
+    shippingInfo.city &&
+    (!zipRequired || shippingInfo.zip) &&
+    taxIdValid &&
+    emailFieldOk
 
   return (
     <>
-      <Card className="group relative flex flex-col gap-3 p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-200/50 hover:ring-2 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30">
-        {item.hidden && (
-          <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-            Hidden
-          </div>
-        )}
-
-        {/* Image carousel */}
-        <div className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
-          <img
-            src={images[currentImageIndex].url}
-            alt={`${item.name} - ${images[currentImageIndex].label}`}
-            className="h-full w-full object-contain p-2"
-          />
-          <Row className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1.5">
-            {images.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentImageIndex(idx)}
-                className={clsx(
-                  'h-2 w-2 rounded-full transition-all',
-                  currentImageIndex === idx
-                    ? 'w-4 bg-indigo-500'
-                    : 'bg-white/70 hover:bg-white'
-                )}
-              />
-            ))}
-          </Row>
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={() =>
-                  setCurrentImageIndex((i) =>
-                    i === 0 ? images.length - 1 : i - 1
-                  )
-                }
-                className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentImageIndex((i) =>
-                    i === images.length - 1 ? 0 : i + 1
-                  )
-                }
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
-              >
-                <ChevronRightIcon className="h-4 w-4" />
-              </button>
-            </>
+      {/* Wrap Card in a relative flex column so (a) the NEW sticker can
+          overflow the card's clipping, and (b) the Card stretches to the full
+          grid-cell height — without that the inner mt-auto on the price/buy
+          row has no extra space to consume and the button doesn't anchor to
+          the bottom. */}
+      <div className="group relative flex h-full flex-col pb-2">
+        {isNew && <NewBadge variant="sticker" />}
+        <Card
+          className={clsx(
+            'relative flex flex-1 flex-col gap-3 overflow-hidden p-4 transition-all duration-200',
+            outOfStock || alreadyPurchased
+              ? 'opacity-75'
+              : 'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-indigo-200/50 group-hover:ring-2 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30'
           )}
-        </div>
+        >
+          {outOfStock && (
+            <div className="absolute right-2 top-2 z-10 rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/50 dark:text-red-400">
+              Out of Stock
+            </div>
+          )}
+          {alreadyPurchased && !outOfStock && (
+            <div className="absolute right-2 top-2 z-10 rounded bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/50 dark:text-green-400">
+              Purchased
+            </div>
+          )}
+          {item.hidden && !outOfStock && !alreadyPurchased && (
+            <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+              Hidden
+            </div>
+          )}
 
-        {/* Title and description */}
-        <div className="text-base font-semibold sm:text-lg">{item.name}</div>
-        <p className="text-ink-600 text-sm">{item.description}</p>
+          {/* Image carousel — all images laid out in a horizontal strip; we
+              translate the strip rather than the visible image so neighbouring
+              images slide in from the side as the user drags. */}
+          <div
+            className="relative aspect-square touch-pan-y overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
+          >
+            {(() => {
+              // Pad the strip with wrap-around clones so a swipe at either
+              // edge reveals the image it'll wrap to (last image pulls in
+              // from the left at index 0; first image pulls in from the right
+              // at the last index). After commit, the index flips and the
+              // strip silently snaps to the real position of the same image
+              // (see isWrap branch in handleTouchEnd) — no visible jump since
+              // both padded positions display the same URL.
+              const hasMultiple = images.length > 1
+              const padded = hasMultiple
+                ? [images[images.length - 1], ...images, images[0]]
+                : images
+              const slot = hasMultiple ? currentImageIndex + 1 : 0
+              return (
+                <div
+                  className={clsx(
+                    'flex h-full will-change-transform',
+                    // Soft ease-out-quint (cubic-bezier(0.22, 1, 0.36, 1)) +
+                    // ~400ms: small swipes glide back, commits settle in.
+                    !isSwipeActive &&
+                      'transition-transform duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]'
+                  )}
+                  style={{
+                    width: `${padded.length * 100}%`,
+                    transform: `translateX(calc(${
+                      -slot * (100 / padded.length)
+                    }% + ${dragOffset}px))`,
+                  }}
+                >
+                  {padded.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={img.url}
+                      alt={`${item.name} - ${img.label}`}
+                      className="h-full object-contain p-2"
+                      style={{
+                        width: `${100 / padded.length}%`,
+                        flexShrink: 0,
+                      }}
+                      draggable={false}
+                    />
+                  ))}
+                </div>
+              )
+            })()}
+            {images.length > 1 && (
+              <div className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-xs font-medium text-white shadow-sm backdrop-blur-sm">
+                {images[currentImageIndex].label}
+              </div>
+            )}
+            <Row className="absolute bottom-2 left-1/2 -translate-x-1/2 gap-1.5">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={clsx(
+                    'h-2 w-2 rounded-full transition-all',
+                    currentImageIndex === idx
+                      ? 'w-4 bg-indigo-500'
+                      : 'bg-white/70 hover:bg-white'
+                  )}
+                />
+              ))}
+            </Row>
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    setCurrentImageIndex((i) =>
+                      i === 0 ? images.length - 1 : i - 1
+                    )
+                  }
+                  className="absolute left-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentImageIndex((i) =>
+                      i === images.length - 1 ? 0 : i + 1
+                    )
+                  }
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full bg-white/80 p-1 opacity-0 shadow transition-opacity hover:bg-white group-hover:opacity-100"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
 
-        {/* Size selector (hidden for single-variant items like one-size caps) */}
-        {!singleVariant && (
-          <Col className="gap-2">
-            <span className="text-ink-600 text-sm font-medium">
-              Select size:
-            </span>
-            <Row className="flex-wrap gap-2">
-              {variants.map((variant) => (
+          {/* Title and description */}
+          <div className="text-base font-semibold sm:text-lg">{item.name}</div>
+          <p className="text-ink-600 text-sm">{item.description}</p>
+
+          {/* Colour selector — shown only when the item has multiple colours.
+            Same flex-wrap pattern as the size row below. Each colour swap
+            updates the image carousel and re-filters the available sizes. */}
+          {hasColors && (
+            <Row className="flex-wrap items-center gap-1.5">
+              <span className="text-ink-600 mr-1 text-sm font-medium">
+                Colour:
+              </span>
+              {colors.map((color) => (
+                <button
+                  key={color}
+                  onClick={() => setSelectedColor(color)}
+                  className={clsx(
+                    'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
+                    selectedColor === color
+                      ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
+                      : 'border-ink-200 hover:border-ink-400 text-ink-700'
+                  )}
+                >
+                  {color}
+                </button>
+              ))}
+            </Row>
+          )}
+
+          {/* Size selector (hidden for single-variant items like one-size caps).
+            Label + buttons share one flex-wrap row so the first few sizes sit
+            inline with "Size:" and only the overflow wraps onto line 2. */}
+          {!singleVariant && (
+            <Row className="flex-wrap items-center gap-1.5">
+              <span className="text-ink-600 mr-1 text-sm font-medium">
+                Size:
+              </span>
+              {sizesForSelection.map((variant) => (
                 <button
                   key={variant.size}
                   onClick={() => setSelectedSize(variant.size)}
                   className={clsx(
-                    'rounded-md border-2 px-3 py-1.5 text-sm font-medium transition-all',
+                    'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedSize === variant.size
                       ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300'
                       : 'border-ink-200 hover:border-ink-400 text-ink-700'
@@ -1002,61 +1581,87 @@ function MerchItemCard(props: {
                 </button>
               ))}
             </Row>
-          </Col>
-        )}
+          )}
 
-        {/* Price and buy button */}
-        <Row className="border-ink-200 mt-auto items-center justify-between border-t pt-3">
-          <Col>
-            <div className="text-lg font-bold text-teal-600">
-              {hasDiscount
-                ? formatMoney(discountedPrice)
-                : formatMoney(item.price)}
+          {/* Price block + full-width buy button stacked below.
+            Keeps the 3-wide grid readable — the old side-by-side layout
+            crammed the pricing into ~half a card and wrapped the button
+            text. Strikethrough original price sits ABOVE the discounted
+            price, matching the regular ShopItemCard layout. */}
+          <Col className="border-ink-200 mt-auto gap-2 border-t pt-3">
+            <Col className="gap-0.5">
               {hasDiscount && (
-                <span className="ml-1 text-xs text-green-600">
-                  ({Math.round(shopDiscount * 100)}% off)
+                <span className="text-ink-400 text-xs line-through">
+                  {formatMoney(item.price)}
                 </span>
               )}
-            </div>
-            {hasDiscount && (
-              <span className="text-ink-400 text-xs line-through">
-                {formatMoney(item.price)}
+              <div className="text-lg font-bold text-teal-600">
+                {hasDiscount
+                  ? formatMoney(discountedPrice)
+                  : formatMoney(item.price)}
+                {hasDiscount && (
+                  <span className="ml-1 text-xs text-green-600">
+                    ({Math.round(shopDiscount * 100)}% off)
+                  </span>
+                )}
+              </div>
+              <span className="text-ink-500 text-xs">
+                + shipping (paid in mana)
               </span>
-            )}
-            <span className="text-ink-500 text-xs">
-              + shipping (paid in mana)
-            </span>
-            {item.limit === 'one-time' && (
-              <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
-                <span>Limit 1 per customer</span>
-                <InfoTooltip
-                  text="We hope to lift this restriction once the mana shop is up and running smoothly!"
-                  size="sm"
-                />
-              </Row>
+              {item.limit === 'one-time' && (
+                <Row className="text-ink-500 mt-0.5 items-center gap-1 text-xs">
+                  <span>Limit 1 per customer</span>
+                  <InfoTooltip
+                    text="Can't get enough? Keep an eye out for new merch drops!"
+                    size="sm"
+                  />
+                </Row>
+              )}
+            </Col>
+            {outOfStock ? (
+              <Button size="sm" color="gray" disabled className="w-full">
+                Out of Stock
+              </Button>
+            ) : alreadyPurchased ? (
+              <Button size="sm" color="gray" disabled className="w-full">
+                Purchased
+              </Button>
+            ) : !canPurchase && user ? (
+              <Link href="/checkout" className="w-full">
+                <Button size="sm" color="gradient-pink" className="w-full">
+                  Buy mana
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                size="sm"
+                color="indigo"
+                disabled={!user || !selectedSize}
+                onClick={handleBuyClick}
+                className="w-full"
+              >
+                {selectedSize ? 'Buy' : 'Select a size'}
+              </Button>
             )}
           </Col>
-          {!canPurchase && user ? (
-            <Link href="/checkout">
-              <Button size="sm" color="gradient-pink">
-                Buy mana
-              </Button>
-            </Link>
-          ) : (
-            <Button
-              size="sm"
-              color="indigo"
-              disabled={!user || !selectedSize}
-              onClick={handleBuyClick}
-            >
-              {selectedSize ? 'Buy' : 'Select a size'}
-            </Button>
-          )}
-        </Row>
-      </Card>
+        </Card>
+      </div>
 
       {/* Purchase confirmation modal */}
-      <Modal open={showPurchaseModal} setOpen={setShowPurchaseModal} size="md">
+      <MerchCheckoutModal
+        open={showPurchaseModal}
+        setOpen={setShowPurchaseModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
+              Cancel
+            </Button>
+            <Button color="indigo" onClick={handleProceedToShipping}>
+              Continue to Shipping
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
@@ -1136,20 +1741,41 @@ function MerchItemCard(props: {
               <strong>not stored</strong> by Manifold.
             </p>
           </div>
-
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowPurchaseModal(false)}>
-              Cancel
-            </Button>
-            <Button color="indigo" onClick={handleProceedToShipping}>
-              Continue to Shipping
-            </Button>
-          </Row>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
 
       {/* Shipping address modal */}
-      <Modal open={showShippingModal} setOpen={setShowShippingModal} size="md">
+      <MerchCheckoutModal
+        open={showShippingModal}
+        setOpen={setShowShippingModal}
+        actions={
+          <>
+            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+              Back
+            </Button>
+            <Button
+              color="indigo"
+              disabled={
+                !shippingInfo.name ||
+                !selectedShipping ||
+                !taxIdValid ||
+                !emailFieldOk
+              }
+              onClick={() => {
+                setAcceptedTerms(false)
+                setShowConfirmOrderModal(true)
+              }}
+            >
+              Place Order ({formatMoney(discountedPrice)}
+              {selectedShipping &&
+                ` + ${formatMoney(
+                  Math.round(parseFloat(selectedShipping.rate) * 100)
+                )} shipping`}
+              )
+            </Button>
+          </>
+        }
+      >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Shipping Address</div>
           <p className="text-ink-500 text-sm">
@@ -1165,7 +1791,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, name: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1174,7 +1800,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address1: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1183,7 +1809,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, address2: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <input
               type="text"
@@ -1192,7 +1818,7 @@ function MerchItemCard(props: {
               onChange={(e) =>
                 setShippingInfo((s) => ({ ...s, city: e.target.value }))
               }
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:hidden"
             />
             <Row className="w-full gap-3">
               <input
@@ -1202,35 +1828,46 @@ function MerchItemCard(props: {
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, city: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
+                className="border-ink-300 bg-canvas-0 hidden min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:block"
               />
               <input
                 type="text"
-                placeholder="State"
+                placeholder="State code"
+                title="Use the official short code (e.g. SP, NY, ON), not the full name."
                 value={shippingInfo.state}
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, state: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
               <input
                 type="text"
-                placeholder="ZIP"
+                placeholder={zipRequired ? 'ZIP' : 'ZIP (optional)'}
                 value={shippingInfo.zip}
                 onChange={(e) =>
                   setShippingInfo((s) => ({ ...s, zip: e.target.value }))
                 }
-                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
+                className="border-ink-300 bg-canvas-0 min-w-0 flex-1 rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 sm:w-24 sm:flex-none"
               />
             </Row>
+            <p className="text-ink-500 -mt-1 text-xs">
+              Enter the official short state/region code (e.g. SP for São Paulo,
+              NY for New York), not the full name.
+            </p>
             <select
               value={shippingInfo.country}
               onChange={(e) => {
-                setShippingInfo((s) => ({ ...s, country: e.target.value }))
+                setShippingInfo((s) => ({
+                  ...s,
+                  country: e.target.value,
+                  // Clear tax ID — formats are country-specific, so a stale
+                  // value from a previously-selected country is never valid.
+                  taxNumber: '',
+                }))
                 setShippingRates(null)
                 setSelectedShipping(null)
               }}
-              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             >
               {COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
@@ -1238,6 +1875,59 @@ function MerchItemCard(props: {
                 </option>
               ))}
             </select>
+            {taxIdConfig && (
+              <Col className="gap-1">
+                <input
+                  type="text"
+                  placeholder={taxIdConfig.placeholder}
+                  value={shippingInfo.taxNumber}
+                  onChange={(e) =>
+                    setShippingInfo((s) => ({
+                      ...s,
+                      taxNumber: e.target.value,
+                    }))
+                  }
+                  className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <p className="text-ink-500 text-xs">
+                  <span className="font-medium">{taxIdConfig.label}:</span>{' '}
+                  {taxIdConfig.helpText}
+                </p>
+                {shippingInfo.taxNumber.length > 0 && !taxIdValid && (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {taxIdConfig.formatError}
+                  </p>
+                )}
+              </Col>
+            )}
+            <Col className="gap-1">
+              <input
+                type="email"
+                placeholder={emailRequired ? 'Email' : 'Email (optional)'}
+                value={shippingInfo.email}
+                maxLength={254}
+                onChange={(e) =>
+                  setShippingInfo((s) => ({ ...s, email: e.target.value }))
+                }
+                className="border-ink-300 bg-canvas-0 w-full rounded-md border px-3 py-2 text-base focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              />
+              {emailRequired ? (
+                <p className="text-ink-500 text-xs">
+                  Required: customs in this country emails the recipient about
+                  duties and documents needed to release the parcel.
+                </p>
+              ) : (
+                <p className="text-ink-500 text-xs">
+                  Optional. Forwarded to our fulfillment partner so the carrier
+                  can reach you about delivery issues.
+                </p>
+              )}
+              {shippingInfo.email.length > 0 && !emailLooksValid && (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  Enter a valid email address.
+                </p>
+              )}
+            </Col>
           </Col>
 
           {!shippingRates && (
@@ -1305,32 +1995,35 @@ function MerchItemCard(props: {
               </span>
             </Row>
           </div>
+        </Col>
+      </MerchCheckoutModal>
 
-          <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>
-              Back
+      {/* Final confirmation modal */}
+      <MerchCheckoutModal
+        open={showConfirmOrderModal}
+        setOpen={setShowConfirmOrderModal}
+        actions={
+          <>
+            <Button
+              color="gray"
+              onClick={() => setShowConfirmOrderModal(false)}
+            >
+              Go Back
             </Button>
             <Button
               color="indigo"
-              disabled={!shippingInfo.name || !selectedShipping}
-              onClick={() => setShowConfirmOrderModal(true)}
+              loading={purchasing}
+              disabled={countdown > 0 || purchasing || !acceptedTerms}
+              onClick={handleSubmitOrder}
             >
-              Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping &&
-                ` + ${formatMoney(
-                  Math.round(parseFloat(selectedShipping.rate) * 100)
-                )} shipping`}
-              )
+              {purchasing
+                ? 'Processing...'
+                : countdown > 0
+                ? `Confirm Order (${countdown})`
+                : 'Confirm Order'}
             </Button>
-          </Row>
-        </Col>
-      </Modal>
-
-      {/* Final confirmation modal */}
-      <Modal
-        open={showConfirmOrderModal}
-        setOpen={setShowConfirmOrderModal}
-        size="md"
+          </>
+        }
       >
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Your Order</div>
@@ -1353,11 +2046,19 @@ function MerchItemCard(props: {
                 {shippingInfo.address1}
                 {shippingInfo.address2 && `, ${shippingInfo.address2}`}
                 <br />
-                {shippingInfo.city}, {shippingInfo.state} {shippingInfo.zip}
+                {[shippingInfo.city, shippingInfo.state, shippingInfo.zip]
+                  .filter(Boolean)
+                  .join(', ')}
                 <br />
                 {COUNTRIES.find((c) => c.code === shippingInfo.country)?.name}
               </span>
             </Row>
+            {shippingInfo.email && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Email:</span>
+                <span className="font-medium">{shippingInfo.email}</span>
+              </Row>
+            )}
             {selectedShipping && (
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping method:</span>
@@ -1406,37 +2107,22 @@ function MerchItemCard(props: {
             </Row>
           </Col>
 
-          <div className="rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
-            <Row className="items-start gap-2">
-              <span className="text-amber-700 dark:text-amber-300">
-                Please verify all details above. Orders cannot be modified after
-                submission.
-              </span>
-            </Row>
-          </div>
-
-          <Row className="justify-end gap-2">
-            <Button
-              color="gray"
-              onClick={() => setShowConfirmOrderModal(false)}
-            >
-              Go Back
-            </Button>
-            <Button
-              color="indigo"
-              loading={purchasing}
-              disabled={countdown > 0 || purchasing}
-              onClick={handleSubmitOrder}
-            >
-              {purchasing
-                ? 'Processing...'
-                : countdown > 0
-                ? `Confirm Order (${countdown})`
-                : 'Confirm Order'}
-            </Button>
-          </Row>
+          <label className="flex cursor-pointer items-start gap-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/30">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span className="text-amber-700 dark:text-amber-300">
+              I understand that orders are final once confirmed with our
+              fulfillment partner. Refunds may be issued at admin discretion
+              before an order ships. Mana spent on merch is non-refundable after
+              shipment.
+            </span>
+          </label>
         </Col>
-      </Modal>
+      </MerchCheckoutModal>
     </>
   )
 }
@@ -1507,12 +2193,9 @@ function SupporterCard(props: {
     entitlements?: UserEntitlement[]
   ) => void
 }) {
-  const { entitlements, onPurchaseComplete } = props
+  const { entitlements } = props
   const user = useUser()
-  const [showModal, setShowModal] = useState(false)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
-  const [modalInitialTier, setModalInitialTier] =
-    useState<SupporterTier | null>(null)
 
   const currentTier = getUserSupporterTier(entitlements)
   const supporterEntitlement = getSupporterEnt(entitlements)
@@ -1538,15 +2221,6 @@ function SupporterCard(props: {
     premium: 10000,
   }
 
-  // Reset modal initial tier and hover state when modal closes
-  const handleSetShowModal = (open: boolean) => {
-    setShowModal(open)
-    if (!open) {
-      setModalInitialTier(null)
-      setHoveredTier(null) // Clear hover state on modal close
-    }
-  }
-
   // Check if device supports hover (desktop)
   const supportsHover =
     typeof window !== 'undefined' && window.matchMedia('(hover: hover)').matches
@@ -1554,9 +2228,9 @@ function SupporterCard(props: {
   return (
     <>
       <div
-        onClick={() => handleSetShowModal(true)}
+        onClick={() => Router.push('/membership')}
         className={clsx(
-          'group relative mb-4 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
+          'group relative mb-6 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
           // Default state (no tier owned, no hover)
           !hoveredTier &&
@@ -1609,21 +2283,27 @@ function SupporterCard(props: {
           )}
         />
 
-        <div className="bg-canvas-0 relative rounded-lg p-5">
+        <div className="bg-canvas-0 relative rounded-lg p-4">
           {/* Header */}
           <Row className="items-start justify-between">
-            <Col className="gap-1">
+            <Row className="flex-wrap items-center gap-x-2 gap-y-0.5">
               <Row className="items-center gap-2">
                 <FaStar
-                  className="h-6 w-6 text-amber-500"
+                  className="h-5 w-5 text-amber-500"
                   style={{
                     filter: 'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
                   }}
                 />
-                <span className="text-xl font-bold">Manifold Membership</span>
+                <span className="text-lg font-bold">Manifold Membership</span>
               </Row>
-              <p className="text-ink-600 text-sm">Unlock premium benefits</p>
-            </Col>
+              <span className="text-primary-600 text-sm font-medium group-hover:underline">
+                {isSupporter
+                  ? isAutoRenewing
+                    ? 'Manage Subscription →'
+                    : 'Resubscribe →'
+                  : 'See details & subscribe →'}
+              </span>
+            </Row>
             {isSupporter && (
               <div className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900 dark:text-amber-300">
                 {SUPPORTER_TIERS[currentTier].name.toUpperCase()}
@@ -1632,7 +2312,7 @@ function SupporterCard(props: {
           </Row>
 
           {/* Profile Preview - horizontal layout like modal */}
-          <div className="my-4 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-4 py-3 dark:from-slate-700/50 dark:to-slate-700/50">
+          <div className="my-3 rounded-lg bg-gradient-to-r from-amber-50/50 to-orange-50/50 px-3 py-2 dark:from-slate-700/50 dark:to-slate-700/50">
             <Row className="flex-wrap items-center justify-between gap-3">
               {/* Left: Avatar + Name + Current Badge */}
               <Row className="items-center gap-3">
@@ -1723,112 +2403,96 @@ function SupporterCard(props: {
             </Row>
           </div>
 
-          {/* Mini Tier Selector (interactive with hover) */}
-          <div className="mb-4 grid grid-cols-3 gap-2">
-            {(['basic', 'plus', 'premium'] as const).map((tier) => {
-              const isCurrentUserTier = currentTier === tier
-              const isHovered = hoveredTier === tier
-              return (
-                <button
-                  key={tier}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setModalInitialTier(tier)
-                    handleSetShowModal(true)
-                  }}
-                  onMouseEnter={() => supportsHover && setHoveredTier(tier)}
-                  onMouseLeave={() => supportsHover && setHoveredTier(null)}
-                  className={clsx(
-                    'relative flex flex-col items-center rounded-lg border-2 px-2 py-2 transition-all duration-150',
-                    // Current user's tier styling
-                    isCurrentUserTier &&
-                      tier === 'basic' &&
-                      'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
-                    isCurrentUserTier &&
-                      tier === 'plus' &&
-                      'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
-                    isCurrentUserTier &&
-                      tier === 'premium' &&
-                      'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
-                    // Hover styling (when not current tier)
-                    !isCurrentUserTier &&
-                      isHovered &&
-                      tier === 'basic' &&
-                      'border-gray-400 bg-gray-50 shadow-[0_0_8px_rgba(107,114,128,0.4)] dark:bg-gray-900/30',
-                    !isCurrentUserTier &&
-                      isHovered &&
-                      tier === 'plus' &&
-                      'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
-                    !isCurrentUserTier &&
-                      isHovered &&
-                      tier === 'premium' &&
-                      'border-amber-400 bg-amber-50 shadow-[0_0_16px_rgba(245,158,11,0.5)] dark:bg-amber-950/30',
-                    // Default state
-                    !isCurrentUserTier &&
-                      !isHovered &&
-                      'border-ink-200 bg-canvas-0 hover:border-ink-300'
-                  )}
-                >
-                  {isCurrentUserTier && (
-                    <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 rounded bg-green-500 px-1 text-[8px] font-bold text-white">
-                      CURRENT
-                    </div>
-                  )}
-                  <div className="relative">
-                    <FaStar
-                      className={clsx(
-                        'h-4 w-4',
-                        tier === 'basic' && 'text-gray-400',
-                        tier === 'plus' && 'text-indigo-500',
-                        tier === 'premium' && 'text-amber-500'
-                      )}
-                      style={
-                        tier === 'premium'
-                          ? {
-                              filter:
-                                'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
-                            }
-                          : undefined
-                      }
-                    />
-                    {tier === 'premium' && (
-                      <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-40 blur-[2px]" />
-                    )}
-                  </div>
-                  <div
+          {/* Mini Tier Selector (interactive with hover) — hidden for existing subscribers */}
+          {!isSupporter && (
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              {(['basic', 'plus', 'premium'] as const).map((tier) => {
+                const isCurrentUserTier = currentTier === tier
+                const isHovered = hoveredTier === tier
+                return (
+                  <button
+                    key={tier}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      Router.push(`/membership?tier=${tier}`)
+                    }}
+                    onMouseEnter={() => supportsHover && setHoveredTier(tier)}
+                    onMouseLeave={() => supportsHover && setHoveredTier(null)}
                     className={clsx(
-                      'text-xs font-semibold',
-                      SUPPORTER_TIERS[tier].textColor
+                      'relative flex flex-col items-center rounded-lg border-2 px-2 py-1.5 transition-all duration-150',
+                      // Current user's tier styling
+                      isCurrentUserTier &&
+                        tier === 'basic' &&
+                        'border-gray-400 bg-gray-50 dark:bg-gray-900/30',
+                      isCurrentUserTier &&
+                        tier === 'plus' &&
+                        'border-indigo-400 bg-indigo-50 shadow-md shadow-indigo-200/50 dark:bg-indigo-950/30',
+                      isCurrentUserTier &&
+                        tier === 'premium' &&
+                        'border-amber-400 bg-amber-50 shadow-lg shadow-amber-200/50 dark:bg-amber-950/30',
+                      // Hover styling (when not current tier)
+                      !isCurrentUserTier &&
+                        isHovered &&
+                        tier === 'basic' &&
+                        'border-gray-400 bg-gray-50 shadow-[0_0_8px_rgba(107,114,128,0.4)] dark:bg-gray-900/30',
+                      !isCurrentUserTier &&
+                        isHovered &&
+                        tier === 'plus' &&
+                        'border-indigo-400 bg-indigo-50 shadow-[0_0_12px_rgba(99,102,241,0.5)] dark:bg-indigo-950/30',
+                      !isCurrentUserTier &&
+                        isHovered &&
+                        tier === 'premium' &&
+                        'border-amber-400 bg-amber-50 shadow-[0_0_16px_rgba(245,158,11,0.5)] dark:bg-amber-950/30',
+                      // Default state
+                      !isCurrentUserTier &&
+                        !isHovered &&
+                        'border-ink-200 bg-canvas-0 hover:border-ink-300'
                     )}
                   >
-                    {SUPPORTER_TIERS[tier].name}
-                  </div>
-                  <div className="text-ink-500 text-[10px]">
-                    {formatMoney(tierPrices[tier])}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          {/* CTA */}
-          <div className="text-primary-600 text-center text-sm font-medium group-hover:underline">
-            {isSupporter
-              ? isAutoRenewing
-                ? `Manage Subscription →`
-                : 'Resubscribe →'
-              : 'See details & subscribe →'}
-          </div>
+                    {isCurrentUserTier && (
+                      <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 rounded bg-green-500 px-1 text-[8px] font-bold text-white">
+                        CURRENT
+                      </div>
+                    )}
+                    <div className="relative">
+                      <FaStar
+                        className={clsx(
+                          'h-4 w-4',
+                          tier === 'basic' && 'text-gray-400',
+                          tier === 'plus' && 'text-indigo-500',
+                          tier === 'premium' && 'text-amber-500'
+                        )}
+                        style={
+                          tier === 'premium'
+                            ? {
+                                filter:
+                                  'drop-shadow(0 0 3px rgba(245, 158, 11, 0.5))',
+                              }
+                            : undefined
+                        }
+                      />
+                      {tier === 'premium' && (
+                        <FaStar className="absolute inset-0 h-4 w-4 animate-pulse text-amber-500 opacity-40 blur-[2px]" />
+                      )}
+                    </div>
+                    <div
+                      className={clsx(
+                        'text-xs font-semibold',
+                        SUPPORTER_TIERS[tier].textColor
+                      )}
+                    >
+                      {SUPPORTER_TIERS[tier].name}
+                    </div>
+                    <div className="text-ink-500 text-[10px]">
+                      {formatMoney(tierPrices[tier])}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
-
-      <SupporterModal
-        open={showModal}
-        setOpen={handleSetShowModal}
-        entitlements={entitlements}
-        onPurchaseComplete={onPurchaseComplete}
-        initialTier={modalInitialTier}
-      />
     </>
   )
 }
@@ -2185,7 +2849,7 @@ function SupporterModal(props: {
           {/* Link to full page */}
           <div className="text-center">
             <Link
-              href="/supporter"
+              href="/membership"
               onClick={() => setOpen(false)}
               className="text-primary-600 hover:text-primary-700 text-sm font-medium"
             >
@@ -2248,6 +2912,148 @@ function SupporterModal(props: {
         </Col>
       </Modal>
     </>
+  )
+}
+
+// Prize Drawing promotion card
+function PrizeDrawingCard() {
+  const { data } = useAPIGetter('get-sweepstakes', {})
+  const sweepstakes = data?.sweepstakes
+  const totalTickets = data?.totalTickets ?? 0
+  const totalPrizePool = sweepstakes ? getTotalPrizePool(sweepstakes.prizes) : 0
+
+  // Time remaining countdown
+  const [timeRemaining, setTimeRemaining] = useState<string>('')
+  useEffect(() => {
+    if (!sweepstakes) return
+    const updateTime = () => {
+      const now = Date.now()
+      const diff = sweepstakes.closeTime - now
+      if (diff <= 0) {
+        setTimeRemaining('Ended')
+        return
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      )
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+      if (days > 0) {
+        setTimeRemaining(`${days}d ${hours}h`)
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours}h ${minutes}m`)
+      } else {
+        setTimeRemaining(`${minutes}m`)
+      }
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 60000)
+    return () => clearInterval(interval)
+  }, [sweepstakes?.closeTime])
+
+  // Loading skeleton — keeps the layout stable until sweepstakes data arrives
+  if (!sweepstakes) {
+    return (
+      <div
+        className={clsx(
+          'overflow-hidden rounded-xl p-1',
+          'bg-gradient-to-br from-gray-300 via-gray-200 to-gray-300 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700'
+        )}
+      >
+        <div className="animate-pulse rounded-lg bg-white p-4 dark:bg-gray-900">
+          <Row className="mb-3 items-center gap-2">
+            <div className="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-5 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <Row className="mb-3 gap-4">
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-12 flex-1 rounded bg-gray-200 dark:bg-gray-700" />
+          </Row>
+          <div className="mb-3 h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-8 w-full rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
+    )
+  }
+
+  const isClosed = sweepstakes.closeTime <= Date.now()
+
+  if (isClosed) {
+    return (
+      <GiveawayPromoCard
+        href="/prize"
+        gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
+        hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
+        icon={<FaGift className="h-5 w-5 text-teal-500" />}
+        title="Prize Drawing"
+        pill={ENDED_PILL}
+        stats={[
+          {
+            value: `$${totalPrizePool.toLocaleString()}`,
+            label: 'Prize Pool',
+            valueClassName: clsx(
+              'font-bold text-teal-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+          {
+            value: formatEntries(totalTickets),
+            label: 'Entries',
+            valueClassName: clsx(
+              'font-bold text-blue-600',
+              promoStatSizeClass(totalTickets, true)
+            ),
+          },
+        ]}
+        message="Drawing has ended. Winner will be announced soon!"
+        ctaText="View Results →"
+        ctaColor="indigo"
+      />
+    )
+  }
+
+  return (
+    <GiveawayPromoCard
+      href="/prize"
+      gradientClassName="from-teal-400 via-cyan-400 to-blue-500"
+      hoverShadowClassName="group-hover:shadow-teal-200/50 dark:group-hover:shadow-teal-900/30"
+      icon={<FaGift className="h-5 w-5 text-teal-500" />}
+      title="Prize Drawing"
+      pill={{
+        text: 'LIVE',
+        className: 'bg-teal-100 text-teal-700 dark:bg-teal-500 dark:text-white',
+      }}
+      stats={[
+        {
+          value: `$${totalPrizePool.toLocaleString()}`,
+          label: 'Prize Pool',
+          valueClassName: clsx(
+            'font-bold text-teal-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+        {
+          value: timeRemaining || '...',
+          label: 'Time Left',
+          valueClassName: clsx(
+            'font-bold text-cyan-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+          extraClassName: 'whitespace-nowrap',
+        },
+        {
+          value: formatEntries(totalTickets),
+          label: 'Entries',
+          valueClassName: clsx(
+            'font-bold text-blue-600',
+            promoStatSizeClass(totalTickets, true)
+          ),
+        },
+      ]}
+      ctaText="Enter Drawing →"
+      ctaColor="indigo"
+    />
   )
 }
 
@@ -2629,15 +3435,7 @@ function DisguisePreview(props: { user: User | null | undefined }) {
           size="lg"
           noLink
         />
-        <DisguiseSvg
-          className="absolute left-1/2 -translate-x-1/2"
-          style={{
-            top: 8,
-            width: 28,
-            height: 20,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-          }}
-        />
+        <DisguiseOnAvatar size="lg" />
       </div>
     </div>
   )
@@ -3178,11 +3976,10 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         />
         {/* Left ear */}
         <BearEarSvg
-          side="left"
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute origin-bottom rotate-[-25deg] transition-transform duration-300 group-hover:rotate-[-20deg]"
           style={{
-            left: -4,
-            top: -7,
+            left: -1,
+            top: -2,
             width: 18,
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -3190,11 +3987,10 @@ function BearEarsPreview(props: { user: User | null | undefined }) {
         />
         {/* Right ear */}
         <BearEarSvg
-          side="right"
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-110"
+          className="absolute origin-bottom rotate-[25deg] -scale-x-100 transition-transform duration-300 group-hover:rotate-[20deg]"
           style={{
-            right: -4,
-            top: -7,
+            right: -1,
+            top: -2,
             width: 18,
             height: 18,
             filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
@@ -3276,43 +4072,129 @@ function BunnyEarsPreview(props: { user: User | null | undefined }) {
   )
 }
 
-function CatEarsPreview(props: { user: User | null | undefined }) {
-  const { user } = props
+const CAT_EARS_STYLE_COUNT = 2
+const CAT_EARS_STYLE_LABELS = ['Ears', 'Ears + Whiskers']
+
+function CatEarsStylePreview(props: {
+  user: User | null | undefined
+  selectedStyle?: number
+  onSelect?: (style: number) => void
+  owned?: boolean
+}) {
+  const { user, selectedStyle = 0, onSelect, owned } = props
+  const [previewIndex, setPreviewIndex] = useState(
+    Math.max(0, Math.min(selectedStyle, CAT_EARS_STYLE_COUNT - 1))
+  )
+
+  const cyclePrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex =
+      (previewIndex - 1 + CAT_EARS_STYLE_COUNT) % CAT_EARS_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) onSelect(newIndex)
+  }
+  const cycleNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newIndex = (previewIndex + 1) % CAT_EARS_STYLE_COUNT
+    setPreviewIndex(newIndex)
+    if (owned && onSelect) onSelect(newIndex)
+  }
+
+  const showWhiskers = previewIndex === 1
 
   return (
-    <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
-      <div className="relative">
-        <Avatar
-          username={user?.username}
-          avatarUrl={user?.avatarUrl}
-          size="lg"
-          noLink
-        />
-        {/* Left ear */}
-        <CatEarSvg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]"
-          style={{
-            left: -2,
-            top: -9,
-            width: 22,
-            height: 16,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-            transform: 'rotate(-12deg)',
-          }}
-        />
-        {/* Right ear (mirrored) */}
-        <CatEarSvg
-          className="absolute transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:rotate-[3deg]"
-          style={{
-            right: -2,
-            top: -9,
-            width: 22,
-            height: 16,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-            transform: 'rotate(12deg) scaleX(-1)',
-          }}
-        />
-      </div>
+    <div className="bg-canvas-50 flex flex-col items-center justify-center gap-2 rounded-lg p-4 transition-colors duration-200 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950/50">
+      <Row className="w-full items-center">
+        <button
+          onClick={cyclePrev}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-start py-2 pl-1"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        <div className="relative">
+          <Avatar
+            username={user?.username}
+            avatarUrl={user?.avatarUrl}
+            size="lg"
+            noLink
+          />
+          {showWhiskers && (
+            <>
+              {/* Light mode whiskers */}
+              <CatWhiskersSvg
+                className="absolute top-1/2 dark:hidden"
+                style={{
+                  left: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                  transform: 'translateY(-50%) scaleX(-1)',
+                }}
+              />
+              <CatWhiskersSvg
+                className="absolute top-1/2 dark:hidden"
+                style={{
+                  right: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+              {/* Dark mode whiskers — subtle white glow */}
+              <CatWhiskersSvg
+                className="absolute top-1/2 hidden dark:block"
+                style={{
+                  left: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                  transform: 'translateY(-50%) scaleX(-1)',
+                }}
+              />
+              <CatWhiskersSvg
+                className="absolute top-1/2 hidden dark:block"
+                style={{
+                  right: -7,
+                  width: 14,
+                  height: 7,
+                  filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                  transform: 'translateY(-50%)',
+                }}
+              />
+            </>
+          )}
+          <CatEarSvg
+            className="absolute origin-bottom rotate-[-52deg] transition-transform duration-300 group-hover:rotate-[-44deg]"
+            style={{
+              left: -5,
+              top: -2,
+              width: 24,
+              height: 14,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+            }}
+          />
+          <CatEarSvg
+            className="absolute origin-bottom rotate-[52deg] -scale-x-100 transition-transform duration-300 group-hover:rotate-[44deg]"
+            style={{
+              right: -5,
+              top: -2,
+              width: 24,
+              height: 14,
+              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+            }}
+          />
+        </div>
+        <button
+          onClick={cycleNext}
+          className="text-ink-400 hover:text-ink-600 flex flex-1 items-center justify-end py-2 pr-1"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </Row>
+      <span className="text-ink-500 text-xs">
+        {CAT_EARS_STYLE_LABELS[previewIndex]}
+      </span>
     </div>
   )
 }
@@ -3457,70 +4339,7 @@ function HatPreview(props: {
       case 'halo':
         return (
           <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 transition-transform duration-300 group-hover:-translate-y-0.5">
-            {/* Light mode — dual-stroke SVG matching live avatar halo */}
-            <svg
-              className="dark:hidden"
-              width="3.3rem"
-              height="0.85rem"
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{
-                transform: 'rotate(-8deg)',
-                filter:
-                  'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))',
-              }}
-            >
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(217, 170, 50, 0.7)"
-                strokeWidth="3.5"
-                fill="none"
-              />
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(255, 252, 240, 0.95)"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
-            {/* Dark mode — dual-stroke SVG matching live avatar halo */}
-            <svg
-              className="hidden dark:block"
-              width="3.3rem"
-              height="0.85rem"
-              viewBox="0 0 40 12"
-              overflow="visible"
-              style={{
-                transform: 'rotate(-8deg)',
-                filter:
-                  'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))',
-              }}
-            >
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(200, 160, 60, 0.5)"
-                strokeWidth="3.5"
-                fill="none"
-              />
-              <ellipse
-                cx="20"
-                cy="6"
-                rx="18"
-                ry="5"
-                stroke="rgba(255, 252, 240, 0.95)"
-                strokeWidth="1.5"
-                fill="none"
-              />
-            </svg>
+            <HaloSvg width="3.3rem" height="0.85rem" />
           </div>
         )
       case 'propeller-hat':
@@ -3681,7 +4500,10 @@ function StreakFreezePreview(props: {
   // Include local bonus for optimistic display
   const currentFreezes = (user?.streakForgiveness ?? 0) + localBonus
   // Max is only a purchase cap, not an accumulation cap
-  const maxPurchasable = getMaxStreakFreezes(allEntitlements)
+  const maxPurchasable = getMaxStreakFreezes(
+    allEntitlements,
+    user?.bonusEligibility
+  )
   const isAtPurchaseMax = currentFreezes >= maxPurchasable
 
   return (
@@ -3850,14 +4672,14 @@ function HovercardRoyalBorderPreview(props: { user: User | null | undefined }) {
   )
 }
 
-type HovercardBgType =
+export type HovercardBgType =
   | 'royalty'
   | 'mana-printer'
   | 'oracle'
   | 'trading-floor'
   | 'champions-legacy'
 
-function HovercardBackgroundPreview(props: {
+export function HovercardBackgroundPreview(props: {
   user: User | null | undefined
   background: HovercardBgType
 }) {
@@ -4605,7 +5427,18 @@ function ItemPreview(props: {
     case 'avatar-bunny-ears':
       return <BunnyEarsPreview user={user} />
     case 'avatar-cat-ears':
-      return <CatEarsPreview user={user} />
+      return (
+        <CatEarsStylePreview
+          user={user}
+          selectedStyle={(entitlement?.metadata?.style as number) ?? 0}
+          owned={!!entitlement}
+          onSelect={
+            onMetadataUpdate
+              ? (style) => onMetadataUpdate({ style })
+              : undefined
+          }
+        />
+      )
     case 'streak-forgiveness':
       return (
         <StreakFreezePreview
@@ -4674,6 +5507,7 @@ function ShopItemCard(props: {
   entitlement?: UserEntitlement
   allEntitlements?: UserEntitlement[]
   justPurchased?: boolean
+  isNew?: boolean
   onPurchaseComplete: (itemId: string, entitlements?: UserEntitlement[]) => void
   onToggleComplete: (
     itemId: string,
@@ -4698,6 +5532,7 @@ function ShopItemCard(props: {
     entitlement,
     allEntitlements,
     justPurchased,
+    isNew,
     onPurchaseComplete,
     onToggleComplete,
     onMetadataChange,
@@ -4729,7 +5564,7 @@ function ShopItemCard(props: {
     item.id === 'streak-forgiveness' &&
     user &&
     (user.streakForgiveness ?? 0) + localStreakBonus >=
-      getMaxStreakFreezes(allEntitlements)
+      getMaxStreakFreezes(allEntitlements, user.bonusEligibility)
 
   // Check if seasonal item is currently unavailable
   const isSeasonalUnavailable =
@@ -4822,24 +5657,27 @@ function ShopItemCard(props: {
 
   return (
     <>
-      <div className="group flex pb-1">
+      <div className="group flex pb-2">
         <Card
           ref={cardRef}
           className={clsx(
-            'group relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
+            'relative flex w-full cursor-default flex-col gap-3 p-4 transition-all duration-200',
             justPurchased && 'ring-2 ring-indigo-500 ring-offset-2',
             !justPurchased &&
-              'hover:-translate-y-1 hover:shadow-xl hover:ring-2',
+              'group-hover:-translate-y-1 group-hover:shadow-xl group-hover:ring-2',
             !justPurchased &&
               isPremiumItem &&
-              'hover:shadow-amber-200/50 hover:ring-amber-500 dark:hover:shadow-amber-900/30',
+              'group-hover:shadow-amber-200/50 group-hover:ring-amber-500 dark:group-hover:shadow-amber-900/30',
             !justPurchased &&
               !isPremiumItem &&
-              'hover:shadow-indigo-200/50 hover:ring-indigo-500 dark:hover:shadow-indigo-900/30',
+              'group-hover:shadow-indigo-200/50 group-hover:ring-indigo-500 dark:group-hover:shadow-indigo-900/30',
             isPremiumItem &&
               'dark:to-yellow-900/15 bg-gradient-to-br from-amber-50/50 to-yellow-50/50 dark:from-amber-900/20'
           )}
         >
+          {/* NEW sticker — overflows the card's clipping */}
+          {isNew && <NewBadge variant="sticker" />}
+
           {/* Loading overlay during purchase */}
           {purchasing && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 dark:bg-gray-900/80">
@@ -4850,51 +5688,64 @@ function ShopItemCard(props: {
             </div>
           )}
 
-          {item.hidden && (
-            <div className="absolute right-2 top-2 z-10 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
-              Hidden
-            </div>
-          )}
-
-          {/* Card header with badge inline */}
-          <Row className="items-start justify-between gap-2">
+          {/* Card header — title takes remaining space; badges wrap when crowded */}
+          <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
             <div
               className={clsx(
-                'text-base font-semibold sm:text-lg',
+                'min-w-0 flex-1 text-base font-semibold sm:text-lg',
                 isPremiumItem && 'text-amber-700 dark:text-amber-400'
               )}
             >
               {item.name}
             </div>
-            {/* OWNED badge for purchased items */}
-            {owned && (
-              <div
-                className={clsx(
-                  'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
-                  isPremiumItem
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
-                )}
-              >
-                OWNED
-              </div>
-            )}
-            {/* LEGENDARY badge for halo, wings, crown only */}
-            {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(
-              item.id
-            ) &&
-              !owned && (
-                <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-                  LEGENDARY
+            <div className="flex flex-wrap items-start justify-end gap-1">
+              {/* OWNED badge for purchased items */}
+              {owned && (
+                <div
+                  className={clsx(
+                    'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold sm:px-2 sm:text-xs',
+                    isPremiumItem
+                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                      : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300'
+                  )}
+                >
+                  OWNED
                 </div>
               )}
-            {/* SEASONAL badge */}
-            {item.seasonalAvailability && (
-              <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
-                SEASONAL
-              </div>
-            )}
-          </Row>
+              {/* LEGENDARY badge for halo, wings, crown only */}
+              {['avatar-halo', 'avatar-angel-wings', 'avatar-crown'].includes(
+                item.id
+              ) &&
+                !owned && (
+                  <div className="shrink-0 rounded bg-gradient-to-r from-amber-500 to-yellow-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                    LEGENDARY
+                  </div>
+                )}
+              {/* SEASONAL badge */}
+              {item.seasonalAvailability && (
+                <div className="shrink-0 rounded bg-gradient-to-r from-pink-500 to-rose-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm sm:px-2 sm:text-xs">
+                  SEASONAL
+                </div>
+              )}
+              {/* Hidden badge — inline so it doesn't overlap the others */}
+              {item.hidden &&
+                !(
+                  item.seasonalAvailability && isSeasonalItemAvailable(item)
+                ) && (
+                  <Tooltip
+                    text={
+                      owned
+                        ? 'This item is only visible because you already own it'
+                        : 'Hidden from the public shop'
+                    }
+                  >
+                    <div className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 sm:px-2 sm:text-xs">
+                      Hidden
+                    </div>
+                  </Tooltip>
+                )}
+            </div>
+          </div>
 
           {/* Slot tag */}
           {EXCLUSIVE_SLOTS.includes(item.slot) && (
@@ -5061,24 +5912,31 @@ function ShopItemCard(props: {
             // Non-owned item layout - stacks vertically on very narrow screens
             <>
               <Col className="mt-auto gap-2 pt-2">
-                <Row className="items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   {hasDiscount || item.originalPrice ? (
-                    <Col className="gap-0.5">
-                      <Row className="items-center gap-1.5">
+                    <Col className="min-w-0 gap-0.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="text-ink-400 text-xs line-through">
                           {formatMoney(item.originalPrice ?? item.price)}
                         </span>
-                        {item.originalPrice && (
+                        {item.originalPrice && !hasDiscount && (
                           <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-bold text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
                             SALE
                           </span>
                         )}
-                        {hasDiscount && (
+                        {(hasDiscount || item.originalPrice) && (
                           <span className="rounded bg-green-100 px-1 py-0.5 text-[10px] font-bold text-green-700 dark:bg-green-900/50 dark:text-green-300">
-                            -{Math.round(shopDiscount * 100)}%
+                            -
+                            {Math.round(
+                              (1 -
+                                discountedPrice /
+                                  (item.originalPrice ?? item.price)) *
+                                100
+                            )}
+                            %
                           </span>
                         )}
-                      </Row>
+                      </div>
                       <div className="font-semibold text-teal-600">
                         {formatMoney(discountedPrice)}
                       </div>
@@ -5116,7 +5974,7 @@ function ShopItemCard(props: {
                       </Button>
                     )}
                   </div>
-                </Row>
+                </div>
 
                 {/* Full-width button on narrow screens */}
                 <div className="min-[480px]:hidden">
@@ -5176,11 +6034,14 @@ function ShopItemCard(props: {
                 <span className="font-semibold text-teal-600">
                   {formatMoney(discountedPrice)}
                 </span>
-                {hasDiscount && (
-                  <span className="ml-1 text-xs text-green-600">
-                    ({Math.round(shopDiscount * 100)}% off)
-                  </span>
-                )}
+                <span className="ml-1 text-xs text-green-600">
+                  (
+                  {Math.round(
+                    (1 - discountedPrice / (item.originalPrice ?? item.price)) *
+                      100
+                  )}
+                  % off)
+                </span>
               </>
             ) : (
               <span className="font-semibold text-teal-600">

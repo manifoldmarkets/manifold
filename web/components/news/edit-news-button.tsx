@@ -13,6 +13,7 @@ import { Subtitle } from '../widgets/subtitle'
 import { Title } from '../widgets/title'
 import { Headline } from 'common/news'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
+import { ModActionBadge } from 'web/components/moderation/mod-action'
 
 export const EditNewsButton = (props: {
   defaultDashboards: Headline[]
@@ -25,9 +26,10 @@ export const EditNewsButton = (props: {
     <>
       <button
         // copy pasta'ed from header
-        className="outline-none' max-w-[40ch] text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-900 dark:hover:text-purple-400"
+        className="outline-none' inline-flex max-w-[40ch] items-center gap-1 text-ellipsis whitespace-nowrap px-3 py-2 text-sm font-bold text-purple-600 hover:bg-purple-100 hover:text-purple-700 dark:hover:bg-purple-900 dark:hover:text-purple-400"
         onClick={() => setOpen(true)}
       >
+        <ModActionBadge />
         Edit
       </button>
       {open && (

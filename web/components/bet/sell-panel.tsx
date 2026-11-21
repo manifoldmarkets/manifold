@@ -8,6 +8,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  isMultiCpmm,
   MultiContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
@@ -15,6 +16,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { Fees, getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
+import { getSellPreviewAmounts } from 'common/sell-preview'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import {
@@ -67,10 +69,12 @@ export function SellPanel(props: {
     sellForUserId,
   } = props
   const { outcomeType } = contract
+  const isCreatorBanned =
+    user.id === contract.creatorId && contract.creatorBannedFromBetting === true
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)
@@ -90,18 +94,19 @@ export function SellPanel(props: {
       : allUnfilledBets
 
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
+    const sellableShares = getSellPreviewAmounts(shares, shares).sellQuantity
     const probChange = isMultiSumsToOne
       ? getSaleResultMultiSumsToOne(
           contract,
           answerId!,
-          shares,
+          sellableShares,
           sharesOutcome,
           unfilledBets,
           balanceByUserId
         ).probChange
       : getSaleResult(
           contract,
-          shares,
+          sellableShares,
           sharesOutcome,
           unfilledBets,
           balanceByUserId,
@@ -110,8 +115,8 @@ export function SellPanel(props: {
     return probChange > 0.2
       ? undefined
       : isStonk
-      ? getStonkDisplayShares(contract, shares)
-      : shares
+      ? getStonkDisplayShares(contract, sellableShares)
+      : sellableShares
   })
   const [amount, setAmount] = useState<number | undefined>(
     isStonk
@@ -124,18 +129,18 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
+  const { isSellingAllShares, sellQuantity, saleFrac } = getSellPreviewAmounts(
+    shares,
+    amount
+  )
   const betDisabled =
-    isSubmitting || !amount || (error && error.includes('Maximum'))
-
-  // Sell all shares if remaining shares would be < 1
-  const isSellingAllShares = amount === Math.floor(shares)
-
-  const sellQuantity = isSellingAllShares ? shares : amount ?? 0
+    isSubmitting ||
+    sellQuantity === 0 ||
+    (error && error.includes('Maximum')) ||
+    isCreatorBanned
 
   // Include both free loans and margin loans in total loan amount
   const loanAmount = (metric?.loan ?? 0) + (metric?.marginLoan ?? 0)
-  const soldShares = Math.min(sellQuantity, shares)
-  const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
@@ -144,7 +149,7 @@ export function SellPanel(props: {
   const betDeps = useRef<LimitBet[]>()
 
   async function submitSell() {
-    if (!user || !amount) return
+    if (!user || betDisabled) return
 
     setError(undefined)
     setIsSubmitting(true)
@@ -158,6 +163,14 @@ export function SellPanel(props: {
       sellForUserId,
     })
       .then(() => {
+        // Only on success: page funnels count this event as a trade.
+        track('sell shares', {
+          outcomeType: contract.outcomeType,
+          slug: contract.slug,
+          contractId: contract.id,
+          shares: sellQuantity,
+          outcome: sharesOutcome,
+        })
         setIsSubmitting(false)
         setWasSubmitted(true)
         setAmount(undefined)
@@ -177,14 +190,6 @@ export function SellPanel(props: {
         }
         setIsSubmitting(false)
       })
-
-    track('sell shares', {
-      outcomeType: contract.outcomeType,
-      slug: contract.slug,
-      contractId: contract.id,
-      shares: sellQuantity,
-      outcome: sharesOutcome,
-    })
   }
 
   let initialProb: number, saleValue: number

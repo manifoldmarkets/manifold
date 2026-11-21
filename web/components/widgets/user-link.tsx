@@ -125,6 +125,7 @@ export function UserLink(props: {
         name?: string
         username?: string
         createdTime?: number
+        isBot?: boolean
         entitlements?: UserEntitlement[]
       }
     | undefined
@@ -155,7 +156,7 @@ export function UserLink(props: {
     )
   }
 
-  const { id, name, username, createdTime, entitlements } = user
+  const { id, name, username, createdTime, isBot, entitlements } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name, maxLength) : name
   const children = (
@@ -165,6 +166,7 @@ export function UserLink(props: {
         <UserBadge
           userId={id}
           username={username}
+          isBot={isBot}
           fresh={fresh}
           marketCreator={marketCreator}
           entitlements={entitlements}
@@ -279,6 +281,7 @@ export function RestrictedBadge({
 export function UserBadge(props: {
   userId: string
   username: string
+  isBot?: boolean
   fresh?: boolean
   marketCreator?: boolean
   entitlements?: UserEntitlement[]
@@ -289,6 +292,7 @@ export function UserBadge(props: {
   const {
     userId,
     username,
+    isBot,
     fresh,
     marketCreator,
     entitlements,
@@ -308,7 +312,7 @@ export function UserBadge(props: {
     : false
 
   const badges = []
-  if (BOT_USERNAMES.includes(username)) {
+  if (isBot ?? BOT_USERNAMES.includes(username)) {
     badges.push(<BotBadge key="bot" />)
   }
   if (ENV_CONFIG.adminIds.includes(userId)) {
@@ -500,6 +504,7 @@ export const StackedUserNames = (props: {
           <UserBadge
             userId={user.id}
             username={user.username}
+            isBot={user.isBot}
             fresh={user.createdTime ? isFresh(user.createdTime) : false}
             entitlements={user.entitlements}
             displayContext={displayContext}

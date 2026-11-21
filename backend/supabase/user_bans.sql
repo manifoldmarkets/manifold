@@ -17,9 +17,6 @@ alter table user_bans
 add constraint user_bans_created_by_fkey foreign key (created_by) references users (id);
 
 alter table user_bans
-add constraint user_bans_ended_by_fkey foreign key (ended_by) references users (id);
-
-alter table user_bans
 add constraint user_bans_user_id_fkey foreign key (user_id) references users (id);
 
 -- Indexes

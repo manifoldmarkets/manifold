@@ -1,18 +1,27 @@
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { throttle } from 'lodash'
-import { useState, useEffect, forwardRef, useRef, Ref, ReactNode } from 'react'
+import {
+  useState,
+  useEffect,
+  useCallback,
+  forwardRef,
+  Ref,
+  ReactNode,
+} from 'react'
 import { Row } from '../layout/row'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 
-export function Carousel(props: {
+type CarouselProps = {
   children: ReactNode
   loadMore?: () => void
   className?: string
   labelsParentClassName?: string
   fadeEdges?: boolean
   showArrowsOnHover?: boolean
-}) {
+} & Omit<JSX.IntrinsicElements['div'], 'children' | 'className'>
+
+export function Carousel(props: CarouselProps) {
   const {
     children,
     labelsParentClassName,
@@ -20,16 +29,16 @@ export function Carousel(props: {
     className,
     fadeEdges,
     showArrowsOnHover,
+    ...rest
   } = props
 
-  const ref = useRef<HTMLDivElement>(null)
+  // Callback ref so attachment triggers a re-render — needed for atFront/atBack to measure on mount.
+  const [el, setEl] = useState<HTMLDivElement | null>(null)
   const [isHovered, setIsHovered] = useState(false)
 
-  const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(
-    ref.current
-  )
+  const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(el)
 
-  useEffect(onScroll, [children])
+  useEffect(onScroll, [children, onScroll])
 
   const showArrows = showArrowsOnHover ? isHovered : !fadeEdges
 
@@ -38,13 +47,14 @@ export function Carousel(props: {
       className={clsx('relative', className)}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      {...rest}
     >
       <div
         className={clsx(
           fadeEdges && {
-            'before:from-canvas-0 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-10 before:bg-gradient-to-r before:to-transparent':
+            'before:from-canvas-0 before:pointer-events-none before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-10 before:bg-gradient-to-r before:to-transparent':
               !atFront,
-            'after:from-canvas-0 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-10 after:bg-gradient-to-l after:to-transparent':
+            'after:from-canvas-0 after:pointer-events-none after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-10 after:bg-gradient-to-l after:to-transparent':
               !atBack,
           }
         )}
@@ -54,7 +64,7 @@ export function Carousel(props: {
             'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
             labelsParentClassName ?? 'gap-4'
           )}
-          ref={ref}
+          ref={setEl}
           onScroll={onScroll}
         >
           {children}
@@ -68,20 +78,24 @@ export function Carousel(props: {
         </Row>
       </div>
       {showArrows && !atFront && (
-        <div
+        <button
+          type="button"
+          aria-label="Scroll left"
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
-          onMouseDown={scrollLeft}
+          onClick={scrollLeft}
         >
           <ChevronLeftIcon className="text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
-        </div>
+        </button>
       )}
       {showArrows && !atBack && (
-        <div
+        <button
+          type="button"
+          aria-label="Scroll right"
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
-          onMouseDown={scrollRight}
+          onClick={scrollRight}
         >
           <ChevronRightIcon className="text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
-        </div>
+        </button>
       )}
     </div>
   )
@@ -146,20 +160,24 @@ export const ControlledCarousel = forwardRef(function (
         </Row>
       </div>
       {!fadeEdges && !atFront && (
-        <div
+        <button
+          type="button"
+          aria-label="Scroll left"
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
-          onMouseDown={scrollLeft}
+          onClick={scrollLeft}
         >
           <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
-        </div>
+        </button>
       )}
       {!fadeEdges && !atBack && (
-        <div
+        <button
+          type="button"
+          aria-label="Scroll right"
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
-          onMouseDown={scrollRight}
+          onClick={scrollRight}
         >
           <ChevronRightIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
-        </div>
+        </button>
       )}
     </div>
   )
@@ -176,13 +194,23 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
 
   const [atFront, setAtFront] = useState(true)
   const [atBack, setAtBack] = useState(true)
-  const onScroll = () => {
+  const onScroll = useCallback(() => {
     if (carouselRef) {
       const { scrollLeft, clientWidth, scrollWidth } = carouselRef
-      setAtFront(scrollLeft < 60)
-      setAtBack(scrollWidth - (clientWidth + scrollLeft) < 60)
+      // Only allow for subpixel rounding: even a partially clipped pill
+      // needs an arrow to reach the rest of its content.
+      setAtFront(scrollLeft <= 1)
+      setAtBack(scrollWidth - (clientWidth + scrollLeft) <= 1)
     }
-  }
+  }, [carouselRef])
+
+  useEffect(() => {
+    if (!carouselRef) return
+    onScroll()
+    const observer = new ResizeObserver(onScroll)
+    observer.observe(carouselRef)
+    return () => observer.disconnect()
+  }, [carouselRef, onScroll])
   return {
     scrollLeft,
     scrollRight,

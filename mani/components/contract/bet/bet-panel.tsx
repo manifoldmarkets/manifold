@@ -1,4 +1,9 @@
-import { Contract, isBinaryMulti, MarketContract } from 'common/contract'
+import {
+  Contract,
+  isBinaryMulti,
+  isMultiCpmm,
+  MarketContract,
+} from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
@@ -182,7 +187,7 @@ export function BetPanelContent({
       setError(null)
     }
   }, [amount, user, token])
-  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const isCpmmMulti = isMultiCpmm(contract)
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }

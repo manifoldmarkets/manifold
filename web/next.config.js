@@ -33,6 +33,10 @@ module.exports = {
       { hostname: 'storage.googleapis.com' },
       { hostname: 'picsum.photos' },
       { hostname: '*.giphy.com' },
+      // Sentinel Bio charity logo (common/charity.ts). next/image throws at
+      // runtime on an unlisted hostname, so this is required for the legacy
+      // /old-charity pages, which render every charity's photo.
+      { hostname: 'sentinelbio.org' },
     ],
   },
   turbopack: {
@@ -64,6 +68,21 @@ module.exports = {
   async redirects() {
     return [
       {
+        source: '/community-guidelines/prize-faq',
+        destination: '/community-guidelines/prize-drawings-faq',
+        permanent: true,
+      },
+      {
+        source: '/community-guidelines/prize-rules',
+        destination: '/community-guidelines/prize-drawings-rules',
+        permanent: true,
+      },
+      {
+        source: '/supporter',
+        destination: '/membership',
+        permanent: true,
+      },
+      {
         source: '/politics',
         destination: '/election',
         permanent: true,
@@ -94,6 +113,24 @@ module.exports = {
         destination: '/lab',
         permanent: true,
       },
+      {
+        source: '/store',
+        destination: '/shop',
+        permanent: true,
+      },
+      // Aliases that should land on the jobs board (/jobs).
+      ...[
+        '/job-board',
+        '/jobboard',
+        '/jobs-board',
+        '/jobsboard',
+        '/career',
+        '/careers',
+      ].map((source) => ({
+        source,
+        destination: '/jobs',
+        permanent: true,
+      })),
 
       {
         source: '/versus',
@@ -118,6 +155,11 @@ module.exports = {
       {
         source: '/sweepstakes-rules',
         destination: 'https://docs.manifold.markets/sweepstakes-rules',
+        permanent: true,
+      },
+      {
+        source: '/data',
+        destination: 'https://docs.manifold.markets/data',
         permanent: true,
       },
       {
@@ -175,6 +217,16 @@ module.exports = {
         source: '/dashboard/:slug',
         destination: '/news/:slug',
         permanent: true,
+      },
+      {
+        source: '/sports/f1/f1',
+        destination: '/sports/f1',
+        permanent: true,
+      },
+      {
+        source: '/sports/world-cup',
+        destination: '/sports/world-cup-2026',
+        permanent: false,
       },
       {
         source: '/home/:newsSlug*',

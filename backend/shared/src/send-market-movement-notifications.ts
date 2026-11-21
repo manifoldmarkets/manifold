@@ -1,5 +1,5 @@
 import { Answer } from 'common/answer'
-import { Contract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { Notification } from 'common/notification'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
@@ -13,12 +13,15 @@ import { createPushNotifications } from 'shared/create-push-notifications'
 import { bulkInsert } from 'shared/supabase/utils'
 import { createMarketMovementNotification } from './create-notification'
 import { truncateText } from './send-unseen-notifications'
-import { createSupabaseDirectClient, SupabaseDirectClient } from './supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from './supabase/init'
 import { contractColumnsToSelect, isProd, log } from './utils'
 
 const pastPeriodHoursAgoStart = 24
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
-const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
+const _TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
 type ProbChange = {
   contract: Contract
   answer?: Answer
@@ -34,11 +37,15 @@ export async function sendMarketMovementNotifications(debug = false) {
   const now = Date.now()
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
   const nowEnd = now
-  // const where = `where c.id = ANY(ARRAY[${TEST_CONTRACT_IDS}])`
+  // const where = `where c.id = ANY(ARRAY[${_TEST_CONTRACT_IDS}])`
+  // Perps use oracle-driven price movements which get their own notification
+  // path (update-perps + notifications/perps.ts); exclude from this job.
   const where = `
   where c.last_bet_time > now() - interval '${nowPeriodHoursAgoStart} hours'
   and c.resolution_time is null
-  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'`
+  and c.deleted = false
+  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'
+  and coalesce(c.data->>'mechanism', '') <> 'perp'`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c ${where};
@@ -50,7 +57,7 @@ export async function sendMarketMovementNotifications(debug = false) {
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts
-    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .filter((c) => isMultiCpmm(c) && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
   for (const contract of allContracts) {
@@ -106,10 +113,7 @@ export async function sendMarketMovementNotifications(debug = false) {
           currentProb: prob,
         })
       }
-    } else if (
-      contract.mechanism === 'cpmm-multi-1' &&
-      contract.shouldAnswersSumToOne
-    ) {
+    } else if (isMultiCpmm(contract) && contract.shouldAnswersSumToOne) {
       const { answers: contractAnswers } = contract
       let maxChange = probThreshold
       let maxChangedAnswer = null
@@ -290,7 +294,6 @@ async function createMarketMovementNotifications(
     avgAfter,
     currentProb,
   } of probChanges) {
-    const { mechanism } = contract
     // Get users who are watching this market or have shares in it
     const usersInterestedInContract = allInterestedUsers
       .filter((u) => u.contractId === contract.id)
@@ -314,8 +317,7 @@ async function createMarketMovementNotifications(
       const { sendToBrowser, sendToMobile } =
         getNotificationDestinationsForUser(user, 'market_movements')
 
-      const sumsToOne =
-        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+      const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
 
       // Check if a similar notification has already been sent recently for the relevant destination
       const existingNotificationsForUserAndContract =
@@ -476,8 +478,8 @@ const getAverageBetProbs = async (
   const contractKeysToProbsMap: Record<string, number | null> = {}
   await pg.map(
     `
-    WITH 
-    -- Get all bets in the window plus the last bet before the window 
+    WITH
+    -- Get all bets in the window plus the last bet before the window
     all_relevant_bets AS (
       (
         -- Last bet before the window (for initial probability)
@@ -489,7 +491,7 @@ const getAverageBetProbs = async (
           millis_to_ts($1) as effective_end_time,
           'pre_window' as bet_position
         FROM contract_bets
-        WHERE 
+        WHERE
           created_time < millis_to_ts($1)
           AND contract_id = ANY($3)
           AND (NOT is_redemption OR contract_id = ANY($4))
@@ -506,7 +508,7 @@ const getAverageBetProbs = async (
           created_time as effective_end_time,
           'in_window' as bet_position
         FROM contract_bets
-        WHERE 
+        WHERE
           created_time BETWEEN millis_to_ts($1) AND millis_to_ts($2)
           AND contract_id = ANY($3)
           AND (NOT is_redemption OR contract_id = ANY($4))
@@ -523,7 +525,7 @@ const getAverageBetProbs = async (
         bet_position,
         -- Calculate the end time for this probability (when the next bet happens or window ends)
         LEAD(created_time, 1, millis_to_ts($2)) OVER (
-          PARTITION BY contract_id, answer_id 
+          PARTITION BY contract_id, answer_id
           ORDER BY created_time
         ) as next_bet_time,
         -- Calculate how long this probability lasted within the window
@@ -569,12 +571,12 @@ const getAverageBetProbs = async (
         SUM(prob_after * duration_seconds) as weighted_sum,
         SUM(duration_seconds) as total_duration,
         -- If we have duration data, calculate weighted average
-        CASE 
-          WHEN SUM(duration_seconds) > 0 THEN 
+        CASE
+          WHEN SUM(duration_seconds) > 0 THEN
             SUM(prob_after * duration_seconds) / SUM(duration_seconds)
-          ELSE 
+          ELSE
             -- Fallback if no duration (shouldn't happen but just in case)
-            AVG(prob_after) 
+            AVG(prob_after)
         END as weighted_avg_prob,
         -- Include the total duration for debugging/filtering
         COUNT(*) as bet_count
@@ -589,7 +591,7 @@ const getAverageBetProbs = async (
         answer_id,
         prob_after as prob
       FROM contract_bets
-      WHERE 
+      WHERE
         created_time < millis_to_ts($1)
         AND contract_id = ANY($3)
         AND (NOT is_redemption OR contract_id = ANY($4))

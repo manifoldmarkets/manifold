@@ -30,7 +30,7 @@ export type ContractMetric = {
   previousProfit?: number
   from:
     | {
-        // Monthly is not updated atm bc it's not used
+        // Most current UI consumers render day/week; PERPs also populate month.
         [period: string]: {
           profit: number
           profitPercent: number

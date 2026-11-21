@@ -2,11 +2,12 @@ import clsx from 'clsx'
 import Link from 'next/link'
 import { Fragment } from 'react'
 import { useNativeInfo } from '../native-message-provider'
-import { linkClass } from './site-link'
+import { linkClass, LinkFavicon } from './site-link'
 
 // Return a JSX span, linkifying @username, and https://...
 export function Linkify(props: { text: string; className?: string }) {
   const { text, className } = props
+  const { isNative } = useNativeInfo()
   // Replace "m1234" with "ϻ1234"
   // const mRegex = /(\W|^)m(\d+)/g
   // text = text.replace(mRegex, (_, pre, num) => `${pre}ϻ${num}`)
@@ -24,7 +25,7 @@ export function Linkify(props: { text: string; className?: string }) {
       {
         '@': `/${tag}`,
       }[symbol] ?? match.trim()
-    const target = getLinkTarget(href)
+    const target = getLinkTarget(href, false, isNative)
     const className = clsx(linkClass, 'text-primary-700')
 
     return (
@@ -42,6 +43,7 @@ export function Linkify(props: { text: string; className?: string }) {
             className={className}
             href={href}
           >
+            <LinkFavicon href={href} />
             {symbol}
             {tag}
           </a>
@@ -63,13 +65,27 @@ export function Linkify(props: { text: string; className?: string }) {
 
 const isInternalHref = (href: string) => href.startsWith('/')
 
-export const getLinkTarget = (href: string, newTab?: boolean) => {
-  if (
-    href.startsWith('http') &&
-    !href.startsWith(`https://manifold`) // covers manifold.markets and manifold.love
-  )
-    return '_blank'
-  const { isNative } = useNativeInfo()
+const isManifoldHost = (href: string) => {
+  try {
+    const { hostname } = new URL(href)
+    return (
+      hostname === 'manifold.markets' ||
+      hostname === 'manifold.love' ||
+      hostname.endsWith('.manifold.markets') ||
+      hostname.endsWith('.manifold.love')
+    )
+  } catch {
+    return false
+  }
+}
+
+export const getLinkTarget = (
+  href: string,
+  newTab: boolean,
+  isNative: boolean
+) => {
+  // Schemes are case-insensitive, and linkify keeps e.g. HTTPS:// as typed.
+  if (/^https?:/i.test(href) && !isManifoldHost(href)) return '_blank'
   // Native will open 'a new tab' when target = '_blank' in the system browser rather than in the app
   if (isNative) return '_self'
   return newTab ? '_blank' : '_self'

@@ -23,6 +23,10 @@ import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import Link from 'next/link'
 import { XIcon } from '@heroicons/react/solid'
+import {
+  ModActionBadge,
+  ModActionTag,
+} from 'web/components/moderation/mod-action'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -208,14 +212,14 @@ export function ResolveHeader(props: {
         {closeTime && closeTime < Date.now() ? (
           <Col>
             <span className="mb-2 text-lg">
-              {!isCreator && (
-                <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-                  Mod
-                </span>
-              )}
+              {!isCreator && <ModActionTag className="mr-2" />}
               If {isCreator ? 'your' : 'this'} question closed too early{' '}
             </span>
-            <Button color={'gray'} onClick={() => setIsEditingCloseTime(true)}>
+            <Button
+              color={isCreator ? 'gray' : 'purple-outline'}
+              onClick={() => setIsEditingCloseTime(true)}
+            >
+              {!isCreator && <ModActionBadge className="mr-1" />}
               Extend the close time
             </Button>
           </Col>
@@ -224,11 +228,7 @@ export function ResolveHeader(props: {
         )}
       </Row>
       <div className="mb-2 text-lg">
-        {!isCreator && (
-          <span className="mr-2 rounded bg-purple-100 p-1 align-baseline text-xs uppercase text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-            Mod
-          </span>
-        )}
+        {!isCreator && <ModActionTag className="mr-2" />}
         If you know the answer, resolve{' '}
         {fullTitle
           ? `"${contract.question}"`
@@ -329,11 +329,7 @@ export function MiniResolutionPanel(props: {
 
   return (
     <Row className="mt-2 flex-wrap gap-4">
-      {isAdmin && !isCreator && (
-        <div className="bg-scarlet-50 text-scarlet-500 self-start rounded p-1 text-xs">
-          ADMIN
-        </div>
-      )}
+      {isAdmin && !isCreator && <ModActionTag admin className="self-start" />}
       <Col className="gap-1">
         <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
         {outcome === 'MKT' && (

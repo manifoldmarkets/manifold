@@ -1,5 +1,6 @@
 import {
   ArrowRightIcon,
+  CashIcon,
   ChatIcon,
   ChevronDownIcon,
   DotsVerticalIcon,
@@ -26,19 +27,23 @@ import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
   Contract,
+  MarketContract,
   MultiContract,
   contractPath,
+  convertsToCpmmMulti2,
+  isMultiCpmm,
   tradingAllowed,
 } from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { isAdminId, isModId } from 'common/envs/constants'
+import { canStaffAddSportsAnswers } from 'common/sports'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
 import { debounce, groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
 import toast from 'react-hot-toast'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -68,6 +73,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
+import { AddLiquidityModal } from '../contract/liquidity-modal'
 import { Col } from '../layout/col'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
@@ -84,15 +90,19 @@ import {
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
 
-const MAX_DEFAULT_GRAPHED_ANSWERS = 6
-
 // the offset in which the top of answers is visible
 const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
 
+const NO_BETS: LimitBet[] = []
+
 // full resorting, hover, clickiness, search and add
-export function AnswersPanel(props: {
+//
+// Memoized, and it memoizes each row: zooming the chart re-renders its parent
+// many times a second, and a market can have a couple of hundred rows. Pass
+// it callbacks that stay the same from render to render.
+export const AnswersPanel = memo(function AnswersPanel(props: {
   contract: MultiContract
   selectedAnswerIds: string[]
   sort: MultiSort
@@ -103,7 +113,6 @@ export function AnswersPanel(props: {
   onAnswerHover?: (answer: Answer | undefined) => void
   onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
-  setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
   className?: string
@@ -121,7 +130,6 @@ export function AnswersPanel(props: {
     query,
     setQuery,
     showSetDefaultSort,
-    setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
     className,
     hideSearch,
@@ -130,10 +138,14 @@ export function AnswersPanel(props: {
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
 
-  const answers = contract.answers.map((a) => ({
-    ...a,
-    prob: getAnswerProbability(contract, a.id),
-  }))
+  const answers = useMemo(
+    () =>
+      contract.answers.map((a) => ({
+        ...a,
+        prob: getAnswerProbability(contract, a.id),
+      })),
+    [contract]
+  )
   const [showAll, setShowAll] = useState(props.showAll)
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
@@ -149,20 +161,13 @@ export function AnswersPanel(props: {
       (answer) =>
         selectedAnswerIds.includes(answer.id) || searchInAny(query, answer.text)
     )
-  }, [sortedAnswers, query])
+  }, [sortedAnswers, query, selectedAnswerIds])
 
   const answersToShow = query
     ? searchedAnswers
     : showAll
     ? sortedAnswers
     : getSortedAnswers(contract, sortedAnswers, sort, selectedAnswerIds)
-
-  useEffect(() => {
-    if (!selectedAnswerIds.length)
-      setDefaultAnswerIdsToGraph?.(
-        answersToShow.map((a) => a.id).slice(0, MAX_DEFAULT_GRAPHED_ANSWERS)
-      )
-  }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
   const allMetrics = useAllSavedContractMetrics(contract)
@@ -179,6 +184,21 @@ export function AnswersPanel(props: {
     {
       enabled: isAdvancedTrader,
     }
+  )
+
+  // The first metric for each answer, and each answer's open orders, worked
+  // out once so that every row gets the same objects from render to render.
+  const metricByAnswerId = useMemo(() => {
+    const byAnswerId: { [answerId: string]: ContractMetric } = {}
+    for (const metric of allMetrics ?? []) {
+      if (metric.answerId && !(metric.answerId in byAnswerId))
+        byAnswerId[metric.answerId] = metric
+    }
+    return byAnswerId
+  }, [allMetrics])
+  const unfilledBetsByAnswerId = useMemo(
+    () => groupBy(unfilledBets ?? [], (bet) => bet.answerId ?? ''),
+    [unfilledBets]
   )
 
   const allResolved = getAllResolved(contract, answers)
@@ -207,7 +227,8 @@ export function AnswersPanel(props: {
       !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
-          user.id === contract.creatorId)) &&
+          (user.id === contract.creatorId ||
+            canStaffAddSportsAnswers(contract, user.id)))) &&
       tradingAllowed(contract) &&
       !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
       unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
@@ -256,6 +277,7 @@ export function AnswersPanel(props: {
           setSort={setSort}
           showDefaultSort={showSetDefaultSort && contract.sort !== sort}
           setDefaultSort={setDefaultSort}
+          defaultSortModAction={!!user && user.id !== contract.creatorId}
         />
       )}
       <Col ref={answersContainerRef}>
@@ -266,34 +288,27 @@ export function AnswersPanel(props: {
         ) : (
           <Col className="mx-[2px] mt-1 gap-2">
             {answersToShow.map((answer) => (
-              <AnswerComponent
-                myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
-                shouldShowPositions={shouldShowPositions}
-                className={
-                  selectedAnswerIds.length &&
-                  !selectedAnswerIds.includes(answer.id) &&
-                  !!onAnswerClick
-                    ? 'opacity-70'
-                    : ''
-                }
+              <AnswerRow
                 key={answer.id}
-                user={user}
                 answer={answer}
                 contract={contract}
-                onCommentClick={
-                  onAnswerCommentClick
-                    ? () => onAnswerCommentClick(answer)
+                user={user}
+                myMetric={metricByAnswerId[answer.id]}
+                shouldShowPositions={shouldShowPositions}
+                dimmed={
+                  selectedAnswerIds.length > 0 &&
+                  !selectedAnswerIds.includes(answer.id) &&
+                  !!onAnswerClick
+                }
+                unfilledBets={
+                  unfilledBets
+                    ? unfilledBetsByAnswerId[answer.id] ?? NO_BETS
                     : undefined
                 }
-                onHover={(hovering) =>
-                  onAnswerHover?.(hovering ? answer : undefined)
-                }
-                onClick={onAnswerClick}
-                unfilledBets={unfilledBets?.filter(
-                  (b) => b.answerId === answer.id
-                )}
-                color={getAnswerColor(answer)}
                 shouldShowLimitOrderChart={isAdvancedTrader}
+                onAnswerCommentClick={onAnswerCommentClick}
+                onAnswerHover={onAnswerHover}
+                onAnswerClick={onAnswerClick}
               />
             ))}
 
@@ -334,7 +349,53 @@ export function AnswersPanel(props: {
       )}
     </Col>
   )
-}
+})
+
+// One row of the answer list. Every prop it takes is the same object from
+// render to render unless that answer's own data changed, so a re-render of
+// the list (a keystroke in the search box, a chart zoom) skips the rows that
+// did not change.
+const AnswerRow = memo(function AnswerRow(props: {
+  answer: Answer
+  contract: MultiContract
+  user: User | undefined | null
+  myMetric: ContractMetric | undefined
+  shouldShowPositions: boolean
+  // Faded: other answers are selected for the chart and this one is not.
+  dimmed: boolean
+  unfilledBets: LimitBet[] | undefined
+  shouldShowLimitOrderChart: boolean
+  onAnswerCommentClick?: (answer: Answer) => void
+  onAnswerHover?: (answer: Answer | undefined) => void
+  onAnswerClick?: (answer: Answer) => void
+}) {
+  const { answer, onAnswerCommentClick, onAnswerHover } = props
+  const onCommentClick = useMemo(
+    () =>
+      onAnswerCommentClick ? () => onAnswerCommentClick(answer) : undefined,
+    [onAnswerCommentClick, answer]
+  )
+  const onHover = useCallback(
+    (hovering: boolean) => onAnswerHover?.(hovering ? answer : undefined),
+    [onAnswerHover, answer]
+  )
+  return (
+    <AnswerComponent
+      myMetric={props.myMetric}
+      shouldShowPositions={props.shouldShowPositions}
+      className={props.dimmed ? 'opacity-70' : ''}
+      user={props.user}
+      answer={answer}
+      contract={props.contract}
+      onCommentClick={onCommentClick}
+      onHover={onHover}
+      onClick={props.onAnswerClick}
+      unfilledBets={props.unfilledBets}
+      color={getAnswerColor(answer)}
+      shouldShowLimitOrderChart={props.shouldShowLimitOrderChart}
+    />
+  )
+})
 
 export const EditAnswerModal = (props: {
   open: boolean
@@ -347,7 +408,35 @@ export const EditAnswerModal = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [text, setText] = useState(answer.text)
+  const [customHex, setCustomHex] = useState(color)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => setCustomHex(color), [color])
+
+  const saveColor = async (rawColor: string, close?: () => void) => {
+    const normalizedColor = rawColor.trim().startsWith('#')
+      ? rawColor.trim()
+      : `#${rawColor.trim()}`
+
+    if (!/^#[0-9a-fA-F]{6}$/.test(normalizedColor)) {
+      setError('Enter a valid 6-digit hex color, like #11b981.')
+      return
+    }
+
+    try {
+      await editAnswerCpmm({
+        answerId: answer.id,
+        contractId: contract.id,
+        color: normalizedColor,
+      })
+      setError(null)
+      close?.()
+    } catch (error) {
+      console.error(error)
+      setError('Error saving color')
+    }
+  }
+
   const editAnswer = async () => {
     if (isSubmitting) return
     setIsSubmitting(true)
@@ -400,22 +489,34 @@ export const EditAnswerModal = (props: {
             />
           )}
           dropdownMenuContent={(close) => (
-            <CirclePicker
-              className="w-[240px] py-2"
-              onChange={async (change) => {
-                try {
-                  await editAnswerCpmm({
-                    answerId: answer.id,
-                    contractId: contract.id,
-                    color: change.hex,
-                  })
-                } catch (error) {
-                  console.error(error)
-                } finally {
-                  close()
-                }
-              }}
-            />
+            <Col className="gap-2 p-2">
+              <CirclePicker
+                className="w-[240px]"
+                onChange={(change) => saveColor(change.hex, close)}
+              />
+              <Row className="border-ink-200 items-center gap-2 border-t pt-2">
+                <Input
+                  value={customHex}
+                  onChange={(e) => setCustomHex(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      saveColor(customHex, close)
+                    }
+                  }}
+                  placeholder="#RRGGBB"
+                  className="!h-8 !px-2 font-mono text-xs"
+                  maxLength={7}
+                />
+                <Button
+                  size="2xs"
+                  color="gray-outline"
+                  onClick={() => saveColor(customHex, close)}
+                >
+                  Apply
+                </Button>
+              </Row>
+            </Col>
           )}
         />
 
@@ -431,8 +532,17 @@ export function SimpleAnswerBars(props: {
   maxAnswers?: number
   barColor?: string
   feedReason?: string
+  // Per-answer color overrides by answer id, for pages that color answers by
+  // meaning (e.g. party). Answers not listed keep their usual color.
+  answerColors?: Record<string, string>
 }) {
-  const { contract, maxAnswers = Infinity, barColor, feedReason } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    barColor,
+    feedReason,
+    answerColors,
+  } = props
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
   const user = useUser()
@@ -462,7 +572,7 @@ export function SimpleAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer)}
+              color={answerColors?.[answer.id] ?? getAnswerColor(answer)}
               barColor={barColor}
               shouldShowLimitOrderChart={isAdvancedTrader}
               feedReason={feedReason}
@@ -550,6 +660,20 @@ export function AnswerComponent(props: {
 
   const [tradesModalOpen, setTradesModalOpen] = useState(false)
   const [limitBetModalOpen, setLimitBetModalOpen] = useState(false)
+  const [addLiquidityOpen, setAddLiquidityOpen] = useState(false)
+
+  // Per-answer subsidy: deepen this answer's own binary CPMM (open market). Only
+  // where it's lossless, as add-liquidity enforces: cpmm-multi-2 markets, or
+  // cpmm-multi-1 ones the add would convert. And only on public markets, the
+  // only ones the liquidity modal takes adds on.
+  const canSubsidizeAnswer =
+    isMultiCpmm(contract) &&
+    (contract.mechanism === 'cpmm-multi-2' || convertsToCpmmMulti2(contract)) &&
+    contract.visibility === 'public' &&
+    !contract.isResolved &&
+    !answer.resolution &&
+    (contract.closeTime ?? Infinity) > Date.now() &&
+    answer.poolYes != undefined
 
   const hasLimitOrders = unfilledBets?.length && limitOrderVolume
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
@@ -588,6 +712,7 @@ export function AnswerComponent(props: {
         icon: <PencilIcon className=" h-4 w-4" />,
         name: 'Edit',
         onClick: () => setEditingAnswer(answer),
+        modAction: isModAnswerEdit(answer, contract, user),
       },
 
     onCommentClick && {
@@ -616,6 +741,11 @@ export function AnswerComponent(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
+    },
+    canSubsidizeAnswer && {
+      icon: <CashIcon className="h-4 w-4" />,
+      name: 'Add liquidity',
+      onClick: () => setAddLiquidityOpen(true),
     }
   )
 
@@ -729,6 +859,15 @@ export function AnswerComponent(props: {
           answer={answer}
         />
       )}
+      {addLiquidityOpen && isMultiCpmm(contract) && (
+        <AddLiquidityModal
+          contract={contract as MarketContract}
+          isOpen={addLiquidityOpen}
+          setOpen={setAddLiquidityOpen}
+          answerId={answer.id}
+          answerText={answer.text}
+        />
+      )}
       {!!hasLimitOrders && (
         <Modal
           open={limitBetModalOpen}
@@ -784,6 +923,19 @@ export function canEditAnswer(
       isModId(user.id) ||
       user.id === contract.creatorId ||
       user.id === answer.userId)
+  )
+}
+
+// Can only edit the answer because the user is a mod or admin
+export function isModAnswerEdit(
+  answer: Answer,
+  contract: MultiContract,
+  user?: User | undefined | null
+) {
+  return (
+    !!canEditAnswer(answer, contract, user) &&
+    user?.id !== contract.creatorId &&
+    user?.id !== answer.userId
   )
 }
 

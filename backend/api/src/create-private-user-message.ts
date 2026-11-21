@@ -3,6 +3,10 @@ import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
 import { contentSchema } from 'common/api/zod-types'
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
+import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
 import { getUser } from 'shared/utils'
@@ -35,24 +39,34 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
   const isBannedFromPosting =
     creator.isBannedFromPosting || isUserBanned(creatorBans, 'posting')
 
+  // Get other members for admin check (used by both ban and eligibility checks)
+  const otherMemberIds = await pg.map<string>(
+    `select user_id from private_user_message_channel_members
+     where channel_id = $1 and user_id != $2`,
+    [channelId, creator.id],
+    (r) => r.user_id
+  )
+
+  const allRecipientsAreAdmins =
+    otherMemberIds.length > 0 && otherMemberIds.every((id) => isAdminId(id))
+
   if (isBannedFromPosting) {
-    // Banned users can still message admins - check if all other members are admins
-    const otherMemberIds = await pg.map<string>(
-      `select user_id from private_user_message_channel_members
-       where channel_id = $1 and user_id != $2`,
-      [channelId, creator.id],
-      (r) => r.user_id
-    )
-
-    const allRecipientsAreAdmins =
-      otherMemberIds.length > 0 && otherMemberIds.every((id) => isAdminId(id))
-
+    // Banned users can still message admins
     if (!allRecipientsAreAdmins) {
       throw new APIError(
         403,
         'You are banned from messaging. You can still message Manifold staff for support.'
       )
     }
+  }
+
+  // Private messaging shares the new-account social gate with comments.
+  if (!allRecipientsAreAdmins && !(await passesNewAccountGate(pg, creator))) {
+    throw new APIError(
+      403,
+      newAccountGateMessage('Messaging') +
+        ' You can still message Manifold staff for support.'
+    )
   }
 
   return await createPrivateUserMessageMain(

@@ -6,23 +6,25 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
 } from 'common/contract'
+import { getVersusAnswers } from 'common/versus'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { formatPercent } from 'common/util/format'
 import { HOUR_MS } from 'common/util/time'
 import { capitalize } from 'lodash'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
+import { TradeDialog } from '../bet/trade-ticket'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
@@ -42,7 +44,7 @@ import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { floatingEqual } from 'common/util/math'
-import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -209,12 +211,40 @@ export const AddComment = (props: { onClick: () => void }) => {
   )
 }
 
+// The answer buttons open a trade ticket in place. With nobody signed in, the
+// press can also open sign-in (see common/signed-out-bet.ts).
+export const onAnswerBetPress = (
+  contract: CPMMMultiContract,
+  answer: Answer,
+  outcome: 'YES' | 'NO',
+  user: User | null | undefined
+) => {
+  // TODO: Twomba tracking bet terminology
+  track('bet intent', {
+    location: 'answer panel',
+    contractId: contract.id,
+    answerId: answer.id,
+    outcome,
+    signedOut: !user,
+  })
+  // Only once auth has settled on nobody: sign-in must not open at an account
+  // that is still loading.
+  if (user === null)
+    onSignedOutBetPress({
+      contractId: contract.id,
+      location: 'answer panel',
+      surface: 'ticket',
+      outcome,
+    })
+}
+
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
   buttonClassName?: string
 }) => {
   const { answer, contract, buttonClassName } = props
+  const user = useUser()
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
@@ -239,8 +269,7 @@ export const MultiBettor = (props: {
         className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
+          onAnswerBetPress(contract, answer, 'YES', user)
           setOutcome('YES')
         }}
       >
@@ -256,32 +285,47 @@ const YesNoBetButtons = (props: {
   feedReason?: string
 }) => {
   const { answer, contract, feedReason, fillColor } = props
-  const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
+  const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
+  // Kept after closing so the ticket doesn't flip sides while it fades out.
+  const [outcome, setOutcome] = useState<'YES' | 'NO'>('YES')
+  const [open, setOpen] = useState(false)
+  const openTicket = (side: 'YES' | 'NO') => {
+    setOutcome(side)
+    setOpen(true)
+  }
+
+  if (isCreatorBanned) {
+    return null
+  }
 
   return (
     <>
-      <Modal
-        open={outcome != undefined}
-        setOpen={(open) => setOutcome(open ? 'YES' : undefined)}
-      >
-        <AnswerCpmmBetPanel
-          answer={answer}
-          feedReason={feedReason}
-          contract={contract}
-          outcome={outcome}
-          closePanel={() => setOutcome(undefined)}
-        />
-      </Modal>
+      <TradeDialog
+        contract={contract}
+        multiProps={{ answers: contract.answers, answerToBuy: answer }}
+        open={open}
+        setOpen={setOpen}
+        initialOutcome={outcome}
+        trackingLocation="contract page answer"
+        feedReason={feedReason}
+        title={answer.text}
+        question={contract.question}
+      />
 
       <Button
         size="2xs"
         color="green-outline"
+        aria-label={`Bet Yes on ${answer.text}`}
+        aria-haspopup="dialog"
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
-          setOutcome('YES')
+          onAnswerBetPress(contract, answer, 'YES', user)
+          openTicket('YES')
         }}
       >
         Yes
@@ -289,12 +333,13 @@ const YesNoBetButtons = (props: {
       <Button
         size="2xs"
         color="red-outline"
+        aria-label={`Bet No on ${answer.text}`}
+        aria-haspopup="dialog"
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
-          // TODO: Twomba tracking bet terminology
-          track('bet intent', { location: 'answer panel' })
-          setOutcome('NO')
+          onAnswerBetPress(contract, answer, 'NO', user)
+          openTicket('NO')
         }}
       >
         No
@@ -351,14 +396,35 @@ export const BinaryMultiSellRow = (props: {
   const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
   const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
-  const { totalShares, maxSharesOutcome } = metric ?? {
-    totalShares: { YES: 0, NO: 0 },
-    maxSharesOutcome: 'YES',
+  const sharesOutcome = metric?.maxSharesOutcome
+  const sharesSum = metric?.totalShares[sharesOutcome ?? 'YES'] ?? 0
+  // `sharesOutcome` is relative to the answer the position is stored on: YES
+  // backs `answer`, NO backs the other one (see `versusSide` in common/versus).
+  const answerPseudonym = {
+    YES: {
+      pseudonymName: answer.text,
+      pseudonymColor: getAnswerColor(answer),
+    },
+    NO: {
+      pseudonymName: otherAnswer.text,
+      pseudonymColor: getAnswerColor(otherAnswer),
+    },
   }
-  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
-  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
 
-  if (!sharesOutcome || !user || contract.isResolved) return null
+  // Match the whole-share threshold used by per-answer position metrics.
+  // An absent metric means no position, not a zero-share YES position.
+  const canSell =
+    !!metric &&
+    (sharesOutcome === 'YES' || sharesOutcome === 'NO') &&
+    !!user &&
+    !contract.isResolved &&
+    Number.isFinite(sharesSum) &&
+    sharesSum >= 1
+  useEffect(() => {
+    if (!canSell) setOpen(false)
+  }, [canSell])
+
+  if (!canSell) return null
   return (
     <Row className={'mt-2'}>
       {open && (
@@ -369,8 +435,8 @@ export const BinaryMultiSellRow = (props: {
           shares={sharesSum}
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
-          answerId={getMainBinaryMCAnswer(contract)?.id}
-          binaryPseudonym={getPseudonym(contract)}
+          answerId={answer.id}
+          binaryPseudonym={answerPseudonym}
         />
       )}
       <Button
@@ -389,21 +455,29 @@ export const BinaryMultiSellRow = (props: {
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
-            pseudonym={{
-              YES: {
-                pseudonymName: answer.text,
-                pseudonymColor: getAnswerColor(answer),
-              },
-              NO: {
-                pseudonymName: otherAnswer.text,
-                pseudonymColor: getAnswerColor(otherAnswer),
-              },
-            }}
+            pseudonym={answerPseudonym}
           />
           shares
         </Row>
       </Button>
     </Row>
+  )
+}
+
+/**
+ * Sell buttons for a versus market. Positions can be stored on either answer
+ * (e.g. YES on the second answer placed through the API), so render one row
+ * per answer the user holds shares on.
+ */
+export const VersusSellRows = (props: { contract: CPMMMultiContract }) => {
+  const { contract } = props
+  const answers = getVersusAnswers(contract)
+  if (!answers) return null
+  return (
+    <>
+      <BinaryMultiSellRow contract={contract} answer={answers.main} />
+      <BinaryMultiSellRow contract={contract} answer={answers.other} />
+    </>
   )
 }
 
@@ -556,7 +630,9 @@ export function AnswerPosition(props: {
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
   const isCashContract = contract.token === 'CASH'
-  const canSell = tradingAllowed(contract, answer)
+  const canSell =
+    tradingAllowed(contract, answer) &&
+    !(contract.creatorBannedFromBetting && user.id === contract.creatorId)
   const won =
     (position > 1e-7 && answer.resolution === 'YES') ||
     (position < -1e-7 && answer.resolution === 'NO')

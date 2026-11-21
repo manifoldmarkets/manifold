@@ -1,21 +1,23 @@
+import { richTextToString } from 'common/util/parse'
+import { RepostModal } from './repost-modal'
 import { PaperAirplaneIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
 import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
-import { APIError } from 'common/api/utils'
 import { Bet } from 'common/bet'
 import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Contract } from 'common/contract'
-import { User } from 'common/user'
+import { canPostSocially, User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
+import { NewAccountGateNotice } from 'web/components/user/new-account-gate-notice'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAnswer } from 'web/hooks/use-answers'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -31,7 +33,11 @@ export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
   // Reply to another comment
   parentCommentId?: string
-  onSubmitComment: (editor: Editor, type: CommentType) => Promise<void>
+  onSubmitComment: (
+    editor: Editor,
+    type: CommentType,
+    clearInput: () => void
+  ) => Promise<void>
   // unique id for autosave
   pageId: string
   className?: string
@@ -41,6 +47,9 @@ export function CommentInput(props: {
   autoFocus: boolean
   onClearInput?: () => void
   priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
+  // Market creators can always comment on their own markets (create-comment
+  // exempts them from the new-account gate too).
+  skipNewAccountGate?: boolean
 }) {
   const {
     parentCommentId,
@@ -54,6 +63,7 @@ export function CommentInput(props: {
     commentTypes,
     onClearInput,
     priorityUserIds,
+    skipNewAccountGate,
   } = props
   const user = useUser()
 
@@ -87,11 +97,16 @@ export function CommentInput(props: {
     }
 
     try {
-      await onSubmitComment?.(editor, type)
-      if (!editor.isDestroyed) editor.commands.clearContent(true)
-      // force clear save, because it can fail if editor unrenders
-      safeLocalStorage?.removeItem(`text ${key}`)
-      onClearInput?.()
+      const clearInput = () => {
+        if (!editor.isDestroyed) editor.commands.clearContent(true)
+        // Force clear save, because it can fail if the editor unmounts.
+        safeLocalStorage?.removeItem(`text ${key}`)
+        onClearInput?.()
+      }
+      await onSubmitComment?.(editor, type, clearInput)
+      // Sharing opens a second composer; keep the original draft until published.
+      if (type === 'repost') return
+      clearInput()
     } catch (e) {
       console.error(e)
       if (e instanceof APIError) {
@@ -103,6 +118,16 @@ export function CommentInput(props: {
   })
 
   if (user?.isBannedFromPosting) return <></>
+
+  // Market and post comments share the new-account social gate.
+  if (user && !skipNewAccountGate && !canPostSocially(user))
+    return (
+      <NewAccountGateNotice
+        user={user}
+        action="Commenting"
+        className={className}
+      />
+    )
 
   return blocked ? (
     <div className={'text-ink-500 mb-3 text-sm'}>
@@ -222,11 +247,9 @@ export function CommentInputTextArea(props: {
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       <Row className={''}>
         {user && !isSubmitting && submit && commentTypes.includes('repost') && (
-          <Tooltip
-            text={'Post question & comment to your followers'}
-            className={'mt-2'}
-          >
+          <Tooltip text={'Post to Yap'} className={'mt-2'}>
             <button
+              aria-label="Post to Yap"
               disabled={!editor || editor.isEmpty}
               className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-2 transition-colors"
               onClick={() => submit('repost')}
@@ -293,8 +316,12 @@ export function ContractCommentInput(props: {
   const isReplyToAnswer = replyTo && !isReplyToBet
   const replyToUserInfo =
     useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
+  const [socialDraft, setSocialDraft] = useState<{
+    text: string
+    onPosted: () => void
+  }>()
   const onSubmitComment = useEvent(
-    async (editor: Editor, type: CommentType) => {
+    async (editor: Editor, type: CommentType, clearInput: () => void) => {
       if (!user) return
 
       let comment: ContractComment | undefined
@@ -307,12 +334,14 @@ export function ContractCommentInput(props: {
           replyToBetId: isReplyToBet ? replyTo.id : undefined,
         })
       } else {
-        comment = await api('post', {
-          contractId: playContract.id,
-          content: editor.getJSON(),
-          betId: isReplyToBet ? replyTo.id : undefined,
+        setSocialDraft({
+          text: richTextToString(editor.getJSON()),
+          onPosted: () => {
+            clearInput()
+            clearReply?.()
+          },
         })
-        if (comment) toast.success('Reposted to your followers!')
+        return
       }
       clearReply?.()
       onSubmit?.(comment)
@@ -353,6 +382,18 @@ export function ContractCommentInput(props: {
         <CommentOnAnswer answer={replyTo} clear={clearReply} />
       ) : null}
 
+      {socialDraft !== undefined && (
+        <RepostModal
+          playContract={playContract}
+          bet={isReplyToBet ? replyTo : undefined}
+          initialText={socialDraft.text}
+          onPosted={socialDraft.onPosted}
+          open
+          setOpen={(open) => {
+            if (!open) setSocialDraft(undefined)
+          }}
+        />
+      )}
       <CommentInput
         autoFocus={autoFocus}
         replyToUserInfo={replyToUserInfo}
@@ -371,6 +412,7 @@ export function ContractCommentInput(props: {
         commentTypes={commentTypes}
         onClearInput={onClearInput}
         priorityUserIds={[playContract.creatorId, ...(commenterUserIds ?? [])]}
+        skipNewAccountGate={user?.id === playContract.creatorId}
       />
     </>
   )

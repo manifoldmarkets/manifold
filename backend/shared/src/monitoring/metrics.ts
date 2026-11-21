@@ -19,6 +19,14 @@ export type MetricDescriptor = {
 export type MetricLabels = Record<string, string>
 
 export const CUSTOM_METRICS = {
+  'perps/mnx_backoff_remaining_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'perps/mnx_backoff_suppressed_reads': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
   'ws/open_connections': {
     metricKind: 'GAUGE',
     valueKind: 'int64Value',
@@ -32,6 +40,45 @@ export const CUSTOM_METRICS = {
     valueKind: 'int64Value',
   },
   'ws/broadcasts_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  // Oracle-tick pushes handed from the scheduler to the API for broadcast.
+  // A sustained gap between these two is the signal that perp pages have
+  // silently fallen back to polling, i.e. that displayed prices are lagging.
+  'perps/quote_pushes_sent': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'perps/quote_push_failures': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcasts_published': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcasts_received': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcast_publish_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_broadcast_parse_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_publisher_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_subscriber_errors': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'ws/redis_subscriber_start_errors': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
@@ -83,6 +130,30 @@ export const CUSTOM_METRICS = {
     metricKind: 'GAUGE',
     valueKind: 'int64Value',
   },
+  // Process health, sampled by the metric writer at every flush. The main
+  // scheduler OOM-crashed daily for over a month at the 14 GB V8 heap limit
+  // with nothing to show it, and the multi-minute event-loop stalls that did
+  // the collateral damage (every other job's open transaction killed on the
+  // idle-in-transaction timeout) could only be reconstructed afterwards from
+  // gaps in a 10-second cron. These make both visible in Cloud Monitoring.
+  'process/rss_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'process/heap_used_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  'process/heap_total_bytes': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
+  // Worst lag of a 1-second timer since the previous flush: how long the
+  // event loop was blocked, at most, in that minute.
+  'process/event_loop_lag_ms': {
+    metricKind: 'GAUGE',
+    valueKind: 'int64Value',
+  },
   'vercel/revalidations_succeeded': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
@@ -92,6 +163,26 @@ export const CUSTOM_METRICS = {
     valueKind: 'int64Value',
   },
   'mcp/request_count': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'mcp/rate_limit': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  // Redis-backed shared cache (shared/redis/cache.ts). hits/misses are labelled
+  // by `cache` (e.g. user-interests, related-markets) so we can watch hit rate
+  // per consumer; redis_errors covers connect/get/set failures (which fall back
+  // to the db, so they degrade latency rather than break requests).
+  'cache/hits': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'cache/misses': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'cache/redis_errors': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },

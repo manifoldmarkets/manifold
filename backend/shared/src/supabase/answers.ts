@@ -3,7 +3,10 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { millisToTs, Row } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { groupBy, mapValues, sortBy } from 'lodash'
-import { type SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  type SupabaseDirectClient,
+  type SupabaseTransaction,
+} from 'shared/supabase/init'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
@@ -13,6 +16,61 @@ import { bulkUpdate, insert, update } from './utils'
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
   return row ? convertAnswer(row) : null
+}
+
+// Like getAnswer, but takes a row lock (SELECT ... FOR UPDATE). Required whenever a
+// transaction read-modify-writes answer fields with concrete values, as the scheduler's
+// drizzleAnswer does with subsidyPool: the betsQueue serializes only within one process,
+// so another process's write (the per-answer addLiquidity path, which increments
+// subsidyPool atomically) would otherwise land between the read and the write, and
+// subsidy mana would be created or destroyed.
+export const getAnswerForUpdate = async (
+  pg: SupabaseDirectClient,
+  id: string
+) => {
+  const row = await pg.oneOrNone(
+    `select * from answers where id = $1 for update`,
+    [id]
+  )
+  return row ? convertAnswer(row) : null
+}
+
+// An independent multiple choice market splits liquidity added to the whole
+// market equally among the answers open at that moment, as each one's pending
+// subsidy: the drizzle deepens that answer's pool with it, and resolution pays
+// out what's left. The provision records these answers, so a cancelled answer
+// refunds exactly its share (getIndependentMultiFixedPayouts). The row locks
+// keep any of them from resolving, and paying out its subsidy, without this
+// share until the transaction commits. Returns the answers, none if every
+// answer has resolved.
+export const addSubsidyToOpenAnswers = async (
+  pg: SupabaseTransaction,
+  contractId: string,
+  amount: number
+) => {
+  const answerIds = await pg.map(
+    `select id from answers
+    where contract_id = $1 and resolution is null
+    order by id
+    for update`,
+    [contractId],
+    (r: { id: string }) => r.id
+  )
+  if (answerIds.length === 0) return []
+  const share = amount / answerIds.length
+  const answers = await pg.map(
+    // Both columns can be null, and null plus a share is still null: the
+    // provision would record an answer that got nothing.
+    `update answers
+    set
+      subsidy_pool = coalesce(subsidy_pool, 0) + $1,
+      total_liquidity = coalesce(total_liquidity, 0) + $1
+    where id in ($2:list)
+    returning *`,
+    [share, answerIds],
+    convertAnswer
+  )
+  return sortBy(answers, 'index')
 }
 
 export const getAnswersForContractsDirect = async (
@@ -46,18 +104,31 @@ export const getAnswersForContract = async (
   )
 }
 
+export type AnswerWriteOptions = {
+  // Each write below is broadcast over the websocket as soon as its SQL runs.
+  // Inside a transaction that may be retried (runTransactionWithRetries), pass
+  // false and broadcast the returned value once the transaction has committed:
+  // an attempt that rolls back after the write would otherwise announce an
+  // answer, or prices, that never existed.
+  broadcast?: boolean
+}
+
 export const insertAnswer = async (
   pg: SupabaseDirectClient,
-  ans: Omit<Answer, 'id'>
+  ans: Omit<Answer, 'id'>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await insert(pg, 'answers', answerToRow(ans))
-  broadcastNewAnswer(convertAnswer(row))
+  const answer = convertAnswer(row)
+  if (options?.broadcast !== false) broadcastNewAnswer(answer)
+  return answer
 }
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
   answerId: string,
-  data: Partial<Answer>
+  data: Partial<Answer>,
+  options?: AnswerWriteOptions
 ) => {
   const row = await update(
     pg,
@@ -66,18 +137,21 @@ export const updateAnswer = async (
     partialAnswerToRow({ ...data, id: answerId })
   )
   const answer = convertAnswer(row)
-  broadcastUpdatedAnswers(answer.contractId, [answer])
+  if (options?.broadcast !== false) {
+    broadcastUpdatedAnswers(answer.contractId, [answer])
+  }
   return answer
 }
 
 export const updateAnswers = async (
   pg: SupabaseDirectClient,
   contractId: string,
-  updates: (Partial<Answer> & { id: string })[]
+  updates: (Partial<Answer> & { id: string })[],
+  options?: AnswerWriteOptions
 ) => {
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 
-  broadcastUpdatedAnswers(contractId, updates)
+  if (options?.broadcast !== false) broadcastUpdatedAnswers(contractId, updates)
 }
 
 // Can update answers across multiple contracts.
@@ -88,36 +162,62 @@ export const bulkUpdateAnswers = async (
   await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 }
 
-export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
-  id: answer.id,
-  index: answer.index,
-  contract_id: answer.contractId,
-  user_id: answer.userId,
-  text: answer.text,
-  color: answer.color,
-  pool_yes: answer.poolYes,
-  pool_no: answer.poolNo,
-  prob: answer.prob,
-  total_liquidity: answer.totalLiquidity,
-  subsidy_pool: answer.subsidyPool,
-  created_time: answer.createdTime
-    ? millisToTs(answer.createdTime) + '::timestamptz'
-    : undefined,
-  is_other: answer.isOther,
-  resolution: answer.resolution,
-  resolution_time: answer.resolutionTime
-    ? millisToTs(answer.resolutionTime) + '::timestamptz'
-    : undefined,
-  resolution_probability: answer.resolutionProbability,
-  resolver_id: answer.resolverId,
-  prob_change_day: answer.probChanges?.day,
-  prob_change_week: answer.probChanges?.week,
-  prob_change_month: answer.probChanges?.month,
-  image_url: answer.imageUrl,
-  short_text: answer.shortText,
-  midpoint: answer.midpoint,
-  volume: answer.volume,
-})
+// Reject writes that would persist a degenerate CPMM pool (a pool side <= 0 or
+// non-finite). answerToRow is the single choke point every answer write passes
+// through.
+export const assertValidAnswerPoolWrite = (
+  answer: Pick<Partial<Answer>, 'id' | 'poolYes' | 'poolNo'>
+) => {
+  for (const key of ['poolYes', 'poolNo'] as const) {
+    const value = answer[key]
+    // undefined = not being written in this (partial) update; leave it alone.
+    if (value === undefined) continue
+    if (typeof value !== 'number' || !isFinite(value) || value <= 0) {
+      throw new Error(
+        `Refusing to write degenerate answer pool for answer ${
+          answer.id ?? '(no id)'
+        }: ${key}=${value} (poolYes=${answer.poolYes}, poolNo=${
+          answer.poolNo
+        }). CPMM pool sides must be finite and > 0.`
+      )
+    }
+  }
+}
+
+export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => {
+  assertValidAnswerPoolWrite(answer)
+  return {
+    id: answer.id,
+    index: answer.index,
+    contract_id: answer.contractId,
+    user_id: answer.userId,
+    text: answer.text,
+    color: answer.color,
+    pool_yes: answer.poolYes,
+    pool_no: answer.poolNo,
+    p: answer.p,
+    prob: answer.prob,
+    total_liquidity: answer.totalLiquidity,
+    subsidy_pool: answer.subsidyPool,
+    created_time: answer.createdTime
+      ? millisToTs(answer.createdTime) + '::timestamptz'
+      : undefined,
+    is_other: answer.isOther,
+    resolution: answer.resolution,
+    resolution_time: answer.resolutionTime
+      ? millisToTs(answer.resolutionTime) + '::timestamptz'
+      : undefined,
+    resolution_probability: answer.resolutionProbability,
+    resolver_id: answer.resolverId,
+    prob_change_day: answer.probChanges?.day,
+    prob_change_week: answer.probChanges?.week,
+    prob_change_month: answer.probChanges?.month,
+    image_url: answer.imageUrl,
+    short_text: answer.shortText,
+    midpoint: answer.midpoint,
+    volume: answer.volume,
+  }
+}
 
 // does not convert isOther, loverUserId
 export const partialAnswerToRow = (answer: Partial<Answer>) => {

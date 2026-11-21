@@ -74,7 +74,7 @@ function LiquidityStatusText(props: {
   isCashContract: boolean
 }) {
   const { liquidity, bettor, isSelf, isCashContract } = props
-  const { amount, createdTime, isAnte } = liquidity
+  const { amount, createdTime, isAnte, withdrawnBy } = liquidity
 
   return (
     <div className="text-ink-1000 flex flex-wrap items-center gap-x-1 pr-4 text-sm">
@@ -86,7 +86,14 @@ function LiquidityStatusText(props: {
         <span>{isSelf ? 'You' : `A ${BETTOR}`}</span>
       )}
       <span>
-        {isAnte ? 'created question with' : amount >= 0 ? 'added' : 'withdrew'}
+        {isAnte
+          ? 'created question with'
+          : amount >= 0
+          ? 'added'
+          : withdrawnBy
+          ? // Their share of someone else's withdrawal
+            'got back'
+          : 'withdrew'}
       </span>
       <MoneyDisplay amount={Math.abs(amount)} isCashContract={isCashContract} />
       <span>subsidy</span>

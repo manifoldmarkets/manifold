@@ -70,27 +70,121 @@ export const SUPPORTER_ENTITLEMENT_IDS = [
 ] as const
 
 // ============================================
+// EFFECTIVE TIER (account standing + subscription combined)
+// ============================================
+//
+// A user's effective tier determines which benefits and bonus multipliers they
+// receive. Subscribers always get their subscription tier. Every other account
+// earns at the 'free' tier by default — identity verification (KYC) is
+// optional and only gates prize drawings (and unlocks commenting early). Only
+// an explicit admin/system action drops an account below 'free'.
+//
+// Tier ladder (low → high): restricted < reduced < free < basic (Plus) < plus (Pro) < premium
+
+export type EffectiveTier =
+  | 'restricted' // admin-flagged (requires_verification): earns NO bonuses
+  | 'reduced' // bonus-blocked (ineligible, e.g. super-banned): reduced 0.2x
+  | 'free'
+  | SupporterTier // 'basic' | 'plus' | 'premium'
+
+export const EFFECTIVE_TIER_ORDER: EffectiveTier[] = [
+  'restricted',
+  'reduced',
+  'free',
+  'basic',
+  'plus',
+  'premium',
+]
+
+// Tier strings recorded on txns/notifications before verification became
+// optional: 'unverified' (default accounts, 0.2x) and 'verified' (1x). Maps
+// them onto the current tiers so old income notifications still render.
+export function normalizeRecordedTier(
+  tier: string | undefined
+): EffectiveTier | undefined {
+  if (tier === 'unverified') return 'reduced'
+  if (tier === 'verified') return 'free'
+  return tier as EffectiveTier | undefined
+}
+
+// ============================================
 // CENTRAL BENEFITS CONFIG - MODIFY VALUES HERE
 // ============================================
+//
+// Single source of truth for every per-tier benefit, keyed by effective tier.
+// The bonus multipliers (quest/streak/referral/unique-trader) live here next to
+// the subscription perks — there is no separate multiplier table. Read bonus
+// multipliers via getEffectiveBonusMultiplier (standing-aware) and
+// subscription perks via getBenefit (subscription-only). SUPPORTER_BENEFITS is
+// just the subscriber subset of this, derived below so the two can't drift.
 
-export const SUPPORTER_BENEFITS: Record<
-  SupporterTier,
-  {
-    questMultiplier: number
-    referralMultiplier: number
-    shopDiscount: number
-    maxStreakFreezes: number // Max purchasable streak freezes (non-supporters: 1)
-    badgeAnimation: boolean // Animated star badge on hovercard for Premium
-    freeLoanRate: number // Daily free loan percentage (0.01 = 1%)
-    marginLoanAccess: boolean // Whether user can request margin loans
-    maxLoanNetWorthPercent: number // Max loan as % of net worth (1.0 = 100% = 2x leverage)
-  }
-> = {
+type TierBenefits = {
+  // Bonus multipliers — standing-aware (flagged/blocked accounts earn less).
+  questMultiplier: number
+  streakMultiplier: number
+  referralMultiplier: number
+  uniqueTraderMultiplier: number
+  // Subscription perks — non-subscribers share one baseline (see below).
+  shopDiscount: number
+  maxStreakFreezes: number // Max purchasable streak freezes (non-supporters: 1)
+  badgeAnimation: boolean // Animated star badge on hovercard for Premium
+  freeLoanRate: number // Daily free loan percentage (0.01 = 1%)
+  marginLoanAccess: boolean // Whether user can request margin loans
+  maxLoanNetWorthPercent: number // Max loan as % of net worth (1.0 = 100% = 2x leverage)
+}
+
+// Perks shared by every non-subscriber; subscriber tiers override these.
+const NON_SUBSCRIBER_PERKS = {
+  shopDiscount: 0,
+  maxStreakFreezes: 1, // flagged/blocked baseline ('free' overrides to 2 below)
+  badgeAnimation: false,
+  freeLoanRate: 0.01, // 1%
+  marginLoanAccess: false,
+  maxLoanNetWorthPercent: 1.0, // 100% = 2x leverage (if they had access)
+}
+
+export const TIER_BENEFITS: Record<EffectiveTier, TierBenefits> = {
+  // Admin-flagged users (bonusEligibility = 'requires_verification'): earn ZERO
+  // on the farmable bonuses (quest/streak/referral) until they verify. The
+  // EXCEPTION is the unique-trader bonus, which still pays in full: it rewards a
+  // creator for attracting *real* unique traders (who already passed bot/API/
+  // redemption gates), so the abuse vector is narrow even for a flagged account.
+  restricted: {
+    ...NON_SUBSCRIBER_PERKS,
+    questMultiplier: 0,
+    streakMultiplier: 0,
+    referralMultiplier: 0,
+    uniqueTraderMultiplier: 1,
+  },
+  // Bonus-blocked users (bonusEligibility = 'ineligible' — set by super-ban
+  // or an admin) earn a reduced 0.2x rather than zero.
+  reduced: {
+    ...NON_SUBSCRIBER_PERKS,
+    questMultiplier: 0.2,
+    streakMultiplier: 0.2,
+    referralMultiplier: 0.2,
+    // Half the unique-trader bonus instead of 0.2x: the bonus is the
+    // creator's payoff for attracting *real* unique users — those users
+    // already passed bot/API/redemption gates, so the abuse vector is
+    // narrower than self-driven streak/quest farming.
+    uniqueTraderMultiplier: 0.5,
+  },
+  // Every account in good standing, verified or not.
+  free: {
+    ...NON_SUBSCRIBER_PERKS,
+    questMultiplier: 1,
+    streakMultiplier: 1,
+    referralMultiplier: 1,
+    uniqueTraderMultiplier: 1,
+    maxStreakFreezes: 2,
+  },
   basic: {
     questMultiplier: 1.5,
+    streakMultiplier: 1.5, // mirrors quest
     referralMultiplier: 1,
+    uniqueTraderMultiplier: 1, // unique-trader doesn't scale with subscription
     shopDiscount: 0,
-    maxStreakFreezes: 2, // +1 over non-supporter
+    maxStreakFreezes: 3, // Plus
     badgeAnimation: false,
     freeLoanRate: 0.01, // 1% (same as free users)
     marginLoanAccess: true,
@@ -98,9 +192,11 @@ export const SUPPORTER_BENEFITS: Record<
   },
   plus: {
     questMultiplier: 2,
+    streakMultiplier: 2,
     referralMultiplier: 1.5,
+    uniqueTraderMultiplier: 1,
     shopDiscount: 0.05,
-    maxStreakFreezes: 3, // +2 over non-supporter
+    maxStreakFreezes: 5, // Pro
     badgeAnimation: false,
     freeLoanRate: 0.02, // 2%
     marginLoanAccess: true,
@@ -108,14 +204,25 @@ export const SUPPORTER_BENEFITS: Record<
   },
   premium: {
     questMultiplier: 3,
+    streakMultiplier: 3,
     referralMultiplier: 2,
+    uniqueTraderMultiplier: 1,
     shopDiscount: 0.1,
-    maxStreakFreezes: 10, // +9 over non-supporter
+    maxStreakFreezes: 10, // Premium
     badgeAnimation: true,
     freeLoanRate: 0.03, // 3%
     marginLoanAccess: true,
     maxLoanNetWorthPercent: 3.0, // 300% = 4x leverage
   },
+}
+
+// Subscriber subset of TIER_BENEFITS. Kept as a named export because lots of
+// UI / backend code reads it directly; derived so it can't drift from the
+// source above.
+export const SUPPORTER_BENEFITS: Record<SupporterTier, TierBenefits> = {
+  basic: TIER_BENEFITS.basic,
+  plus: TIER_BENEFITS.plus,
+  premium: TIER_BENEFITS.premium,
 }
 
 // ============================================
@@ -153,28 +260,18 @@ export function getUserSupporterTier(
   return null
 }
 
-// Get specific benefit value for user
-export function getBenefit<K extends keyof (typeof SUPPORTER_BENEFITS)['basic']>(
+// Get specific benefit value for a user. Subscription-only / standing-
+// agnostic: non-subscribers get the 'free' baseline. For standing-aware bonus
+// multipliers (flagged accounts earn less) use getEffectiveBonusMultiplier.
+export function getBenefit<K extends keyof TierBenefits>(
   entitlements: UserEntitlement[] | undefined,
   benefit: K,
-  defaultValue?: (typeof SUPPORTER_BENEFITS)['basic'][K]
-): (typeof SUPPORTER_BENEFITS)['basic'][K] {
+  defaultValue?: TierBenefits[K]
+): TierBenefits[K] {
   const tier = getUserSupporterTier(entitlements)
   if (!tier) {
-    // Return default value or a sensible default
     if (defaultValue !== undefined) return defaultValue
-    // Type-safe defaults based on benefit type (non-supporter defaults)
-    const defaults: (typeof SUPPORTER_BENEFITS)['basic'] = {
-      questMultiplier: 1,
-      referralMultiplier: 1,
-      shopDiscount: 0,
-      maxStreakFreezes: 1, // Non-supporters can only store 1
-      badgeAnimation: false,
-      freeLoanRate: 0.01, // Free users get 1%
-      marginLoanAccess: false,
-      maxLoanNetWorthPercent: 1.0, // Non-supporters: 100% = 2x leverage (if they had access)
-    }
-    return defaults[benefit]
+    return TIER_BENEFITS.free[benefit]
   }
   return SUPPORTER_BENEFITS[tier][benefit]
 }
@@ -242,12 +339,73 @@ export function getTierInfo(tier: SupporterTier) {
 // All tiers in order (for iteration)
 export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 
-// Get max streak freezes for a user based on their tier
-// Non-supporters: 1, Plus: 2, Pro: 3, Premium: 5
-export function getMaxStreakFreezes(
+// Resolve a user's effective tier from their subscription + account standing.
+// Pure: callers pass in the bits we need so this file doesn't need to import User.
+export function resolveEffectiveTier(args: {
   entitlements: UserEntitlement[] | undefined
+  // Accepts the full User.bonusEligibility union (unless they have a
+  // subscription, which always wins). Only the two explicit deny states drop
+  // below 'free': 'requires_verification' (admin-flagged) maps to 'restricted'
+  // and earns ZERO bonuses; 'ineligible' (bonus-blocked) maps to 'reduced'
+  // (0.2x). Everything else — including undefined (never verified) — is 'free'.
+  bonusEligibility:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+    | 'requires_verification'
+    | undefined
+}): EffectiveTier {
+  const subTier = getUserSupporterTier(args.entitlements)
+  if (subTier) return subTier
+  if (args.bonusEligibility === 'requires_verification') return 'restricted'
+  if (args.bonusEligibility === 'ineligible') return 'reduced'
+  return 'free'
+}
+
+export function getEffectiveBonusMultiplier(
+  tier: EffectiveTier,
+  kind: 'quest' | 'streak' | 'referral' | 'uniqueTrader'
 ): number {
-  return getBenefit(entitlements, 'maxStreakFreezes')
+  const b = TIER_BENEFITS[tier]
+  if (kind === 'quest') return b.questMultiplier
+  if (kind === 'streak') return b.streakMultiplier
+  if (kind === 'uniqueTrader') return b.uniqueTraderMultiplier
+  return b.referralMultiplier
+}
+
+// Round a tier-scaled bonus to the nearest 0.01 mana. Multipliers can be
+// fractional (e.g. 0.2x, 0.5x, 1.5x), so flooring would silently round small
+// bonuses down to zero (e.g. a future M$3 base × 0.2 = M$0.6 → floor 0). Use
+// this everywhere a bonus is multiplied by an effective-tier multiplier.
+export function roundTierBonus(amount: number): number {
+  return Math.round(amount * 100) / 100
+}
+
+// Display labels for the membership page tier column headers and inline upsells.
+export const EFFECTIVE_TIER_LABELS: Record<EffectiveTier, string> = {
+  restricted: 'Flagged',
+  reduced: 'Reduced',
+  free: 'Free',
+  basic: SUPPORTER_TIERS.basic.name, // 'Plus'
+  plus: SUPPORTER_TIERS.plus.name, // 'Pro'
+  premium: SUPPORTER_TIERS.premium.name, // 'Premium'
+}
+
+// Get max streak freezes for a user based on their effective tier.
+// Flagged/blocked: 1, Free: 2, Plus: 3, Pro: 5, Premium: 10.
+// Pass bonusEligibility so flagged/blocked accounts get their lower cap.
+export function getMaxStreakFreezes(
+  entitlements: UserEntitlement[] | undefined,
+  bonusEligibility?:
+    | 'verified'
+    | 'grandfathered'
+    | 'eligible'
+    | 'ineligible'
+    | 'requires_verification'
+): number {
+  const tier = resolveEffectiveTier({ entitlements, bonusEligibility })
+  return TIER_BENEFITS[tier].maxStreakFreezes
 }
 
 // Get free loan rate for a user based on their tier
@@ -321,7 +479,7 @@ export const BENEFIT_DEFINITIONS = [
     description: 'How many streak freezes you can hold',
     getValueForTier: (tier: SupporterTier) =>
       `${SUPPORTER_BENEFITS[tier].maxStreakFreezes}`,
-    baseValue: '1',
+    baseValue: `${TIER_BENEFITS.free.maxStreakFreezes}`,
   },
   {
     id: 'freeLoan',

@@ -2,7 +2,6 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
-import { STARTING_BALANCE } from 'common/economy'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Group } from 'common/group'
 import { convertGroup } from 'common/supabase/groups'
@@ -15,7 +14,6 @@ import { User } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { formatMoney } from 'common/util/format'
 import { randomString } from 'common/util/random'
 import { removeEmojis } from 'common/util/string'
 import { capitalize, intersection, orderBy, uniq, uniqBy } from 'lodash'
@@ -27,6 +25,10 @@ import { api, followTopic, followUser, updateUser } from 'web/lib/api/api'
 import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
+import {
+  markWelcomeFinished,
+  registerWelcome,
+} from 'web/lib/util/signed-out-bet'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -45,6 +47,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [page, setPage] = useState(0)
 
   const shouldShowWelcomeModal = user?.shouldShowWelcome
+
+  // A bet waiting to reopen after sign-in holds off until these steps end.
+  useEffect(() => registerWelcome(), [])
 
   const handleSetPage = (page: number) => {
     if (page === 0) {
@@ -89,8 +94,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
         goBack={() => handleSetPage(page - 1)}
       />
     ),
-    // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
+  // Pages 0, 1, 2 show bottom buttons; page 3 (TopicsPage) has its own
   const showBottomButtons = page < 3
 
   const getTrendingAndUserCategories = async (userId: string) => {
@@ -147,16 +152,21 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       getTrendingAndUserCategories(user.id)
   }, [user?.id, shouldShowWelcomeModal])
 
+  async function finishOnboarding() {
+    if (user) await api('me/update', { shouldShowWelcome: false })
+    track('welcome screen: complete')
+    setOpen(false)
+
+    if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
+      // About to reload, so there is nothing to tell this page.
+      window.location.reload() // reload to ensure personalized feed
+    } else markWelcomeFinished(user?.id)
+  }
+
   async function increasePage() {
     if (page < availablePages.length - 1) handleSetPage(page + 1)
     else {
-      if (user) await api('me/update', { shouldShowWelcome: false })
-      track('welcome screen: complete')
-      setOpen(false)
-
-      if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
-        window.location.reload() // reload to ensure personalized feed
-      }
+      await finishOnboarding()
     }
   }
 
@@ -220,7 +230,8 @@ function WhatIsManifoldPage() {
         Welcome to Manifold!
       </div>
       <div className="mb-4 text-lg">
-        Manifold is a play money prediction market platform.
+        Manifold is a play money prediction market platform where you can win
+        real cash prizes.
       </div>
       <div className="mb-4 text-lg">
         Bet on politics, tech, sports, and more. Your {TRADE_TERM}s contribute
@@ -292,9 +303,7 @@ function PredictionMarketPage() {
         How it works
       </div>
       <div className="mt-2 text-lg">
-        We've sent you{' '}
-        <strong className="text-xl">{formatMoney(STARTING_BALANCE)}</strong> in
-        play money. {capitalize(TRADE_TERM)} on the answer you think is right.
+        {capitalize(TRADE_TERM)} on the answer you think is right.
       </div>
       <div className="mt-2 text-lg">
         Research shows wagering currency leads to more accurate predictions than

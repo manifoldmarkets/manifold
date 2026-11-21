@@ -1,3 +1,20 @@
+import {
+  socialPostDraftSchema,
+  socialPostEditSchema,
+  hasSocialPostContent,
+  socialPostSourceSchema,
+  socialCursorSchema,
+  SocialPost,
+  SocialPostPage,
+  SocialPostDetail,
+  SocialLikerPage,
+} from '../social-post'
+import { PerpOrder } from '../perps/orders'
+import { PerpSuggestion } from '../perps/suggestion'
+import { MNX_LINK_LOCATIONS } from 'common/perps/mnx-cta'
+import { MnxDashboard, perpConfigFields } from 'common/perps/management'
+import { randomStringRegex } from 'common/util/random'
+import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
@@ -10,7 +27,12 @@ import {
   PostComment,
   type ContractComment,
 } from 'common/comment'
-import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
+import {
+  AIGeneratedMarket,
+  Contract,
+  CREATEABLE_OUTCOME_TYPES,
+  MarketContract,
+} from 'common/contract'
 import { Dashboard } from 'common/dashboard'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -22,27 +44,55 @@ import {
   SearchGroupShape,
   Topic,
 } from 'common/group'
+import { MARKET_LINK_RELATIONS, MarketLinks } from 'common/market-links'
+import {
+  JOB_INTERESTS,
+  JOB_REGIONS,
+  JOB_SKILLS,
+  JobSeekerInterest,
+} from 'common/job-seeker'
 import { League } from 'common/leagues'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
 import { Headline } from 'common/news'
 import { PERIODS } from 'common/period'
+import type { PerpTradeActivity } from 'common/perps/activity'
+import { PerpCreatorAccount } from 'common/perps/creator-accounts'
+import { PerpQuote, perpQuoteSchema } from 'common/perps/quote'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
 import { Repost } from 'common/repost'
 import { ManaSupply } from 'common/stats'
+import { SportsMarket } from 'common/sports'
+import {
+  SPORT_KEY_RE,
+  SportInfo,
+  SportsScheduleResponse,
+  SportsSubtopic,
+} from 'common/sports-schedule'
+import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { ElectionLeaderboards } from 'common/election-leaderboards'
+import { CompetitionSwitchState } from 'common/sports-calendar'
+import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
 import { z } from 'zod'
 import { ModReport } from '../mod-report'
 import { PrivateUser, User, UserBan } from '../user'
-import { searchProps } from './market-search-types'
+import {
+  FIRESTORE_DOC_REF_ID_REGEX,
+  type FullMarketSearchResult,
+  searchProps,
+} from './market-search-types'
 import {
   FullMarket,
+  closePerpPositionSchema,
   createMarketProps,
+  createPerpSchema,
+  placePerpTradeSchema,
   resolveMarketProps,
   updateMarketProps,
   type LiteMarket,
@@ -50,6 +100,7 @@ import {
 import { DisplayUser, FullUser } from './user-types'
 
 import { ContractMetric } from 'common/contract-metric'
+import { PersonalizedManaOfferSummary } from 'common/personalized-mana-offer'
 import {
   CheckoutSession,
   GIDXDocument,
@@ -72,11 +123,15 @@ import { RanksType } from 'common/achievements'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ShopItem } from 'common/shop/items'
-import { UserEntitlement } from 'common/shop/types'
+import { UserEntitlement, ShopOrder } from 'common/shop/types'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
-import { YEAR_MS } from 'common/util/time'
+import {
+  MarketProbsHistory,
+  PROBS_HISTORY_MIN_STEP_MS,
+} from 'common/market-probs-history'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
 import {
   MAX_WATCHED_MARKETS,
   WATCHED_MARKETS_PAGE_SIZE,
@@ -154,6 +209,9 @@ export const API = (_apiTypeCheck = {
       firebaseEmail?: string
       initialDeviceToken?: string
       initialIpAddress?: string
+      // Admin-only audit note for flagged users — served only through this
+      // admin-gated endpoint, never the public User surface.
+      verificationFlagReason?: string
     },
   },
   'admin-delete-user': {
@@ -166,6 +224,75 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+  'admin-set-bonus-eligibility': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        bonusEligibility: z
+          .enum(['verified', 'grandfathered', 'eligible', 'ineligible'])
+          .nullable(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'admin-set-prize-eligibility': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        prizeEligibility: z.enum(['eligible', 'ineligible']).nullable(),
+        // When true AND prizeEligibility is 'ineligible', void the user's
+        // outstanding entries in unresolved drawings and refund the mana
+        // they paid. Use for under-18 cases where the buyer is owed their
+        // money back, or confirmed fraud where the pool should be cleaned.
+        voidOutstandingEntries: z.boolean().optional(),
+        // Optional free-text reason stamped onto each voided entry row
+        // (sweepstakes_tickets.voided_reason) for audit. Surfaced in admin
+        // UI only.
+        reason: z.string().max(500).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      voidedEntryCount: number
+      refundedManaTotal: number
+    },
+  },
+  'admin-flag-for-verification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        // true = flag (bonusEligibility = 'requires_verification' + reason).
+        // false = clear (restore the pre-flag bonus state, else revert to
+        // undefined; clears the reason either way).
+        flag: z.boolean(),
+        // Optional free-text note shown to other admins in the user-info
+        // page. Examples: "suspected alt of @other-user", "fraud signal from
+        // signup_blocklist", "manual review requested after dispute".
+        reason: z.string().max(500).optional(),
+      })
+      .strict(),
+    // bonusEligibility = the resulting state ('requires_verification' on flag;
+    // the restored prior value or undefined on clear) so the UI can update
+    // optimistically without guessing.
+    returns: {} as {
+      success: boolean
+      bonusEligibility?:
+        | 'verified'
+        | 'grandfathered'
+        | 'eligible'
+        | 'ineligible'
+        | 'requires_verification'
+    },
   },
   'admin-search-users-by-email': {
     method: 'GET',
@@ -488,6 +615,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Apply share identities to collapse mixed YES/NO positions on a sum-to-one
+  // multi-choice market into all-YES (with at least one zero) and redeem the
+  // minimum across outcomes as cash. Pure accounting — no AMM, no fees.
+  'market/:contractId/rebalance': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      cashRedeemed: number
+      minShares: number
+      betCount: number
+      loanPaid: number
+    },
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+  },
   'get-user-limit-orders-with-contracts': {
     method: 'GET',
     visibility: 'undocumented',
@@ -550,6 +696,7 @@ export const API = (_apiTypeCheck = {
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
+        excludeApi: coerceBoolean.optional(),
         commentRepliesOnly: coerceBoolean.optional(),
         count: coerceBoolean.optional(),
         points: coerceBoolean.optional(),
@@ -766,6 +913,30 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // Each market's probability every `step` ms from `start` to now, rebuilt
+  // from bets: the election map's rewind. `start` sits on the step grid so
+  // viewers share cached responses.
+  'market-probs-history': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=60, stale-while-revalidate=60',
+    returns: {} as MarketProbsHistory,
+    props: z
+      .object({
+        ids: z.array(z.string()).min(1).max(100),
+        start: z.coerce.number().int(),
+        step: z.coerce
+          .number()
+          .int()
+          .gte(PROBS_HISTORY_MIN_STEP_MS)
+          .lte(DAY_MS),
+      })
+      .strict()
+      .refine((p) => p.start % p.step === 0, {
+        message: 'start must be a multiple of step',
+      }),
+  },
   'markets-by-ids': {
     method: 'GET',
     visibility: 'undocumented',
@@ -837,6 +1008,10 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         amount: z.number().gt(0).finite(),
+        // Subsidize a SINGLE answer (its own binary CPMM) instead of the whole market. Omit for
+        // the whole-market add. The subsidy lands in that answer's subsidyPool and the per-answer
+        // drizzle deepens it losslessly (float-p for cpmm-multi-2) — see add-liquidity.ts.
+        answerId: z.string().optional(),
       })
       .strict(),
   },
@@ -914,13 +1089,17 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ contractId: z.string() }).strict(),
+    props: z
+      .object({ contractId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   'market/:contractId/unblock': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ contractId: z.string() }).strict(),
+    props: z
+      .object({ contractId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   unresolve: {
     method: 'POST',
@@ -931,6 +1110,586 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().max(MAX_ANSWER_LENGTH),
         answerId: z.string().max(MAX_ANSWER_LENGTH).optional(),
+      })
+      .strict(),
+  },
+  'create-perp': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as LiteMarket,
+    props: createPerpSchema,
+  },
+  'internal-perp-order-effects': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { processed: number },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        orderIds: z.array(z.string().min(1)).max(25),
+      })
+      .strict(),
+  },
+  'get-perp-order': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder | null },
+    props: z.object({ contractId: z.string(), orderId: z.string().optional() }),
+    cache: 'no-store',
+  },
+  'place-perp-trade': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder },
+    props: placePerpTradeSchema,
+  },
+  'close-perp-position': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { order: PerpOrder },
+    props: closePerpPositionSchema,
+  },
+  // The open-weight index halts on models it cannot classify. These two
+  // endpoints are how that gets cleared without a deploy: the queue of models
+  // the nightly watcher could not confirm, and the verdict on one.
+  'get-model-classifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      pending: {
+        permaslug: string
+        openRouterName: string | null
+        huggingFaceId: string | null
+        discoveredVia: string | null
+        firstSeen: number
+        ageMs: number
+        /** Null until the model actually enters the ranked window. */
+        firstRankedAt: number | null
+        rankedAgeMs: number | null
+        /** Past the window: the index is already halting on this one. */
+        graceExpired: boolean
+        /** The research agent's recommendation, if it ran. Never auto-applied. */
+        agentRecommendation: string | null
+        agentReasoning: string | null
+        /**
+         * The tool calls the recommendation rests on, in order. A closed
+         * verdict cannot be machine-checked, so this is what the operator
+         * actually adjudicates against — the summary alone is not evidence.
+         */
+        agentSearches: {
+          tool: string
+          input: string | null
+          result: string
+        }[]
+        /**
+         * A repo the agent proposed and the live HuggingFace API confirmed.
+         * Never applied automatically — verification and a name match cannot
+         * establish that the repo is THIS model's — but prefilled so the
+         * operator confirms rather than retypes.
+         */
+        agentProposedWeights: string | null
+        /** Weight files the live API reported for that repo, when known. */
+        agentWeightFileCount: number | null
+      }[]
+      recent: {
+        permaslug: string
+        open: boolean
+        weights: string | null
+        source: string
+        classifiedAt: number | null
+        classifiedBy: string | null
+      }[]
+      seedVersion: string
+      graceWindowMs: number
+    },
+    props: z.object({}).strict(),
+  },
+  'set-model-classification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true; permaslug: string; open: boolean },
+    props: z
+      .object({
+        permaslug: z.string().min(1),
+        open: z.boolean(),
+        // The HuggingFace repo proving the weights are downloadable.
+        weights: z.string().min(1).optional(),
+      })
+      .strict()
+      // Same invariant the seed list's test and the table's check constraint
+      // enforce: an `open` verdict cites its evidence or it does not land.
+      // Rejecting here means the operator finds out at the form, not from a
+      // constraint violation.
+      .refine((p) => !p.open || !!p.weights, {
+        message: 'An open classification must cite a public weights repo',
+      }),
+  },
+  // Runtime maintenance for the Chinese-lab OpenRouter index. Ordinary
+  // publishers are classified once at author scope; anonymous/shared
+  // namespaces can instead receive an exact-model verdict.
+  'get-openrouter-lab-classifications': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      pending: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        discoveredVia: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        firstSeen: number
+        firstRankedAt: number | null
+      }[]
+      decided: {
+        subjectType: 'author' | 'model'
+        subjectSlug: string
+        isChinese: boolean
+        evidence: string
+        sourceUrl: string | null
+        exampleModels: string[]
+        exampleNames: string[]
+        source: 'auto' | 'admin'
+        classifiedAt: number
+        classifiedBy: string | null
+      }[]
+      seedVersion: string
+    },
+    props: z.object({}).strict(),
+  },
+  'set-openrouter-lab-classification': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      success: true
+      subjectType: 'author' | 'model'
+      subjectSlug: string
+      isChinese: boolean
+    },
+    props: z
+      .object({
+        subjectType: z.enum(['author', 'model']),
+        subjectSlug: z.string().trim().min(1).max(300),
+        isChinese: z.boolean(),
+        evidence: z.string().trim().min(1).max(2_000),
+        sourceUrl: z
+          .string()
+          .trim()
+          .url()
+          .max(2_000)
+          .refine((url) => /^https?:\/\//i.test(url), {
+            message: 'Evidence URL must use http or https',
+          }),
+      })
+      .strict(),
+  },
+  // Admin / MNX-owner live risk tuning; undocumented deliberately — internal
+  // operator tooling, not part of the public perp API surface.
+  'update-perp-config': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      success: true
+      maxLeverage: number
+      maxFundingRate: number
+      fundingSensitivity: number
+      takerFeeBps: number
+      takerFeeImpact: number
+      // Configured API-channel base rate, or null when API trades pay the
+      // same base as the web. The engine applies max(takerFeeBps, this).
+      takerFeeApiBps: number | null
+      // What an API-key open is actually charged after that max() — equal to
+      // takerFeeBps whenever the configured API rate sits at or below the
+      // base, which makes such a rate a no-op rather than a reduction.
+      effectiveTakerFeeApiBps: number
+      maxOraclePriceAgeMs: number
+    },
+    props: perpConfigFields
+      .extend({
+        contractId: z.string().min(1),
+        // Optimistic check of the values the operator reviewed. Trades do not
+        // change these, so normal activity does not invalidate the preview.
+        expectedConfig: perpConfigFields.optional(),
+        expectedManagerId: z.string().min(1).optional(),
+      })
+      .strict()
+      .refine(
+        (p) =>
+          Object.keys(perpConfigFields.shape).some(
+            (key) => p[key as keyof typeof perpConfigFields.shape] !== undefined
+          ),
+        { message: 'Provide at least one field to update' }
+      ),
+  },
+  'get-mnx-dashboard': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as MnxDashboard,
+    props: z.object({}).strict(),
+  },
+  // Defaults to the signed-in manager; the MNX dashboard uses MNX funds.
+  // For 'both', amount is added to EACH side.
+  // A request key makes retrying a dashboard operation safe after a timeout.
+  'add-perp-subsidy': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true; poolLong: number; poolShort: number },
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        side: z.enum(['long', 'short', 'both']),
+        fundingAccount: z.enum(['mnx']).optional(),
+        expectedManagerId: z.string().min(1).optional(),
+        amount: z.number().finite().gt(0).lte(1_000_000),
+        idempotencyKey: z
+          .string()
+          .regex(randomStringRegex)
+          .length(10)
+          .optional(),
+      })
+      .strict(),
+  },
+  'get-oracle-price': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      latest: {
+        feedId: string
+        price: number
+        ts: number
+        sourceTs?: number
+      } | null
+    },
+    props: z.object({ feedId: z.string().min(1) }).strict(),
+  },
+  'get-oracle-price-series': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as { ts: number; price: number }[],
+    props: z
+      .object({
+        feedId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        // Exclusive upper bound (ms). `limit` always returns the NEWEST points
+        // in the window, so `before` is what makes the series pageable: pass
+        // the first ts of the previous response to walk backwards to the start
+        // of the feed. Without it, `since` alone can only shrink a window that
+        // is already anchored to now.
+        before: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
+        // Server-side downsampling: return the last point of each
+        // `bucketSeconds` bucket instead of raw rows. A 15s feed emits ~5k
+        // points/day, so week+ windows must bucket or the `limit` cap turns
+        // every timeframe into "the last two days".
+        bucketSeconds: z.coerce.number().int().positive().max(86400).optional(),
+      })
+      .strict(),
+  },
+  'get-known-oracle-feeds': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    // Registry metadata lets the admin page omit runtime-only feeds from its
+    // picker. null updatePeriodMs means the feed has price rows but no
+    // OracleFeedDef; false marketCreationEnabled means either unregistered or
+    // deliberately runtime-only (create-perp rejects both).
+    // The admin create page needs it to convert an annual max funding rate
+    // into the per-PERIOD fraction the engine stores — assuming hourly on a
+    // daily feed would understate the cap 24x.
+    returns: [] as {
+      id: string
+      // Capability probe for scripts that explicitly set the API-channel fee.
+      supportsApiTakerFee: boolean
+      updatePeriodMs: number | null
+      marketCreationEnabled: boolean
+      description: string | null
+      // Canonical ticker (PERP_FEED_TICKERS); null for a feed nobody has
+      // named, where the form may choose one.
+      ticker: string | null
+      launchLatencyRisk: string | null
+      launchRecommendation: {
+        question: string
+        maxLeverage: number
+        annualMaxFundingRate: number
+        fundingSensitivity: number
+        maxOraclePriceAgeMs: number
+        subsidyLong: number
+        subsidyShort: number
+        requiredTopicNames: string[]
+        creatorAuthorized: boolean
+      } | null
+      // Whether the caller may create on this feed at all: only the official
+      // Manifold account can, because it either pays the backing itself or
+      // acts for a partner account (see createPerpSchema.creatorAccount).
+      callerAuthorized: boolean
+      // Every selectable owner, in display order. `allowed` is feed policy
+      // (a partner owns only its own feeds); `unavailableReason` is set when
+      // the account cannot be resolved in this environment.
+      creatorAccounts: {
+        account: PerpCreatorAccount
+        label: string
+        allowed: boolean
+        username: string | null
+        unavailableReason: string | null
+      }[]
+    }[],
+    props: z.object({}).strict(),
+  },
+  'internal-write-oracle-price': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        feedId: z.string().min(1).max(200),
+        ts: z.number().int().positive(),
+        // Provider-declared source data timestamp. Required by the writer for
+        // feeds whose attribution terms include an as-of time.
+        sourceTs: z.number().int().positive().optional(),
+        // The engine divides by entry prices and treats <= 0 as invalid;
+        // reject junk at the door rather than poisoning the feed.
+        price: z.number().finite().positive(),
+      })
+      .strict(),
+  },
+  'get-perp-quote': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // Never edge-cached. This is the price a trader sizes and closes against;
+    // DEFAULT_CACHE_STRATEGY's max-age=5 + stale-while-revalidate=10 can serve
+    // a body 15s old, which at 100x leverage is a materially different market.
+    // See get-perp-positions for the same reasoning applied to positions.
+    cache: 'no-cache',
+    returns: {} as PerpQuote,
+    props: z.object({ contractId: z.string().min(1) }).strict(),
+  },
+  // Scheduler -> API hop that turns an applied oracle tick into a websocket
+  // broadcast. Not called by clients. See perps/publish-perp-quote.ts for why
+  // the scheduler cannot broadcast directly.
+  //
+  // Must stay off the read-replica allowlist in url-map-config.yaml: only the
+  // writer process runs the websocket server, so routing this to a replica
+  // would drop every push without erroring.
+  'internal-perp-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        quote: perpQuoteSchema,
+      })
+      .strict(),
+  },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-sports-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        contractId: z.string().min(1),
+        score: z.object({
+          sportsHomeScore: z.number().finite().nonnegative().nullable(),
+          sportsAwayScore: z.number().finite().nonnegative().nullable(),
+          sportsLiveStatus: z.enum([
+            'IN_PLAY',
+            'PAUSED',
+            'FINISHED',
+            'AWARDED',
+          ]),
+          sportsLiveMinute: z.string().nullable(),
+          sportsLiveUpdatedTime: z.number().finite(),
+          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
+        }),
+      })
+      .strict(),
+  },
+  'get-perp-positions': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // NOT the default 5s+swr cache: the API sits behind an edge cache that
+    // serves stale-while-revalidate regardless of client no-cache, so a
+    // trader's own just-placed position can vanish from refetches for ~15s.
+    // Positions are correctness-critical right after a trade.
+    cache: 'no-cache',
+    returns: [] as {
+      contractId: string
+      userId: string
+      direction: 'long' | 'short'
+      size: number
+      costBasis: number
+      originalCostBasis: number
+      takerFeeCostBasis: number
+      entryPrice: number
+      leverage: number
+      liquidationPrice: number
+      openedTime: number
+      updatedTime: number
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        // One of contractId / userId is required: a market's book, a user's
+        // book across every perp (the /perps hub polls that in one call), or
+        // one user in one market.
+        contractId: z.string().min(1).optional(),
+        userId: z.string().min(1).optional(),
+      })
+      .strict()
+      .refine((p) => p.contractId || p.userId, {
+        message: 'contractId or userId is required',
+      }),
+  },
+  'get-perp-suggestions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Signed-in viewers get their own hasVoted in the same response.
+    preferAuth: true,
+    cache: 'no-store',
+    returns: [] as PerpSuggestion[],
+    props: z
+      .object({
+        limit: z.coerce.number().int().positive().max(100).optional(),
+        // Mods and admins only — silently ignored for everyone else. Returns
+        // moderated rows alongside the live ones, each tagged with `hidden`.
+        includeHidden: coerceBoolean.optional(),
+      })
+      .strict(),
+  },
+  'create-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as PerpSuggestion,
+    props: z
+      .object({
+        name: z.string().min(1).max(200),
+        dataSource: z.string().max(1000).optional(),
+      })
+      .strict(),
+  },
+  'vote-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { votes: number },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        remove: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  // Moderation: mods and admins drop a suggestion out of the public list.
+  // Reversible — the row is flagged, never deleted, so the votes on it
+  // survive an unhide.
+  'hide-perp-suggestion': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { hidden: boolean },
+    props: z
+      .object({
+        suggestionId: z.number().int().positive(),
+        // Omitted means hide; pass false to restore.
+        hide: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'get-perp-events': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // See get-perp-positions: edge-cache staleness makes fresh closes /
+    // liquidations lag their tombstones. Funding events and oracle series
+    // keep the default cache — append-only data where 5-15s is harmless.
+    cache: 'no-cache',
+    returns: [] as {
+      id: number
+      contractId: string
+      ts: number
+      userId: string | null
+      direction: 'long' | 'short' | null
+      eventType: 'open' | 'add' | 'close' | 'liquidation' | 'adl' | 'funding'
+      oraclePrice: number
+      sizeDelta: number
+      costBasisDelta: number
+      originalCostBasisDelta: number
+      leverage: number | null
+      payout: number | null
+      pnl: number | null
+      adlFactor: number | null
+      /** Closes only: the fraction of the position this event took. Null on
+       * closes written before partial closes existed, which were whole. */
+      fraction: number | null
+      isApi: boolean
+      userName: string | null
+      username: string | null
+      avatarUrl: string | null
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1).optional(),
+        // A merged, newest-first tape across several markets in ONE query —
+        // the /perps hub's activity feed. Exactly one of contractId /
+        // contractIds.
+        contractIds: z.array(z.string().min(1)).min(1).max(50).optional(),
+        userId: z.string().min(1).optional(),
+        beforeId: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(200).optional(),
+        // Drops trades placed with an API key. Liquidations and ADL stay:
+        // they aren't anyone's order. Events written before the flag shipped
+        // carry no marker and read as manual.
+        excludeApi: coerceBoolean.optional(),
+      })
+      .strict()
+      .refine((p) => !!p.contractId !== !!p.contractIds, {
+        message: 'Exactly one of contractId or contractIds is required',
+      }),
+  },
+  'get-perp-funding-events': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as {
+      ts: number
+      fundingRate: number
+      oraclePrice: number
+      numLiquidations: number
+      adlFactorLong: number
+      adlFactorShort: number
+    }[],
+    props: z
+      .object({
+        contractId: z.string().min(1),
+        since: z.coerce.number().int().optional(),
+        limit: z.coerce.number().int().positive().max(5000).optional(),
       })
       .strict(),
   },
@@ -976,7 +1735,11 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // Both search handlers accept optional auth and use it for visibility,
+    // blocks, and personalized ranking. The edge cache does not vary on the
+    // Authorization header, so public caching can serve one user's result to
+    // another user (or to an anonymous caller).
+    cache: 'private, no-store',
     returns: [] as LiteMarket[],
     props: searchProps,
   },
@@ -985,8 +1748,8 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     preferAuth: true,
-    cache: DEFAULT_CACHE_STRATEGY,
-    returns: [] as Contract[],
+    cache: 'private, no-store',
+    returns: [] as FullMarketSearchResult[],
     props: searchProps,
   },
   'recent-markets': {
@@ -1171,7 +1934,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({}),
     returns: {} as FullUser,
   },
@@ -1191,11 +1953,15 @@ export const API = (_apiTypeCheck = {
       // settings
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
+      hideApiTrades: z.boolean().optional(),
+      showOrderBook: z.boolean().optional(),
       //internal
       seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),
       hasSeenContractFollowModal: z.boolean().optional(),
       hasSeenLoanModal: z.boolean().optional(),
+      hasSeenPerpsExplainer: z.boolean().optional(),
+      lastShopVisitTime: z.number().optional(),
     }),
     returns: {} as FullUser,
   },
@@ -1230,6 +1996,7 @@ export const API = (_apiTypeCheck = {
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
         lastAppReviewTime: z.number().optional(),
+        optOutAppReviewPrompts: z.boolean().optional(),
       })
       .strict(),
   },
@@ -1294,13 +2061,17 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ id: z.string() }).strict(),
+    props: z
+      .object({ id: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   'user/by-id/:id/unblock': {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    props: z.object({ id: z.string() }).strict(),
+    props: z
+      .object({ id: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX) })
+      .strict(),
   },
   users: {
     method: 'GET',
@@ -1375,6 +2146,39 @@ export const API = (_apiTypeCheck = {
       enabled: z.boolean(),
     }),
   },
+  'set-job-interest': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        skills: z.array(z.enum(JOB_SKILLS)).max(JOB_SKILLS.length),
+        interests: z.array(z.enum(JOB_INTERESTS)).max(JOB_INTERESTS.length),
+        region: z.enum(JOB_REGIONS).nullable(),
+        openToContact: z.boolean(),
+      })
+      .strict(),
+  },
+  'get-mnx-invite-link': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        feedId: z.string(),
+        location: z.enum(MNX_LINK_LOCATIONS),
+      })
+      .strict(),
+    returns: {} as { url: string },
+  },
+  'get-job-interest': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { interest: JobSeekerInterest | null },
+  },
   headlines: {
     method: 'GET',
     visibility: 'undocumented',
@@ -1412,7 +2216,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract', 'post']),
+        contentType: z.enum(['comment', 'contract', 'post', 'social_post']),
         commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
@@ -1446,7 +2250,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'public, max-age=300, stale-while-revalidate=30',
     props: z
       .object({
         contractId: z.string(),
@@ -1464,7 +2268,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=3600, stale-while-revalidate=10',
+    cache: 'no-store',
     returns: {} as {
       groupContracts: Contract[]
     },
@@ -1490,6 +2294,16 @@ export const API = (_apiTypeCheck = {
       context: JSONContent | undefined
     },
   },
+  'set-bot-status': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+      isBot: z.boolean(),
+    }),
+    returns: {} as { success: boolean },
+  },
   'ban-user': {
     method: 'POST',
     visibility: 'undocumented',
@@ -1504,6 +2318,7 @@ export const API = (_apiTypeCheck = {
             posting: z.boolean().optional(),
             marketControl: z.boolean().optional(),
             trading: z.boolean().optional(),
+            purchase: z.boolean().optional(),
             modAlert: z.boolean().optional(), // false to clear active mod alert
           })
           .optional(),
@@ -1512,6 +2327,7 @@ export const API = (_apiTypeCheck = {
             posting: z.number().optional(),
             marketControl: z.number().optional(),
             trading: z.number().optional(),
+            purchase: z.number().optional(),
             modAlert: z.number().optional(), // mod alerts don't auto-expire, but included for type consistency
           })
           .optional(),
@@ -1553,6 +2369,18 @@ export const API = (_apiTypeCheck = {
         userId: z.string(),
       })
       .strict(),
+    returns: {} as { success: boolean; skippedMarketCleanup: boolean },
+  },
+  'admin-ip-ban-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; added: boolean; ipAddress: string },
   },
   'get-user-bans': {
     method: 'GET',
@@ -1687,31 +2515,12 @@ export const API = (_apiTypeCheck = {
       .object({
         before: z.coerce.number().optional(),
         after: z.coerce.number().default(0),
+        limit: z.coerce.number().gte(0).lte(1000).default(100),
+        offset: z.coerce.number().gte(0).default(0),
         userId: z.string(),
+        changeType: z.string().optional(),
       })
       .strict(),
-  },
-  'get-partner-stats': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success' | 'error'
-      username: string
-      numContractsCreated: number
-      numUniqueBettors: number
-      numReferrals: number
-      numReferralsWhoRetained: number
-      totalTraderIncome: number
-      totalReferralIncome: number
-      dollarsEarned: number
-    },
   },
   'record-contract-view': {
     method: 'POST',
@@ -1971,6 +2780,9 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(100).default(25),
         offset: z.coerce.number().gte(0).default(0),
         count: coerceBoolean.optional(),
+        order: z.enum(['asc', 'desc']).default('desc'),
+        cursorTime: z.string().datetime({ offset: true }).optional(),
+        cursorId: z.coerce.number().int().optional(),
       })
       .strict(),
     returns: {} as {
@@ -2021,6 +2833,9 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  // DEPRECATED: GIDX endpoints - replaced by idenfy for identity verification
+  // Use create-idenfy-session and get-idenfy-status instead
+  // Kept for: historical transaction processing, gradual migration
   'register-gidx': {
     method: 'POST',
     visibility: 'undocumented',
@@ -2253,7 +3068,7 @@ export const API = (_apiTypeCheck = {
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: LIGHT_CACHE_STRATEGY,
     authed: false,
     returns: {} as {
       maxGeneralLoan: number
@@ -2271,6 +3086,8 @@ export const API = (_apiTypeCheck = {
       // Equity-based calculation fields (equity = portfolioValue - loans)
       equity?: number
       portfolioValue?: number
+      // Perp position value left out of the equity base (display only)
+      perpValueExcluded?: number
     },
     props: z.object({
       userId: z.string(),
@@ -2279,7 +3096,7 @@ export const API = (_apiTypeCheck = {
   'get-market-loan-max': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: LIGHT_CACHE_STRATEGY,
     authed: true,
     returns: {} as {
       maxLoan: number
@@ -2316,8 +3133,8 @@ export const API = (_apiTypeCheck = {
   'get-free-loan-available': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
-    authed: true,
+    cache: LIGHT_CACHE_STRATEGY,
+    authed: false,
     returns: {} as {
       available: number
       canClaim: boolean
@@ -2340,8 +3157,10 @@ export const API = (_apiTypeCheck = {
       todayLoans: number
       // Today's claimed free loan
       todaysFreeLoan: number
+      // Perp position value left out of the equity base (display only)
+      perpValueExcluded?: number
     },
-    props: z.object({}),
+    props: z.object({ userId: z.string() }),
   },
   'claim-free-loan': {
     method: 'POST',
@@ -2582,6 +3401,14 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-browse-personalization': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as BrowsePersonalization,
+  },
   'get-unified-feed': {
     method: 'GET',
     visibility: 'undocumented',
@@ -2598,6 +3425,7 @@ export const API = (_apiTypeCheck = {
       boostedContracts: Contract[]
       // Activity data
       activityBets: Bet[]
+      activityPerpTrades: PerpTradeActivity[]
       activityComments: CommentWithTotalReplies[]
       activityNewContracts: Contract[]
       activityRelatedContracts: Contract[]
@@ -2702,7 +3530,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentIds: z.array(z.string()),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'social_post']),
       })
       .strict(),
   },
@@ -2752,6 +3580,17 @@ export const API = (_apiTypeCheck = {
         }
       ),
     returns: {} as { success: boolean; checkoutUrl?: string },
+  },
+  'remove-boost': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
   },
   'generate-ai-numeric-ranges': {
     method: 'POST',
@@ -2871,6 +3710,27 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-referral-earnings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      total: number
+      byReferredUserId: Record<
+        string,
+        {
+          amount: number
+          maxMultiplier: number
+          // Which bonus types this referrer has been paid for this referred
+          // user. 'signup' is the full bonus paid when the referral was
+          // recorded; 'first_bet'/'verify' are the legacy split; 'legacy' means
+          // a pre-split single-payment txn exists (treated as fully paid).
+          bonusTypes: ('signup' | 'first_bet' | 'verify' | 'legacy')[]
+        }
+      >
+    },
+  },
 
   'save-market-draft': {
     method: 'POST',
@@ -2882,10 +3742,19 @@ export const API = (_apiTypeCheck = {
         data: z.object({
           question: z.string(),
           description: z.any().optional(),
-          outcomeType: z.string(),
+          // The creatable types, not a free string. A draft is a market in
+          // progress, so a type create-market can never accept (PERP) has no
+          // business being saved as one — storing it produced a draft that
+          // looked creatable in the form and then failed at submit.
+          outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
           answers: z.array(z.string()).optional(),
           closeDate: z.string().optional(),
           closeHoursMinutes: z.string().optional(),
+          neverCloses: z.boolean().optional(),
+          hasManuallyEditedCloseDate: z.boolean().optional(),
+          inheritedCloseTimeFrom: z.string().optional(),
+          linkedToContractId: z.string().optional(),
+          linkRelation: z.enum(MARKET_LINK_RELATIONS).optional(),
           visibility: z.string(),
           selectedGroups: z.array(z.any()),
           savedAt: z.number(),
@@ -3245,9 +4114,107 @@ export const API = (_apiTypeCheck = {
         name: string
         avatarUrl: string
       }
-      // Provably fair fields
-      nonceHash?: string // MD5 hash of nonce, always shown when giveaway exists
-      nonce?: string // Actual nonce, only revealed AFTER winner is selected for verification
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winner is selected. Users verify by finding first block after closeTime.
+      nonce?: string
+    },
+  },
+  'get-charity-giveaway-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as {
+      giveaways: Array<{
+        giveawayNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinner: boolean
+      }>
+    },
+  },
+  'get-crypto-purchase-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      hasCryptoPurchase: boolean
+    },
+  },
+  'create-daimo-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        offerId: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      sessionId: string
+      clientSecret: string
+    },
+  },
+  'get-personalized-mana-offers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'activate-personalized-mana-offers': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'release-personalized-mana-offer-lock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ offerId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-personalized-mana-offer': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    // Global dismiss: applies to all active offers for the calling user.
+    // dismissed=false un-dismisses them (used by the "show hidden offer(s)"
+    // chip on /checkout).
+    props: z.object({ dismissed: z.boolean() }).strict(),
+    returns: {} as PersonalizedManaOfferSummary,
+  },
+  'admin-create-charity-giveaway': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizeAmountUsd: z.number(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
+    },
+  },
+  'admin-update-charity-giveaway-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        giveawayNum: z.number(),
+        prizeAmountUsd: z.number().finite().positive(),
+      })
+      .strict(),
+    returns: {} as {
+      giveawayNum: number
+      prizeAmountUsd: number
     },
   },
   'buy-charity-giveaway-tickets': {
@@ -3258,7 +4225,7 @@ export const API = (_apiTypeCheck = {
       .object({
         giveawayNum: z.number(),
         charityId: z.string(),
-        numTickets: z.number().int().positive(),
+        numTickets: z.number().positive(),
       })
       .strict(),
     returns: {} as {
@@ -3300,6 +4267,395 @@ export const API = (_apiTypeCheck = {
       ticketId: string
       charityId: string
       userId: string
+      blockHash: string
+      blockHeight: number
+    },
+  },
+  'get-sweepstakes': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sweepstakes?: {
+        sweepstakesNum: number
+        name: string
+        prizes: {
+          rank?: number
+          rankStart?: number
+          rankEnd?: number
+          amountUsdc: number
+          label: string
+        }[]
+        closeTime: number
+        winningTicketIds: string[] | null
+        createdTime: number
+        announcementSent: boolean
+      }
+      userStats: {
+        userId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+      totalManaSpent?: number
+      participantCount?: number
+      winners?: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        user: {
+          id: string
+          username: string
+          name: string
+          avatarUrl: string
+        }
+      }[]
+      // Provably fair: nonce contains the Bitcoin block hash used for winner selection
+      // Only revealed AFTER winners are selected. Users verify by finding first block after closeTime.
+      nonce?: string
+      // Free ticket status for current user
+      hasClaimedFreeTicket?: boolean
+      // Investment requirement fields (for current user)
+      userTotalManaInvested?: number
+      meetsInvestmentRequirement?: boolean
+      minManaInvested?: number
+      // Set when an admin voided this user's entries in this drawing (and
+      // refunded their mana). Lets the page explain the dropped entry count.
+      userVoidedEntries?: number
+      userVoidedManaRefunded?: number
+    },
+  },
+  'get-sweepstakes-list': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Wait for Firebase auth to settle before firing — the per-drawing
+    // userStatus icons depend on auth.uid, and without preferAuth the
+    // first call races auth-loading and comes back with everything null,
+    // which then gets cached for the rest of the session.
+    preferAuth: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      sweepstakes: Array<{
+        sweepstakesNum: number
+        name: string
+        closeTime: number
+        createdTime: number
+        hasWinners: boolean
+        totalPrizeUsd: number
+        // Per-user claim status for surfacing icons. Null when no relevant
+        // state (unauthenticated, didn't win, or rejected/opted_out).
+        userStatus: 'paid' | 'pending' | 'action-needed' | null
+      }>
+    },
+  },
+  'admin-create-sweepstakes': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        closeTime: z.number(),
+        prizes: z
+          .array(
+            z.object({
+              rank: z.number(),
+              amountUsdc: z.number(),
+              label: z.string(),
+            })
+          )
+          .min(1),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+    },
+  },
+  'check-sweepstakes-geo': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    // Don't cache — the user's IP can change between visits (VPN toggle,
+    // mobile network handoff) and an incorrect cached "allowed" would let
+    // a restricted user see the buy UI.
+    props: z.object({}).strict(),
+    returns: {} as { allowed: boolean },
+  },
+  'admin-announce-prize-drawing': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        // When true, returns the title + body that *would* be sent
+        // without actually firing notifications or flipping the
+        // announcement_sent flag. Used by the admin UI for the preview.
+        dryRun: z.boolean().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      sweepstakesNum: number
+      title: string
+      body: string
+      totalPrizeUsd: number
+      winnerCount: number
+      closeTime: number
+      alreadySent: boolean
+      sent: boolean
+    },
+  },
+  'buy-sweepstakes-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        numTickets: z.number().positive().optional(),
+        maxManaSpent: z.number().positive().optional(),
+      })
+      .strict()
+      .refine((props) => props.numTickets || props.maxManaSpent, {
+        message: 'Must provide numTickets or maxManaSpent',
+      }),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'claim-free-sweepstakes-ticket': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+    },
+  },
+  'get-sweepstakes-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sweepstakesNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        sweepstakesNum: number
+        userId: string
+        numTickets: number
+        manaSpent: number
+        isFree: boolean
+        createdTime: number
+      }[]
+    },
+  },
+  'select-sweepstakes-winners': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.number() }).strict(),
+    returns: {} as {
+      winners: {
+        rank: number
+        label: string
+        prizeUsdc: number
+        ticketId: string
+        userId: string
+      }[]
+      blockHash: string
+      blockHeight: number
+    },
+  },
+  'check-bitcoin-block': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ closeTime: z.coerce.number() }).strict(),
+    returns: {} as
+      | { available: false }
+      | {
+          available: true
+          blockHeight: number
+          blockHash: string
+          blockTimestamp: number
+        },
+  },
+  'claim-sweepstakes-prize': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        sweepstakesNum: z.number(),
+        walletAddress: z
+          .string()
+          .regex(/^0x[a-fA-F0-9]{40}$/, 'Invalid Ethereum address'),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      claimId: string
+    },
+  },
+  'get-sweepstakes-prize-claim': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number() }).strict(),
+    returns: {} as {
+      claim: {
+        id: string
+        rank: number
+        prizeAmountUsdc: number
+        // Null when admin recorded an opted_out / rejected status before
+        // the user ever submitted a wallet.
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out'
+        paymentTxnHash: string | null
+        createdTime: number
+      } | null
+      winnerInfo: {
+        rank: number
+        prizeAmountUsdc: number
+      } | null
+    },
+  },
+  'admin-get-prize-claims': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ sweepstakesNum: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      claims: Array<{
+        id: string | null
+        sweepstakesNum: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        rank: number
+        prizeAmountUsdc: number
+        walletAddress: string | null
+        paymentStatus: 'awaiting' | 'sent' | 'rejected' | 'opted_out' | null
+        paymentTxnHash: string | null
+        createdTime: number | null
+      }>
+    },
+  },
+  'admin-update-prize-payment': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    // Identify the claim by either an existing claimId (user already
+    // submitted a wallet) or by (sweepstakesNum, userId) — the latter lets
+    // admins record opted_out/rejected decisions for winners who never
+    // submitted a wallet, by upserting a row with NULL wallet_address.
+    props: z
+      .object({
+        claimId: z.string().optional(),
+        sweepstakesNum: z.number().int().optional(),
+        userId: z.string().optional(),
+        paymentStatus: z.enum(['awaiting', 'sent', 'rejected', 'opted_out']),
+        paymentTxnHash: z.string().optional(),
+      })
+      .strict()
+      .refine(
+        (v) => !!v.claimId || (v.sweepstakesNum !== undefined && !!v.userId),
+        { message: 'Provide either claimId or (sweepstakesNum, userId)' }
+      ),
+    returns: {} as { success: boolean },
+  },
+  'admin-delete-prize-claim': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ claimId: z.string() }).strict(),
+    returns: {} as { success: boolean },
+  },
+  'admin-get-mana-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      sales: Array<{
+        id: string
+        createdTime: number
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        amount: number
+        paidInCents: number | null
+        paymentType: 'stripe' | 'apple' | 'gidx' | 'crypto' | 'unknown'
+      }>
+    },
+  },
+  'admin-get-top-whale-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        userId: string
+        username: string
+        name: string
+        avatarUrl: string
+        totalPaidCents: number
+        totalMana: number
+        purchaseCount: number
+        lastPurchaseTime: number
+        byType: {
+          stripe: { paidCents: number; mana: number; count: number }
+          apple: { paidCents: number; mana: number; count: number }
+          gidx: { paidCents: number; mana: number; count: number }
+          crypto: { paidCents: number; mana: number; count: number }
+          unknown: { paidCents: number; mana: number; count: number }
+        }
+      }>
+    },
+  },
+  'admin-get-new-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ limit: z.coerce.number().optional() }).strict(),
+    returns: {} as {
+      users: Array<{
+        id: string
+        createdTime: number
+        username: string
+        name: string
+        avatarUrl: string
+        balance: number
+        isBannedFromPosting: boolean
+        referredByUserId: string | null
+        referredByUsername: string | null
+        referredByName: string | null
+        bonusEligibility:
+          | 'verified'
+          | 'grandfathered'
+          | 'eligible'
+          | 'ineligible'
+          | 'requires_verification'
+          | null
+        purchasedMana: boolean
+        email: string | null
+        ipAddress: string | null
+      }>
     },
   },
   'get-predictle-percentile': {
@@ -3383,6 +4739,34 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     returns: {} as { success: boolean; refundedAmount: number },
   },
+  'get-ticket-stock': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'public, max-age=2, stale-while-revalidate=10',
+    props: z.object({ itemId: z.string().optional() }).strict(),
+    returns: {} as { sold: number; maxStock: number; available: number },
+  },
+  'get-ticket-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ itemId: z.string().optional() }).strict(),
+    returns: {} as {
+      orders: Array<{
+        id: string
+        userId: string
+        username: string
+        displayName: string
+        email: string | null
+        itemId: string
+        priceMana: number
+        status: string
+        createdTime: number
+      }>
+      total: number
+    },
+  },
   'shop-purchase-merch': {
     method: 'POST',
     visibility: 'public',
@@ -3397,9 +4781,11 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           address2: z.string().max(200).optional(),
           city: z.string().max(100),
-          state: z.string().max(100),
-          zip: z.string().max(20),
+          state: z.string().max(100).optional(),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
+          email: z.string().email().max(254).optional(),
         }),
       })
       .strict(),
@@ -3420,8 +4806,9 @@ export const API = (_apiTypeCheck = {
           address1: z.string().max(200),
           city: z.string().max(100),
           state: z.string().max(100).optional(),
-          zip: z.string().max(20),
+          zip: z.string().max(20).optional(),
           country: z.string().regex(/^[A-Z]{2}$/),
+          taxNumber: z.string().max(50).optional(),
         }),
       })
       .strict(),
@@ -3539,6 +4926,12 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      merchSales: {
+        date: string
+        itemId: string
+        quantity: number
+        revenue: number
+      }[]
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number
@@ -3551,6 +4944,543 @@ export const API = (_apiTypeCheck = {
         premiumCount: number
         totalCount: number
       }[]
+    },
+  },
+  // iDenfy identity verification endpoints
+  'create-idenfy-session': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { redirectUrl: string; scanRef: string },
+  },
+  'get-idenfy-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as {
+      status: 'pending' | 'approved' | 'denied' | 'suspected' | null
+      verifiedTime: number | null
+    },
+  },
+  'get-idenfy-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      dailyStats: {
+        date: string
+        approvals: number
+        denials: number
+        pending: number
+        suspected: number
+      }[]
+    },
+  },
+  // Admins only: the /stats page funnels. Internal product metrics, so they
+  // are not in daily_stats or the page's static props.
+  'get-surface-funnels': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limitDays: z.coerce.number().int().min(1).max(400).default(120),
+      })
+      .strict(),
+    returns: {} as {
+      // funnels is a SurfaceFunnels value (common/src/stat-surfaces.ts);
+      // read it with parseSurfaceFunnels.
+      days: { date: string; funnels: unknown }[]
+    },
+  },
+  // Merch admin endpoints
+  'get-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limit: z.coerce.number().int().min(1).max(2000).default(25),
+        offset: z.coerce.number().int().min(0).default(0),
+        dateRange: z
+          .enum(['all', 'week', 'month', '3-months', '6-months', 'year'])
+          .default('all'),
+      })
+      .strict(),
+    returns: {} as {
+      orders: (ShopOrder & { username: string; displayName: string })[]
+      total: number
+    },
+  },
+  'get-merch-stock-status': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: {} as { outOfStockItems: string[] },
+  },
+  'toggle-merch-stock': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+      })
+      .strict(),
+    returns: {} as { itemId: string; outOfStock: boolean },
+  },
+  'cancel-merch-order': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        orderId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; refundedAmount: number },
+  },
+  'get-user-merch-orders': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { orders: ShopOrder[] },
+  },
+
+  // ─── Sports Admin ────────────────────────────────────────────────────────────
+
+  'admin-sports-fixtures': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        dateFrom: z.string(),
+        dateTo: z.string(),
+        stage: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as {
+      fixtures: Array<{
+        id: number
+        homeTeam: { name: string; tla: string; crest: string }
+        awayTeam: { name: string; tla: string; crest: string }
+        homeFlag: string
+        awayFlag: string
+        utcDate: string
+        stageCode: string
+        stageLabel: string
+        group: string | null
+        status: string
+        closeTime: number
+        liquidityTier: number
+        existingMarketId: string | null
+        sportsEventId: string
+      }>
+    },
+  },
+
+  'admin-sports-create-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        matchIds: z.array(z.number()),
+        dryRun: z.boolean(),
+        customNote: z.string().optional(),
+        dashboardUrl: z.string().optional(),
+        liquidityTierOverrides: z.record(z.string(), z.number()).optional(),
+        // Extra topic/group slugs to tag every created market with, on top of
+        // the tournament's configured groups. Unknown slugs are ignored.
+        extraGroupSlugs: z.array(z.string()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      groupRestricted: boolean
+      communityGroupId: string
+      communityGroupCreated: boolean
+      communityDashboardId: string
+      communityDashboardCreated: boolean
+      results: Array<{
+        matchId: number
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        question: string
+        marketId: string | null
+        reason: string | null
+      }>
+    },
+  },
+
+  'admin-sports-community-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+        contractId: z.string(),
+        action: z.enum(['add', 'remove']),
+      })
+      .strict(),
+    returns: {} as {
+      success: boolean
+      dashboardId: string
+      action: 'add' | 'remove'
+      contractId: string
+    },
+  },
+
+  'admin-sports-init-community': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ competitionCode: z.string() }).strict(),
+    returns: {} as {
+      groupId: string
+      groupCreated: boolean
+      dashboardId: string
+      dashboardCreated: boolean
+    },
+  },
+
+  'sports-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        sportsLeague: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      markets: SportsMarket[]
+    },
+  },
+
+  'create-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        content: socialPostDraftSchema,
+        parentId: z.string().optional(),
+        source: socialPostSourceSchema.optional(),
+      })
+      .strict()
+      .refine(
+        ({ content, source }) =>
+          hasSocialPostContent(content) || !!(source && 'postId' in source),
+        'Add text, a market, an image, or a quoted post'
+      ),
+    returns: {} as SocialPost,
+  },
+  'edit-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string(), content: socialPostEditSchema }).strict(),
+    returns: {} as SocialPost,
+  },
+  'delete-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as { success: true },
+  },
+  'get-social-posts': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        parentId: z.string().optional(),
+        ids: z.array(z.string().min(1).max(200)).min(1).max(50).optional(),
+        forModeration: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        useCache: z
+          .enum(['true', 'false'])
+          .transform((value) => value === 'true')
+          .optional(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(30).default(20),
+      })
+      .strict()
+      .refine(
+        ({ ids, parentId, cursor, useCache }) =>
+          !ids || (!parentId && !cursor && !useCache),
+        'ID lookups cannot be combined with timeline pagination or caching'
+      )
+      .refine(
+        ({ forModeration, ids }) => !forModeration || !!ids,
+        'Moderation lookups require post IDs'
+      ),
+    returns: {} as SocialPostPage,
+  },
+  'get-social-post': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z.object({ id: z.string() }).strict(),
+    returns: {} as SocialPostDetail,
+  },
+  'get-social-likers': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'no-store',
+    props: z
+      .object({
+        id: z.string(),
+        cursor: socialCursorSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(50).default(30),
+      })
+      .strict(),
+    returns: {} as SocialLikerPage,
+  },
+  // Upcoming, live and just-finished games across every sport, each with the
+  // ids of its related markets (props, totals, community side-bets). Powers the
+  // /sports schedule. Probabilities move over websockets after the first load,
+  // so a short shared cache keeps the fan-out cheap.
+  'sports-schedule': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    props: z
+      .object({
+        // 'all', a curated sport key, or a sport from a Sports subtopic.
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        daysAhead: z.coerce.number().int().min(1).max(60).optional(),
+        limit: z.coerce.number().int().min(1).max(400).optional(),
+        // nextCursor from the previous page.
+        cursor: z
+          .string()
+          .regex(/^\d+_[A-Za-z0-9]+$/)
+          .max(64)
+          .optional(),
+        includeRelated: coerceBoolean.optional(),
+        // A topic under Sports (SportsSubtopic.id): only its games and markets.
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
+    returns: {} as SportsScheduleResponse,
+  },
+  // Every sport on the sports pages and every other topic under Sports, with
+  // the topics behind each. Topic pages use it to send a topic to its page
+  // there.
+  'sports-index': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    // `topics` is absent from an API that predates it.
+    returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
+  },
+  // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
+  // under Sports, and with `userId` where that user stands on them. The
+  // scheduler rebuilds them hourly. Empty boards for a sport or topic it
+  // doesn't know.
+  'sports-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z
+      .object({
+        sport: z.string().regex(SPORT_KEY_RE).optional(),
+        topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+        userId: z.string().min(1).max(MAX_ID_LENGTH).optional(),
+      })
+      .strict(),
+    returns: {} as SportsLeaderboards,
+  },
+  // The /election page's leaderboards (common/election-leaderboards), one
+  // per election scope. The scheduler rebuilds them; a board not built yet
+  // is left out.
+  'election-leaderboards': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=300, stale-while-revalidate=600',
+    props: z.object({}).strict(),
+    returns: {} as ElectionLeaderboards,
+  },
+
+  // Link a market to the market it's about (common/market-links), replacing
+  // any parent it had. The market's creator or a mod.
+  'link-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+        parentContractId: z.string().min(1).max(MAX_ID_LENGTH),
+        relation: z.enum(MARKET_LINK_RELATIONS).optional(),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // Remove a market's link: its creator, the parent's creator, or a mod.
+  'unlink-market': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as { success: true },
+  },
+  // What a market is linked to and what's linked to it: a market's info
+  // dialog, and the markets under a race on the election map.
+  'get-market-links': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string().min(1).max(MAX_ID_LENGTH),
+      })
+      .strict(),
+    returns: {} as MarketLinks,
+  },
+
+  // The scheduler switches on /admin/sports: one per Odds API calendar phase.
+  'admin-sports-competition-switches': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { switches: CompetitionSwitchState[] },
+  },
+  'admin-sports-set-competition-switch': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string().max(100),
+        phase: z.string().max(100),
+        on: z.boolean(),
+      })
+      .strict(),
+    returns: {} as { on: boolean },
+  },
+  // How often the sports resolver asks for scores, and the credits it spends.
+  'admin-sports-score-polling': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as ScorePollingPanel,
+  },
+  'admin-sports-set-score-polling': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        // 'sport:<sport id>', 'game:<contract id>' or 'finals'.
+        target: z.string().max(60),
+        // Seconds; 0 is off. Null goes back to the default.
+        intervalSeconds: z.number().int().min(0).max(3600).nullable(),
+      })
+      .strict(),
+    returns: {} as { intervalSeconds: number | null },
+  },
+  'admin-sports-create-odds-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // Provider event ids from a dry run. Only these games are created.
+        eventIds: z.array(z.string()).max(200).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        eventId: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+  // F1 markets from BALLDONTLIE for the next F1_DAYS_AHEAD days' sessions, by
+  // hand, on dev or prod. The daily sports-f1-create job makes them too.
+  'admin-sports-create-f1-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionId: z.string(),
+        dryRun: z.boolean().optional(),
+        // `<session id>:<market type>` keys from a dry run. Only these are created.
+        keys: z.array(z.string().max(40)).max(100).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      created: number
+      skipped: number
+      errors: number
+      results: Array<{
+        key: string
+        question: string
+        status: 'created' | 'skipped' | 'dry-run' | 'error'
+        reason: string | null
+      }>
+    },
+  },
+
+  'admin-sports-resolve': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        competitionCode: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      resolved: number
+      skipped: number
+      errors: number
+      log: Array<{
+        question: string
+        result: string
+        status: 'resolved' | 'skipped' | 'error'
+      }>
     },
   },
 } as const)

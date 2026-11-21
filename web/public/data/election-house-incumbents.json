@@ -1,0 +1,1742 @@
+{
+  "asOf": "2026-10-01",
+  "retrieved": "2026-10-03",
+  "congress": 119,
+  "source": "https://clerk.house.gov/xml/lists/MemberData.xml",
+  "members": {
+    "AK-0": {
+      "name": "Nicholas J. Begich III",
+      "party": "Republican"
+    },
+    "AL-1": {
+      "name": "Barry Moore",
+      "party": "Republican"
+    },
+    "AL-2": {
+      "name": "Shomari Figures",
+      "party": "Democrat"
+    },
+    "AL-3": {
+      "name": "Mike Rogers",
+      "party": "Republican"
+    },
+    "AL-4": {
+      "name": "Robert B. Aderholt",
+      "party": "Republican"
+    },
+    "AL-5": {
+      "name": "Dale W. Strong",
+      "party": "Republican"
+    },
+    "AL-6": {
+      "name": "Gary J. Palmer",
+      "party": "Republican"
+    },
+    "AL-7": {
+      "name": "Terri A. Sewell",
+      "party": "Democrat"
+    },
+    "AR-1": {
+      "name": "Eric A. \"Rick\" Crawford",
+      "party": "Republican"
+    },
+    "AR-2": {
+      "name": "J. French Hill",
+      "party": "Republican"
+    },
+    "AR-3": {
+      "name": "Steve Womack",
+      "party": "Republican"
+    },
+    "AR-4": {
+      "name": "Bruce Westerman",
+      "party": "Republican"
+    },
+    "AZ-1": {
+      "name": "David Schweikert",
+      "party": "Republican"
+    },
+    "AZ-2": {
+      "name": "Elijah Crane",
+      "party": "Republican"
+    },
+    "AZ-3": {
+      "name": "Yassamin Ansari",
+      "party": "Democrat"
+    },
+    "AZ-4": {
+      "name": "Greg Stanton",
+      "party": "Democrat"
+    },
+    "AZ-5": {
+      "name": "Andy Biggs",
+      "party": "Republican"
+    },
+    "AZ-6": {
+      "name": "Juan Ciscomani",
+      "party": "Republican"
+    },
+    "AZ-7": {
+      "name": "Adelita S. Grijalva",
+      "party": "Democrat"
+    },
+    "AZ-8": {
+      "name": "Abraham J. Hamadeh",
+      "party": "Republican"
+    },
+    "AZ-9": {
+      "name": "Paul A. Gosar",
+      "party": "Republican"
+    },
+    "CA-1": {
+      "name": "James Gallagher",
+      "party": "Republican"
+    },
+    "CA-2": {
+      "name": "Jared Huffman",
+      "party": "Democrat"
+    },
+    "CA-3": {
+      "name": "Kevin Kiley",
+      "party": "Independent"
+    },
+    "CA-4": {
+      "name": "Mike Thompson",
+      "party": "Democrat"
+    },
+    "CA-5": {
+      "name": "Tom McClintock",
+      "party": "Republican"
+    },
+    "CA-6": {
+      "name": "Ami Bera",
+      "party": "Democrat"
+    },
+    "CA-7": {
+      "name": "Doris O. Matsui",
+      "party": "Democrat"
+    },
+    "CA-8": {
+      "name": "John Garamendi",
+      "party": "Democrat"
+    },
+    "CA-9": {
+      "name": "Josh Harder",
+      "party": "Democrat"
+    },
+    "CA-10": {
+      "name": "Mark DeSaulnier",
+      "party": "Democrat"
+    },
+    "CA-11": {
+      "name": "Nancy Pelosi",
+      "party": "Democrat"
+    },
+    "CA-12": {
+      "name": "Lateefah Simon",
+      "party": "Democrat"
+    },
+    "CA-13": {
+      "name": "Adam Gray",
+      "party": "Democrat"
+    },
+    "CA-14": {
+      "name": "Aisha Wahab",
+      "party": "Democrat"
+    },
+    "CA-15": {
+      "name": "Kevin Mullin",
+      "party": "Democrat"
+    },
+    "CA-16": {
+      "name": "Sam T. Liccardo",
+      "party": "Democrat"
+    },
+    "CA-17": {
+      "name": "Ro Khanna",
+      "party": "Democrat"
+    },
+    "CA-18": {
+      "name": "Zoe Lofgren",
+      "party": "Democrat"
+    },
+    "CA-19": {
+      "name": "Jimmy Panetta",
+      "party": "Democrat"
+    },
+    "CA-20": {
+      "name": "Vince Fong",
+      "party": "Republican"
+    },
+    "CA-21": {
+      "name": "Jim Costa",
+      "party": "Democrat"
+    },
+    "CA-22": {
+      "name": "David G. Valadao",
+      "party": "Republican"
+    },
+    "CA-23": {
+      "name": "Jay Obernolte",
+      "party": "Republican"
+    },
+    "CA-24": {
+      "name": "Salud O. Carbajal",
+      "party": "Democrat"
+    },
+    "CA-25": {
+      "name": "Raul Ruiz",
+      "party": "Democrat"
+    },
+    "CA-26": {
+      "name": "Julia Brownley",
+      "party": "Democrat"
+    },
+    "CA-27": {
+      "name": "George Whitesides",
+      "party": "Democrat"
+    },
+    "CA-28": {
+      "name": "Judy Chu",
+      "party": "Democrat"
+    },
+    "CA-29": {
+      "name": "Luz M. Rivas",
+      "party": "Democrat"
+    },
+    "CA-30": {
+      "name": "Laura Friedman",
+      "party": "Democrat"
+    },
+    "CA-31": {
+      "name": "Gilbert Ray Cisneros, Jr.",
+      "party": "Democrat"
+    },
+    "CA-32": {
+      "name": "Brad Sherman",
+      "party": "Democrat"
+    },
+    "CA-33": {
+      "name": "Pete Aguilar",
+      "party": "Democrat"
+    },
+    "CA-34": {
+      "name": "Jimmy Gomez",
+      "party": "Democrat"
+    },
+    "CA-35": {
+      "name": "Norma J. Torres",
+      "party": "Democrat"
+    },
+    "CA-36": {
+      "name": "Ted Lieu",
+      "party": "Democrat"
+    },
+    "CA-37": {
+      "name": "Sydney Kamlager-Dove",
+      "party": "Democrat"
+    },
+    "CA-38": {
+      "name": "Linda T. Sánchez",
+      "party": "Democrat"
+    },
+    "CA-39": {
+      "name": "Mark Takano",
+      "party": "Democrat"
+    },
+    "CA-40": {
+      "name": "Young Kim",
+      "party": "Republican"
+    },
+    "CA-41": {
+      "name": "Ken Calvert",
+      "party": "Republican"
+    },
+    "CA-42": {
+      "name": "Robert Garcia",
+      "party": "Democrat"
+    },
+    "CA-43": {
+      "name": "Maxine Waters",
+      "party": "Democrat"
+    },
+    "CA-44": {
+      "name": "Nanette Diaz Barragán",
+      "party": "Democrat"
+    },
+    "CA-45": {
+      "name": "Derek Tran",
+      "party": "Democrat"
+    },
+    "CA-46": {
+      "name": "J. Luis Correa",
+      "party": "Democrat"
+    },
+    "CA-47": {
+      "name": "Dave Min",
+      "party": "Democrat"
+    },
+    "CA-48": {
+      "name": "Darrell Issa",
+      "party": "Republican"
+    },
+    "CA-49": {
+      "name": "Mike Levin",
+      "party": "Democrat"
+    },
+    "CA-50": {
+      "name": "Scott H. Peters",
+      "party": "Democrat"
+    },
+    "CA-51": {
+      "name": "Sara Jacobs",
+      "party": "Democrat"
+    },
+    "CA-52": {
+      "name": "Juan Vargas",
+      "party": "Democrat"
+    },
+    "CO-1": {
+      "name": "Diana DeGette",
+      "party": "Democrat"
+    },
+    "CO-2": {
+      "name": "Joe Neguse",
+      "party": "Democrat"
+    },
+    "CO-3": {
+      "name": "Jeff Hurd",
+      "party": "Republican"
+    },
+    "CO-4": {
+      "name": "Lauren Boebert",
+      "party": "Republican"
+    },
+    "CO-5": {
+      "name": "Jeff Crank",
+      "party": "Republican"
+    },
+    "CO-6": {
+      "name": "Jason Crow",
+      "party": "Democrat"
+    },
+    "CO-7": {
+      "name": "Brittany Pettersen",
+      "party": "Democrat"
+    },
+    "CO-8": {
+      "name": "Gabe Evans",
+      "party": "Republican"
+    },
+    "CT-1": {
+      "name": "John B. Larson",
+      "party": "Democrat"
+    },
+    "CT-2": {
+      "name": "Joe Courtney",
+      "party": "Democrat"
+    },
+    "CT-3": {
+      "name": "Rosa L. DeLauro",
+      "party": "Democrat"
+    },
+    "CT-4": {
+      "name": "James A. Himes",
+      "party": "Democrat"
+    },
+    "CT-5": {
+      "name": "Jahana Hayes",
+      "party": "Democrat"
+    },
+    "DE-0": {
+      "name": "Sarah McBride",
+      "party": "Democrat"
+    },
+    "FL-1": {
+      "name": "Jimmy Patronis",
+      "party": "Republican"
+    },
+    "FL-2": {
+      "name": "Neal P. Dunn",
+      "party": "Republican"
+    },
+    "FL-3": {
+      "name": "Kat Cammack",
+      "party": "Republican"
+    },
+    "FL-4": {
+      "name": "Aaron Bean",
+      "party": "Republican"
+    },
+    "FL-5": {
+      "name": "John H. Rutherford",
+      "party": "Republican"
+    },
+    "FL-6": {
+      "name": "Randy Fine",
+      "party": "Republican"
+    },
+    "FL-7": {
+      "name": "Cory Mills",
+      "party": "Republican"
+    },
+    "FL-8": {
+      "name": "Mike Haridopolos",
+      "party": "Republican"
+    },
+    "FL-9": {
+      "name": "Darren Soto",
+      "party": "Democrat"
+    },
+    "FL-10": {
+      "name": "Maxwell Frost",
+      "party": "Democrat"
+    },
+    "FL-11": {
+      "name": "Daniel Webster",
+      "party": "Republican"
+    },
+    "FL-12": {
+      "name": "Gus M. Bilirakis",
+      "party": "Republican"
+    },
+    "FL-13": {
+      "name": "Anna Paulina Luna",
+      "party": "Republican"
+    },
+    "FL-14": {
+      "name": "Kathy Castor",
+      "party": "Democrat"
+    },
+    "FL-15": {
+      "name": "Laurel M. Lee",
+      "party": "Republican"
+    },
+    "FL-16": {
+      "name": "Vern Buchanan",
+      "party": "Republican"
+    },
+    "FL-17": {
+      "name": "W. Gregory Steube",
+      "party": "Republican"
+    },
+    "FL-18": {
+      "name": "Scott Franklin",
+      "party": "Republican"
+    },
+    "FL-19": {
+      "name": "Byron Donalds",
+      "party": "Republican"
+    },
+    "FL-20": null,
+    "FL-21": {
+      "name": "Brian J. Mast",
+      "party": "Republican"
+    },
+    "FL-22": {
+      "name": "Lois Frankel",
+      "party": "Democrat"
+    },
+    "FL-23": {
+      "name": "Jared Moskowitz",
+      "party": "Democrat"
+    },
+    "FL-24": {
+      "name": "Frederica S. Wilson",
+      "party": "Democrat"
+    },
+    "FL-25": {
+      "name": "Debbie Wasserman Schultz",
+      "party": "Democrat"
+    },
+    "FL-26": {
+      "name": "Mario Diaz-Balart",
+      "party": "Republican"
+    },
+    "FL-27": {
+      "name": "Maria Elvira Salazar",
+      "party": "Republican"
+    },
+    "FL-28": {
+      "name": "Carlos A. Gimenez",
+      "party": "Republican"
+    },
+    "GA-1": {
+      "name": "Earl L. \"Buddy\" Carter",
+      "party": "Republican"
+    },
+    "GA-2": {
+      "name": "Sanford D. Bishop, Jr.",
+      "party": "Democrat"
+    },
+    "GA-3": {
+      "name": "Brian Jack",
+      "party": "Republican"
+    },
+    "GA-4": {
+      "name": "Henry C. \"Hank\" Johnson, Jr.",
+      "party": "Democrat"
+    },
+    "GA-5": {
+      "name": "Nikema Williams",
+      "party": "Democrat"
+    },
+    "GA-6": {
+      "name": "Lucy McBath",
+      "party": "Democrat"
+    },
+    "GA-7": {
+      "name": "Richard McCormick",
+      "party": "Republican"
+    },
+    "GA-8": {
+      "name": "Austin Scott",
+      "party": "Republican"
+    },
+    "GA-9": {
+      "name": "Andrew S. Clyde",
+      "party": "Republican"
+    },
+    "GA-10": {
+      "name": "Mike Collins",
+      "party": "Republican"
+    },
+    "GA-11": {
+      "name": "Barry Loudermilk",
+      "party": "Republican"
+    },
+    "GA-12": {
+      "name": "Rick W. Allen",
+      "party": "Republican"
+    },
+    "GA-13": {
+      "name": "Everton Blair Jr.",
+      "party": "Democrat"
+    },
+    "GA-14": {
+      "name": "Clay Fuller",
+      "party": "Republican"
+    },
+    "HI-1": {
+      "name": "Ed Case",
+      "party": "Democrat"
+    },
+    "HI-2": {
+      "name": "Jill N. Tokuda",
+      "party": "Democrat"
+    },
+    "IA-1": {
+      "name": "Mariannette Miller-Meeks",
+      "party": "Republican"
+    },
+    "IA-2": {
+      "name": "Ashley Hinson",
+      "party": "Republican"
+    },
+    "IA-3": {
+      "name": "Zachary Nunn",
+      "party": "Republican"
+    },
+    "IA-4": {
+      "name": "Randy Feenstra",
+      "party": "Republican"
+    },
+    "ID-1": {
+      "name": "Russ Fulcher",
+      "party": "Republican"
+    },
+    "ID-2": {
+      "name": "Michael K. Simpson",
+      "party": "Republican"
+    },
+    "IL-1": {
+      "name": "Jonathan L. Jackson",
+      "party": "Democrat"
+    },
+    "IL-2": {
+      "name": "Robin L. Kelly",
+      "party": "Democrat"
+    },
+    "IL-3": {
+      "name": "Delia C. Ramirez",
+      "party": "Democrat"
+    },
+    "IL-4": {
+      "name": "Jesús G. \"Chuy\" García",
+      "party": "Democrat"
+    },
+    "IL-5": {
+      "name": "Mike Quigley",
+      "party": "Democrat"
+    },
+    "IL-6": {
+      "name": "Sean Casten",
+      "party": "Democrat"
+    },
+    "IL-7": {
+      "name": "Danny K. Davis",
+      "party": "Democrat"
+    },
+    "IL-8": {
+      "name": "Raja Krishnamoorthi",
+      "party": "Democrat"
+    },
+    "IL-9": {
+      "name": "Janice D. Schakowsky",
+      "party": "Democrat"
+    },
+    "IL-10": {
+      "name": "Bradley Scott Schneider",
+      "party": "Democrat"
+    },
+    "IL-11": {
+      "name": "Bill Foster",
+      "party": "Democrat"
+    },
+    "IL-12": {
+      "name": "Mike Bost",
+      "party": "Republican"
+    },
+    "IL-13": {
+      "name": "Nikki Budzinski",
+      "party": "Democrat"
+    },
+    "IL-14": {
+      "name": "Lauren Underwood",
+      "party": "Democrat"
+    },
+    "IL-15": {
+      "name": "Mary E. Miller",
+      "party": "Republican"
+    },
+    "IL-16": {
+      "name": "Darin LaHood",
+      "party": "Republican"
+    },
+    "IL-17": {
+      "name": "Eric Sorensen",
+      "party": "Democrat"
+    },
+    "IN-1": {
+      "name": "Frank J. Mrvan",
+      "party": "Democrat"
+    },
+    "IN-2": {
+      "name": "Rudy Yakym III",
+      "party": "Republican"
+    },
+    "IN-3": {
+      "name": "Marlin A. Stutzman",
+      "party": "Republican"
+    },
+    "IN-4": {
+      "name": "James R. Baird",
+      "party": "Republican"
+    },
+    "IN-5": {
+      "name": "Victoria Spartz",
+      "party": "Republican"
+    },
+    "IN-6": {
+      "name": "Jefferson Shreve",
+      "party": "Republican"
+    },
+    "IN-7": {
+      "name": "André Carson",
+      "party": "Democrat"
+    },
+    "IN-8": {
+      "name": "Mark B. Messmer",
+      "party": "Republican"
+    },
+    "IN-9": {
+      "name": "Erin Houchin",
+      "party": "Republican"
+    },
+    "KS-1": {
+      "name": "Tracey Mann",
+      "party": "Republican"
+    },
+    "KS-2": {
+      "name": "Derek Schmidt",
+      "party": "Republican"
+    },
+    "KS-3": {
+      "name": "Sharice Davids",
+      "party": "Democrat"
+    },
+    "KS-4": {
+      "name": "Ron Estes",
+      "party": "Republican"
+    },
+    "KY-1": {
+      "name": "James Comer",
+      "party": "Republican"
+    },
+    "KY-2": {
+      "name": "Brett Guthrie",
+      "party": "Republican"
+    },
+    "KY-3": {
+      "name": "Morgan McGarvey",
+      "party": "Democrat"
+    },
+    "KY-4": {
+      "name": "Thomas Massie",
+      "party": "Republican"
+    },
+    "KY-5": {
+      "name": "Harold Rogers",
+      "party": "Republican"
+    },
+    "KY-6": {
+      "name": "Andy Barr",
+      "party": "Republican"
+    },
+    "LA-1": {
+      "name": "Steve Scalise",
+      "party": "Republican"
+    },
+    "LA-2": {
+      "name": "Troy A. Carter",
+      "party": "Democrat"
+    },
+    "LA-3": {
+      "name": "Clay Higgins",
+      "party": "Republican"
+    },
+    "LA-4": {
+      "name": "Mike Johnson",
+      "party": "Republican"
+    },
+    "LA-5": {
+      "name": "Julia Letlow",
+      "party": "Republican"
+    },
+    "LA-6": {
+      "name": "Cleo Fields",
+      "party": "Democrat"
+    },
+    "MA-1": {
+      "name": "Richard E. Neal",
+      "party": "Democrat"
+    },
+    "MA-2": {
+      "name": "James P. McGovern",
+      "party": "Democrat"
+    },
+    "MA-3": {
+      "name": "Lori Trahan",
+      "party": "Democrat"
+    },
+    "MA-4": {
+      "name": "Jake Auchincloss",
+      "party": "Democrat"
+    },
+    "MA-5": {
+      "name": "Katherine M. Clark",
+      "party": "Democrat"
+    },
+    "MA-6": {
+      "name": "Seth Moulton",
+      "party": "Democrat"
+    },
+    "MA-7": {
+      "name": "Ayanna Pressley",
+      "party": "Democrat"
+    },
+    "MA-8": {
+      "name": "Stephen F. Lynch",
+      "party": "Democrat"
+    },
+    "MA-9": {
+      "name": "William R. Keating",
+      "party": "Democrat"
+    },
+    "MD-1": {
+      "name": "Andy Harris",
+      "party": "Republican"
+    },
+    "MD-2": {
+      "name": "Johnny Olszewski, Jr.",
+      "party": "Democrat"
+    },
+    "MD-3": {
+      "name": "Sarah Elfreth",
+      "party": "Democrat"
+    },
+    "MD-4": {
+      "name": "Glenn Ivey",
+      "party": "Democrat"
+    },
+    "MD-5": {
+      "name": "Steny H. Hoyer",
+      "party": "Democrat"
+    },
+    "MD-6": {
+      "name": "April McClain Delaney",
+      "party": "Democrat"
+    },
+    "MD-7": {
+      "name": "Kweisi Mfume",
+      "party": "Democrat"
+    },
+    "MD-8": {
+      "name": "Jamie Raskin",
+      "party": "Democrat"
+    },
+    "ME-1": {
+      "name": "Chellie Pingree",
+      "party": "Democrat"
+    },
+    "ME-2": {
+      "name": "Jared F. Golden",
+      "party": "Democrat"
+    },
+    "MI-1": {
+      "name": "Jack Bergman",
+      "party": "Republican"
+    },
+    "MI-2": {
+      "name": "John R. Moolenaar",
+      "party": "Republican"
+    },
+    "MI-3": {
+      "name": "Hillary J. Scholten",
+      "party": "Democrat"
+    },
+    "MI-4": {
+      "name": "Bill Huizenga",
+      "party": "Republican"
+    },
+    "MI-5": {
+      "name": "Tim Walberg",
+      "party": "Republican"
+    },
+    "MI-6": {
+      "name": "Debbie Dingell",
+      "party": "Democrat"
+    },
+    "MI-7": {
+      "name": "Tom Barrett",
+      "party": "Republican"
+    },
+    "MI-8": {
+      "name": "Kristen McDonald Rivet",
+      "party": "Democrat"
+    },
+    "MI-9": {
+      "name": "Lisa C. McClain",
+      "party": "Republican"
+    },
+    "MI-10": {
+      "name": "John James",
+      "party": "Republican"
+    },
+    "MI-11": {
+      "name": "Haley M. Stevens",
+      "party": "Democrat"
+    },
+    "MI-12": {
+      "name": "Rashida Tlaib",
+      "party": "Democrat"
+    },
+    "MI-13": {
+      "name": "Shri Thanedar",
+      "party": "Democrat"
+    },
+    "MN-1": {
+      "name": "Brad Finstad",
+      "party": "Republican"
+    },
+    "MN-2": {
+      "name": "Angie Craig",
+      "party": "Democrat"
+    },
+    "MN-3": {
+      "name": "Kelly Morrison",
+      "party": "Democrat"
+    },
+    "MN-4": {
+      "name": "Betty McCollum",
+      "party": "Democrat"
+    },
+    "MN-5": {
+      "name": "Ilhan Omar",
+      "party": "Democrat"
+    },
+    "MN-6": {
+      "name": "Tom Emmer",
+      "party": "Republican"
+    },
+    "MN-7": {
+      "name": "Michelle Fischbach",
+      "party": "Republican"
+    },
+    "MN-8": {
+      "name": "Pete Stauber",
+      "party": "Republican"
+    },
+    "MO-1": {
+      "name": "Wesley Bell",
+      "party": "Democrat"
+    },
+    "MO-2": {
+      "name": "Ann Wagner",
+      "party": "Republican"
+    },
+    "MO-3": {
+      "name": "Robert F. Onder, Jr.",
+      "party": "Republican"
+    },
+    "MO-4": {
+      "name": "Mark Alford",
+      "party": "Republican"
+    },
+    "MO-5": {
+      "name": "Emanuel Cleaver",
+      "party": "Democrat"
+    },
+    "MO-6": {
+      "name": "Sam Graves",
+      "party": "Republican"
+    },
+    "MO-7": {
+      "name": "Eric Burlison",
+      "party": "Republican"
+    },
+    "MO-8": {
+      "name": "Jason Smith",
+      "party": "Republican"
+    },
+    "MS-1": {
+      "name": "Trent Kelly",
+      "party": "Republican"
+    },
+    "MS-2": {
+      "name": "Bennie G. Thompson",
+      "party": "Democrat"
+    },
+    "MS-3": {
+      "name": "Michael Guest",
+      "party": "Republican"
+    },
+    "MS-4": {
+      "name": "Mike Ezell",
+      "party": "Republican"
+    },
+    "MT-1": {
+      "name": "Ryan K. Zinke",
+      "party": "Republican"
+    },
+    "MT-2": {
+      "name": "Troy Downing",
+      "party": "Republican"
+    },
+    "NC-1": {
+      "name": "Donald G. Davis",
+      "party": "Democrat"
+    },
+    "NC-2": {
+      "name": "Deborah K. Ross",
+      "party": "Democrat"
+    },
+    "NC-3": {
+      "name": "Gregory F. Murphy",
+      "party": "Republican"
+    },
+    "NC-4": {
+      "name": "Valerie P. Foushee",
+      "party": "Democrat"
+    },
+    "NC-5": {
+      "name": "Virginia Foxx",
+      "party": "Republican"
+    },
+    "NC-6": {
+      "name": "Addison P. McDowell",
+      "party": "Republican"
+    },
+    "NC-7": {
+      "name": "David Rouzer",
+      "party": "Republican"
+    },
+    "NC-8": {
+      "name": "Mark Harris",
+      "party": "Republican"
+    },
+    "NC-9": {
+      "name": "Richard Hudson",
+      "party": "Republican"
+    },
+    "NC-10": {
+      "name": "Pat Harrigan",
+      "party": "Republican"
+    },
+    "NC-11": {
+      "name": "Chuck Edwards",
+      "party": "Republican"
+    },
+    "NC-12": {
+      "name": "Alma S. Adams",
+      "party": "Democrat"
+    },
+    "NC-13": {
+      "name": "Brad Knott",
+      "party": "Republican"
+    },
+    "NC-14": {
+      "name": "Tim Moore",
+      "party": "Republican"
+    },
+    "ND-0": {
+      "name": "Julie Fedorchak",
+      "party": "Republican"
+    },
+    "NE-1": {
+      "name": "Mike Flood",
+      "party": "Republican"
+    },
+    "NE-2": {
+      "name": "Don Bacon",
+      "party": "Republican"
+    },
+    "NE-3": {
+      "name": "Adrian Smith",
+      "party": "Republican"
+    },
+    "NH-1": {
+      "name": "Chris Pappas",
+      "party": "Democrat"
+    },
+    "NH-2": {
+      "name": "Maggie Goodlander",
+      "party": "Democrat"
+    },
+    "NJ-1": {
+      "name": "Donald Norcross",
+      "party": "Democrat"
+    },
+    "NJ-2": {
+      "name": "Jefferson Van Drew",
+      "party": "Republican"
+    },
+    "NJ-3": {
+      "name": "Herbert C. Conaway, Jr.",
+      "party": "Democrat"
+    },
+    "NJ-4": {
+      "name": "Christopher H. Smith",
+      "party": "Republican"
+    },
+    "NJ-5": {
+      "name": "Josh Gottheimer",
+      "party": "Democrat"
+    },
+    "NJ-6": {
+      "name": "Frank Pallone, Jr.",
+      "party": "Democrat"
+    },
+    "NJ-7": {
+      "name": "Thomas H. Kean, Jr.",
+      "party": "Republican"
+    },
+    "NJ-8": {
+      "name": "Robert Menendez",
+      "party": "Democrat"
+    },
+    "NJ-9": {
+      "name": "Nellie Pou",
+      "party": "Democrat"
+    },
+    "NJ-10": {
+      "name": "LaMonica McIver",
+      "party": "Democrat"
+    },
+    "NJ-11": {
+      "name": "Analilia Mejia",
+      "party": "Democrat"
+    },
+    "NJ-12": {
+      "name": "Bonnie Watson Coleman",
+      "party": "Democrat"
+    },
+    "NM-1": {
+      "name": "Melanie A. Stansbury",
+      "party": "Democrat"
+    },
+    "NM-2": {
+      "name": "Gabe Vasquez",
+      "party": "Democrat"
+    },
+    "NM-3": {
+      "name": "Teresa Leger Fernandez",
+      "party": "Democrat"
+    },
+    "NV-1": {
+      "name": "Dina Titus",
+      "party": "Democrat"
+    },
+    "NV-2": {
+      "name": "Mark E. Amodei",
+      "party": "Republican"
+    },
+    "NV-3": {
+      "name": "Susie Lee",
+      "party": "Democrat"
+    },
+    "NV-4": {
+      "name": "Steven Horsford",
+      "party": "Democrat"
+    },
+    "NY-1": {
+      "name": "Nick LaLota",
+      "party": "Republican"
+    },
+    "NY-2": {
+      "name": "Andrew R. Garbarino",
+      "party": "Republican"
+    },
+    "NY-3": {
+      "name": "Thomas R. Suozzi",
+      "party": "Democrat"
+    },
+    "NY-4": {
+      "name": "Laura Gillen",
+      "party": "Democrat"
+    },
+    "NY-5": {
+      "name": "Gregory W. Meeks",
+      "party": "Democrat"
+    },
+    "NY-6": {
+      "name": "Grace Meng",
+      "party": "Democrat"
+    },
+    "NY-7": {
+      "name": "Nydia M. Velázquez",
+      "party": "Democrat"
+    },
+    "NY-8": {
+      "name": "Hakeem S. Jeffries",
+      "party": "Democrat"
+    },
+    "NY-9": {
+      "name": "Yvette D. Clarke",
+      "party": "Democrat"
+    },
+    "NY-10": {
+      "name": "Daniel S. Goldman",
+      "party": "Democrat"
+    },
+    "NY-11": {
+      "name": "Nicole Malliotakis",
+      "party": "Republican"
+    },
+    "NY-12": {
+      "name": "Jerrold Nadler",
+      "party": "Democrat"
+    },
+    "NY-13": {
+      "name": "Adriano Espaillat",
+      "party": "Democrat"
+    },
+    "NY-14": {
+      "name": "Alexandria Ocasio-Cortez",
+      "party": "Democrat"
+    },
+    "NY-15": {
+      "name": "Ritchie Torres",
+      "party": "Democrat"
+    },
+    "NY-16": {
+      "name": "George Latimer",
+      "party": "Democrat"
+    },
+    "NY-17": {
+      "name": "Michael Lawler",
+      "party": "Republican"
+    },
+    "NY-18": {
+      "name": "Patrick Ryan",
+      "party": "Democrat"
+    },
+    "NY-19": {
+      "name": "Josh Riley",
+      "party": "Democrat"
+    },
+    "NY-20": {
+      "name": "Paul Tonko",
+      "party": "Democrat"
+    },
+    "NY-21": {
+      "name": "Elise M. Stefanik",
+      "party": "Republican"
+    },
+    "NY-22": {
+      "name": "John W. Mannion",
+      "party": "Democrat"
+    },
+    "NY-23": {
+      "name": "Nicholas A. Langworthy",
+      "party": "Republican"
+    },
+    "NY-24": {
+      "name": "Claudia Tenney",
+      "party": "Republican"
+    },
+    "NY-25": {
+      "name": "Joseph D. Morelle",
+      "party": "Democrat"
+    },
+    "NY-26": {
+      "name": "Timothy M. Kennedy",
+      "party": "Democrat"
+    },
+    "OH-1": {
+      "name": "Greg Landsman",
+      "party": "Democrat"
+    },
+    "OH-2": {
+      "name": "David J. Taylor",
+      "party": "Republican"
+    },
+    "OH-3": {
+      "name": "Joyce Beatty",
+      "party": "Democrat"
+    },
+    "OH-4": {
+      "name": "Jim Jordan",
+      "party": "Republican"
+    },
+    "OH-5": {
+      "name": "Robert E. Latta",
+      "party": "Republican"
+    },
+    "OH-6": {
+      "name": "Michael A. Rulli",
+      "party": "Republican"
+    },
+    "OH-7": {
+      "name": "Max L. Miller",
+      "party": "Republican"
+    },
+    "OH-8": {
+      "name": "Warren Davidson",
+      "party": "Republican"
+    },
+    "OH-9": {
+      "name": "Marcy Kaptur",
+      "party": "Democrat"
+    },
+    "OH-10": {
+      "name": "Michael R. Turner",
+      "party": "Republican"
+    },
+    "OH-11": {
+      "name": "Shontel M. Brown",
+      "party": "Democrat"
+    },
+    "OH-12": {
+      "name": "Troy Balderson",
+      "party": "Republican"
+    },
+    "OH-13": {
+      "name": "Emilia Strong Sykes",
+      "party": "Democrat"
+    },
+    "OH-14": {
+      "name": "David P. Joyce",
+      "party": "Republican"
+    },
+    "OH-15": {
+      "name": "Mike Carey",
+      "party": "Republican"
+    },
+    "OK-1": {
+      "name": "Kevin Hern",
+      "party": "Republican"
+    },
+    "OK-2": {
+      "name": "Josh Brecheen",
+      "party": "Republican"
+    },
+    "OK-3": {
+      "name": "Frank D. Lucas",
+      "party": "Republican"
+    },
+    "OK-4": {
+      "name": "Tom Cole",
+      "party": "Republican"
+    },
+    "OK-5": {
+      "name": "Stephanie I. Bice",
+      "party": "Republican"
+    },
+    "OR-1": {
+      "name": "Suzanne Bonamici",
+      "party": "Democrat"
+    },
+    "OR-2": {
+      "name": "Cliff Bentz",
+      "party": "Republican"
+    },
+    "OR-3": {
+      "name": "Maxine Dexter",
+      "party": "Democrat"
+    },
+    "OR-4": {
+      "name": "Val T. Hoyle",
+      "party": "Democrat"
+    },
+    "OR-5": {
+      "name": "Janelle S. Bynum",
+      "party": "Democrat"
+    },
+    "OR-6": {
+      "name": "Andrea Salinas",
+      "party": "Democrat"
+    },
+    "PA-1": {
+      "name": "Brian K. Fitzpatrick",
+      "party": "Republican"
+    },
+    "PA-2": {
+      "name": "Brendan F. Boyle",
+      "party": "Democrat"
+    },
+    "PA-3": {
+      "name": "Dwight Evans",
+      "party": "Democrat"
+    },
+    "PA-4": {
+      "name": "Madeleine Dean",
+      "party": "Democrat"
+    },
+    "PA-5": {
+      "name": "Mary Gay Scanlon",
+      "party": "Democrat"
+    },
+    "PA-6": {
+      "name": "Chrissy Houlahan",
+      "party": "Democrat"
+    },
+    "PA-7": {
+      "name": "Ryan Mackenzie",
+      "party": "Republican"
+    },
+    "PA-8": {
+      "name": "Robert P. Bresnahan, Jr.",
+      "party": "Republican"
+    },
+    "PA-9": {
+      "name": "Daniel Meuser",
+      "party": "Republican"
+    },
+    "PA-10": {
+      "name": "Scott Perry",
+      "party": "Republican"
+    },
+    "PA-11": {
+      "name": "Lloyd Smucker",
+      "party": "Republican"
+    },
+    "PA-12": {
+      "name": "Summer L. Lee",
+      "party": "Democrat"
+    },
+    "PA-13": {
+      "name": "John Joyce",
+      "party": "Republican"
+    },
+    "PA-14": {
+      "name": "Guy Reschenthaler",
+      "party": "Republican"
+    },
+    "PA-15": {
+      "name": "Glenn Thompson",
+      "party": "Republican"
+    },
+    "PA-16": {
+      "name": "Mike Kelly",
+      "party": "Republican"
+    },
+    "PA-17": {
+      "name": "Christopher R. Deluzio",
+      "party": "Democrat"
+    },
+    "RI-1": {
+      "name": "Gabe Amo",
+      "party": "Democrat"
+    },
+    "RI-2": {
+      "name": "Seth Magaziner",
+      "party": "Democrat"
+    },
+    "SC-1": {
+      "name": "Nancy Mace",
+      "party": "Republican"
+    },
+    "SC-2": {
+      "name": "Joe Wilson",
+      "party": "Republican"
+    },
+    "SC-3": {
+      "name": "Sheri Biggs",
+      "party": "Republican"
+    },
+    "SC-4": {
+      "name": "William R. Timmons IV",
+      "party": "Republican"
+    },
+    "SC-5": {
+      "name": "Ralph Norman",
+      "party": "Republican"
+    },
+    "SC-6": {
+      "name": "James E. Clyburn",
+      "party": "Democrat"
+    },
+    "SC-7": {
+      "name": "Russell Fry",
+      "party": "Republican"
+    },
+    "SD-0": {
+      "name": "Dusty Johnson",
+      "party": "Republican"
+    },
+    "TN-1": {
+      "name": "Diana Harshbarger",
+      "party": "Republican"
+    },
+    "TN-2": {
+      "name": "Tim Burchett",
+      "party": "Republican"
+    },
+    "TN-3": {
+      "name": "Charles J. \"Chuck\" Fleischmann",
+      "party": "Republican"
+    },
+    "TN-4": {
+      "name": "Scott DesJarlais",
+      "party": "Republican"
+    },
+    "TN-5": {
+      "name": "Andrew Ogles",
+      "party": "Republican"
+    },
+    "TN-6": {
+      "name": "John W. Rose",
+      "party": "Republican"
+    },
+    "TN-7": {
+      "name": "Matt Van Epps",
+      "party": "Republican"
+    },
+    "TN-8": {
+      "name": "David Kustoff",
+      "party": "Republican"
+    },
+    "TN-9": {
+      "name": "Steve Cohen",
+      "party": "Democrat"
+    },
+    "TX-1": {
+      "name": "Nathaniel Moran",
+      "party": "Republican"
+    },
+    "TX-2": {
+      "name": "Dan Crenshaw",
+      "party": "Republican"
+    },
+    "TX-3": {
+      "name": "Keith Self",
+      "party": "Republican"
+    },
+    "TX-4": {
+      "name": "Pat Fallon",
+      "party": "Republican"
+    },
+    "TX-5": {
+      "name": "Lance Gooden",
+      "party": "Republican"
+    },
+    "TX-6": {
+      "name": "Jake Ellzey",
+      "party": "Republican"
+    },
+    "TX-7": {
+      "name": "Lizzie Fletcher",
+      "party": "Democrat"
+    },
+    "TX-8": {
+      "name": "Morgan Luttrell",
+      "party": "Republican"
+    },
+    "TX-9": {
+      "name": "Al Green",
+      "party": "Democrat"
+    },
+    "TX-10": {
+      "name": "Michael T. McCaul",
+      "party": "Republican"
+    },
+    "TX-11": {
+      "name": "August Pfluger",
+      "party": "Republican"
+    },
+    "TX-12": {
+      "name": "Craig A. Goldman",
+      "party": "Republican"
+    },
+    "TX-13": {
+      "name": "Ronny Jackson",
+      "party": "Republican"
+    },
+    "TX-14": {
+      "name": "Randy K. Weber, Sr.",
+      "party": "Republican"
+    },
+    "TX-15": {
+      "name": "Monica De La Cruz",
+      "party": "Republican"
+    },
+    "TX-16": {
+      "name": "Veronica Escobar",
+      "party": "Democrat"
+    },
+    "TX-17": {
+      "name": "Pete Sessions",
+      "party": "Republican"
+    },
+    "TX-18": {
+      "name": "Christian D. Menefee",
+      "party": "Democrat"
+    },
+    "TX-19": {
+      "name": "Jodey C. Arrington",
+      "party": "Republican"
+    },
+    "TX-20": {
+      "name": "Joaquin Castro",
+      "party": "Democrat"
+    },
+    "TX-21": {
+      "name": "Chip Roy",
+      "party": "Republican"
+    },
+    "TX-22": {
+      "name": "Troy E. Nehls",
+      "party": "Republican"
+    },
+    "TX-23": null,
+    "TX-24": {
+      "name": "Beth Van Duyne",
+      "party": "Republican"
+    },
+    "TX-25": {
+      "name": "Roger Williams",
+      "party": "Republican"
+    },
+    "TX-26": {
+      "name": "Brandon Gill",
+      "party": "Republican"
+    },
+    "TX-27": {
+      "name": "Michael Cloud",
+      "party": "Republican"
+    },
+    "TX-28": {
+      "name": "Henry Cuellar",
+      "party": "Democrat"
+    },
+    "TX-29": {
+      "name": "Sylvia R. Garcia",
+      "party": "Democrat"
+    },
+    "TX-30": {
+      "name": "Jasmine Crockett",
+      "party": "Democrat"
+    },
+    "TX-31": {
+      "name": "John R. Carter",
+      "party": "Republican"
+    },
+    "TX-32": {
+      "name": "Julie Johnson",
+      "party": "Democrat"
+    },
+    "TX-33": {
+      "name": "Marc A. Veasey",
+      "party": "Democrat"
+    },
+    "TX-34": {
+      "name": "Vicente Gonzalez",
+      "party": "Democrat"
+    },
+    "TX-35": {
+      "name": "Greg Casar",
+      "party": "Democrat"
+    },
+    "TX-36": {
+      "name": "Brian Babin",
+      "party": "Republican"
+    },
+    "TX-37": {
+      "name": "Lloyd Doggett",
+      "party": "Democrat"
+    },
+    "TX-38": {
+      "name": "Wesley Hunt",
+      "party": "Republican"
+    },
+    "UT-1": {
+      "name": "Blake D. Moore",
+      "party": "Republican"
+    },
+    "UT-2": {
+      "name": "Celeste Maloy",
+      "party": "Republican"
+    },
+    "UT-3": {
+      "name": "Mike Kennedy",
+      "party": "Republican"
+    },
+    "UT-4": {
+      "name": "Burgess Owens",
+      "party": "Republican"
+    },
+    "VA-1": {
+      "name": "Robert J. Wittman",
+      "party": "Republican"
+    },
+    "VA-2": {
+      "name": "Jennifer A. Kiggans",
+      "party": "Republican"
+    },
+    "VA-3": {
+      "name": "Robert C. \"Bobby\" Scott",
+      "party": "Democrat"
+    },
+    "VA-4": {
+      "name": "Jennifer L. McClellan",
+      "party": "Democrat"
+    },
+    "VA-5": {
+      "name": "John J. McGuire III",
+      "party": "Republican"
+    },
+    "VA-6": {
+      "name": "Ben Cline",
+      "party": "Republican"
+    },
+    "VA-7": {
+      "name": "Eugene Simon Vindman",
+      "party": "Democrat"
+    },
+    "VA-8": {
+      "name": "Donald S. Beyer, Jr.",
+      "party": "Democrat"
+    },
+    "VA-9": {
+      "name": "H. Morgan Griffith",
+      "party": "Republican"
+    },
+    "VA-10": {
+      "name": "Suhas Subramanyam",
+      "party": "Democrat"
+    },
+    "VA-11": {
+      "name": "James R. Walkinshaw",
+      "party": "Democrat"
+    },
+    "VT-0": {
+      "name": "Becca Balint",
+      "party": "Democrat"
+    },
+    "WA-1": {
+      "name": "Suzan K. DelBene",
+      "party": "Democrat"
+    },
+    "WA-2": {
+      "name": "Rick Larsen",
+      "party": "Democrat"
+    },
+    "WA-3": {
+      "name": "Marie Gluesenkamp Perez",
+      "party": "Democrat"
+    },
+    "WA-4": {
+      "name": "Dan Newhouse",
+      "party": "Republican"
+    },
+    "WA-5": {
+      "name": "Michael Baumgartner",
+      "party": "Republican"
+    },
+    "WA-6": {
+      "name": "Emily Randall",
+      "party": "Democrat"
+    },
+    "WA-7": {
+      "name": "Pramila Jayapal",
+      "party": "Democrat"
+    },
+    "WA-8": {
+      "name": "Kim Schrier",
+      "party": "Democrat"
+    },
+    "WA-9": {
+      "name": "Adam Smith",
+      "party": "Democrat"
+    },
+    "WA-10": {
+      "name": "Marilyn Strickland",
+      "party": "Democrat"
+    },
+    "WI-1": {
+      "name": "Bryan Steil",
+      "party": "Republican"
+    },
+    "WI-2": {
+      "name": "Mark Pocan",
+      "party": "Democrat"
+    },
+    "WI-3": {
+      "name": "Derrick Van Orden",
+      "party": "Republican"
+    },
+    "WI-4": {
+      "name": "Gwen Moore",
+      "party": "Democrat"
+    },
+    "WI-5": {
+      "name": "Scott Fitzgerald",
+      "party": "Republican"
+    },
+    "WI-6": {
+      "name": "Glenn Grothman",
+      "party": "Republican"
+    },
+    "WI-7": {
+      "name": "Thomas P. Tiffany",
+      "party": "Republican"
+    },
+    "WI-8": {
+      "name": "Tony Wied",
+      "party": "Republican"
+    },
+    "WV-1": {
+      "name": "Carol D. Miller",
+      "party": "Republican"
+    },
+    "WV-2": {
+      "name": "Riley M. Moore",
+      "party": "Republican"
+    },
+    "WY-0": {
+      "name": "Harriet M. Hageman",
+      "party": "Republican"
+    }
+  }
+}

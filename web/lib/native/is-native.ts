@@ -1,5 +1,15 @@
-import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
+import {
+  IS_NATIVE_KEY,
+  NATIVE_INFO_LOCAL_KEYS,
+  PLATFORM_KEY,
+} from 'common/native-message'
 import { PrivateUser } from 'common/user'
+import {
+  BROWSE_CHOICE_KEY,
+  BROWSE_BROWSER_KEY,
+  BROWSE_ENROLLMENT_KEY,
+  DEVICE_HISTORY_KEY,
+} from 'common/browse-rollout'
 import { uniq } from 'lodash'
 import { safeLocalStorage, safeSessionStorage } from 'web/lib/util/local'
 import { api } from '../api/api'
@@ -22,6 +32,32 @@ const getNativeInfo = () => {
   const isNative = local?.getItem(IS_NATIVE_KEY) || ss?.getItem(IS_NATIVE_KEY)
   const platform = local?.getItem(PLATFORM_KEY) || ss?.getItem(PLATFORM_KEY)
   return { isNative: isNative === 'true', platform }
+}
+
+// The logout path clears localStorage wholesale, which also drops the native
+// flags. The legacy is-native/native-platform pair mostly survives that anyway
+// (getNativeInfo falls back to sessionStorage, and the WebView re-injects them
+// on every page load), but the v2 keys behind useNativeInfo() live only in
+// localStorage and are re-written only from a ?nativePlatform= query — which an
+// in-app reload of a client-side route doesn't carry. Carry all of them across
+// the clear so the page keeps rendering as native.
+export const clearLocalStoragePreservingNativeInfo = () => {
+  if (typeof window === 'undefined') return
+  const { isNative, platform } = getNativeInfo()
+  // These describe this browser, not the account. Keep the experiment and
+  // explicit layout choice stable through logout, as well as native flags.
+  const preserved = [
+    ...NATIVE_INFO_LOCAL_KEYS,
+    BROWSE_BROWSER_KEY,
+    DEVICE_HISTORY_KEY,
+    BROWSE_ENROLLMENT_KEY,
+    BROWSE_CHOICE_KEY,
+  ].map((key) => [key, safeLocalStorage?.getItem(key) ?? null] as const)
+  localStorage.clear()
+  if (isNative) setIsNativeOld(true, platform ?? '')
+  preserved.forEach(([key, value]) => {
+    if (value !== null) safeLocalStorage?.setItem(key, value)
+  })
 }
 
 export const setIsNativeOld = (isNative: boolean, platform: string) => {

@@ -20,6 +20,8 @@ export const sliderColors = {
   ],
   // light: ['primary-200', 'primary-300']
 } as const
+
+export type SliderColor = keyof typeof sliderColors | `#${string}`
 export type Mark = { value: number; label: string }
 
 export function Slider(props: {
@@ -29,11 +31,13 @@ export function Slider(props: {
   max?: number
   step?: number
   marks?: Mark[]
-  color?: keyof typeof sliderColors
+  color?: SliderColor
   className?: string
   disabled?: boolean
   inverted?: boolean
   fillToRight?: boolean
+  ariaLabel?: string
+  ariaValueText?: string
 }) {
   const {
     amount,
@@ -47,12 +51,19 @@ export function Slider(props: {
     color = 'indigo',
     inverted,
     fillToRight,
+    ariaLabel,
+    ariaValueText,
   } = props
 
-  const [trackClasses, thumbClasses] = sliderColors[color]
+  const isCustomColor = color.startsWith('#')
+  const [trackClasses, thumbClasses] = isCustomColor
+    ? ['', '']
+    : sliderColors[color as keyof typeof sliderColors]
 
   return (
     <RxSlider.Root
+      aria-label={ariaLabel}
+      aria-valuetext={ariaValueText}
       className={clsx(
         className,
         'relative flex touch-none select-none items-center',
@@ -66,7 +77,10 @@ export function Slider(props: {
       disabled={disabled}
       inverted={inverted}
     >
-      <Track className={trackClasses}>
+      <Track
+        className={trackClasses}
+        rangeStyle={isCustomColor ? { backgroundColor: color } : undefined}
+      >
         <div className="absolute left-2.5 right-2.5 h-full">
           {marks?.map(({ value, label }) => (
             <div
@@ -85,6 +99,12 @@ export function Slider(props: {
                     : 'bg-ink-400',
                   'h-2 w-2 rounded-full'
                 )}
+                style={
+                  isCustomColor &&
+                  (fillToRight ? amount <= value : amount >= value)
+                    ? { backgroundColor: color }
+                    : undefined
+                }
               />
               <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
                 {label}
@@ -93,7 +113,10 @@ export function Slider(props: {
           ))}
         </div>
       </Track>
-      <Thumb className={thumbClasses} />
+      <Thumb
+        className={thumbClasses}
+        style={isCustomColor ? { backgroundColor: color } : undefined}
+      />
     </RxSlider.Root>
   )
 }
@@ -160,23 +183,29 @@ export function RangeSlider(props: {
   )
 }
 
-const Track = (props: { className: string; children?: ReactNode }) => {
-  const { className, children } = props
+const Track = (props: {
+  className: string
+  children?: ReactNode
+  rangeStyle?: React.CSSProperties
+}) => {
+  const { className, children, rangeStyle } = props
   return (
     <RxSlider.Track className="bg-ink-300 relative h-1 grow rounded-full">
       {children}
       <RxSlider.Range
         className={clsx(className, 'absolute h-full rounded-full')}
+        style={rangeStyle}
       />
     </RxSlider.Track>
   )
 }
 
-const Thumb = (props: { className: string }) => (
+const Thumb = (props: { className: string; style?: React.CSSProperties }) => (
   <RxSlider.Thumb
     className={clsx(
       props.className,
       'block h-5 w-5 cursor-col-resize rounded-full outline outline-4 outline-transparent transition-colors'
     )}
+    style={props.style}
   />
 )

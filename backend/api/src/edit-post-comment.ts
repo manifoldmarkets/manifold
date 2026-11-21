@@ -2,7 +2,7 @@ import { type APIHandler, APIError } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateData } from 'shared/supabase/utils'
-import { getUser } from 'shared/utils' // Changed import for getUser
+import { getUser, sanitizeJsonContent } from 'shared/utils'
 import { getPost } from 'shared/supabase/posts' // TODO: Need this function
 import { PostComment } from 'common/comment'
 import { revalidatePost } from './create-post-comment'
@@ -55,7 +55,7 @@ async function _editPostCommentInternal(props: EditProps, authId: string) {
     comment_id: commentId,
   }
   if (content !== undefined) {
-    updatePayload.content = content
+    updatePayload.content = sanitizeJsonContent(content)
     updatePayload.editedTime = Date.now()
   }
   if (hidden !== undefined) {

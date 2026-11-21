@@ -3,18 +3,11 @@ create table if not exists
   manalink_claims (
     manalink_id text not null,
     txn_id text not null,
-    constraint primary key (manalink_id, txn_id)
+    primary key (manalink_id, txn_id)
   );
 
 -- Row Level Security
 alter table manalink_claims enable row level security;
-
--- Policies
-drop policy if exists "public read" on manalink_claims;
-
-create policy "public read" on manalink_claims for
-select
-  using (true);
 
 -- Indexes
 drop index if exists manalink_claims_pkey;

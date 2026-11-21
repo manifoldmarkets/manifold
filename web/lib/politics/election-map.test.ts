@@ -1,0 +1,634 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+
+import { Contract } from 'common/contract'
+import {
+  availableModes,
+  describeFill,
+  focusRowKey,
+  leaderColors,
+  leaderOf,
+  LEADER_COLORS,
+  MapView,
+  mapFills,
+  NO_LEADER_COLOR,
+  mapTracker,
+  marketTippingPoints,
+  matchesPlace,
+  OTHER_LEADER_COLOR,
+  placeTitle,
+  primaryRowKey,
+  SENATE_NOT_UP_2028,
+  statePanel,
+  tippingPlaces,
+  tippingWinnerOf,
+} from './election-map'
+import { PrimaryRow } from './primaries'
+import { BoardRace } from './race-board'
+
+const view = (patch: Partial<MapView>): MapView => ({
+  mode: 'president',
+  office: 'P',
+  party: 'D',
+  ...patch,
+})
+
+const races: BoardRace[] = [
+  { o: 'P', st: 'PA', p: 0.55, s: 'pa-ev', ev: 19 },
+  { o: 'P', st: 'TX', p: 0.2, s: 'tx-ev', ev: 40 },
+  { o: 'P', st: 'CA', p: 0.97, s: 'ca-ev', ev: 54 },
+  { o: 'P', st: 'GA', p: 0.502, s: 'ga-ev', ev: 16 },
+  { o: 'P', st: 'ME', p: 0.8, s: 'me-ev', ev: 2 },
+  { o: 'P', st: 'ME', d: 2, p: 0.3, s: 'me2-ev', ev: 1 },
+  { o: 'V', st: 'PA', p: 0.58, s: 'pa-pv' },
+  { o: 'S', st: 'TN', sp: 1, p: 0.1, s: 'tn-sp' },
+  { o: 'S', st: 'PA', p: 0.62, s: 'pa-sen', c: 'D' },
+  { o: 'G', st: 'NH', p: 0.45, s: 'nh-gov' },
+  { o: 'H', st: 'PA', d: 1, p: 0.4, s: 'pa-1' },
+  { o: 'H', st: 'PA', d: 12, p: 0.9, s: 'pa-12' },
+  { o: 'H', st: 'AK', d: 0, p: 0.2, s: 'ak-al' },
+  // A row reading only its prior has no market to list.
+  { o: 'P', st: 'WY', p: 0.02, ev: 3 },
+]
+
+const cell = (l: string, p: number, s = `${l}-mkt`) => ({ s, l, p })
+const primaries: PrimaryRow[] = [
+  {
+    k: 'P-IA-2028',
+    o: 'P',
+    st: 'IA',
+    D: cell('Newsom', 0.4),
+    R: cell('Vance', 0.6),
+  },
+  { k: 'P-NH-2028', o: 'P', st: 'NH', D: cell('Buttigieg', 0.35) },
+  { k: 'P-PA-2028', o: 'P', st: 'PA', D: cell('Shapiro', 0.7) },
+  { k: 'P-SC-2028', o: 'P', st: 'SC', D: cell('Newsom', 0.3) },
+  { k: 'P-NV-2028', o: 'P', st: 'NV', D: cell('Whitmer', 0.25) },
+  { k: 'P-PR-2028', o: 'P', st: 'PR', D: cell('Newsom', 0.5) },
+  {
+    k: 'S-PA-2028',
+    o: 'S',
+    st: 'PA',
+    D: cell('Fetterman', 0.95),
+    R: cell('Mc', 0.5),
+  },
+  { k: 'S-CA-2028', o: 'S', st: 'CA', A: cell('Padilla', 0.8) },
+  {
+    k: 'S-MN-sp-2027',
+    o: 'S',
+    st: 'MN',
+    sp: 1,
+    y: 2027,
+    D: cell('Flanagan', 0.7),
+  },
+]
+
+test('the President view colors states and Maine/Nebraska districts', () => {
+  const ev = mapFills(view({}), races, primaries)
+  assert.deepEqual(ev.PA, { kind: 'rating', p: 0.55 })
+  assert.deepEqual(ev['ME-2'], { kind: 'rating', p: 0.3 })
+  assert.equal(ev.ME?.kind, 'rating')
+  assert.equal(ev.WY?.kind, 'rating')
+  // The state popular-vote markets aren't map colors.
+  assert.ok(Object.values(ev).every((f) => f.kind === 'rating' && f.p !== 0.58))
+})
+
+test('Senate, governor and House views', () => {
+  const senate = mapFills(view({ mode: 'senate' }), races, primaries)
+  assert.deepEqual(senate.PA, { kind: 'rating', p: 0.62, c: 'D' })
+  assert.equal(senate.TN?.kind, 'rating')
+  assert.deepEqual(
+    Object.keys(mapFills(view({ mode: 'governor' }), races, primaries)),
+    ['NH']
+  )
+  const house = mapFills(view({ mode: 'house' }), races, primaries)
+  assert.deepEqual(Object.keys(house).sort(), ['AK-0', 'PA-1', 'PA-12'])
+})
+
+test('presidential primaries color by leader, the three most common first', () => {
+  const colors = leaderColors(primaries, 'D')
+  // Newsom leads 3, then the rest lead 1 each, by name.
+  assert.deepEqual(colors, {
+    Newsom: LEADER_COLORS[0],
+    Buttigieg: LEADER_COLORS[1],
+    Shapiro: LEADER_COLORS[2],
+  })
+  const fills = mapFills(view({ mode: 'primary' }), races, primaries)
+  assert.equal(fills.IA.kind === 'leader' && fills.IA.color, LEADER_COLORS[0])
+  assert.equal(fills.NV.kind === 'leader' && fills.NV.color, OTHER_LEADER_COLOR)
+  // Territories are on the map too (as chips).
+  assert.equal(fills.PR?.kind, 'leader')
+  const gop = mapFills(view({ mode: 'primary', party: 'R' }), races, primaries)
+  assert.deepEqual(Object.keys(gop), ['IA'])
+})
+
+test('Senate and governor primaries: a party contest, else the open one', () => {
+  const d = mapFills(
+    view({ mode: 'primary', office: 'S', party: 'D' }),
+    races,
+    primaries
+  )
+  assert.deepEqual(d.PA, {
+    kind: 'strength',
+    party: 'D',
+    name: 'Fetterman',
+    p: 0.95,
+    won: false,
+  })
+  assert.equal(d.CA.kind, 'open')
+  assert.equal(d.MN.kind, 'strength')
+  const r = mapFills(
+    view({ mode: 'primary', office: 'S', party: 'R' }),
+    races,
+    primaries
+  )
+  assert.equal(r.CA.kind, 'open')
+  assert.equal(r.MN, undefined)
+})
+
+test('modes appear only with something to show', () => {
+  assert.deepEqual(availableModes(races, primaries), [
+    'president',
+    'senate',
+    'governor',
+    'house',
+    'primary',
+  ])
+  assert.deepEqual(
+    availableModes(
+      races.filter((r) => r.o === 'P'),
+      []
+    ),
+    ['president']
+  )
+})
+
+test('a race leads by the odds readers see: 50.2% is even', () => {
+  assert.equal(leaderOf({ p: 0.55 }), 'D')
+  assert.equal(leaderOf({ p: 0.45 }), 'R')
+  assert.equal(leaderOf({ p: 0.502 }), undefined)
+  assert.equal(leaderOf({ p: 0.3, c: 'D' }), 'D')
+  assert.equal(leaderOf({ p: 0.9, c: 'O' }), undefined)
+})
+
+test('the President tracker counts electoral votes by rating, to 270', () => {
+  const t = mapTracker(view({}), races, primaries)
+  assert.equal(t.threshold, 270)
+  // CA 54 + PA 19 + ME 2 lead D; TX 40 + ME-2 1 + WY 3 lead R; GA is even.
+  assert.equal(t.dem, 75)
+  assert.equal(t.rep, 44)
+  assert.deepEqual(
+    t.segments.map((s) => [s.key, s.count, s.places]),
+    [
+      ['safeD', 54, ['CA']],
+      ['likelyD', 2, ['ME']],
+      ['tossup', 35, ['PA', 'GA']],
+      ['leanR', 1, ['ME-2']],
+      ['likelyR', 40, ['TX']],
+      ['safeR', 3, ['WY']],
+    ]
+  )
+  // Every electoral vote on the board is in a segment.
+  assert.equal(
+    t.segments.reduce((n, s) => n + s.count, 0),
+    54 + 19 + 40 + 16 + 2 + 1 + 3
+  )
+})
+
+test('the Senate tracker adds the seats not up in 2028, to 100', () => {
+  const t = mapTracker(view({ mode: 'senate' }), races, primaries)
+  assert.equal(SENATE_NOT_UP_2028.D + SENATE_NOT_UP_2028.R, 65)
+  assert.equal(t.threshold, 50)
+  // PA called for D; TN's special leans hard R.
+  assert.equal(t.dem, SENATE_NOT_UP_2028.D + 1)
+  assert.equal(t.rep, SENATE_NOT_UP_2028.R + 1)
+  assert.deepEqual(
+    t.segments.map((s) => s.key),
+    ['notUpD', 'wonD', 'safeR', 'notUpR']
+  )
+  assert.deepEqual(t.segments[0].places, [])
+})
+
+test('House and governor trackers', () => {
+  const house = mapTracker(view({ mode: 'house' }), races, primaries)
+  assert.equal(house.threshold, 218)
+  assert.equal(house.dem, 1)
+  assert.equal(house.rep, 2)
+  assert.equal(house.middle, '218 for a majority · 3 seats')
+  const gov = mapTracker(view({ mode: 'governor' }), races, primaries)
+  assert.equal(gov.threshold, undefined)
+  assert.equal(gov.middle, '1 governorships up in 2028')
+})
+
+test('primary trackers count contests by leader or by how sure', () => {
+  const p = mapTracker(view({ mode: 'primary' }), races, primaries)
+  assert.equal(p.dem, undefined)
+  assert.deepEqual(
+    p.segments.map((s) => [s.label, s.count, s.color]),
+    [
+      ['Newsom leads', 3, LEADER_COLORS[0]],
+      ['Buttigieg leads', 1, LEADER_COLORS[1]],
+      ['Shapiro leads', 1, LEADER_COLORS[2]],
+      ['Someone else leads', 1, OTHER_LEADER_COLOR],
+    ]
+  )
+  const s = mapTracker(view({ mode: 'primary', office: 'S' }), races, primaries)
+  assert.deepEqual(
+    s.segments.map((x) => [x.key, x.places]),
+    [
+      ['strength2', ['PA']],
+      ['strength1', ['MN']],
+      ['open', ['CA']],
+    ]
+  )
+})
+
+test('tipping points: every state showing 5% or more, with no cap', () => {
+  const tips = [
+    { key: 'PA', p: 0.26 },
+    { key: 'GA', p: 0.13 },
+    { key: 'NC', p: 0.12 },
+    { key: 'WI', p: 0.113 },
+    { key: 'MI', p: 0.113 },
+    { key: 'NV', p: 0.062 },
+    { key: 'AZ', p: 0.056 },
+    { key: 'OH', p: 0.0451 }, // shows "5%", so it's outlined
+    { key: 'TX', p: 0.04 },
+    { key: 'FL', p: 0.014 },
+  ]
+  assert.deepEqual(
+    tippingPlaces(tips).map((t) => t.key),
+    ['PA', 'GA', 'NC', 'WI', 'MI', 'NV', 'AZ', 'OH']
+  )
+  // Election night: one state runs away with it, the rest lose their outline.
+  assert.deepEqual(
+    tippingPlaces([
+      { key: 'PA', p: 0.93 },
+      { key: 'MI', p: 0.04 },
+      { key: 'WI', p: 0.03 },
+    ]).map((t) => t.key),
+    ['PA']
+  )
+  assert.deepEqual(
+    tippingPlaces(tips, 12).map((t) => t.key),
+    ['PA', 'GA', 'NC']
+  )
+})
+
+test('tipping points from the tipping-point market', () => {
+  const answer = (id: string, text: string, p: number, isOther = false) => ({
+    id,
+    text,
+    poolYes: (1 - p) * 100,
+    poolNo: p * 100,
+    prob: p,
+    isOther,
+  })
+  const market = (over: object) =>
+    ({
+      id: 'tip',
+      slug: 'which-state-will-be-the-tipping-point',
+      outcomeType: 'MULTIPLE_CHOICE',
+      mechanism: 'cpmm-multi-2',
+      shouldAnswersSumToOne: true,
+      answers: [
+        answer('pa', 'Pennsylvania', 0.3),
+        answer('ga', 'Georgia', 0.2),
+        answer('wv', 'West Virginia', 0.05),
+        answer('va', 'Virginia', 0.1),
+        answer('dc', 'Washington, D.C.', 0.01),
+        answer('wa', 'Washington', 0.04),
+        answer('nc', 'NC', 0.12),
+        answer('me2', "Maine's 2nd District", 0.03),
+        answer('pr', 'Puerto Rico', 0.02),
+        answer('xx', 'Atlantis', 0.03),
+        answer('o', 'Other', 0.1, true),
+      ],
+      ...over,
+    } as unknown as Contract)
+  const near = (x: number, y: number) =>
+    assert.ok(Math.abs(x - y) < 1e-9, `${x} ≈ ${y}`)
+
+  // Open: each state by its postal code, likeliest first. Other, a
+  // territory and a name that's no state are left out; a district reads as
+  // its state.
+  const open = marketTippingPoints(market({}))
+  assert.deepEqual(
+    open.map((t) => t.key),
+    ['PA', 'GA', 'NC', 'VA', 'WV', 'WA', 'ME', 'DC']
+  )
+  near(open[0].p, 0.3)
+  near(open.find((t) => t.key === 'WV')!.p, 0.05)
+  near(open.find((t) => t.key === 'DC')!.p, 0.01)
+
+  // Two answers for one state add up.
+  const twice = marketTippingPoints(
+    market({
+      answers: [
+        answer('me', 'Maine', 0.04),
+        answer('me2', "Maine's 2nd District", 0.03),
+      ],
+    })
+  )
+  assert.equal(twice.length, 1)
+  near(twice[0].p, 0.07)
+
+  // Only a whole label names a state: DC however it's written, districts by
+  // name or key, and nothing for a phrase that merely mentions a state.
+  const labels = (texts: string[]) =>
+    marketTippingPoints(
+      market({ answers: texts.map((t, i) => answer(`a${i}`, t, 0.1)) })
+    ).map((t) => t.key)
+  assert.deepEqual(labels(['Washington DC']), ['DC'])
+  assert.deepEqual(labels(['D.C.']), ['DC'])
+  assert.deepEqual(labels(['District of Columbia']), ['DC'])
+  assert.deepEqual(labels(['NE-2']), ['NE'])
+  assert.deepEqual(labels(['Nebraska 2nd']), ['NE'])
+  assert.deepEqual(labels(["Maine's 2nd congressional district"]), ['ME'])
+  assert.deepEqual(labels(['pennsylvania ']), ['PA'])
+  assert.deepEqual(labels(['NE-3']), ['NE'])
+  assert.deepEqual(labels(['NE-9']), [])
+  assert.deepEqual(labels(['Maine 3rd district']), [])
+  assert.deepEqual(labels(['Iowa or Ohio']), [])
+  assert.deepEqual(labels(['Kansas City']), [])
+  assert.deepEqual(labels(['Virginia Beach']), [])
+
+  // Resolved to Georgia: Georgia alone, at 100%, whatever the pools say.
+  const georgia = marketTippingPoints(
+    market({ isResolved: true, resolution: 'ga' })
+  )
+  assert.deepEqual(georgia, [{ key: 'GA', p: 1 }])
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'ga' })),
+    'GA'
+  )
+  // Resolved to Other: no state, even when Other's label names one.
+  assert.deepEqual(
+    marketTippingPoints(
+      market({
+        isResolved: true,
+        resolution: 'o',
+        answers: [answer('ia', 'Ohio', 0.2), answer('o', 'Iowa', 0.8, true)],
+      })
+    ),
+    []
+  )
+  // A split payout (95% Other, 5% Pennsylvania): Pennsylvania at its share,
+  // and no winner.
+  const splitMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { o: 95, pa: 5 },
+  })
+  assert.deepEqual(marketTippingPoints(splitMarket), [{ key: 'PA', p: 0.05 }])
+  assert.equal(tippingWinnerOf(splitMarket), undefined)
+  // Any payout to Other, however small, means no state won in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 100, o: 0.00000001 },
+      })
+    ),
+    undefined
+  )
+  // Two states share it: each at its share, no winner.
+  const sharedMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { pa: 60, ga: 40 },
+  })
+  const shared = marketTippingPoints(sharedMarket)
+  assert.deepEqual(
+    shared.map((t) => t.key),
+    ['PA', 'GA']
+  )
+  near(shared[0].p, 0.6)
+  assert.equal(tippingWinnerOf(sharedMarket), undefined)
+  // All of it to one state through several answers (Nebraska and its
+  // districts): a win in full, decided by who was paid, not by the sum.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 20, ne2: 10 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.2),
+          answer('ne2', 'NE-2', 0.2),
+          answer('o', 'Other', 0.1, true),
+        ],
+      })
+    ),
+    'NE'
+  )
+  // Nebraska's answers adding to all of it with a sliver to Other: no
+  // winner, whatever the shares sum to.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 30, o: 0.05 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.3),
+          answer('o', 'Other', 0.2, true),
+        ],
+      })
+    ),
+    undefined
+  )
+  // A paid answer missing from this copy of the market: not a win in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 60, ga: 40 },
+        answers: [answer('pa', 'Pennsylvania', 0.6)],
+      })
+    ),
+    undefined
+  )
+  // Cancelled: no winner.
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'CANCEL' })),
+    undefined
+  )
+  // Open: no winner, however lopsided.
+  assert.equal(
+    tippingWinnerOf(market({ answers: [answer('pa', 'Pennsylvania', 0.99)] })),
+    undefined
+  )
+  // Independent answers aren't shares of one outcome: nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ shouldAnswersSumToOne: false })),
+    []
+  )
+  // N/A (nobody reached 270): nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ isResolved: true, resolution: 'CANCEL' })),
+    []
+  )
+  // No market, or not a multiple choice one.
+  assert.deepEqual(marketTippingPoints(null), [])
+  assert.deepEqual(
+    marketTippingPoints({
+      outcomeType: 'BINARY',
+      mechanism: 'cpmm-1',
+    } as unknown as Contract),
+    []
+  )
+})
+
+test('search finds states, names and districts', () => {
+  assert.ok(matchesPlace('PA', 'pa'))
+  assert.ok(matchesPlace('PA', 'penn'))
+  assert.ok(matchesPlace('PA-1', 'Pennsylvania'))
+  assert.ok(matchesPlace('TX-15', 'TX-15'))
+  assert.ok(matchesPlace('TX-15', 'tx 15'))
+  assert.ok(!matchesPlace('TX-1', 'TX-15'))
+  assert.ok(matchesPlace('AK-0', 'ak-al'))
+  assert.ok(matchesPlace('PR', 'puerto'))
+  // "Virginia" also names West Virginia; a code is exact.
+  assert.ok(matchesPlace('WV', 'virginia'))
+  assert.ok(!matchesPlace('WV', 'va'))
+  assert.ok(matchesPlace('OH', 'pa, oh'))
+  assert.ok(!matchesPlace('PA', 'p'))
+})
+
+test("a state's panel lists every market it has, by office", () => {
+  const pa = statePanel('PA', races, primaries, [
+    {
+      question: 'Who will win the 2027 Pennsylvania Supreme Court retention?',
+      slug: 'pa-court',
+      creatorUsername: 'Someone',
+    },
+    {
+      question: 'Who will be elected governor of Kentucky in 2027?',
+      slug: 'ky',
+      creatorUsername: 'ManifoldPolitics',
+    },
+  ])
+  assert.deepEqual(
+    pa.map((s) => [s.key, s.rows.map((r) => r.label)]),
+    [
+      ['president', ['Electoral votes (19)', 'Popular vote']],
+      ['senate', ['Senate']],
+      ['house', ['1st district', '12th district']],
+      [
+        'primaries',
+        [
+          'Democratic presidential primary',
+          'Democratic Senate primary',
+          'Republican Senate primary',
+        ],
+      ],
+      ['more', ['Who will win the 2027 Pennsylvania Supreme Court retention?']],
+    ]
+  )
+  const me = statePanel('ME', races, [])
+  assert.deepEqual(
+    me[0].rows.map((r) => [r.key, r.label]),
+    [
+      ['P-ME', 'Statewide (2)'],
+      ['P-ME-2', '2nd district (1 EV)'],
+    ]
+  )
+  // A prior-only row has no market, so nothing to list.
+  assert.deepEqual(statePanel('WY', races, []), [])
+  assert.deepEqual(
+    statePanel('MN', races, primaries)[0].rows.map((r) => r.label),
+    ['Democratic Senate primary (2027 special)']
+  )
+  assert.deepEqual(
+    statePanel('CA', races, primaries)
+      .find((s) => s.key === 'primaries')
+      ?.rows.map((r) => r.label),
+    ['Senate primary, all parties']
+  )
+  assert.equal(statePanel('AK', races, [])[0].rows[0].label, 'At-large')
+  assert.equal(statePanel('TN', races, [])[0].rows[0].label, 'Special election')
+})
+
+test('a clicked place opens the race behind its color', () => {
+  assert.equal(focusRowKey(view({}), 'PA'), 'P-PA')
+  assert.equal(focusRowKey(view({}), 'ME-2'), 'P-ME-2')
+  assert.equal(focusRowKey(view({ mode: 'senate' }), 'PA'), 'S-PA')
+  assert.equal(focusRowKey(view({ mode: 'house' }), 'PA-12'), 'H-PA-12')
+  assert.equal(focusRowKey(view({ mode: 'house' }), 'AK-0'), 'H-AK-0')
+  // Its keys are the panel's.
+  const rows = statePanel('PA', races, primaries).flatMap((s) => s.rows)
+  assert.ok(rows.some((r) => r.key === 'H-PA-12'))
+  assert.ok(rows.some((r) => r.key === 'S-PA'))
+})
+
+test('places are named for people', () => {
+  assert.equal(placeTitle('PA'), 'Pennsylvania')
+  assert.equal(placeTitle('PA-1'), "Pennsylvania's 1st district")
+  assert.equal(placeTitle('NY-12'), "New York's 12th district")
+  assert.equal(placeTitle('AK-0'), 'Alaska at-large')
+  assert.equal(placeTitle('ME', true), 'Maine statewide')
+  assert.equal(placeTitle('PR'), 'Puerto Rico')
+  assert.equal(placeTitle('DA'), 'Democrats Abroad')
+})
+
+test('fills read as odds, leaders and calls', () => {
+  assert.equal(describeFill({ kind: 'rating', p: 0.64 }), 'D 64%')
+  assert.equal(describeFill({ kind: 'rating', p: 0.2 }), 'R 80%')
+  assert.equal(describeFill({ kind: 'rating', p: 0.999 }), 'D >99%')
+  // As shown, 50.3% is even, here as on the hover card.
+  assert.equal(describeFill({ kind: 'rating', p: 0.503 }), 'Even')
+  assert.equal(describeFill({ kind: 'rating', p: 0.7, c: 'R' }), 'Called for R')
+  assert.equal(
+    describeFill({ kind: 'open', name: 'Padilla', p: 0.8 }),
+    'Padilla 80%'
+  )
+  assert.equal(
+    describeFill({ kind: 'open', name: 'Padilla', p: 1, won: true }),
+    'Won: Padilla'
+  )
+  assert.equal(describeFill({ kind: 'open' }), 'No leader yet')
+})
+
+test('a contest with no leader is its own group, not "someone else"', () => {
+  const rows: PrimaryRow[] = [
+    ...primaries,
+    { k: 'P-OH-2028', o: 'P', st: 'OH', D: { s: 'oh-d' } },
+  ]
+  const fills = mapFills(view({ mode: 'primary' }), races, rows)
+  assert.equal(fills.OH.kind === 'leader' && fills.OH.color, NO_LEADER_COLOR)
+  const t = mapTracker(view({ mode: 'primary' }), races, rows)
+  assert.deepEqual(t.segments[t.segments.length - 1], {
+    key: 'leader:none',
+    label: 'No leader yet',
+    count: 1,
+    tone: 'leader',
+    color: NO_LEADER_COLOR,
+    places: ['OH'],
+  })
+})
+
+test("a clicked primary opens the market behind the state's color", () => {
+  const d = view({ mode: 'primary', office: 'S', party: 'D' })
+  assert.equal(primaryRowKey(d, primaries, 'PA'), 'S-PA-2028-D')
+  assert.equal(primaryRowKey(d, primaries, 'CA'), 'S-CA-2028-A')
+  assert.equal(primaryRowKey(d, primaries, 'MN'), 'S-MN-sp-2027-D')
+  assert.equal(primaryRowKey({ ...d, party: 'R' }, primaries, 'MN'), undefined)
+  // A regular top-two contest outranks a special with a party cell, on the
+  // map and in the card alike.
+  const both: PrimaryRow[] = [
+    { k: 'S-XX-sp', o: 'S', st: 'WA', sp: 1, D: cell('Sp', 0.5) },
+    { k: 'S-XX', o: 'S', st: 'WA', A: cell('Reg', 0.5) },
+  ]
+  assert.equal(primaryRowKey(d, both, 'WA'), 'S-XX-A')
+  assert.equal(mapFills(d, races, both).WA.kind, 'open')
+  // Its keys are the panel's.
+  const panelKeys = statePanel('PA', races, primaries)
+    .flatMap((s) => s.rows)
+    .map((r) => r.key)
+  assert.ok(panelKeys.includes('S-PA-2028-D'))
+})

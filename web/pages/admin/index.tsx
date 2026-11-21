@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { NoSEO } from 'web/components/NoSEO'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Title } from 'web/components/widgets/title'
+import { ModActionTag } from 'web/components/moderation/mod-action'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
@@ -17,7 +18,6 @@ export default function AdminPage() {
   useRedirectIfSignedOut()
   const isAdmin = useAdmin()
   const [manaStatus, setManaStatus] = useState(true)
-  const [cashStatus, setCashStatus] = useState(true)
   const [loanStatus, setLoanStatus] = useState(true)
   const [togglesEnabled, setTogglesEnabled] = useState(false)
 
@@ -30,18 +30,15 @@ export default function AdminPage() {
       .then((result) => {
         const statuses = result.data ?? []
         setManaStatus(statuses.find((s) => s.token === 'MANA')?.status ?? true)
-        setCashStatus(statuses.find((s) => s.token === 'CASH')?.status ?? true)
         setLoanStatus(statuses.find((s) => s.token === 'LOAN')?.status ?? true)
       })
   }, [])
 
-  const toggleStatus = async (token: 'MANA' | 'CASH' | 'LOAN') => {
+  const toggleStatus = async (token: 'MANA' | 'LOAN') => {
     if (!togglesEnabled) return
     const result = await api('toggle-system-trading-status', { token })
     if (token === 'MANA') {
       setManaStatus(result.status)
-    } else if (token === 'CASH') {
-      setCashStatus(result.status)
     } else {
       setLoanStatus(result.status)
     }
@@ -53,7 +50,10 @@ export default function AdminPage() {
     <Page trackPageView={'admin page'}>
       <NoSEO />
       <div className="mx-8">
-        <Title>Admin</Title>
+        <Title>
+          Admin
+          <ModActionTag admin className="ml-2 align-middle" />
+        </Title>
         <Row className="mb-4 flex items-center justify-around gap-2 p-2">
           <span> Toggles: {togglesEnabled ? 'Unlocked' : 'Locked'} </span>
           <ShortToggle
@@ -67,12 +67,6 @@ export default function AdminPage() {
             setOn={() => toggleStatus('MANA')}
             disabled={!togglesEnabled}
           />
-          <span>Cash trading: {cashStatus ? 'Enabled' : 'Disabled'}</span>
-          <ShortToggle
-            on={cashStatus}
-            setOn={() => toggleStatus('CASH')}
-            disabled={!togglesEnabled}
-          />
           <span>Loans: {loanStatus ? 'Enabled' : 'Disabled'}</span>
           <ShortToggle
             on={loanStatus}
@@ -81,6 +75,11 @@ export default function AdminPage() {
           />
         </Row>
 
+        <LabCard title="🧾 sales" href="/admin/sales" />
+        <LabCard title="🎟️ manifest tickets" href="/admin/tickets" />
+        <LabCard title="🆕 new users" href="/admin/new-users" />
+        <LabCard title="🎁 prize payouts" href="/admin/prize" />
+        <LabCard title="🐋 whales" href="/admin/whales" />
         <LabCard title="💹 stats" href="/stats" />
         <LabCard
           title="🍚 umami"
@@ -95,9 +94,15 @@ export default function AdminPage() {
           title="💤 postgres logs"
           href="https://app.supabase.com/project/pxidrgkatumlvfqaxcll/logs/postgres-logs"
         />
-        <LabCard title="🗺️ user journeys" href="/admin/journeys" />
-        <LabCard title="🥩 new user questions" href="/newbies" />
+        <LabCard title="⚽ sports markets" href="/admin/sports" />
+        <LabCard title="📈 create perp market" href="/admin/create-perp" />
+        <LabCard title="MNX partner dashboard" href="/admin/mnx" />
+        <LabCard
+          title="🧭 OpenRouter classifications"
+          href="/admin/model-classifications"
+        />
         <LabCard title="🤬 reports" href="/admin/reports" />
+        <LabCard title="👕 merch management" href="/admin/merch" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
         <LabCard title="👤 update user" href="/admin/update-user" />
@@ -137,13 +142,5 @@ export default function AdminPage() {
         </Row>
       </div>
     </Page>
-  )
-}
-
-const Badge = (props: { src: string; href: string }) => {
-  return (
-    <a href={props.href}>
-      <img src={props.src} alt="" />
-    </a>
   )
 }

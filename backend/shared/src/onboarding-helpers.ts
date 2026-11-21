@@ -188,6 +188,11 @@ const processUserForBonus = async (
     return undefined
   }
 
+  // The next-day bonus is a pure retention nudge (come back the day after
+  // signup), so it goes to ALL new users at the full amount — regardless of
+  // verification/eligibility tier. It's one-time per account (manaBonusSent
+  // above), so it isn't a farmable ongoing bonus.
+
   const result: SignupBonusResult = {}
 
   // Prepare private user update

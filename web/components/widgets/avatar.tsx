@@ -20,6 +20,7 @@ import {
   BullHornSvg,
   BearEarSvg,
   CatEarSvg,
+  CatWhiskersSvg,
   SantaHatSvg,
   BunnyEarSvg,
   WizardHatSvg,
@@ -27,6 +28,9 @@ import {
   JesterHatSvg,
   FedoraSvg,
   DevilHornSvg,
+  HaloSvg,
+  HALO_BACK_ARC,
+  HALO_FRONT_ARC,
 } from '../shop/item-svgs'
 import {
   userHasAvatarDecoration,
@@ -47,8 +51,22 @@ import {
   shouldAnimatePropeller,
   shouldAnimateFireItem,
 } from 'common/shop/display-config'
+import { isAprilFools } from 'common/util/time'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+
+/** Pick a per-size value from a partial lookup. Missing sizes fall through to
+ *  `fallback` (typically the lg/default value). Replaces long nested ternaries
+ *  like `size === '2xs' || size === 'xs' ? A : size === 'sm' ? B : C`. */
+export function pickBySize<T>(
+  size: AvatarSizeType | undefined,
+  table: Partial<Record<AvatarSizeType, T>>,
+  fallback: T
+): T {
+  const resolved = size ?? 'lg'
+  const v = table[resolved]
+  return v !== undefined ? v : fallback
+}
 export const Avatar = memo(
   (props: {
     username?: string
@@ -123,6 +141,7 @@ export const Avatar = memo(
     )
     const hasBadAura = userHasAvatarDecoration(entitlements, 'avatar-bad-aura')
     // Get active avatar overlay (hat) - excludes halo and crown since they're unique slots
+    const aprilFools = isAprilFools()
     const activeOverlay = getActiveAvatarOverlay(entitlements)
     const overlayStyle = getOverlayStyle(entitlements, activeOverlay)
     // Check for halo separately (unique slot - combines with other hats)
@@ -190,6 +209,12 @@ export const Avatar = memo(
         ? 'h-4 w-4'
         : 'h-5 w-5'
 
+    // April Fools: scale hat size by entitlement count (wealth proxy)
+    const entitlementCount = entitlements?.length ?? 0
+    const hatScale = aprilFools
+      ? 1.5 + Math.min(entitlementCount, 12) * 0.25
+      : 1
+
     // Scale position offset based on avatar size
     // For small avatars, position hat more towards top-right corner to avoid golden glow overlap
     const hatPositionClass =
@@ -248,7 +273,25 @@ export const Avatar = memo(
         {hasFireItem && (
           <FireItemDecoration size={size} animate={animateFireItem} />
         )}
-        {/* Angel wings - feathered wings flanking avatar (behind profile pic) */}
+        {/* Solid border ring — extracted from the avatar image so wings can
+            sit on top of it (but still behind the avatar photo itself).
+            isUserFresh's ring is applied directly to the image/icon below so
+            it tracks the avatar even when a margin class (e.g. mt-0.5) is
+            passed in via className and offsets the image inside the wrapper. */}
+        {(hasGoldenBorder || hasBadAura || hasManaAura || hasBlackHole) && (
+          <div
+            className={clsx(
+              'pointer-events-none absolute inset-0 rounded-full',
+              hasGoldenBorder && 'ring-2 ring-amber-400',
+              hasBadAura && 'ring-2 ring-red-500',
+              hasManaAura && 'ring-2 ring-violet-400',
+              hasBlackHole &&
+                'shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40'
+            )}
+            style={{ zIndex: -2 }}
+          />
+        )}
+        {/* Angel wings - feathered wings flanking avatar (behind profile pic, in front of border ring) */}
         {hasAngelWings && (
           <AngelWingsDecoration
             size={size}
@@ -278,14 +321,8 @@ export const Avatar = memo(
               'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
               `w-${s} h-${s}`,
               !noLink && 'cursor-pointer',
-              className,
               isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400',
-              hasBadAura && 'relative ring-2 ring-red-500',
-              hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole &&
-                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
-              hasFireItem && 'relative'
+              className
             )}
             style={{
               maxWidth: `${s * 0.25}rem`,
@@ -305,14 +342,8 @@ export const Avatar = memo(
           <UserCircleIcon
             className={clsx(
               `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
-              className,
               isUserFresh && 'ring-1 ring-green-500',
-              hasGoldenBorder && 'relative ring-2 ring-amber-400',
-              hasBadAura && 'relative ring-2 ring-red-500',
-              hasManaAura && 'relative ring-2 ring-violet-400',
-              hasBlackHole &&
-                'relative shadow-[0_0_6px_rgba(147,51,234,0.5)] ring-1 ring-purple-500/40',
-              hasFireItem && 'relative'
+              className
             )}
             style={{ position: 'relative', zIndex: 0 }}
             onClick={onClick}
@@ -328,8 +359,10 @@ export const Avatar = memo(
             <LuSprout className="h-4 w-4 text-green-500" />
           </div>
         )}
-        {/* Avatar overlay (hat) - sandwiched between halo halves */}
-        {activeOverlay && (
+        {/* Head-appendage overlays (ears, horns) render BEHIND the accessory
+            so a face-covering accessory (disguise) sits in front of them —
+            they sprout from the head, not above it. */}
+        {activeOverlay && isHeadAppendageOverlay(activeOverlay) && (
           <AvatarOverlay
             overlay={activeOverlay}
             hatSizeClass={hatSizeClass}
@@ -339,6 +372,27 @@ export const Avatar = memo(
             animatePropeller={animatePropeller}
             size={size}
             capStyle={overlayStyle}
+            hatScale={hatScale}
+          />
+        )}
+        {/* Avatar accessory — sits on the face, covers head appendages behind
+            but not actual hats in front. */}
+        {activeAccessory && (
+          <AvatarAccessory accessory={activeAccessory} size={size} />
+        )}
+        {/* Actual hats (caps, top hats, wizard hats, etc.) — render ON TOP
+            of the accessory so the brim / crown sits above the disguise. */}
+        {activeOverlay && !isHeadAppendageOverlay(activeOverlay) && (
+          <AvatarOverlay
+            overlay={activeOverlay}
+            hatSizeClass={hatSizeClass}
+            hatPositionClass={hatPositionClass}
+            animateHatOnHover={animateHatOnHover}
+            animateHat={animateHat}
+            animatePropeller={animatePropeller}
+            size={size}
+            capStyle={overlayStyle}
+            hatScale={hatScale}
           />
         )}
         {/* Crown — unique slot, sandwiched between halo halves */}
@@ -352,6 +406,7 @@ export const Avatar = memo(
             animatePropeller={false}
             size={size}
             crownPosition={crownPosition}
+            hatScale={hatScale}
           />
         )}
         {/* Halo front half — in front of the avatar (and hat/crown if any) */}
@@ -366,10 +421,6 @@ export const Avatar = memo(
             size={size}
             haloHalf="front"
           />
-        )}
-        {/* Avatar accessory */}
-        {activeAccessory && (
-          <AvatarAccessory accessory={activeAccessory} size={size} />
         )}
       </div>
     )
@@ -396,7 +447,7 @@ function AngelWingsDecoration(props: {
           animateOnHover && 'group-hover:rotate-6',
           animate && 'rotate-6'
         )}
-        style={{ left: offset, width: wingW, height: wingH, zIndex: -2 }}
+        style={{ left: offset, width: wingW, height: wingH, zIndex: -1 }}
       >
         <AngelWingSvg style={{ width: wingW, height: wingH, opacity: 0.9 }} />
       </div>
@@ -407,7 +458,7 @@ function AngelWingsDecoration(props: {
           animateOnHover && 'group-hover:-rotate-6',
           animate && '-rotate-6'
         )}
-        style={{ right: offset, width: wingW, height: wingH, zIndex: -2 }}
+        style={{ right: offset, width: wingW, height: wingH, zIndex: -1 }}
       >
         <AngelWingSvg
           style={{
@@ -505,18 +556,6 @@ function FireItemForeground(props: {
           0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
           100% { transform: translate(1px, -18px) scale(0); opacity: 0; }
         }
-        @keyframes wisp-drift-1 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(6px) translateY(-1.5px); }
-        }
-        @keyframes wisp-drift-2 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(5px) translateY(1px); }
-        }
-        @keyframes wisp-drift-3 {
-          0%, 100% { transform: translateX(0) translateY(0); }
-          50% { transform: translateX(4px) translateY(-1px); }
-        }
         @keyframes flame-smoke-drift-1 {
           0% { transform: translate(0, 0); opacity: 0.7; }
           50% { transform: translate(-6px, -8px); opacity: 0.4; }
@@ -581,62 +620,6 @@ function FireItemForeground(props: {
               'radial-gradient(ellipse at 70% 75%, rgba(249,115,22,0.35) 0%, rgba(234,88,12,0.2) 25%, rgba(220,38,38,0.1) 45%, transparent 70%)',
           }}
         />
-        {/* Wispy smoke streaks — left-to-right, over the avatar */}
-        <div
-          className="absolute"
-          style={{
-            left: '10%',
-            top: '55%',
-            width: '80%',
-            height: '4px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.45) 20%, rgba(180,185,195,0.3) 60%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(1.5px)',
-            ...(animate
-              ? { animation: 'wisp-drift-1 4s ease-in-out infinite' }
-              : {}),
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            left: '5%',
-            top: '40%',
-            width: '65%',
-            height: '3.5px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.4) 30%, rgba(180,185,195,0.25) 70%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(2px)',
-            ...(animate
-              ? {
-                  animation: 'wisp-drift-2 5s ease-in-out infinite',
-                  animationDelay: '0.8s',
-                }
-              : {}),
-          }}
-        />
-        <div
-          className="absolute"
-          style={{
-            left: '20%',
-            top: '68%',
-            width: '70%',
-            height: '3.5px',
-            background:
-              'linear-gradient(90deg, transparent 0%, rgba(200,205,215,0.42) 25%, rgba(180,185,195,0.28) 55%, transparent 100%)',
-            borderRadius: '2px',
-            filter: 'blur(1.5px)',
-            ...(animate
-              ? {
-                  animation: 'wisp-drift-3 4.5s ease-in-out infinite',
-                  animationDelay: '1.5s',
-                }
-              : {}),
-          }}
-        />
-
         {/* Ember particles — above the flames, drift upward when animated */}
         <div
           className="absolute h-[2px] w-[2px] rounded-full bg-amber-400"
@@ -1369,6 +1352,20 @@ export function BlackCapSvg({ style = 0 }: { style?: number }) {
   )
 }
 
+// Overlays in the "hat" slot that are anatomically part of the head
+// (ears, horns) rather than a hat resting on top of the head. These render
+// BEHIND face-covering accessories (the disguise) so the mask sits on top
+// of them, matching real-world physics.
+const HEAD_APPENDAGE_OVERLAYS = new Set<AvatarDecorationId>([
+  'avatar-cat-ears',
+  'avatar-bear-ears',
+  'avatar-bunny-ears',
+  'avatar-bull-horns',
+  'avatar-devil-horns',
+])
+const isHeadAppendageOverlay = (id: AvatarDecorationId): boolean =>
+  HEAD_APPENDAGE_OVERLAYS.has(id)
+
 // Component to render avatar overlays (hats)
 function AvatarOverlay(props: {
   overlay: AvatarDecorationId
@@ -1381,6 +1378,7 @@ function AvatarOverlay(props: {
   haloHalf?: 'back' | 'front'
   capStyle?: number
   crownPosition?: CrownPosition
+  hatScale?: number
 }) {
   const {
     overlay,
@@ -1393,6 +1391,7 @@ function AvatarOverlay(props: {
     haloHalf,
     capStyle = 0,
     crownPosition = 0,
+    hatScale = 1,
   } = props
 
   // Corner position (for graduation cap, microphone - sits at top-right)
@@ -1446,752 +1445,813 @@ function AvatarOverlay(props: {
     animateHat && '-translate-y-0.5 scale-110'
   )
 
-  switch (overlay) {
-    case 'avatar-crown': {
-      // Position order: 0=Right, 1=Left, 2=Center (smooth directional cycling)
-      const positionClasses =
-        crownPosition === 2
-          ? crownCenterClasses
-          : crownPosition === 1
-          ? crownLeftClasses
-          : crownRightClasses
-      return (
-        <div className={positionClasses}>
-          <LuCrown
-            className={clsx(hatSizeClass, 'text-amber-500')}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-        </div>
-      )
-    }
-    case 'avatar-graduation-cap':
-      return (
-        <div className={cornerClasses}>
-          <LuGraduationCap className={clsx(hatSizeClass, 'text-indigo-500')} />
-        </div>
-      )
-    case 'avatar-top-hat':
-      return (
-        <div className={centeredClasses}>
-          {/* Light mode */}
-          <GiTopHat
-            className={clsx(hatSizeClass, 'text-gray-800 dark:hidden')}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-          {/* Dark mode - black with white outline */}
-          <GiTopHat
-            className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
-            style={{
-              filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
-            }}
-          />
-        </div>
-      )
-    case 'avatar-halo': {
-      // Unified halo dimensions — same whether hat is equipped or not
-      const haloW =
-        size === '2xs' || size === 'xs'
-          ? '1.75rem'
-          : size === 'sm'
-          ? '2.35rem'
-          : '3.3rem'
-      const haloH =
-        size === '2xs' || size === 'xs'
-          ? '0.55rem'
-          : size === 'sm'
-          ? '0.65rem'
-          : '0.85rem'
-      const haloPositionClass = clsx(
-        'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
-        size === '2xs' || size === 'xs'
-          ? '-top-0.5'
-          : size === 'sm'
-          ? '-top-1'
-          : '-top-1.5',
-        animateHatOnHover && 'group-hover:-translate-y-0.5',
-        animateHat && '-translate-y-0.5'
-      )
-
-      // Halo stroke colors: white with amber lining
-      const whiteStroke = 'rgba(255, 252, 240, 0.95)'
-      const amberStroke = 'rgba(217, 170, 50, 0.7)'
-      const amberStrokeDark = 'rgba(200, 160, 60, 0.5)'
-
-      // When split for hat overlap, render only one arc half
-      // Otherwise render the full ellipse — same viewBox/sizes either way
-      const arcPath = haloHalf
-        ? haloHalf === 'back'
-          ? 'M 2,6 A 18,5 0 0,0 38,6' // counter-clockwise = lower arc (behind hat)
-          : 'M 2,6 A 18,5 0 0,1 38,6' // clockwise = upper arc (in front of hat)
-        : null
-
-      const lightFilter =
-        'drop-shadow(0 0 3px rgba(245, 200, 80, 0.5)) drop-shadow(0 0 1px rgba(217, 170, 50, 0.6))'
-      const darkFilter =
-        'drop-shadow(0 0 3px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 6px rgba(255, 255, 200, 0.4))'
-
-      return (
-        <div className={haloPositionClass}>
-          {/* Light mode */}
-          <svg
-            className="dark:hidden"
-            width={haloW}
-            height={haloH}
-            viewBox="0 0 40 12"
-            overflow="visible"
-            style={{ transform: 'rotate(-8deg)', filter: lightFilter }}
-          >
-            {arcPath ? (
-              <>
-                <path
-                  d={arcPath}
-                  stroke={amberStroke}
-                  strokeWidth="3.5"
-                  fill="none"
-                />
-                <path
-                  d={arcPath}
-                  stroke={whiteStroke}
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </>
-            ) : (
-              <>
-                <ellipse
-                  cx="20"
-                  cy="6"
-                  rx="18"
-                  ry="5"
-                  stroke={amberStroke}
-                  strokeWidth="3.5"
-                  fill="none"
-                />
-                <ellipse
-                  cx="20"
-                  cy="6"
-                  rx="18"
-                  ry="5"
-                  stroke={whiteStroke}
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </>
-            )}
-          </svg>
-          {/* Dark mode */}
-          <svg
-            className="hidden dark:block"
-            width={haloW}
-            height={haloH}
-            viewBox="0 0 40 12"
-            overflow="visible"
-            style={{ transform: 'rotate(-8deg)', filter: darkFilter }}
-          >
-            {arcPath ? (
-              <>
-                <path
-                  d={arcPath}
-                  stroke={amberStrokeDark}
-                  strokeWidth="3.5"
-                  fill="none"
-                />
-                <path
-                  d={arcPath}
-                  stroke={whiteStroke}
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </>
-            ) : (
-              <>
-                <ellipse
-                  cx="20"
-                  cy="6"
-                  rx="18"
-                  ry="5"
-                  stroke={amberStrokeDark}
-                  strokeWidth="3.5"
-                  fill="none"
-                />
-                <ellipse
-                  cx="20"
-                  cy="6"
-                  rx="18"
-                  ry="5"
-                  stroke={whiteStroke}
-                  strokeWidth="1.5"
-                  fill="none"
-                />
-              </>
-            )}
-          </svg>
-        </div>
-      )
-    }
-    case 'avatar-propeller-hat': {
-      // Propeller hat - seated closer to avatar than other corner hats
-      const propellerPositionClass =
-        size === '2xs' || size === 'xs'
-          ? '-right-0.5 -top-0.5'
-          : size === 'sm'
-          ? '-right-1 -top-0.5'
-          : '-right-1 top-0'
-      const propellerClasses = clsx(
-        'absolute transition-transform duration-300',
-        propellerPositionClass,
-        'rotate-45',
-        animateHatOnHover &&
-          'group-hover:-translate-y-0.5 group-hover:scale-110',
-        animateHat && '-translate-y-0.5 scale-110'
-      )
-      return (
-        <div className={propellerClasses}>
-          <div className="relative flex flex-col items-center">
-            {/* Beanie dome */}
-            <div
-              className={clsx(
-                'rounded-t-full bg-red-500',
-                size === '2xs' || size === 'xs'
-                  ? 'h-1.5 w-3'
-                  : size === 'sm'
-                  ? 'h-2 w-4'
-                  : 'h-2.5 w-5'
-              )}
+  const content = (() => {
+    switch (overlay) {
+      case 'avatar-crown': {
+        // Position order: 0=Right, 1=Left, 2=Center (smooth directional cycling)
+        const positionClasses =
+          crownPosition === 2
+            ? crownCenterClasses
+            : crownPosition === 1
+            ? crownLeftClasses
+            : crownRightClasses
+        return (
+          <div className={positionClasses}>
+            <LuCrown
+              className={clsx(hatSizeClass, 'text-amber-500')}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
             />
-            {/* Propeller blades - positioned to overlap beanie top */}
-            <div
-              className="absolute"
+          </div>
+        )
+      }
+      case 'avatar-graduation-cap':
+        return (
+          <div className={cornerClasses}>
+            <LuGraduationCap
+              className={clsx(hatSizeClass, 'text-indigo-500')}
+            />
+          </div>
+        )
+      case 'avatar-top-hat':
+        return (
+          <div className={centeredClasses}>
+            {/* Light mode */}
+            <GiTopHat
+              className={clsx(hatSizeClass, 'text-gray-800 dark:hidden')}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiTopHat
+              className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
               style={{
-                top:
-                  size === '2xs' || size === 'xs'
-                    ? -5
-                    : size === 'sm'
-                    ? -6
-                    : -8,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                ...(animatePropeller ? { perspective: '80px' } : {}),
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
               }}
-            >
+            />
+          </div>
+        )
+      case 'avatar-halo': {
+        const haloW = pickBySize(
+          size,
+          { '2xs': '1.75rem', xs: '1.75rem', sm: '2.35rem' },
+          '3.3rem'
+        )
+        const haloH = pickBySize(
+          size,
+          { '2xs': '0.55rem', xs: '0.55rem', sm: '0.65rem' },
+          '0.85rem'
+        )
+        const haloTopClass = pickBySize(
+          size,
+          { '2xs': '-top-0.5', xs: '-top-0.5', sm: '-top-1' },
+          '-top-1.5'
+        )
+        const haloPositionClass = clsx(
+          'absolute left-1/2 -translate-x-1/2 transition-transform duration-300',
+          haloTopClass,
+          animateHatOnHover && 'group-hover:-translate-y-0.5',
+          animateHat && '-translate-y-0.5'
+        )
+        // When split for hat overlap, render one arc half; otherwise the full
+        // ellipse — same viewBox either way.
+        const arcPath = haloHalf
+          ? haloHalf === 'back'
+            ? HALO_BACK_ARC
+            : HALO_FRONT_ARC
+          : null
+
+        return (
+          <div className={haloPositionClass}>
+            <HaloSvg width={haloW} height={haloH} arcPath={arcPath} />
+          </div>
+        )
+      }
+      case 'avatar-propeller-hat': {
+        // Propeller hat - seated closer to avatar than other corner hats
+        const propellerPositionClass =
+          size === '2xs' || size === 'xs'
+            ? '-right-0.5 -top-0.5'
+            : size === 'sm'
+            ? '-right-1 -top-0.5'
+            : '-right-1 top-0'
+        const propellerClasses = clsx(
+          'absolute transition-transform duration-300',
+          propellerPositionClass,
+          'rotate-45',
+          animateHatOnHover &&
+            'group-hover:-translate-y-0.5 group-hover:scale-110',
+          animateHat && '-translate-y-0.5 scale-110'
+        )
+        return (
+          <div className={propellerClasses}>
+            <div className="relative flex flex-col items-center">
+              {/* Beanie dome */}
               <div
-                style={
-                  animatePropeller ? { transform: 'rotateX(50deg)' } : undefined
-                }
+                className={clsx(
+                  'rounded-t-full bg-red-500',
+                  size === '2xs' || size === 'xs'
+                    ? 'h-1.5 w-3'
+                    : size === 'sm'
+                    ? 'h-2 w-4'
+                    : 'h-2.5 w-5'
+                )}
+              />
+              {/* Propeller blades - positioned to overlap beanie top */}
+              <div
+                className="absolute"
+                style={{
+                  top:
+                    size === '2xs' || size === 'xs'
+                      ? -5
+                      : size === 'sm'
+                      ? -6
+                      : -8,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  ...(animatePropeller ? { perspective: '80px' } : {}),
+                }}
               >
-                <svg
-                  width={
-                    size === '2xs' || size === 'xs'
-                      ? 10
-                      : size === 'sm'
-                      ? 12
-                      : 16
-                  }
-                  height={
-                    size === '2xs' || size === 'xs'
-                      ? 10
-                      : size === 'sm'
-                      ? 12
-                      : 16
-                  }
-                  viewBox="0 0 18 18"
-                  className={clsx(animatePropeller && 'animate-spin')}
+                <div
                   style={
-                    animatePropeller ? { animationDuration: '0.5s' } : undefined
+                    animatePropeller
+                      ? { transform: 'rotateX(50deg)' }
+                      : undefined
                   }
                 >
-                  <rect
-                    x="1"
-                    y="7.5"
-                    width="6.5"
-                    height="3"
-                    rx="1.5"
-                    fill="#3B82F6"
-                  />
-                  <rect
-                    x="10.5"
-                    y="7.5"
-                    width="6.5"
-                    height="3"
-                    rx="1.5"
-                    fill="#EF4444"
-                  />
-                  <circle cx="9" cy="9" r="2.5" fill="#FBBF24" />
-                </svg>
+                  <svg
+                    width={
+                      size === '2xs' || size === 'xs'
+                        ? 10
+                        : size === 'sm'
+                        ? 12
+                        : 16
+                    }
+                    height={
+                      size === '2xs' || size === 'xs'
+                        ? 10
+                        : size === 'sm'
+                        ? 12
+                        : 16
+                    }
+                    viewBox="0 0 18 18"
+                    className={clsx(animatePropeller && 'animate-spin')}
+                    style={
+                      animatePropeller
+                        ? { animationDuration: '0.5s' }
+                        : undefined
+                    }
+                  >
+                    <rect
+                      x="1"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#3B82F6"
+                    />
+                    <rect
+                      x="10.5"
+                      y="7.5"
+                      width="6.5"
+                      height="3"
+                      rx="1.5"
+                      fill="#EF4444"
+                    />
+                    <circle cx="9" cy="9" r="2.5" fill="#FBBF24" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )
-    }
-    case 'avatar-wizard-hat':
-      return (
-        <div className={cornerClasses}>
-          <WizardHatSvg
-            className={clsx(hatSizeClass)}
-            style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
-          />
-        </div>
-      )
-    case 'avatar-tinfoil-hat':
-      return (
-        <div className={cornerClasses}>
-          <TinfoilHatSvg
-            className={clsx(hatSizeClass)}
-            style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
-          />
-        </div>
-      )
-    case 'avatar-microphone':
-      return (
-        <div className={cornerClasses}>
-          {/* Light mode */}
-          <GiDunceCap
-            className={clsx(hatSizeClass, 'text-gray-900 dark:hidden')}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-          {/* Dark mode - black with white outline */}
-          <GiDunceCap
-            className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
-            style={{
-              filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
-            }}
-          />
-        </div>
-      )
-    case 'avatar-jester-hat': {
-      const jesterSizeClass =
-        size === '2xs' || size === 'xs'
-          ? 'h-3 w-3'
-          : size === 'sm'
-          ? 'h-[1rem] w-[1rem]'
-          : 'h-5 w-5'
-      return (
-        <div
-          className={clsx(
-            'absolute rotate-45 transition-transform duration-300',
-            size === '2xs' || size === 'xs'
-              ? '-right-1.5 -top-1.5'
-              : size === 'sm'
-              ? '-right-1.5 -top-2'
-              : '-right-2 -top-2.5',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:scale-110',
-            animateHat && '-translate-y-0.5 scale-110'
-          )}
-        >
-          <JesterHatSvg
-            className={clsx(jesterSizeClass)}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-        </div>
-      )
-    }
-    case 'avatar-fedora': {
-      return (
-        <div className={cornerClasses}>
-          <FedoraSvg
-            className={clsx(hatSizeClass)}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-        </div>
-      )
-    }
-    case 'avatar-devil-horns': {
-      const hornSize =
-        size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 12
-      const devilHornClasses = clsx(
-        'absolute transition-transform duration-300',
-        animateHatOnHover &&
-          'group-hover:-translate-y-0.5 group-hover:scale-110',
-        animateHat && '-translate-y-0.5 scale-110'
-      )
-      return (
-        <>
-          <DevilHornSvg
-            side="left"
-            className={devilHornClasses}
-            style={{
-              left:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
-              top:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-              width: hornSize,
-              height: hornSize,
-              filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
-              transform: 'rotate(-45deg)',
-            }}
-          />
-          <DevilHornSvg
-            side="right"
-            className={devilHornClasses}
-            style={{
-              right:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -3,
-              top:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-              width: hornSize,
-              height: hornSize,
-              filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
-              transform: 'rotate(45deg)',
-            }}
-          />
-        </>
-      )
-    }
-    case 'avatar-team-red-hat': {
-      // Red cap — 9 style variants
-      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
-      const capSizeFull =
-        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
-      const capSizeSmall =
-        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
-      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
-      const isFrontFacing = capStyle <= 2
-      const capSize = isSmall ? capSizeSmall : capSizeFull
-      return (
-        <div
-          className={clsx(
-            'absolute transition-transform duration-300',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
-            animateHat && '-translate-y-0.5 rotate-[-3deg]'
-          )}
-          style={{
-            left: '50%',
-            transform: isFrontFacing
-              ? 'translateX(-50%)'
-              : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs'
-                ? -2
-                : size === 'xs'
-                ? -3
+        )
+      }
+      case 'avatar-wizard-hat':
+        return (
+          <div className={cornerClasses}>
+            <WizardHatSvg
+              className={clsx(hatSizeClass)}
+              style={{ filter: 'drop-shadow(0 0 3px rgba(139, 92, 246, 0.5))' }}
+            />
+          </div>
+        )
+      case 'avatar-tinfoil-hat':
+        return (
+          <div className={cornerClasses}>
+            <TinfoilHatSvg
+              className={clsx(hatSizeClass)}
+              style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }}
+            />
+          </div>
+        )
+      case 'avatar-microphone':
+        return (
+          <div className={cornerClasses}>
+            {/* Light mode */}
+            <GiDunceCap
+              className={clsx(hatSizeClass, 'text-gray-900 dark:hidden')}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+            {/* Dark mode - black with white outline */}
+            <GiDunceCap
+              className={clsx(hatSizeClass, 'hidden text-gray-900 dark:block')}
+              style={{
+                filter: 'drop-shadow(0 0 1px white) drop-shadow(0 0 1px white)',
+              }}
+            />
+          </div>
+        )
+      case 'avatar-jester-hat': {
+        const jesterSizeClass =
+          size === '2xs' || size === 'xs'
+            ? 'h-3 w-3'
+            : size === 'sm'
+            ? 'h-[1rem] w-[1rem]'
+            : 'h-5 w-5'
+        return (
+          <div
+            className={clsx(
+              'absolute rotate-45 transition-transform duration-300',
+              size === '2xs' || size === 'xs'
+                ? '-right-1.5 -top-1.5'
                 : size === 'sm'
-                ? -5
-                : -7,
-            width: capSize,
-            height: capSize,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
-        >
-          <RedCapSvg style={capStyle} />
-        </div>
-      )
-    }
-    case 'avatar-team-green-hat': {
-      // Green cap — 9 style variants
-      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
-      const capSizeFull =
-        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
-      const capSizeSmall =
-        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
-      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
-      const isFrontFacing = capStyle <= 2
-      const capSize = isSmall ? capSizeSmall : capSizeFull
-      return (
-        <div
-          className={clsx(
-            'absolute transition-transform duration-300',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
-            animateHat && '-translate-y-0.5 rotate-[-3deg]'
-          )}
-          style={{
-            left: '50%',
-            transform: isFrontFacing
-              ? 'translateX(-50%)'
-              : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs'
-                ? -2
-                : size === 'xs'
-                ? -3
-                : size === 'sm'
-                ? -5
-                : -7,
-            width: capSize,
-            height: capSize,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
-        >
-          <GreenCapSvg style={capStyle} />
-        </div>
-      )
-    }
-    case 'avatar-black-cap': {
-      // Black cap — 9 style variants
-      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
-      const capSizeFull =
-        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
-      const capSizeSmall =
-        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
-      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
-      const isFrontFacing = capStyle <= 2
-      const capSize = isSmall ? capSizeSmall : capSizeFull
-      return (
-        <div
-          className={clsx(
-            'absolute transition-transform duration-300',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
-            animateHat && '-translate-y-0.5 rotate-[-3deg]'
-          )}
-          style={{
-            left: '50%',
-            transform: isFrontFacing
-              ? 'translateX(-50%)'
-              : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs'
-                ? -2
-                : size === 'xs'
-                ? -3
-                : size === 'sm'
-                ? -5
-                : -7,
-            width: capSize,
-            height: capSize,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
-        >
-          <BlackCapSvg style={capStyle} />
-        </div>
-      )
-    }
-    case 'avatar-blue-cap': {
-      // Blue cap — 9 style variants
-      // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
-      const capSizeFull =
-        size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
-      const capSizeSmall =
-        size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
-      const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
-      const isFrontFacing = capStyle <= 2
-      const capSize = isSmall ? capSizeSmall : capSizeFull
-      return (
-        <div
-          className={clsx(
-            'absolute transition-transform duration-300',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
-            animateHat && '-translate-y-0.5 rotate-[-3deg]'
-          )}
-          style={{
-            left: '50%',
-            transform: isFrontFacing
-              ? 'translateX(-50%)'
-              : 'translateX(-50%) rotate(-5deg)',
-            top:
-              size === '2xs'
-                ? -2
-                : size === 'xs'
-                ? -3
-                : size === 'sm'
-                ? -5
-                : -7,
-            width: capSize,
-            height: capSize,
-            filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
-          }}
-        >
-          <BlueCapSvg style={capStyle} />
-        </div>
-      )
-    }
-    case 'avatar-bull-horns': {
-      const hornW =
-        size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 26 : 32
-      const hornH =
-        size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 20 : 24
-      return (
-        <>
-          <BullHornSvg
-            className="absolute"
-            style={{
-              right: '50%',
-              top:
-                size === '2xs' || size === 'xs' ? -7 : size === 'sm' ? -9 : -11,
-              width: hornW,
-              height: hornH,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            }}
-          />
-          <BullHornSvg
-            className="absolute"
+                ? '-right-1.5 -top-2'
+                : '-right-2 -top-2.5',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+          >
+            <JesterHatSvg
+              className={clsx(jesterSizeClass)}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+        )
+      }
+      case 'avatar-fedora': {
+        return (
+          <div className={cornerClasses}>
+            <FedoraSvg
+              className={clsx(hatSizeClass)}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+        )
+      }
+      case 'avatar-devil-horns': {
+        const hornSize =
+          size === '2xs' || size === 'xs' ? 8 : size === 'sm' ? 10 : 12
+        const devilHornClasses = clsx(
+          'absolute transition-transform duration-300',
+          animateHatOnHover &&
+            'group-hover:-translate-y-0.5 group-hover:scale-110',
+          animateHat && '-translate-y-0.5 scale-110'
+        )
+        return (
+          <>
+            <DevilHornSvg
+              side="left"
+              className={devilHornClasses}
+              style={{
+                left:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -2
+                    : -3,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -3
+                    : -4,
+                width: hornSize,
+                height: hornSize,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(-45deg)',
+              }}
+            />
+            <DevilHornSvg
+              side="right"
+              className={devilHornClasses}
+              style={{
+                right:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -2
+                    : -3,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -3
+                    : -4,
+                width: hornSize,
+                height: hornSize,
+                filter: 'drop-shadow(0 0 2px rgba(220, 38, 38, 0.5))',
+                transform: 'rotate(45deg)',
+              }}
+            />
+          </>
+        )
+      }
+      case 'avatar-team-red-hat': {
+        // Red cap — 9 style variants
+        // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+        const capSizeFull =
+          size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
+        const capSizeSmall =
+          size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
+        const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+        const isFrontFacing = capStyle <= 2
+        const capSize = isSmall ? capSizeSmall : capSizeFull
+        return (
+          <div
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+              animateHat && '-translate-y-0.5 rotate-[-3deg]'
+            )}
             style={{
               left: '50%',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top:
-                size === '2xs' || size === 'xs' ? -7 : size === 'sm' ? -9 : -11,
-              width: hornW,
-              height: hornH,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-              transform: 'scaleX(-1)',
-            }}
-          />
-        </>
-      )
-    }
-    case 'avatar-bear-ears': {
-      const earSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
-      const bearEarClasses = clsx(
-        'absolute transition-transform duration-300',
-        animateHatOnHover &&
-          'group-hover:-translate-y-0.5 group-hover:scale-110',
-        animateHat && '-translate-y-0.5 scale-110'
-      )
-      return (
-        <>
-          <BearEarSvg
-            side="left"
-            className={bearEarClasses}
-            style={{
-              left:
-                size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
-              top:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
-              width: earSize,
-              height: earSize,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            }}
-          />
-          <BearEarSvg
-            side="right"
-            className={bearEarClasses}
-            style={{
-              right:
-                size === '2xs' || size === 'xs' ? -3 : size === 'sm' ? -4 : -6,
-              top:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -6 : -8,
-              width: earSize,
-              height: earSize,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-            }}
-          />
-        </>
-      )
-    }
-    case 'avatar-cat-ears': {
-      const earW =
-        size === '2xs' || size === 'xs' ? 14 : size === 'sm' ? 18 : 22
-      const earH =
-        size === '2xs' || size === 'xs' ? 10 : size === 'sm' ? 13 : 16
-      return (
-        <>
-          <CatEarSvg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:rotate-[-5deg]',
-              animateHat && '-translate-y-0.5 rotate-[-5deg]'
-            )}
-            style={{
-              left:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -2,
-              top:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
-              width: earW,
-              height: earH,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(-12deg)',
-            }}
-          />
-          <CatEarSvg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-0.5 group-hover:rotate-[5deg]',
-              animateHat && '-translate-y-0.5 rotate-[5deg]'
-            )}
-            style={{
-              right:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -2 : -2,
-              top:
-                size === '2xs' || size === 'xs' ? -5 : size === 'sm' ? -7 : -9,
-              width: earW,
-              height: earH,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(12deg) scaleX(-1)',
-            }}
-          />
-        </>
-      )
-    }
-    case 'avatar-santa-hat': {
-      return (
-        <div
-          className={clsx(
-            'absolute transition-transform duration-300',
-            hatPositionClass,
-            'rotate-[20deg]',
-            animateHatOnHover &&
-              'group-hover:-translate-y-0.5 group-hover:scale-110',
-            animateHat && '-translate-y-0.5 scale-110'
-          )}
-        >
-          <SantaHatSvg
-            className={hatSizeClass}
-            style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
-          />
-        </div>
-      )
-    }
-    case 'avatar-bunny-ears': {
-      const earSize =
-        size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 22
-      return (
-        <>
-          <BunnyEarSvg
-            className={clsx(
-              'absolute transition-transform duration-300',
-              animateHatOnHover &&
-                'group-hover:-translate-y-1 group-hover:rotate-[-5deg]',
-              animateHat && '-translate-y-1 rotate-[-5deg]'
-            )}
-            style={{
-              left:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
-              top:
-                size === '2xs' || size === 'xs'
-                  ? -10
+                size === '2xs'
+                  ? -2
+                  : size === 'xs'
+                  ? -3
                   : size === 'sm'
-                  ? -14
-                  : -18,
-              width: earSize,
-              height: earSize * 1.5,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(-15deg)',
+                  ? -5
+                  : -7,
+              width: capSize,
+              height: capSize,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
             }}
-          />
-          <BunnyEarSvg
+          >
+            <RedCapSvg style={capStyle} />
+          </div>
+        )
+      }
+      case 'avatar-team-green-hat': {
+        // Green cap — 9 style variants
+        // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+        const capSizeFull =
+          size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
+        const capSizeSmall =
+          size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
+        const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+        const isFrontFacing = capStyle <= 2
+        const capSize = isSmall ? capSizeSmall : capSizeFull
+        return (
+          <div
             className={clsx(
               'absolute transition-transform duration-300',
               animateHatOnHover &&
-                'group-hover:-translate-y-1 group-hover:rotate-[5deg]',
-              animateHat && '-translate-y-1 rotate-[5deg]'
+                'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+              animateHat && '-translate-y-0.5 rotate-[-3deg]'
             )}
             style={{
-              right:
-                size === '2xs' || size === 'xs' ? -2 : size === 'sm' ? -3 : -4,
+              left: '50%',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
               top:
-                size === '2xs' || size === 'xs'
-                  ? -10
+                size === '2xs'
+                  ? -2
+                  : size === 'xs'
+                  ? -3
                   : size === 'sm'
-                  ? -14
-                  : -18,
-              width: earSize,
-              height: earSize * 1.5,
-              filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
-              transform: 'rotate(15deg)',
+                  ? -5
+                  : -7,
+              width: capSize,
+              height: capSize,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
             }}
-          />
-        </>
-      )
+          >
+            <GreenCapSvg style={capStyle} />
+          </div>
+        )
+      }
+      case 'avatar-black-cap': {
+        // Black cap — 9 style variants
+        // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+        const capSizeFull =
+          size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
+        const capSizeSmall =
+          size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
+        const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+        const isFrontFacing = capStyle <= 2
+        const capSize = isSmall ? capSizeSmall : capSizeFull
+        return (
+          <div
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+              animateHat && '-translate-y-0.5 rotate-[-3deg]'
+            )}
+            style={{
+              left: '50%',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
+              top:
+                size === '2xs'
+                  ? -2
+                  : size === 'xs'
+                  ? -3
+                  : size === 'sm'
+                  ? -5
+                  : -7,
+              width: capSize,
+              height: capSize,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlackCapSvg style={capStyle} />
+          </div>
+        )
+      }
+      case 'avatar-blue-cap': {
+        // Blue cap — 9 style variants
+        // Front: 0: Classic, 1: Mini, 2: MANA | Left: 3: MANA, 4: Clean, 5: Mini | Right: 6: MANA, 7: Clean, 8: Mini
+        const capSizeFull =
+          size === '2xs' ? 12 : size === 'xs' ? 16 : size === 'sm' ? 24 : 30
+        const capSizeSmall =
+          size === '2xs' ? 9 : size === 'xs' ? 12 : size === 'sm' ? 19 : 24
+        const isSmall = capStyle === 1 || capStyle === 5 || capStyle === 8
+        const isFrontFacing = capStyle <= 2
+        const capSize = isSmall ? capSizeSmall : capSizeFull
+        return (
+          <div
+            className={clsx(
+              'absolute transition-transform duration-300',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:rotate-[-3deg]',
+              animateHat && '-translate-y-0.5 rotate-[-3deg]'
+            )}
+            style={{
+              left: '50%',
+              transform: isFrontFacing
+                ? 'translateX(-50%)'
+                : 'translateX(-50%) rotate(-5deg)',
+              top:
+                size === '2xs'
+                  ? -2
+                  : size === 'xs'
+                  ? -3
+                  : size === 'sm'
+                  ? -5
+                  : -7,
+              width: capSize,
+              height: capSize,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))',
+            }}
+          >
+            <BlueCapSvg style={capStyle} />
+          </div>
+        )
+      }
+      case 'avatar-bull-horns': {
+        const hornW =
+          size === '2xs' || size === 'xs' ? 20 : size === 'sm' ? 26 : 32
+        const hornH =
+          size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 20 : 24
+        return (
+          <>
+            <BullHornSvg
+              className="absolute"
+              style={{
+                right: '50%',
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -7
+                    : size === 'sm'
+                    ? -9
+                    : -11,
+                width: hornW,
+                height: hornH,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+              }}
+            />
+            <BullHornSvg
+              className="absolute"
+              style={{
+                left: '50%',
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -7
+                    : size === 'sm'
+                    ? -9
+                    : -11,
+                width: hornW,
+                height: hornH,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+                transform: 'scaleX(-1)',
+              }}
+            />
+          </>
+        )
+      }
+      case 'avatar-bear-ears': {
+        const earSize =
+          size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 20
+        const bearEarClasses =
+          'absolute origin-bottom transition-transform duration-300'
+        return (
+          <>
+            <BearEarSvg
+              className={clsx(
+                bearEarClasses,
+                'rotate-[-25deg]',
+                animateHatOnHover && 'group-hover:rotate-[-20deg]',
+                animateHat && 'rotate-[-20deg]'
+              )}
+              style={{
+                left:
+                  size === '2xs' || size === 'xs'
+                    ? -1
+                    : size === 'sm'
+                    ? -1
+                    : -2,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -1
+                    : size === 'sm'
+                    ? -2
+                    : -3,
+                width: earSize,
+                height: earSize,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+              }}
+            />
+            <BearEarSvg
+              className={clsx(
+                bearEarClasses,
+                'rotate-[25deg] -scale-x-100',
+                animateHatOnHover && 'group-hover:rotate-[20deg]',
+                animateHat && 'rotate-[20deg]'
+              )}
+              style={{
+                right:
+                  size === '2xs' || size === 'xs'
+                    ? -1
+                    : size === 'sm'
+                    ? -1
+                    : -2,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -1
+                    : size === 'sm'
+                    ? -2
+                    : -3,
+                width: earSize,
+                height: earSize,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+              }}
+            />
+          </>
+        )
+      }
+      case 'avatar-cat-ears': {
+        const isTiny = size === '2xs' || size === 'xs'
+        const isSm = size === 'sm'
+        const isMd = size === 'md'
+        const isXl = size === 'xl'
+        // ear SVG is 20x14 (flat/wide); anchor base at circle's upper-corner
+        const ear = isTiny
+          ? { w: 12, h: 7, side: -2, top: -1 }
+          : isSm
+          ? { w: 16, h: 10, side: -3, top: -2 }
+          : isMd
+          ? { w: 19, h: 11, side: -4, top: -1 }
+          : isXl
+          ? { w: 44, h: 26, side: -8, top: -3 }
+          : { w: 24, h: 14, side: -5, top: -2 }
+        const hasWhiskers = capStyle === 1
+        const whiskerW = isTiny ? 7 : isSm ? 10 : isXl ? 28 : 14
+        const whiskerH = isTiny ? 4 : isSm ? 5 : isXl ? 14 : 7
+        const whiskerOffset = isTiny ? -3 : isSm ? -5 : isXl ? -14 : -7
+        return (
+          <>
+            {hasWhiskers && (
+              <>
+                {/* Light mode whiskers */}
+                <CatWhiskersSvg
+                  className="absolute top-1/2 dark:hidden"
+                  style={{
+                    left: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                    transform: 'translateY(-50%) scaleX(-1)',
+                  }}
+                />
+                <CatWhiskersSvg
+                  className="absolute top-1/2 dark:hidden"
+                  style={{
+                    right: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.25))',
+                    transform: 'translateY(-50%)',
+                  }}
+                />
+                {/* Dark mode whiskers — white glow outline */}
+                <CatWhiskersSvg
+                  className="absolute top-1/2 hidden dark:block"
+                  style={{
+                    left: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                    transform: 'translateY(-50%) scaleX(-1)',
+                  }}
+                />
+                <CatWhiskersSvg
+                  className="absolute top-1/2 hidden dark:block"
+                  style={{
+                    right: whiskerOffset,
+                    width: whiskerW,
+                    height: whiskerH,
+                    filter: 'drop-shadow(0 0 1px rgba(255,255,255,0.7))',
+                    transform: 'translateY(-50%)',
+                  }}
+                />
+              </>
+            )}
+            <CatEarSvg
+              className={clsx(
+                'absolute origin-bottom transition-transform duration-300',
+                'rotate-[-52deg]',
+                animateHatOnHover && 'group-hover:rotate-[-44deg]',
+                animateHat && 'rotate-[-44deg]'
+              )}
+              style={{
+                left: ear.side,
+                top: ear.top,
+                width: ear.w,
+                height: ear.h,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+              }}
+            />
+            <CatEarSvg
+              className={clsx(
+                'absolute origin-bottom transition-transform duration-300',
+                'rotate-[52deg] -scale-x-100',
+                animateHatOnHover && 'group-hover:rotate-[44deg]',
+                animateHat && 'rotate-[44deg]'
+              )}
+              style={{
+                right: ear.side,
+                top: ear.top,
+                width: ear.w,
+                height: ear.h,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.25))',
+              }}
+            />
+          </>
+        )
+      }
+      case 'avatar-santa-hat': {
+        return (
+          <div
+            className={clsx(
+              'absolute transition-transform duration-300',
+              hatPositionClass,
+              'rotate-[20deg]',
+              animateHatOnHover &&
+                'group-hover:-translate-y-0.5 group-hover:scale-110',
+              animateHat && '-translate-y-0.5 scale-110'
+            )}
+          >
+            <SantaHatSvg
+              className={hatSizeClass}
+              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+        )
+      }
+      case 'avatar-bunny-ears': {
+        const earSize =
+          size === '2xs' || size === 'xs' ? 12 : size === 'sm' ? 16 : 22
+        return (
+          <>
+            <BunnyEarSvg
+              className={clsx(
+                'absolute transition-transform duration-300',
+                animateHatOnHover &&
+                  'group-hover:-translate-y-1 group-hover:rotate-[-5deg]',
+                animateHat && '-translate-y-1 rotate-[-5deg]'
+              )}
+              style={{
+                left:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -3
+                    : -4,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -10
+                    : size === 'sm'
+                    ? -14
+                    : -18,
+                width: earSize,
+                height: earSize * 1.5,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+                transform: 'rotate(-15deg)',
+              }}
+            />
+            <BunnyEarSvg
+              className={clsx(
+                'absolute transition-transform duration-300',
+                animateHatOnHover &&
+                  'group-hover:-translate-y-1 group-hover:rotate-[5deg]',
+                animateHat && '-translate-y-1 rotate-[5deg]'
+              )}
+              style={{
+                right:
+                  size === '2xs' || size === 'xs'
+                    ? -2
+                    : size === 'sm'
+                    ? -3
+                    : -4,
+                top:
+                  size === '2xs' || size === 'xs'
+                    ? -10
+                    : size === 'sm'
+                    ? -14
+                    : -18,
+                width: earSize,
+                height: earSize * 1.5,
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.2))',
+                transform: 'rotate(15deg)',
+              }}
+            />
+          </>
+        )
+      }
+      default:
+        return null
     }
-    default:
-      return null
-  }
+  })()
+
+  if (!content || hatScale === 1 || overlay === 'avatar-halo') return content
+  // Scale hat visuals at full hatScale. The zoom provides a partial (40%)
+  // position correction — pulling hats back toward the avatar without
+  // fully overcorrecting.
+  const positionCorrection = 1 + (hatScale - 1) * 0.4
+  return (
+    <div
+      className="absolute inset-0"
+      style={{
+        zoom: positionCorrection,
+        transform: `scale(${hatScale / positionCorrection})`,
+      }}
+    >
+      {content}
+    </div>
+  )
+}
+
+/** Per-size geometry for the disguise overlay. Shared by the live-avatar
+ *  rendering and the shop-page preview so the two can't drift. Height derives
+ *  from width via the viewBox aspect ratio (0.68). */
+const DISGUISE_GEOMETRY: Record<
+  AvatarSizeType,
+  { width: number; top: number }
+> = {
+  '2xs': { width: 18, top: 1 },
+  xs: { width: 27, top: 1 },
+  sm: { width: 36, top: 2 },
+  md: { width: 45, top: 3 },
+  lg: { width: 54, top: 4 },
+  xl: { width: 108, top: 8 },
+}
+
+/** Renders the Groucho disguise positioned over an avatar of the given size.
+ *  Exported so the shop preview and live-avatar rendering share one source of
+ *  truth for width/top/filter. */
+export function DisguiseOnAvatar({ size }: { size?: AvatarSizeType }) {
+  const { width, top } = DISGUISE_GEOMETRY[size ?? 'lg']
+  return (
+    <DisguiseSvg
+      className="absolute left-1/2 -translate-x-1/2"
+      style={{
+        top,
+        width,
+        height: width * 0.68,
+        // Subtle white outline to separate the dark frames from dark avatars,
+        // stacked on top of the existing soft drop shadow.
+        filter:
+          'drop-shadow(0 0 0.5px rgba(255,255,255,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+      }}
+    />
+  )
 }
 
 // Component to render avatar accessories (monocle, crystal ball, thought bubbles, stonks)
@@ -2239,21 +2299,9 @@ function AvatarAccessory(props: {
         />
       )
     }
-    case 'avatar-disguise': {
-      const disguiseSize =
-        size === '2xs' || size === 'xs' ? 16 : size === 'sm' ? 22 : 28
-      return (
-        <DisguiseSvg
-          className="absolute left-1/2 -translate-x-1/2"
-          style={{
-            top: size === '2xs' || size === 'xs' ? 4 : size === 'sm' ? 6 : 8,
-            width: disguiseSize,
-            height: disguiseSize * 0.7,
-            filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
-          }}
-        />
-      )
-    }
+    case 'avatar-disguise':
+      return <DisguiseOnAvatar size={size} />
+
     case 'avatar-thought-yes': {
       // YES thought bubble at top-left with trailing bubbles
       const bubbleSize =

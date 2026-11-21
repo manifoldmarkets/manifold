@@ -4,6 +4,10 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
+  newAccountGateMessage,
+  passesNewAccountGate,
+} from 'shared/new-account-gate'
+import {
   createBinarySchema,
   createBountySchema,
   createMultiDateSchema,
@@ -24,11 +28,12 @@ import {
   PollVoterVisibility,
   add_answers_mode,
   contractUrl,
+  isMultiCpmm,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { getNewContract } from 'common/new-contract'
+import { getAnswerProbsError, getNewContract } from 'common/new-contract'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -39,6 +44,11 @@ import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { camelCase, first } from 'lodash'
+import {
+  canInheritLinkedCloseTime,
+  getLinkChildError,
+  getLinkParentError,
+} from 'common/market-links'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -52,6 +62,12 @@ import {
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
+import {
+  getLinkParentCandidate,
+  lockMarketLinkContracts,
+  lockMarketLinkFundingUser,
+  upsertMarketLink,
+} from 'shared/supabase/market-links'
 import { bulkInsertQuery } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -60,10 +76,10 @@ import {
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import {
-  htmlToRichText,
-  isProd,
-  log,
-} from 'shared/utils'
+  AUTO_TAG_API_MARKET_CREATIONS,
+  autoTagUntaggedContract,
+} from 'shared/helpers/topic-matching'
+import { htmlToRichText, isProd, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -72,6 +88,32 @@ import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 type Body = ValidatedAPIParams<'market'>
+
+class LinkedCreationFundingBusy extends Error {}
+
+const LINKED_CREATION_MAX_ATTEMPTS = 5
+
+async function retryLinkedCreation<T>(run: () => Promise<T>) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await run()
+    } catch (error) {
+      // Only the deliberate NOWAIT preflight is retryable here. Never rerun
+      // a creation that has reached ante movement or other side effects.
+      if (!(error instanceof LinkedCreationFundingBusy)) throw error
+      if (attempt + 1 === LINKED_CREATION_MAX_ATTEMPTS)
+        throw new APIError(
+          503,
+          'The funding account is busy. Please try again.'
+        )
+      // The failed transaction and local queue slot have both been released.
+      // Give normal payouts time to finish, with jitter to avoid replicas
+      // retrying together. Four waits total 1.5–3 seconds; no writes retry.
+      const delayMs = 100 * 2 ** attempt * (1 + Math.random())
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+}
 
 export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
   'createMarket',
@@ -111,10 +153,38 @@ export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
           market.answers.forEach(broadcastNewAnswer)
         }
         await onCreateMarket(market, embedding)
+        await maybeAutoTagApiMarket(pg, market, groupIds)
       },
     }
   }
 )
+
+// API counterpart to the web UI's getSimilarGroupsToContract suggester,
+// for markets created without groupIds. On; AUTO_TAG_API_MARKET_CREATIONS is
+// the kill switch.
+async function maybeAutoTagApiMarket(
+  pg: SupabaseDirectClient,
+  market: Contract,
+  groupIdsProvided: string[] | null | undefined
+) {
+  if (!AUTO_TAG_API_MARKET_CREATIONS) return
+  if (groupIdsProvided && groupIdsProvided.length > 0) return
+  if (market.visibility !== 'public') return
+  if (market.outcomeType === 'STONK' || market.outcomeType === 'POLL') return
+
+  try {
+    const matches = await autoTagUntaggedContract(pg, market)
+    if (matches.length > 0) {
+      log(
+        `Auto-tagged API market ${market.id} with: ${matches
+          .map((m) => m.slug)
+          .join(', ')}`
+      )
+    }
+  } catch (err) {
+    log.error('Auto-tag failed for market ' + market.id, { err })
+  }
+}
 
 export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {
@@ -144,6 +214,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    answerProbs,
     takerAPIOrdersDisabled,
     liquidityTier,
     unit,
@@ -153,31 +224,14 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     pollType,
     maxSelections,
   } = validateMarketBody(body)
+  const { linkedToContractId, linkRelation, neverCloses } = body
 
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
 
-  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
-  const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
-
-  const ante =
-    outcomeType === 'BOUNTIED_QUESTION' && totalBounty
-      ? totalBounty
-      : getAnte(outcomeType, numAnswers, liquidityTier)
-  const totalMarketCost = ante + (extraLiquidity ?? 0)
-  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
-
-  const closeTime = await getCloseTimestamp(
-    closeTimeRaw,
-    question,
-    outcomeType,
-    utcOffset
-  )
-
-  if (closeTime && closeTime < Date.now())
-    throw new APIError(400, 'Question must close in the future')
-
+  // A retry must identify the already-created market even if its parent has
+  // since closed, resolved, or become ineligible. Do this before defaults too.
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
     idempotencyKey,
     pg
@@ -189,8 +243,111 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  return await betsQueue.enqueueFn(async () => {
+  // The market this one is about. Checked before any mana moves; the link is
+  // written in the same transaction as the market.
+  let linkParentCloseTime: number | undefined
+  if (linkedToContractId) {
+    if (visibility !== 'public')
+      throw new APIError(
+        400,
+        'Only public markets can be linked to another market.'
+      )
+    const parent = await getLinkParentCandidate(pg, linkedToContractId)
+    const linkError = getLinkParentError(parent)
+    if (linkError) throw new APIError(400, linkError)
+    linkParentCloseTime = parent?.closeTime ?? undefined
+  }
+
+  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
+  const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
+
+  // Bountied questions use the totalBounty as their ante (the bounty pool
+  // IS the seed liquidity). The cast is needed because prize-drawing's
+  // schema changes narrowed BOUNTIED_QUESTION out of the runtime type
+  // here, but the value can still arrive via createBountySchema in the
+  // request body.
+  const ante =
+    (outcomeType as string) === 'BOUNTIED_QUESTION' && totalBounty
+      ? totalBounty
+      : getAnte(outcomeType, numAnswers, liquidityTier)
+  const totalMarketCost = ante + (extraLiquidity ?? 0)
+  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
+
+  // Copy the parent's deadline once unless explicitly overridden. STONKs and
+  // bounties keep their native no-close default; polls can inherit or opt out.
+  const shouldInheritCloseTime =
+    closeTimeRaw === undefined &&
+    !neverCloses &&
+    canInheritLinkedCloseTime(outcomeType)
+  const defaultCloseTime = neverCloses
+    ? undefined
+    : await getCloseTimestamp(
+        shouldInheritCloseTime ? linkParentCloseTime : closeTimeRaw,
+        question,
+        outcomeType,
+        utcOffset
+      )
+
+  if (
+    defaultCloseTime !== undefined &&
+    (!Number.isFinite(defaultCloseTime) || defaultCloseTime <= Date.now())
+  )
+    throw new APIError(400, 'Question must close in the future')
+
+  const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
+  const house = isProd()
+    ? HOUSE_LIQUIDITY_PROVIDER_ID
+    : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+  const providerId = isFree ? house : userId
+  // Resolution pays users before updating the parent. Share its queue key
+  // locally; the NOWAIT payer preflight prevents the inverse lock order
+  // from deadlocking across replicas.
+  const queueDependencies = linkedToContractId
+    ? [userId, linkedToContractId]
+    : [userId]
+
+  const enqueueCreation = <T>(run: () => Promise<T>) => {
+    const attempt = () => betsQueue.enqueueFn(run, queueDependencies)
+    return linkedToContractId ? retryLinkedCreation(attempt) : attempt()
+  }
+  return await enqueueCreation(async () => {
     return pg.tx(async (tx) => {
+      let closeTime = defaultCloseTime
+      if (linkedToContractId) {
+        // The child does not exist yet. Lock the existing parent before any
+        // inserts or funds move, then reread using a fresh statement snapshot.
+        await lockMarketLinkContracts(tx, [linkedToContractId])
+        const parent = await getLinkParentCandidate(tx, linkedToContractId)
+        const linkError = getLinkParentError(parent)
+        if (linkError) throw new APIError(400, linkError)
+        if (shouldInheritCloseTime)
+          closeTime =
+            parent?.closeTime ??
+            (NO_CLOSE_TIME_TYPES.includes(outcomeType)
+              ? undefined
+              : defaultCloseTime)
+      }
+      if (
+        closeTime !== undefined &&
+        (!Number.isFinite(closeTime) || closeTime <= Date.now())
+      )
+        throw new APIError(400, 'Question must close in the future')
+
+      if (linkedToContractId) {
+        try {
+          await lockMarketLinkFundingUser(tx, providerId)
+        } catch (error: unknown) {
+          if (
+            typeof error === 'object' &&
+            error !== null &&
+            'code' in error &&
+            error.code === '55P03'
+          )
+            throw new LinkedCreationFundingBusy()
+          throw error
+        }
+      }
+
       const proposedSlug = slugify(question)
 
       const userAndSlugResult = await tx.multi(
@@ -201,7 +358,18 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
 
-      const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
+      // Creating unlisted markets is a new-account anti-spam gate, not a
+      // bonus gate.
+      if (
+        visibility === 'unlisted' &&
+        !(await passesNewAccountGate(tx, user))
+      ) {
+        throw new APIError(
+          403,
+          newAccountGateMessage('Creating unlisted markets')
+        )
+      }
+
       if (!isFree && totalMarketCost > user.balance)
         throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
       if (isFree) {
@@ -247,6 +415,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           answers: answers ?? [],
           answerShortTexts,
           answerImageUrls,
+          answerProbs,
           addAnswersMode,
           shouldAnswersSumToOne,
           isAutoBounty,
@@ -263,6 +432,16 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           maxSelections: maxSelections,
         })
       )
+      // Moderation can override the requested visibility. Check the actual
+      // child before inserting it or moving any mana.
+      if (linkedToContractId) {
+        const childError = getLinkChildError({
+          visibility: contract.visibility,
+          deleted: !!contract.deleted,
+          childCount: 0,
+        })
+        if (childError) throw new APIError(400, childError)
+      }
       const nativeColumns = nativeContractColumnsArray.filter(
         (column) => column !== 'data'
       )
@@ -275,12 +454,11 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       const contractDataToInsert = Object.fromEntries(
         Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
       )
-      const insertAnswersQuery =
-        contract.mechanism === 'cpmm-multi-1'
-          ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
-          : 'select 1 where false'
+      const insertAnswersQuery = isMultiCpmm(contract)
+        ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+        : 'select 1 where false'
       const contractQuery = pgp.as.format(
-        `insert into contracts 
+        `insert into contracts
         (id, data, ${nativeColumns.join(',')})
          values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
         [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
@@ -290,13 +468,9 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
        ${insertAnswersQuery};`
       )
 
-      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+      if (result[1].length > 0 && isMultiCpmm(contract)) {
         contract.answers = result[1].map(convertAnswer)
       }
-      const house = isProd()
-        ? HOUSE_LIQUIDITY_PROVIDER_ID
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-      const providerId = isFree ? house : userId
       await runTxnOutsideBetQueue(tx, {
         fromId: providerId,
         fromType: 'USER',
@@ -316,9 +490,18 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
       await generateAntes(tx, providerId, contract, ante, totalMarketCost)
 
+      if (linkedToContractId) {
+        await upsertMarketLink(tx, {
+          childId: contract.id,
+          parentId: linkedToContractId,
+          relation: linkRelation ?? 'related',
+          createdBy: userId,
+        })
+      }
+
       return { contract, user }
     })
-  }, [userId])
+  })
 }
 
 async function getDuplicateSubmissionUrl(
@@ -377,6 +560,9 @@ function validateMarketBody(body: Body) {
     takerAPIOrdersDisabled,
   } = body
 
+  if (body.neverCloses && (outcomeType !== 'POLL' || closeTime !== undefined))
+    throw new APIError(400, 'Only polls without a close time can never close.')
+
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
     throw new APIError(
       400,
@@ -390,6 +576,7 @@ function validateMarketBody(body: Body) {
     answers: string[] | undefined,
     answerShortTexts: string[] | undefined,
     answerImageUrls: string[] | undefined,
+    answerProbs: number[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -489,12 +676,26 @@ function validateMarketBody(body: Body) {
       answers,
       answerShortTexts,
       answerImageUrls,
+      answerProbs,
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
+    // Answers sum to one unless the creator says otherwise (getNewContract
+    // applies the same default), and that decides whether an "Other" answer
+    // gets created, so resolve it here before anything counts the answers.
+    shouldAnswersSumToOne = shouldAnswersSumToOne ?? true
     const hasOtherAnswer =
       addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
     const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+    if (answerProbs) {
+      const error = getAnswerProbsError({
+        answerProbs,
+        numAnswers: answers.length,
+        shouldAnswersSumToOne,
+        hasOtherAnswer,
+      })
+      if (error) throw new APIError(400, error)
+    }
     // Unfortunately this is a requirement because if we don't add an answer,
     // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
     // then the answer costs will be calculated based on 0, which is not what we want.
@@ -519,11 +720,8 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers, voterVisibility, pollType, maxSelections } = validateMarketType(
-      outcomeType,
-      createPollSchema,
-      body
-    ))
+    ;({ answers, voterVisibility, pollType, maxSelections } =
+      validateMarketType(outcomeType, createPollSchema, body))
     // Validate maxSelections
     if (
       maxSelections !== undefined &&
@@ -566,6 +764,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    answerProbs,
     takerAPIOrdersDisabled,
     unit,
     midpoints,

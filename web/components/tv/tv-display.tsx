@@ -3,7 +3,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Router from 'next/router'
 
-import { Contract, tradingAllowed } from 'common/contract'
+import { Contract, isMultiCpmm, tradingAllowed } from 'common/contract'
+import {
+  formatPrice as formatPerpPrice,
+  inferPriceDecimals as inferPerpPriceDecimals,
+} from 'common/perps/format'
 import { SEO } from 'web/components/SEO'
 import { Button } from 'web/components/buttons/button'
 import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
@@ -11,20 +15,19 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { useUser } from 'web/hooks/use-user'
-import { Linkify } from 'web/components/widgets/linkify'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import {
   BinaryBetPanel,
   SimpleMultiOverview,
 } from 'web/components/contract/contract-overview'
-import { PublicChat } from 'web/components/chat/public-chat'
-import { Tabs } from 'web/components/layout/tabs'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
-import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
-import { buildArray } from 'common/util/array'
+import { TVStreamPlayer } from './tv-stream'
+import { useTVChat } from './tv-chat'
+import { TRADE_TERM } from 'common/envs/constants'
 import { UserBetsSummary } from '../bet/user-bet-summary'
+import { MarketTitleLabel } from '../contract/market-title-label'
+import { ModActionBadge } from '../moderation/mod-action'
 
 export function TVDisplay(props: {
   contract: Contract
@@ -35,15 +38,21 @@ export function TVDisplay(props: {
   const user = useUser()
 
   const isMod = useAdminOrMod()
-  const showModify = user?.id === stream?.creator_id || isMod
+  const isStreamCreator = user?.id === stream?.creator_id
+  const showModify = isStreamCreator || isMod
 
-  const isMobile = useIsMobile(1280) //xl
   const [showSettings, setShowSettings] = useState(false)
 
   const isBinary = contract.outcomeType === 'BINARY'
+  const perpContract = contract.outcomeType === 'PERP' ? contract : undefined
+  const perpPrice =
+    perpContract?.resolvedOraclePrice ?? perpContract?.oraclePrice
+  const formattedPerpPrice =
+    typeof perpPrice === 'number' && Number.isFinite(perpPrice)
+      ? formatPerpPrice(perpPrice, inferPerpPriceDecimals([perpPrice]))
+      : undefined
   const isMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1'
+    contract.outcomeType === 'MULTIPLE_CHOICE' && isMultiCpmm(contract)
 
   const betPanel = (
     <>
@@ -60,19 +69,7 @@ export function TVDisplay(props: {
   )
 
   const channelId = `tv-${stream?.id ?? 'default'}`
-
-  const streamSrc = (() => {
-    if (stream?.source === 'twitch') {
-      return `https://player.twitch.tv/?channel=${stream.stream_id}&parent=${DOMAIN}&autoplay=true`
-    } else if (stream?.source === 'youtube') {
-      return (
-        'https://www.youtube.com/embed/' + stream?.stream_id + '?autoplay=1'
-      )
-    } else if (stream?.source === 'twitter') {
-      return `https://platform.twitter.com/embed/Tweet.html?dnt=false&embedId=twitter-widget-0&features=eyJ0ZndfdGltZWxpbmVfbGlzdCI6eyJidWNrZXQiOltdLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X2ZvbGxvd2VyX2NvdW50X3N1bnNldCI6eyJidWNrZXQiOnRydWUsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfZWRpdF9iYWNrZW5kIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19yZWZzcmNfc2Vzc2lvbiI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfZm9zbnJfc29mdF9pbnRlcnZlbnRpb25zX2VuYWJsZWQiOnsiYnVja2V0Ijoib24iLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X21peGVkX21lZGlhXzE1ODk3Ijp7ImJ1Y2tldCI6InRyZWF0bWVudCIsInZlcnNpb24iOm51bGx9LCJ0ZndfZXhwZXJpbWVudHNfY29va2llX2V4cGlyYXRpb24iOnsiYnVja2V0IjoxMjA5NjAwLCJ2ZXJzaW9uIjpudWxsfSwidGZ3X3Nob3dfYmlyZHdhdGNoX3Bpdm90c19lbmFibGVkIjp7ImJ1Y2tldCI6Im9uIiwidmVyc2lvbiI6bnVsbH0sInRmd19kdXBsaWNhdGVfc2NyaWJlc190b19zZXR0aW5ncyI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfdXNlX3Byb2ZpbGVfaW1hZ2Vfc2hhcGVfZW5hYmxlZCI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9LCJ0ZndfdmlkZW9faGxzX2R5bmFtaWNfbWFuaWZlc3RzXzE1MDgyIjp7ImJ1Y2tldCI6InRydWVfYml0cmF0ZSIsInZlcnNpb24iOm51bGx9LCJ0ZndfbGVnYWN5X3RpbWVsaW5lX3N1bnNldCI6eyJidWNrZXQiOnRydWUsInZlcnNpb24iOm51bGx9LCJ0ZndfdHdlZXRfZWRpdF9mcm9udGVuZCI6eyJidWNrZXQiOiJvbiIsInZlcnNpb24iOm51bGx9fQ%3D%3D&frame=false&hideCard=false&hideThread=false&id=${stream.stream_id}&lang=en&maxWidth=1000px&maxHeight=300px&origin=https%3A%2F%2Fpublish.twitter.com%2F%23&sessionId=6def12a89bdb0d99bf58197bc34012a9f3f22936&theme=light&widgetsVersion=2615f7e52b7e0%3A1702314776716`
-    }
-    return ''
-  })()
+  const chat = useTVChat({ channelId })
 
   return (
     <Page trackPageView="tv page" className="!mt-0 xl:col-span-10 xl:pr-0">
@@ -84,56 +81,46 @@ export function TVDisplay(props: {
       />
       <Row className="w-full items-start">
         <Col className={clsx('bg-canvas-0 w-full rounded-b ')}>
-          <iframe
-            src={streamSrc}
-            title="Manifold Live video"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="bg-canvas-0 h-[300px] w-full lg:h-[500px]"
-          />
+          <TVStreamPlayer stream={stream} />
 
           <Col className="mb-2 p-4 md:pb-8 lg:px-8">
             <Row className="justify-between gap-4">
-              <Row className="gap-2 text-xl font-medium sm:text-2xl">
+              <Row className="items-center gap-2 text-xl font-medium sm:text-2xl">
+                <MarketTitleLabel contract={contract} />
                 <Link
                   href={`/${contract.creatorUsername}/${contract.slug}`}
                   target="_blank"
                   className="hover:underline"
                 >
-                  <Linkify text={contract.question} />
+                  {contract.question}
                 </Link>
               </Row>
               {isBinary && (
                 <BinaryResolutionOrChance isCol contract={contract} />
               )}
+              {perpContract && formattedPerpPrice && (
+                <Col className="shrink-0 items-end">
+                  <span className="text-ink-500 text-xs">
+                    {perpContract.resolvedOraclePrice == null
+                      ? 'Oracle price'
+                      : 'Settlement price'}
+                  </span>
+                  <span className="text-xl font-semibold sm:text-2xl">
+                    {formattedPerpPrice}
+                  </span>
+                </Col>
+              )}
             </Row>
-            {isMobile ? (
-              <Tabs
-                tabs={buildArray([
-                  { title: 'Market', content: betPanel },
-                  {
-                    title: 'Chat',
-                    content: (
-                      <PublicChat
-                        channelId={channelId}
-                        key={channelId}
-                        className="bg-canvas-50"
-                      />
-                    ),
-                  },
-                ])}
-              />
-            ) : (
-              betPanel
-            )}
+            {betPanel}
           </Col>
 
           <Row className="m-4 gap-4">
             {showModify && (
               <Button
-                color="indigo-outline"
+                color={isStreamCreator ? 'indigo-outline' : 'purple-outline'}
                 onClick={() => setShowSettings(true)}
               >
+                {!isStreamCreator && <ModActionBadge className="mr-1" />}
                 Modify event
               </Button>
             )}
@@ -152,17 +139,13 @@ export function TVDisplay(props: {
           </Row>
         </Col>
 
-        <Col className="sticky top-0 ml-4 hidden h-screen w-[300px] max-w-[375px] xl:flex xl:w-[350px]">
-          <div className={'text-primary-700 border-b-2 py-2 text-xl'}>
-            Live chat
-          </div>
-          <PublicChat
-            channelId={channelId}
-            key={channelId}
-            className="min-h-0 grow"
-          />
-        </Col>
+        {chat.docked && (
+          <Col className="sticky top-0 ml-4 hidden h-screen w-[350px] shrink-0 py-2 xl:flex">
+            {chat.docked}
+          </Col>
+        )}
       </Row>
+      {chat.floating}
     </Page>
   )
 }

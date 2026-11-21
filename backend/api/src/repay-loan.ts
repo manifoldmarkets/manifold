@@ -1,5 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseTransaction } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser, log } from 'shared/utils'
 import {
   calculateLoanWithInterest,
@@ -20,15 +21,15 @@ import {
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   getLoanTrackingRows,
+  incrementLoanFieldsQuery,
+  LoanDelta,
   upsertLoanTrackingQuery,
   LoanTrackingRow,
 } from 'shared/helpers/user-contract-loans'
-import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 
 export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   const { amount, contractId, answerId } = props
-  const pg = createSupabaseDirectClient()
   const user = await getUser(auth.uid)
   if (!user) {
     throw new APIError(404, `User ${auth.uid} not found`)
@@ -42,11 +43,44 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     throw new APIError(400, 'Insufficient balance')
   }
 
+  const { userUpdates, response } = await betsQueue.enqueueFn(async () => {
+    return runTransactionWithRetries(
+      async (tx) => {
+        // Lock the user row to serialize loan operations (and bets, which update
+        // the balance before writing metrics) for this user across replicas.
+        // Every loan input is read after this lock, so repayment can't be
+        // computed from state another request is about to change.
+        const locked = await tx.one<{ balance: number }>(
+          'select balance::float as balance from users where id = $1 for update',
+          [user.id]
+        )
+        if (locked.balance < amount) {
+          throw new APIError(400, 'Insufficient balance')
+        }
+        return repayLoanLocked(tx, user.id, amount, contractId, answerId)
+      },
+      3,
+      { mode: 'default', isExpectedError: (error) => error instanceof APIError }
+    )
+  }, [auth.uid])
+
+  broadcastUserUpdates(userUpdates)
+  return response
+}
+
+// Must be called with the user row locked.
+const repayLoanLocked = async (
+  tx: SupabaseTransaction,
+  userId: string,
+  amount: number,
+  contractId: string | undefined,
+  answerId: string | undefined
+) => {
   const now = Date.now()
 
   // Get all user's contract metrics with loans
-  const { metrics } = await getUnresolvedContractMetricsContractsAnswers(pg, [
-    user.id,
+  const { metrics } = await getUnresolvedContractMetricsContractsAnswers(tx, [
+    userId,
   ])
 
   // Market-specific repayment
@@ -64,7 +98,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     }
 
     // Get loan tracking data for interest calculation
-    const loanTracking = await getLoanTrackingRows(pg, user.id, [contractId])
+    const loanTracking = await getLoanTrackingRows(tx, userId, [contractId])
     const trackingByKey = keyBy(
       loanTracking,
       (t) => `${t.contract_id}-${t.answer_id ?? ''}`
@@ -163,7 +197,9 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       metricsToRepay,
       (m) => `${m.contractId}-${m.answerId ?? ''}`
     )
-    const updatedMetrics: ContractMetric[] = filterDefined(
+    // Relative to the stored values, so a concurrent writer's loan change
+    // isn't overwritten with this request's snapshot.
+    const loanDeltas: LoanDelta[] = filterDefined(
       Array.from(metricUpdates.entries()).map(([key, update]) => {
         const metric = metricsById[key]
         if (!metric) return undefined
@@ -171,12 +207,10 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
           return undefined
 
         return {
-          ...metric,
-          loan: Math.max(0, (metric.loan ?? 0) - update.freeLoanRepaid),
-          marginLoan: Math.max(
-            0,
-            (metric.marginLoan ?? 0) - update.marginPrincipalRepaid
-          ),
+          contractId: metric.contractId,
+          answerId: metric.answerId,
+          loanDelta: -update.freeLoanRepaid,
+          marginLoanDelta: -update.marginPrincipalRepaid,
         }
       })
     )
@@ -202,7 +236,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
         const newIntegral = finalIntegral * (1 - repaymentRatio)
 
         loanTrackingUpdate.push({
-          user_id: user.id,
+          user_id: userId,
           contract_id: loan.contractId,
           answer_id: loan.answerId,
           loan_day_integral: Math.max(0, newIntegral),
@@ -210,7 +244,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
         })
       } else {
         loanTrackingUpdate.push({
-          user_id: user.id,
+          user_id: userId,
           contract_id: loan.contractId,
           answer_id: loan.answerId,
           loan_day_integral: 0,
@@ -221,11 +255,11 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
     // Create transaction
     const loanPaymentTxn: Omit<Txn, 'id' | 'createdTime'> = {
-      fromId: user.id,
+      fromId: userId,
       fromType: 'USER',
       toId: 'BANK',
       toType: 'BANK',
-      amount: -repaymentAmount,
+      amount: repaymentAmount,
       token: 'M$',
       category: 'LOAN_PAYMENT',
       data: {
@@ -237,12 +271,11 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     }
 
     const balanceUpdate = {
-      id: user.id,
+      id: userId,
       balance: -repaymentAmount,
     }
 
-    const bulkUpdateContractMetricsQ =
-      bulkUpdateContractMetricsQuery(updatedMetrics)
+    const incrementLoansQ = incrementLoanFieldsQuery(userId, loanDeltas)
     const loanTrackingQ =
       loanTrackingUpdate.length > 0
         ? upsertLoanTrackingQuery(loanTrackingUpdate)
@@ -250,29 +283,25 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
     const txnQuery = getInsertQuery('txns', txnToRow(loanPaymentTxn))
 
-    const { userUpdates } = await betsQueue.enqueueFn(async () => {
-      return pg.tx(async (tx) => {
-        const res = await tx.multi(
-          `${balanceUpdateQuery};
-           ${txnQuery};
-           ${bulkUpdateContractMetricsQ};
-           ${loanTrackingQ}`
-        )
-        const userUpdates = res[0] as UserUpdate[]
-        return { userUpdates }
-      })
-    }, [auth.uid])
-
-    broadcastUserUpdates(userUpdates)
+    const res = await tx.multi(
+      `${balanceUpdateQuery};
+       ${txnQuery};
+       ${incrementLoansQ};
+       ${loanTrackingQ}`
+    )
+    const userUpdates = res[0] as UserUpdate[]
     log(
-      `User ${user.id} repaid ${repaymentAmount} on market ${contractId} (margin: ${totalMarginRepaid}, free: ${totalFreeLoanRepaid})`
+      `User ${userId} repaid ${repaymentAmount} on market ${contractId} (margin: ${totalMarginRepaid}, free: ${totalFreeLoanRepaid})`
     )
 
     const remainingLoan = totalOwed - repaymentAmount
 
     return {
-      repaid: repaymentAmount,
-      remainingLoan: Math.max(0, remainingLoan),
+      userUpdates,
+      response: {
+        repaid: repaymentAmount,
+        remainingLoan: Math.max(0, remainingLoan),
+      },
     }
   }
 
@@ -287,7 +316,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
   // Get loan tracking data for margin loans
   const contractIds = [...new Set(metricsWithLoans.map((m) => m.contractId))]
-  const loanTracking = await getLoanTrackingRows(pg, user.id, contractIds)
+  const loanTracking = await getLoanTrackingRows(tx, userId, contractIds)
   const trackingByKey = keyBy(
     loanTracking,
     (t) => `${t.contract_id}-${t.answer_id ?? ''}`
@@ -369,7 +398,9 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     metrics,
     (m) => `${m.contractId}-${m.answerId ?? ''}`
   )
-  const updatedMetrics: ContractMetric[] = filterDefined(
+  // Relative to the stored values, so a concurrent writer's loan change
+  // isn't overwritten with this request's snapshot.
+  const loanDeltas: LoanDelta[] = filterDefined(
     Array.from(metricUpdates.entries()).map(([key, update]) => {
       const metric = metricsById[key]
       if (!metric) return undefined
@@ -377,12 +408,10 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
         return undefined
 
       return {
-        ...metric,
-        loan: Math.max(0, (metric.loan ?? 0) - update.freeLoanRepaid),
-        marginLoan: Math.max(
-          0,
-          (metric.marginLoan ?? 0) - update.marginPrincipalRepaid
-        ),
+        contractId: metric.contractId,
+        answerId: metric.answerId,
+        loanDelta: -update.freeLoanRepaid,
+        marginLoanDelta: -update.marginPrincipalRepaid,
       }
     })
   )
@@ -409,7 +438,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       const newIntegral = finalIntegral * (1 - repaymentRatio)
 
       loanTrackingUpdates.push({
-        user_id: user.id,
+        user_id: userId,
         contract_id: loan.contractId,
         answer_id: loan.answerId,
         loan_day_integral: Math.max(0, newIntegral),
@@ -417,7 +446,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       })
     } else {
       loanTrackingUpdates.push({
-        user_id: user.id,
+        user_id: userId,
         contract_id: loan.contractId,
         answer_id: loan.answerId,
         loan_day_integral: 0,
@@ -428,11 +457,11 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
   // Create transaction
   const loanPaymentTxn: Omit<Txn, 'id' | 'createdTime'> = {
-    fromId: user.id,
+    fromId: userId,
     fromType: 'USER',
     toId: 'BANK',
     toType: 'BANK',
-    amount: -repaymentAmount,
+    amount: repaymentAmount,
     token: 'M$',
     category: 'LOAN_PAYMENT',
     data: {
@@ -441,12 +470,11 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   }
 
   const balanceUpdate = {
-    id: user.id,
+    id: userId,
     balance: -repaymentAmount,
   }
 
-  const bulkUpdateContractMetricsQ =
-    bulkUpdateContractMetricsQuery(updatedMetrics)
+  const incrementLoansQ = incrementLoanFieldsQuery(userId, loanDeltas)
   const loanTrackingQ =
     loanTrackingUpdates.length > 0
       ? upsertLoanTrackingQuery(loanTrackingUpdates)
@@ -454,27 +482,23 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
   const txnQuery = getInsertQuery('txns', txnToRow(loanPaymentTxn))
 
-  const { userUpdates } = await betsQueue.enqueueFn(async () => {
-    return pg.tx(async (tx) => {
-      const res = await tx.multi(
-        `${balanceUpdateQuery};
-         ${txnQuery};
-         ${bulkUpdateContractMetricsQ};
-         ${loanTrackingQ}`
-      )
-      const userUpdates = res[0] as UserUpdate[]
-      return { userUpdates }
-    })
-  }, [auth.uid])
-
-  broadcastUserUpdates(userUpdates)
-  log(`User ${user.id} repaid ${repaymentAmount} in loans.`)
+  const res = await tx.multi(
+    `${balanceUpdateQuery};
+     ${txnQuery};
+     ${incrementLoansQ};
+     ${loanTrackingQ}`
+  )
+  const userUpdates = res[0] as UserUpdate[]
+  log(`User ${userId} repaid ${repaymentAmount} in loans.`)
 
   // Calculate remaining loan
   const remainingLoan = totalOwed - repaymentAmount
 
   return {
-    repaid: repaymentAmount,
-    remainingLoan: Math.max(0, remainingLoan),
+    userUpdates,
+    response: {
+      repaid: repaymentAmount,
+      remainingLoan: Math.max(0, remainingLoan),
+    },
   }
 }

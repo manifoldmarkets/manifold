@@ -1,4 +1,8 @@
 import { useState } from 'react'
+import {
+  BOOST_CONTRACT_SUBSIDY_MANA,
+  contractBoostAddsSubsidy,
+} from 'common/boost'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
@@ -6,7 +10,6 @@ import { Row } from '../layout/row'
 import { Contract } from 'common/contract'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
-import { AddFundsModal } from '../add-funds-modal'
 import toast from 'react-hot-toast'
 import { BsRocketTakeoff } from 'react-icons/bs'
 import { BOOST_COST_MANA } from 'common/economy'
@@ -15,7 +18,9 @@ import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
 import { formatMoney } from 'common/util/format'
 import { BoostAnalytics } from './boost-analytics'
-import { useAdminOrMod } from 'web/hooks/use-admin'
+import { ModActionBadge } from '../moderation/mod-action'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
+import Link from 'next/link'
 
 export function AddBoostButton(props: {
   contract: Contract
@@ -70,10 +75,54 @@ export function AddBoostButton(props: {
               Boost Analytics
             </Row>
             <BoostAnalytics contract={contract} />
+            <AdminRemoveBoostButton
+              contract={contract}
+              onRemoved={() => setShowAnalytics(false)}
+            />
           </Col>
         </Modal>
       )}
     </>
+  )
+}
+
+function AdminRemoveBoostButton(props: {
+  contract: Contract
+  onRemoved: () => void
+}) {
+  const { contract, onRemoved } = props
+  const [isRemoving, setIsRemoving] = useState(false)
+  const isAdmin = useAdmin()
+
+  if (!isAdmin || !contract.boosted) return null
+
+  const removeBoost = async () => {
+    setIsRemoving(true)
+    try {
+      await api('remove-boost', {
+        contractId: contract.id,
+      })
+      toast.success('Boost removed.')
+      onRemoved()
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Error removing boost')
+    }
+    setIsRemoving(false)
+  }
+
+  return (
+    <Button
+      color="purple-outline"
+      size="xs"
+      className="self-start"
+      loading={isRemoving}
+      disabled={isRemoving}
+      onClick={removeBoost}
+    >
+      <ModActionBadge admin className="mr-1" />
+      Remove boost
+    </Button>
   )
 }
 
@@ -84,7 +133,6 @@ function BoostPurchaseModal(props: {
 }) {
   const { open, setOpen, contract } = props
   const [loading, setLoading] = useState<string>()
-  const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const now = Date.now()
   const [startTime, setStartTime] = useState(now)
   const user = useUser()
@@ -93,6 +141,7 @@ function BoostPurchaseModal(props: {
   if (!user) return null
 
   const notEnoughFunds = (user.balance ?? 0) < BOOST_COST_MANA
+  const paidBoostAddsSubsidy = contractBoostAddsSubsidy(contract)
 
   const purchaseBoost = async (paymentMethod: 'mana' | 'cash') => {
     setLoading(paymentMethod)
@@ -109,7 +158,11 @@ function BoostPurchaseModal(props: {
       }
 
       toast.success(
-        'Market boosted! It will be featured on the homepage for 24 hours.'
+        paidBoostAddsSubsidy
+          ? `Market boosted! It will be featured on the homepage for 24 hours and receive ${formatMoney(
+              BOOST_CONTRACT_SUBSIDY_MANA
+            )} in subsidy.`
+          : 'Market boosted! It will be featured on the homepage for 24 hours.'
       )
       setOpen(false)
     } catch (e) {
@@ -159,6 +212,13 @@ function BoostPurchaseModal(props: {
                   .format('MMM D')}`}
           </div>
 
+          {paidBoostAddsSubsidy && (
+            <div className="text-ink-600 text-sm">
+              Paid boosts also add {formatMoney(BOOST_CONTRACT_SUBSIDY_MANA)} in
+              subsidy to this contract.
+            </div>
+          )}
+
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
             <Input
@@ -180,37 +240,25 @@ function BoostPurchaseModal(props: {
             />
           </Row>
 
-          <Row className="gap-2">
-            <Button
-              color="indigo"
-              onClick={() => purchaseBoost('mana')}
-              loading={loading === 'mana'}
-              disabled={!!loading || notEnoughFunds}
-              className="flex-1"
-            >
-              Pay {formatMoney(BOOST_COST_MANA)}
-            </Button>
-            <Button
-              color="indigo"
-              onClick={() => purchaseBoost('cash')}
-              loading={loading === 'cash'}
-              className="flex-1"
-              disabled={!!loading}
-            >
-              Pay $100
-            </Button>
-          </Row>
+          <Button
+            color="indigo"
+            onClick={() => purchaseBoost('mana')}
+            loading={loading === 'mana'}
+            disabled={!!loading || notEnoughFunds}
+          >
+            Pay {formatMoney(BOOST_COST_MANA)}
+          </Button>
 
           {isAdminOrMod && (
             <Row className="gap-2">
               <Button
-                color="indigo-outline"
+                color="purple-outline"
                 onClick={handleAdminFreeBoost}
                 loading={loading === 'admin-free'}
                 disabled={!!loading}
                 className="flex-1"
               >
-                <BsRocketTakeoff className="mr-1 h-5 w-5" />
+                <ModActionBadge className="mr-1" />
                 Free Admin Boost
               </Button>
             </Row>
@@ -219,19 +267,16 @@ function BoostPurchaseModal(props: {
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>
-              <Button
-                size="xs"
-                color="gradient-pink"
-                onClick={() => setFundsModalOpen(true)}
+              <Link
+                href="/checkout"
+                className="bg-primary-500 hover:bg-primary-600 rounded px-2 py-1 text-sm text-white"
               >
                 Get mana
-              </Button>
+              </Link>
             </div>
           )}
         </Col>
       </Modal>
-
-      <AddFundsModal open={fundsModalOpen} setOpen={setFundsModalOpen} />
     </>
   )
 }

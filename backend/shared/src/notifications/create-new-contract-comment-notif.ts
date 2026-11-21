@@ -49,6 +49,11 @@ export const createCommentOnContractNotification = async (
   taggedUserIds: string[],
   requiresResponse: boolean
 ) => {
+  // Bots deliver silently. Temporary blanket mute until the per-user bot
+  // notification level ships; see PR #4001. isBot is the users.is_bot column
+  // (convertUser maps it), so mod changes via set-bot-status apply at once.
+  if (sourceUser.isBot) return
+
   const pg = createSupabaseDirectClient()
 
   const usersToReceivedNotifications: Record<
@@ -92,8 +97,11 @@ export const createCommentOnContractNotification = async (
     }) as Notification
   }
 
-  const needNotFollowContractReasons = ['tagged_user']
+  const needNotFollowContractReasons = ['tagged_user', 'tagged_all_traders']
 
+  // Users reached only through @traders get their own preference, so they can
+  // keep these pings without the push alerts they want for direct tags.
+  let allTradersTaggedUserIds: string[] = []
   if (
     taggedUserIds?.includes(ALL_TRADERS_ID) &&
     (sourceUser.id === sourceContract.creatorId ||
@@ -102,8 +110,9 @@ export const createCommentOnContractNotification = async (
   ) {
     const allBettors = await getUniqueBettorIds(sourceContract.id, pg)
     const allVoters = await getUniqueVoterIds(sourceContract.id, pg)
-    const allUsers = uniq(allBettors.concat(allVoters))
-    taggedUserIds.push(...allUsers)
+    allTradersTaggedUserIds = uniq(allBettors.concat(allVoters)).filter(
+      (id) => !taggedUserIds.includes(id)
+    )
   }
   const bettorIds = await getUniqueBettorIds(sourceContract.id, pg)
 
@@ -111,6 +120,7 @@ export const createCommentOnContractNotification = async (
     ...followerIds,
     sourceContract.creatorId,
     ...(taggedUserIds ?? []),
+    ...allTradersTaggedUserIds,
     ...(repliedUsersInfo ? Object.keys(repliedUsersInfo) : []),
     ...bettorIds,
   ])
@@ -211,6 +221,11 @@ export const createCommentOnContractNotification = async (
       )
     )
   }
+  await Promise.all(
+    allTradersTaggedUserIds.map(async (userId) =>
+      sendNotificationsIfSettingsPermit(userId, 'tagged_all_traders')
+    )
+  )
   log('notifying creator')
   await sendNotificationsIfSettingsPermit(
     sourceContract.creatorId,
@@ -253,6 +268,9 @@ export const createCommentOnPostNotification = async (
   repliedUserId: string | undefined,
   mentionedUserIds: string[]
 ) => {
+  // Same blanket mute as the contract-comment path above.
+  if (commentCreator.isBot) return
+
   const usersToNotify: { userId: string; reason: NotificationReason }[] = []
 
   // Fetch post followers

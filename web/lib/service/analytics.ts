@@ -1,16 +1,20 @@
-// eslint-disable-next-line no-restricted-imports
-import * as amplitude from '@amplitude/analytics-browser'
-import { ENV, ENV_CONFIG } from 'common/envs/constants'
+import { ENV } from 'common/envs/constants'
 import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
 import { api, completeQuest } from 'web/lib/api/api'
+import { auth } from 'web/lib/firebase/users'
+import { ensureDeviceToken } from 'web/lib/util/device-token'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
-
-amplitude.init(ENV_CONFIG.amplitudeApiKey, undefined)
+import {
+  getStatSurface,
+  STAT_SURFACE_EVENT_KEY,
+  SURFACE_TRADE_EVENT,
+  SURFACE_TRADE_SOURCE_EVENTS,
+} from 'common/stat-surfaces'
 
 type EventIds = {
   contractId?: string | null
@@ -20,34 +24,61 @@ type EventIds = {
 
 type EventData = Record<string, Json | undefined>
 
+// Resolves true once the event is stored and false if storing it failed.
+// Nothing here retries; a caller that must not lose an event can.
 export async function track(name: string, properties?: EventIds & EventData) {
-  const deviceId = amplitude.getDeviceId()
-  const sessionId = amplitude.getSessionId()
-  const userId = amplitude.getUserId()
+  const userId = auth.currentUser?.uid
+  const deviceId = ensureDeviceToken()
   const isNative = getIsNative()
+  // The /stats page funnel (Sports, Midterms, Perps) the event happened on.
+  const funnel =
+    typeof window === 'undefined'
+      ? undefined
+      : getStatSurface(window.location.pathname)
 
   // mqp: did you know typescript can't type `const x = { a: b, ...c }` correctly?
   // see https://github.com/microsoft/TypeScript/issues/27273
-  const allProperties = Object.assign(properties ?? {}, {
-    isNative,
-    deviceId,
-    sessionId,
-  })
+  const allProperties = Object.assign(
+    properties ?? {},
+    { isNative, deviceId },
+    funnel ? { [STAT_SURFACE_EVENT_KEY]: funnel } : {}
+  )
 
   const { contractId, adId, commentId, ...data } = allProperties
+  let stored = false
   try {
     if (ENV !== 'PROD') {
       console.log(name, userId, allProperties)
-      await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
-      return
     }
-    await Promise.all([
-      amplitude.track(name, removeUndefinedProps(allProperties)).promise,
-      insertUserEvent(name, data, db, userId, contractId, commentId, adId),
-    ])
+    await insertUserEvent(name, data, db, userId, contractId, commentId, adId)
+    stored = true
   } catch (e) {
     console.log('error tracking event:', e)
   }
+
+  // Bets become contract interactions rather than user_events rows, so a
+  // trade placed on a funnel page also gets a row of its own for the funnels.
+  if (funnel && userId && SURFACE_TRADE_SOURCE_EVENTS.includes(name)) {
+    try {
+      await insertUserEvent(
+        SURFACE_TRADE_EVENT,
+        removeUndefinedProps({
+          [STAT_SURFACE_EVENT_KEY]: funnel,
+          kind: name,
+          location: data.location,
+          token: data.token,
+          isNative,
+          deviceId,
+        }),
+        db,
+        userId,
+        contractId
+      )
+    } catch (e) {
+      console.log('error tracking event:', e)
+    }
+  }
+  return stored
 }
 
 // Convenience functions:
@@ -68,26 +99,6 @@ export const withTracking =
     track(eventName, eventProperties)
     await promise
   }
-
-export function identifyUser(userId: string | null) {
-  if (userId) {
-    amplitude.setUserId(userId)
-  } else {
-    amplitude.setUserId(null as any)
-  }
-}
-
-export async function setUserProperty(property: string, value: string) {
-  const identifyObj = new amplitude.Identify()
-  identifyObj.set(property, value)
-  await amplitude.identify(identifyObj).promise
-}
-
-export async function setOnceUserProperty(property: string, value: string) {
-  const identifyObj = new amplitude.Identify()
-  identifyObj.setOnce(property, value)
-  await amplitude.identify(identifyObj).promise
-}
 
 export async function trackShareEvent(
   eventName: string,
@@ -159,7 +170,7 @@ function insertUserEvent(
           !!feedReason
         ? 'card bet'
         : 'page bet'
-    if (userId !== null) {
+    if (userId != null) {
       return api(
         'record-contract-interaction',
         removeUndefinedProps({

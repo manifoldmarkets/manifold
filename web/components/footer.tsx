@@ -2,7 +2,10 @@ import Link from 'next/link'
 import { track } from 'web/lib/service/analytics'
 
 export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
-  <div className="text-ink-400 mb-4 mt-8 w-full text-center text-sm">
+  <footer
+    role="contentinfo"
+    className="text-ink-400 mb-4 mt-8 w-full text-center text-sm"
+  >
     © Manifold Markets, Inc.
     <span className="mx-2">&bull;</span>
     {showAbout && (
@@ -30,5 +33,5 @@ export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
     >
       Privacy
     </a>
-  </div>
+  </footer>
 )

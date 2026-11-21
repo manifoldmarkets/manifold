@@ -1,46 +1,61 @@
-import { MultiContract } from 'common/contract'
+import { getDisplayProbability } from 'common/calculate'
+import { BinaryContract, Contract } from 'common/contract'
 import { getContractFromSlug } from 'common/supabase/contracts'
-import { PoliticsCard } from 'web/components/us-elections/contracts/politics-card'
+import { Col } from 'web/components/layout/col'
+import { SizedContainer } from 'web/components/sized-container'
+import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
 import { useTracking } from 'web/hooks/use-tracking'
-import { ELECTION_PARTY_CONTRACT_SLUG } from 'web/lib/politics/home'
+import { MIDTERMS_2026 } from 'web/public/data/elections-data'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 
 interface ElectionNeedleProps {
-  electionPartyContract: MultiContract | null
+  senateControlContract: Contract | null
 }
 
-function ElectionNeedle({ electionPartyContract }: ElectionNeedleProps) {
+function ElectionNeedle({ senateControlContract }: ElectionNeedleProps) {
   useTracking('view election needle')
 
-  if (!electionPartyContract) {
+  if (!senateControlContract) {
     return <Custom404 />
   }
 
+  // The market resolves YES if Republicans win the Senate, so the Democratic
+  // probability (which the needle expects) is the complement.
+  const democraticProb =
+    1 - getDisplayProbability(senateControlContract as BinaryContract)
+
   return (
-    <PoliticsCard
-      contract={electionPartyContract}
-      viewType="BINARY_PARTY"
-      customTitle="Which party will win the Presidential Election?"
-    />
+    <Col className="mx-auto w-full max-w-2xl gap-2 p-4">
+      <div className="mx-auto font-semibold sm:text-lg">
+        Which party will control the Senate?
+      </div>
+      <SizedContainer className="mx-auto h-[260px] w-full">
+        {(width, height) => (
+          <ProbabilityNeedle
+            percentage={democraticProb}
+            width={width}
+            height={height}
+          />
+        )}
+      </SizedContainer>
+    </Col>
   )
 }
 
-export default function ElectionNeedlePage({
-  electionPartyContract,
-}: ElectionNeedleProps) {
-  return <ElectionNeedle electionPartyContract={electionPartyContract} />
+export default function ElectionNeedlePage(props: ElectionNeedleProps) {
+  return <ElectionNeedle {...props} />
 }
 
 export async function getStaticProps() {
   const adminDb = await initSupabaseAdmin()
-  const electionPartyContract = await getContractFromSlug(
+  const senateControlContract = await getContractFromSlug(
     adminDb,
-    ELECTION_PARTY_CONTRACT_SLUG
+    MIDTERMS_2026.senateControl
   )
   return {
     props: {
-      electionPartyContract,
+      senateControlContract,
     },
     revalidate: 60,
   }

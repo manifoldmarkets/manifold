@@ -1,5 +1,6 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
 
@@ -8,7 +9,8 @@ import { useUser } from 'web/hooks/use-user'
 import { StreakProgressBar } from './streak-progress-bar'
 import { updateUser } from 'web/lib/api/api'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { getBenefit } from 'common/supporter-config'
+import { getEffectiveBonusMultiplier } from 'common/supporter-config'
+import { getEffectiveTier } from 'common/user'
 
 const START = 1744135118428 // 2025-04-08
 export function FirstStreakModalManager() {
@@ -28,14 +30,16 @@ export function FirstStreakModalManager() {
     }
   }, [user?.currentBettingStreak])
 
-  const questMultiplier = getBenefit(user?.entitlements, 'questMultiplier')
+  const streakMultiplier = user
+    ? getEffectiveBonusMultiplier(getEffectiveTier(user), 'streak')
+    : 1
 
   return (
     <BettingStreakProgressModal
       open={open}
       setOpen={setOpen}
       currentStreak={user?.currentBettingStreak ?? 0}
-      questMultiplier={questMultiplier}
+      questMultiplier={streakMultiplier}
     />
   )
 }
@@ -46,6 +50,8 @@ export function BettingStreakProgressModal(props: {
   questMultiplier?: number
 }) {
   const { open, setOpen, currentStreak, questMultiplier = 1 } = props
+  const user = useUser()
+  const freezes = user?.streakForgiveness ?? 0
   return (
     <Modal open={open} setOpen={setOpen} size="md">
       <Col className="bg-canvas-0 rounded-md px-8 py-6">
@@ -64,9 +70,17 @@ export function BettingStreakProgressModal(props: {
           />
         </div>
 
-        <Button onClick={() => setOpen(false)} className="self-end">
-          Got it
-        </Button>
+        <Row className="w-full items-center justify-between">
+          <Row className="text-ink-500 items-center gap-1.5 text-sm">
+            <span>🧊</span>
+            <span>
+              {freezes > 0
+                ? `${freezes} streak freeze${freezes === 1 ? '' : 's'} owned`
+                : 'No streak freezes — buy more in the shop!'}
+            </span>
+          </Row>
+          <Button onClick={() => setOpen(false)}>Got it</Button>
+        </Row>
       </Col>
     </Modal>
   )

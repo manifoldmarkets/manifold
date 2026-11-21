@@ -40,7 +40,9 @@ export const getFollowedReposts = async (
          posts.user_username,
          posts.user_avatar_url
         from recent_posts posts
-           join contracts on posts.contract_id = contracts.id and contracts.close_time > now()
+           join contracts on posts.contract_id = contracts.id
+             and (contracts.close_time is null or contracts.close_time > now())
+             and contracts.resolution_time is null
            join group_contracts on group_contracts.contract_id = contracts.id
            join contract_comments on posts.contract_comment_id = contract_comments.comment_id
            left join contract_bets on contract_comments.data->>'betId' = contract_bets.bet_id
@@ -50,7 +52,8 @@ export const getFollowedReposts = async (
                 and contract_id = posts.contract_id
                 and posts.created_time < coalesce(greatest(ucv.last_page_view_ts, ucv.last_card_view_ts),millis_to_ts(0))
             )
-            and contracts.close_time > now()
+            and (contracts.close_time is null or contracts.close_time > now())
+            and contracts.resolution_time is null
             and coalesce((contract_comments.data->'hidden')::boolean, false) = false
             and contracts.outcome_type != 'STONK'
             and contracts.visibility = 'public'
@@ -168,7 +171,8 @@ export const getTopicReposts = async (
              and case when contract_comments.user_id = 'hDq0cvn68jbAUVd6aWIU9aSv9ZA2' 
                  then contract_comments.likes > 1
                  else contract_comments.likes > 0 end
-             and contracts.close_time > now()
+             and (contracts.close_time is null or contracts.close_time > now())
+             and contracts.resolution_time is null
              and coalesce((contract_comments.data->'hidden')::boolean, false) = false
              and contracts.outcome_type != 'STONK' 
              and contracts.visibility = 'public'

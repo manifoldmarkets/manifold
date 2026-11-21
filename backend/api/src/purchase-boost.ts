@@ -3,9 +3,11 @@ import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
 import {
+  BOOST_CONTRACT_SUBSIDY_MANA,
   BOOST_INITIATED_EVENT_NAMES,
   BOOST_PAYMENT_TYPE,
   BOOST_PURCHASE_EVENT_NAMES,
+  contractBoostAddsSubsidy,
 } from 'common/boost'
 import { Contract, contractUrl } from 'common/contract'
 import {
@@ -13,12 +15,13 @@ import {
   DEV_BOOST_STRIPE_PRICE_ID,
   PROD_BOOST_STRIPE_PRICE_ID,
 } from 'common/economy'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId, isModId, STRIPE_PAYMENTS_ENABLED } from 'common/envs/constants'
 import { Row } from 'common/supabase/utils'
 import { TopLevelPost } from 'common/top-level-post'
 import { ContractBoostPurchaseTxn } from 'common/txn'
 import { DAY_MS } from 'common/util/time'
 import { trackPublicEvent } from 'shared/analytics'
+import { addHouseSubsidy } from 'shared/helpers/add-house-subsidy'
 import { boostContractImmediately } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
@@ -121,6 +124,10 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
   }
 
   if (fundViaCash) {
+    if (!STRIPE_PAYMENTS_ENABLED) {
+      throw new APIError(400, 'Cash payments via Stripe are currently disabled')
+    }
+
     // insert the boost as unfunded and then in the stripe endpoint, query for the boost and mark it as funded
     const boost = await pg.one(
       `insert into contract_boosts (contract_id, post_id, user_id, start_time, end_time, funded)
@@ -230,6 +237,13 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> =
             : BOOST_PAYMENT_TYPE.MANA,
         }
       )
+      if (
+        contract &&
+        !freeAdminBoost &&
+        contractBoostAddsSubsidy(contract)
+      ) {
+        await addHouseSubsidy(contract.id, BOOST_CONTRACT_SUBSIDY_MANA)
+      }
       if (startTime <= Date.now() && !fundViaCash && contract) {
         await boostContractImmediately(pg, contract)
       }

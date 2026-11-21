@@ -1,5 +1,6 @@
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { isUserBanned } from 'common/ban-utils'
+import { isMultiCpmm } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { removeUndefinedProps } from 'common/util/object'
 import { HOUR_MS } from 'common/util/time'
@@ -16,7 +17,10 @@ const bodySchema = z
     contractId: z.string().max(MAX_ANSWER_LENGTH),
     answerId: z.string().max(MAX_ANSWER_LENGTH),
     text: z.string().min(1).max(MAX_ANSWER_LENGTH).optional(),
-    color: z.string().length(7).startsWith('#').optional(),
+    color: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .optional(),
   })
   .strict()
 
@@ -28,32 +32,32 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   // Check for bans
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.userDeleted)
-    throw new APIError(403, 'Your account has been deleted')
+  if (user.userDeleted) throw new APIError(403, 'Your account has been deleted')
   const userBans = await getActiveUserBans(auth.uid)
   if (isUserBanned(userBans, 'marketControl') || user.isBannedFromPosting)
     throw new APIError(403, 'You are banned from editing answers')
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
-  if (contract.mechanism !== 'cpmm-multi-1')
+  if (!isMultiCpmm(contract))
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
 
+  const isModOrAdmin = isAdminId(auth.uid) || isModId(auth.uid)
+
   const { closeTime } = contract
-  if (closeTime && Date.now() > closeTime)
+  if (closeTime && Date.now() > closeTime && !isModOrAdmin)
     throw new APIError(403, 'Cannot edit answer after market closes')
 
   const answer = await getAnswer(pg, answerId)
   if (!answer) throw new APIError(404, 'Answer not found')
 
-  if (answer.resolution)
+  if (answer.resolution && !isModOrAdmin)
     throw new APIError(403, 'Cannot edit answer that is already resolved')
 
   if (
     answer.userId === auth.uid &&
     answer.userId !== contract.creatorId &&
-    !isModId(auth.uid) &&
-    !isAdminId(auth.uid) &&
+    !isModOrAdmin &&
     answer.createdTime < Date.now() - HOUR_MS
   )
     throw new APIError(
@@ -64,8 +68,7 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   if (
     answer.userId !== auth.uid &&
     contract.creatorId !== auth.uid &&
-    !isAdminId(auth.uid) &&
-    !isModId(auth.uid)
+    !isModOrAdmin
   )
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
 

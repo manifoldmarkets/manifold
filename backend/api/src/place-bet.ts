@@ -4,17 +4,27 @@ import {
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
   getUserBalancesAndMetrics,
+  lockContractAndGetBetData,
   updateMakers,
 } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
-import { Answer } from 'common/answer'
+import { Answer, answerP } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
-import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import {
+  CPMM_MULTI_2_UNPRICED_ERROR,
+  cpmmMultiTradeMissesSumToOne,
+} from 'common/calculate-cpmm-arbitrage'
+import {
+  CpmmState,
+  getCpmmProbability,
+  isDrainedPool,
+} from 'common/calculate-cpmm'
 import {
   CPMM_MIN_POOL_QTY,
   MarketContract,
   MultiContract,
+  isMultiCpmm,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { FLAT_TRADE_FEE } from 'common/fees'
@@ -127,19 +137,13 @@ export const placeBetMain = async (
   const startTime = Date.now()
   const { contractId, replyToCommentId, deterministic, answerId, silent } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
-  const {
-    user,
-    contract,
-    answers,
-    unfilledBets,
-    balanceByUserId,
-    unfilledBetUserIds,
-  } = await fetchContractBetDataAndValidate(
-    createSupabaseDirectClient(),
-    body,
-    uid,
-    isApi
-  )
+  const { user, contract, creator, answers, unfilledBets, balanceByUserId } =
+    await fetchContractBetDataAndValidate(
+      createSupabaseDirectClient(),
+      body,
+      uid,
+      isApi
+    )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
@@ -152,29 +156,39 @@ export const placeBetMain = async (
 
   const result = await runTransactionWithRetries(async (pgTrans) => {
     log(`Inside main transaction for ${uid} placing a bet on ${contractId}.`)
+    // Re-read pool/answers/open limit orders under a FOR UPDATE lock on the
+    // contract row, so each retry recomputes against current state rather than the
+    // possibly-stale pre-transaction read.
+    const {
+      contract: lockedContract,
+      answers: lockedAnswers,
+      unfilledBets: lockedUnfilledBets,
+      balanceByUserId: lockedMakerBalances,
+    } = await lockContractAndGetBetData(pgTrans, body, uid)
     // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
     const { balanceByUserId, contractMetrics } =
       await getUserBalancesAndMetrics(
         pgTrans,
         [uid, ...simulatedMakerIds], // Fetch just the makers that matched in the simulation.
-        contract,
+        lockedContract,
         answerId
       )
     user.balance = balanceByUserId[uid]
     if (user.balance < body.amount)
       throw new APIError(403, 'Insufficient balance.')
 
-    for (const userId of unfilledBetUserIds) {
-      if (!(userId in balanceByUserId)) {
-        // Assume other makers have infinite balance since they are not involved in this bet.
-        balanceByUserId[userId] = Number.MAX_SAFE_INTEGER
-      }
+    // The other makers keep the balances read with their orders above. Taking
+    // them to have all they need, as this did, fills any order the simulation
+    // passed by because its maker was out of balance. The check below then
+    // refuses the bet, and refuses it again every time it is retried.
+    for (const [userId, balance] of Object.entries(lockedMakerBalances)) {
+      if (!(userId in balanceByUserId)) balanceByUserId[userId] = balance
     }
     const newBetResult = calculateBetResult(
       body,
-      contract,
-      answers,
-      unfilledBets,
+      lockedContract,
+      lockedAnswers,
+      lockedUnfilledBets,
       balanceByUserId
     )
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
@@ -195,15 +209,16 @@ export const placeBetMain = async (
     }
 
     const betGroupId =
-      contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+      isMultiCpmm(lockedContract) && lockedContract.shouldAnswersSumToOne
         ? getNewBetId()
         : undefined
 
     return await executeNewBetResult(
       pgTrans,
       newBetResult,
-      contract,
+      lockedContract,
       user,
+      creator,
       isApi,
       contractMetrics,
       balanceByUserId,
@@ -273,7 +288,7 @@ export const calculateBetResult = (
       expiresAt,
       expiresMillisAfter
     )
-  } else if (mechanism == 'cpmm-multi-1') {
+  } else if (isMultiCpmm(contract)) {
     const { shouldAnswersSumToOne } = contract
     if (!body.answerId || !answers) {
       throw new APIError(400, 'answerId must be specified for multi bets')
@@ -330,6 +345,7 @@ export const executeNewBetResult = async (
   newBetResult: NewBetResult,
   contract: MarketContract,
   user: User,
+  creator: User | undefined,
   isApi: boolean,
   contractMetrics: ContractMetric[],
   balanceByUserId: Record<string, number>,
@@ -357,6 +373,38 @@ export const executeNewBetResult = async (
       Math.min(...Object.values(newPool ?? {})) < CPMM_MIN_POOL_QTY)
   ) {
     throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+  // A cpmm-multi-2 answer's p can sit as far from 0.5 as a binary market's, and a
+  // big enough trade drains a pool side outright. Refuse it as a binary market
+  // would, rather than let the answer write guard fail it with a 500. Not at
+  // cpmm-1's CPMM_MIN_POOL_QTY: these pools open with far smaller sides.
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    [newPool, ...(otherBetResults ?? []).map((r) => r.cpmmState.pool)].some(
+      (pool) => pool && isDrainedPool(pool)
+    )
+  ) {
+    throw new APIError(403, 'Trade too large for current liquidity pool.')
+  }
+  // A single-answer cpmm-multi-2 trade the arbitrage couldn't price leaves the
+  // probabilities missing summing to one, as one through an answer split off a
+  // tiny Other can. Refuse it rather than write it. (A multi-answer trade
+  // writes its legs one call at a time.)
+  if (
+    mechanism === 'cpmm-multi-2' &&
+    isMultiCpmm(contract) &&
+    contract.shouldAnswersSumToOne &&
+    !isMultiBet &&
+    newBet.answerId &&
+    newPool &&
+    cpmmMultiTradeMissesSumToOne(contract.answers, {
+      [newBet.answerId]: newPool,
+      ...Object.fromEntries(
+        (otherBetResults ?? []).map((r) => [r.answer.id, r.cpmmState.pool])
+      ),
+    })
+  ) {
+    throw new APIError(403, CPMM_MULTI_2_UNPRICED_ERROR)
   }
 
   if (
@@ -422,8 +470,7 @@ export const executeNewBetResult = async (
     volume: number
   }[] = []
 
-  const sumsToOne =
-    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+  const sumsToOne = isMultiCpmm(contract) && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
     (!isMultiBet || firstBetInMultiBet) &&
@@ -436,7 +483,8 @@ export const executeNewBetResult = async (
     const { balanceUpdate, txnQuery } = getUniqueBettorBonusQuery(
       contract,
       user,
-      newBet
+      newBet,
+      creator
     )
     if (balanceUpdate) {
       userBalanceUpdates.push(balanceUpdate)
@@ -464,7 +512,9 @@ export const executeNewBetResult = async (
         })
 
         const { YES: poolYes, NO: poolNo } = cpmmState.pool
-        const prob = getCpmmProbability(cpmmState.pool, 0.5)
+        // Use the answer's own p (cpmm-multi-2) so the denormalized `prob`
+        // matches the read-path `probability`; p=0.5 ⇒ byte-identical for v1.
+        const prob = getCpmmProbability(cpmmState.pool, answerP(answer))
         answerUpdates.push({
           id: answer.id,
           poolYes,
@@ -487,11 +537,14 @@ export const executeNewBetResult = async (
   // Multi-cpmm-1 contract: add main bet's answer update
   if (newBet.answerId && newPool) {
     const { YES: poolYes, NO: poolNo } = newPool
-    const prob = getCpmmProbability(newPool, 0.5)
     const answer = (contract as MultiContract).answers.find(
       (a) => a.id === newBet.answerId
     )
     if (!answer) throw new APIError(404, 'Answer not found')
+    // newP is only set for cpmm-1; for multi the per-answer p is unchanged by a
+    // buy/sell, so use answer.p (= 0.5 for cpmm-multi-1 ⇒ byte-identical). This
+    // keeps the denormalized `prob` consistent with the read-path `probability`.
+    const prob = getCpmmProbability(newPool, answerP(answer))
     answerUpdates.push({
       id: newBet.answerId,
       poolYes,
@@ -521,7 +574,7 @@ export const executeNewBetResult = async (
             prob:
               newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
           }
-        : contract.mechanism === 'cpmm-multi-1' &&
+        : isMultiCpmm(contract) &&
           answerUpdates.length > 0 &&
           contract.answers.length > 0
         ? {
@@ -628,10 +681,9 @@ export const executeNewBetResult = async (
   if (userUpdates.length) {
     // if negative balances, make sure the balance is higher than when they started
     for (const userUpdate of userUpdates) {
-      if (userUpdate.balance < -EPSILON) {
-        if (userUpdate.balance < balanceByUserId[userUpdate.id]) {
-          throw new APIError(403, 'Maker has insufficient balance.')
-        }
+      const startBalance = balanceByUserId[userUpdate.id]
+      if (userUpdate.balance < -EPSILON && userUpdate.balance < startBalance) {
+        throw new APIError(403, 'Maker has insufficient balance.')
       }
     }
   }

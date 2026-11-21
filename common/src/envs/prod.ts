@@ -1,7 +1,6 @@
 export type EnvConfig = {
   domain: string
   firebaseConfig: FirebaseConfig
-  amplitudeApiKey: string
   supabaseInstanceId: string
   supabaseAnonKey: string
   twitchBotEndpoint: string
@@ -48,7 +47,6 @@ type FirebaseConfig = {
 
 export const PROD_CONFIG: EnvConfig = {
   domain: 'manifold.markets',
-  amplitudeApiKey: '2d6509fd4185ebb8be29709842752a15',
   supabaseInstanceId: 'pxidrgkatumlvfqaxcll',
   supabaseAnonKey:
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB4aWRyZ2thdHVtbHZmcWF4Y2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Njg5OTUzOTgsImV4cCI6MTk4NDU3MTM5OH0.d_yYtASLzAoIIGdXUBIgRAGLBnNow7JG2SoaNMQ8ySg',
@@ -75,9 +73,11 @@ export const PROD_CONFIG: EnvConfig = {
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
     'KHX2ThSFtLQlau58hrjtCX7OL2h2', // stefanie
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
+    'HT8eUoGkBufqbNB7RayTEOV94VB2', // wasabipesto
     '799tbR05zWe23KnLg5esZaHmuxi2', // Manifold Mod
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
     '8lZo8X5lewh4hnCoreI7iSc0GxK2', // Manifold AI
+    'NnVY8olowYMYQGr346dfmHXBSpx2', // Manifold Sports
     'mwaVAaKkabODsH8g5VrtbshsXz03', // Ian's alt
   ],
   visibility: 'PUBLIC',

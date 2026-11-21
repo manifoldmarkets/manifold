@@ -1,5 +1,6 @@
 import {
   createSupabaseDirectClient,
+  READ_ONLY_REPEATABLE_MODE,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import {
@@ -8,11 +9,12 @@ import {
   log,
   prefixedContractColumnsToSelect,
 } from 'shared/utils'
-import { Dictionary, groupBy, sortBy, sumBy } from 'lodash'
+import { Dictionary, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import {
   Contract,
   ContractToken,
   CPMMMultiContract,
+  isMultiCpmm,
   MarketContract,
 } from 'common/contract'
 import {
@@ -37,6 +39,7 @@ import {
   leftJoin,
   where,
 } from './supabase/sql-builder'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -116,8 +119,17 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   }
 
   log('Loading metrics, contracts, and answers...')
-  const { metrics, contracts, answers } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, activeUserIds)
+  // One snapshot for all three reads. They are sent as one multi-statement
+  // query, but at READ COMMITTED each statement sees its own snapshot: a
+  // market that resolved between the metrics and the contracts statements
+  // was in `metrics` with no entry in `contractsById` (TypeError reading
+  // 'token' in getUnresolvedStatsForToken, about daily), and a metric row
+  // inserted between the contracts and answers statements put an answer in
+  // with no contract to attach it to (TypeError setting 'answers').
+  const { metrics, contracts, answers } = await pg.tx(
+    { mode: READ_ONLY_REPEATABLE_MODE },
+    (tx) => getUnresolvedContractMetricsContractsAnswers(tx, activeUserIds)
+  )
   log(`Loaded ${metrics.length} metrics.`)
   log(`Loaded ${contracts.length} contracts and their answers.`)
 
@@ -241,7 +253,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     where('c.resolution_time is null'),
     where('(a is null or a.resolution_time is null)'),
     where(
-      `case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end`
+      `case when c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL} then ucm.answer_id is not null else true end`
     ),
   ]
   const metricsSql = renderSql(
@@ -276,7 +288,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     `,
     [userIds]
   )
-  const metrics = results[0].map(
+  const allMetrics = results[0].map(
     (r) =>
       ({
         ...r.data,
@@ -286,7 +298,32 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       } as RankedContractMetric)
   )
   const contracts = results[1].map<MarketContract>(convertContract)
-  const answers = results[2].map(convertAnswer)
+  const loadedContractIds = new Set(contracts.map((c) => c.id))
+  // Callers that run this on their own connection (the loan endpoints) get
+  // no snapshot guarantee, so never hand back a metric or answer whose
+  // contract did not come with it: the consumers index contractsById and
+  // would throw. Under the scheduler's repeatable-read transaction this does
+  // not fire.
+  const orphanMetrics = allMetrics.filter(
+    (m) => !loadedContractIds.has(m.contractId)
+  )
+  const allAnswers = results[2].map(convertAnswer)
+  const orphanAnswers = allAnswers.filter(
+    (a) => !loadedContractIds.has(a.contractId)
+  )
+  if (orphanMetrics.length > 0 || orphanAnswers.length > 0) {
+    log.warn(
+      `Dropping ${orphanMetrics.length} metric(s) and ${orphanAnswers.length} answer(s) whose contract changed between reads`,
+      {
+        contractIds: uniq([
+          ...orphanMetrics.map((m) => m.contractId),
+          ...orphanAnswers.map((a) => a.contractId),
+        ]),
+      }
+    )
+  }
+  const metrics = allMetrics.filter((m) => loadedContractIds.has(m.contractId))
+  const answers = allAnswers.filter((a) => loadedContractIds.has(a.contractId))
   if (metrics.length === 0) {
     return {
       metrics: [],
@@ -295,9 +332,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       updatedMetricsByContract: {},
     }
   }
+  // Index once instead of scanning every metric again for each contract.
+  const metricsByContractId = groupBy(metrics, (m) => m.contractId)
   const contractsWithMetrics = contracts.map((c) => ({
     contract: c,
-    metrics: metrics.filter((m) => m.contractId === c.id),
+    metrics: Object.prototype.hasOwnProperty.call(metricsByContractId, c.id)
+      ? metricsByContractId[c.id]
+      : [],
   }))
   const { metricsByContract } =
     calculateUpdatedMetricsForContracts(contractsWithMetrics)
@@ -349,8 +390,22 @@ export const getUnresolvedStatsForToken = (
       }
     }
 
+    // Perps: the engine already writes an authoritative synthetic metric
+    // row with payout (current position value at oracle price) and invested
+    // (gross originalCostBasis). Just plumb those through; perps are never
+    // eligible for loans so loan=0. `MarketContract` doesn't include
+    // PerpContract, so we widen through `Contract` for the check.
+    if ((contract as Contract).mechanism === 'perp') {
+      return {
+        value: cm.payout ?? 0,
+        invested: cm.invested ?? 0,
+        dailyProfit: cm.from?.day?.profit ?? 0,
+        loan: 0,
+      }
+    }
+
     // ignore summary metrics
-    if (contract.mechanism === 'cpmm-multi-1') {
+    if (isMultiCpmm(contract)) {
       if (!cm.answerId)
         return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
       const answer = contract.answers.find((a) => a.id === cm.answerId)

@@ -1,3 +1,4 @@
+import { toast } from 'react-hot-toast'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { useState } from 'react'
@@ -8,20 +9,35 @@ import { SupabaseAdditionalFilter, Search } from 'web/components/search'
 import { Col } from './layout/col'
 
 export function SelectMarkets(props: {
+  initialContracts?: Contract[]
+  maxSelections?: number
+  publicOnly?: boolean
   submitLabel: (length: number) => string
   onSubmit: (contracts: Contract[]) => void | Promise<void>
+  onCancel?: () => void
   className?: string
   additionalFilter?: SupabaseAdditionalFilter
 }) {
-  const { submitLabel, onSubmit, className, additionalFilter } = props
+  const { submitLabel, onSubmit, onCancel, className, additionalFilter } = props
 
   const privateUser = usePrivateUser()
-  const [contracts, setContracts] = useState<Contract[]>([])
+  const [contracts, setContracts] = useState<Contract[]>(
+    props.initialContracts ?? []
+  )
   const [loading, setLoading] = useState(false)
 
   async function toggleContract(contract: Contract) {
+    if (
+      props.publicOnly &&
+      (contract.visibility !== 'public' || contract.deleted)
+    ) {
+      toast.error('Only public markets can be attached')
+      return
+    }
     if (contracts.some((c) => c.id === contract.id)) {
       setContracts(contracts.filter((c) => c.id !== contract.id))
+    } else if (props.maxSelections && contracts.length >= props.maxSelections) {
+      toast.error(`Attach up to ${props.maxSelections} markets`)
     } else setContracts([...contracts, contract])
   }
 
@@ -58,7 +74,9 @@ export function SelectMarkets(props: {
           <>
             <Button
               onClick={() => {
-                if (contracts.length > 0) {
+                if (onCancel) {
+                  onCancel()
+                } else if (contracts.length > 0) {
                   setContracts([])
                 } else {
                   onSubmit([])
@@ -66,15 +84,15 @@ export function SelectMarkets(props: {
               }}
               color="gray"
             >
-              {contracts.length > 0 ? 'Reset' : 'Cancel'}
+              {!onCancel && contracts.length > 0 ? 'Reset' : 'Cancel'}
             </Button>
             <Button
               onClick={onFinish}
               color="indigo"
-              disabled={contracts.length <= 0}
+              disabled={!onCancel && contracts.length <= 0}
               loading={loading}
             >
-              {contracts.length > 0
+              {contracts.length > 0 || onCancel
                 ? submitLabel(contracts.length)
                 : 'Add questions'}
             </Button>

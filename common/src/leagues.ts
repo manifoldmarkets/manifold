@@ -1,11 +1,67 @@
 import { keyBy } from 'lodash'
 import { Bet } from './bet'
+import { getProfitMetrics } from './calculate'
 import { Contract } from './contract'
 import { LeagueChangeData } from './notification'
 import { Row } from './supabase/utils'
 import { HOUR_MS } from './util/time'
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
+
+// Markets that never count toward league mana earned.
+export const EXCLUDED_LEAGUE_CONTRACT_SLUGS = new Set([
+  'will-there-be-another-wellrecognize-393de260ec26',
+  'will-there-be-another-wellrecognize-511a499bd82e',
+  'will-there-be-another-wellrecognize',
+])
+
+export const isLeagueScorableContract = (contract: Contract) =>
+  contract.token === 'MANA' &&
+  contract.visibility === 'public' &&
+  contract.mechanism !== 'perp' &&
+  contract.isRanked !== false &&
+  !EXCLUDED_LEAGUE_CONTRACT_SLUGS.has(contract.slug)
+
+/**
+ * Adds each user's season profit on one contract into profitByUserId.
+ *
+ * Only users already present in profitByUserId (the season's league members)
+ * are scored; everyone else's bets are ignored. This is the per-contract step
+ * of what update-league used to do per user over the whole season's bets in
+ * one pass, split out so bets can be loaded a few hundred contracts at a time
+ * instead of all at once (3M+ rows a season once API market-makers arrived).
+ *
+ * Returns the users whose profit came out NaN; they are skipped, as before.
+ */
+export const addLeagueProfitForContract = (
+  contract: Contract,
+  betsByUserId: Record<string, Bet[]>,
+  profitByUserId: Record<string, number>
+) => {
+  const nanUserIds: string[] = []
+  for (const [userId, userBets] of Object.entries(betsByUserId)) {
+    if (!(userId in profitByUserId)) continue
+
+    // Adjust bets to exclude portions that filled against user's own limit orders
+    const nonSelfTradeBets = excludeSelfTrades(userBets, userId)
+
+    // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
+    const relevantBets = filterBetsForLeagueScoring(
+      nonSelfTradeBets,
+      contract,
+      userId
+    )
+    if (relevantBets.length === 0) continue
+
+    const { profit } = getProfitMetrics(contract, relevantBets)
+    if (isNaN(profit)) {
+      nanUserIds.push(userId)
+      continue
+    }
+    profitByUserId[userId] += profit
+  }
+  return nanUserIds
+}
 
 /**
  * Filters bets to only include those that count for league scoring.
@@ -326,7 +382,10 @@ export const getCohortSize = (division: number) => {
   return 25
 }
 
+// Indexed by division number. Silicon (0) pays only the top 6;
+// payout further requires mana_earned >= 100 (see payout-leagues.ts).
 export const prizesByDivisionAndRank = [
+  [800, 400, 360, 320, 280, 240],
   [100, 50, 40, 30, 20, 10, 5],
   [200, 100, 90, 80, 70, 60, 50, 40],
   [400, 200, 180, 160, 140, 120, 100, 80, 60],
@@ -335,8 +394,10 @@ export const prizesByDivisionAndRank = [
   [6400, 3200, 1600, 1440, 1200, 1120, 960, 800, 640, 480],
 ]
 
+export const SILICON_PRIZE_MIN_MANA_EARNED = 100
+
 export const getLeaguePrize = (division: number, rank: number) => {
-  const divisionPrizes = prizesByDivisionAndRank[division - 1]
+  const divisionPrizes = prizesByDivisionAndRank[division]
   if (!divisionPrizes) return 0
   return divisionPrizes[rank - 1] || 0
 }

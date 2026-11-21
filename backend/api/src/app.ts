@@ -10,9 +10,12 @@ import { hrtime } from 'node:process'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { log, metrics } from 'shared/utils'
 import { typedEndpoint } from './helpers/endpoint'
+import { ipRateLimitMiddleware } from './helpers/rate-limit'
 import { handleMcpRequest } from './mcp'
+import { MINUTE_MS } from 'common/util/time'
 import { addOldRoutes } from './old-routes'
 import { handlers } from './routes'
+import { healthzLive, healthzReady } from './healthz'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
@@ -26,6 +29,7 @@ function cacheController(policy?: string): RequestHandler {
   }
 }
 const ignoredEndpoints = [
+  '/internal-perp-broadcast',
   '/get-channel-messages',
   '/v0/user/by-id/',
   '/get-channel-memberships',
@@ -76,6 +80,17 @@ const getBaseName = (path: string) => {
   return base
 }
 
+// Postgres error codes for transactions that were aborted and rolled back under
+// contention. Both are already treated as retryable inside runTransactionWithRetries;
+// these are the ones that escape after its retry budget is exhausted.
+const RETRYABLE_PG_ERROR_CODES = new Set([
+  '40001', // serialization_failure
+  '40P01', // deadlock_detected
+])
+
+const isRetryablePgError = (error: any) =>
+  typeof error?.code === 'string' && RETRYABLE_PG_ERROR_CODES.has(error.code)
+
 export const apiErrorHandler: ErrorRequestHandler = (
   error,
   _req,
@@ -91,15 +106,38 @@ export const apiErrorHandler: ErrorRequestHandler = (
       }
       res.status(error.code).json(output)
     }
+  } else if (isRetryablePgError(error)) {
+    // The transaction was aborted and rolled back — nothing was committed, and a
+    // retry is expected to succeed. That is a 503, not a 500, and it must not leak
+    // a stack trace to the client.
+    log.info(`Transaction conflict (${error.code}); returning 503.`)
+    if (!res.headersSent) {
+      res
+        .status(503)
+        .json({ message: 'Transaction conflict. Please try again.' })
+    }
   } else {
+    // The full error (with stack) goes to the server log only. Returning the
+    // stack in the response body leaked internal file paths and gave users an
+    // indecipherable wall of text in place of an error message.
     log.error(error)
     if (!res.headersSent) {
-      res.status(500).json({ message: error.stack, error })
+      res.status(500).json({
+        message:
+          'An unexpected error occurred. Please try again, and report it if it persists.',
+      })
     }
   }
 }
 
 export const app = express()
+
+// Infra health checks, registered before requestMonitoring so the LB's
+// per-instance polling (every few seconds) doesn't spam request logs or inflate
+// http/request_count. These are unauthenticated and intentionally trivial.
+app.get('/healthz/live', healthzLive)
+app.get('/healthz/ready', healthzReady)
+
 app.use(compression())
 app.use(requestMonitoring)
 
@@ -130,7 +168,22 @@ Object.entries(handlers).forEach(([path, handler]) => {
   }
 })
 
-// Add MCP POST endpoint
-app.post('/v0/mcp', express.json(), allowCorsUnrestricted, handleMcpRequest)
+// Add MCP POST endpoint. The handler is unauthenticated (it wraps already-public
+// read-only tools), so rate-limit by client IP to prevent abuse / DoS. Limits
+// are intentionally generous for legitimate MCP sessions while bounding cost.
+app.post(
+  '/v0/mcp',
+  // CORS first so that 429 (and any other short-circuit) responses still
+  // include Access-Control-Allow-Origin; otherwise browser-based MCP clients
+  // see a CORS failure instead of the JSON-RPC rate-limit body + Retry-After.
+  allowCorsUnrestricted,
+  ipRateLimitMiddleware({
+    maxCalls: 60,
+    windowMs: MINUTE_MS,
+    metricName: 'mcp/rate_limit',
+  }),
+  express.json({ limit: '256kb' }),
+  handleMcpRequest
+)
 
 addOldRoutes(app)

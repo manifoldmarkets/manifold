@@ -294,6 +294,7 @@ const UserRow = (props: {
                 <UserBadge
                   userId={user.id}
                   username={user.username}
+                  isBot={user.isBot}
                   entitlements={user.entitlements}
                   displayContext="leagues"
                 />

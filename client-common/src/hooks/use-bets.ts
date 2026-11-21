@@ -2,7 +2,7 @@ import { APIParams, APIResponse } from 'common/api/schema'
 import { Bet, LimitBet } from 'common/bet'
 import { User } from 'common/user'
 import { sortBy, uniq, uniqBy } from 'lodash'
-import { Dispatch, SetStateAction, useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect, useRef } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
@@ -16,8 +16,14 @@ export function useBetsOnce(
     `use-bets-${JSON.stringify(options)}`
   )
 
+  // Only the latest request counts, so one for earlier options landing late
+  // can't replace its results.
+  const latestRequest = useRef(0)
   useEffectCheckEquality(() => {
-    api(options ?? {}).then((bets) => setBets(bets))
+    const requestId = ++latestRequest.current
+    api(options ?? {}).then((bets) => {
+      if (requestId === latestRequest.current) setBets(bets)
+    })
   }, [options])
 
   return bets
@@ -131,7 +137,12 @@ export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
     // if open-limit kind exists, and bet is not filled/cancelled
     (options.kinds === 'open-limit' && (bet.isFilled || bet.isCancelled)) ||
     // if commentRepliesOnly is true, and bet is not a comment reply
-    (options.commentRepliesOnly && !bet.replyToCommentId)
+    (options.commentRepliesOnly && !bet.replyToCommentId) ||
+    // if minAmount exists, and bet amount is below the minimum
+    (options.minAmount !== undefined &&
+      Math.abs(bet.amount) < options.minAmount) ||
+    // if excludeApi is true, and bet was made via API
+    (options.excludeApi && bet.isApi)
 
   return shouldBeFiltered
 }

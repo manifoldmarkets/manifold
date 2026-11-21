@@ -1,3 +1,4 @@
+import { formatOraclePrice } from 'common/perps/oracle-display'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
@@ -15,6 +16,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
+import { inferPriceDecimals } from 'common/perps/format'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
@@ -23,7 +25,7 @@ import {
   NotificationReason,
 } from 'common/notification'
 import { chunk, Dictionary } from 'lodash'
-import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { getEmailNotificationDestinations } from 'shared/unsubscribe-links'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -75,7 +77,7 @@ export const getMarketResolutionEmail = (
   resolutions?: { [outcome: string]: number },
   answerId?: string
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -168,6 +170,18 @@ export const toDisplayResolution = (
   if (contract.outcomeType === 'STONK') {
     return formatNumericProbability(getProbability(contract), contract)
   }
+  if (contract.outcomeType === 'PERP') {
+    const finalPrice =
+      typeof contract.resolvedOraclePrice === 'number' &&
+      Number.isFinite(contract.resolvedOraclePrice)
+        ? contract.resolvedOraclePrice
+        : contract.oraclePrice
+    return formatOraclePrice(
+      contract.oracleFeedId,
+      finalPrice,
+      inferPriceDecimals([finalPrice])
+    )
+  }
 
   if (contract.outcomeType === 'NUMBER') {
     if (!resolutions) return 'Invalid resolution data'
@@ -211,7 +225,7 @@ export const sendWelcomeEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  const { unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     'onboarding_flow'
   )
@@ -321,7 +335,7 @@ export const sendCreatorGuideEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'onboarding_flow'
   )
@@ -350,7 +364,7 @@ export const sendUnactivatedNewUserEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'onboarding_flow'
   )
@@ -377,7 +391,7 @@ export const sendThankYouEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'thank_you_for_purchases'
   )
@@ -438,7 +452,7 @@ export const getNewCommentEmail = (
   commentId: string,
   bet?: Bet
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -489,7 +503,7 @@ export const sendNewAnswerEmail = async (
   // Don't send the creator's own answers.
   if (privateUser.id === creatorId) return
 
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -529,7 +543,7 @@ export const sendInterestingMarketsEmail = async (
     return
   }
 
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'trending_markets'
   )
@@ -576,9 +590,9 @@ export const sendBonusWithInterestingMarketsEmail = async (
   let unsubscribeUrl = ''
   // This is email is of both types, so try either
   const { sendToEmail, unsubscribeUrl: unsub1 } =
-    getNotificationDestinationsForUser(privateUser, 'onboarding_flow')
+    getEmailNotificationDestinations(privateUser, 'onboarding_flow')
   const { sendToEmail: trendingSendToEmail, unsubscribeUrl: unsub2 } =
-    getNotificationDestinationsForUser(privateUser, 'trending_markets')
+    getEmailNotificationDestinations(privateUser, 'trending_markets')
 
   if (!sendToEmail && !trendingSendToEmail) return
   unsubscribeUrl = !sendToEmail ? unsub2 : unsub1
@@ -628,7 +642,7 @@ export const getNewFollowedMarketEmail = (
   privateUser: PrivateUser,
   contract: Contract
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -656,7 +670,7 @@ export const sendNewPrivateMarketEmail = async (
   contract: Contract,
   groupName: string
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -697,7 +711,7 @@ export const sendNewUniqueBettorsEmail = async (
   userBets: Dictionary<[Bet, ...Bet[]]>,
   bonusAmount: number
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
     reason
   )
@@ -760,7 +774,7 @@ export const getWeeklyPortfolioUpdateEmail = (
 ) => {
   if (!privateUser || !privateUser.email) return
 
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'profit_loss_updates'
   )
@@ -813,7 +827,7 @@ export const getMarketMovementEmail = (
 ) => {
   if (!privateUser || !privateUser.email) return
 
-  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+  const { unsubscribeUrl, sendToEmail } = getEmailNotificationDestinations(
     privateUser,
     'market_movements'
   )

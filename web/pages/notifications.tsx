@@ -1,6 +1,5 @@
 import { XIcon } from '@heroicons/react/outline'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
-import { useEvent } from 'client-common/hooks/use-event'
 import {
   NOTIFICATIONS_PER_PAGE,
   useGroupedNotifications,
@@ -16,7 +15,6 @@ import {
 } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { maybePluralize } from 'common/util/format'
-import dayjs from 'dayjs'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
@@ -45,8 +43,8 @@ import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, markAllNotifications } from 'web/lib/api/api'
-import { postMessageToNative } from 'web/lib/native/post-message'
 import { track } from 'web/lib/service/analytics'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { PrivateMessagesList } from '../components/messaging/private-messages-list'
 
 export default function NotificationsPage() {
@@ -124,7 +122,7 @@ function NotificationsContent(props: {
     (params) => api('get-notifications', params),
     usePersistentLocalState
   )
-  const resolution = groupedNotifications?.some(
+  const hasFavorableResolution = groupedNotifications?.some(
     (ng) =>
       ng.notifications.some(
         (n) => n.reason === 'resolutions_on_watched_markets'
@@ -145,38 +143,16 @@ function NotificationsContent(props: {
         return false
       })
   )
-  const { isNative } = useNativeInfo()
-  const lastPushModalSeenTime =
-    privateUser.lastPromptedToEnablePushNotifications
 
-  const checkIfShouldPromptStoreReview = useEvent(() => {
-    const shownPushModalToday = lastPushModalSeenTime
-      ? dayjs(lastPushModalSeenTime).isSame(dayjs(), 'day')
-      : false
-
-    const yearAgo = dayjs().subtract(1, 'years').valueOf()
-    const recentlyReviewed = privateUser.lastAppReviewTime
-      ? privateUser.lastAppReviewTime > yearAgo
-      : false
-    const shouldCheckReviewAbility =
-      isNative && resolution && !recentlyReviewed && !shownPushModalToday
-
-    if (shouldCheckReviewAbility) {
-      postMessageToNative('hasReviewActionRequested', {})
-    }
-  })
+  const tryOfferReview = useStoreReviewNudge('notifications-resolution')
 
   useEffect(() => {
-    setTimeout(() => {
-      // Give the push notification modal time to show and the user to see their notifs
-      checkIfShouldPromptStoreReview()
-    }, 3000)
-  }, [
-    isNative,
-    resolution,
-    lastPushModalSeenTime,
-    privateUser.lastAppReviewTime,
-  ])
+    if (!hasFavorableResolution) return
+    if (!privateUser) return
+    // Give the push notification modal time to show and the user to see their notifs
+    const t = setTimeout(tryOfferReview, 3000)
+    return () => clearTimeout(t)
+  }, [hasFavorableResolution, privateUser, tryOfferReview])
 
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
@@ -542,7 +518,9 @@ function NotificationGroupItemComponent(props: {
       {header}
       <div className="relative whitespace-pre-line last:[&>*]:pb-6 sm:last:[&>*]:pb-4">
         {needsExpanding && (
-          <div className={clsx('absolute bottom-0 right-4')}>
+          // z-20 keeps this expander above a link-backed notification's full-row
+          // overlay <Link> (z-0) and content layer (z-10).
+          <div className={clsx('absolute bottom-0 right-4 z-20')}>
             <ShowMoreLessButton
               onClick={onExpandHandler}
               isCollapsed={!expanded}

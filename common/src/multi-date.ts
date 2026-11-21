@@ -1,4 +1,4 @@
-import { sum } from 'lodash'
+import { sortBy, sum } from 'lodash'
 import { getAnswerProbability } from './calculate'
 import { filterDefined } from './util/array'
 import { getInitialAnswerProbability } from './calculate'
@@ -11,7 +11,8 @@ export function getExpectedDate(
   contract: MultiDateContract,
   initialOnly?: boolean
 ) {
-  const { answers, shouldAnswersSumToOne, isResolved } = contract
+  const { shouldAnswersSumToOne, isResolved } = contract
+  const answers = sortBy(contract.answers, 'index')
 
   const answerProbabilities = filterDefined(
     answers.map((a) =>

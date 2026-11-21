@@ -3,6 +3,7 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { hasAllAnswersForCopy } from 'common/answer-probs'
 import { Bet } from 'common/bet'
 import {
   HistoryPoint,
@@ -15,14 +16,18 @@ import {
   tradingAllowed,
   type Contract,
   type ContractParams,
+  type PerpContract,
 } from 'common/contract'
 import { shouldHideGraph } from 'common/contract-params'
+import { movedProbability } from 'common/multi-chart'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
+import { getSportsLeagueLabel } from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
-import { mergeWith, uniqBy } from 'lodash'
+import { maxBy, uniqBy } from 'lodash'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
@@ -36,6 +41,8 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { NextMarketPrompt } from 'web/components/bet/next-market-prompt'
+import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-tracking-location'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
@@ -52,13 +59,15 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
+import { MarketTitleLabel } from 'web/components/contract/market-title-label'
+import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { precacheAnswers } from 'web/hooks/use-answers'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { useGraphUserFromUrl } from 'web/hooks/use-graph-user'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -68,18 +77,22 @@ import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
+import {
+  WIN_BET_MIN_PROFIT,
+  WIN_BET_RECENT_RESOLUTION_MS,
+} from 'common/store-review'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
-import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
-import { MarketContext } from './market-context'
-import { YourTrades } from './your-trades'
 import { LogoIcon } from '../icons/logo-icon'
+import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
+import { YourTrades } from './your-trades'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -92,11 +105,24 @@ export function ContractPageContent(props: ContractParams) {
     dashboards,
     pinnedComments,
     totalComments,
+    totalAnswers,
   } = props
 
   // Just use the contract that was navigated to directly
-  const liveContract = useLiveContract(props.contract)
+  const { contract: liveContract, hasLoaded } = useLiveContractWithStatus(
+    props.contract
+  )
+  // The server renders a big market with only its top answers; the rest arrive
+  // with the live contract. Until then a duplicate would copy only those
+  const hasAllAnswers = hasAllAnswersForCopy(
+    props.contract,
+    liveContract,
+    totalAnswers,
+    hasLoaded
+  )
+
   const user = useUser()
+
   useSaveReferral(user, {
     defaultReferrerUsername: props.contract.creatorUsername,
     contractId: props.contract.id,
@@ -128,21 +154,56 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [])
 
-  const { bets, totalBets, yourNewBets, betPoints } = useBetData({
-    contractId: liveContract.id,
-    outcomeType: liveContract.outcomeType,
-    userId: user?.id,
-    lastBetTime: props.lastBetTime,
-    totalBets: props.totalBets,
-    pointsString: pointsString,
-    multiPointsString: multiPointsString,
-  })
+  // The answers whose chart line came with the page. A market with many
+  // answers is rendered without chart points: every answer is listed, each
+  // with an empty line.
+  const serverPointAnswerIds = useMemo(
+    () =>
+      Object.keys(multiPointsString ?? {}).filter(
+        (answerId) => multiPointsString?.[answerId]
+      ),
+    [multiPointsString]
+  )
+
+  const { bets, totalBets, yourNewBets, betPoints, latestNewBetTime } =
+    useBetData({
+      contractId: liveContract.id,
+      outcomeType: liveContract.outcomeType,
+      // The multiple choice chart draws the bets made since the page was
+      // rendered by itself, from a feed that also has the rows that move the
+      // other answers. A market of two answers is drawn as a binary one, by
+      // a chart that does not.
+      chartAddsNewBets:
+        liveContract.outcomeType === 'MULTIPLE_CHOICE' &&
+        !isBinaryMulti(liveContract),
+      userId: user?.id,
+      lastBetTime: props.lastBetTime,
+      totalBets: props.totalBets,
+      pointsString: pointsString,
+      multiPointsString: multiPointsString,
+    })
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
   const { coverImageUrl } = liveContract
 
+  const tryOfferReview = useStoreReviewNudge('win-bet')
+  // Boolean instead of raw profit so streaming-bet metric ticks don't
+  // re-arm the 3s timer; we only care about the threshold transition.
+  const winNudgeEligible =
+    isResolved &&
+    !!privateUser &&
+    (myContractMetrics?.profit ?? 0) >= WIN_BET_MIN_PROFIT &&
+    !!liveContract.resolutionTime &&
+    Date.now() - liveContract.resolutionTime <= WIN_BET_RECENT_RESOLUTION_MS
+  useEffect(() => {
+    if (!winNudgeEligible) return
+    const t = setTimeout(tryOfferReview, 3000)
+    return () => clearTimeout(t)
+  }, [winNudgeEligible, tryOfferReview])
+
   const description = liveContract.description
+  const isPerp = liveContract.mechanism === 'perp'
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -161,11 +222,15 @@ export function ContractPageContent(props: ContractParams) {
   const initialHideGraph = shouldHideGraph(liveContract)
   const [hideGraph, setHideGraph] = useState(initialHideGraph)
 
-  const {
-    graphUser,
-    setGraphUser,
-    ready: graphUserReady,
-  } = useGraphUserFromUrl()
+  // Deep-linking to the graph (e.g. the elections page's "chart →" links): on
+  // many-answer markets the graph is hidden by default, so `?graph` forces it
+  // open. Done in an effect to avoid an SSR/hydration mismatch.
+  const router = useRouter()
+  useEffect(() => {
+    if (router.isReady && router.query.graph) setHideGraph(false)
+  }, [router.isReady, router.query.graph])
+
+  const { graphUser, setGraphUser } = useGraphUserFromUrl()
 
   useEffect(() => {
     if (replyTo) {
@@ -208,7 +273,7 @@ export function ContractPageContent(props: ContractParams) {
             <LogoIcon className="h-8 w-8 stroke-indigo-700 dark:stroke-white" />
             <span className="text-lg font-thin">MANIFOLD</span>
           </Link>
-          <SignUpButton />
+          <SignUpButton location="market page header" />
         </Row>
       )}
       <Row className="w-full items-start justify-center gap-8">
@@ -269,10 +334,18 @@ export function ContractPageContent(props: ContractParams) {
                 )}
                 {headerStuck && (
                   <span
+                    role="button"
+                    tabIndex={0}
                     className="text-ink-1000 line-clamp-2 cursor-pointer select-none first:ml-4"
                     onClick={() =>
                       window.scrollTo({ top: 0, behavior: 'smooth' })
                     }
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                      }
+                    }}
                   >
                     {isSpiceMarket && (
                       <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -280,6 +353,10 @@ export function ContractPageContent(props: ContractParams) {
                       </Tooltip>
                     )}
                     <VisibilityIcon contract={props.contract} />{' '}
+                    <MarketTitleLabel
+                      contract={liveContract}
+                      className="mr-1"
+                    />
                     {props.contract.question}
                   </span>
                 )}
@@ -287,6 +364,7 @@ export function ContractPageContent(props: ContractParams) {
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
                   contract={liveContract}
+                  hasAllAnswers={hasAllAnswers}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -308,6 +386,7 @@ export function ContractPageContent(props: ContractParams) {
               </div>
               <HeaderActions
                 contract={liveContract}
+                hasAllAnswers={hasAllAnswers}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
@@ -327,6 +406,16 @@ export function ContractPageContent(props: ContractParams) {
                   <EditableQuestionTitle
                     contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
+                    modAction={!isCreator}
+                    prefix={
+                      isPerp ? (
+                        <PerpMarketExplainer
+                          contract={liveContract as PerpContract}
+                        />
+                      ) : getSportsLeagueLabel(liveContract) ? (
+                        <MarketTitleLabel contract={liveContract} linkToSport />
+                      ) : undefined
+                    }
                   />
                 </div>
               </Col>
@@ -346,50 +435,64 @@ export function ContractPageContent(props: ContractParams) {
                   question={props.contract.question}
                   financeContract={liveContract}
                   editable={isCreator || isAdmin || isMod}
+                  modAction={!isCreator}
                   isCashContract={isCashContract}
                 />
               </Row>
               <Col className="gap-2">
-                <ContractOverview
-                  contract={liveContract}
-                  key={liveContract.id} // reset state when switching play vs cash
-                  betPoints={betPoints}
-                  showResolver={showResolver}
-                  showUnresolver={showUnresolver}
-                  resolutionRating={
-                    userHasReviewed ? (
-                      <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                        You rated this resolution{' '}
-                        {justNowReview ?? userReview?.rating}{' '}
-                        <StarIcon className="h-4 w-4" />
-                      </Row>
-                    ) : null
-                  }
-                  setShowResolver={setShowResolver}
-                  setShowUnresolver={setShowUnresolver}
-                  onAnswerCommentClick={setReplyTo}
-                  chartAnnotations={chartAnnotations}
-                  hideGraph={hideGraph}
-                  setHideGraph={setHideGraph}
-                  graphUser={graphUser}
-                  setGraphUser={setGraphUser}
-                />
+                <AnswerBetTrackingLocationContext.Provider value="contract page answer">
+                  <ContractOverview
+                    contract={liveContract}
+                    key={liveContract.id} // reset state when switching play vs cash
+                    betPoints={betPoints}
+                    serverLastBetTime={props.pointsLatestBetTime}
+                    serverPointAnswerIds={serverPointAnswerIds}
+                    latestPageBetTime={latestNewBetTime}
+                    hasLiveContract={hasLoaded}
+                    showResolver={showResolver}
+                    showUnresolver={showUnresolver}
+                    resolutionRating={
+                      userHasReviewed ? (
+                        <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                          You rated this resolution{' '}
+                          {justNowReview ?? userReview?.rating}{' '}
+                          <StarIcon className="h-4 w-4" />
+                        </Row>
+                      ) : null
+                    }
+                    setShowResolver={setShowResolver}
+                    setShowUnresolver={setShowUnresolver}
+                    onAnswerCommentClick={setReplyTo}
+                    chartAnnotations={chartAnnotations}
+                    hideGraph={hideGraph}
+                    setHideGraph={setHideGraph}
+                    graphUser={graphUser}
+                    setGraphUser={setGraphUser}
+                  />
+                  <NextMarketPrompt
+                    contract={liveContract}
+                    placement="page"
+                    className="mb-2"
+                  />
+                </AnswerBetTrackingLocationContext.Provider>
 
-                <UserBetsSummary
-                  className="border-ink-200 mb-2 "
-                  contract={liveContract}
-                  includeSellButton={
-                    tradingAllowed(liveContract) &&
-                    (outcomeType === 'NUMBER' ||
-                      outcomeType === 'MULTIPLE_CHOICE' ||
-                      isBinaryMulti(liveContract) ||
-                      outcomeType === 'BINARY' ||
-                      outcomeType === 'PSEUDO_NUMERIC' ||
-                      outcomeType === 'STONK')
-                      ? user
-                      : undefined
-                  }
-                />
+                {liveContract.mechanism !== 'perp' && (
+                  <UserBetsSummary
+                    className="border-ink-200 mb-2 "
+                    contract={liveContract}
+                    includeSellButton={
+                      tradingAllowed(liveContract) &&
+                      (outcomeType === 'NUMBER' ||
+                        outcomeType === 'MULTIPLE_CHOICE' ||
+                        isBinaryMulti(liveContract) ||
+                        outcomeType === 'BINARY' ||
+                        outcomeType === 'PSEUDO_NUMERIC' ||
+                        outcomeType === 'STONK')
+                        ? user
+                        : undefined
+                    }
+                  />
+                )}
 
                 <YourTrades
                   contract={liveContract}
@@ -456,6 +559,20 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {isPerp && (
+              // Perps render the description directly above the boost/share
+              // panel so the oracle context (e.g. "30-day trailing average
+              // Trump approval rating") is visible near the top of the page
+              // flow, rather than further down.
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
+              />
+            )}
             {!isResolved && !isClosed && isCreator && (
               <>
                 {showResolver && <Spacer h={4} />}
@@ -473,17 +590,23 @@ export function ContractPageContent(props: ContractParams) {
                   {liveContract.question}
                 </Link>
               </span>
-            ) : (
+            ) : isPerp ? null : ( // perps render description above the boost panel instead
               <ContractDescription
                 contractId={props.contract.id}
                 creatorId={props.contract.creatorId}
                 isSweeps={isCashContract}
                 description={description}
+                creatorBannedFromBetting={liveContract.creatorBannedFromBetting}
+                contract={liveContract}
               />
             )}
-            {props.contract.isRanked !== false && (
-              <MarketContext contractId={props.contract.id} />
-            )}
+            {/* The "Market context" AI panel was removed here. The component
+                (./market-context) and its get-market-context endpoint are all
+                still in place — to bring the button back, restore the import
+                and re-add:
+                {props.contract.isRanked !== false && (
+                  <MarketContext contractId={props.contract.id} />
+                )} */}
 
             <Row className="mb-4 mt-2 items-center gap-2">
               <MarketTopics
@@ -505,7 +628,12 @@ export function ContractPageContent(props: ContractParams) {
             </Row>
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
-            {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
+            {!user && (
+              <SidebarSignUpButton
+                className="mb-4 flex md:hidden"
+                location="market page"
+              />
+            )}
 
             {isResolved && resolution !== 'CANCEL' && (
               <>
@@ -551,7 +679,7 @@ export function ContractPageContent(props: ContractParams) {
             </div>
             {showExplainerPanel && (
               <div className="bg-canvas-50 -mx-4 p-4 pb-0 md:-mx-8 xl:hidden">
-                <ExplainerPanel />
+                <ExplainerPanel showAccuracy={false} />
               </div>
             )}
             <RelatedContractsGrid
@@ -564,7 +692,7 @@ export function ContractPageContent(props: ContractParams) {
         <Col className="hidden min-h-full max-w-[375px] xl:flex">
           {showExplainerPanel && (
             <div>
-              <ExplainerPanel />
+              <ExplainerPanel showAccuracy={false} />
             </div>
           )}
 
@@ -576,7 +704,12 @@ export function ContractPageContent(props: ContractParams) {
         </Col>
       </Row>
 
-      <ScrollToTopButton className="fixed bottom-16 right-2 z-20 lg:bottom-2 xl:hidden" />
+      <ScrollToTopButton
+        className={clsx(
+          'fixed right-2 z-20 lg:bottom-2 xl:hidden',
+          showResolver || showUnresolver ? 'bottom-40' : 'bottom-16'
+        )}
+      />
     </>
   )
 }
@@ -584,6 +717,9 @@ export function ContractPageContent(props: ContractParams) {
 const useBetData = (props: {
   contractId: string
   outcomeType: Contract['outcomeType'] | undefined
+  // Whether the chart adds the bets made since the page was rendered itself.
+  // If not, they are added to the points here.
+  chartAddsNewBets: boolean
   userId: string | undefined
   lastBetTime: number | undefined
   totalBets: number
@@ -594,6 +730,7 @@ const useBetData = (props: {
     contractId,
     userId,
     outcomeType,
+    chartAddsNewBets,
     lastBetTime,
     pointsString,
     multiPointsString,
@@ -627,21 +764,33 @@ const useBetData = (props: {
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
 
+  // Decoded once: the server's points never change while the page is open.
+  const serverMultiPoints = useMemo(
+    () =>
+      (multiPointsString
+        ? unserializeBase64Multi(multiPointsString)
+        : {}) as MultiPoints,
+    [multiPointsString]
+  )
   const betPoints = useMemo(() => {
+    if (chartAddsNewBets) return serverMultiPoints
     if (
       outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'NUMBER' ||
       outcomeType === 'MULTI_NUMERIC' ||
       outcomeType === 'DATE'
     ) {
-      const data = multiPointsString
-        ? unserializeBase64Multi(multiPointsString)
-        : {}
       const newData = getMultiBetPointsFromBets(newBets)
-
-      return mergeWith(data, newData, (array1, array2) =>
-        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
-      ) as MultiPoints
+      // Only the answers with new bets get a new array, so a chart line with
+      // nothing new is not rebuilt.
+      const merged: MultiPoints = { ...serverMultiPoints }
+      for (const answerId of Object.keys(newData)) {
+        merged[answerId] = [
+          ...(serverMultiPoints[answerId] ?? []),
+          ...newData[answerId],
+        ].sort((a, b) => a.x - b.x)
+      }
+      return merged
     } else {
       const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
@@ -650,12 +799,23 @@ const useBetData = (props: {
       }))
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
-  }, [pointsString, newBets.length])
+  }, [pointsString, serverMultiPoints, newBets.length, chartAddsNewBets])
+
+  // The time of the newest bet this feed has brought since the page was
+  // rendered that moved a probability, if it has brought any. An order that
+  // has not been filled moves nothing, and the chart has no use for it.
+  const latestNewBetTime = useMemo(
+    () =>
+      maxBy(newBets.filter(movedProbability), (bet) => bet.createdTime)
+        ?.createdTime,
+    [newBets]
+  )
 
   return {
     bets,
     totalBets,
     yourNewBets,
     betPoints,
+    latestNewBetTime,
   }
 }

@@ -40,6 +40,7 @@ import { MoneyDisplay } from '../bet/money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useUser } from 'web/hooks/use-user'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -56,6 +57,11 @@ export const NumericBetPanel = (props: {
     },
   } = props
   const contract = useLiveContract(props.contract)
+  const user = useUser()
+  const isCreatorBanned =
+    !!user &&
+    user.id === contract.creatorId &&
+    contract.creatorBannedFromBetting === true
   const { answers, min: minimum, max: maximum } = contract
   const [expectedValue, setExpectedValue] = useState(
     getNumberExpectedValue(contract)
@@ -106,6 +112,10 @@ export const NumericBetPanel = (props: {
   const answersToBuy = answers.filter((a) => shouldIncludeAnswer(a))
 
   const placeBet = async () => {
+    if (isCreatorBanned) {
+      setError('You have blocked yourself from betting on this market.')
+      return
+    }
     if (!betAmount) {
       setError(`Please enter a ${TRADE_TERM} amount`)
       return
@@ -206,7 +216,9 @@ export const NumericBetPanel = (props: {
         undefined,
         unfilledBets,
         balanceByUserId,
-        contract.collectedFees
+        contract.collectedFees,
+        // The preview must price with the same arb the backend will use.
+        contract.mechanism
       )
     const fees = [...newBetResults, ...otherBetResults].reduce(
       (acc, r) => addObjects(acc, r.totalFees),
@@ -256,6 +268,7 @@ export const NumericBetPanel = (props: {
           <Row className={'justify-between'}>
             <span className={' text-xl'}>Probability Distribution</span>
             <IconButton
+              aria-label="Close probability distribution"
               className={'w-12'}
               onClick={() => setMode(undefined)}
               disabled={isSubmitting}
@@ -358,6 +371,7 @@ export const NumericBetPanel = (props: {
               </Button>
               {!showDistribution && (
                 <IconButton
+                  aria-label="Close advanced numeric bet"
                   className={'w-12'}
                   onClick={() => setMode(undefined)}
                   disabled={isSubmitting}
@@ -406,7 +420,7 @@ export const NumericBetPanel = (props: {
               className={'w-full'}
               loading={isSubmitting}
               onClick={placeBet}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isCreatorBanned}
             >
               {capitalize(TRADE_TERM)}&nbsp;
               <MoneyDisplay

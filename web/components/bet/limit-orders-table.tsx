@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react'
 import clsx from 'clsx'
 import { groupBy, maxBy, sortBy, uniqBy } from 'lodash'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
-import { contractPath, MarketContract } from 'common/contract'
+import { contractPath, isMultiCpmm, MarketContract } from 'common/contract'
 import { LimitBet } from 'common/bet'
 import { formatPercent } from 'common/util/format'
 import Link from 'next/link'
@@ -103,7 +103,7 @@ export function LimitOrdersTable(props: {
     resolved: (b) =>
       !!b.contract.resolutionTime ||
       !!(
-        b.contract.mechanism === 'cpmm-multi-1' &&
+        isMultiCpmm(b.contract) &&
         b.contract.answers.find((a) => a.id === b.answerId)?.resolutionTime
       ),
     closed: (b) =>
@@ -454,7 +454,11 @@ export function LimitOrdersTable(props: {
 
               <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
                 {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
-                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                  <IconButton
+                    size="2xs"
+                    aria-label="Reload order with same parameters"
+                    onClick={() => setShowLimitModal(bet)}
+                  >
                     <Tooltip text="Reload order with same parameters">
                       <span className="text-ink-500">
                         <DocumentDuplicateIcon className="h-4 w-4" />
@@ -463,7 +467,11 @@ export function LimitOrdersTable(props: {
                   </IconButton>
                 )}
                 {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
-                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                  <IconButton
+                    size="2xs"
+                    aria-label="Place a new order with same parameters"
+                    onClick={() => setShowLimitModal(bet)}
+                  >
                     <Tooltip text="Place a new order with same parameters">
                       <span className="text-ink-500">
                         <DocumentDuplicateIcon className="h-4 w-4" />
@@ -474,6 +482,7 @@ export function LimitOrdersTable(props: {
 
                 <IconButton
                   size="2xs"
+                  aria-label="Edit orders for this market"
                   onClick={() => openContractModal(contract.id)}
                 >
                   <Tooltip text="Edit orders for this market">
@@ -518,10 +527,9 @@ export function LimitOrdersTable(props: {
   )
 }
 const getProb = (bet: LimitBet, contract: MarketContract) => {
-  const prob =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
-      : contract.prob
+  const prob = isMultiCpmm(contract)
+    ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
+    : contract.prob
   return prob
 }
 
@@ -558,7 +566,7 @@ const RefreshLimitOrderModal = (props: {
         <LimitOrderPanel
           initialProb={limitProb}
           multiProps={
-            contract.mechanism === 'cpmm-multi-1'
+            isMultiCpmm(contract)
               ? {
                   answers: contract.answers,
                   answerToBuy: contract.answers.find((a) => a.id === answerId)!,

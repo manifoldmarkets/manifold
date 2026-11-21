@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
 import { apiWithoutAuth } from '../lib/api'
 import { APIError } from 'common/api/utils'
-const promiseCache: Record<string, Promise<any> | undefined> = {}
+const promiseCache: Record<string, Promise<unknown> | undefined> = {}
 
 // Prepopulate cache with data, e.g. from static props
 export function prepopulateCache<P extends APIPath>(
@@ -41,28 +41,53 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     undefined,
     key
   )
+  // The request the data came from. Data is shared across props, so a failed
+  // read for new props must not leave the old props' data showing as its own.
+  const [dataKey, setDataKey] = usePersistentInMemoryState<string | undefined>(
+    undefined,
+    `${overrideKey ?? path}-data-key`
+  )
 
+  // Every call gets a generation number. A response that lands after a newer
+  // call (different props, or a refresh) is dropped: the setter always writes
+  // to the latest key, so applying it would show stale data under new props.
+  const generation = useRef(0)
   const getAndSetData = useEvent(async () => {
     if (!props || !enabled) return
     setError(undefined)
+    const mine = ++generation.current
 
-    let promise = promiseCache[key]
+    let promise = promiseCache[key] as Promise<APIResponse<P>> | undefined
     if (!promise) {
-      setLoading(true)
       promise = apiCall(path, props)
-        .catch(setError)
-        .finally(() => setLoading(false))
       promiseCache[key] = promise
     }
 
-    const k = key
-    const result = await promise
-    if (k === key) setData(result)
+    setLoading(true)
+    try {
+      const result = await promise
+      if (mine === generation.current) {
+        setData(result)
+        setDataKey(key)
+      }
+    } catch (error) {
+      // Cache only successful reads. Every subscriber handles the rejection,
+      // and a remount can retry instead of reusing an empty resolved promise.
+      if (promiseCache[key] === promise) delete promiseCache[key]
+      if (mine === generation.current) {
+        setError(error as APIError)
+        // A failed refresh keeps its last good data; anything else is cleared.
+        if (dataKey !== key) setData(undefined)
+      }
+    } finally {
+      if (mine === generation.current) setLoading(false)
+    }
   })
 
   useEffect(() => {
     getAndSetData()
     return () => {
+      generation.current++
       setLoading(false)
     }
   }, [propsStringToTriggerRefresh, enabled])

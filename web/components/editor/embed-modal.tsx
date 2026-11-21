@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/react'
 import { DOMAIN } from 'common/envs/constants'
+import { getManifoldMarketEmbedUrl } from 'common/util/manifold-url'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -14,17 +15,21 @@ type EmbedPattern = {
   rewrite: (text: string) => string
 }
 
+function isSafeIframeSrc(html: string): boolean {
+  const srcMatch = html.match(/src\s*=\s*["']([^"']+)["']/)
+  if (!srcMatch) return false
+  try {
+    const url = new URL(srcMatch[1], 'https://placeholder.invalid')
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
+}
+
 const embedPatterns: EmbedPattern[] = [
   {
     regex: /^(<iframe.*<\/iframe>)$/,
-    rewrite: (text: string) => text,
-  },
-  {
-    regex: /^https?:\/\/manifold\.markets\/([^\/]+\/[^\/]+)/,
-    // regex: /^http?:\/\/localhost:3000\/([^\/]+\/[^\/]+)/,
-    rewrite: (slug) =>
-      `<iframe src="https://manifold.markets/embed/${slug}"></iframe>`,
-    // `<iframe src="http://localhost:3000/embed/${slug}"></iframe>`,
+    rewrite: (text: string) => (isSafeIframeSrc(text) ? text : ''),
   },
   {
     regex: /^https?:\/\/(?:twitter|x)\.com\/.*\/status\/(\d+)/,
@@ -101,12 +106,17 @@ function isAllowedDomain(url: string) {
       (allowedDomain) =>
         hostname === allowedDomain || hostname.endsWith('.' + allowedDomain)
     )
-  } catch (error) {
+  } catch {
     return false
   }
 }
 
-function embedCode(text: string) {
+function embedCode(text: string, currentOrigin?: string) {
+  const manifoldEmbedUrl = getManifoldMarketEmbedUrl(text, currentOrigin)
+  if (manifoldEmbedUrl) {
+    return `<iframe src="${manifoldEmbedUrl}"></iframe>`
+  }
+
   for (const pattern of embedPatterns) {
     const match = text.match(pattern.regex)
     if (match) {
@@ -130,7 +140,9 @@ export function EmbedModal(props: {
 }) {
   const { editor, open, setOpen } = props
   const [input, setInput] = useState('')
-  const embed = embedCode(input)
+  const currentOrigin =
+    typeof window === 'undefined' ? undefined : window.location.origin
+  const embed = embedCode(input, currentOrigin)
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -151,7 +163,9 @@ export function EmbedModal(props: {
           onChange={(e) => setInput(e.target.value)}
         />
 
-        {embed && <div dangerouslySetInnerHTML={{ __html: embed }}></div>}
+        {embed && (
+          <div className="text-ink-500 text-sm">Embed preview ready</div>
+        )}
         <Spacer h={2} />
 
         <Row className="gap-2">

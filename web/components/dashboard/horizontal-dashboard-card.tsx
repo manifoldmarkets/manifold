@@ -1,7 +1,12 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { Contract, contractPath, isBinaryMulti } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  isBinaryMulti,
+  isMultiCpmm,
+} from 'common/contract'
 import { ContractCardView } from 'common/events'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
@@ -22,6 +27,7 @@ import { BinaryBetButton } from '../us-elections/contracts/conditional-market/co
 import { capitalize } from 'lodash'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { MarketTitleLabel } from '../contract/market-title-label'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -122,16 +128,20 @@ export function HorizontalDashboardCard(props: {
           href={path}
           onClick={trackClick}
         >
-          <VisibilityIcon contract={contract} /> {contract.question}
+          <VisibilityIcon contract={contract} />{' '}
+          <MarketTitleLabel contract={contract} className="mr-1" />
+          {contract.question}
         </Link>
       </Col>
       <Col>
         <Row className="w-full items-center justify-end gap-3 whitespace-nowrap">
           {contract.outcomeType !== 'MULTIPLE_CHOICE' && (
-            <ContractStatusLabel
-              className="text-lg font-bold"
-              contract={contract}
-            />
+            <Row className="items-center gap-1.5">
+              <ContractStatusLabel
+                className="text-lg font-bold"
+                contract={contract}
+              />
+            </Row>
           )}
           {isBinaryCpmm && !isClosed && <BinaryBetButton contract={contract} />}
         </Row>
@@ -153,7 +163,7 @@ export function HorizontalDashboardCard(props: {
           )}
 
           {isBinaryMc &&
-            contract.mechanism === 'cpmm-multi-1' &&
+            isMultiCpmm(contract) &&
             contract.outcomeType !== 'NUMBER' &&
             contract.outcomeType !== 'MULTI_NUMERIC' &&
             contract.outcomeType !== 'DATE' && (
