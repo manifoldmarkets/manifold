@@ -92,15 +92,15 @@ export async function loadUserAchievements(
       ),
       account_age as (
         -- Whole years since signup, plus the share of the current year,
-        -- rounded down to two places, all in UTC. A year is complete when
+        -- rounded down to four places (under an hour), all in UTC. A year is complete when
         -- created_time plus that many calendar years has passed (so a
         -- Feb 29 signup completes one on Feb 28), and the whole part and the
         -- share come from the same anniversaries, so the Account Age trophy
         -- is never reached early.
         select a.whole + floor(
-            100 * extract(epoch from (a.now_utc - a.last_anniversary))
+            10000 * extract(epoch from (a.now_utc - a.last_anniversary))
             / extract(epoch from (a.next_anniversary - a.last_anniversary))
-          ) / 100 as account_age_years
+          ) / 10000 as account_age_years
         from (
           select
             y.now_utc,
@@ -140,13 +140,17 @@ export async function loadUserAchievements(
           and ucm.answer_id is null
           and c.token = 'MANA'
       ),
-      -- The longest streak a bonus was paid for, or the current streak if
-      -- longer: an account that can't receive bonuses gets no bonus txns.
+      -- The longest of: any streak a bonus was paid for, the longest ended
+      -- streak (kept by reset-betting-streaks) and the current one. Accounts
+      -- that can't receive bonuses get no bonus txns.
       longest_streak as (
         select greatest(
           coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0),
           coalesce((
-            select (u.data->>'currentBettingStreak')::int
+            select greatest(
+              coalesce((u.data->>'longestBettingStreak')::int, 0),
+              coalesce((u.data->>'currentBettingStreak')::int, 0)
+            )
             from users u where u.id = (select uid from base)
           ), 0)
         ) as longest_betting_streak

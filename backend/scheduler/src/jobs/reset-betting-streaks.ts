@@ -32,7 +32,15 @@ export const resetBettingStreaksInternal = async () => {
           'lastStreakFreezeTime', ts_to_millis(now())
         )
       else
-        jsonb_build_object('currentBettingStreak', 0)
+        -- Keep the longest streak (the Prediction Streak trophy reads it):
+        -- accounts that can't get streak bonuses have no bonus txns to show it.
+        jsonb_build_object(
+          'currentBettingStreak', 0,
+          'longestBettingStreak', greatest(
+            coalesce((data->>'longestBettingStreak')::int, 0),
+            (data->>'currentBettingStreak')::int
+          )
+        )
       end
     where (data->'currentBettingStreak')::numeric > 0
     and (data->'lastBetTime')::numeric < ts_to_millis(now() - interval '1 day')`
@@ -42,7 +50,9 @@ export const resetBettingStreaksInternal = async () => {
 
   // Send notifications to users whose freeze was used
   if (usersWithFreezeUsed && usersWithFreezeUsed.length > 0) {
-    log(`Sending streak freeze notifications to ${usersWithFreezeUsed.length} users`)
+    log(
+      `Sending streak freeze notifications to ${usersWithFreezeUsed.length} users`
+    )
     await createStreakFreezeUsedNotification(
       usersWithFreezeUsed.map((u) => ({
         id: u.id,
