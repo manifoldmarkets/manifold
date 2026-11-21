@@ -183,6 +183,31 @@ function scenarios(sport: Sport): Scenario[] {
     match('Kickoff unknown', { kickoffKnown: false }),
     match('Pre-game price move', {}, { move: true }),
     match('Live', { ...live, status: 'live', gameState: 'live' }),
+    ...(sport === 'nba' || sport === 'wnba'
+      ? [
+          match('Fourth quarter', {
+            ...live,
+            period: 4,
+            clock: '7:31',
+            status: 'live',
+            gameState: 'live',
+            liveScore: {
+              home: 58,
+              away: 56,
+              status: 'IN_PROGRESS',
+              minute: null,
+            },
+            scoreboard: {
+              periodScores: [
+                { home: 20, away: 17 },
+                { home: 18, away: 22 },
+                { home: 13, away: 9 },
+                { home: 7, away: 8 },
+              ],
+            },
+          }),
+        ]
+      : []),
     match('Delayed', { gameState: 'delayed' }),
     match('Final, settling', {
       status: 'finished',
@@ -243,6 +268,7 @@ function scenarios(sport: Sport): Scenario[] {
 
 function ScenarioCard({ scenario }: { scenario: Scenario }) {
   const [moved, setMoved] = useState(false)
+  const [preview, setPreview] = useState<string>()
   let { game } = scenario
   if (moved && scenario.move)
     game = {
@@ -264,7 +290,16 @@ function ScenarioCard({ scenario }: { scenario: Scenario }) {
           </button>
         )}
       </div>
-      <TeamScoreboard game={game} />
+      <TeamScoreboard
+        game={game}
+        onBet={game.gameState === 'live' && !game.draw ? setPreview : undefined}
+      />
+      {preview && (
+        <p role="status" className="text-ink-600 mt-1 text-sm">
+          Preview selection ·{' '}
+          {preview === game.home.answerId ? game.home.name : game.away.name}
+        </p>
+      )}
       {scenario.attention && (
         <p className="text-ink-600 mt-1 text-sm">
           Admin review · Conflicting final scores

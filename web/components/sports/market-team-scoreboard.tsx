@@ -3,7 +3,7 @@ import { getMainBinaryMCAnswer, isMultiCpmm } from 'common/contract'
 import { canBetOnScheduledGame } from 'common/sports-game-feed'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import type { MultiContract, Sports } from 'common/contract'
 import {
@@ -18,7 +18,7 @@ import { api } from 'web/lib/api/api'
 import {
   marketScoreSnapshot,
   newerMarketScore,
-  recoverMarketScore,
+  recoverMarketSnapshot,
   type MarketScoreSnapshot,
 } from './market-score-recovery'
 import { TeamScoreboard } from './team-scoreboard'
@@ -29,26 +29,31 @@ const MarketBetDialog = dynamic(
   { ssr: false }
 )
 
-export function MarketTeamScoreboard({
-  contract,
-}: {
-  contract: MultiContract & Sports
-}) {
+function EventScoreboard({ contract }: { contract: MultiContract & Sports }) {
   const user = useUser()
   const [selectedAnswer, setSelectedAnswer] = useState<string>()
   const { id } = contract
   const current = marketScoreSnapshot(id, contract, Date.now())
+  const propVersion = useRef(current.updated)
+  useEffect(() => {
+    propVersion.current = current.updated
+  }, [current.updated])
   const isVisible = useIsPageVisible()
   const [read, setRead] = useState<MarketScoreSnapshot>()
   const [score, setScore] = useState<SportsScoreTick>()
-  const game = recoverMarketScore(current, read)
-  const canRead = isVisible && !!game && !game.isResolved
+  const recovered = recoverMarketSnapshot(current, read)
+  const game = recovered.game
+  const market = recovered.contract ?? contract
+  const canRead =
+    isVisible && !current.denied && !contract.isResolved && !game?.isResolved
+  const canSubscribe = canRead && !!game
 
   useEffect(() => {
     if (!canRead) return
     let pending: AbortController | undefined
     const refresh = async () => {
       if (document.hidden || navigator.onLine === false || pending) return
+      const checkedVersion = propVersion.current
       const request = new AbortController()
       pending = request
       const timeout = window.setTimeout(() => request.abort(), 15_000)
@@ -62,7 +67,8 @@ export function MarketTeamScoreboard({
         const snapshot = marketScoreSnapshot(
           id,
           rows.find((row) => row.id === id),
-          Date.now()
+          Date.now(),
+          checkedVersion
         )
         setRead((previous) =>
           previous ? newerMarketScore(previous, snapshot) : snapshot
@@ -77,6 +83,7 @@ export function MarketTeamScoreboard({
     const online = () => {
       void refresh()
     }
+    void refresh()
     window.addEventListener('online', online)
     // A socket can reconnect without a browser online event. Its channel does
     // not replay missed ticks, including a final that will never be broadcast again.
@@ -88,26 +95,43 @@ export function MarketTeamScoreboard({
     }
   }, [canRead, id])
   useApiSubscription({
-    enabled: canRead,
+    enabled: canSubscribe,
     topics: [`contract/${id}/sports-live`],
     onBroadcast: ({ data }) => {
       const tick = decodeSportsScoreTick(data)
       if (tick) setScore((previous) => newerSportsScoreTick(previous, tick))
     },
   })
-  if (!game) return null
-  const view = applySportsLive(game, { liveScore: score })
-  const mainAnswer = getMainBinaryMCAnswer(contract)
+  const view = game && applySportsLive(game, { liveScore: score })
+  const mainAnswer = getMainBinaryMCAnswer(market)
+  const closeTime = view?.closeTime
+  const [, setClock] = useState(0)
+  useEffect(() => {
+    if (closeTime == null) return
+    let timer: number
+    const schedule = () => {
+      const remaining = closeTime - Date.now()
+      if (remaining <= 0) setClock((n) => n + 1)
+      else timer = window.setTimeout(schedule, Math.min(remaining, 2 ** 31 - 1))
+    }
+    schedule()
+    return () => window.clearTimeout(timer)
+  }, [closeTime])
   const tradable =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    isMultiCpmm(contract) &&
+    !!view &&
+    market.outcomeType === 'MULTIPLE_CHOICE' &&
+    isMultiCpmm(market) &&
     !!mainAnswer &&
     canBetOnScheduledGame(view, Date.now())
+  useEffect(() => {
+    if (!tradable) setSelectedAnswer(undefined)
+  }, [tradable])
+  if (!view) return null
   const select = (id: string) => {
     if (
       !tradable ||
       !canBetOnScheduledGame(view, Date.now()) ||
-      !contract.answers.some((answer) => answer.id === id)
+      !market.answers.some((answer) => answer.id === id && !answer.resolution)
     )
       return
     if (!user) {
@@ -116,15 +140,13 @@ export function MarketTeamScoreboard({
     }
     setSelectedAnswer(id)
   }
-  const selected = contract.answers.find(
-    (answer) => answer.id === selectedAnswer
-  )
+  const selected = market.answers.find((answer) => answer.id === selectedAnswer)
   return (
     <>
       <TeamScoreboard game={view} onBet={tradable ? select : undefined} />
       {tradable && selected && (
         <MarketBetDialog
-          contract={contract}
+          contract={market}
           open
           setOpen={(open) => {
             if (!open) setSelectedAnswer(undefined)
@@ -134,5 +156,18 @@ export function MarketTeamScoreboard({
         />
       )}
     </>
+  )
+}
+
+export function MarketTeamScoreboard({
+  contract,
+}: {
+  contract: MultiContract & Sports
+}) {
+  return (
+    <EventScoreboard
+      key={JSON.stringify([contract.id, contract.sportsEventId])}
+      contract={contract}
+    />
   )
 }

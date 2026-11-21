@@ -193,3 +193,48 @@ test('the quarter history shares each team row with its score and preserves miss
   )
   assert.doesNotMatch(markup, /Q1 ·/)
 })
+test('live detail without totals discloses freshness; resolution cannot relabel partial periods or shots as final', () => {
+  const partial = {
+    periodScores: [{ home: 0, away: 3 }],
+    shots: { home: 14, away: 17 },
+  }
+  const live = render({
+    gameState: 'live',
+    status: 'live',
+    clock: '4:12',
+    scoreboard: partial,
+  })
+  assert.match(live, /Q1/)
+  assert.match(live, /Scores are delayed/)
+  assert.match(
+    render({ gameState: 'live', status: 'live', clock: '4:12' }),
+    /Scores are delayed/
+  )
+  const resolved = render({
+    gameState: 'final',
+    isResolved: true,
+    status: 'finished',
+    scoreboard: partial,
+    liveScore: { status: 'IN_PROGRESS', home: 0, away: 3, minute: null },
+  })
+  assert.doesNotMatch(resolved, />Q1<|Shots|>3<\/td>/)
+  assert.match(
+    render({
+      gameState: 'final',
+      isResolved: true,
+      status: 'finished',
+      scoreboard: partial,
+      finalScore: { home: 61, away: 55 },
+    }),
+    />Q1</
+  )
+})
+
+test('the initial scheduled and resumption dates use UTC independently of the rendering host timezone', () => {
+  const at = Date.UTC(2026, 6, 3, 22, 30)
+  assert.match(render({ startTime: at }), /Jul 3[\s\S]*10:30 PM UTC/)
+  assert.match(
+    render({ gameState: 'suspended', resumptionTime: at }),
+    /resumes Jul 3[\s,]*UTC/
+  )
+})

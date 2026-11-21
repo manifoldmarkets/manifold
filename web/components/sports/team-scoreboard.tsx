@@ -1,4 +1,4 @@
-import dayjs from 'dayjs'
+import { useEffect, useState } from 'react'
 import { getGameDisplayTeams } from 'common/sports-game-feed'
 import { formatSportsPrice } from 'common/sports-price'
 import type { ScheduleGame } from 'common/sports-schedule'
@@ -12,12 +12,23 @@ export function TeamScoreboard({
   game: ScheduleGame
   onBet?: (answerId: string) => void
 }) {
+  // The first browser render must use the same zone as the server.
+  const [zone, setZone] = useState('UTC')
+  useEffect(() => setZone(Intl.DateTimeFormat().resolvedOptions().timeZone), [])
+  const dateText = (at: number, withTime = false) =>
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      month: 'short',
+      day: 'numeric',
+      ...(withTime && { hour: 'numeric', minute: '2-digit' }),
+      timeZoneName: 'short',
+    }).format(at)
   const voided = game.isResolved && game.isCanceled
   const state = voided ? 'canceled' : game.gameState
   const awaiting = !state && !game.isResolved && game.status === 'finished'
   const label = voided
     ? 'Canceled'
-    : gameScoreLabel(game, (time) => dayjs(time).format('MMM D')) ??
+    : gameScoreLabel(game, (time) => dateText(time)) ??
       (awaiting ? 'Awaiting result' : null)
   const final = state === 'final' || (!state && game.isResolved)
   const settling = state === 'settling'
@@ -31,9 +42,8 @@ export function TeamScoreboard({
   const scores = ended
     ? game.finalScore ?? (lastScoreIsFinal ? game.liveScore : null)
     : game.liveScore
-  const showFreshness =
-    (live || state === 'suspended' || settling) &&
-    (scores?.home != null || scores?.away != null)
+  const allowScoreDetails =
+    showScores && (!ended || !!game.finalScore || lastScoreIsFinal)
   const draw =
     final &&
     (game.draw
@@ -59,7 +69,7 @@ export function TeamScoreboard({
       ? 4
       : 0
   const periods =
-    (showScores && regulation && game.scoreboard?.periodScores) || []
+    (allowScoreDetails && regulation && game.scoreboard?.periodScores) || []
   const start = Math.max(0, periods.length - 4)
   const visiblePeriods = periods.slice(start).map((score, i) => {
     const n = start + i + 1
@@ -73,7 +83,7 @@ export function TeamScoreboard({
         : n - regulation + 'OT'
     return { label, score }
   })
-  const details = showScores
+  const details = allowScoreDetails
     ? scoreboardDetailLines(
         periods.length
           ? {
@@ -86,6 +96,16 @@ export function TeamScoreboard({
           : game
       )
     : []
+  const showFreshness =
+    (live || state === 'suspended' || settling) &&
+    (scores?.home != null ||
+      scores?.away != null ||
+      visiblePeriods.length > 0 ||
+      details.length > 0 ||
+      !!game.clock ||
+      !!game.period ||
+      !!game.liveScore?.minute ||
+      !!game.liveScore?.clock)
   const showPrices = !canceled && (!showScores || !!onBet)
 
   return (
@@ -125,11 +145,11 @@ export function TeamScoreboard({
               </span>
             )
           )}
-          {date != null && dayjs(date).isValid() && (
+          {date != null && Number.isFinite(new Date(date).getTime()) && (
             <span>
               {(!game.kickoffKnown || state === 'postponed') && 'Closes '}
               <time dateTime={new Date(date).toISOString()}>
-                {dayjs(date).format('MMM D, h:mm A')}
+                {dateText(date, true)}
               </time>
             </span>
           )}
