@@ -408,6 +408,21 @@ export default function ShopPage() {
     }
   }, [user?.streakForgiveness])
 
+  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
+  // stays stable for the duration of the page visit — otherwise the WebSocket
+  // update triggered by our own me/update call below would collapse the NEW
+  // section mid-view, and stickers would vanish while the user is still
+  // looking. The snapshot only refreshes on login/logout. It sits above the
+  // Custom404 return so hooks run in the same order on every render.
+  //
+  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
+  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const lastShopVisit = useMemo(
+    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
+    [user?.id]
+  )
+
   // Allow admins to access shop for testing even when feature flag is off
   if (!SPEND_MANA_ENABLED && !isAdminOrMod) {
     return <Custom404 />
@@ -422,21 +437,8 @@ export default function ShopPage() {
 
   // "NEW to user" predicate. Falls back to createdTime so fresh signups don't
   // see every historically-added item flagged. Suppresses NEW for items the
-  // user already owns (nothing "new to discover" there).
-  //
-  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
-  // stays stable for the duration of the page visit — otherwise the WebSocket
-  // update triggered by our own me/update call below would collapse the NEW
-  // section mid-view, and stickers would vanish while the user is still
-  // looking. The snapshot only refreshes on login/logout.
-  //
-  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
-  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const lastShopVisit = useMemo(
-    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
-    [user?.id]
-  )
+  // user already owns (nothing "new to discover" there). lastShopVisit is
+  // snapshotted above the Custom404 return.
   const isItemNewToUser = (item: ShopItem): boolean =>
     !!user && // logged-out visitors never see NEW (matches the sidebar badge)
     !!item.visibleSinceTime &&
@@ -2228,7 +2230,16 @@ function SupporterCard(props: {
   return (
     <>
       <div
+        role="link"
+        tabIndex={0}
         onClick={() => Router.push('/membership')}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            Router.push('/membership')
+          }
+        }}
         className={clsx(
           'group relative mb-6 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
