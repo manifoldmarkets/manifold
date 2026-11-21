@@ -429,6 +429,33 @@ export type SportsMarketType =
   | 'title'
 
 export type Sports = {
+  sportsProvider?: import('./sports-provider').SportsProvider
+  sportsLeagueKey?: import('./bdl/leagues').BdlLeagueKey
+  sportsCompetitionId?: string
+  sportsHomeTeamId?: string
+  sportsAwayTeamId?: string
+  openingLineSource?: import('./sports-kickoff-interface').OpeningLineSource
+  openingProbs?: number[]
+  openingBookCount?: number
+  openingLineVendors?: string[]
+  openingSampledTime?: number
+  /** Kickoff as known at creation. Schedule changes only update sportsStartTimestamp. */
+  readonly sportsSeededStartTimestamp?: string
+  sportsStartKnown?: boolean
+  sportsKickoffBudget?: number
+  sportsObservedStartTime?: number
+  sportsFixture?: true
+  sportsLivePeriod?: number | string
+  sportsLiveClock?: string
+  sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
+  sportsResultHash?: string
+  sportsVerification?: {
+    source: string
+    crossCheck: string | null
+    verifiedTime: number
+  }
+  sportsAttentionReason?: string
+  sportsAttentionSince?: number
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string

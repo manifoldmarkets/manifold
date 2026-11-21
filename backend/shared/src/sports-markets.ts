@@ -3,9 +3,14 @@ import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
 import {
+  findLockedSportsMarket,
+  findSportsMarket,
+} from './sports-market-dedupe'
+import {
   createSupabaseDirectClient,
   pgp,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
@@ -19,10 +24,16 @@ import {
   Contract,
   contractPath,
   CPMMMultiContract,
+  Sports,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { insert, bulkInsert, bulkInsertQuery } from 'shared/supabase/utils'
 import { answerToRow } from 'shared/supabase/answers'
+import {
+  isKickoffLiquidityCandidate,
+  SPORTS_KICKOFF_BUDGET,
+  SportsAnteDecision,
+} from 'common/sports-kickoff-interface'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
@@ -43,7 +54,6 @@ import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import {
   LiquidityTierValue,
-  MANIFOLD_SPORTS_USER_IDS,
   StageLiquidityTiers,
   TournamentConfig,
   TOURNAMENT_CONFIGS,
@@ -1085,7 +1095,22 @@ export async function pollAndStoreLiveScores(
 
 // ─── Creating a sports market from a job ─────────────────────────────────────
 
-export interface SportsContractParams {
+export interface SportsContractParams
+  extends Pick<
+    Sports,
+    | 'sportsProvider'
+    | 'sportsLeagueKey'
+    | 'sportsCompetitionId'
+    | 'sportsHomeTeamId'
+    | 'sportsAwayTeamId'
+    | 'openingLineSource'
+    | 'openingProbs'
+    | 'openingBookCount'
+    | 'openingLineVendors'
+    | 'openingSampledTime'
+    | 'sportsStartKnown'
+    | 'sportsFixture'
+  > {
   question: string
   outcomeType: 'BINARY' | 'MULTIPLE_CHOICE'
   description: JSONContent
@@ -1129,25 +1154,7 @@ export interface SportsContractParams {
   groupIds: string[]
 }
 
-/**
- * An active official market of this type on the event: what reserves the
- * event and type for a pipeline.
- */
-export const findSportsMarket = (
-  pg: SupabaseDirectClient,
-  eventId: string,
-  marketType: string
-) =>
-  pg.oneOrNone<{ id: string }>(
-    `select id from contracts
-     where data->>'sportsEventId' = $1
-       and creator_id = any($2)
-       and token = 'MANA'
-       and resolution is distinct from 'CANCEL'
-       and data->>'sportsMarketType' = $3
-     limit 1`,
-    [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
-  )
+export { findSportsMarket } from './sports-market-dedupe'
 
 /** Only an active official moneyline reserves an event for this pipeline. */
 export const findSportsMoneyline = (
@@ -1180,6 +1187,8 @@ export async function createSportsContract(
   creatorUser: User,
   params: SportsContractParams,
   opts: {
+    /** Evaluate the funding decision under the same locks as creation. */
+    chooseAnte?: (tx: SupabaseTransaction) => Promise<SportsAnteDecision>
     notifyFollowers?: boolean
     deduplicateMoneyline?: boolean
     /**
@@ -1208,7 +1217,9 @@ export async function createSportsContract(
     })
     if (error) throw new Error(`${params.question}: ${error}`)
   }
-  const ante = sportsMarketAnte(params)
+  if (opts.chooseAnte && params.sportsMarketType !== 'moneyline')
+    throw new Error('Sports game ante hooks require a moneyline')
+  const standardAnte = sportsMarketAnte(params)
   const proposedSlug = slugify(params.question)
   const slugExists = await pg.oneOrNone<{ id: string }>(
     `select id from contracts where slug = $1 limit 1`,
@@ -1216,86 +1227,121 @@ export async function createSportsContract(
   )
   const slug = slugExists ? `${proposedSlug}-${randomString(4)}` : proposedSlug
 
-  const contract = getNewContract({
-    id: randomString(),
-    slug,
-    creator: creatorUser,
-    question: params.question,
-    outcomeType: params.outcomeType,
-    description: params.description,
-    initialProb: params.initialProb ?? 50,
-    ante,
-    closeTime: params.closeTime,
-    visibility: 'public',
-    isTwitchContract: undefined,
-    token: 'MANA',
-    takerAPIOrdersDisabled: undefined,
-    siblingContractId: undefined,
-    coverImageUrl: undefined,
-    min: 0,
-    max: 0,
-    isLogScale: false,
-    answers,
-    addAnswersMode,
-    shouldAnswersSumToOne,
-    answerShortTexts: params.answerShortTexts,
-    answerImageUrls: params.answerImageUrls,
-    answerProbs: params.answerProbs,
-    answerColors: params.answerColors,
-    sportsStartTimestamp: params.sportsStartTimestamp,
-    sportsEventId: params.sportsEventId,
-    sportsLeague: params.sportsLeague,
-    sportsHomeTeam: params.sportsHomeTeam,
-    sportsAwayTeam: params.sportsAwayTeam,
-    sportsMarketType: params.sportsMarketType,
-    sportsEntrantIds: params.sportsEntrantIds,
-    unit: undefined,
-    midpoints: undefined,
-    timezone: undefined,
-    voterVisibility: undefined,
-    pollType: undefined,
-    maxSelections: undefined,
-  })
-  const multi = contract as CPMMMultiContract
   const providerId = creatorUser.id
+  function buildRows(decision?: SportsAnteDecision) {
+    const ante = decision?.ante ?? standardAnte
+    const contract = getNewContract({
+      id: randomString(),
+      slug,
+      creator: creatorUser,
+      question: params.question,
+      outcomeType: params.outcomeType,
+      description: params.description,
+      initialProb: params.initialProb ?? 50,
+      ante,
+      closeTime: params.closeTime,
+      visibility: 'public',
+      isTwitchContract: undefined,
+      token: 'MANA',
+      takerAPIOrdersDisabled: undefined,
+      siblingContractId: undefined,
+      coverImageUrl: undefined,
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers,
+      addAnswersMode,
+      shouldAnswersSumToOne,
+      answerShortTexts: params.answerShortTexts,
+      answerImageUrls: params.answerImageUrls,
+      answerProbs: params.answerProbs,
+      answerColors: params.answerColors,
+      sportsStartTimestamp: params.sportsStartTimestamp,
+      sportsEventId: params.sportsEventId,
+      sportsLeague: params.sportsLeague,
+      sportsHomeTeam: params.sportsHomeTeam,
+      sportsAwayTeam: params.sportsAwayTeam,
+      sportsMarketType: params.sportsMarketType,
+      sportsEntrantIds: params.sportsEntrantIds,
+      unit: undefined,
+      midpoints: undefined,
+      timezone: undefined,
+      voterVisibility: undefined,
+      pollType: undefined,
+      maxSelections: undefined,
+    })
+    Object.assign(
+      contract,
+      removeUndefinedProps({
+        sportsProvider: params.sportsProvider,
+        sportsLeagueKey: params.sportsLeagueKey,
+        sportsCompetitionId: params.sportsCompetitionId,
+        sportsHomeTeamId: params.sportsHomeTeamId,
+        sportsAwayTeamId: params.sportsAwayTeamId,
+        openingLineSource: params.openingLineSource,
+        openingProbs: params.openingProbs,
+        openingBookCount: params.openingBookCount,
+        openingLineVendors: params.openingLineVendors,
+        openingSampledTime: params.openingSampledTime,
+        sportsStartKnown: params.sportsStartKnown,
+        sportsFixture: params.sportsFixture,
+        sportsSeededStartTimestamp:
+          params.sportsProvider || opts.chooseAnte
+            ? params.sportsStartTimestamp
+            : undefined,
+        sportsKickoffBudget: decision?.kickoffBudget,
+      })
+    )
+    if (
+      decision?.kickoffBudget !== undefined &&
+      (decision.kickoffBudget !== SPORTS_KICKOFF_BUDGET ||
+        decision.kickoffBudget !== ante ||
+        !isKickoffLiquidityCandidate(contract))
+    )
+      throw new Error('Ineligible kickoff funding')
+    const multi = contract as CPMMMultiContract
 
-  // Insert with all native columns set (creator_id, slug, outcome_type,
-  // mechanism, importance_score, freshness_score, etc.) so feed ranking,
-  // search, and other systems that read native columns work correctly.
-  const nativeColumns = nativeContractColumnsArray.filter((c) => c !== 'data')
-  const nativeValues = nativeColumns.map((column) => {
-    const camelKey = camelCase(column) as keyof Contract
-    return camelKey in contract ? contract[camelKey] : null
-  })
-  const nativeKeys = nativeColumns.map(camelCase)
-  const contractDataToInsert = Object.fromEntries(
-    Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
-  )
-  const contractQuery = pgp.as.format(
-    `insert into contracts (id, data, ${nativeColumns.join(',')})
-     values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`).join(',')})`,
-    [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
-  )
-  const hasAnswers = multi.answers?.length > 0
-  const insertAnswersQuery = hasAnswers
-    ? bulkInsertQuery('answers', multi.answers.map(answerToRow), true)
-    : null
+    // Insert with all native columns set (creator_id, slug, outcome_type,
+    // mechanism, importance_score, freshness_score, etc.) so feed ranking,
+    // search, and other systems that read native columns work correctly.
+    const nativeColumns = nativeContractColumnsArray.filter((c) => c !== 'data')
+    const nativeValues = nativeColumns.map((column) => {
+      const camelKey = camelCase(column) as keyof Contract
+      return camelKey in contract ? contract[camelKey] : null
+    })
+    const nativeKeys = nativeColumns.map(camelCase)
+    const contractDataToInsert = Object.fromEntries(
+      Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
+    )
+    const contractQuery = pgp.as.format(
+      `insert into contracts (id, data, ${nativeColumns.join(',')})
+       values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`).join(',')})`,
+      [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
+    )
+    const hasAnswers = multi.answers?.length > 0
+    const insertAnswersQuery = hasAnswers
+      ? bulkInsertQuery('answers', multi.answers.map(answerToRow), true)
+      : null
+    return { contract, multi, contractQuery, insertAnswersQuery, ante }
+  }
 
-  const dedupeType = opts.deduplicateMoneyline
-    ? 'moneyline'
-    : opts.deduplicateMarketType
+  // Preserve the legacy creation timestamp and IDs while waiting on the transaction.
+  const legacyRows =
+    !opts.chooseAnte && params.sportsProvider !== 'bdl'
+      ? buildRows()
+      : undefined
+
+  const dedupeType =
+    params.sportsProvider === 'bdl'
+      ? params.sportsMarketType
+      : opts.deduplicateMoneyline
+      ? 'moneyline'
+      : opts.deduplicateMarketType
+  if (params.sportsProvider === 'bdl' && !dedupeType)
+    throw new Error('BDL creation requires a market type for deduplication')
   const result = await pg.tx(async (tx) => {
     if (dedupeType) {
-      // Serialize the existence check with the insert and ante. A concurrent
-      // admin/scheduler run sees the committed market after acquiring the lock.
-      await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
-        `sports-${dedupeType}:${params.sportsEventId}`,
-      ])
-      const existing = await findSportsMarket(
-        tx,
-        params.sportsEventId,
-        dedupeType
-      )
+      const existing = await findLockedSportsMarket(tx, params, dedupeType)
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
     if (opts.minLeadMs != null) {
@@ -1303,6 +1349,14 @@ export async function createSportsContract(
       if (!(start > Date.now() + opts.minLeadMs))
         throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
     }
+    const decision = await opts.chooseAnte?.(tx)
+    if (
+      opts.chooseAnte &&
+      (!decision || !Number.isFinite(decision.ante) || decision.ante <= 0)
+    )
+      throw new Error('Invalid sports ante decision')
+    const { contract, multi, contractQuery, insertAnswersQuery, ante } =
+      legacyRows ?? buildRows(decision)
     if (insertAnswersQuery) {
       const rows = await tx.multi(`${contractQuery}; ${insertAnswersQuery};`)
       if (rows[1]?.length > 0) multi.answers = rows[1].map(convertAnswer)
