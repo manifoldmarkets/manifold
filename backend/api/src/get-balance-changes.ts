@@ -329,7 +329,8 @@ const getLiquidityBalanceChanges = async (
   //   tables' triggers cast createdTime to bigint, so the casts cannot fail.
   // Plain `desc` (nulls first) matches the contract_liquidity_user_id index,
   // so the scan stops at the limit; a null created_time already fails the
-  // `>=` above. liquidity_id breaks ties, so every limit agrees.
+  // `>=` above. The primary key (liquidity_id is unique only per market)
+  // breaks ties, so every limit agrees.
   const liquidityDocs = await pg.map(
     `select cl.data from contract_liquidity cl
     join contracts c on c.id = cl.data->>'contractId'
@@ -345,7 +346,7 @@ const getLiquidityBalanceChanges = async (
           else (c.data->>'createdTime')::numeric
         end
     ) < 100) is not true
-    order by cl.created_time desc, cl.liquidity_id desc
+    order by cl.created_time desc, cl.liquidity_id desc, cl.contract_id desc
     limit $4`,
     [userId, after, before ?? null, maxRows],
     (row) => row.data as LiquidityProvision

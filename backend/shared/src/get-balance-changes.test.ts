@@ -410,6 +410,26 @@ beforeAll(async () => {
       createdTime,
     })
   }
+
+  // liquidity_id is unique only per market: thirty markets, one provision
+  // each, all with the same liquidity_id and the same time.
+  const tiedTime = nextTime()
+  for (let i = 0; i < 30; i++) {
+    const contractId = `tied-mc-${String(i).padStart(2, '0')}`
+    await market(contractId, 'cpmm-multi-2', 'public')
+    await insert('contract_liquidity', {
+      contract_id: contractId,
+      liquidity_id: 'shared',
+      data: {
+        id: `tied-liq-${String(i).padStart(2, '0')}`,
+        userId: 'tied',
+        contractId,
+        answerId: 'a',
+        amount: 5,
+        createdTime: tiedTime,
+      },
+    })
+  }
 })
 
 afterAll(async () => {
@@ -562,6 +582,17 @@ describe('get-balance-changes', () => {
     await expect(
       handler({ userId: ME, after: 0, changeType: '', limit: 3, offset: 4 })
     ).resolves.toEqual(all.slice(4, 7))
+  })
+
+  it('pages liquidity rows that share a time and liquidity_id', async () => {
+    const full = await fullLog({ userId: 'tied', after: 0 })
+    expect(new Set(keysOf(full)).size).toBe(30)
+    const walked: string[] = []
+    for (let offset = 0; offset < 30; offset++) {
+      const page = await handler({ userId: 'tied', after: 0, limit: 1, offset })
+      walked.push(...keysOf(page))
+    }
+    expect(walked).toEqual(keysOf(full))
   })
 
   it('skips a newest ante without shortening the page', async () => {

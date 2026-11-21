@@ -6,6 +6,29 @@ jest.mock('shared/helpers/openai-utils', () => ({}))
 jest.mock('shared/helpers/prompt-ai', () => ({}))
 jest.mock('shared/websockets/helpers', () => ({}))
 
+// Counts how often getContractsDirect reads an answer's market id.
+const mockCounter = { contractIdReads: 0 }
+jest.mock('common/supabase/contracts', () => {
+  const actual = jest.requireActual<typeof import('common/supabase/contracts')>(
+    'common/supabase/contracts'
+  )
+  return {
+    ...actual,
+    convertAnswer: (row: Parameters<typeof actual.convertAnswer>[0]) => {
+      const answer = actual.convertAnswer(row)
+      const { contractId } = answer
+      Object.defineProperty(answer, 'contractId', {
+        enumerable: true,
+        get: () => {
+          mockCounter.contractIdReads++
+          return contractId
+        },
+      })
+      return answer
+    },
+  }
+})
+
 type ContractRow = { data: Record<string, unknown>; importance_score: number }
 type AnswerRow = {
   id: string
@@ -86,10 +109,11 @@ describe('getContractsDirect', () => {
     expect(byId.get('bin')).not.toHaveProperty('answers')
   })
 
-  // The old per-market filter did contracts x answers comparisons: 8 billion
-  // here, minutes of blocked event loop. One pass over the answers is linear.
-  it('stays linear for a whole account of multiple choice markets', async () => {
-    const marketCount = 40_000
+  // The old per-market filter read every answer's market id once per market:
+  // markets x answers reads, 20 million here (and minutes of blocked event
+  // loop for a large account). One pass reads each answer's id once.
+  it('reads each answer once, however many markets there are', async () => {
+    const marketCount = 2_000
     const answersPerMarket = 5
     const contracts = Array.from({ length: marketCount }, (_, i) =>
       contractRow(`m${i}`, 'cpmm-multi-2')
@@ -101,12 +125,12 @@ describe('getContractsDirect', () => {
     )
     const { pg } = fakePg(contracts, answers)
 
-    const start = Date.now()
+    mockCounter.contractIdReads = 0
     const result = await getContractsDirect(
       contracts.map((c) => c.data.id as string),
       pg
     )
-    const elapsedMs = Date.now() - start
+    expect(mockCounter.contractIdReads).toBeLessThanOrEqual(2 * answers.length)
 
     expect(result).toHaveLength(marketCount)
     for (const contract of result) {
@@ -116,6 +140,5 @@ describe('getContractsDirect', () => {
         true
       )
     }
-    expect(elapsedMs).toBeLessThan(10_000)
-  }, 60_000)
+  })
 })
