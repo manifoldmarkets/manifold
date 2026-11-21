@@ -1,4 +1,3 @@
-import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { fullSearchProps, searchProps } from 'common/api/market-search-types'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -14,9 +13,18 @@ jest.mock('shared/supabase/init', () => ({
 jest.mock('shared/helpers/openai-utils', () => ({}))
 jest.setTimeout(60_000)
 const pgp = pgPromise()
-let db: PGlite
-const sqlReads: string[] = []
 type DbRow = Record<string, unknown>
+type TestDatabase = {
+  query<T = DbRow>(sql: string, params?: unknown[]): Promise<{ rows: T[] }>
+  exec(sql: string): Promise<{ rows: DbRow[] }[]>
+  close(): Promise<void>
+}
+// Only the test runtime needs PGlite's WASM implementation.
+const { PGlite } = jest.requireActual<{ PGlite: new () => TestDatabase }>(
+  '@electric-sql/pglite'
+)
+let db: TestDatabase
+const sqlReads: string[] = []
 const query = async (sql: string, args?: unknown[]) => {
   const statement = pgp.as.format(sql, args)
   sqlReads.push(statement)
