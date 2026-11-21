@@ -6,15 +6,23 @@ export type BdlParams = Readonly<Record<string, BdlValue | readonly BdlValue[]>>
 const ENDPOINT =
   /^\/([a-z][a-z0-9]*|fifa\/worldcup)\/(v[1-9]\d*)\/([a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*)$/
 
-function endpointParts(path: string) {
+export function matchBdlEndpoint(path: string) {
   const match = ENDPOINT.exec(path)
-  if (!match || match[0] !== path || match[1] === 'account') {
+  if (!match || match[0] !== path || match[1] === 'account') return undefined
+  return { league: match[1], version: match[2], resource: match[3] }
+}
+
+function endpointParts(path: string) {
+  const endpoint = matchBdlEndpoint(path)
+  if (!endpoint) {
     throw new Error('[sports-bdl-client] Invalid sports endpoint')
   }
   return {
-    league: match[1].replace('/', '-'),
+    league: endpoint.league.replace('/', '-'),
     endpointSlug:
-      match[2] + '-' + match[3].replace(/-/g, '~').replace(/\//g, '-'),
+      endpoint.version +
+      '-' +
+      endpoint.resource.replace(/-/g, '~').replace(/\//g, '-'),
   }
 }
 

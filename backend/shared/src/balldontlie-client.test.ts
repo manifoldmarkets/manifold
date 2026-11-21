@@ -1,3 +1,9 @@
+// Service accounting has its own transport-to-database tests.
+jest.mock('./bdl/request-stats', () => ({
+  recordServiceBdlResponse: jest.fn(),
+  reportBdlRequestIssue: jest.fn(),
+}))
+
 import { BDL_LEAGUES, BDL_LEAGUE_KEYS } from 'common/bdl/leagues'
 import { promises as fs } from 'fs'
 import { tmpdir } from 'os'

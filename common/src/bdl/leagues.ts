@@ -5,7 +5,7 @@ import {
   SPORT_ID_TO_SPORT_KEY,
   SportId,
 } from '../sports-calendar'
-import { FINALS_FROM_MINUTES } from '../sports-score-polling'
+import { FINALS_FROM_MINUTES } from '../sports-finals-timing'
 import {
   BDL_DEFAULT_MAX_LEAD_DAYS,
   BDL_PER_LEAGUE_RUN_CAP,

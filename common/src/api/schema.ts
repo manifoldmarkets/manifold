@@ -77,6 +77,7 @@ import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { publicSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
+import type { BdlOperatorPanel } from 'common/bdl/operator-panel'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
@@ -5345,6 +5346,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as MarketLinks,
   },
 
+  'admin-sports-bdl-competitions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as BdlOperatorPanel,
+  },
   // The scheduler switches on /admin/sports: one per Odds API calendar phase.
   'admin-sports-competition-switches': {
     method: 'GET',
