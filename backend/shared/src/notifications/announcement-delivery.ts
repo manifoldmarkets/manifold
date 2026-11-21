@@ -10,6 +10,10 @@ import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 // migrations/2026112201_announcement_deliveries.sql): a batch's notifications
 // and the cursor commit together, so a send that stops for any reason resumes
 // where it stopped, and no user is sent the announcement twice.
+//
+// The audience is every user who existed when the send was queued. Each batch
+// re-reads the post and stops the send if it has been unlisted or is no
+// longer an announcement.
 
 export const ANNOUNCEMENT_BATCH_SIZE = 1000
 // A failing batch is retried this many times before the send gives up for
@@ -19,6 +23,8 @@ const RETRY_DELAY_MS = 2000
 // A send not finished and not touched for this long has stopped: its sender
 // died or gave up. Every batch takes well under a second.
 export const STALLED_AFTER_MINUTES = 2
+// Characters of the post's text a notification carries.
+const SOURCE_TEXT_LENGTH = 200
 
 type NotificationTemplate = Omit<Notification, 'id' | 'userId'>
 
@@ -28,21 +34,34 @@ export type AnnouncementDeliveryResult = {
   sent: number
   // Users sent it so far, by every call.
   totalSent: number
+  // No one is left to send to, or the send was closed (see closed).
   finished: boolean
+  // Why the send was closed before reaching everyone: the post was unlisted,
+  // is not an announcement, or is gone.
+  closed?: string
+  // Why this call stopped with users still to send to.
   error?: string
 }
 
 // Records that the post is to be sent to every user. Call it in the
 // transaction that creates the post, so an announcement never exists without
 // it. Calling it again for the same post does nothing.
+//
+// skipUsersWhoHaveIt: before sending to a user, check they have no
+// notification for this post already. For a post some users were sent
+// another way (the sender before this one stopped part way). It is stored on
+// the delivery, so a resumed send keeps doing it. Slower: it reads each
+// user's notifications.
 export async function queueAnnouncementDelivery(
   pg: SupabaseDirectClient | SupabaseTransaction,
-  postId: string
+  postId: string,
+  options: { skipUsersWhoHaveIt?: boolean } = {}
 ) {
   await pg.none(
-    `insert into announcement_deliveries (post_id) values ($1)
+    `insert into announcement_deliveries (post_id, skip_existing)
+     values ($1, $2)
      on conflict (post_id) do nothing`,
-    [postId]
+    [postId, options.skipUsersWhoHaveIt ?? false]
   )
 }
 
@@ -57,11 +76,9 @@ export async function deliverAnnouncement(
 ): Promise<AnnouncementDeliveryResult> {
   const batchSize = options.batchSize ?? ANNOUNCEMENT_BATCH_SIZE
   const retryDelayMs = options.retryDelayMs ?? RETRY_DELAY_MS
+  if (!Number.isSafeInteger(batchSize) || batchSize < 1)
+    throw new Error(`batchSize must be a positive integer, not ${batchSize}`)
 
-  const post = await pg.oneOrNone<{ data: TopLevelPost }>(
-    `select data from old_posts where id = $1`,
-    [postId]
-  )
   const delivery = await pg.oneOrNone<{ sent_count: number }>(
     `select sent_count from announcement_deliveries where post_id = $1`,
     [postId]
@@ -75,26 +92,7 @@ export async function deliverAnnouncement(
       error: 'not queued',
     }
   }
-  if (!post?.data.isAnnouncement) {
-    // Nothing to send. Close the row so the resume job stops looking at it.
-    const error = post ? 'post is not an announcement' : 'post not found'
-    await pg.none(
-      `update announcement_deliveries
-       set finished_time = now(), updated_time = now(), last_error = $2
-       where post_id = $1 and finished_time is null`,
-      [postId, error]
-    )
-    log.warn(`Announcement ${postId} not sent: ${error}`)
-    return {
-      postId,
-      sent: 0,
-      totalSent: delivery.sent_count,
-      finished: true,
-      error,
-    }
-  }
 
-  const template = notificationTemplate(post.data)
   let sent = 0
   let totalSent = delivery.sent_count
   let failures = 0
@@ -106,9 +104,7 @@ export async function deliverAnnouncement(
   while (true) {
     let batch: BatchResult
     try {
-      batch = await pg.tx((tx) =>
-        sendNextBatch(tx, postId, template, batchSize)
-      )
+      batch = await pg.tx((tx) => sendNextBatch(tx, postId, batchSize))
     } catch (e) {
       failures++
       const error = e instanceof Error ? e.message : String(e)
@@ -118,7 +114,7 @@ export async function deliverAnnouncement(
         .none(
           `update announcement_deliveries
            set last_error = $2, updated_time = now()
-           where post_id = $1`,
+           where post_id = $1 and finished_time is null`,
           [postId, error.slice(0, 1000)]
         )
         .catch(() => undefined)
@@ -141,6 +137,19 @@ export async function deliverAnnouncement(
     failures = 0
     sent += batch.sent
     totalSent = batch.totalSent
+    if (batch.closed) {
+      log.warn(`Announcement ${postId} closed: ${batch.closed}`, {
+        postId,
+        totalSent,
+      })
+      return {
+        postId,
+        sent,
+        totalSent,
+        finished: true,
+        closed: batch.closed,
+      }
+    }
     if (batch.finished) {
       log(`Announcement ${postId} sent to ${totalSent} users`, {
         postId,
@@ -152,7 +161,8 @@ export async function deliverAnnouncement(
   }
 }
 
-// Resumes every send that has stopped. Run by the scheduler.
+// Resumes every send that has stopped. Run by the scheduler. Throws, once it
+// has tried them all, if any is still unfinished.
 export async function resumeStalledAnnouncementDeliveries(
   pg: SupabaseDirectClient,
   options: { batchSize?: number; retryDelayMs?: number } = {}
@@ -168,17 +178,34 @@ export async function resumeStalledAnnouncementDeliveries(
   const results: AnnouncementDeliveryResult[] = []
   for (const postId of postIds) {
     log(`Resuming announcement ${postId}`)
-    results.push(await deliverAnnouncement(pg, postId, options))
+    try {
+      results.push(await deliverAnnouncement(pg, postId, options))
+    } catch (e) {
+      const error = e instanceof Error ? e.message : String(e)
+      results.push({ postId, sent: 0, totalSent: 0, finished: false, error })
+    }
+  }
+  const unfinished = results.filter((r) => !r.finished)
+  if (unfinished.length > 0) {
+    throw new Error(
+      `Announcement sends still unfinished: ${unfinished
+        .map((r) => `${r.postId} (${r.error})`)
+        .join(', ')}`
+    )
   }
   return results
 }
 
-type BatchResult = { sent: number; totalSent: number; finished: boolean }
+type BatchResult = {
+  sent: number
+  totalSent: number
+  finished: boolean
+  closed?: string
+}
 
 async function sendNextBatch(
   tx: SupabaseTransaction,
   postId: string,
-  template: Omit<NotificationTemplate, 'createdTime'>,
   batchSize: number
 ): Promise<BatchResult> {
   // The row lock makes concurrent senders take turns: the second one waits
@@ -187,10 +214,10 @@ async function sendNextBatch(
     last_user_id: string | null
     sent_count: number
     finished: boolean
-    created_ms: number
+    skip_existing: boolean
   }>(
-    `select last_user_id, sent_count, finished_time is not null as finished,
-       (extract(epoch from created_time) * 1000)::bigint as created_ms
+    `select last_user_id, sent_count, skip_existing,
+       finished_time is not null as finished
      from announcement_deliveries
      where post_id = $1
      for update`,
@@ -201,19 +228,73 @@ async function sendNextBatch(
     return { sent: 0, totalSent: delivery.sent_count, finished: true }
   }
 
+  // Read with every batch: a post unlisted mid-send stops going out.
+  const post = await tx.oneOrNone<{ data: TopLevelPost }>(
+    `select data from old_posts where id = $1`,
+    [postId]
+  )
+  const closed = !post
+    ? 'post not found'
+    : !post.data.isAnnouncement
+    ? 'post is not an announcement'
+    : post.data.visibility === 'unlisted'
+    ? 'post is unlisted'
+    : undefined
+  if (closed || !post) {
+    await tx.none(
+      `update announcement_deliveries
+       set finished_time = now(), updated_time = now(), last_error = $2
+       where post_id = $1`,
+      [postId, closed]
+    )
+    return {
+      sent: 0,
+      totalSent: delivery.sent_count,
+      finished: true,
+      closed,
+    }
+  }
+
+  // Everyone who existed when the send was queued, whenever their batch
+  // comes round.
   const userIds = await tx.map(
     `select id from users
-     where $1::text is null or id > $1
+     where ($2::text is null or id > $2)
+       and created_time <= (
+         select created_time from announcement_deliveries where post_id = $1
+       )
      order by id
-     limit $2`,
-    [delivery.last_user_id, batchSize],
+     limit $3`,
+    [postId, delivery.last_user_id, batchSize],
     (r: { id: string }) => r.id
   )
 
-  if (userIds.length > 0) {
+  let recipients = userIds
+  if (delivery.skip_existing && userIds.length > 0) {
+    // Looked up by user id, so it reads only these users' notifications. (As
+    // an anti-join against the insert, Postgres read the whole table every
+    // batch: 4.5 s a batch at 4M rows.)
+    const have = new Set(
+      await tx.map(
+        `select distinct user_id from user_notifications
+         where user_id = any($1::text[])
+           and data->>'sourceId' = $2
+           and data->>'sourceType' = 'post'`,
+        [userIds, postId],
+        (r: { user_id: string }) => r.user_id
+      )
+    )
+    recipients = userIds.filter((id) => !have.has(id))
+  }
+
+  if (recipients.length > 0) {
+    // Stamped as it is sent, not when it was queued: the notifications page
+    // fetches only what is newer than the newest notification it has, and a
+    // batch sent late would otherwise sort behind notifications that user
+    // got in the meantime and never be fetched.
     const data: NotificationTemplate = {
-      ...template,
-      createdTime: Number(delivery.created_ms),
+      ...notificationTemplate(post.data),
+      createdTime: Date.now(),
     }
     // A fresh random id per user, as every other notification has: some
     // queries still join user_notifications on notification_id, and one
@@ -225,12 +306,13 @@ async function sendNextBatch(
        select n.user_id, n.notification_id,
          $3::jsonb || jsonb_build_object('id', n.notification_id, 'userId', n.user_id)
        from unnest($1::text[], $2::text[]) as n(user_id, notification_id)`,
-      [userIds, userIds.map(() => nanoid(6)), JSON.stringify(data)]
+      [recipients, recipients.map(() => nanoid(6)), JSON.stringify(data)]
     )
   }
+  const inserted = recipients.length
 
   const finished = userIds.length < batchSize
-  const totalSent = delivery.sent_count + userIds.length
+  const totalSent = delivery.sent_count + inserted
   await tx.none(
     `update announcement_deliveries
      set last_user_id = coalesce($2, last_user_id),
@@ -241,7 +323,7 @@ async function sendNextBatch(
      where post_id = $1`,
     [postId, userIds[userIds.length - 1] ?? null, totalSent, finished]
   )
-  return { sent: userIds.length, totalSent, finished }
+  return { sent: inserted, totalSent, finished }
 }
 
 function notificationTemplate(
@@ -256,10 +338,22 @@ function notificationTemplate(
     sourceUserName: post.creatorName,
     sourceUserUsername: post.creatorUsername,
     sourceUserAvatarUrl: post.creatorAvatarUrl ?? '',
-    sourceText: richTextToString(post.content).slice(0, 200),
+    sourceText: truncateText(
+      richTextToString(post.content),
+      SOURCE_TEXT_LENGTH
+    ),
     sourceSlug: `post/${post.slug}`,
     sourceTitle: post.title,
   }
+}
+
+// The first `length` characters, never splitting one. String#slice counts
+// UTF-16 units, so a cut between the two halves of an emoji leaves a lone
+// surrogate, which JSON carries as "\udXXX" and Postgres jsonb refuses: the
+// insert fails, the same way on every retry. Array.from walks whole code
+// points. (A post's own text can't hold a lone surrogate: jsonb refuses it.)
+export function truncateText(text: string, length: number) {
+  return Array.from(text).slice(0, length).join('')
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))

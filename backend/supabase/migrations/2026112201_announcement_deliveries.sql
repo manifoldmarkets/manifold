@@ -23,8 +23,7 @@ begin;
 -- picks up any send that has stopped moving.
 create table if not exists announcement_deliveries (
   post_id text primary key,
-  -- When the announcement was queued. Every user's notification carries it as
-  -- createdTime, so a send that resumed later still reads as one moment.
+  -- When the announcement was queued. Users who existed then are its audience.
   created_time timestamptz not null default now(),
   -- Users are sent to in id order. The last id sent; null before the first
   -- batch.
@@ -35,8 +34,12 @@ create table if not exists announcement_deliveries (
   -- Bumped by every batch and every failure. A send not finished and not
   -- touched for a few minutes has stopped, and the resume job takes it up.
   updated_time timestamptz not null default now(),
-  -- The last batch failure, kept until the next batch commits.
-  last_error text
+  -- The last batch failure, kept until the next batch commits; or why the
+  -- send was closed early (the post was unlisted, or is no announcement).
+  last_error text,
+  -- Check each user has no notification for the post before sending: for a
+  -- post the old sender reached part of (scripts/send-announcement.ts).
+  skip_existing boolean not null default false
 );
 
 alter table announcement_deliveries enable row level security;

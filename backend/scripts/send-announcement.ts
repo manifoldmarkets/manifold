@@ -5,25 +5,24 @@ import {
   queueAnnouncementDelivery,
 } from 'shared/notifications/announcement-delivery'
 
-// Sends an announcement post to every user who hasn't been sent it, the same
-// way create-post does (shared/notifications/announcement-delivery.ts):
-// 1,000 users per transaction, resumable, nobody twice. Use it for an
-// announcement posted before that existed, or to finish one by hand. Prints
+// Sends an announcement post to every user who doesn't have it, the same way
+// create-post does (shared/notifications/announcement-delivery.ts): 1,000
+// users per transaction, resumable, nobody twice. For an announcement the
+// old sender reached part of, or none of, or to finish one by hand. Prints
 // the plan; pass --apply to send.
 //
 //   npx ts-node send-announcement.ts --post=<postId> [--apply]
 //
-// A post sent the old way, partly, already has notifications for some users
-// (in user id order). This send knows nothing of those, so they would get a
-// second one: the plan samples users to check, and refuses such a post
-// unless you pass --allow-duplicates.
+// A send this script queues checks each user for a notification for the post
+// before sending them one, so users the old sender reached are skipped. The
+// delivery row keeps that setting, so a send the scheduler resumes keeps
+// skipping them too. Exits nonzero unless everyone has been sent it.
 
 const SAMPLE_SIZE = 300
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
-    const allowDuplicates = process.argv.includes('--allow-duplicates')
     const postId = process.argv
       .find((arg) => arg.startsWith('--post='))
       ?.slice('--post='.length)
@@ -36,14 +35,16 @@ if (require.main === module) {
     if (!post) throw new Error(`No post ${postId}`)
     if (!post.data.isAnnouncement)
       throw new Error(`Post ${postId} is not an announcement`)
+    if (post.data.visibility === 'unlisted')
+      throw new Error(`Post ${postId} is unlisted`)
 
     const delivery = await pg.oneOrNone<{
       sent_count: number
-      last_user_id: string | null
       finished_time: string | null
       last_error: string | null
+      skip_existing: boolean
     }>(
-      `select sent_count, last_user_id, finished_time, last_error
+      `select sent_count, finished_time, last_error, skip_existing
        from announcement_deliveries where post_id = $1`,
       [postId]
     )
@@ -71,8 +72,8 @@ if (require.main === module) {
                 : 'not finished'
             }${
               delivery.last_error ? `, last error: ${delivery.last_error}` : ''
-            }`
-          : 'none yet'
+            }${delivery.skip_existing ? ', skipping users who have it' : ''}`
+          : 'none yet (this run skips users who have it)'
       }`
     )
     console.log(
@@ -80,25 +81,24 @@ if (require.main === module) {
     )
 
     if (delivery?.finished_time) {
-      console.log('Already sent to everyone. Nothing to do.')
+      console.log('Already finished. Nothing to do.')
       return
-    }
-    if (!delivery && sample.already > 0 && !allowDuplicates) {
-      throw new Error(
-        'Some users already have this announcement from an earlier send and would get it twice. Pass --allow-duplicates to send anyway.'
-      )
     }
     if (!apply) {
       console.log('Dry run. Pass --apply to send.')
       return
     }
 
-    await queueAnnouncementDelivery(pg, postId)
+    await queueAnnouncementDelivery(pg, postId, { skipUsersWhoHaveIt: true })
     const result = await deliverAnnouncement(pg, postId)
+    if (!result.finished || result.closed)
+      throw new Error(
+        `Stopped after ${result.totalSent} users: ${
+          result.error ?? result.closed
+        }. Run it again to resume.`
+      )
     console.log(
-      result.finished
-        ? `Done: sent to ${result.sent} users now, ${result.totalSent} in all.`
-        : `Stopped after ${result.totalSent} users: ${result.error}. Run it again to resume.`
+      `Done: sent to ${result.sent} users now, ${result.totalSent} in all.`
     )
   })
 }

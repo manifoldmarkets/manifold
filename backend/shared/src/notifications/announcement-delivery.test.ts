@@ -119,21 +119,30 @@ const addUsers = async (count: number, prefix = 'u') => {
       `${prefix}${String(i).padStart(3, '0')}`,
     ])
 }
-const addPost = async (id: string, isAnnouncement = true) =>
+const addPost = async (
+  id: string,
+  options: { isAnnouncement?: boolean; visibility?: string; text?: string } = {}
+) =>
   rows(`insert into old_posts (id, data) values ($1, $2)`, [
     id,
     {
       id,
       slug: `slug-${id}`,
       title: `Title ${id}`,
-      content: doc(`Body of ${id}`),
+      content: doc(options.text ?? `Body of ${id}`),
       creatorId: ADMIN,
       creatorName: 'Gen',
       creatorUsername: 'Gen',
       creatorAvatarUrl: 'https://avatar',
-      isAnnouncement,
+      isAnnouncement: options.isAnnouncement ?? true,
+      visibility: options.visibility ?? 'public',
     },
   ])
+const unlist = (id: string) =>
+  rows(
+    `update old_posts set data = data || '{"visibility":"unlisted"}' where id = $1`,
+    [id]
+  )
 const notificationsFor = async (postId: string) =>
   (
     await rows(
@@ -160,7 +169,10 @@ const insertsIntoNotifications = (sql: string) =>
 beforeAll(async () => {
   db = new PGlite()
   await db.exec(`
-    create table users (id text primary key);
+    create table users (
+      id text primary key,
+      created_time timestamptz not null default now()
+    );
     create table old_posts (id text primary key, data jsonb not null);
     create table user_notifications (
       data jsonb not null,
@@ -196,9 +208,8 @@ describe('deliverAnnouncement', () => {
     })
     const sent = await notificationsFor('p1')
     expect(sent.map((n) => n.userId)).toEqual(await userIds())
-    // Each its own id, one moment for all.
+    // Each its own id.
     expect(new Set(sent.map((n) => n.notificationId)).size).toBe(10)
-    expect(new Set(sent.map((n) => n.data.createdTime)).size).toBe(1)
     for (const n of sent) {
       expect(n.data).toMatchObject({
         id: n.notificationId,
@@ -235,22 +246,26 @@ describe('deliverAnnouncement', () => {
     expect((await notificationsFor('p1')).length).toBe(6)
   })
 
-  it('stamps the notifications with the time it was queued', async () => {
-    await addUsers(2)
+  it('stamps each batch with the time it is sent, not when it was queued', async () => {
+    // The notifications page fetches only what is newer than its newest
+    // notification, so a late batch must not carry an earlier time.
+    await addUsers(4)
     await addPost('p1')
     await queueAnnouncementDelivery(pg, 'p1')
-    await rows(
-      `update announcement_deliveries
-       set created_time = '2026-11-21T16:16:12Z' where post_id = 'p1'`
-    )
-
-    await deliverAnnouncement(pg, 'p1')
+    let clock = 1_000_000
+    const now = jest
+      .spyOn(Date, 'now')
+      .mockImplementation(() => (clock += 1000))
+    try {
+      await deliverAnnouncement(pg, 'p1', { batchSize: 2 })
+    } finally {
+      now.mockRestore()
+    }
 
     const times = (await notificationsFor('p1')).map((n) => n.data.createdTime)
-    expect(times).toEqual([
-      Date.parse('2026-11-21T16:16:12Z'),
-      Date.parse('2026-11-21T16:16:12Z'),
-    ])
+    expect(times[0]).toBe(times[1])
+    expect(times[2]).toBe(times[3])
+    expect(times[2]).toBeGreaterThan(times[0])
   })
 
   it('retries a failed batch, and nobody gets it twice', async () => {
@@ -324,7 +339,7 @@ describe('deliverAnnouncement', () => {
     expect((await notificationsFor('p1')).length).toBe(3)
   })
 
-  it('reaches users who sign up during the send, if their id comes later', async () => {
+  it('goes to the users who existed when it was queued, wherever their id falls', async () => {
     await addUsers(4)
     await addPost('p1')
     await queueAnnouncementDelivery(pg, 'p1')
@@ -332,13 +347,89 @@ describe('deliverAnnouncement', () => {
     failStatement = (sql) => insertsIntoNotifications(sql) && ++inserts > 1
     await deliverAnnouncement(pg, 'p1', { batchSize: 2, retryDelayMs: 0 })
     failStatement = () => false
-    await addUsers(1, 'z') // after the cursor
-    await addUsers(1, 'a') // before it
+    await addUsers(1, 'z') // signed up mid-send, id after the cursor
+    await addUsers(1, 'a') // and before it
 
     await deliverAnnouncement(pg, 'p1', { batchSize: 2 })
 
     const got = (await notificationsFor('p1')).map((n) => n.userId)
-    expect(got).toEqual(['u000', 'u001', 'u002', 'u003', 'z000'])
+    expect(got).toEqual(['u000', 'u001', 'u002', 'u003'])
+    expect((await deliveryOf('p1')).finished_time).not.toBeNull()
+  })
+
+  it('skips users who already have it, when queued to', async () => {
+    await addUsers(6)
+    await addPost('p1')
+    // Two users the old sender reached.
+    for (const userId of ['u001', 'u004'])
+      await rows(
+        `insert into user_notifications (user_id, notification_id, data)
+         values ($1, 'old', $2)`,
+        [userId, { id: 'old', sourceId: 'p1', sourceType: 'post' }]
+      )
+    await queueAnnouncementDelivery(pg, 'p1', { skipUsersWhoHaveIt: true })
+
+    const result = await deliverAnnouncement(pg, 'p1', { batchSize: 2 })
+
+    expect(result).toMatchObject({ sent: 4, totalSent: 4, finished: true })
+    const got = (await notificationsFor('p1')).map((n) => n.userId)
+    expect(got).toEqual(await userIds())
+    expect((await deliveryOf('p1')).last_user_id).toBe('u005')
+  })
+
+  it('stops a send whose post is unlisted, before or during it', async () => {
+    await addUsers(4)
+    await addPost('before', { visibility: 'unlisted' })
+    await addPost('during')
+    await queueAnnouncementDelivery(pg, 'before')
+    await queueAnnouncementDelivery(pg, 'during')
+
+    expect(await deliverAnnouncement(pg, 'before')).toMatchObject({
+      sent: 0,
+      finished: true,
+      closed: 'post is unlisted',
+    })
+
+    let inserts = 0
+    failStatement = (sql) => insertsIntoNotifications(sql) && ++inserts > 1
+    await deliverAnnouncement(pg, 'during', { batchSize: 2, retryDelayMs: 0 })
+    failStatement = () => false
+    await unlist('during')
+
+    expect(
+      await deliverAnnouncement(pg, 'during', { batchSize: 2 })
+    ).toMatchObject({ sent: 0, totalSent: 2, closed: 'post is unlisted' })
+    expect((await notificationsFor('before')).length).toBe(0)
+    expect((await notificationsFor('during')).map((n) => n.userId)).toEqual([
+      'u000',
+      'u001',
+    ])
+    expect((await deliveryOf('during')).finished_time).not.toBeNull()
+  })
+
+  it('cuts the text between characters, never inside an emoji', async () => {
+    await addUsers(1)
+    // 199 letters then an emoji: a cut at 200 UTF-16 units splits it.
+    const text = 'a'.repeat(199) + '\u{1F600}' + 'more'
+    // The old cut, which this one replaces, cannot be stored.
+    await expect(
+      rows(`select $1::jsonb`, [JSON.stringify({ t: text.slice(0, 200) })])
+    ).rejects.toThrow('invalid input syntax for type json')
+    await addPost('p1', { text })
+    await queueAnnouncementDelivery(pg, 'p1')
+
+    expect(await deliverAnnouncement(pg, 'p1')).toMatchObject({ sent: 1 })
+    const [p1] = await notificationsFor('p1')
+    expect(p1.data.sourceText).toBe('a'.repeat(199) + '\u{1F600}')
+  })
+
+  it('refuses a batch size that would never advance', async () => {
+    await addPost('p1')
+    await queueAnnouncementDelivery(pg, 'p1')
+
+    await expect(
+      deliverAnnouncement(pg, 'p1', { batchSize: 0 })
+    ).rejects.toThrow('batchSize must be a positive integer')
   })
 
   it('does nothing for a post that was never queued', async () => {
@@ -357,19 +448,19 @@ describe('deliverAnnouncement', () => {
 
   it('closes the delivery of a post that is not an announcement, or is gone', async () => {
     await addUsers(3)
-    await addPost('p1', false)
+    await addPost('p1', { isAnnouncement: false })
     await queueAnnouncementDelivery(pg, 'p1')
     await queueAnnouncementDelivery(pg, 'gone')
 
     expect(await deliverAnnouncement(pg, 'p1')).toMatchObject({
       sent: 0,
       finished: true,
-      error: 'post is not an announcement',
+      closed: 'post is not an announcement',
     })
     expect(await deliverAnnouncement(pg, 'gone')).toMatchObject({
       sent: 0,
       finished: true,
-      error: 'post not found',
+      closed: 'post not found',
     })
     expect((await rows(`select * from user_notifications`)).length).toBe(0)
     expect((await deliveryOf('p1')).finished_time).not.toBeNull()
@@ -407,6 +498,29 @@ describe('resumeStalledAnnouncementDeliveries', () => {
     expect((await notificationsFor('stalled')).length).toBe(3)
     expect((await notificationsFor('running')).length).toBe(0)
     expect((await notificationsFor('finished')).length).toBe(0)
+  })
+
+  it('fails the run while a send cannot get through, after trying the rest', async () => {
+    await addUsers(3)
+    for (const id of ['stuck', 'fine']) {
+      await addPost(id)
+      await queueAnnouncementDelivery(pg, id)
+    }
+    await rows(
+      `update announcement_deliveries set updated_time = now() - interval '3 minutes'`
+    )
+    // Every insert for 'stuck' fails.
+    failStatement = (sql) =>
+      insertsIntoNotifications(sql) && sql.includes('"sourceId":"stuck"')
+
+    await expect(
+      resumeStalledAnnouncementDeliveries(pg, { retryDelayMs: 0 })
+    ).rejects.toThrow('stuck')
+    expect((await notificationsFor('stuck')).length).toBe(0)
+    expect((await notificationsFor('fine')).length).toBe(3)
+    expect((await deliveryOf('stuck')).last_error).toBe(
+      'canceling statement due to statement timeout'
+    )
   })
 })
 

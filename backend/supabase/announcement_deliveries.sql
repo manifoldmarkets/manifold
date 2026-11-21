@@ -7,7 +7,8 @@ create table if not exists announcement_deliveries (
   sent_count int not null default 0,
   finished_time timestamptz,
   updated_time timestamptz not null default now(),
-  last_error text
+  last_error text,
+  skip_existing boolean not null default false
 );
 
 alter table announcement_deliveries enable row level security;

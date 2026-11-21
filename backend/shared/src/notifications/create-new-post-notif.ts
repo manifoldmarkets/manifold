@@ -13,6 +13,7 @@ import { nanoid } from 'common/util/random'
 import { TopLevelPost } from 'common/top-level-post'
 import { getUserFollowerIds } from 'shared/supabase/users'
 import { richTextToString } from 'common/util/parse'
+import { truncateText } from 'shared/notifications/announcement-delivery'
 
 // Notifies the creator's followers of a new post. Announcements go to every
 // user instead, through announcement-delivery.ts.
@@ -24,7 +25,8 @@ export const createNewPostFromFollowedUserNotification = async (
   const bulkNotifications: Notification[] = []
   const followerIds = await getUserFollowerIds(creator.id, pg)
 
-  const sourceText = richTextToString(post.content).slice(0, 200)
+  // Whole characters only: a cut emoji makes the insert fail.
+  const sourceText = truncateText(richTextToString(post.content), 200)
 
   // Get all private users for the followers
   const privateUsers = await pg.map(
