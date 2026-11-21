@@ -54,18 +54,18 @@ const schedules = {
     eligible: true,
   },
   nfl: {
-    id: 501,
-    slateDate: '2026-11-19',
-    status: 'final',
-    home: { id: 51, name: 'Lake City Wolves' },
-    away: { id: 52, name: 'Northport Bobcats' },
-    homeScore: 24,
-    awayScore: 24,
+    id: 1392367,
+    slateDate: '2026-11-22',
+    status: 'scheduled',
+    home: { id: 3, name: 'Buffalo Bills' },
+    away: { id: 5, name: 'Miami Dolphins' },
+    homeScore: null,
+    awayScore: null,
     postseason: false,
     eligible: true,
   },
 } as const
-const recordedSchedules: MajorLeague[] = ['nba', 'nhl']
+const recordedSchedules: MajorLeague[] = ['nba', 'nhl', 'nfl']
 const recordedOdds: MajorLeague[] = ['nba', 'nhl']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
@@ -622,4 +622,25 @@ it('preserves period and clock on a synthetic live NHL playoff game', async () =
     homeScore: 1,
     awayScore: 2,
   })
+})
+
+it('keeps both scores on a synthetic tied NFL final', async () => {
+  const base = fixture('nfl', 'games').data[0]
+  const client = localClient(() => ({
+    data: [
+      {
+        ...base,
+        status_state: 'final',
+        home_team_score: 24,
+        visitor_team_score: 24,
+      },
+    ],
+  })).client
+  const [game] = await fetchMajorGames(
+    client,
+    'nfl',
+    dateFor('nfl'),
+    dateFor('nfl')
+  )
+  expect(game).toMatchObject({ status: 'final', homeScore: 24, awayScore: 24 })
 })
