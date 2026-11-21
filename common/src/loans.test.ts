@@ -256,4 +256,37 @@ describe('sizeGeneralLoan', () => {
       ).toEqual({ exceeded: 'daily' })
     }
   )
+
+  it.each([false, true])(
+    'fails on a non-finite amount (clampToLimit: %s)',
+    (clampToLimit) => {
+      const headroom = { availableTotal: 700, availableToday: 60 }
+      expect(sizeGeneralLoan(Infinity, clampToLimit, headroom)).toEqual({
+        exceeded: 'total',
+      })
+      expect(sizeGeneralLoan(NaN, clampToLimit, headroom)).toEqual({
+        exceeded: 'total',
+      })
+    }
+  )
+
+  it('tolerates float error at the limit, but no more', () => {
+    const headroom = { availableTotal: 700, availableToday: 60 }
+    expect(sizeGeneralLoan(60 + 1e-9, false, headroom)).toEqual({
+      loanAmount: 60 + 1e-9,
+    })
+    expect(sizeGeneralLoan(60 + 1e-6, false, headroom)).toEqual({
+      exceeded: 'daily',
+    })
+  })
+
+  it('lends an amount under M$1 that fits, with or without clampToLimit', () => {
+    const headroom = { availableTotal: 0.8, availableToday: 60 }
+    expect(sizeGeneralLoan(0.5, false, headroom)).toEqual({ loanAmount: 0.5 })
+    expect(sizeGeneralLoan(0.5, true, headroom)).toEqual({ loanAmount: 0.5 })
+    // Asked for less than M$1, so the clamp won't go below what was asked.
+    expect(
+      sizeGeneralLoan(0.5, true, { availableTotal: 0.3, availableToday: 60 })
+    ).toEqual({ exceeded: 'total' })
+  })
 })

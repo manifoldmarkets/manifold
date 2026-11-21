@@ -80,8 +80,10 @@ export function LoansModal(props: {
 
     // At the (rounded) max, ask for the actual max and let the server cut it
     // to the live limit. The max here was fetched earlier, and equity moves
-    // with every price change, so it's often a fraction over by now.
-    const atMax = requestLoanMax > 0 && amountToRequest >= requestLoanMax
+    // with every price change, so it's often a fraction over by now. A quick
+    // loan button names its amount, so it gets exactly that or fails.
+    const atMax =
+      !isQuickLoan && requestLoanMax > 0 && amountToRequest >= requestLoanMax
     if (atMax) amountToRequest = requestLoanMaxActual
     // For display, keep the rounded amount
     setLoanAmount(Math.floor(amountToRequest))
@@ -130,6 +132,13 @@ export function LoansModal(props: {
   const requestLoanMaxActual = Math.min(availableGeneralLoan, availableToday)
   // Round down for display/slider max
   const requestLoanMax = Math.floor(requestLoanMaxActual)
+
+  // Keep the selection within the limits when they drop, e.g. on the refetch
+  // after a failed request, so a retry can't resend an amount now over them.
+  useEffect(() => {
+    if (loanData && loanAmount && loanAmount > requestLoanMax)
+      setLoanAmount(requestLoanMax > 0 ? requestLoanMax : undefined)
+  }, [requestLoanMax])
 
   // Create filtered slider values that respect the max (rounded down)
   // Ensures the rounded max is included as the last value

@@ -277,6 +277,8 @@ export const sizeGeneralLoan = (
   headroom: Pick<GeneralLoanHeadroom, 'availableTotal' | 'availableToday'>
 ): { loanAmount: number } | { exceeded: 'total' | 'daily' } => {
   const { availableTotal, availableToday } = headroom
+  // An infinite request must not clamp down to the max as if it were one.
+  if (!Number.isFinite(amount)) return { exceeded: 'total' }
   const exceeds = (available: number) =>
     !Number.isFinite(available) ||
     available <= 0 ||
