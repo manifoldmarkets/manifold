@@ -6,22 +6,24 @@ The full product plan, including how trophies fit new-user onboarding and the re
 
 ## How it works
 
-| Piece | Where |
-| --- | --- |
-| Trophy and milestone definitions, progress, claim and pin rules (pure, shared) | `common/src/trophies.ts`, tests in `common/src/trophies.test.ts` |
-| Stats a trophy measures | `get-user-achievements` (`backend/api/src/get-user-achievements.ts`), unchanged by trophies |
-| Claims and pins | `get-user-trophies`, `claim-trophy`, `set-showcase-pins`, admin `unclaim-trophy` in `backend/api/src/` |
-| Tables | `user_trophy_milestones`, `user_showcase` (migrations `2026112210_trophy_milestones.sql`, `2026112211_trophy_milestone_rewards.sql`) |
-| UI | `web/components/trophies/`: Trophies tab on the profile, profile showcase under the name |
+| Piece                                                                          | Where                                                                                                                                |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Trophy and milestone definitions, progress, claim and pin rules (pure, shared) | `common/src/trophies.ts`, tests in `common/src/trophies.test.ts`                                                                     |
+| Stats a trophy measures                                                        | `get-user-achievements` (`backend/api/src/get-user-achievements.ts`), unchanged by trophies                                          |
+| Claims and pins                                                                | `get-user-trophies`, `claim-trophy`, `set-showcase-pins`, admin `unclaim-trophy` in `backend/api/src/`                               |
+| Tables                                                                         | `user_trophy_milestones`, `user_showcase` (migrations `2026112210_trophy_milestones.sql`, `2026112211_trophy_milestone_rewards.sql`) |
+| UI                                                                             | `web/components/trophies/`: Trophies tab on the profile, profile showcase under the name                                             |
 
 Data flow:
 
-1. The profile fetches the user's stats (`get-user-achievements`, cached briefly) and their claims and pins (`get-user-trophies`, not cached). `web/hooks/use-user-trophies.ts` shares the second between the tab and the showcase.
+1. The profile fetches the user's stats (`get-user-achievements`) and their claims and pins (`get-user-trophies`). `web/hooks/use-user-achievements.ts` and `web/hooks/use-user-trophies.ts` share them between the tab and the showcase, so both always agree. Stats are read again on each visit once they are 30 seconds old, and when the page regains focus.
 2. The web works out progress from the stats with the shared helpers, so it shows the same answer the server will give.
-3. Claiming a milestone calls `claim-trophy`. The server reloads the stats, checks the milestone is reached, and inserts one row per milestone, the requested one and every lower one. The primary key `(user_id, trophy_id, milestone_id)` makes repeats and concurrent claims harmless, and a claim can never be lowered.
+3. Claiming a milestone calls `claim-trophy`. The server reloads the stats, checks the milestone is reached, and inserts one row per milestone, the requested one and every lower one. The primary key `(user_id, trophy_id, milestone_id)` makes repeats and concurrent claims harmless, and a claim can never be lowered. Only the admin `unclaim-trophy` deletes claim rows, after which a milestone can be claimed anew: anything paid for a claim must be recorded in a table that is never deleted (stage 2's `user_trophy_rewards`), not keyed to the claim row.
 4. Pinning calls `set-showcase-pins`. The server checks each pin is a claimed trophy (`trophy-<id>`) or the league badge (`league`), and that the user has unlocked that many slots: one at the start, two at 25 claimed milestones, three at 50.
 
-Both write endpoints run through `onlyUsersWhoCanPerformAction`: claiming is blocked by a posting or trading ban, pinning by a posting ban.
+Both write endpoints run through `onlyUsersWhoCanPerformAction`: claiming is blocked by a posting or trading ban, pinning by a posting ban. Both also take the profile's `userId` and refuse it unless it is the signed-in user, so a session that switched accounts after the page loaded can't change the wrong account.
+
+Visitors see only the milestones the owner has claimed; the owner sees everything they have reached.
 
 ## "Getting started" trophies (rewards)
 
@@ -42,14 +44,14 @@ Ids are stored in the database. Never change a trophy's or milestone's `id`; cha
 
 Each stage is its own PR.
 
-| Stage | What | State |
-| --- | --- | --- |
-| 1 | Trophies v1, cosmetic: per-milestone claims, server-checked claims and pins, emoji badges | Built |
-| 1b | Fresh trade counts: the `ach_trades` refresh job stopped in Sep 2025 | Separate PR off main |
-| 2 | "Getting started" milestones for new accounts that pay mana once each, off on prod | Built |
-| 3 | A notification when a trophy is ready to claim, a celebration on claim, a "next trophy" card | Planned |
-| 4 | Days of Plus membership as rewards, never auto-renewing | Needs a product decision |
-| 5 | Badge art (`art-guide.md`, `badge-prompts.txt`, `composite-badge.ts`) | Needs a product decision |
+| Stage | What                                                                                                                                                                                  | State                    |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| 1     | Trophies v1, cosmetic: per-milestone claims, server-checked claims and pins, emoji badges                                                                                             | Built                    |
+| 1b    | Live trade counts and volume: `user_stats`, kept by triggers on `contract_bets` (the `ach_trades` refresh job stopped in Sep 2025). Trades Placed reads a frozen count until it ships | Separate PR off main     |
+| 2     | "Getting started" milestones for new accounts that pay mana once each, off on prod                                                                                                    | Built                    |
+| 3     | A notification when a trophy is ready to claim, a celebration on claim, a "next trophy" card                                                                                          | Planned                  |
+| 4     | Days of Plus membership as rewards, never auto-renewing                                                                                                                               | Needs a product decision |
+| 5     | Badge art (`art-guide.md`, `badge-prompts.txt`, `composite-badge.ts`)                                                                                                                 | Needs a product decision |
 
 Ideas from the March plan kept for later: streak freezes as rewards (they already exist as a shop item, so a reward adds one to the user's count), leaderboard and subscription trophies, gifted titles that only other users can buy you, and animations that scale with tier.
 

@@ -36,8 +36,8 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { openShowcasePicker } from 'web/components/trophies/open-showcase-picker'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
+import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   addTrophyClaims,
   addTrophyRewards,
@@ -49,14 +49,14 @@ import { api } from 'web/lib/api/api'
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
 
-  // Keyed per user, so another profile's stats never show while these load.
-  const { data: achievements } = useAPIGetter(
-    'get-user-achievements',
-    { userId },
-    undefined,
-    `get-user-achievements-${userId}`
-  )
-  // Shared live with ProfileShowcase, so a claim shows up there at once.
+  // Both shared live with ProfileShowcase, so a claim shows up there at once
+  // and both show the same stats.
+  const {
+    achievements,
+    error: achievementsError,
+    loading: achievementsLoading,
+    retry: retryAchievements,
+  } = useUserAchievements(userId)
   const { trophies, error: trophiesError } = useUserTrophies(userId)
 
   const currentUser = useUser()
@@ -82,6 +82,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     setClaimingId(trophyId)
     try {
       const { claims, rewardAmount, rewarded } = await api('claim-trophy', {
+        userId,
         trophyId,
         milestoneId,
       })
@@ -109,8 +110,20 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   if (!achievements) {
     return (
-      <Col className="items-center py-8">
-        <div className="text-ink-400 text-sm">Loading trophies...</div>
+      <Col className="items-center gap-2 py-8">
+        {achievementsError && !achievementsLoading ? (
+          <>
+            <div className="text-ink-500 text-sm">Stats couldn't load.</div>
+            <button
+              className="text-primary-600 text-sm font-medium hover:underline"
+              onClick={retryAchievements}
+            >
+              Try again
+            </button>
+          </>
+        ) : (
+          <div className="text-ink-400 text-sm">Loading trophies...</div>
+        )}
       </Col>
     )
   }
@@ -464,7 +477,7 @@ function AchievementsSection(props: {
     {
       id: 'creatorTraders',
       title: 'Fan Favorite',
-      desc: 'Unique traders on your markets.',
+      desc: 'Traders on your markets, counted once per market.',
       fmt: () => formatWithCommas(data.creatorTraders),
     },
     {

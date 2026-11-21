@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
 import {
+  assertOwnProfile,
   convertTrophyClaim,
   getRewardedMilestones,
   getStarterStats,
@@ -33,7 +34,8 @@ import { loadUserAchievements } from './get-user-achievements'
 export const claimTrophy: APIHandler<'claim-trophy'> =
   onlyUsersWhoCanPerformAction(
     'claimTrophy',
-    async ({ trophyId, milestoneId }, auth) => {
+    async ({ userId, trophyId, milestoneId }, auth) => {
+      assertOwnProfile(userId, auth)
       const def = getTrophyDefinition(trophyId)
       if (!def) throw new APIError(404, 'Trophy not found')
       const milestone = getMilestone(def, milestoneId)

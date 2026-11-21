@@ -222,9 +222,14 @@ const bet = (
 
 // The handlers return plain responses; their type also allows { result,
 // continue }, which these never use.
-const claim = async (uid: string, trophyId: string, milestoneId: string) =>
+const claim = async (
+  uid: string,
+  trophyId: string,
+  milestoneId: string,
+  profileUserId = uid
+) =>
   (await claimTrophy(
-    { trophyId, milestoneId },
+    { userId: profileUserId, trophyId, milestoneId },
     { uid } as never,
     {} as never
   )) as APIResponse<'claim-trophy'>
@@ -384,6 +389,18 @@ describe('claiming a starter milestone', () => {
     ).rejects.toMatchObject({ code: 403 })
     expect(await rewardTxns('u')).toHaveLength(0)
     expect(await claimRows('u')).toHaveLength(0)
+  })
+
+  it("refuses a claim for another account's profile", async () => {
+    await addUser('u')
+    await addUser('other')
+    await bet('u', 'm1', 10, 0)
+    await expect(
+      claim('u', 'starter-trades', 'first-trade', 'other')
+    ).rejects.toMatchObject({ code: 403 })
+    expect(await claimRows('u')).toHaveLength(0)
+    expect(await claimRows('other')).toHaveLength(0)
+    expect(await rewardTxns('u')).toHaveLength(0)
   })
 
   it('refuses starter trophies for accounts created before the start', async () => {

@@ -297,10 +297,12 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'creator-traders',
     label: 'Creator Popularity',
-    description: "Unique traders who've bet on your markets",
+    // creatorTraders adds up each market's unique bettors, so someone who
+    // trades on three of your markets counts three times.
+    description: 'Traders on your markets, counted once per market',
     category: 'creating',
     statKey: 'creatorTraders',
-    unit: 'unique traders',
+    unit: 'traders',
     milestones: [
       m('invisible', 'Invisible', '\u{1F47B}', 10, 'green'),
       m('unknown', 'Unknown', '\u{1F464}', 50, 'green'),
