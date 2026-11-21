@@ -3,10 +3,10 @@ import { BdlLeagueKey, isBdlLeagueKey } from './bdl/leagues'
 import { ENV } from './envs/constants'
 import {
   BDL_ADDITIONAL_SPORTS,
-  FINALS_FROM_MINUTES,
   SPORT_LEAGUE_LABEL,
   SportId,
 } from './sports-calendar'
+import { FINALS_FROM_MINUTES } from './sports-finals-timing'
 
 // ─── How often the resolver asks for scores ───────────────────────────────────
 //
@@ -30,7 +30,8 @@ export const DEFAULT_FINALS_INTERVAL = 300
 /** A game still unresolved 3 hours after close is checked at most this often. */
 export const OVERDUE_FINALS_INTERVAL = 30 * 60
 
-export { FINALS_FROM_MINUTES } from './sports-calendar'
+export { FINALS_FROM_MINUTES }
+import { FINALS_FROM_MINUTES } from './sports-finals-timing'
 
 /** The admin settings, from the sports_score_polling table. */
 export interface ScorePollingSettings {
