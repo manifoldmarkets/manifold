@@ -4,6 +4,7 @@ import {
   BDL_MIN_CREATION_LEAD_MS,
   BDL_REISSUED_EVENT_MATCH_WINDOW_MS,
 } from 'common/bdl/constants'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import {
   MAJOR_LEAGUES,
@@ -17,6 +18,7 @@ import {
 } from 'common/bdl/opening-line'
 import {
   autoCreates,
+  getSportsCalendar,
   calendarEntriesOverlapping,
   CompetitionSwitches,
   competitionSwitchError,
@@ -93,6 +95,14 @@ function eligiblePhases(
   options: MajorCreationOptions,
   game?: MajorGame
 ) {
+  // Force can correct a named game, but it cannot start a disabled league.
+  if (
+    options.force &&
+    !getSportsCalendar().some(
+      (p) => p.bdlLeagueKey === league && autoCreates(p, switches)
+    )
+  )
+    return []
   const applicable = calendarEntriesOverlapping(from, to).filter(
     (phase) =>
       phase.bdlLeagueKey === league &&
@@ -185,11 +195,6 @@ export async function runMajorCreation(
     throw Error('A forced run requires a selected league and competition')
   if (options.keys && options.keys.length > 200)
     throw Error('Select at most 200 games')
-  const pg = deps.pg ?? createSupabaseDirectClient()
-  const clock = deps.clock ?? bdlClock()
-  const role = options.role ?? 'dev'
-  const switches = await getCompetitionSwitches(pg)
-  const selected = options.keys && new Set(options.keys)
   const result: MajorCreationResult = {
     created: 0,
     wouldCreate: 0,
@@ -197,6 +202,12 @@ export async function runMajorCreation(
     errors: 0,
     log: [],
   }
+  if (!isSportsBdlEnabled()) return result
+  const pg = deps.pg ?? createSupabaseDirectClient()
+  const clock = deps.clock ?? bdlClock()
+  const role = options.role ?? 'dev'
+  const switches = await getCompetitionSwitches(pg)
+  const selected = options.keys && new Set(options.keys)
   const batch = new Set<string>(),
     planned = new Map<MajorLeague, number>()
   let plannedTotal = 0,
@@ -253,6 +264,15 @@ export async function runMajorCreation(
             clock,
             key: process.env.BALLDONTLIE_API_KEY,
             enabledLeagues: new Set([league]),
+            isLeagueEnabled: async (requested) =>
+              requested === league &&
+              eligiblePhases(
+                league,
+                began,
+                began + maxLead,
+                await getCompetitionSwitches(pg),
+                options
+              ).length > 0,
           })
         const games = await fetchMajorGames(
           client,

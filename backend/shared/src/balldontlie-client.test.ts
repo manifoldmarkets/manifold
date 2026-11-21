@@ -1,3 +1,20 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+jest.mock('./bdl/dev-admission', () => ({
+  sendDevBdlRequest: jest.fn(
+    async (
+      _league: string,
+      enabled: () => Promise<boolean>,
+      send: () => Promise<unknown>
+    ) => {
+      if (!(await enabled()))
+        throw new Error('[sports-bdl-client] League disabled')
+      return send()
+    }
+  ),
+}))
 // Service accounting has its own transport-to-database tests.
 jest.mock('./bdl/request-stats', () => ({
   recordServiceBdlResponse: jest.fn(),
@@ -47,7 +64,7 @@ function setup() {
   const seen: BdlAttempt[] = []
   const client = createBdlClient({
     clock,
-    role: 'codex',
+    role: 'recorder',
     key,
     transport,
     onAttempt: (a) => {
@@ -121,13 +138,14 @@ it('withholds credentials in responses and sanitized network failures from obser
   await expect(get(endpoint)).rejects.toThrow(
     'Credential found in provider response'
   )
-  transport.mockRejectedValueOnce(new Error('fetch error with ' + key))
+  transport.mockRejectedValue(new Error('fetch error with ' + key))
   await expect(get(endpoint)).rejects.toThrow('BDL connection failed')
   await expect(get(endpoint, { id: key })).rejects.toThrow(
     'Credential found in request parameters'
   )
   expect(seen).toEqual([])
-  expect(transport).toHaveBeenCalledTimes(2)
+  // One rejected response followed by three bounded connection failures.
+  expect(transport).toHaveBeenCalledTimes(4)
 })
 
 it('canonicalizes repeated params and keeps leagues, endpoint versions and cursors distinct', () => {
@@ -186,9 +204,8 @@ it('shares the manual rate between concurrent recorder clients and honors its la
 it.each([
   ['scheduler', 200],
   ['api', 2000],
-  ['dev', 400],
+  ['dev', 30000],
   ['recorder', 1000],
-  ['codex', 1000],
 ] as const)(
   'enforces the %s budget across clients and league slugs',
   async (role, interval) => {
@@ -275,7 +292,7 @@ it('makes zero provider requests for disabled service leagues, including on dire
     const path = BDL_LEAGUES[slug].apiBase + '/games'
     await expect(
       client.getAll(path, {}, { maxPages: 2, matches: () => true })
-    ).resolves.toEqual([])
+    ).rejects.toThrow('League disabled')
     await expect(client.get(path)).rejects.toThrow('League disabled')
   }
   expect(transport).not.toHaveBeenCalled()
@@ -465,5 +482,69 @@ it('rechecks the live switch when waiting to retry a provider call', async () =>
     transport,
   })
   await expect(client.get(endpoint)).rejects.toThrow('League disabled')
+  expect(transport).toHaveBeenCalledTimes(1)
+})
+
+it('blocks every service league with an enabled-league snapshot when rollout is off', async () => {
+  const transport = jest.fn()
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    for (const role of ['api', 'scheduler', 'dev'] as const) {
+      const client = createBdlClient({
+        role,
+        key,
+        transport,
+        enabledLeagues: new Set(BDL_LEAGUE_KEYS),
+      })
+      for (const league of BDL_LEAGUE_KEYS) {
+        const path = BDL_LEAGUES[league].apiBase + '/games'
+        await expect(client.get(path)).rejects.toThrow('League disabled')
+        await expect(
+          client.getAll(path, {}, { maxPages: 1, matches: () => true })
+        ).rejects.toThrow('League disabled')
+      }
+    }
+    expect(transport).not.toHaveBeenCalled()
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
+})
+
+it('requires an actual local fixture directory for a codex replay', () => {
+  const transport = jest.fn()
+  expect(() => createBdlClient({ role: 'codex', key, transport })).toThrow(
+    'Codex replay requires'
+  )
+  expect(transport).not.toHaveBeenCalled()
+})
+
+it('retries dropped responses and unreadable success bodies within the same capped budget', async () => {
+  const { get, transport, seen } = setup()
+  transport
+    .mockRejectedValueOnce(new Error('transport'))
+    .mockResolvedValueOnce(new Response('{', { status: 200 }))
+    .mockResolvedValueOnce(json({ ready: true }))
+  await expect(get(endpoint)).resolves.toMatchObject({ body: { ready: true } })
+  expect(transport).toHaveBeenCalledTimes(3)
+  expect(seen.map((a) => a.status)).toEqual([200])
+})
+
+it('rechecks live authorization for each page, even when a run started enabled', async () => {
+  let enabled = true
+  const transport = jest.fn(async () => {
+    enabled = false
+    return json({ data: [], meta: { next_cursor: 2 } })
+  })
+  const client = createBdlClient({
+    key,
+    role: 'scheduler',
+    clock: fakeClock(),
+    transport,
+    enabledLeagues: new Set(['nba']),
+    isLeagueEnabled: async (league) => league === 'nba' && enabled,
+  })
+  await expect(
+    client.getAll(endpoint, {}, { maxPages: 3, matches: () => true })
+  ).rejects.toThrow('League disabled')
   expect(transport).toHaveBeenCalledTimes(1)
 })

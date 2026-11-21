@@ -4,12 +4,14 @@ import {
   BDL_REQUESTS_PER_MINUTE,
 } from 'common/bdl/constants'
 import { BDL_LEAGUES, BdlLeagueKey, isBdlLeagueKey } from 'common/bdl/leagues'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { sendDevBdlRequest } from './bdl/dev-admission'
 
 import {
   createBdlFixtureTransport,
   requireBdlLocalOnly,
 } from './balldontlie-fixture'
-import { BdlParams, bdlUrl } from './balldontlie-request'
+import { BdlParams, bdlUrl, matchBdlEndpoint } from './balldontlie-request'
 import {
   recordServiceBdlResponse,
   reportBdlRequestIssue,
@@ -93,7 +95,8 @@ export class BdlRateLimiter {
 
   acquire(
     rate = this.rate,
-    externalSlot?: (effectiveRate: number) => Promise<void>
+    externalSlot?: (effectiveRate: number) => Promise<void>,
+    checkBeforeGrant?: () => Promise<void>
   ) {
     const interval = this.interval(rate)
     const ticket = this.tail.then(async () => {
@@ -103,15 +106,15 @@ export class BdlRateLimiter {
         const gap = Math.max(interval, this.lastInterval) * (slow ? 2 : 1)
         const due = Math.max(this.next, this.lastAt + gap)
         if (now >= due) {
-          if (externalSlot) {
-            await externalSlot(slow ? rate / 2 : rate)
-            // A response could have paused or slowed this key during the external wait.
-            if (
-              this.clock.now() < this.next ||
-              (!slow && this.clock.now() < this.slowUntil)
-            )
-              continue
-          }
+          if (externalSlot) await externalSlot(slow ? rate / 2 : rate)
+          if (checkBeforeGrant) await checkBeforeGrant()
+          // Another response can pause or slow the key while an external check runs.
+          if (
+            (externalSlot || checkBeforeGrant) &&
+            (this.clock.now() < this.next ||
+              (!slow && this.clock.now() < this.slowUntil))
+          )
+            continue
           this.lastAt = this.clock.now()
           this.lastInterval = interval
           return
@@ -213,6 +216,8 @@ export type BdlClientOptions = {
   role?: BdlRole
   /** Current service switches. Manual recorder and fixture queries do not create markets. */
   enabledLeagues?: ReadonlySet<BdlLeagueKey>
+  /** Re-read current phase authorization before each transport attempt. */
+  isLeagueEnabled?: (league: BdlLeagueKey) => Promise<boolean>
   /** Explicit recorder CLI rate (including its lower trial rate or approved paid run). */
   recorderRate?: number
   /** Additional machine-wide slot for recorder processes sharing one credential. */
@@ -232,6 +237,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       '[sports-bdl-client] Fake time requires fixtures for BDL requests'
     )
   const role = options.role ?? (fixture ? 'codex' : 'dev')
+  if (role === 'codex' && !fixture)
+    throw new Error('[sports-bdl-client] Codex replay requires BDL_FIXTURE_DIR')
   const serviceRole =
     !fixture && (role === 'api' || role === 'scheduler' || role === 'dev')
       ? role
@@ -242,12 +249,13 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     )
   const rate = options.recorderRate ?? BDL_REQUESTS_PER_MINUTE[role]
   const limiter = processBudget(clock, role)
-  function leagueIsOn(path: string) {
+  async function leagueIsOn(league: BdlLeagueKey) {
     if (role === 'recorder' || role === 'codex') return true
-    const slug = path.slice(1).split(/\/v[1-9]\d*\//, 1)[0]
     return (
-      isBdlLeagueKey(slug) &&
-      (options.enabledLeagues?.has(slug) ?? BDL_LEAGUES[slug].defaultAutoCreate)
+      isSportsBdlEnabled() &&
+      (options.enabledLeagues?.has(league) ??
+        BDL_LEAGUES[league].defaultAutoCreate) &&
+      (!options.isLeagueEnabled || (await options.isLeagueEnabled(league)))
     )
   }
   const maxAttempts = options.maxAttempts ?? 3
@@ -259,7 +267,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     params: BdlParams = {}
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
-    if (!leagueIsOn(path))
+    const slug = matchBdlEndpoint(path)?.league
+    if (!slug || !isBdlLeagueKey(slug) || !(await leagueIsOn(slug)))
       throw new Error('[sports-bdl-client] League disabled')
     const key = fixture ? undefined : options.key
     if (!fixture && !key)
@@ -273,18 +282,24 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         '[sports-bdl-client] Credential found in request parameters'
       )
     for (let attemptIndex = 0; ; attemptIndex++) {
-      if (!leagueIsOn(path))
+      if (!(await leagueIsOn(slug)))
         throw new Error('[sports-bdl-client] League disabled')
-      await limiter.acquire(rate, options.acquireSharedSlot)
-      if (!leagueIsOn(path))
-        throw new Error('[sports-bdl-client] League disabled')
-      const requestedAt = clock.now()
-      const request = { path, params, at: new Date(requestedAt).toISOString() }
-      let res: Response
-      if (fixture) res = await fixture(path, params)
-      else {
+      await limiter.acquire(
+        rate,
+        options.acquireSharedSlot,
+        serviceRole
+          ? async () => {
+              if (!(await leagueIsOn(slug)))
+                throw new Error('[sports-bdl-client] League disabled')
+            }
+          : undefined
+      )
+      let requestedAt = clock.now()
+      const send = async () => {
+        requestedAt = clock.now()
+        if (fixture) return fixture(path, params)
         try {
-          res = await (options.transport ?? fetch)(url.toString(), {
+          return await (options.transport ?? fetch)(url.toString(), {
             method: 'GET',
             headers: { Authorization: key as string },
             signal: AbortSignal.timeout(15_000),
@@ -293,9 +308,21 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         } catch {
           if (serviceRole)
             reportBdlRequestIssue(serviceRole, 'connection failed')
-          throw new Error('[sports-bdl-client] BDL connection failed')
+          return undefined
         }
       }
+      const res =
+        serviceRole === 'dev'
+          ? await sendDevBdlRequest(slug, () => leagueIsOn(slug), send)
+          : await send()
+      const backoff = Math.min(60_000, 1000 * 2 ** attemptIndex)
+      if (!res) {
+        if (attemptIndex + 1 >= maxAttempts)
+          throw new Error('[sports-bdl-client] BDL connection failed')
+        limiter.deferUntil(clock.now() + backoff)
+        continue
+      }
+      const request = { path, params, at: new Date(requestedAt).toISOString() }
 
       const rateLimit = {
         limit: numericHeader(res.headers, 'x-ratelimit-limit'),
@@ -305,7 +332,6 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       const retryable = res.status === 429 || res.status >= 500
       limiter.observeQuota(rateLimit, resetAt(res.headers, now), requestedAt)
       if (retryable) {
-        const backoff = Math.min(60_000, 1000 * 2 ** attemptIndex)
         limiter.deferUntil(
           Math.max(
             now + backoff,
@@ -332,8 +358,12 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       try {
         body = await res.json()
       } catch {
-        if (res.ok && res.status !== 204 && res.status !== 205)
-          throw new Error('[sports-bdl-client] Invalid JSON from provider')
+        if (res.ok && res.status !== 204 && res.status !== 205) {
+          if (attemptIndex + 1 >= maxAttempts)
+            throw new Error('[sports-bdl-client] Invalid JSON from provider')
+          limiter.deferUntil(clock.now() + backoff)
+          continue
+        }
         body = null
       } finally {
         await accounting
@@ -363,10 +393,6 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   ): Promise<T[]> => {
     if (!Number.isSafeInteger(maxPages) || maxPages < 1)
       throw new Error('[sports-bdl-client] Invalid page cap')
-    if (!leagueIsOn(path)) {
-      bdlUrl(path, params)
-      return []
-    }
     const rows: T[] = []
     const cursors = new Set<string>()
     let cursor = params.cursor

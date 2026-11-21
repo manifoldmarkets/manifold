@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -11,7 +12,7 @@ import {
   teamDisplayName,
 } from 'common/sports-schedule'
 import { gameScoreLabel, scoreboardDetailLines } from 'common/sports-scoreboard'
-import { formatSportsPrice } from 'common/sports-price'
+import { formatFeedPrice } from 'common/sports-price'
 import { readableTextColor } from 'common/sports-team-colors'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -139,7 +140,9 @@ export function GameRow(props: {
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
-  const canBet = canBetOnScheduledGame(game, Date.now())
+  const canBet = isSportsBdlEnabled()
+    ? canBetOnScheduledGame(game, Date.now())
+    : !finished
 
   const score =
     game.finalScore ??
@@ -361,7 +364,7 @@ export function GameRow(props: {
   }
 
   if (variant === 'featured') {
-    const details = scoreboardDetailLines(game)
+    const details = isSportsBdlEnabled() ? scoreboardDetailLines(game) : []
     return (
       <section
         id={gameAnchor(game)}
@@ -477,7 +480,7 @@ export function GameRow(props: {
                       type="button"
                       disabled={!canBet}
                       onClick={() => onBet('draw')}
-                      aria-label={`Bet on a draw (${formatSportsPrice(
+                      aria-label={`Bet on a draw (${formatFeedPrice(
                         game.draw.prob
                       )})${
                         backsOutcome(stakeOn(game.draw.answerId))
@@ -492,7 +495,7 @@ export function GameRow(props: {
                     >
                       Draw
                       <br />
-                      {formatSportsPrice(game.draw.prob)}
+                      {formatFeedPrice(game.draw.prob)}
                     </button>
                   )}
                   {displayTeams.map(({ team }, index) => (
@@ -582,10 +585,11 @@ function GameWhen(props: {
   let primary: ReactNode
   let secondary: ReactNode
   const observed =
-    game.gameState ||
-    game.period != null ||
-    game.clock ||
-    game.liveScore?.minute
+    isSportsBdlEnabled() &&
+    (game.gameState ||
+      game.period != null ||
+      game.clock ||
+      game.liveScore?.minute)
       ? gameScoreLabel(game, (at) => dayjs(at).format('MMM D'))
       : null
   if (observed) {
@@ -703,7 +707,7 @@ function TeamLine(props: {
       )}
       {finished ? (
         <span className="text-ink-500 w-14 text-right text-xs tabular-nums sm:w-16">
-          {formatSportsPrice(team.prob)}
+          {formatFeedPrice(team.prob)}
         </span>
       ) : (
         <PriceChip
@@ -845,7 +849,7 @@ function StripCell(props: {
       </Row>
       {finished ? (
         <span className="text-ink-500 flex min-h-[40px] items-center justify-center text-xs tabular-nums">
-          {formatSportsPrice(prob)}
+          {formatFeedPrice(prob)}
         </span>
       ) : (
         <PriceChip
@@ -921,7 +925,9 @@ function TeamBadge({
           : undefined
       }
     >
-      {team.shortName.slice(0, team.entrantId ? 4 : 3).toUpperCase()}
+      {team.shortName
+        .slice(0, isSportsBdlEnabled() && team.entrantId ? 4 : 3)
+        .toUpperCase()}
     </span>
   )
 }
@@ -940,7 +946,7 @@ export function PriceChip(props: {
   className?: string
 }) {
   const { prob, onClick, label, disabled, muted, held, className } = props
-  const price = formatSportsPrice(prob)
+  const price = formatFeedPrice(prob)
   const flash = useProbFlash(Math.round(prob * 100))
   return (
     <button
@@ -1018,7 +1024,7 @@ function StakeLine(props: {
             {order.against ? 'No' : 'Order'}{' '}
           </span>
           {order.against && compact ? 'No ' : ''}
-          {formatMoney(order.amount)} at {formatSportsPrice(order.prob)}
+          {formatMoney(order.amount)} at {formatFeedPrice(order.prob)}
         </span>
       ))}
     </div>

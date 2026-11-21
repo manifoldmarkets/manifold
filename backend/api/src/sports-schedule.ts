@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
 import {
@@ -93,7 +94,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
   ] = await Promise.all([
-    getOfficialGames(pg, index, daysAhead, now),
+    isSportsBdlEnabled()
+      ? getOfficialGames(pg, index, daysAhead, now)
+      : getLegacyOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
     getRaceWeekends(pg, raceDays, now),
     sport === 'f1' && !cursor && !topicIds
@@ -409,6 +412,58 @@ function isAfterCursor(
 //
 // Anyone can stamp a sportsEventId through the API; only markets from the
 // @ManifoldSports account are game rows.
+async function getLegacyOfficialGames(
+  pg: Pg,
+  index: SportsIndex,
+  daysAhead: number,
+  now: number
+): Promise<{
+  games: ScheduleGame[]
+  /** Each game's topic ids. */
+  groupIds: Record<string, string[]>
+}> {
+  const maxGames = 400
+  const rows = await pg.manyOrNone(
+    `select ${contractColumnsToSelect}
+     from contracts
+     where data->>'sportsEventId' is not null
+       and creator_id = any($2)
+       and token = 'MANA'
+       and visibility = 'public'
+       and coalesce(deleted, false) = false
+       and resolution is distinct from 'CANCEL'
+       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
+       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
+     order by close_time asc
+     limit ${maxGames}`,
+    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+  )
+  // Rows come soonest first, so hitting the cap drops the latest games.
+  if (rows.length === maxGames)
+    log.warn(
+      `[sports-schedule] ${maxGames} official games in the window; later games are cut off`
+    )
+  const contracts = rows.map((r) => convertContract(r))
+  const ids = contracts.map((c) => c.id)
+  const [answersByContract, groupIdsByContract] = await Promise.all([
+    getAnswers(pg, ids),
+    getGroupIds(pg, ids),
+  ])
+  const games = contracts
+    .map((c) =>
+      toOfficialGame(
+        c,
+        answersByContract[c.id] ?? [],
+        groupIdsByContract[c.id] ?? [],
+        index,
+        now,
+        false
+      )
+    )
+    .filter((g): g is ScheduleGame => g !== null)
+  return { games, groupIds: groupIdsByContract }
+}
+
 async function getOfficialGames(
   pg: Pg,
   index: SportsIndex,

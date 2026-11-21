@@ -1,3 +1,7 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
 import {
   adminSportsScorePolling,
   adminSportsSetScorePolling,
@@ -24,6 +28,7 @@ jest.mock('shared/supabase/odds-api-usage', () => ({
   }),
 }))
 jest.mock('shared/supabase/sports-score-polling', () => ({
+  getLegacyScorePollingGames: jest.fn(async () => [{ contractId: 'legacy' }]),
   getScorePollingRows: async () => [
     { target: 'league:nba', intervalSeconds: 120 },
     { target: 'game:demo', intervalSeconds: 0 },
@@ -79,4 +84,24 @@ it('publishes league defaults and permits an admin to reset one target', async (
     intervalSeconds: null,
     userId: 'admin',
   })
+})
+
+it('returns the historical Odds-only panel and refuses league writes with rollout off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    const panel = await get({}, { uid: 'admin' })
+    expect(panel.leagues).toBeUndefined()
+    expect(panel.games).toEqual([
+      { contractId: 'legacy', overrideSeconds: null },
+    ])
+    await expect(
+      save({ target: 'league:nba', intervalSeconds: 60 }, { uid: 'admin' })
+    ).rejects.toMatchObject({
+      code: 400,
+      message: 'Unknown setting league:nba',
+    })
+    expect(setScorePolling).not.toHaveBeenCalled()
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })

@@ -132,6 +132,7 @@ const existing = jest.mocked(findLockedSportsMarket),
   hold = jest.mocked(majorCreationHold)
 beforeEach(() => {
   jest.resetAllMocks()
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
   clock.now.mockReturnValue(initial)
   switches.mockResolvedValue({
     ...Object.fromEntries(
@@ -201,6 +202,29 @@ it('creates a priced market with its stored line, fixed answers, notified budget
   const opts = jest.mocked(createBdlClient).mock.calls[0][0]!
   expect(opts.enabledLeagues?.has('nba')).toBe(true)
 })
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+})
+it('returns before reading switches or initializing any client with rollout off', async () => {
+  delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  expect(
+    (await run({ force: true, competitionId: firstPhase('nba').competitionId }))
+      .log
+  ).toEqual([])
+  expect(switches).not.toHaveBeenCalled()
+  expect(createBdlClient).not.toHaveBeenCalled()
+  expect(save).not.toHaveBeenCalled()
+})
+it('rechecks the league before subsequent pages and retry attempts', async () => {
+  await run()
+  const gate = jest.mocked(createBdlClient).mock.calls[0][0]?.isLeagueEnabled
+  expect(gate).toBeDefined()
+  expect(await gate!('nba')).toBe(true)
+  switches.mockResolvedValue({})
+  expect(await gate!('nba')).toBe(false)
+  expect(await gate!('mlb')).toBe(false)
+})
 it('makes zero provider calls when all phases are off or switches cannot be read', async () => {
   switches.mockResolvedValue({})
   expect((await run()).log).toEqual([])
@@ -238,6 +262,10 @@ it('only allows a targeted force and never bypasses cutover or budget', async ()
     competitionId: firstPhase('nba').competitionId,
     dryRun: true,
   }
+  expect((await run(opts)).log).toEqual([])
+  expect(createBdlClient).not.toHaveBeenCalled()
+  expect(schedule).not.toHaveBeenCalled()
+  switches.mockResolvedValue(enabled('nba'))
   expect((await run(opts)).wouldCreate).toBe(1)
   readSettings.mockResolvedValue({
     ...settings('nba'),

@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
 import type { ScheduleGame } from './sports-schedule'
 
 /** Initial schedule window shared by the page and its social preview. */
@@ -24,6 +25,7 @@ export function scheduleFeedTime({
   resumptionTime,
 }: FeedTime) {
   if (
+    isSportsBdlEnabled() &&
     (gameState === 'suspended' || gameState === 'postponed') &&
     resumptionTime != null &&
     Number.isFinite(resumptionTime) &&
@@ -58,7 +60,13 @@ export function getGameDisplayTeams<Team>(game: {
 
 export const compareGameStartTime = (a: GameOrder, b: GameOrder) =>
   scheduleFeedTime(a) - scheduleFeedTime(b) ||
-  (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
+  (isSportsBdlEnabled()
+    ? a.id < b.id
+      ? -1
+      : a.id > b.id
+      ? 1
+      : 0
+    : a.id.localeCompare(b.id))
 
 const safeVolume = (game: GameOrder) =>
   Number.isFinite(game.volume) ? Math.max(0, game.volume) : 0

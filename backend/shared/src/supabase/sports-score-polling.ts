@@ -135,3 +135,30 @@ export function getScorePollingGames(
       })
     )
 }
+
+/** Original Odds-only admin list while the BDL rollout is off. */
+export function getLegacyScorePollingGames(pg: SupabaseDirectClient) {
+  return pg.map(
+    `select id, data->>'question' as question, data->>'slug' as slug,
+              data->>'sportsLeague' as league,
+              data->>'sportsStartTimestamp' as start
+         from contracts
+        where creator_id = any($1)
+          and resolution is null
+          and data->>'sportsEventId' like 'odds:%'
+          and close_time > now() - interval '6 hours'
+          and close_time < now() + interval '16 hours'
+          and (data->>'sportsStartTimestamp')::timestamptz
+                < now() + interval '12 hours'
+        order by start
+        limit 100`,
+    [MANIFOLD_SPORTS_USER_IDS],
+    (r) => ({
+      contractId: r.id as string,
+      question: r.question as string,
+      slug: r.slug as string,
+      sport: sportForLeague(r.league ?? undefined),
+      startTime: Date.parse(r.start),
+    })
+  )
+}

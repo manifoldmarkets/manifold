@@ -53,7 +53,8 @@ export async function refreshLoadedFeed(
   pageSize: number,
   requestLimit: number,
   read: (limit: number, cursor?: string) => Promise<SportsScheduleResponse>,
-  isCurrent: () => boolean
+  isCurrent: () => boolean,
+  readAllPages = true
 ) {
   const target = refreshLimit(previous, pageSize, Infinity)
   const first = await read(Math.min(target, requestLimit))
@@ -62,7 +63,7 @@ export async function refreshLoadedFeed(
   let upcoming = first.games.filter((g) => g.status === 'upcoming').length
   const pages = [first]
   const visited = new Set<string>()
-  while (feed.cursor && upcoming < target) {
+  while (readAllPages && feed.cursor && upcoming < target) {
     const cursor = feed.cursor
     if (visited.has(cursor)) throw new Error('Repeated sports schedule cursor')
     visited.add(cursor)

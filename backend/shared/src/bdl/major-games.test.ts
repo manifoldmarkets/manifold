@@ -23,7 +23,7 @@ function localClient(response: (url: URL) => Page) {
   let now = 0
   const urls: URL[] = []
   const client = createBdlClient({
-    role: 'codex',
+    role: 'recorder',
     key: 'test-only',
     clock: {
       now: () => now,

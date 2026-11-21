@@ -1,3 +1,7 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
 jest.mock('shared/utils', () => ({
   LOCAL_ONLY: true,
   log: { warn: jest.fn() },
@@ -151,3 +155,10 @@ it.each(['1710000000000', 'u'])(
     expect(second.res.json).toHaveBeenCalledWith(end)
   }
 )
+
+it('keeps the disabled attention route off the database', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValueOnce(false)
+  const { next } = await request({}, 'admin')
+  expect(next).toHaveBeenCalledWith(expect.objectContaining({ code: 404 }))
+  expect(createSupabaseDirectClient).not.toHaveBeenCalled()
+})

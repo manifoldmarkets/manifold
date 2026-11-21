@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
 import { BDL_LEAGUES } from './bdl/leagues'
 import type { Sports } from './contract'
 import { parseBdlEventId } from './sports-ids'
@@ -90,6 +91,14 @@ export function getSportsLeagueLabel(
   if (!MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId)) return undefined
   const { sportsEventId, sportsLeague } = contract
   if (!sportsEventId) return undefined
+  if (!isSportsBdlEnabled()) {
+    const odds = parseOddsEventId(sportsEventId)
+    if (odds) return LABEL_BY_ODDS_KEY[odds.sportKey]
+    // BALLDONTLIE's F1 pipeline: session markets and the season's titles.
+    if (parseF1EventId(sportsEventId) || parseF1TitleEventId(sportsEventId))
+      return 'F1'
+    return sportsLeague ? LABEL_BY_LEAGUE[sportsLeague] : undefined
+  }
   if (contract.sportsFixture) return undefined
   const provider = providerOf(contract)
   if (provider === 'bdl') {
@@ -107,6 +116,15 @@ export function getSportsLeagueLabel(
 }
 
 export function sportsLeagueHref(contract: SportsTitle): string {
+  if (!isSportsBdlEnabled()) {
+    const odds = parseOddsEventId(contract.sportsEventId)
+    if (!odds && contract.sportsLeague === WORLD_CUP_2026.sportsLeague)
+      return WORLD_CUP_2026.dashboardPath
+    const sport = sportForMarket({
+      sportsLeague: odds?.sportKey ?? contract.sportsLeague,
+    })
+    return sport === 'other' ? '/sports' : sportPath(sport)
+  }
   const bdl = officialBdlLeague(contract)
   if (bdl) return sportPath(bdl.sportKey)
   const provider = providerOf(contract)

@@ -178,3 +178,24 @@ it('keeps a newer live price when a later page repeats the game', () => {
   // Against what the feed actually took, it stays.
   expect(pruneLiveForPage(live, adoptedGames(feed, page)).G).toEqual(live.G)
 })
+
+it('refreshes the first capped page exactly once with extended paging off', async () => {
+  const games = Array.from({ length: 502 }, (_, i) =>
+    game(String(i).padStart(3, '0'), 3600)
+  )
+  const previous = feedFromResponse(serve(games, { limit: 500 }))
+  const read = jest.fn(async (limit: number, cursor?: string) =>
+    serve(games, { limit, cursor })
+  )
+  const result = await refreshLoadedFeed(
+    previous,
+    PAGE,
+    MAX,
+    read,
+    () => true,
+    false
+  )
+  expect(read.mock.calls).toEqual([[400]])
+  expect(result?.feed.games).toHaveLength(400)
+  expect(result?.feed.cursor).toBeTruthy()
+})

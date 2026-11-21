@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { chunk, first } from 'lodash'
 
 import { getPrivateUsersNotSent, isProd, log } from 'shared/utils'
@@ -53,7 +54,8 @@ export async function sendWeeklyMarketsEmails() {
           if (userIdsToAverageTopicConversionScores[privateUser.id]) {
             delete userIdsToAverageTopicConversionScores[privateUser.id]
           }
-          if (sent) userIdsSentEmails.push(privateUser.id)
+          if (!isSportsBdlEnabled() || sent)
+            userIdsSentEmails.push(privateUser.id)
         })
       )
       const failed = results.filter((r) => r.status === 'rejected')
@@ -97,7 +99,7 @@ export async function getForYouMarkets(
     offset: 0,
     sort: 'score',
     isPrizeMarket: false,
-    excludeOfficialSports: true,
+    ...(isSportsBdlEnabled() && { excludeOfficialSports: true }),
     privateUser,
     token: 'ALL',
     threshold: 200,

@@ -1,4 +1,29 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+jest.mock('./bdl/dev-admission', () => ({
+  sendDevBdlRequest: jest.fn(
+    async (
+      _league: string,
+      enabled: () => Promise<boolean>,
+      send: () => Promise<unknown>
+    ) => {
+      if (!(await enabled()))
+        throw new Error('[sports-bdl-client] League disabled')
+      return send()
+    }
+  ),
+}))
+import { isProd } from 'shared/utils'
+import { getCompetitionSwitches } from './supabase/sports-competition-switches'
+import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
+jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
+jest.mock('./supabase/sports-competition-switches', () => ({
+  getCompetitionSwitches: jest.fn(),
+}))
 jest.mock('shared/utils', () => ({
+  isProd: jest.fn(() => true),
   log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
 }))
 
@@ -27,6 +52,8 @@ const page = (data: unknown[], next_cursor?: string | number | null) => ({
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.mocked(isProd).mockReturnValue(true)
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   process.env.BALLDONTLIE_API_KEY = 'test-key'
   global.fetch = jest
     .fn()
@@ -105,4 +132,29 @@ it('reports whether a key is configured without throwing', () => {
   expect(hasBalldontlieKey()).toBe(true)
   delete process.env.BALLDONTLIE_API_KEY
   expect(hasBalldontlieKey()).toBe(false)
+})
+
+it('keeps prod F1 available while blocking dev transport with the rollout or F1 phases off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  expect(hasBalldontlieKey()).toBe(true)
+  await getF1Events(2026)
+  jest.mocked(isProd).mockReturnValue(false)
+  expect(hasBalldontlieKey()).toBe(false)
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(getCompetitionSwitches).not.toHaveBeenCalled()
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  jest.mocked(getCompetitionSwitches).mockResolvedValue({})
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+it('rechecks explicit F1 authorization across pages on dev', async () => {
+  jest.mocked(isProd).mockReturnValue(false)
+  const f1 = SPORTS_CALENDAR.find((e) => e.provider === 'bdl-f1')!
+  jest
+    .mocked(getCompetitionSwitches)
+    .mockResolvedValueOnce({ [calendarPhaseKey(f1)]: true })
+    .mockResolvedValue({})
+  jest.mocked(global.fetch).mockResolvedValue(page([], 10) as Response)
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(global.fetch).toHaveBeenCalledTimes(1)
 })

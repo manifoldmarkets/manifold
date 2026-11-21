@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 jest.mock('shared/supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(),
 }))
@@ -1061,4 +1065,50 @@ it('uses the resumption time to order and page an old suspended market', async (
   expect(second.nextCursor).toBe(String(resumption) + '_resumed')
   expect(third.games.map((g) => g.id)).toEqual(['later'])
   expect(third.nextCursor).toBeNull()
+})
+
+it('uses the legacy single capped close-time scan and original scores when rollout is off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    const now = Date.now()
+    const odds = {
+      ...official[0].data,
+      creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+      sportsEventId: 'odds:americanfootball_nfl:game',
+      sportsStartTimestamp: new Date(now - 60000).toISOString(),
+      sportsStartKnown: false,
+      sportsLiveStatus: 'IN_PLAY',
+      sportsLiveMinute: '45',
+      sportsHomeScore: 7,
+      sportsAwayScore: 3,
+      sportsLiveUpdatedTime: now,
+      sportsLivePeriod: 1,
+    }
+    officialRows = [{ data: odds }]
+    const pg = createSupabaseDirectClient()
+    const read = jest.spyOn(pg, 'manyOrNone')
+    const transaction = jest.spyOn(pg, 'tx')
+    const getSchedule = sportsSchedule as (
+      props: Parameters<typeof sportsSchedule>[0]
+    ) => ReturnType<typeof sportsSchedule>
+    const response = await getSchedule({ sport: 'all', includeRelated: false })
+    const result = 'result' in response ? response.result : response
+    const queries = read.mock.calls
+      .map(([sql]) => String(sql))
+      .filter((sql) => sql.includes("where data->>'sportsEventId' is not null"))
+    expect(queries).toHaveLength(1)
+    expect(queries[0]).toContain('order by close_time asc')
+    expect(queries[0]).toContain('limit 400')
+    expect(transaction).not.toHaveBeenCalled()
+    expect(result.games[0]).toMatchObject({
+      sportsEventId: odds.sportsEventId,
+      kickoffKnown: true,
+      status: 'live',
+      liveScore: { home: 7, away: 3, minute: '45', status: 'IN_PLAY' },
+    })
+    expect(result.games[0]).not.toHaveProperty('gameState')
+    expect(result.games[0].liveScore).not.toHaveProperty('period')
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })

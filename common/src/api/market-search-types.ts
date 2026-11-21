@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from '../bdl/rollout'
 import { z } from 'zod'
 import type { Contract } from '../contract'
 import { coerceBoolean } from './zod-types'
@@ -149,6 +150,7 @@ export function shouldExcludeOfficialSports(
   props: z.input<typeof fullSearchProps>
 ) {
   if (
+    !isSportsBdlEnabled() ||
     props.term?.trim() ||
     props.topicSlug ||
     props.gids ||

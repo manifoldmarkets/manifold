@@ -19,6 +19,7 @@ const migration = readFileSync(
 )
 const pgp = pgPromise()
 const stats = 'public.sports_bdl_request_stats'
+const slots = 'public.sports_bdl_dev_request_slots'
 const index = 'contracts_sports_event_id_idx'
 const schema = `
   create role anon; create role authenticated; create role service_role bypassrls;
@@ -258,23 +259,63 @@ it('rolls back the whole telemetry transaction on an invalid observation', async
   ).toEqual([{ count: 0 }])
 })
 
-it('denies client access including truncate and lets the backend maintain aggregates', async () => {
+async function checkServiceOnlyAccess(table: string) {
   const security = await db.query<{
     enabled: boolean
     policies: number
   }>(`select relrowsecurity as enabled,
-    (select count(*)::int from pg_policy where polrelid=c.oid) as policies from pg_class c where oid='${stats}'::regclass`)
+    (select count(*)::int from pg_policy where polrelid=c.oid) as policies from pg_class c where oid='${table}'::regclass`)
   expect(security.rows).toEqual([{ enabled: true, policies: 0 }])
   for (const role of ['anon', 'authenticated', 'service_role']) {
     const acl = await db.query<{ privilege: string; allowed: boolean }>(
       `select privilege,has_table_privilege($1,$2,privilege) as allowed
       from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','TRIGGER','REFERENCES']) as p(privilege)`,
-      [role, stats]
+      [role, table]
     )
     expect(acl.rows.filter((r) => r.allowed).map((r) => r.privilege)).toEqual(
       role === 'service_role' ? ['SELECT', 'INSERT', 'UPDATE'] : []
     )
   }
+}
+
+it('protects dev admission slots from client privileges and permits only service reads, inserts and updates', async () => {
+  await checkServiceOnlyAccess(slots)
+  const reserve = `insert into ${slots} (scope, next_request_at) values ('global', '2026-11-21T01:00:00Z')`
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    await db.exec('set role ' + role)
+    try {
+      if (role === 'service_role') {
+        await db.exec(reserve)
+        await db.exec(
+          `update ${slots} set next_request_at = next_request_at + interval '1 minute' where scope='global'`
+        )
+        expect(
+          (
+            await db.query(
+              `select next_request_at = timestamptz '2026-11-21T01:01:00Z' as updated from ${slots} where scope='global'`
+            )
+          ).rows
+        ).toEqual([{ updated: true }])
+      } else {
+        for (const sql of [
+          `select * from ${slots}`,
+          reserve,
+          `update ${slots} set next_request_at = now()`,
+        ]) {
+          await expect(db.exec(sql)).rejects.toMatchObject({ code: '42501' })
+        }
+      }
+      for (const sql of [`delete from ${slots}`, `truncate ${slots}`]) {
+        await expect(db.exec(sql)).rejects.toMatchObject({ code: '42501' })
+      }
+    } finally {
+      await db.exec('reset role')
+    }
+  }
+})
+
+it('denies client access including truncate and lets the backend maintain aggregates', async () => {
+  await checkServiceOnlyAccess(stats)
   for (const role of ['anon', 'authenticated']) {
     await db.exec('set role ' + role)
     try {

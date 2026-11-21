@@ -1,3 +1,6 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
+import { formatFeedPrice } from './sports-price'
+jest.mock('./bdl/rollout', () => ({ isSportsBdlEnabled: jest.fn(() => true) }))
 import {
   compareGameStartTime,
   compareGameVolume,
@@ -55,4 +58,27 @@ it('orders resumed games with normal games and race sessions and breaks same-slo
     ])
   expect(selectFeaturedGame([moved, race], undefined, 'start')?.id).toBe('f1')
   expect(selectFeaturedGame([{ ...race, volume: 100 }, moved])?.id).toBe('f1')
+})
+
+it('retains legacy card prices, kickoff and same-time order unless enabled', () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    expect([0.004, 0.996, 0.5].map(formatFeedPrice)).toEqual([
+      '0%',
+      '100%',
+      '50%',
+    ])
+    const moved = {
+      ...game,
+      gameState: 'suspended' as const,
+      resumptionTime: resume,
+    }
+    expect(scheduleFeedTime(moved)).toBe(kickoff)
+    const earlier = { ...game, id: 'a' }
+    const later = { ...game, id: 'Z' }
+    expect(compareGameStartTime(earlier, later)).toBe('a'.localeCompare('Z'))
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
+  expect([0.004, 0.996].map(formatFeedPrice)).toEqual(['<1%', '>99%'])
 })

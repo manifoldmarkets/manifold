@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { AdminBdlPolling } from './admin-bdl-polling'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -47,9 +48,10 @@ export function AdminScorePolling() {
     }
   }
 
-  const bdlPanel = (
+  const bdlPanel = isSportsBdlEnabled() && (
     <AdminBdlPolling leagues={data?.leagues} pending={pending} save={save} />
   )
+  if (!data && !isSportsBdlEnabled()) return <LoadingIndicator />
   if (!data)
     return (
       <Col className="gap-4">
@@ -279,7 +281,9 @@ function GamesNow(props: {
         Games on now or in the next 12 hours
       </span>
       <span className="text-ink-500 text-xs">
-        Override the live score interval for one game.
+        {isSportsBdlEnabled()
+          ? 'Override the live score interval for one game.'
+          : 'Speed up one big game without changing its sport. It costs the same as changing the whole league, but only while that game is on.'}
       </span>
       {data.games.length === 0 && (
         <span className="text-ink-500 text-sm">No games in that window.</span>

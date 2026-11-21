@@ -79,7 +79,7 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
-import { publicSportsScoreSchema } from 'common/sports-scoreboard'
+import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import type { BdlOperatorPanel } from 'common/bdl/operator-panel'
@@ -1519,7 +1519,7 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         contractId: z.string().min(1),
-        score: publicSportsScoreSchema,
+        score: rolloutSportsScoreSchema,
       })
       .strict(),
   },

@@ -1,3 +1,7 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
 import { getBdlOperatorPanel } from 'shared/bdl/operator-panel-queries'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { adminSportsBdlCompetitions } from './admin-sports-bdl-competitions'
@@ -30,4 +34,12 @@ it('rejects a non-admin before accessing the database', async () => {
 it('returns the shared read model for an admin', async () => {
   await expect(handle({}, { uid: 'admin' })).resolves.toEqual({ leagues: [] })
   expect(getBdlOperatorPanel).toHaveBeenCalledWith('pg')
+})
+
+it('keeps the disabled operator route off the database', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValueOnce(false)
+  await expect(handle({}, { uid: 'admin' })).rejects.toMatchObject({
+    code: 404,
+  })
+  expect(createSupabaseDirectClient).not.toHaveBeenCalled()
 })

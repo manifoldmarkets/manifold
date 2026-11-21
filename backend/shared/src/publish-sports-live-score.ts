@@ -1,6 +1,6 @@
 import { getApiUrl } from 'common/api/utils'
 import { SportsLiveScore } from 'common/sports-schedule'
-import { publicSportsScoreSchema } from 'common/sports-scoreboard'
+import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { LOCAL_DEV, log } from 'shared/utils'
 
 /**
@@ -21,7 +21,7 @@ export async function publishSportsLiveScore(
     return
   }
 
-  const payload = publicSportsScoreSchema.safeParse(score)
+  const payload = rolloutSportsScoreSchema.safeParse(score)
   if (!payload.success) {
     log.error(`[sports-live] invalid score for ${contractId}; skipping push`)
     return

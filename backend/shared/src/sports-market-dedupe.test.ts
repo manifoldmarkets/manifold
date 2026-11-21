@@ -249,7 +249,24 @@ it.each(unmatched)(
     expect(await findLockedSportsMarket(tx, candidate, 'moneyline')).toBeNull()
   }
 )
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+})
+it('uses only the original event lock for a legacy Odds moneyline with rollout off', async () => {
+  process.env = { ...process.env }
+  delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  await insert('bdl-counterpart', {
+    ...candidate,
+    sportsMarketType: 'moneyline',
+  })
+  expect(
+    await findLockedSportsMarket(tx, odds, 'moneyline', undefined, true)
+  ).toBeNull()
+  expect(locks).toEqual(['sports-moneyline:' + odds.sportsEventId])
+})
 it('only compares Odds markets for BDL moneylines', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
   await insert('odds-market', odds)
   expect(await findLockedSportsMarket(tx, candidate, 'winner')).toBeNull()
   const anotherOdds = { ...odds, sportsEventId: 'odds:baseball_mlb:other' }
@@ -282,6 +299,7 @@ it('preserves preexisting lookup behavior for football-data and unidentifiable O
 })
 
 it('protects an open BDL moneyline when an operator switches back to Odds without changing other legacy lookups', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
   await insert('bdl-game', { ...candidate, sportsMarketType: 'moneyline' })
   const latest = { ...odds, sportsEventId: 'odds:baseball_mlb:switched-back' }
   expect(await findLockedSportsMarket(tx, latest, 'moneyline')).toBeNull()

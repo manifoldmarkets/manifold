@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 jest.mock('shared/websockets/helpers', () => ({
   broadcastSportsLiveScore: jest.fn(),
 }))
@@ -64,4 +68,27 @@ it('delivers an authenticated scheduler score to the API switchboard', async () 
     send({ apiSecret: 'test-secret', contractId: 'game', score })
   ).resolves.toEqual({ success: true })
   expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', score)
+})
+
+it('keeps only legacy score fields and rejects the extended protocol when rollout is off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  process.env.API_SECRET = 'test-secret'
+  try {
+    await send({
+      apiSecret: 'test-secret',
+      contractId: 'game',
+      score: { ...score, sportsLivePeriod: 3 },
+    })
+    expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', score)
+    await expect(
+      send({
+        apiSecret: 'test-secret',
+        contractId: 'game',
+        score: { ...score, sportsLiveStatus: 'SUSPENDED' },
+      })
+    ).rejects.toThrow()
+    expect(broadcastSportsLiveScore).toHaveBeenCalledTimes(1)
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })
