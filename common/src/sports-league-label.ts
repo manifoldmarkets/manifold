@@ -1,6 +1,12 @@
 import { isSportsBdlEnabled } from './bdl/rollout'
 import { BDL_LEAGUES } from './bdl/leagues'
-import type { Sports } from './contract'
+import {
+  isMultiCpmm,
+  isSportsContract,
+  type Contract,
+  type MultiContract,
+  type Sports,
+} from './contract'
 import { parseBdlEventId } from './sports-ids'
 import { providerOf } from './sports-provider'
 import { sportForMarket, sportPath } from './sports-schedule'
@@ -113,6 +119,22 @@ export function getSportsLeagueLabel(
   return provider !== 'fixture' && sportsLeague
     ? LABEL_BY_LEAGUE[sportsLeague]
     : undefined
+}
+
+export function hasPublicTeamScoreboard(
+  contract: Contract
+): contract is MultiContract & Sports {
+  return (
+    isSportsBdlEnabled() &&
+    isSportsContract(contract) &&
+    isMultiCpmm(contract) &&
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    contract.sportsMarketType === 'moneyline' &&
+    contract.visibility === 'public' &&
+    contract.token === 'MANA' &&
+    !contract.deleted &&
+    officialBdlLeague(contract)?.adapter === 'us-majors'
+  )
 }
 
 export function sportsLeagueHref(contract: SportsTitle): string {

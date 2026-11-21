@@ -22,7 +22,10 @@ import { shouldHideGraph } from 'common/contract-params'
 import { movedProbability } from 'common/multi-chart'
 import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
-import { getSportsLeagueLabel } from 'common/sports-league-label'
+import {
+  getSportsLeagueLabel,
+  hasPublicTeamScoreboard,
+} from 'common/sports-league-label'
 import { DAY_MS } from 'common/util/time'
 import { maxBy, uniqBy } from 'lodash'
 import Image from 'next/image'
@@ -60,6 +63,7 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { NumericResolutionPanel } from 'web/components/numeric-resolution-panel'
 import { MarketTitleLabel } from 'web/components/contract/market-title-label'
+import { MarketTeamScoreboard } from 'web/components/sports/market-team-scoreboard'
 import { PerpMarketExplainer } from 'web/components/perps/perp-market-explainer'
 import { ResolutionPanel } from 'web/components/resolution-panel'
 import { Rating, ReviewPanel } from 'web/components/reviews/stars'
@@ -439,6 +443,12 @@ export function ContractPageContent(props: ContractParams) {
                   isCashContract={isCashContract}
                 />
               </Row>
+              {hasPublicTeamScoreboard(liveContract) && (
+                <MarketTeamScoreboard
+                  key={liveContract.id}
+                  contract={liveContract}
+                />
+              )}
               <Col className="gap-2">
                 <AnswerBetTrackingLocationContext.Provider value="contract page answer">
                   <ContractOverview

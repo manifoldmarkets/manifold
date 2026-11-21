@@ -1,10 +1,12 @@
 import { isSportsBdlEnabled } from './bdl/rollout'
 jest.mock('./bdl/rollout', () => ({ isSportsBdlEnabled: jest.fn(() => true) }))
+import type { Contract } from './contract'
 import { SPORTS_CALENDAR } from './sports-calendar'
 import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  hasPublicTeamScoreboard,
   sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
 } from './sports-league-label'
@@ -133,6 +135,38 @@ describe('getSportsLeagueLabel', () => {
           sportsEventId,
         })
       ).toBe('/sports/world-cup-2026')
+  })
+
+  it('only mounts the live panel for an official public major-league winner market', () => {
+    const game = {
+      creatorId: sports,
+      sportsEventId: 'bdl:nba:1',
+      sportsMarketType: 'moneyline',
+      mechanism: 'cpmm-multi-2',
+      outcomeType: 'MULTIPLE_CHOICE',
+      visibility: 'public',
+      token: 'MANA',
+    } as unknown as Contract
+    jest.mocked(isSportsBdlEnabled).mockReturnValueOnce(false)
+    expect(hasPublicTeamScoreboard(game)).toBe(false)
+    expect(hasPublicTeamScoreboard(game)).toBe(true)
+    for (const changes of [
+      { visibility: 'private' },
+      { visibility: 'unlisted' },
+      { token: 'CASH' },
+      { deleted: true },
+      { creatorId: 'other' },
+      { sportsFixture: true },
+      { sportsMarketType: 'prop' },
+      { sportsEventId: 'bdl:fifa/worldcup:1' },
+      { sportsEventId: 'bdl-f1:374:1869' },
+      { sportsEventId: 'odds:basketball_nba:1' },
+      { mechanism: 'cpmm-1' },
+      { outcomeType: 'NUMBER' },
+    ])
+      expect(hasPublicTeamScoreboard({ ...game, ...changes } as Contract)).toBe(
+        false
+      )
   })
 
   it('has a label for every sport key on the calendar', () => {
