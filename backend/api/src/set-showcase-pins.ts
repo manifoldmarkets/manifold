@@ -13,7 +13,7 @@ export const setShowcasePins: APIHandler<'set-showcase-pins'> =
       await pg.tx(async (tx) => {
         // Checked and saved under the user row lock unclaim-trophy also
         // takes, so an unclaim can't land between the check and the save.
-        await tx.none(`select 1 from users where id = $1 for no key update`, [
+        await tx.one(`select 1 from users where id = $1 for no key update`, [
           auth.uid,
         ])
         const claims = await getTrophyClaims(tx, auth.uid)

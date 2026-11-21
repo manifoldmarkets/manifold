@@ -127,6 +127,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       </Col>
     )
   }
+  // A later refresh failed: the stats shown may be out of date.
+  const refreshFailed = !!achievementsError && !achievementsLoading
   if (!trophies) {
     return (
       <Col className="gap-6 pt-4">
@@ -135,14 +137,13 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
             ? "Trophies couldn't load. Try again later."
             : 'Loading trophies...'}
         </div>
+        {refreshFailed && <StatsRefreshNotice onRetry={retryAchievements} />}
         <AchievementsSection data={achievements} />
       </Col>
     )
   }
 
   const { claims, starter } = trophies
-  // A later refresh failed: the stats shown may be out of date.
-  const refreshFailed = !!achievementsError && !achievementsLoading
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
   const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
@@ -213,17 +214,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         )}
       </Col>
 
-      {refreshFailed && (
-        <Row className="text-ink-500 items-center gap-2 text-sm">
-          <span>Couldn't refresh these stats.</span>
-          <button
-            className="text-primary-600 font-medium hover:underline"
-            onClick={retryAchievements}
-          >
-            Try again
-          </button>
-        </Row>
-      )}
+      {refreshFailed && <StatsRefreshNotice onRetry={retryAchievements} />}
 
       {isOwnProfile && (
         <ShowcaseSlotTracker
@@ -283,6 +274,20 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         </Col>
       )}
     </Col>
+  )
+}
+
+function StatsRefreshNotice(props: { onRetry: () => void }) {
+  return (
+    <Row className="text-ink-500 items-center gap-2 text-sm">
+      <span>Couldn't refresh these stats.</span>
+      <button
+        className="text-primary-600 font-medium hover:underline"
+        onClick={props.onRetry}
+      >
+        Try again
+      </button>
+    </Row>
   )
 }
 

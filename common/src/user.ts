@@ -109,6 +109,9 @@ export type User = {
   shouldShowWelcome?: boolean
   lastBetTime?: number
   currentBettingStreak?: number
+  // The longest streak that has ended, kept when the streak resets (since
+  // Nov 2026; earlier ones only show through streak bonus txns).
+  longestBettingStreak?: number
   streakForgiveness: number
   lastStreakFreezeTime?: number // timestamp when a streak freeze was last used
   hasSeenLoanModal?: boolean

@@ -42,6 +42,7 @@ jest.mock('common/trophies', () => {
 import { claimTrophy } from 'api/claim-trophy'
 import { loadUserAchievements } from 'api/get-user-achievements'
 import { getUserTrophies } from 'api/get-user-trophies'
+import { setShowcasePins } from 'api/set-showcase-pins'
 import { unclaimTrophy } from 'api/unclaim-trophy'
 import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -71,8 +72,11 @@ const client = {
   },
   many: async (sql: string, params?: unknown) => rows(sql, params),
   manyOrNone: async (sql: string, params?: unknown) => rows(sql, params),
+  // Like pg-promise: a statement run with none() must not return rows.
   none: async (sql: string, params?: unknown) => {
-    await rows(sql, params)
+    if ((await rows(sql, params)).length) {
+      throw new Error('No return data was expected.')
+    }
   },
   multi: async (sql: string) => (await db.exec(sql)).map((r) => r.rows),
   tx: async (...args: unknown[]) => {
@@ -519,6 +523,41 @@ describe('other trophies', () => {
     expect(result.newlyClaimed.map((c) => c.milestoneId)).toEqual(['goldfish'])
     expect(result.rewardAmount).toBe(0)
     expect(await rewardTxns('u')).toHaveLength(0)
+  })
+})
+
+describe('showcase pins', () => {
+  const pin = async (uid: string, pins: string[], profileUserId = uid) =>
+    (await setShowcasePins(
+      { userId: profileUserId, pins },
+      { uid } as never,
+      {} as never
+    )) as APIResponse<'set-showcase-pins'>
+  const savedPins = async (userId: string) =>
+    (
+      await rows(`select pins from user_showcase where user_id = $1`, [userId])
+    )[0]?.pins
+
+  it('saves pins of claimed trophies, and refuses others', async () => {
+    await addUser('u')
+    await bet('u', 'm1', 10, 0)
+    await claim('u', 'starter-trades', 'first-trade')
+    expect(await pin('u', ['trophy-starter-trades'])).toEqual({
+      pins: ['trophy-starter-trades'],
+    })
+    expect(await savedPins('u')).toEqual(['trophy-starter-trades'])
+    await expect(pin('u', ['trophy-starter-days'])).rejects.toMatchObject({
+      code: 400,
+    })
+    expect(await savedPins('u')).toEqual(['trophy-starter-trades'])
+  })
+
+  it("refuses pins for another account's profile", async () => {
+    await addUser('u')
+    await addUser('other')
+    await expect(pin('u', [], 'other')).rejects.toMatchObject({ code: 403 })
+    expect(await savedPins('other')).toBeUndefined()
+    expect(await savedPins('u')).toBeUndefined()
   })
 })
 

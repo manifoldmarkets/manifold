@@ -328,7 +328,8 @@ const DAYS_PER_YEAR = 365
 
 function formatStat(def: TrophyDefinition, value: number) {
   if (def.unit === 'years') {
-    return `${Math.round(value * DAYS_PER_YEAR).toLocaleString()} days`
+    // Rounded down, so it never shows a full year before the anniversary.
+    return `${Math.floor(value * DAYS_PER_YEAR).toLocaleString()} days`
   }
   if (def.formatPrefix) return formatTrophyValue(def, value)
   return `${formatTrophyValue(def, value)} ${def.unit}`
@@ -337,7 +338,8 @@ function formatStat(def: TrophyDefinition, value: number) {
 function formatRemaining(def: TrophyDefinition, remaining: number) {
   const value = Math.max(remaining, 0)
   if (def.unit === 'years') {
-    return `${Math.ceil(value * DAYS_PER_YEAR).toLocaleString()} days`
+    const days = Math.ceil(value * DAYS_PER_YEAR)
+    return `${days.toLocaleString()} ${days === 1 ? 'day' : 'days'}`
   }
   return formatTrophyValue(def, value)
 }
