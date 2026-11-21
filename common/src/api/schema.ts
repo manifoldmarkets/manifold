@@ -18,6 +18,11 @@ import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
+import {
+  parseSportsAttentionCursor,
+  SPORTS_ATTENTION_MAX_LIMIT,
+  type SportsAttentionPage,
+} from 'common/bdl/attention'
 import type { Bet, LimitBet } from 'common/bet'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import {
@@ -5360,6 +5365,29 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { switches: CompetitionSwitchState[] },
+  },
+  'admin-sports-bdl-attention': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        limit: z
+          .union([z.number(), z.string().regex(/^[1-9]\d{0,2}$/)])
+          .pipe(z.coerce.number().int().min(1).max(SPORTS_ATTENTION_MAX_LIMIT))
+          .optional(),
+        cursor: z
+          .string()
+          .max(256)
+          .refine((value) => {
+            const cursor = parseSportsAttentionCursor(value)
+            return cursor !== null && cursor.asOf <= Date.now()
+          })
+          .optional(),
+      })
+      .strict(),
+    returns: {} as SportsAttentionPage,
   },
   'admin-sports-set-competition-switch': {
     method: 'POST',

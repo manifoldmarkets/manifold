@@ -14,6 +14,7 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { NoSEO } from 'web/components/NoSEO'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
@@ -30,6 +31,7 @@ import {
 } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
 import { AdminCompetitionSwitches } from 'web/components/sports/admin-competition-switches'
+import { AdminSportsAttention } from 'web/components/sports/admin-sports-attention'
 import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
@@ -250,6 +252,11 @@ function OddsApiSelectAll(props: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SportsAdminPage() {
+  const user = useUser()
+  return <SportsAdmin key={user?.id ?? 'signed-out'} />
+}
+
+function SportsAdmin() {
   useRedirectIfSignedOut()
   // Both hooks run on every render; `useAdmin() || useDev()` skipped one.
   const admin = useAdmin()
@@ -508,7 +515,6 @@ export default function SportsAdminPage() {
 
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
-  const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set())
 
   if (!isAdmin) return <></>
 
@@ -726,7 +732,7 @@ export default function SportsAdminPage() {
   const filteredMarkets =
     marketFilter === 'ALL'
       ? markets
-      : marketFilter === 'NEEDS_ATTENTION'
+      : marketFilter === 'OVERDUE'
       ? markets.filter((m) => m.needsAttention)
       : marketFilter === 'RESOLVED'
       ? markets.filter((m) => m.resolution)
@@ -1701,7 +1707,7 @@ export default function SportsAdminPage() {
                   All: 'ALL',
                   Open: 'OPEN',
                   Resolved: 'RESOLVED',
-                  'Needs attention': 'NEEDS_ATTENTION',
+                  'Closed over 3h': 'OVERDUE',
                 }}
                 setChoice={(v) => setMarketFilter(v as string)}
                 color="indigo-dark"
@@ -1710,14 +1716,6 @@ export default function SportsAdminPage() {
                 {marketsLoading ? 'Loading…' : 'Refresh'}
               </Button>
             </Row>
-
-            {alertMarkets.length > 0 && (
-              <AlertBox
-                title={`${alertMarkets.length} market(s) need attention`}
-              >
-                Past close time and unresolved — check the Alerts section below.
-              </AlertBox>
-            )}
 
             {marketsLoading ? (
               <LoadingIndicator />
@@ -1756,7 +1754,7 @@ export default function SportsAdminPage() {
                           </a>
                           {m.needsAttention && (
                             <span className="ml-2 text-xs font-medium text-red-600">
-                              ⚠ overdue
+                              Closed over 3h
                             </span>
                           )}
                         </td>
@@ -1885,79 +1883,8 @@ export default function SportsAdminPage() {
           </Col>
         </Section>
 
-        {/* ── 6. Alerts ── */}
-        <Section
-          title={`6. Alerts${
-            alertMarkets.length > 0
-              ? ` (${
-                  alertMarkets.filter((m) => !handledAlerts.has(m.id)).length
-                } active)`
-              : ''
-          }`}
-        >
-          <Col className="gap-3">
-            {alertMarkets.filter((m) => !handledAlerts.has(m.id)).length ===
-            0 ? (
-              <p className="text-sm text-green-600">✅ No active alerts.</p>
-            ) : (
-              alertMarkets
-                .filter((m) => !handledAlerts.has(m.id))
-                .map((m) => (
-                  <Row
-                    key={m.id}
-                    className="items-start justify-between rounded border border-red-200 bg-red-50 p-3"
-                  >
-                    <Col className="gap-1">
-                      <span className="text-sm font-medium text-red-700">
-                        ⚠ Unresolved past close time
-                      </span>
-                      <a
-                        href={m.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary-600 text-sm hover:underline"
-                      >
-                        {m.question}
-                      </a>
-                      <span className="text-ink-500 text-xs">
-                        Closed:{' '}
-                        {new Date(m.closeTime).toLocaleString('en-GB', {
-                          timeZone: 'UTC',
-                        })}{' '}
-                        UTC
-                      </span>
-                    </Col>
-                    <Button
-                      size="xs"
-                      color="gray-outline"
-                      onClick={() =>
-                        setHandledAlerts((prev) => new Set([...prev, m.id]))
-                      }
-                    >
-                      Mark handled
-                    </Button>
-                  </Row>
-                ))
-            )}
-
-            {/* Handled alerts (collapsed) */}
-            {handledAlerts.size > 0 && (
-              <details className="text-ink-400 text-xs">
-                <summary className="cursor-pointer">
-                  {handledAlerts.size} handled alert(s)
-                </summary>
-                <Col className="mt-2 gap-1">
-                  {alertMarkets
-                    .filter((m) => handledAlerts.has(m.id))
-                    .map((m) => (
-                      <span key={m.id} className="line-through">
-                        {m.question}
-                      </span>
-                    ))}
-                </Col>
-              </details>
-            )}
-          </Col>
+        <Section title="6. Markets needing attention">
+          <AdminSportsAttention overdue={alertMarkets} />
         </Section>
 
         {/* ── 7. Community Markets ── */}

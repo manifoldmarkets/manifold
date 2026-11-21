@@ -164,6 +164,19 @@ export const F1_CLOSE_BUFFER_HOURS: Record<F1SessionKind, number> = {
 export const F1_RESOLVE_DELAY_HOURS = 2
 
 /**
+ * An unresolved market this long after it was due to pay out needs a person.
+ * The provider posts results about ten minutes after a session, so a market
+ * still waiting by then has a feed problem, and in late 2026 those lasted
+ * days.
+ */
+export const F1_ATTENTION_AFTER_MS = 2 * HOUR_MS
+/**
+ * A postponed session waits this long past its old time for a new date or
+ * a cancellation before its market needs a person.
+ */
+export const F1_POSTPONED_ATTENTION_MS = 14 * DAY_MS
+
+/**
  * How far ahead sessions get markets, and how far the F1 page looks: five
  * weeks, so the next few races (and the first one after a summer break)
  * are already open.
