@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ExpandableImage } from 'web/components/widgets/expandable-image'
 import { useLinkPreview } from 'web/hooks/use-link-previews'
 import { getSocialLinks } from './social-text'
 import { SocialLink } from './social-link'
@@ -17,22 +18,22 @@ function LinkPreviewCard({ url }: { url: string }) {
 
   const image = preview.image
   return (
-    <SocialLink
-      href={url}
-      className="border-ink-200 dark:border-ink-300 hover:border-primary-400 hover:bg-canvas-50 mt-3 block overflow-hidden rounded-xl border transition-colors"
-    >
+    <div className="border-ink-200 dark:border-ink-300 mt-3 flex flex-col overflow-hidden rounded-xl border">
       {image && /^https?:\/\//i.test(image) && !imageFailed && (
-        <img
+        <ExpandableImage
           src={image}
           alt=""
-          loading="lazy"
+          buttonLabel="Expand link preview image"
           decoding="async"
           referrerPolicy="no-referrer"
           onError={() => setImageFailed(true)}
-          className="bg-canvas-50 aspect-[1.91/1] max-h-64 w-full object-cover"
+          className="block h-auto max-h-64 max-w-full"
         />
       )}
-      <div className="space-y-1 px-3 py-2.5">
+      <SocialLink
+        href={url}
+        className="hover:bg-canvas-50 block space-y-1 px-3 py-2.5"
+      >
         <div className="text-ink-600 truncate text-xs">
           {new URL(url).hostname}
         </div>
@@ -44,7 +45,7 @@ function LinkPreviewCard({ url }: { url: string }) {
             {preview.description}
           </div>
         )}
-      </div>
-    </SocialLink>
+      </SocialLink>
+    </div>
   )
 }

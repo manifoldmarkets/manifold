@@ -361,6 +361,8 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         replyToAnswerId: z.string().optional(),
         replyToBetId: z.string().optional(),
+        // Mods and admins only
+        isModComment: z.boolean().optional(),
       })
       .strict(),
   },
@@ -3413,7 +3415,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
+    cache: 'private, no-store',
     returns: {} as {
       // Personalized feed data
       contracts: Contract[]
@@ -3429,12 +3431,19 @@ export const API = (_apiTypeCheck = {
       activityComments: CommentWithTotalReplies[]
       activityNewContracts: Contract[]
       activityRelatedContracts: Contract[]
+      socialPosts: SocialPost[]
+      nextSocialCursor: string | null
     },
     props: z
       .object({
         userId: z.string().optional(),
         feedLimit: z.coerce.number().gt(0).lte(50).default(3),
         feedOffset: z.coerce.number().gte(0).default(0),
+        socialCursor: socialCursorSchema.optional(),
+        includeSocial: z
+          .enum(['true', 'false'])
+          .transform((v) => v === 'true')
+          .default('true'),
         activityLimit: z.coerce.number().gt(0).lte(50).default(5),
         activityOffset: z.coerce.number().gte(0).default(0),
         ignoreContractIds: z.array(z.string()).optional(),
@@ -5181,6 +5190,10 @@ export const API = (_apiTypeCheck = {
         content: socialPostDraftSchema,
         parentId: z.string().optional(),
         source: socialPostSourceSchema.optional(),
+        // Also post the text and images as a comment on the source market, in
+        // the same transaction. Rejected unless the post is top-level, shared
+        // from a market, and has text or an image.
+        alsoComment: z.boolean().optional(),
       })
       .strict()
       .refine(
@@ -5207,7 +5220,7 @@ export const API = (_apiTypeCheck = {
   'get-social-posts': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: true,
+    authed: false,
     cache: 'no-store',
     props: z
       .object({
@@ -5239,7 +5252,7 @@ export const API = (_apiTypeCheck = {
   'get-social-post': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: true,
+    authed: false,
     cache: 'no-store',
     props: z.object({ id: z.string() }).strict(),
     returns: {} as SocialPostDetail,
@@ -5247,7 +5260,7 @@ export const API = (_apiTypeCheck = {
   'get-social-likers': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: true,
+    authed: false,
     cache: 'no-store',
     props: z
       .object({
@@ -5257,6 +5270,25 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SocialLikerPage,
+  },
+  'repost-social-post': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        source: socialPostSourceSchema,
+        remove: z.boolean().default(false),
+      })
+      .strict(),
+    returns: {} as SocialPost,
+  },
+  'set-social-thread-subscription': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ id: z.string(), muted: z.boolean() }).strict(),
+    returns: {} as { success: true },
   },
   // Upcoming, live and just-finished games across every sport, each with the
   // ids of its related markets (props, totals, community side-bets). Powers the

@@ -13,7 +13,7 @@ export async function notifySocialMentions(
   pg: SupabaseDirectClient,
   post: SocialRow,
   actor: User,
-  parentAuthorId?: string
+  _parentAuthorId?: string
 ) {
   if (actor.isBot || post.deleted_time) return
   if (!getSocialMentionIds(post.rich_content).length) return
@@ -23,7 +23,7 @@ export async function notifySocialMentions(
   const current = await pg.oneOrNone<SocialRow & { root_user_id: string }>(
     `select p.*, root.user_id as root_user_id
      from social_posts p join social_posts root on root.id=p.root_id
-     where p.id=$1 and p.deleted_time is null`,
+     where p.id=$1 and p.deleted_time is null and p.hidden_time is null and root.hidden_time is null`,
     [post.id]
   )
   if (!current) return
@@ -47,9 +47,15 @@ export async function notifySocialMentions(
       )
         return
       // A mention still matters when this reader has disabled reply notices.
+      const subscribed = current.parent_id
+        ? await pg.oneOrNone(
+            'select 1 from social_thread_subscriptions where root_id=$1 and user_id=$2 and not muted',
+            [current.root_id, userId]
+          )
+        : null
       if (
         current.parent_id &&
-        userId === parentAuthorId &&
+        subscribed &&
         getNotificationDestinationsForUser(recipient, 'social_replies')
           .sendToBrowser
       )

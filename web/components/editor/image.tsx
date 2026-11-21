@@ -1,58 +1,30 @@
 import { Image } from '@tiptap/extension-image'
-import clsx from 'clsx'
-import { useState } from 'react'
-import { createPortal } from 'react-dom'
+import { ExpandableImage } from 'web/components/widgets/expandable-image'
+
+type ImageAttrs = { src: string; alt?: string; title?: string }
 
 export const BasicImage = Image.extend({
-  renderReact: (attrs: any) => (
+  renderReact: (attrs: ImageAttrs) => (
     <img loading="lazy" {...attrs} alt={attrs.alt ?? ''} />
   ),
 })
 
 export const DisplayImage = Image.extend({
-  renderReact: (attrs: any) => <ExpandingImage {...attrs} />,
+  renderReact: (attrs: ImageAttrs) => (
+    <ExpandableImage
+      {...attrs}
+      height={128}
+      className="h-[128px] object-contain"
+    />
+  ),
 })
 
 export const MediumDisplayImage = Image.extend({
-  renderReact: (attrs: any) => <ExpandingImage size={'md'} {...attrs} />,
+  renderReact: (attrs: ImageAttrs) => (
+    <ExpandableImage
+      {...attrs}
+      height={400}
+      className="max-h-[400px] object-contain"
+    />
+  ),
 })
-
-function ExpandingImage(props: {
-  src: string
-  alt?: string
-  title?: string
-  size?: 'md'
-}) {
-  const [expanded, setExpanded] = useState(false)
-  const { size, alt, ...rest } = props
-
-  return (
-    <>
-      <img
-        loading="lazy"
-        alt={alt ?? ''}
-        {...rest}
-        onClick={() => setExpanded(true)}
-        className={clsx(
-          'cursor-pointer object-contain',
-          size === 'md' ? 'max-h-[400px]' : 'h-[128px]'
-        )}
-        height={size === 'md' ? 400 : 128}
-      />
-      {expanded &&
-        createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-            onClick={() => setExpanded(false)}
-          >
-            <img
-              alt={alt ?? ''}
-              {...rest}
-              className="max-h-full cursor-pointer object-contain"
-            />
-          </div>,
-          document.body
-        )}
-    </>
-  )
-}

@@ -29,6 +29,10 @@ export type Database = {
           source_contract_id: string | null
           source_comment_id: string | null
           source_bet_id: string | null
+          canonical_key: string | null
+          feed_visible: boolean
+          hidden_time: string | null
+          market_comment_id: string | null
           deleted_time: string | null
           deleted_by: string | null
           removed_by_moderator: boolean
@@ -47,6 +51,10 @@ export type Database = {
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
+          canonical_key?: string | null
+          feed_visible?: boolean
+          hidden_time?: string | null
+          market_comment_id?: string | null
           deleted_time?: string | null
           deleted_by?: string | null
           removed_by_moderator?: boolean
@@ -65,6 +73,10 @@ export type Database = {
           source_contract_id?: string | null
           source_comment_id?: string | null
           source_bet_id?: string | null
+          canonical_key?: string | null
+          feed_visible?: boolean
+          hidden_time?: string | null
+          market_comment_id?: string | null
           deleted_time?: string | null
           deleted_by?: string | null
           removed_by_moderator?: boolean
@@ -108,6 +120,81 @@ export type Database = {
           {
             foreignKeyName: 'social_posts_deleted_by_fkey'
             columns: ['deleted_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_reposts: {
+        Row: {
+          post_id: string
+          user_id: string
+          active: boolean
+          created_time: string
+          bumped_time: string
+        }
+        Insert: {
+          post_id: string
+          user_id: string
+          active?: boolean
+          created_time?: string
+          bumped_time?: string
+        }
+        Update: {
+          post_id?: string
+          user_id?: string
+          active?: boolean
+          created_time?: string
+          bumped_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_reposts_post_id_fkey'
+            columns: ['post_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_reposts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      social_thread_subscriptions: {
+        Row: {
+          root_id: string
+          user_id: string
+          muted: boolean
+          created_time: string
+        }
+        Insert: {
+          root_id: string
+          user_id: string
+          muted?: boolean
+          created_time?: string
+        }
+        Update: {
+          root_id?: string
+          user_id?: string
+          muted?: boolean
+          created_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'social_thread_subscriptions_root_id_fkey'
+            columns: ['root_id']
+            isOneToOne: false
+            referencedRelation: 'social_posts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'social_thread_subscriptions_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
@@ -2859,6 +2946,7 @@ export type Database = {
           contract_id: string | null
           created_time: string
           id: number
+          social_post_id: string | null
           user_avatar_url: string
           user_id: string
           user_name: string
@@ -2870,6 +2958,7 @@ export type Database = {
           contract_id?: string | null
           created_time?: string
           id?: never
+          social_post_id?: string | null
           user_avatar_url: string
           user_id: string
           user_name: string
@@ -2881,6 +2970,7 @@ export type Database = {
           contract_id?: string | null
           created_time?: string
           id?: never
+          social_post_id?: string | null
           user_avatar_url?: string
           user_id?: string
           user_name?: string

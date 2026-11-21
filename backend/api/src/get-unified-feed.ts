@@ -33,9 +33,14 @@ import {
 } from 'common/feed'
 import { CommentWithTotalReplies } from 'common/comment'
 import { JSONContent } from '@tiptap/core'
+import { readSocialPosts } from './social-posts'
+import { getSocialViewer } from 'shared/social-posts'
 import { contractColumnsToSelect } from 'shared/utils'
 
-export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (props) => {
+export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (
+  props,
+  auth
+) => {
   const {
     userId,
     feedLimit,
@@ -71,33 +76,44 @@ export const getUnifiedFeed: APIHandler<'get-unified-feed'> = async (props) => {
   ]
 
   // Run feed, activity, and boosted queries in parallel
-  const [feedResult, activityResult, boostedContracts] = await Promise.all([
-    userId
-      ? fetchPersonalizedFeed(
-          pg,
-          userId,
-          feedLimit,
-          feedOffset,
-          ignoreContractIds,
-          privateUser ?? undefined
-        )
-      : fetchTrendingFeed(pg, feedLimit, feedOffset),
-    fetchSiteActivity(
-      pg,
-      activityLimit,
-      activityOffset,
-      blockedUserIds,
-      blockedGroupSlugs,
-      blockedContractIds,
-      minBetAmount
-    ),
-    fetchBoostedContracts(pg, blockedContractIds, blockedUserIds),
-  ])
+  const [feedResult, activityResult, boostedContracts, socialPage] =
+    await Promise.all([
+      userId
+        ? fetchPersonalizedFeed(
+            pg,
+            userId,
+            feedLimit,
+            feedOffset,
+            ignoreContractIds,
+            privateUser ?? undefined
+          )
+        : fetchTrendingFeed(pg, feedLimit, feedOffset),
+      fetchSiteActivity(
+        pg,
+        activityLimit,
+        activityOffset,
+        blockedUserIds,
+        blockedGroupSlugs,
+        blockedContractIds,
+        minBetAmount
+      ),
+      fetchBoostedContracts(pg, blockedContractIds, blockedUserIds),
+      props.includeSocial
+        ? getSocialViewer(auth?.uid).then((viewer) =>
+            readSocialPosts(pg, viewer, {
+              limit: Math.min(feedLimit, 10),
+              cursor: props.socialCursor,
+            })
+          )
+        : Promise.resolve({ posts: [], nextCursor: null }),
+    ])
 
   log('unified feed queries completed in (s):', (Date.now() - startTime) / 1000)
 
   return {
     ...feedResult,
+    socialPosts: socialPage.posts,
+    nextSocialCursor: socialPage.nextCursor,
     boostedContracts,
     activityBets: activityResult.bets,
     activityPerpTrades: activityResult.perpTrades,
@@ -477,7 +493,14 @@ async function fetchSiteActivity(
 
   // Filter and process comments
   const baseCommentData = recentCommentRecords
-    .filter((rc) => !rc.reply_to_data?.hidden && !rc.data.hidden)
+    // Neither a hidden nor a deleted comment, nor a reply to one.
+    .filter(
+      (rc) =>
+        !rc.reply_to_data?.hidden &&
+        !rc.data.hidden &&
+        !rc.reply_to_data?.deleted &&
+        !rc.data.deleted
+    )
     .filter(
       (rc) =>
         !hasContentWithText(rc.data.content, [

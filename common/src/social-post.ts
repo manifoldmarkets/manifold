@@ -2,8 +2,10 @@ import { z } from 'zod'
 import { Contract } from './contract'
 import { DisplayUser } from './api/user-types'
 import { FIREBASE_CONFIG } from './envs/constants'
+import { MAX_COMMENT_JSON_LENGTH } from './comment'
 import {
   SocialRichContent,
+  socialPostToCommentContent,
   socialRichContentDisplaySchema,
   socialRichContentSchema,
   socialRichContentToText,
@@ -14,6 +16,7 @@ export const SOCIAL_POST_MAX_MARKETS = 5
 export const SOCIAL_POST_MAX_IMAGES = 4
 export const SOCIAL_FEED_PAGE_SIZE = 10
 export const SOCIAL_POST_EDIT_WINDOW_MS = 30 * 60 * 1000
+export const SOCIAL_REPOST_COOLDOWN_MS = 24 * 60 * 60 * 1000
 
 export const isSocialPostEditable = (createdTimeMs: number, now = Date.now()) =>
   Number.isFinite(createdTimeMs) &&
@@ -106,6 +109,36 @@ export const socialPostSourceSchema = z.union([
   z.object({ postId: z.string().min(1).max(200) }).strict(),
 ])
 
+export type SocialMarketSource = Extract<
+  SocialPostSource,
+  { contractId: string }
+>
+export const isSocialMarketSource = (
+  source: SocialPostSource | undefined
+): source is SocialMarketSource => !!source && 'contractId' in source
+
+// A Yap shared from a market, comment or trade can also be posted as a comment
+// on that market, as reposts with text were before Yap. Quoted Yap posts have no
+// market thread, and a quote with nothing added has nothing to comment.
+export const canCommentFromSocialPost = (
+  content: { text: string; imageUrls?: string[] },
+  source: SocialPostSource | undefined
+) =>
+  isSocialMarketSource(source) &&
+  !!(content.text.trim() || content.imageUrls?.length)
+
+// Market comments cap their serialized size, which many short paragraphs can
+// exceed well inside the Yap character limit.
+export const socialCommentFits = (content: {
+  text: string
+  richContent?: SocialRichContent | null
+  imageUrls?: string[]
+}) =>
+  JSON.stringify(socialPostToCommentContent(content)).length <=
+  MAX_COMMENT_JSON_LENGTH
+export const SOCIAL_COMMENT_TOO_LONG =
+  'This post is too long to also comment on the market. Shorten it or post it to Yap only.'
+
 export type SocialQuote = {
   kind: 'comment' | 'bet' | 'market' | 'post'
   url: string
@@ -142,12 +175,22 @@ export type SocialPost = {
   replyCount: number
   canReply: boolean
   replyPreviews: SocialPost[]
+  discussionCreatorId?: string | null
+  marketCommentId?: string | null
+  canonicalKey?: string | null
+  feedTimeMs?: number
+  repostCount?: number
+  reposted?: boolean
+  repostedBy?: DisplayUser[]
+  threadMuted?: boolean
+  threadFollowing?: boolean
 }
 export type SocialPostPage = { posts: SocialPost[]; nextCursor: string | null }
 export type SocialPostDetail = {
   post: SocialPost
   ancestors: SocialPost[]
-  // Only included for the author while the uncached live post is editable.
+  // These are returned only to an eligible editor of a live post.
+  editOnMarket?: string
   editContent?: SocialRichContent | null
 }
 export type SocialLikerPage = {
@@ -177,18 +220,29 @@ export const socialTimestamp = (timestamp: string) =>
 export const socialTimestampMillis = (timestamp: string) =>
   Date.parse(socialTimestamp(timestamp).replace(/(\.\d{3})\d+/, '$1'))
 
+// The markets a post shows. A market comment that starts its own thread on Yap
+// has none attached: it shows the market it was written on, which arrives on
+// its source.
+export const socialPostMarkets = (
+  post: Pick<SocialPost, 'markets' | 'source'>
+): Contract[] =>
+  post.markets.length
+    ? post.markets
+    : (post.source?.kind === 'market' && post.source.markets) || []
+
 // Quote one level of content. Reposts of reposts link back to the original
 // discussion rather than expanding an arbitrarily deep chain in the timeline.
 export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
   kind: 'post',
-  url: socialPostPath(post.id),
+  // An original that cannot be shown is not linked to either.
+  url: post.removed ? '' : socialPostPath(post.id),
   text: post.removed ? '' : post.text,
   ...(post.richContent
     ? { richContent: post.removed ? null : post.richContent }
     : {}),
   author: post.removed ? undefined : post.author,
   imageUrls: post.removed ? [] : post.imageUrls,
-  markets: post.removed ? [] : post.markets,
+  markets: post.removed ? [] : socialPostMarkets(post),
   includesQuote:
     !post.removed && !!post.source && post.source.kind !== 'market',
   unavailable: !!post.removed,

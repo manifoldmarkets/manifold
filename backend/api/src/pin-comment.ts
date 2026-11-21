@@ -33,6 +33,8 @@ export const pinComment: APIHandler<'pin-comment'> = async (
   }
 
   const comment = await getComment(pg, commentId)
+  if (comment.contractId !== contractId)
+    throw new APIError(400, 'Comment does not belong to this market')
 
   // update the comment
   await updateData(pg, 'contract_comments', 'comment_id', {
