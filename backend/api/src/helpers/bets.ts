@@ -451,7 +451,10 @@ export const getBulkUpdateLimitOrdersQueryAndValues = (
       ...bet,
       ...updateData,
     }
-    const updateQ = `('${bet.id}', '${JSON.stringify(updateData)}'::jsonb)`
+    const updateQ = pgp.as.format('($1, $2::jsonb)', [
+      bet.id,
+      JSON.stringify(updateData),
+    ])
     return { updatedBet, updateQ }
   })
 

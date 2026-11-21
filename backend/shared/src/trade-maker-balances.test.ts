@@ -13,7 +13,8 @@ jest.mock('shared/utils', () => ({
 jest.mock('shared/supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(),
   SERIAL_MODE: {},
-  pgp: {},
+  // Query builders format with pg-promise; nothing here reaches a database.
+  pgp: jest.requireActual('pg-promise')(),
 }))
 jest.mock('shared/helpers/fn-queue', () => ({
   betsQueue: { enqueueFn: (fn: () => unknown) => fn() },

@@ -55,7 +55,7 @@ const getOrderedContractMetricRowsForContractId = async (
   )
 
   if (userId) {
-    return pg.map(renderSql(...sharedConditions), [], (r) => r.data)
+    return pg.map(renderSql(...sharedConditions), undefined, (r) => r.data)
   }
 
   const query1 = renderSql(
@@ -77,8 +77,8 @@ const getOrderedContractMetricRowsForContractId = async (
   )
 
   const [positiveResults, negativeResults] = await Promise.all([
-    pg.map(query1, [], (r) => r.data),
-    pg.map(query2, [], (r) => r.data),
+    pg.map(query1, undefined, (r) => r.data),
+    pg.map(query2, undefined, (r) => r.data),
   ])
 
   return [...positiveResults, ...negativeResults]

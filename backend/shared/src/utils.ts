@@ -363,7 +363,7 @@ export const getPrivateUsersNotSent = async (
        coalesce(((u.data->>'currentBettingStreak')::bigint),0) as current_betting_streak
          from private_users pu
          join users u on pu.id = u.id
-         where (pu.data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
+         where (pu.data->'notificationPreferences'->>$2)::jsonb @> '["email"]'
          and ${
            preference === 'trending_markets'
              ? 'weekly_trending_email_sent'
@@ -372,7 +372,7 @@ export const getPrivateUsersNotSent = async (
          and (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
          and pu.data->>'email' is not null
          limit $1`,
-    [limit],
+    [limit, preference],
     (row) => ({
       ...(row.data as PrivateUser),
       createdTime: tsToMillis(row.created_time as string),

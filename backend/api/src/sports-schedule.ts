@@ -421,11 +421,15 @@ async function getOfficialGames(
        and visibility = 'public'
        and coalesce(deleted, false) = false
        and resolution is distinct from 'CANCEL'
-       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
+       and close_time > now() - interval $3
        and close_time < now() + ($1 || ' days')::interval + interval '1 day'
      order by close_time asc
      limit ${MAX_OFFICIAL_GAMES}`,
-    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+    [
+      String(daysAhead),
+      MANIFOLD_SPORTS_USER_IDS,
+      `${FINISHED_GRACE_HOURS} hours`,
+    ]
   )
   // Rows come soonest first, so hitting the cap drops the latest games.
   if (rows.length === MAX_OFFICIAL_GAMES)
@@ -468,11 +472,15 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
        and visibility = 'public'
        and coalesce(deleted, false) = false
        and resolution is distinct from 'CANCEL'
-       and close_time > now() - interval '${RACE_LOOKBACK_HOURS} hours'
+       and close_time > now() - interval $3
        and close_time < now() + ($1 || ' days')::interval + interval '1 day'
      order by close_time asc
      limit ${MAX_RACE_MARKETS}`,
-    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+    [
+      String(daysAhead),
+      MANIFOLD_SPORTS_USER_IDS,
+      `${RACE_LOOKBACK_HOURS} hours`,
+    ]
   )
   const full = rows.map((r) => convertContract(r))
   const contracts = full.map((c) => c as RaceContract)

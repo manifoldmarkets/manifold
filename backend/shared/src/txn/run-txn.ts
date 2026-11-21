@@ -141,18 +141,20 @@ async function runTxnInternal(
       }
 
       const setClause = Object.entries(update)
-        .map(([field, val]) => `${field} = ${field} + ${val}`)
+        .map(([field, val]) =>
+          pgp.as.format('$1:alias = $1:alias + $2', [field, val])
+        )
         .join(', ')
 
       queries.push(
         pgp.as.format(
           `
           update users 
-          set ${setClause}
+          set $2:raw
           where id = $1
           returning id, balance, cash_balance, total_deposits, total_cash_deposits;
         `,
-          [toId]
+          [toId, setClause]
         )
       )
     } else if (

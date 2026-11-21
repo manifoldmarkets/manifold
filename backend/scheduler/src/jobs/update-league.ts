@@ -134,7 +134,7 @@ export async function updateLeague(
       user_id: userId,
       season,
       mana_earned: total,
-      mana_earned_breakdown: `${JSON.stringify(manaEarnedBreakdown)}::jsonb`,
+      mana_earned_breakdown: JSON.stringify(manaEarnedBreakdown),
     })
   }
 

@@ -14,6 +14,6 @@ export const insertLiquidity = async (
   return await insert(pg, 'contract_liquidity', {
     liquidity_id: doc.id,
     contract_id: doc.contractId,
-    data: JSON.stringify(removeUndefinedProps(doc)) + '::jsonb',
+    data: JSON.stringify(removeUndefinedProps(doc)),
   })
 }

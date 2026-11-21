@@ -19,7 +19,8 @@ export async function expirePersonalizedManaOffers() {
         set status = 'expired'
       where status = 'active'
         and expires_at is not null
-        and expires_at + interval '${OFFER_EXPIRY_GRACE_MINUTES} minutes' < now()`
+        and expires_at + interval $1 < now()`,
+    [`${OFFER_EXPIRY_GRACE_MINUTES} minutes`]
   )
 
   if (result.rowCount > 0) {

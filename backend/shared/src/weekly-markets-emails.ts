@@ -103,7 +103,9 @@ export async function getForYouMarkets(
   })
 
   const pg = createSupabaseDirectClient()
-  const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
+  const contracts = await pg.map(searchMarketSQL, undefined, (r) =>
+    convertContract(r)
+  )
 
   // Prefer cash contracts over mana contracts in emails
   const manaContractIds = filterDefined(

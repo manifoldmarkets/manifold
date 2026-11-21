@@ -234,7 +234,7 @@ const search = async (
           isPrizeMarket,
           privateUser,
         }),
-        null,
+        undefined,
         convertContract
       )
     } else {
@@ -245,7 +245,7 @@ const search = async (
         isPrizeMarket,
         privateUser,
       })
-      return await pg.map(forYouSql, [term], (r) => convertContract(r))
+      return await pg.map(forYouSql, undefined, (r) => convertContract(r))
     }
   } else if (searchRoute === 'recent' && userId) {
     return await pg.map(
@@ -526,7 +526,7 @@ const semanticFallback = async (
             limit: limit - lexicalResults.length,
             excludeContractIds: lexicalResults.map((c) => c.id),
           }),
-          null,
+          undefined,
           convertContract
         )
       )
