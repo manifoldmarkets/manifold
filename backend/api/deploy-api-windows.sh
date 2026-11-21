@@ -197,6 +197,14 @@ printf '%s\n' \
     "REDIS_URL=${REDIS_URL}" \
     "DISABLE_REDIS_CACHE=${DISABLE_REDIS_CACHE}" \
     "PERP_TRADING_MODE=${PERP_TRADING_MODE}" > "${ENV_FILE}"
+if [[ "$ENV" == dev && -v NEXT_PUBLIC_SPORTS_BDL_ENABLED ]]; then
+    # The container environment file stores exactly one variable per line.
+    if [[ "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" == *$'\n'* || "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" == *$'\r'* ]]; then
+        echo "NEXT_PUBLIC_SPORTS_BDL_ENABLED must be a single line." >&2
+        exit 1
+    fi
+    printf 'NEXT_PUBLIC_SPORTS_BDL_ENABLED=%s\n' "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" >> "$ENV_FILE"
+fi
 
 echo "Creating new instance template ${TEMPLATE_NAME} using Docker image https://${IMAGE_URL}..."
 gcloud compute instance-templates create ${TEMPLATE_NAME} \
