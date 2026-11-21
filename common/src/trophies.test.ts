@@ -225,15 +225,25 @@ describe('showcase pins', () => {
 })
 
 describe('formatTrophyValue', () => {
-  it('shows whole numbers', () => {
+  it('shows whole numbers, rounded down', () => {
     const volume = getTrophyDefinition('trading-volume')!
-    expect(formatTrophyValue(volume, 360.867)).toBe('361')
-    expect(formatTrophyValue(volume, 360_867)).toBe('361K')
+    expect(formatTrophyValue(volume, 360.867)).toBe('360')
+    expect(formatTrophyValue(volume, 360_867)).toBe('360K')
     expect(formatTrophyValue(volume, 2_500_000)).toBe('2.5M')
+    expect(formatTrophyValue(volume, 12_000)).toBe('12K')
     const charity = getTrophyDefinition('charity-donated')!
-    expect(formatTrophyValue(charity, 12.5)).toBe('$13')
+    expect(formatTrophyValue(charity, 12.5)).toBe('$12')
     const comments = getTrophyDefinition('comments')!
     expect(formatTrophyValue(comments, 1234)).toBe('1,234')
+  })
+
+  it('never shows a threshold not yet reached, or 0 still to go', () => {
+    const volume = getTrophyDefinition('trading-volume')!
+    expect(formatTrophyValue(volume, 9_999.75)).toBe('9.9K')
+    expect(formatTrophyValue(volume, 0.25, 'up')).toBe('1')
+    const charity = getTrophyDefinition('charity-donated')!
+    expect(formatTrophyValue(charity, 9.75)).toBe('$9')
+    expect(formatTrophyValue(charity, 0.25, 'up')).toBe('$1')
   })
 })
 
