@@ -49,6 +49,7 @@ function loadUserAchievements(userId: string) {
       if (getEntry(userId).loading === loading) {
         setEntry(userId, { loading: undefined })
       }
+      pruneIdle()
     })
   setEntry(userId, { loading })
   return loading

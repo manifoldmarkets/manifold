@@ -117,6 +117,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   }
 
   const { claims } = trophies
+  // A later refresh failed: the stats shown may be out of date.
+  const refreshFailed = !!achievementsError && !achievementsLoading
   const progressList = computeAllTrophyProgress(achievements)
   const reached = countReachedMilestones(achievements)
   const total = getTotalPossibleMilestones()
@@ -169,6 +171,18 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
           </span>
         )}
       </Col>
+
+      {refreshFailed && (
+        <Row className="text-ink-500 items-center gap-2 text-sm">
+          <span>Couldn't refresh these stats.</span>
+          <button
+            className="text-primary-600 font-medium hover:underline"
+            onClick={retryAchievements}
+          >
+            Try again
+          </button>
+        </Row>
+      )}
 
       {isOwnProfile && (
         <ShowcaseSlotTracker

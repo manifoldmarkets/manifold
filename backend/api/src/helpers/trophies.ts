@@ -1,6 +1,6 @@
 import { APIError, AuthedUser } from 'api/helpers/endpoint'
 import { TrophyClaim } from 'common/trophies'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
 
 // The page sends the profile it is changing. A session that switched accounts
 // after the page loaded must not change the other account's trophies.
@@ -25,8 +25,10 @@ export const convertTrophyClaim = (row: TrophyClaimRow): TrophyClaim => ({
   claimedTime: new Date(row.claimed_time).valueOf(),
 })
 
+type Pg = SupabaseDirectClient | SupabaseTransaction
+
 export async function getTrophyClaims(
-  pg: SupabaseDirectClient,
+  pg: Pg,
   userId: string
 ): Promise<TrophyClaim[]> {
   const rows = await pg.manyOrNone<TrophyClaimRow>(
@@ -40,7 +42,7 @@ export async function getTrophyClaims(
 }
 
 export async function getShowcasePins(
-  pg: SupabaseDirectClient,
+  pg: Pg,
   userId: string
 ): Promise<string[] | null> {
   const row = await pg.oneOrNone<{ pins: string[] }>(

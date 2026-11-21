@@ -91,24 +91,41 @@ export async function loadUserAchievements(
           and c.token = 'MANA'
       ),
       account_age as (
-        -- Whole calendar years since signup, plus the share of the current
-        -- year, to two places. The whole part only ticks over on the
-        -- anniversary (at most 0.99 before it), so the Account Age trophy is
-        -- never reached early, as it was with a 365.25-day year.
-        select a.whole + greatest(0, least(0.99, round((
-            extract(epoch from (now() - a.last_anniversary))
+        -- Whole years since signup, plus the share of the current year,
+        -- rounded down to two places, all in UTC. A year is complete when
+        -- created_time plus that many calendar years has passed (so a
+        -- Feb 29 signup completes one on Feb 28), and the whole part and the
+        -- share come from the same anniversaries, so the Account Age trophy
+        -- is never reached early.
+        select a.whole + floor(
+            100 * extract(epoch from (a.now_utc - a.last_anniversary))
             / extract(epoch from (a.next_anniversary - a.last_anniversary))
-          )::numeric, 2))) as account_age_years
+          ) / 100 as account_age_years
         from (
           select
-            w.whole,
-            u.created_time + make_interval(years => w.whole) as last_anniversary,
-            u.created_time + make_interval(years => w.whole + 1) as next_anniversary
-          from users u
-          cross join lateral (
-            select extract(year from age(now(), u.created_time))::int as whole
-          ) w
-          where u.id = (select uid from base)
+            y.now_utc,
+            y.whole,
+            y.created + make_interval(years => y.whole) as last_anniversary,
+            y.created + make_interval(years => y.whole + 1) as next_anniversary
+          from (
+            select
+              x.now_utc,
+              x.created,
+              x.k
+                + (x.created + make_interval(years => x.k + 1) <= x.now_utc)::int
+                - (x.created + make_interval(years => x.k) > x.now_utc)::int
+                as whole
+            from (
+              select
+                now() at time zone 'UTC' as now_utc,
+                u.created_time at time zone 'UTC' as created,
+                extract(year from age(
+                  now() at time zone 'UTC', u.created_time at time zone 'UTC'
+                ))::int as k
+              from users u
+              where u.id = (select uid from base)
+            ) x
+          ) y
         ) a
       ),
       trade_stats as (
@@ -123,8 +140,16 @@ export async function loadUserAchievements(
           and ucm.answer_id is null
           and c.token = 'MANA'
       ),
+      -- The longest streak a bonus was paid for, or the current streak if
+      -- longer: an account that can't receive bonuses gets no bonus txns.
       longest_streak as (
-        select coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0) as longest_betting_streak
+        select greatest(
+          coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0),
+          coalesce((
+            select (u.data->>'currentBettingStreak')::int
+            from users u where u.id = (select uid from base)
+          ), 0)
+        ) as longest_betting_streak
         from txns tx
         where tx.to_id = (select uid from base)
           and tx.category = 'BETTING_STREAK_BONUS'

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import clsx from 'clsx'
-import { findLastIndex } from 'lodash'
 import {
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -89,19 +88,24 @@ export function TrophyCard(props: {
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
 
-  // The owner sees the milestones they have reached; a visitor sees only the
-  // ones the owner claimed.
+  // The owner sees every milestone and which they have reached; a visitor
+  // sees only the ones the owner claimed.
+  const shown = isOwnProfile
+    ? milestones
+    : milestones.filter((m) => claimedIds.has(m.id))
   const isEarned = (m: TrophyMilestone) =>
     isOwnProfile ? isMilestoneReached(m, currentValue) : claimedIds.has(m.id)
   const startIdx = isOwnProfile
     ? highestMilestone
-      ? milestones.findIndex((m) => m.id === highestMilestone.id)
+      ? shown.findIndex((m) => m.id === highestMilestone.id)
       : -1
-    : findLastIndex(milestones, (m) => claimedIds.has(m.id))
+    : shown.length - 1
   // Start on the highest milestone earned, or the first one.
-  const [viewingIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
+  const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
+  // Claims can be removed (admin unclaim) while the card is showing.
+  const viewingIdx = Math.min(selectedIdx, shown.length - 1)
 
-  const viewing = milestones[viewingIdx]
+  const viewing = shown[viewingIdx]
   if (!viewing) return null
 
   const isReached = isMilestoneReached(viewing, currentValue)
@@ -109,7 +113,7 @@ export function TrophyCard(props: {
   const earned = isEarned(viewing)
   const style = TROPHY_TIER_STYLES[viewing.tier]
   const canGoLeft = viewingIdx > 0
-  const canGoRight = viewingIdx < milestones.length - 1
+  const canGoRight = viewingIdx < shown.length - 1
   const progressPct =
     viewing.threshold > 0 ? Math.min(currentValue / viewing.threshold, 1) : 1
 
@@ -175,7 +179,7 @@ export function TrophyCard(props: {
         </span>
 
         <MilestoneDots
-          milestones={milestones}
+          milestones={shown}
           isEarned={isEarned}
           viewingIndex={viewingIdx}
           onSelect={setViewingIdx}
