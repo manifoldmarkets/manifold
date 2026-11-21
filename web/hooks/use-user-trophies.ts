@@ -30,7 +30,11 @@ type Entry = {
   // Claims this page added, with the claimsVersion at which each was added.
   localClaims: { claim: TrophyClaim; version: number }[]
   claimsVersion: number
+  // claimsVersion of the last admin unclaim; loads started before it keep
+  // the claims it returned.
+  replacedAtVersion: number
   pinsVersion: number // bumped by each local pin change
+  pinsSaves: number // bumped when each save settles
   confirmedPins?: string[] | null // the server's pins, as last seen
   loading?: Promise<void>
   saving?: Promise<void>
@@ -44,7 +48,9 @@ const getEntry = (userId: string): Entry =>
   entries.get(userId) ?? {
     localClaims: [],
     claimsVersion: 0,
+    replacedAtVersion: 0,
     pinsVersion: 0,
+    pinsSaves: 0,
     savePending: false,
   }
 
@@ -79,23 +85,31 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
   if (entry.loading && !forPinRecovery) return entry.loading
   const startClaimsVersion = entry.claimsVersion
   const startPinsVersion = entry.pinsVersion
+  const startPinsSaves = entry.pinsSaves
   const loading = api('get-user-trophies', { userId })
     .then((fresh) => {
       const current = getEntry(userId)
       const newerLocalClaims = current.localClaims.filter(
         (l) => l.version > startClaimsVersion
       )
+      // A save that settled while this load ran may have changed the pins
+      // after the server read them.
       const pinsBusy =
         current.pinsVersion !== startPinsVersion ||
         current.savePending ||
-        (!!current.saving && !forPinRecovery)
+        (!forPinRecovery &&
+          (!!current.saving || current.pinsSaves !== startPinsSaves))
+      const replacedSinceStart =
+        current.replacedAtVersion > startClaimsVersion && !!current.data
       setEntry(userId, {
         data: {
           ...fresh,
-          claims: mergeClaims(
-            fresh.claims,
-            newerLocalClaims.map((l) => l.claim)
-          ),
+          claims: replacedSinceStart
+            ? current.data?.claims ?? fresh.claims
+            : mergeClaims(
+                fresh.claims,
+                newerLocalClaims.map((l) => l.claim)
+              ),
           pins: pinsBusy && current.data ? current.data.pins : fresh.pins,
         },
         localClaims: newerLocalClaims,
@@ -136,14 +150,21 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
 export function replaceTrophyClaims(userId: string, claims: TrophyClaim[]) {
   const entry = getEntry(userId)
   if (!entry.data) return
+  const version = entry.claimsVersion + 1
   setEntry(userId, {
     data: {
       ...entry.data,
       claims,
       pins: pinsWithClaims(entry.data.pins, claims),
     },
-    claimsVersion: entry.claimsVersion + 1,
+    claimsVersion: version,
+    replacedAtVersion: version,
     localClaims: [],
+    pinsVersion: entry.pinsVersion + 1,
+    confirmedPins:
+      entry.confirmedPins === undefined
+        ? undefined
+        : pinsWithClaims(entry.confirmedPins, claims),
   })
 }
 
@@ -173,15 +194,22 @@ function savePinsUntilCurrent(userId: string) {
     while (getEntry(userId).savePending) {
       setEntry(userId, { savePending: false })
       // The signed-in account may have changed since the pins were chosen.
-      if (auth.currentUser?.uid !== userId) {
+      // (No Firebase user, e.g. before the session restores or in local-only
+      // mode: send, and the API decides.)
+      const signedIn = auth.currentUser?.uid
+      if (signedIn && signedIn !== userId) {
         showConfirmedPins(userId)
         break
       }
       const pins = getEntry(userId).data?.pins ?? []
       try {
         await api('set-showcase-pins', { pins })
-        setEntry(userId, { confirmedPins: pins })
+        setEntry(userId, {
+          confirmedPins: pins,
+          pinsSaves: getEntry(userId).pinsSaves + 1,
+        })
       } catch (e) {
+        setEntry(userId, { pinsSaves: getEntry(userId).pinsSaves + 1 })
         toast.error(e instanceof Error ? e.message : String(e))
         if (getEntry(userId).savePending) continue // a newer choice saves next
         await getEntry(userId).loading

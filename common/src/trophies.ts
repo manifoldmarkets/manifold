@@ -536,11 +536,13 @@ export function formatTrophyValue(
   value: number
 ): string {
   if (def.unit === 'years') return `${value.toFixed(1)}yr`
+  // Whole numbers: volume and dollar stats come with decimals.
+  const whole = Math.round(value).toLocaleString('en-US')
   const prefix = def.formatPrefix ?? ''
   if (prefix || def.unit === 'mana') {
     if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`
     if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`
-    return `${prefix}${value.toLocaleString()}`
+    return `${prefix}${whole}`
   }
-  return value.toLocaleString()
+  return whole
 }

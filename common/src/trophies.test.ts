@@ -7,6 +7,7 @@ import {
   countClaimedMilestones,
   countReachedMilestones,
   countUnclaimedReachedMilestones,
+  formatTrophyValue,
   getHighestClaimedMilestone,
   getHighestMilestone,
   getMaxShowcasePins,
@@ -182,5 +183,18 @@ describe('showcase pins', () => {
         one
       )
     ).not.toBeNull()
+  })
+})
+
+describe('formatTrophyValue', () => {
+  it('shows whole numbers', () => {
+    const volume = getTrophyDefinition('trading-volume')!
+    expect(formatTrophyValue(volume, 360.867)).toBe('361')
+    expect(formatTrophyValue(volume, 360_867)).toBe('361K')
+    expect(formatTrophyValue(volume, 2_500_000)).toBe('2.5M')
+    const charity = getTrophyDefinition('charity-donated')!
+    expect(formatTrophyValue(charity, 12.5)).toBe('$13')
+    const comments = getTrophyDefinition('comments')!
+    expect(formatTrophyValue(comments, 1234)).toBe('1,234')
   })
 })
