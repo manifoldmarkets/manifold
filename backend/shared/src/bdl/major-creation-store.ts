@@ -6,6 +6,13 @@ import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import type { SupabaseTransaction } from '../supabase/init'
 import { sportsProviderSql } from '../supabase/sports-provider'
 
+import {
+  oddsEventKeySql,
+  oddsLegacyLabelSql,
+  oddsMoneylineSql,
+  oddsKeysForLeague,
+} from './odds-moneyline-identity'
+
 type ReadDb = Pick<SupabaseTransaction, 'manyOrNone'>
 
 export async function existingMajorGroups(
@@ -44,11 +51,11 @@ export async function majorCreationHold(
     `select c.id, ${sportsProviderSql()} as source, c.data->>'sportsStartTimestamp' as start
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA' and c.resolution is null
-        and c.deleted is not true and c.data->>'sportsMarketType' = 'moneyline'
+        and c.deleted is not true
         and c.data->>'sportsFixture' is distinct from 'true' and (
-          (${sportsProviderSql()} = 'odds' and c.data->>'sportsLeague' = $2
+          (${oddsMoneylineSql()} and (${oddsEventKeySql} = any($9::text[]) or ${oddsLegacyLabelSql} = $2)
            and (c.close_time is null or c.close_time > $3)) or
-          (c.data->>'sportsProvider' = 'bdl' and c.data->>'sportsLeagueKey' = $4
+          (c.data->>'sportsProvider' = 'bdl' and c.data->>'sportsMarketType' = 'moneyline' and c.data->>'sportsLeagueKey' = $4
            and c.data->>'sportsEventId' <> $5
            and not (c.data->>'sportsEventId' = any($6::text[]))
            and ((c.data->>'sportsHomeTeamId' = $7 and c.data->>'sportsAwayTeamId' = $8)
@@ -62,6 +69,7 @@ export async function majorCreationHold(
       seenEventIds,
       String(homeId),
       String(awayId),
+      oddsKeysForLeague(league),
     ]
   )
   let beforeOpenOdds = false

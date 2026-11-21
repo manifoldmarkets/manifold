@@ -18,7 +18,6 @@ import {
 } from 'common/bdl/opening-line'
 import {
   autoCreates,
-  getSportsCalendar,
   calendarEntriesOverlapping,
   CompetitionSwitches,
   competitionSwitchError,
@@ -95,14 +94,6 @@ function eligiblePhases(
   options: MajorCreationOptions,
   game?: MajorGame
 ) {
-  // Force can correct a named game, but it cannot start a disabled league.
-  if (
-    options.force &&
-    !getSportsCalendar().some(
-      (p) => p.bdlLeagueKey === league && autoCreates(p, switches)
-    )
-  )
-    return []
   const applicable = calendarEntriesOverlapping(from, to).filter(
     (phase) =>
       phase.bdlLeagueKey === league &&
@@ -113,7 +104,9 @@ function eligiblePhases(
     (phase) =>
       (!options.competitionId ||
         phase.competitionId === options.competitionId) &&
-      (options.force || autoCreates(phase, switches)) &&
+      // The lifecycle runs only for enabled phases. A named retry can still
+      // reserve a new contract after a mistaken cancellation in this phase.
+      autoCreates(phase, switches) &&
       !competitionSwitchError(phase.competitionId, phase.phase, true, switches)
   )
   // A schedule window can span several phases. For a particular game, every

@@ -7,6 +7,13 @@ import { providerOf, SportsProvider } from 'common/sports-provider'
 import { sportForLeague } from 'common/sports-score-polling'
 import { normalizeTeam } from 'common/sports-team-colors'
 
+import {
+  oddsEventKeySql,
+  oddsLegacyLabelSql,
+  oddsMoneylineSql,
+  oddsKeysForLeague,
+  uniqueLeagueForSport,
+} from './bdl/odds-moneyline-identity'
 import type { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { sportsProviderSql } from './supabase/sports-provider'
 
@@ -126,11 +133,20 @@ export async function findLockedSportsMarket(
       where c.creator_id = any($1) and c.token = 'MANA'
         and c.resolution is null and c.deleted is not true
         and (c.close_time is null or c.close_time > now())
-        and c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline'
         and c.data->>'sportsFixture' is distinct from 'true'
-        and ${sportsProviderSql()} = $3
+        and ${
+          bdl
+            ? `${oddsMoneylineSql()} and (${oddsEventKeySql} = any($3::text[]) or ${oddsLegacyLabelSql} = $2)`
+            : `c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline' and ${sportsProviderSql()} = 'bdl'`
+        }
       order by c.id`,
-    [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport], bdl ? 'odds' : 'bdl']
+    bdl && candidate.sportsLeagueKey
+      ? [
+          MANIFOLD_SPORTS_USER_IDS,
+          uniqueLeagueForSport(sport) ? SPORT_LEAGUE_LABEL[sport] : null,
+          oddsKeysForLeague(candidate.sportsLeagueKey),
+        ]
+      : [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport]]
   )
   return (
     open.find(

@@ -68,7 +68,7 @@ async function insert(
 }
 beforeAll(async () => {
   await postgres.exec(
-    'create table contracts(id text,creator_id text,token text,resolution text,deleted boolean,close_time timestamptz,data jsonb); create table groups(id text,slug text,privacy_status text);'
+    "create table contracts(id text,creator_id text,token text,resolution text,deleted boolean,close_time timestamptz,data jsonb,mechanism text default 'cpmm-multi-2'); create table groups(id text,slug text,privacy_status text);"
   )
 })
 beforeEach(async () => {
@@ -135,7 +135,11 @@ it.each([
   ['fixture', { ...odds, sportsFixture: true }, {}],
   ['spread', { ...odds, sportsMarketType: 'spread' }, {}],
   ['closed odds game', odds, { close: now }],
-  ['other odds league', { ...odds, sportsLeague: 'NHL' }, {}],
+  [
+    'other odds league',
+    { ...odds, sportsEventId: 'odds:icehockey_nhl:abc', sportsLeague: 'NHL' },
+    {},
+  ],
   ['unknown explicit provider', { ...odds, sportsProvider: 'fixture' }, {}],
 ] as const)('permits the candidate with %s', async (_, data, overrides) => {
   await insert(data, overrides)
@@ -143,4 +147,17 @@ it.each([
   expect(
     await majorCreationHold(db, { ...input, seenEventIds: ['bdl:mlb:101'] })
   ).toBeNull()
+})
+
+it('uses the same legacy Odds game identity for the latest open kickoff', async () => {
+  await insert({
+    ...odds,
+    sportsLeague: undefined,
+    sportsMarketType: undefined,
+  })
+  expect(await majorCreationHold(db, input)).toBe(
+    'before latest open Odds kickoff'
+  )
+  await postgres.exec("update contracts set mechanism = 'cpmm-1'")
+  expect(await majorCreationHold(db, input)).toBeNull()
 })

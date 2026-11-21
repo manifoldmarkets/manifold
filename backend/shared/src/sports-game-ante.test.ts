@@ -381,3 +381,36 @@ it('keeps failed group embeddings for retry without repeating successful groups'
   ).toEqual(['first', 'second', 'first'])
   expect(batch.size).toBe(0)
 })
+
+it.each(['cutover', 'funding'])(
+  'rejects an elapsed kickoff lead after the %s lock with no write or debit',
+  async (lock) => {
+    const { tx, pg } = database()
+    const lead = 5 * 60_000
+    jest.spyOn(Date, 'now').mockReturnValue(start - lead - 1)
+    const waitForLock = async () => {
+      jest.spyOn(Date, 'now').mockReturnValue(start - lead)
+    }
+    const options =
+      lock === 'cutover'
+        ? { minLeadMs: lead, checkOddsCutover: waitForLock }
+        : {
+            minLeadMs: lead,
+            chooseAnte: async () => {
+              await waitForLock()
+              return funded
+            },
+          }
+    await expect(
+      createSportsContract(
+        pg,
+        creator,
+        lock === 'cutover' ? legacy : bdl,
+        options
+      )
+    ).rejects.toThrow('kicked off')
+    expect(tx.multi).not.toHaveBeenCalled()
+    expect(tx.none).not.toHaveBeenCalled()
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
