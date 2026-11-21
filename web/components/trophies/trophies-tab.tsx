@@ -180,7 +180,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               justClaimedId={justClaimed}
               onPinToProfile={(trophyId) => {
                 setJustClaimed(null)
-                openShowcasePicker({ pinId: getTrophyPinId(trophyId) })
+                openShowcasePicker(userId, { pinId: getTrophyPinId(trophyId) })
               }}
             />
           </Col>

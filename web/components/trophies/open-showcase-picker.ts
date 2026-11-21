@@ -7,15 +7,32 @@ export const OPEN_SHOWCASE_PICKER_EVENT = 'open-showcase-picker'
 
 export type ShowcasePickerRequest = { pinId?: string }
 
-let pendingRequest: ShowcasePickerRequest | null = null
+// A request is for one profile, and only for a moment: one left behind by a
+// navigation must not open on another profile later.
+const REQUEST_TTL_MS = 10_000
 
-export function openShowcasePicker(request: ShowcasePickerRequest) {
-  pendingRequest = request
+let pending:
+  | { userId: string; request: ShowcasePickerRequest; at: number }
+  | undefined
+
+export function openShowcasePicker(
+  userId: string,
+  request: ShowcasePickerRequest
+) {
+  pending = { userId, request, at: Date.now() }
   window.dispatchEvent(new Event(OPEN_SHOWCASE_PICKER_EVENT))
 }
 
-export function takeShowcasePickerRequest(): ShowcasePickerRequest | null {
-  const request = pendingRequest
-  pendingRequest = null
+export function takeShowcasePickerRequest(
+  userId: string
+): ShowcasePickerRequest | null {
+  if (!pending) return null
+  const { userId: forUser, request, at } = pending
+  if (Date.now() - at > REQUEST_TTL_MS) {
+    pending = undefined
+    return null
+  }
+  if (forUser !== userId) return null
+  pending = undefined
   return request
 }

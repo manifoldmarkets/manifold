@@ -51,22 +51,26 @@ export function ProfileShowcase(props: {
   const claims = trophies?.claims ?? []
   const maxPins = getMaxShowcasePins(countClaimedMilestones(claims))
 
+  const savedPins = trophies?.pins
+  // A saved league pin shows as a placeholder until the league loads, so a
+  // save meanwhile doesn't drop it and the owner can still remove it.
+  const leagueBadges = league
+    ? getLeagueBadges(league)
+    : league === undefined && savedPins?.includes(LEAGUE_SHOWCASE_PIN)
+    ? [LEAGUE_PLACEHOLDER_BADGE]
+    : []
   const badges = sortBadges([
     ...getTrophyBadges(achievements ?? {}, claims),
-    ...(league ? getLeagueBadges(league) : []),
+    ...leagueBadges,
   ])
   const badgeById = new Map(badges.map((b) => [b.id, b]))
 
-  // Saved pins, minus ones that can no longer show. The league badge is kept
-  // until the league has loaded, so a save meanwhile doesn't drop it.
-  const savedPins = trophies?.pins
-  const isShowable = (id: string) =>
-    badgeById.has(id) || (id === LEAGUE_SHOWCASE_PIN && league === undefined)
+  // Saved pins, minus ones that can no longer show.
   // null: never set, so show the best badges. []: the user removed them all.
   const pins =
     savedPins == null
       ? badges.slice(0, maxPins).map((b) => b.id)
-      : savedPins.filter(isShowable).slice(0, maxPins)
+      : savedPins.filter((id) => badgeById.has(id)).slice(0, maxPins)
   const pinnedBadges = pins.flatMap((id) => badgeById.get(id) ?? [])
 
   const savePins = (next: string[]) => setShowcasePins(userId, next)
@@ -88,13 +92,13 @@ export function ProfileShowcase(props: {
   useEffect(() => {
     if (!isOwnProfile) return
     const take = () => {
-      const next = takeShowcasePickerRequest()
+      const next = takeShowcasePickerRequest(userId)
       if (next) setRequest(next)
     }
     take()
     window.addEventListener(OPEN_SHOWCASE_PICKER_EVENT, take)
     return () => window.removeEventListener(OPEN_SHOWCASE_PICKER_EVENT, take)
-  }, [isOwnProfile])
+  }, [isOwnProfile, userId])
 
   useEffect(() => {
     if (!request || !trophies) return
@@ -285,6 +289,14 @@ function leagueTier(division: number): BadgeTier {
   if (division >= 3) return 'blue'
   if (division >= 2) return 'green'
   return 'gray'
+}
+
+const LEAGUE_PLACEHOLDER_BADGE: ShowcaseBadgeData = {
+  id: LEAGUE_SHOWCASE_PIN,
+  label: 'League',
+  detail: 'Your current league',
+  emoji: '\u{1F3C6}',
+  tier: 'gray',
 }
 
 // The current league, from Silver up.
