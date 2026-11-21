@@ -1,4 +1,8 @@
 import {
+  isMarketCommentPostId,
+  materializeSocialPost,
+} from 'shared/social-discussion'
+import {
   getSocialRow,
   limitSocialWrite,
   socialAuthor,
@@ -38,7 +42,11 @@ export const report = authEndpoint(async (req, auth) => {
     await socialAuthor(auth.uid)
     const pg = createSupabaseDirectClient()
     await pg.tx(async (tx) => {
-      const post = await getSocialRow(tx, contentId)
+      // A reported comment that is on Yap without a post of its own gets one,
+      // so the report names something that stays put for whoever reviews it.
+      const post = isMarketCommentPostId(contentId)
+        ? await materializeSocialPost(tx, contentId)
+        : await getSocialRow(tx, contentId)
       if (post.deleted_time) throw new APIError(404, 'Post has been removed')
       if (post.user_id === auth.uid)
         throw new APIError(400, 'You cannot report your own post')

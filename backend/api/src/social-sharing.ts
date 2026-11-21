@@ -3,6 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   ensureSocialSource,
   findSocialSource,
+  isMarketCommentPostId,
+  materializeSocialPost,
   subscribeToSocialThread,
 } from 'shared/social-discussion'
 import {
@@ -108,9 +110,24 @@ export const setSocialThreadSubscription: APIHandler<
   'set-social-thread-subscription'
 > = async ({ id, muted }, auth) => {
   const pg = createSupabaseDirectClient()
+  const fromComment = isMarketCommentPostId(id)
+  // A follow from a comment can give the comment its post, so the account
+  // has to be in use, as for every other action that can.
+  if (fromComment) await socialAuthor(auth.uid)
   const viewer = await getSocialViewer(auth.uid)
   await pg.tx(async (tx) => {
+    // A comment that is on Yap without a post gets its post first, as for
+    // every other action on it. That takes the comment's lock and its
+    // thread's and settles where the comment sits, so the thread followed is
+    // the one the comment is in. Looked up without those locks, the comment
+    // could be placed in a thread it was not in at any one moment.
+    if (fromComment) await materializeSocialPost(tx, id)
     const row = await lockSocialThread(tx, id)
+    // Since a follow from a comment can write a post, it has an hourly
+    // allowance, as the other actions anyone can take on a comment have (a
+    // like, a reply, a re-Yap, a quote, a report). It is asked for after the
+    // locks, where they ask for theirs.
+    if (fromComment) await limitSocialWrite(tx, auth.uid, 'follow', 300)
     if (!muted) await assertSocialInteraction(tx, row, viewer)
     await subscribeToSocialThread(tx, row.root_id, auth.uid)
     await tx.none(

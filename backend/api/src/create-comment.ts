@@ -74,7 +74,8 @@ export const createComment: APIHandler<'comment'> =
 
 // If the comment's thread, trade or market is already discussed on Yap, the
 // comment joins that discussion as a copy. Best effort: a failure here leaves
-// an ordinary market comment, which a later read of the thread can still add.
+// an ordinary market comment. Yap still lists it, read from the market, and
+// it gets its post when someone first acts on it there.
 const joinSocialDiscussion = async (
   comment: ContractComment,
   replyToBetId: string | undefined

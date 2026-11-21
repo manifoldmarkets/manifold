@@ -13,9 +13,16 @@ import {
 } from 'common/social-post'
 import { JSONContent } from '@tiptap/core'
 import {
+  DiscussionEntry,
+  commentOfPostId,
   ensureMarketCommentPost,
+  findSocialPost,
+  getSocialPostForRead,
   isCommentYapRepresentable,
-  reconcileMarketDiscussion,
+  isMarketCommentPostId,
+  listCardComments,
+  listCommentReplies,
+  materializeSocialPost,
   subscribeToSocialThread,
 } from 'shared/social-discussion'
 import {
@@ -59,7 +66,6 @@ import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
 import {
   assertSocialInteraction,
   visibleMarketComment,
-  getSocialRow,
   getSocialEditContent,
   getSocialViewer,
   hydrateSocialPosts,
@@ -72,9 +78,20 @@ import {
   validateSocialMarkets,
   validateSocialRichContent,
   validateSocialSource,
+  withCurrentBlocks,
   withoutRepeatedMarket,
   writeSocialMarkets,
 } from 'shared/social-posts'
+
+// A Yap that also comments on its market is refused when its author has a
+// block with the market's creator.
+const assertNoBlockWithCreator = (viewer: SocialViewer, creatorId: string) => {
+  if (viewer.blocked.includes(creatorId))
+    throw new APIError(
+      403,
+      'You cannot comment on this market because of a block'
+    )
+}
 
 export const createSocialPost: APIHandler<'create-social-post'> =
   onlyUsersWhoCanPerformAction(
@@ -108,6 +125,9 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         )
       // Check the market comment is allowed before publishing, so an ineligible
       // comment fails the whole request rather than leaving a Yap without it.
+      // The block with the market's creator is asked about again under the
+      // locks, with the other checks of this write.
+      let commentedCreatorId: string | undefined
       if (commentSource) {
         if (!socialCommentFits(content))
           throw new APIError(400, SOCIAL_COMMENT_TOO_LONG)
@@ -118,15 +138,36 @@ export const createSocialPost: APIHandler<'create-social-post'> =
           undefined,
           undefined
         )
-        if (viewer.blocked.includes(contract.creatorId))
-          throw new APIError(
-            403,
-            'You cannot comment on this market because of a block'
-          )
+        commentedCreatorId = contract.creatorId
+        assertNoBlockWithCreator(viewer, commentedCreatorId)
       }
+      // A quoted post whose id is a comment's: the comment may be on Yap
+      // without a post of its own, and quoting it gives it one.
+      const quotedId =
+        source && 'postId' in source && isMarketCommentPostId(source.postId)
+          ? source.postId
+          : undefined
+      // A reply that also quotes such a comment (the app sends none) gives it
+      // its post in a transaction of its own, first. Giving a comment its post
+      // takes the comment's lock and then its thread's, and the reply below
+      // does the same for the post it replies to. In one transaction the
+      // second comment's lock would be asked for while a thread's is held,
+      // the wrong way round, and two requests could wait on each other. The
+      // price: this one copy stays if the reply is then refused. A reply that
+      // quotes the very comment it replies to has one comment to lock, so it
+      // needs none of this.
+      if (quotedId && parentId && quotedId !== parentId)
+        await pg.tx((tx) => materializeSocialPost(tx, quotedId, viewer))
       // The Yap, its market comment and its repost rows commit together or not
       // at all, so an edit or a removal never finds one without the others.
       const { row, parent, marketComment, repost } = await pg.tx(async (tx) => {
+        // Quoting a comment that has no post yet gives it one, and so does
+        // replying to one, in this transaction: a Yap that is refused leaves
+        // nothing behind.
+        if (quotedId && !parentId)
+          await materializeSocialPost(tx, quotedId, viewer)
+        if (parentId && isMarketCommentPostId(parentId))
+          await materializeSocialPost(tx, parentId)
         const sharedComment =
           commentSource?.commentId && !parentId
             ? await ensureMarketCommentPost(
@@ -141,7 +182,15 @@ export const createSocialPost: APIHandler<'create-social-post'> =
           : sharedComment
           ? await lockSocialThread(tx, sharedComment.id)
           : null
-        if (parent) await assertSocialInteraction(tx, parent, viewer, true)
+        // The blocks every check from here on goes by: the person's own, read
+        // again now that the locks above are held (withCurrentBlocks). The
+        // thread, a comment that is quoted, the people who are mentioned and
+        // the creator of a market this Yap also comments on are all checked
+        // against the same list.
+        const writer = await withCurrentBlocks(tx, viewer)
+        if (commentedCreatorId)
+          assertNoBlockWithCreator(writer, commentedCreatorId)
+        if (parent) await assertSocialInteraction(tx, parent, writer, true)
         if (parent?.market_comment_id) {
           const target = await getComment(tx, parent.market_comment_id)
           commentSource = {
@@ -174,9 +223,9 @@ export const createSocialPost: APIHandler<'create-social-post'> =
         const richContent = await validateSocialRichContent(
           tx,
           content.richContent,
-          viewer
+          writer
         )
-        await validateSocialSource(tx, source, content.marketIds, viewer)
+        await validateSocialSource(tx, source, content.marketIds, writer)
         const text = richContent
           ? socialRichContentToText(richContent)
           : content.text
@@ -405,8 +454,11 @@ async function syncSocialComment(
 }
 
 // Linked mutations take the native comment lock before the Yap thread lock,
-// matching market edits, moderation and first-time materialization.
+// matching market edits, moderation and first-time materialization. A comment
+// that is on Yap without a post gets its post first, which takes the same two
+// locks in the same order.
 async function lockPostForCommentChange(tx: SupabaseTransaction, id: string) {
+  if (isMarketCommentPostId(id)) await materializeSocialPost(tx, id)
   await tx.oneOrNone(
     `select cc.comment_id from contract_comments cc join social_posts p
     on p.market_comment_id=cc.comment_id where p.id=$1 for update of cc`,
@@ -452,7 +504,9 @@ export const editSocialPost: APIHandler<'edit-social-post'> =
           : await validateSocialRichContent(
               tx,
               content.richContent,
-              viewer,
+              // The editor's blocks as they are with the post locked: an edit
+              // can be the first action on a comment, and so place it.
+              await withCurrentBlocks(tx, viewer),
               post.rich_content
             )
       await writeSocialMarkets(tx, id, content.marketIds)
@@ -633,6 +687,9 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
       'select * from social_posts where id=any($1::text[])',
       [props.ids]
     )
+    // Posts only. A comment that is on Yap without a post of its own is read
+    // through its thread or its own page (get-social-post), one at a time:
+    // finding its place takes several lookups, and this read takes fifty ids.
     return {
       posts: await hydrateSocialPosts(pg, rows, viewer, false),
       nextCursor: null,
@@ -641,31 +698,75 @@ export const getSocialPosts: APIHandler<'get-social-posts'> = async (
   return readSocialPosts(pg, viewer, props)
 }
 
-// Reads show whatever is on Yap already. Adding a market's older comments is
-// a convenience for the reader and must never fail the read.
-const reconcileForRead = (
+// The rows of posts already chosen for a page, each with the time it was last
+// shared by someone the reader sees, as the timeline works it out.
+const postsWithFeedTime = (
   pg: SupabaseDirectClient,
-  post: SocialRow,
-  cursor?: string
+  viewer: SocialViewer,
+  ids: string[]
 ) =>
-  reconcileMarketDiscussion(pg, post, cursor).catch((e) => {
-    log.error('Failed to reconcile a market discussion on read', {
-      e,
-      id: post.id,
-    })
-    return null
-  })
+  ids.length
+    ? pg.manyOrNone<SocialRow>(
+        `select p.*, greatest(p.created_time,coalesce(shares.bumped_time,p.created_time)) as feed_time
+        from social_posts p
+        left join contract_comments cc on cc.comment_id=p.market_comment_id
+        left join contracts c on c.id=coalesce(cc.contract_id,p.source_contract_id)
+        left join lateral (
+          select max(r.bumped_time) as bumped_time from social_reposts r
+          where r.post_id=p.id and r.active and not(r.user_id=any($2::text[]))
+            and r.user_id<>p.user_id and r.user_id is distinct from c.creator_id
+        ) shares on true
+        where p.id=any($1::text[])`,
+        [ids, viewer.blocked]
+      )
+    : Promise.resolve([])
 
+// Reading never writes. A market's card lists the market's comments and a
+// comment lists its replies whether or not each has a post on Yap: one that
+// has none is read from its market and shown as the post it would be. The
+// post is made when someone acts on it (materializeSocialPost).
 export async function readSocialPosts(
   pg: SupabaseDirectClient,
   viewer: SocialViewer,
   { parentId, cursor, limit }: ValidatedAPIParams<'get-social-posts'>
 ): Promise<SocialPostPage> {
-  const parent = parentId ? await getSocialRow(pg, parentId) : null
-  const scanEnd = parent ? await reconcileForRead(pg, parent, cursor) : null
-  const [time, id] = cursor?.split('|') ?? []
+  const parent = parentId ? await getSocialPostForRead(pg, parentId) : null
   const marketThread = parent?.canonical_key?.startsWith('market:')
   const betThread = parent?.canonical_key?.startsWith('bet:')
+  const card = marketThread || betThread
+  if (parent && (card || parent.market_comment_id)) {
+    const entries: DiscussionEntry[] = card
+      ? await listCardComments(pg, parent, viewer, cursor, limit + 1)
+      : await listCommentReplies(pg, parent, viewer, cursor, limit + 1)
+    const page = entries.slice(0, limit)
+    const last = page[page.length - 1]
+    const stored = new Map(
+      (
+        await postsWithFeedTime(
+          pg,
+          viewer,
+          page.flatMap((entry) => (entry.postId ? [entry.postId] : []))
+        )
+      ).map((row) => [row.id, row])
+    )
+    const rows = page.flatMap((entry) => {
+      const row = entry.postId ? stored.get(entry.postId) : entry.pending
+      return row ? [row] : []
+    })
+    const posts = await hydrateSocialPosts(pg, rows, viewer, true, true, [
+      parent,
+    ])
+    return {
+      posts: card ? withoutRepeatedMarket(posts) : posts,
+      // Every entry has one place in the order, with or without a post, so
+      // the next page starts after the last one shown.
+      nextCursor:
+        entries.length > limit
+          ? `${socialTimestamp(last.time)}|${last.id}`
+          : null,
+    }
+  }
+  const [time, id] = cursor?.split('|') ?? []
   const rows = await pg.manyOrNone<SocialRow>(
     `with candidates as (
       select p.*, greatest(p.created_time,coalesce(shares.bumped_time,p.created_time)) as feed_time
@@ -679,14 +780,9 @@ export async function readSocialPosts(
       ) shares on true
       where ${
         parentId
-          ? marketThread
-            ? "cc.contract_id=$1 and cc.data->>'replyToCommentId' is null"
-            : betThread
-            ? "cc.data->>'betId'=$1 and cc.data->>'replyToCommentId' is null"
-            : 'p.parent_id=$1'
+          ? 'p.parent_id=$1'
           : '(p.feed_visible or exists(select 1 from social_reposts r where r.post_id=p.id and r.active and not(r.user_id=any($2::text[]))))'
       }
-      and ($6::text is null or cc.contract_id=$6)
       and (p.deleted_time is null or exists(select 1 from social_posts child where child.parent_id=p.id))
       and p.hidden_time is null and root.hidden_time is null
       and not(p.user_id=any($2::text[])) and not(root.user_id=any($2::text[]))
@@ -698,37 +794,20 @@ export async function readSocialPosts(
     where ($3::timestamptz is null or (${
       parentId ? 'created_time' : 'feed_time'
     },id) ${parentId ? '>' : '<'} ($3::timestamptz,$4::text))
-    and ($7::timestamptz is null or (created_time,id)<=($7::timestamptz,$8::text))
     order by ${
       parentId ? 'created_time asc,id asc' : 'feed_time desc,id desc'
     } limit $5`,
-    [
-      marketThread
-        ? parent!.source_contract_id
-        : betThread
-        ? parent!.source_bet_id
-        : parentId ?? null,
-      viewer.blocked,
-      time ?? null,
-      id ?? null,
-      limit + 1,
-      betThread ? parent!.source_contract_id : null,
-      scanEnd?.time ?? null,
-      scanEnd?.id ?? null,
-    ]
+    [parentId ?? null, viewer.blocked, time ?? null, id ?? null, limit + 1]
   )
   const page = rows.slice(0, limit)
   const last = page[page.length - 1]
-  const posts = await hydrateSocialPosts(pg, page, viewer)
   return {
-    posts: marketThread || betThread ? withoutRepeatedMarket(posts) : posts,
+    posts: await hydrateSocialPosts(pg, page, viewer),
     nextCursor:
       rows.length > limit
         ? `${socialTimestamp(
             parentId ? last.created_time : last.feed_time ?? last.created_time
           )}|${last.id}`
-        : scanEnd
-        ? `${scanEnd.time}|${scanEnd.id}`
         : null,
   }
 }
@@ -738,15 +817,21 @@ export const getSocialPost: APIHandler<'get-social-post'> = async (
   auth
 ) => {
   const pg = createSupabaseDirectClient()
-  const row = await getSocialRow(pg, id)
-  await reconcileForRead(pg, row)
-  const ancestors = await pg.manyOrNone<SocialRow & { depth: number }>(
-    `with recursive ancestors as (
+  // The post may be a comment that is on Yap without a post of its own, and
+  // so may the comments it replies to, one above another (older comments
+  // could reply to a reply). Everything above those is a post.
+  const pendingAbove: SocialRow[] = []
+  const row = await getSocialPostForRead(pg, id, pendingAbove)
+  const ancestors = [
+    ...(await pg.manyOrNone<SocialRow & { depth: number }>(
+      `with recursive ancestors as (
     select p.*, 1 as depth from social_posts p where p.id=$1
     union all select p.*, a.depth+1 from social_posts p join ancestors a on p.id=a.parent_id
   ) select * from ancestors order by depth desc`,
-    [row.parent_id]
-  )
+      [pendingAbove.length ? pendingAbove[0].parent_id : row.parent_id]
+    )),
+    ...pendingAbove,
+  ]
   const viewer = await getSocialViewer(auth?.uid)
   const posts = await hydrateSocialPosts(pg, [...ancestors, row], viewer, false)
   const post = posts[posts.length - 1]
@@ -792,9 +877,16 @@ export const getSocialLikers: APIHandler<'get-social-likers'> = async (
   auth
 ) => {
   const pg = createSupabaseDirectClient()
-  const post = await getSocialRow(pg, id)
+  // A comment with no post yet has likes too: the ones made on its market.
+  // The comments above it that have none either go along, as they do for its
+  // own page, so the comment is read the same way here.
+  const above: SocialRow[] = []
+  const post = await getSocialPostForRead(pg, id, above)
   const viewer = await getSocialViewer(auth?.uid)
-  if ((await hydrateSocialPosts(pg, [post], viewer, false))[0].removed)
+  if (
+    (await hydrateSocialPosts(pg, [post], viewer, false, true, above))[0]
+      .removed
+  )
     return { users: [], nextCursor: null }
   const [time, userId] = cursor?.split('|') ?? []
   const rows = await pg.manyOrNone<
@@ -848,6 +940,46 @@ export const reactToSocialPost: APIHandler<'react'> = async (
   const author = await socialAuthor(auth.uid)
   const viewer = await getSocialViewer(auth.uid)
   const result = await pg.tx(async (tx) => {
+    // Taking a like back from a comment that has no post yet: the like was
+    // made on its market and is the comment's own, so removing it needs no
+    // post. Liking it does, and lockPostForCommentChange makes one. The
+    // comment's lock is taken first here too, before the like allowance's:
+    // the same order as a like, so the two cannot wait on each other. It
+    // also settles whether the comment has a post, since nothing gives it
+    // one without that lock.
+    const likedCommentId = remove ? commentOfPostId(contentId) : null
+    if (likedCommentId) {
+      const locked = await tx.manyOrNone(
+        'select comment_id from contract_comments where comment_id=$1 for update',
+        [likedCommentId]
+      )
+      // No such comment when its lock was asked for: only a post that is
+      // there can have a like taken back. A comment written in the moment
+      // since is not looked for, because it was not locked first, and the
+      // like allowance below must not be asked for before the comment's lock.
+      const target = locked.length
+        ? await findSocialPost(tx, contentId)
+        : await tx.oneOrNone<SocialRow>(
+            'select * from social_posts where id=$1',
+            [contentId]
+          )
+      // Neither a post nor a comment shown on Yap: there is nothing to take
+      // a like back from here. Stopping matters. The comment's market can get
+      // its card a moment later, and the path below would then give the
+      // comment a post, which taking back a like never does.
+      if (!target) throw new APIError(404, 'Post not found')
+      if (target.pending && target.market_comment_id) {
+        await limitSocialWrite(tx, auth.uid, 'like', 300)
+        await writeCommentReaction(
+          tx,
+          target.market_comment_id,
+          auth.uid,
+          'like',
+          true
+        )
+        return null
+      }
+    }
     const post = await lockPostForCommentChange(tx, contentId)
     await limitSocialWrite(tx, auth.uid, 'like', 300)
     if (post.market_comment_id) {

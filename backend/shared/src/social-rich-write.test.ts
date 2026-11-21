@@ -9,6 +9,8 @@ jest.mock('api/helpers/rate-limit', () => ({
 jest.mock('./social-posts', () => ({
   socialAuthor: jest.fn(),
   getSocialViewer: jest.fn(),
+  // The person's blocks read again under the write's locks: none are added.
+  withCurrentBlocks: async (_pg: unknown, viewer: unknown) => viewer,
   getSocialRow: jest.fn(),
   getSocialEditContent: jest.fn(),
   lockSocialThread: jest.fn(),

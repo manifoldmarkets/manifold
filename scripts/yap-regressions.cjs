@@ -179,6 +179,14 @@ function loadDeclarations(file, names, bindings) {
       'backend/shared/src/social-posts.ts',
       [
         'visibleMarketComment',
+        'pendingCommentSql',
+        'pendingAuthorSql',
+        'pendingBlocksJoin',
+        'hasChildSql',
+        'postFitsCommentSql',
+        'tradeCardJoin',
+        'getSocialViewer',
+        'withCurrentBlocks',
         'getSocialRow',
         'lockSocialThread',
         'assertSocialInteraction',
@@ -189,25 +197,48 @@ function loadDeclarations(file, names, bindings) {
         as: require('pg-promise').as,
         ENV_CONFIG: { adminIds: [] },
         MOD_IDS: [],
+        // The interaction check reads the person's blocks itself, with the
+        // thread locked. Here they come from this run's own table.
+        getPrivateUser: async (id, client = pg) => {
+          const row = await client.oneOrNone(
+            'select data from private_users where id=$1',
+            [id]
+          )
+          return row
+            ? { blockedUserIds: [], blockedByUserIds: [], ...row.data, id }
+            : null
+        },
       }
     )
     const skipped = []
     const bridge = loadDeclarations(
       'backend/shared/src/social-discussion.ts',
       [
-        'SOCIAL_RECONCILE_BATCH',
+        'COMMENT_POST_PREFIX',
+        'marketCommentPostId',
+        'isMarketCommentPostId',
+        'commentOfPostId',
+        'stillOpenSql',
         'marketDiscussionParent',
+        'placeChanged',
         'ensureMarketCommentPost',
         'ensureSocialSource',
+        'pendingCommentRow',
+        'listCardComments',
+        'listCommentReplies',
+        'findPendingCommentPost',
+        'storedPost',
+        'findPendingPost',
+        'findSocialPost',
+        'getSocialPostForRead',
+        'materializeSocialPost',
         'findSocialSource',
         'subscribeToSocialThread',
-        'reconcileMarketDiscussion',
       ],
       {
         ...thread,
         APIError,
         getSocialViewer: async (id) => ({ id, blocked: [] }),
-        socialTimestamp: (time) => time,
         log: { warn: (_message, details) => skipped.push(details.commentId) },
         commentToYapContent: (c) => ({
           text: 'fixture',
@@ -339,16 +370,46 @@ function loadDeclarations(file, names, bindings) {
       () => bridge.ensureMarketCommentPost(pg, 'mod'),
       /Mod comments/
     )
-    // Reading the market's discussion takes the comments it can place and
-    // leaves out a reply under a hidden comment and a reply to a mod comment.
-    // A comment whose copy cannot be written (no such user) is skipped alone.
+    // Reading the market's discussion makes no posts. A comment gets its post
+    // when someone acts on it, if it can be on Yap: not a hidden comment, a
+    // reply under one, a reply to a mod comment, or a comment whose author has
+    // no account.
     await db.query(`insert into contract_comments(comment_id,contract_id,user_id,data) values
    ('hidden','market','bob','{"id":"hidden","contractId":"market","userId":"bob","hidden":true,"content":{"type":"doc"},"createdTime":1700000000002}'),
    ('under-hidden','market','alice','{"id":"under-hidden","contractId":"market","userId":"alice","replyToCommentId":"hidden","content":{"type":"doc"},"createdTime":1700000000003}'),
    ('under-mod','market','alice','{"id":"under-mod","contractId":"market","userId":"alice","replyToCommentId":"mod","content":{"type":"doc"},"createdTime":1700000000004}'),
    ('broken','market','nobody','{"id":"broken","contractId":"market","userId":"nobody","content":{"type":"doc"},"createdTime":1700000000005}'),
    ('fresh','market','bob','{"id":"fresh","contractId":"market","userId":"bob","content":{"type":"doc"},"createdTime":1700000000006}');`)
-    await bridge.reconcileMarketDiscussion(pg, m1)
+    const listed = await bridge.listCardComments(
+      pg,
+      m1,
+      { blocked: [] },
+      undefined,
+      50
+    )
+    // The card lists the comment that already has a post, and one without.
+    assert.deepEqual(
+      listed.filter((entry) => entry.postId).map((entry) => entry.postId),
+      ['original']
+    )
+    assert.deepEqual(
+      listed.filter((entry) => entry.pending).map((entry) => entry.id),
+      ['mc-fresh']
+    )
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from social_posts where market_comment_id in ('hidden','under-hidden','under-mod','broken','fresh')"
+        )
+      ).rows[0].n,
+      0
+    )
+    for (const id of ['hidden', 'under-hidden', 'under-mod', 'broken'])
+      await assert.rejects(
+        () => bridge.materializeSocialPost(pg, 'mc-' + id),
+        /Post not found/
+      )
+    await bridge.materializeSocialPost(pg, 'mc-fresh')
     assert.deepEqual(
       (
         await db.query(
@@ -357,7 +418,8 @@ function loadDeclarations(file, names, bindings) {
       ).rows.map((row) => row.id),
       ['fresh']
     )
-    assert.deepEqual(skipped, ['broken'])
+    // Nothing was tried and failed.
+    assert.deepEqual(skipped, [])
     assert.equal(
       (await db.query("select parent_id from social_posts where id='mc-fresh'"))
         .rows[0].parent_id,
@@ -375,8 +437,9 @@ function loadDeclarations(file, names, bindings) {
     await db.query(`insert into social_post_markets(post_id,contract_id) values('original','market'),('original','other');
    insert into social_posts(id,user_id,root_id) values('repeated','alice','repeated'),('self','owner','self');
    insert into social_post_markets(post_id,contract_id) values('repeated','market'),('self','market');`)
-    // Exercise the API's actual cursor. The first 100 native replies are hidden
-    // from this reader, and a newer reply already exists on Yap.
+    // Exercise the API's actual cursor. The first 106 comments are hidden from
+    // this reader, the newest one already has a post on Yap, and the rest are
+    // read from the market without one.
     await db.query(
       "insert into contracts(id,creator_id) values('paged','owner')"
     )
@@ -390,10 +453,10 @@ function loadDeclarations(file, names, bindings) {
       typeof time === 'string' ? time : time.toISOString()
     const { readSocialPosts } = loadDeclarations(
       'backend/api/src/social-posts.ts',
-      ['readSocialPosts'],
+      ['postsWithFeedTime', 'readSocialPosts'],
       {
         ...thread,
-        reconcileForRead: bridge.reconcileMarketDiscussion,
+        ...bridge,
         socialTimestamp: timestamp,
         hydrateSocialPosts: async (_db, rows) => rows,
         withoutRepeatedMarket: (posts) => posts,
@@ -463,7 +526,7 @@ function loadDeclarations(file, names, bindings) {
       other: 2,
     })
     console.log(
-      'PASS: migration merges likes and leaves what it cannot move; shares are unique and reversible, and an undo creates nothing; 24h cooldown survives undo; mutes survive participation; original authors and native reply roots are preserved; mod comments stay out; comments that cannot be placed are skipped without stopping a read; hidden threads reject interaction; ranking deduplicates people and excludes creators/bots.'
+      'PASS: migration merges likes and leaves what it cannot move; shares are unique and reversible, and an undo creates nothing; 24h cooldown survives undo; mutes survive participation; original authors and native reply roots are preserved; mod comments stay out; a read lists comments that have no post and makes none, and a comment that cannot be on Yap gets no post; hidden threads reject interaction; ranking deduplicates people and excludes creators/bots.'
     )
   } finally {
     if (db) {

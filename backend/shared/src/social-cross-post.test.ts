@@ -22,6 +22,12 @@ jest.mock('api/helpers/rate-limit', () => ({
 jest.mock('./social-posts', () => ({
   socialAuthor: jest.fn(),
   getSocialViewer: jest.fn(),
+  // The person's blocks read again under the write's locks: none are added,
+  // unless a case sets the ones made since the request began.
+  withCurrentBlocks: async (_pg: unknown, viewer: { blocked: string[] }) => ({
+    ...viewer,
+    blocked: [...viewer.blocked, ...mockBlocksMadeSince],
+  }),
   assertSocialInteraction: jest.fn(),
   lockSocialThread: jest.fn(),
   limitSocialWrite: jest.fn(),
@@ -33,6 +39,9 @@ jest.mock('./social-posts', () => ({
   notifySocial: jest.fn(),
 }))
 jest.mock('./social-discussion', () => ({
+  // No id in these cases is a comment's own, so nothing is looked up first.
+  isMarketCommentPostId: (id: string) => id.startsWith('mc-'),
+  materializeSocialPost: jest.fn(),
   ensureMarketCommentPost: jest.fn(async () => ({ id: 'original' })),
   isCommentYapRepresentable: jest.fn(() => true),
   subscribeToSocialThread: jest.fn(),
@@ -60,7 +69,10 @@ import {
   deleteSocialPost,
   editSocialPost,
 } from 'api/social-posts'
-import { isCommentYapRepresentable } from './social-discussion'
+import {
+  isCommentYapRepresentable,
+  materializeSocialPost,
+} from './social-discussion'
 import { createSupabaseDirectClient } from './supabase/init'
 import { getComment } from './supabase/contract-comments'
 import { updateData } from './supabase/utils'
@@ -131,6 +143,8 @@ let inTx = false
 // Whether each pg.none call, and the market comment, ran inside the transaction.
 let noneInTx: boolean[] = []
 let commentInTx: boolean | undefined
+// Blocks made after a request read the person's blocks and before its locks.
+let mockBlocksMadeSince: string[] = []
 const sqlCalls = (pattern: RegExp) =>
   pg.none.mock.calls.filter(([sql]) => pattern.test(sql))
 
@@ -172,6 +186,7 @@ beforeEach(() => {
   noneInTx = []
   commentInTx = undefined
   announcedInTx = undefined
+  mockBlocksMadeSince = []
   jest
     .mocked(createSupabaseDirectClient)
     .mockReturnValue(
@@ -202,6 +217,33 @@ beforeEach(() => {
   jest.mocked(getContract).mockResolvedValue({ id: 'market' } as Contract)
 })
 afterEach(() => jest.restoreAllMocks())
+
+test('a Yap that also comments is refused for a block with the market creator, also one made after the request began', async () => {
+  const refused = {
+    code: 403,
+    message: 'You cannot comment on this market because of a block',
+  }
+  // A block that is there when the request reads the author's blocks: it is
+  // refused before anything is begun.
+  jest
+    .mocked(getSocialViewer)
+    .mockResolvedValueOnce({ id: 'author', blocked: ['creator'] })
+  await expect(create({ alsoComment: true })).rejects.toMatchObject(refused)
+  expect(pg.tx).not.toHaveBeenCalled()
+
+  // The creator blocks the author after that read. The list read again with
+  // the write's locks held has the block, and nothing is written.
+  mockBlocksMadeSince = ['creator']
+  await expect(create({ alsoComment: true })).rejects.toMatchObject(refused)
+  expect(pg.tx).toHaveBeenCalledTimes(1)
+  expect(pg.one).not.toHaveBeenCalled()
+  expect(createCommentOnContractInternal).not.toHaveBeenCalled()
+
+  // A block with someone else changes nothing here.
+  mockBlocksMadeSince = ['someone-else']
+  await create({ alsoComment: true })
+  expect(createCommentOnContractInternal).toHaveBeenCalledTimes(1)
+})
 
 test('a Yap shared from a comment also replies in that comment thread', async () => {
   const result = await create({ alsoComment: true })
@@ -540,4 +582,106 @@ test('a moderator removal leaves market comments by admins and moderators', asyn
   ).rejects.toMatchObject({ code: 403 })
   expect(updateData).not.toHaveBeenCalled()
   expect(trackPublicEvent).not.toHaveBeenCalled()
+})
+
+// A market comment can be on Yap without a post of its own, under the id its
+// post will have (mc-<commentId>). The first action on it gives it that post.
+test("acting on a comment's own post id gives the comment its post first; any other id is not looked up", async () => {
+  const made = jest.mocked(materializeSocialPost)
+  const madeInTx: boolean[] = []
+  made.mockImplementation(async () => {
+    madeInTx.push(inTx)
+    return row
+  })
+  const words = (text: string) => ({ text, marketIds: [] })
+
+  // A reply: in the reply's own transaction, before the thread is locked, so
+  // a reply that is refused leaves no post behind.
+  await create({
+    parentId: 'mc-c1',
+    source: undefined,
+    content: words('a reply'),
+  })
+  expect(made.mock.calls).toEqual([[pg, 'mc-c1']])
+  expect(madeInTx).toEqual([true])
+  expect(made.mock.invocationCallOrder[0]).toBeLessThan(
+    jest.mocked(lockSocialThread).mock.invocationCallOrder[0]
+  )
+
+  // A quote: in the quote's own transaction too, with the person quoting, so
+  // a quote that is refused leaves no post behind either.
+  const quoting = { id: 'author', blocked: [] }
+  made.mockClear()
+  pg.tx.mockClear()
+  await create({ source: { postId: 'mc-c2' }, content: words('a quote') })
+  expect(made.mock.calls).toEqual([[pg, 'mc-c2', quoting]])
+  expect(pg.tx).toHaveBeenCalledTimes(1)
+  expect(made.mock.invocationCallOrder[0]).toBeGreaterThan(
+    pg.tx.mock.invocationCallOrder[0]
+  )
+
+  // A reply that also quotes: the quoted comment in a transaction of its own,
+  // before the reply's. Each then asks for one comment's lock and one
+  // thread's, in that order, and neither waits on the other.
+  made.mockClear()
+  pg.tx.mockClear()
+  jest.mocked(lockSocialThread).mockClear()
+  await create({
+    parentId: 'mc-c5',
+    source: { postId: 'mc-c6' },
+    content: words('a reply with a quote'),
+  })
+  expect(made.mock.calls).toEqual([
+    [pg, 'mc-c6', quoting],
+    [pg, 'mc-c5'],
+  ])
+  expect(pg.tx).toHaveBeenCalledTimes(2)
+  expect(made.mock.invocationCallOrder[0]).toBeLessThan(
+    pg.tx.mock.invocationCallOrder[1]
+  )
+  expect(made.mock.invocationCallOrder[1]).toBeGreaterThan(
+    pg.tx.mock.invocationCallOrder[1]
+  )
+  expect(made.mock.invocationCallOrder[1]).toBeLessThan(
+    jest.mocked(lockSocialThread).mock.invocationCallOrder[0]
+  )
+
+  // A reply that quotes the very comment it replies to has one comment to
+  // lock: one transaction, and a refusal leaves nothing.
+  made.mockClear()
+  pg.tx.mockClear()
+  await create({
+    parentId: 'mc-c7',
+    source: { postId: 'mc-c7' },
+    content: words('a reply that quotes what it replies to'),
+  })
+  expect(made.mock.calls).toEqual([[pg, 'mc-c7']])
+  expect(pg.tx).toHaveBeenCalledTimes(1)
+
+  // An edit and a removal: before the post is locked.
+  made.mockClear()
+  await editSocialPost(
+    API['edit-social-post'].props.parse({
+      id: 'mc-c3',
+      content: words('edited'),
+    }),
+    auth,
+    req
+  )
+  await deleteSocialPost({ id: 'mc-c4' }, auth, req)
+  expect(made.mock.calls).toEqual([
+    [pg, 'mc-c3'],
+    [pg, 'mc-c4'],
+  ])
+
+  // Any other id names a post or nothing, and costs no lookup.
+  made.mockClear()
+  await create({
+    parentId: 'post',
+    source: undefined,
+    content: words('a reply'),
+  })
+  await create({ source: { postId: 'post' }, content: words('a quote') })
+  await deleteSocialPost({ id: 'post' }, auth, req)
+  expect(made).not.toHaveBeenCalled()
 })
