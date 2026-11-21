@@ -57,8 +57,10 @@ if (require.main === module) {
       finished_time: string | null
       last_error: string | null
       skip_existing: boolean
+      last_user_id: string | null
     }>(
-      `select sent_count, finished_time, last_error, skip_existing
+      `select sent_count, finished_time, last_error, skip_existing,
+         last_user_id
        from announcement_deliveries where post_id = $1`,
       [postId]
     )
@@ -66,13 +68,20 @@ if (require.main === module) {
       `select count(*)::int as count from users`
     )
     // Users holding a notification for this post from an earlier send.
-    const sample = await pg.one<{ already: number }>(
-      `select count(*) filter (where exists (
+    // Users holding a notification for this post. `ahead` counts only those
+    // a send under way has yet to reach: the rest hold its own copies.
+    const sample = await pg.one<{ already: number; ahead: number }>(
+      `select count(*) filter (where s.has)::int as already,
+         count(*) filter (where s.has and ($3::text is null or s.id > $3))::int
+           as ahead
+       from (
+         select u.id, exists (
            select 1 from user_notifications n
            where n.user_id = u.id and n.data->>'sourceId' = $1
-         ))::int as already
-       from (select id from users order by random() limit $2) u`,
-      [postId, SAMPLE_SIZE]
+         ) as has
+         from (select id from users order by random() limit $2) u
+       ) s`,
+      [postId, SAMPLE_SIZE, delivery?.last_user_id ?? null]
     )
 
     console.log(`Post:      ${post.data.title} (/post/${post.data.slug})`)
@@ -110,9 +119,16 @@ if (require.main === module) {
     // already under way keeps its check, and this run can only turn it on:
     // turning it off part way could reach users ahead of the cursor who
     // have the post.
-    const check = delivery
+    let check = delivery
       ? delivery.skip_existing || !noSkipCheck || !!closed
       : !noSkipCheck
+    if (!check && delivery && sample.ahead > 0) {
+      // The first sample missed someone this send has yet to reach.
+      check = true
+      console.log(
+        `The sample found ${sample.ahead} user(s) ahead of the cursor who have it: turning the check on.`
+      )
+    }
     console.log(
       `Check:     ${
         check
