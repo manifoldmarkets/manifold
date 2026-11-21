@@ -15,9 +15,15 @@ export async function getCommentSafe(
   )
 }
 
-export async function getComment(pg: SupabaseDirectClient, commentId: string) {
+export async function getComment(
+  pg: SupabaseDirectClient,
+  commentId: string,
+  forUpdate = false
+) {
   const comment = await pg.oneOrNone(
-    `select data from contract_comments where comment_id = $1`,
+    `select data from contract_comments where comment_id = $1 ${
+      forUpdate ? 'for update' : ''
+    }`,
     [commentId],
     (r) => (r ? convertContractComment(r.data) : null)
   )

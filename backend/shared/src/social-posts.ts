@@ -1,3 +1,5 @@
+import { as } from 'pg-promise'
+import { ENV_CONFIG, MOD_IDS } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
 import { groupBy } from 'lodash'
 import { getActiveSupporterEntitlements } from './supabase/entitlements'
@@ -33,15 +35,43 @@ import {
 } from 'common/social-rich-content'
 import { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
 import { insertNotificationToSupabase } from './supabase/notifications'
-import { getPrivateUser, getUser } from './utils'
+import { getPrivateUser, getUser, log } from './utils'
 
 type DB = SupabaseDirectClient | SupabaseTransaction
-export type SocialRow = Omit<Row<'social_posts'>, 'rich_content'> & {
+export type SocialRow = Omit<
+  Row<'social_posts'>,
+  'rich_content' | 'canonical_key' | 'feed_visible' | 'hidden_time'
+> & {
   rich_content: SocialRichContent | null
+  canonical_key?: string | null
+  feed_visible?: boolean
+  feed_time?: string
+  hidden_time?: string | null
 }
+// Use the same native moderation predicate for copying, quoting and hydration.
+export const visibleMarketComment = (alias: 'cc' | 'parent') => `
+  not coalesce((${alias}.data->>'deleted')::boolean,false)
+  and not coalesce((${alias}.data->>'isModComment')::boolean,false)
+  and not coalesce((${alias}.data->>'hiddenOnYap')::boolean,
+    coalesce((${alias}.data->>'hidden')::boolean,false)
+    and (${alias}.data->>'hiderId' is null or ${alias}.data->>'hiderId'=any(${as.array(
+  [...ENV_CONFIG.adminIds, ...MOD_IDS]
+)}::text[])
+      or ${alias}.data->>'hiderId' is distinct from (select creator_id from contracts where id=${alias}.contract_id)))`
+
+const visibleQuoteComment = (alias: 'cc' | 'parent') => `${visibleMarketComment(
+  alias
+)}
+  and not exists (select 1 from social_posts mirror join social_posts root on root.id=mirror.root_id
+    where mirror.market_comment_id=${alias}.comment_id and
+    (mirror.hidden_time is not null or mirror.deleted_time is not null or root.hidden_time is not null or root.deleted_time is not null))`
+
 export type SocialViewer = { id?: string; blocked: string[] }
-export async function getSocialViewer(id?: string): Promise<SocialViewer> {
-  const user = id ? await getPrivateUser(id) : null
+export async function getSocialViewer(
+  id?: string,
+  pg?: DB
+): Promise<SocialViewer> {
+  const user = id ? await getPrivateUser(id, pg) : null
   return {
     id,
     blocked: [
@@ -110,7 +140,12 @@ export async function assertSocialInteraction(
   reply = false
 ) {
   const root = await getSocialRow(pg, post.root_id)
-  if (post.deleted_time || (reply && root.deleted_time))
+  if (
+    post.deleted_time ||
+    post.hidden_time ||
+    root.hidden_time ||
+    (reply && root.deleted_time)
+  )
     throw new APIError(403, 'This discussion is closed')
   if (
     viewer.blocked.includes(post.user_id) ||
@@ -120,6 +155,29 @@ export async function assertSocialInteraction(
       403,
       'You cannot interact with this discussion because of a block'
     )
+  if (post.market_comment_id || post.canonical_key?.match(/^(market|bet):/)) {
+    // A market creator's hide collapses the comment on that market only. A
+    // moderator's hide also sets hidden_time on the post, checked above.
+    const available = await pg.oneOrNone(
+      `select c.id from contracts c left join contract_comments cc on cc.comment_id=$2
+       where c.id=coalesce(cc.contract_id,$1) and c.visibility='public'
+         and not coalesce((c.data->>'deleted')::boolean,false)
+         and not(c.creator_id=any($3::text[]))
+         and ($2::text is null or cc.comment_id is not null
+           and ${visibleMarketComment('cc')})`,
+      [post.source_contract_id, post.market_comment_id, viewer.blocked]
+    )
+    if (!available)
+      throw new APIError(403, 'This shared discussion is unavailable')
+  }
+}
+// Whether a discussion still takes new messages: neither the post nor the
+// root of its thread has been removed from Yap or hidden there.
+export async function isSocialThreadOpen(pg: DB, post: SocialRow) {
+  if (post.deleted_time || post.hidden_time) return false
+  const root =
+    post.root_id === post.id ? post : await getSocialRow(pg, post.root_id)
+  return !root.deleted_time && !root.hidden_time
 }
 export async function validateSocialMarkets(pg: DB, marketIds: string[]) {
   const rows = await pg.manyOrNone<{ id: string }>(
@@ -246,6 +304,15 @@ export function getSocialEditContent(
     if (node.type === 'mention' || node.type === 'contract-mention') {
       if (display.type === node.type && display.attrs?.id === node.attrs!.id)
         return display
+      // A market reply's mention, shown as the author of the comment it names
+      // (see socialReplyMentionAuthors). The editor gets that name with the
+      // stored id, so saving puts the stored mention back and mentions no one
+      // anew.
+      if (display.type === node.type && node.type === 'mention')
+        return {
+          type: node.type,
+          attrs: { id: node.attrs!.id, label: display.attrs!.label },
+        }
       return {
         type: node.type,
         attrs: {
@@ -290,22 +357,28 @@ export async function validateSocialSource(
   if (!source) return
   if ('postId' in source) {
     const post = await getSocialRow(pg, source.postId)
-    await assertSocialInteraction(pg, post, viewer)
+    await assertSocialInteraction(pg, post, viewer, true)
     return
   }
   if (!marketIds.includes(source.contractId))
     throw new APIError(400, 'Keep the source market attached')
   if (source.commentId) {
-    const comment = await pg.oneOrNone(
-      `select cc.user_id from contract_comments cc
-      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
+    const comment = await pg.oneOrNone<{
+      user_id: string
+      is_mod_comment: boolean
+    }>(
+      `select cc.user_id, coalesce((cc.data->>'isModComment')::boolean, false) as is_mod_comment
+      from contract_comments cc
+      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId' and parent.contract_id=cc.contract_id
       where cc.comment_id = $1 and cc.contract_id = $2
-      and coalesce((cc.data->>'hidden')::boolean, false) = false and coalesce((cc.data->>'deleted')::boolean, false) = false
-      and coalesce((parent.data->>'hidden')::boolean, false) = false and coalesce((parent.data->>'deleted')::boolean, false) = false`,
+      and ${visibleQuoteComment('cc')} and ${visibleQuoteComment('parent')}`,
       [source.commentId, source.contractId]
     )
     if (!comment || viewer.blocked.includes(comment.user_id))
       throw new APIError(400, 'Source comment is unavailable')
+    // Quoting is sharing too: mod comments stay on their market.
+    if (comment.is_mod_comment)
+      throw new APIError(400, 'Mod comments cannot be shared to Yap')
   }
   if (source.betId) {
     const bet = await pg.oneOrNone(
@@ -331,6 +404,100 @@ const displayUser = (u: {
   entitlements: (u.entitlements ?? []).map(convertEntitlement),
 })
 
+// How many replies each requested post shows. Counted in three parts, so that
+// each can use an index: posts under it on Yap; for a market or trade card,
+// the top-level comments it lists from wherever they sit on Yap; and native
+// replies not copied to Yap yet. Joining the first two with OR, or matching
+// the third on a value that may be null, reads the whole posts table (or all
+// of a market's comments) once for every post on the page.
+export const socialReplyCounts = (pg: DB, ids: string[], blocked: string[]) => {
+  const shown = `p.hidden_time is null and root.hidden_time is null
+    and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
+    and not (p.user_id=any($2::text[]) or root.user_id=any($2::text[]))`
+  // Native comments that will join the thread when it is next read.
+  const pending = (which: string) => `(select count(*) from contract_comments cc
+    join contracts c on c.id=cc.contract_id left join private_users pu on pu.id=cc.user_id
+    where ${which}
+    and ${visibleMarketComment('cc')} and not (cc.user_id=any($2::text[]))
+    and c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+    and not (coalesce(pu.data->'blockedUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id]
+      or coalesce(pu.data->'blockedByUserIds','[]'::jsonb) ?| array[requested.user_id,thread.user_id,c.creator_id])
+    and not exists (select 1 from social_posts copied where copied.market_comment_id=cc.comment_id))`
+  return pg.manyOrNone<{ parent_id: string; count: number }>(
+    `select requested.id as parent_id, (
+      (select count(*) from social_posts p join social_posts root on root.id=p.root_id
+       where p.parent_id=requested.id and ${shown})
+      + (case when requested.canonical_key ~ '^(market|bet):' then
+          (select count(*) from contract_comments cc
+           join social_posts p on p.market_comment_id=cc.comment_id
+           join social_posts root on root.id=p.root_id
+           where cc.contract_id=requested.source_contract_id and cc.data->>'replyToCommentId' is null
+           and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)
+           and p.parent_id is distinct from requested.id and ${shown})
+        else 0 end)
+      + (case
+          when requested.deleted_time is not null or requested.hidden_time is not null
+            or thread.deleted_time is not null or thread.hidden_time is not null then 0
+          when requested.market_comment_id is not null then ${pending(
+            `cc.contract_id=coalesce(original.contract_id,requested.source_contract_id)
+             and cc.data->>'replyToCommentId'=requested.market_comment_id`
+          )}
+          when requested.canonical_key ~ '^(market|bet):' then ${pending(
+            `cc.contract_id=requested.source_contract_id and cc.data->>'replyToCommentId' is null
+             and (requested.source_bet_id is null or cc.data->>'betId'=requested.source_bet_id)`
+          )}
+          else 0 end)
+      )::int as count from social_posts requested join social_posts thread on thread.id=requested.root_id
+      left join contract_comments original on original.comment_id=requested.market_comment_id
+      where requested.id=any($1::text[])`,
+    [ids, blocked]
+  )
+}
+
+// The market's Reply button starts a reply with a mention of the person replied
+// to, and stores the id of the COMMENT replied to in it, not the person's id.
+// For pairs of (a comment, an id one of its mentions carries), this finds whose
+// comment the id names, when that comment is on the same market. The mention's
+// label is never used: a username can change hands, and a label can be forged.
+//
+// In two steps on purpose: the comment's market first, kept apart, then the
+// comment it names. Written as two plain joins, one of the two comments is
+// reached through its market alone, and every comment on that market is read
+// for each pair.
+const replyMentionAuthorsSql = (comments: number, mentions: number) =>
+  `with own as materialized (
+     select pair.comment_id, pair.mention_id, c.contract_id
+     from unnest($${comments}::text[], $${mentions}::text[]) as pair(comment_id, mention_id)
+     join contract_comments c on c.comment_id = pair.comment_id
+   )
+   select own.comment_id, target.comment_id as mention_id, target.user_id
+   from own
+   join contract_comments target on target.comment_id = own.mention_id and target.contract_id = own.contract_id`
+export const socialReplyMentionAuthors = (
+  pg: DB,
+  pairs: (readonly [comment: string, mention: string])[]
+) =>
+  pairs.length
+    ? pg.manyOrNone<{
+        comment_id: string
+        mention_id: string
+        user_id: string
+      }>(replyMentionAuthorsSql(1, 2), [
+        pairs.map(([comment]) => comment),
+        pairs.map(([, mention]) => mention),
+      ])
+    : Promise.resolve([])
+
+// A market comment that starts its own thread carries its market (see
+// hydrateSocialPosts). Listed under the market's or the trade's own card, which
+// names the market already, it does not repeat it.
+export const withoutRepeatedMarket = (posts: SocialPost[]) =>
+  posts.map((post) =>
+    post.source?.markets
+      ? { ...post, source: { ...post.source, markets: undefined } }
+      : post
+  )
+
 export async function hydrateSocialPosts(
   pg: DB,
   rows: SocialRow[],
@@ -349,6 +516,14 @@ export async function hydrateSocialPosts(
   const mentionedMarketIds = [
     ...new Set([...richDocs.values()].flatMap(getSocialMarketMentionIds)),
   ]
+  // In a market comment a mention's id may be the comment it replies to.
+  const replyMentions = rows.flatMap((r) =>
+    r.market_comment_id
+      ? getSocialMentionIds(richDocs.get(r.id)).map(
+          (id) => [r.market_comment_id!, id] as const
+        )
+      : []
+  )
   const [
     users,
     roots,
@@ -359,18 +534,32 @@ export async function hydrateSocialPosts(
     comments,
     bets,
     quotedRows,
+    reposts,
+    subscriptions,
+    linkedComments,
     inlineMarkets,
+    repliedTo,
   ] = await Promise.all([
+    // One list of ids for the primary key. Written as "id = any(...) or id in
+    // (select ...)", the sub-select cannot use an index and every call reads
+    // the whole users table.
     pg.manyOrNone(
       `select id, name, username, data,
       (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=users.id) as entitlements
-      from users where id = any($1::text[]) or id in (select user_id from social_posts where id=any($2::text[]))`,
+      from users where id = any($1::text[]
+        || array(select user_id from social_posts where id=any($2::text[]))
+        || array(select user_id from (${replyMentionAuthorsSql(
+          3,
+          4
+        )}) replied))`,
       [
         rows.flatMap((r) => [
           r.user_id,
           ...getSocialMentionIds(richDocs.get(r.id)),
         ]),
         rows.map((r) => r.parent_id).filter(Boolean),
+        replyMentions.map(([comment]) => comment),
+        replyMentions.map(([, mention]) => mention),
       ]
     ),
     pg.manyOrNone<SocialRow>(
@@ -384,17 +573,13 @@ export async function hydrateSocialPosts(
       [ids]
     ),
     pg.manyOrNone<{ content_id: string; count: number; liked: boolean }>(
-      `select content_id, count(*)::int as count, coalesce(bool_or(user_id = $2),false) as liked from user_reactions
-      where content_type = 'social_post' and reaction_type = 'like' and content_id = any($1::text[]) group by content_id`,
+      `select p.id as content_id, count(distinct r.user_id)::int as count, coalesce(bool_or(r.user_id = $2),false) as liked
+      from social_posts p join user_reactions r on r.content_id=coalesce(p.market_comment_id,p.id)
+        and r.content_type=case when p.market_comment_id is null then 'social_post' else 'comment' end
+      where r.reaction_type='like' and p.id=any($1::text[]) group by p.id`,
       [ids, viewer.id ?? null]
     ),
-    pg.manyOrNone<{ parent_id: string; count: number }>(
-      `select p.parent_id, count(*)::int as count from social_posts p
-      where p.parent_id = any($1::text[])
-      and (p.deleted_time is null or exists (select 1 from social_posts child where child.parent_id=p.id))
-      and not (p.user_id = any($2::text[])) group by p.parent_id`,
-      [ids, viewer.blocked]
-    ),
+    socialReplyCounts(pg, ids, viewer.blocked),
     pg.manyOrNone<Row<'contracts'>>(
       `select * from contracts where id = any($1::text[]) and visibility = 'public' and coalesce((data->>'deleted')::boolean,false) = false`,
       [rows.map((r) => r.source_contract_id).filter(Boolean)]
@@ -404,9 +589,10 @@ export async function hydrateSocialPosts(
       json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
         'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_comments cc join users u on u.id=cc.user_id
-      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId'
-      where cc.comment_id = any($1::text[]) and coalesce((cc.data->>'hidden')::boolean,false) = false and coalesce((cc.data->>'deleted')::boolean,false) = false
-      and coalesce((parent.data->>'hidden')::boolean,false) = false and coalesce((parent.data->>'deleted')::boolean,false) = false`,
+      left join contract_comments parent on parent.comment_id = cc.data->>'replyToCommentId' and parent.contract_id=cc.contract_id
+      where cc.comment_id = any($1::text[]) and ${visibleQuoteComment(
+        'cc'
+      )} and ${visibleQuoteComment('parent')}`,
       [rows.map((r) => r.source_comment_id).filter(Boolean)]
     ),
     pg.manyOrNone(
@@ -424,6 +610,35 @@ export async function hydrateSocialPosts(
           [rows.map((r) => r.source_post_id).filter(Boolean), viewer.blocked]
         )
       : Promise.resolve([]),
+    pg.manyOrNone<{
+      post_id: string
+      count: number
+      reposted: boolean
+      user: Parameters<typeof displayUser>[0]
+    }>(
+      `select * from (select r.post_id,
+        count(*) over(partition by r.post_id)::int as count,
+        bool_or(r.user_id=$2) over(partition by r.post_id) as reposted,
+        row_number() over(partition by r.post_id order by r.bumped_time desc,r.user_id) as rank,
+        json_build_object('id',u.id,'name',u.name,'username',u.username,'data',u.data) as "user"
+        from social_reposts r join users u on u.id=r.user_id
+        where r.post_id=any($1::text[]) and r.active and not(r.user_id=any($3::text[]))) shares where rank<=3`,
+      [ids, viewer.id ?? null, viewer.blocked]
+    ),
+    viewer.id
+      ? pg.manyOrNone<{ root_id: string; muted: boolean }>(
+          'select root_id,muted from social_thread_subscriptions where root_id=any($1::text[]) and user_id=$2',
+          [rows.map((r) => r.root_id), viewer.id]
+        )
+      : Promise.resolve([]),
+    // Hidden on its market does not make a comment unavailable here: only a
+    // moderator's hide reaches Yap, through hidden_time on the post.
+    pg.manyOrNone<{ comment_id: string; available: boolean }>(
+      `select cc.comment_id,(c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+       and ${visibleMarketComment('cc')}) as available
+       from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=any($1::text[])`,
+      [rows.map((r) => r.market_comment_id).filter(Boolean)]
+    ),
     mentionedMarketIds.length
       ? pg.manyOrNone<Row<'contracts'>>(
           `select * from contracts where id=any($1::text[]) and visibility='public'
@@ -431,6 +646,7 @@ export async function hydrateSocialPosts(
           [mentionedMarketIds]
         )
       : Promise.resolve([]),
+    socialReplyMentionAuthors(pg, replyMentions),
   ])
   const quotedPosts = await hydrateSocialPosts(
     pg,
@@ -444,9 +660,10 @@ export async function hydrateSocialPosts(
   )
   const previewRows = previews
     ? await pg.manyOrNone<SocialRow>(
-        `select preview.* from unnest($1::text[]) as requested(id)
-    cross join lateral (select p.* from social_posts p where p.parent_id = requested.id and p.deleted_time is null
+        `select preview.* from social_posts requested
+    cross join lateral (select p.* from social_posts p where p.parent_id = requested.id and p.deleted_time is null and p.hidden_time is null
       and not (p.user_id = any($2::text[])) order by p.created_time desc, p.id desc limit 2) preview
+        where requested.id=any($1::text[])
         order by preview.parent_id, preview.created_time desc, preview.id desc`,
         [ids, viewer.blocked]
       )
@@ -457,13 +674,27 @@ export async function hydrateSocialPosts(
   return rows.map((row) => {
     const root = roots.find((r) => r.id === row.root_id)!
     const parent = roots.find((r) => r.id === row.parent_id)
-    const blocked = viewer.blocked.includes(row.user_id)
+    const blocked =
+      viewer.blocked.includes(row.user_id) ||
+      viewer.blocked.includes(root.user_id)
     const removed = blocked
       ? 'blocked'
       : row.deleted_time
       ? row.removed_by_moderator
         ? 'moderator'
         : 'author'
+      : row.hidden_time ||
+        root.hidden_time ||
+        (row.canonical_key?.match(/^(market|bet):/) &&
+          !sourceMarkets.some(
+            (m) =>
+              m.id === row.source_contract_id &&
+              !viewer.blocked.includes(m.creator_id ?? '')
+          )) ||
+        (row.market_comment_id &&
+          !linkedComments.find((c) => c.comment_id === row.market_comment_id)
+            ?.available)
+      ? 'moderator'
       : null
     const richDoc = richDocs.get(row.id)
     const richContent =
@@ -471,7 +702,18 @@ export async function hydrateSocialPosts(
         ? mapSocialMentions(
             richDoc,
             (node) => {
-              const user = users.find((user) => user.id === node.attrs!.id)
+              // By id. In a market comment, an id that is no user's may be
+              // the comment replied to: then the mention is of its author.
+              const repliedToAuthor = repliedTo.find(
+                (r) =>
+                  r.comment_id === row.market_comment_id &&
+                  r.mention_id === node.attrs!.id
+              )?.user_id
+              const user =
+                users.find((user) => user.id === node.attrs!.id) ??
+                (repliedToAuthor
+                  ? users.find((user) => user.id === repliedToAuthor)
+                  : undefined)
               return user &&
                 !user.data.userDeleted &&
                 !viewer.blocked.includes(user.id)
@@ -533,18 +775,65 @@ export async function hydrateSocialPosts(
               contract.token
             )} on ${bet.data.outcome}. View market`
           : 'View original market',
+        // A market comment that starts its own thread on Yap has no market
+        // attached and nothing above it that names one, so its market comes
+        // with it. Under a market's or a comment's thread the root says it.
+        // Not for a reader who has a block with the market's creator: that
+        // reader is not shown the creator's market card either.
+        ...(row.market_comment_id &&
+        !row.parent_id &&
+        !comment &&
+        !bet &&
+        !attached.length &&
+        !viewer.blocked.includes(sourceMarket.creator_id ?? '')
+          ? { markets: [contract] }
+          : {}),
+      }
+    } else if (
+      (row.source_comment_id || row.source_bet_id) &&
+      !row.canonical_key
+    ) {
+      // The quoted comment or trade can no longer be shown here: taken off
+      // Yap, removed, hidden, or behind a block. Say only that, as a quoted
+      // post does, with nothing that tells who wrote it or where it was. A
+      // trade's own card names its trade the same way and quotes nothing.
+      source = {
+        kind: row.source_comment_id ? 'comment' : 'bet',
+        url: '',
+        text: '',
+        unavailable: true,
       }
     }
     if (row.source_post_id) {
       source = quotesById.get(row.source_post_id) ?? {
         kind: 'post',
-        url: socialPostPath(row.source_post_id),
+        url: '',
         text: '',
         unavailable: true,
       }
     }
     return {
       id: row.id,
+      marketCommentId: row.market_comment_id,
+      discussionCreatorId: sourceMarket?.creator_id,
+      canonicalKey: row.canonical_key,
+      feedTimeMs: socialTimestampMillis(row.feed_time ?? row.created_time),
+      repostCount: removed
+        ? 0
+        : reposts.find((r) => r.post_id === row.id)?.count ?? 0,
+      reposted:
+        !removed &&
+        (reposts.find((r) => r.post_id === row.id)?.reposted ?? false),
+      repostedBy: removed
+        ? []
+        : reposts
+            .filter((r) => r.post_id === row.id)
+            .map((r) => displayUser(r.user)),
+      threadMuted:
+        subscriptions.find((s) => s.root_id === row.root_id)?.muted ?? false,
+      threadFollowing: subscriptions.some(
+        (s) => s.root_id === row.root_id && !s.muted
+      ),
       author: displayUser(users.find((u) => u.id === row.user_id)),
       text: removed
         ? ''
@@ -580,6 +869,7 @@ export async function hydrateSocialPosts(
       canReply:
         !removed &&
         !root.deleted_time &&
+        !root.hidden_time &&
         !viewer.blocked.includes(root.user_id),
       replyPreviews: removed
         ? []
@@ -592,40 +882,83 @@ export async function notifySocial(
   post: SocialRow,
   actor: User,
   kind: 'reply' | 'like',
-  replyId?: string
+  replyId?: string,
+  skip = new Set<string>(),
+  delivered = new Set<string>()
 ) {
-  if (post.user_id === actor.id || post.deleted_time) return
-  const recipient = await getPrivateUser(post.user_id)
   if (
-    !recipient ||
-    recipient.blockedUserIds.includes(actor.id) ||
-    recipient.blockedByUserIds.includes(actor.id)
+    actor.isBot ||
+    post.deleted_time ||
+    post.hidden_time ||
+    (kind === 'like' && post.user_id === actor.id)
   )
     return
-  const reason = kind === 'reply' ? 'social_replies' : 'user_liked_your_content'
-  if (!getNotificationDestinationsForUser(recipient, reason).sendToBrowser)
-    return
   const reply = replyId ? await getSocialRow(pg, replyId) : null
-  if (reply?.deleted_time) return
-  const notification: Notification = {
-    id:
-      kind === 'like'
-        ? `social-like-${post.id}-${actor.id}`
-        : `social-reply-${replyId}`,
-    userId: post.user_id,
-    reason,
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: post.id,
-    sourceType: kind === 'like' ? 'social_post_like' : 'social_reply',
-    sourceUpdateType: 'created',
-    sourceUserName: actor.name,
-    sourceUserUsername: actor.username,
-    sourceUserAvatarUrl: actor.avatarUrl ?? '',
-    data: { sourceUserId: actor.id },
-    sourceText: (reply?.text ?? post.text).slice(0, 200),
-    sourceSlug: socialPostPath(replyId ?? post.id),
-    sourceTitle: kind === 'like' ? 'on Yap' : 'Yap',
+  if (reply?.deleted_time || reply?.hidden_time) return
+  const root = await getSocialRow(pg, post.root_id)
+  if (root.hidden_time || root.deleted_time) return
+  const subscribers =
+    kind === 'reply'
+      ? await pg.manyOrNone<{ user_id: string }>(
+          'select user_id from social_thread_subscriptions where root_id=$1 and not muted',
+          [post.root_id]
+        )
+      : [{ user_id: post.user_id }]
+  for (const { user_id: userId } of subscribers) {
+    if (userId === actor.id || skip.has(userId)) continue
+    try {
+      const recipient = await getPrivateUser(userId, pg)
+      const reason =
+        kind === 'reply' ? 'social_replies' : 'user_liked_your_content'
+      if (
+        !recipient ||
+        recipient.blockedUserIds.includes(actor.id) ||
+        recipient.blockedByUserIds.includes(actor.id) ||
+        !getNotificationDestinationsForUser(recipient, reason).sendToBrowser
+      )
+        continue
+      if (
+        recipient.blockedUserIds.includes(root.user_id) ||
+        recipient.blockedByUserIds.includes(root.user_id)
+      )
+        continue
+      const notification: Notification = {
+        id:
+          kind === 'like'
+            ? `social-like-${post.id}-${actor.id}`
+            : `social-thread-${post.root_id}`,
+        userId,
+        reason,
+        createdTime: Date.now(),
+        isSeen: false,
+        sourceId: kind === 'reply' ? post.root_id : post.id,
+        sourceType: kind === 'like' ? 'social_post_like' : 'social_reply',
+        sourceUpdateType: 'created',
+        sourceUserName: actor.name,
+        sourceUserUsername: actor.username,
+        sourceUserAvatarUrl: actor.avatarUrl ?? '',
+        data: { sourceUserId: actor.id },
+        sourceText: (reply?.text ?? post.text).slice(0, 200),
+        sourceSlug: socialPostPath(replyId ?? post.id),
+        sourceTitle: kind === 'like' ? 'on Yap' : 'a Yap discussion you follow',
+      }
+      if (kind === 'like') await insertNotificationToSupabase(notification, pg)
+      else {
+        await pg.none(
+          `insert into user_notifications(user_id,notification_id,data) values ($1,$2,$3)
+        on conflict (user_id,notification_id) do update set data=excluded.data`,
+          [userId, notification.id, notification]
+        )
+        delivered.add(userId)
+        const { broadcast } = await import('./websockets/server')
+        broadcast(`user-notifications/${userId}`, { notification })
+      }
+    } catch (error) {
+      log.error('Failed to deliver a Yap notification', {
+        error,
+        userId,
+        postId: post.id,
+      })
+    }
   }
-  await insertNotificationToSupabase(notification, pg)
 }

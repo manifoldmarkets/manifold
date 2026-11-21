@@ -1,7 +1,8 @@
 import { JSONContent } from '@tiptap/core'
 import { Bet } from 'common/bet'
-import { ContractComment } from 'common/comment'
+import { ContractComment, MAX_COMMENT_JSON_LENGTH } from 'common/comment'
 import { type Contract } from 'common/contract'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { convertBet } from 'common/supabase/bets'
 import { millisToTs } from 'common/supabase/utils'
@@ -15,7 +16,9 @@ import { first } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
+import { updateData } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { sanitizeJsonContent } from 'shared/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
@@ -24,14 +27,15 @@ import { broadcastNewComment } from 'shared/websockets/helpers'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 import { onCreateCommentOnContract } from './on-create-comment-on-contract'
+import { linkCommentToOpenDiscussion } from 'shared/social-discussion'
 
-export const MAX_COMMENT_JSON_LENGTH = 20000
+// TODO: generate ids in supabase instead
+export const newCommentId = () => Math.random().toString(36).substring(2, 15)
 
 // Creates a new comment on a contract.
 // Posts and chats are not supported yet.
-export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction(
-  'comment',
-  async (props, auth) => {
+export const createComment: APIHandler<'comment'> =
+  onlyUsersWhoCanPerformAction('comment', async (props, auth) => {
     const {
       contractId,
       content,
@@ -40,17 +44,51 @@ export const createComment: APIHandler<'comment'> = onlyUsersWhoCanPerformAction
       replyToCommentId,
       replyToAnswerId,
       replyToBetId,
+      isModComment,
     } = props
-    return createCommentOnContractInternal(contractId, auth, {
+    if (isModComment && !isModId(auth.uid) && !isAdminId(auth.uid)) {
+      throw new APIError(403, 'Only moderators can post mod comments')
+    }
+    // A comment written on the market is always the market's own comment, as
+    // written and under the market's rules. Whether it also shows on Yap never
+    // decides whether it is accepted or what is stored.
+    const created = await createCommentOnContractInternal(contractId, auth, {
       content,
       html,
       markdown,
       replyToCommentId,
       replyToAnswerId,
       replyToBetId,
+      isModComment,
+    })
+    return {
+      result: created.result,
+      continue: async () => {
+        // Before the comment's own notifications, so people following the
+        // Yap thread are told once.
+        await joinSocialDiscussion(created.result, replyToBetId)
+        await created.continue()
+      },
+    }
+  })
+
+// If the comment's thread, trade or market is already discussed on Yap, the
+// comment joins that discussion as a copy. Best effort: a failure here leaves
+// an ordinary market comment, which a later read of the thread can still add.
+const joinSocialDiscussion = async (
+  comment: ContractComment,
+  replyToBetId: string | undefined
+) => {
+  try {
+    const pg = createSupabaseDirectClient()
+    await linkCommentToOpenDiscussion(pg, comment, replyToBetId)
+  } catch (e) {
+    log.error('Failed to add a market comment to its Yap discussion', {
+      e,
+      commentId: comment.id,
     })
   }
-)
+}
 
 export const createCommentOnContractInternal = async (
   contractId: string,
@@ -63,7 +101,14 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId?: string
     replyToBetId?: string
     isRepost?: boolean
-  }
+    isModComment?: boolean
+    socialPostId?: string
+    // Callers that must link the comment before it exists can assign its id
+    id?: string
+  },
+  // Reads and writes through the caller's transaction, without taking another
+  // connection. The caller announces the comment once it has committed.
+  tx?: SupabaseTransaction
 ) => {
   const {
     content,
@@ -73,19 +118,23 @@ export const createCommentOnContractInternal = async (
     replyToAnswerId,
     replyToBetId,
     isRepost,
+    socialPostId,
+    id,
+    isModComment,
   } = options
 
+  const pg = createSupabaseDirectClient()
+  const db = tx ?? pg
   const {
     you: creator,
     contract,
     contentJson,
-  } = await validateComment(contractId, auth.uid, content, html, markdown)
+  } = await validateComment(contractId, auth.uid, content, html, markdown, db)
 
-  const pg = createSupabaseDirectClient()
   const now = Date.now()
 
   if (replyToCommentId) {
-    const repliedComment = await pg.oneOrNone<{
+    const repliedComment = await db.oneOrNone<{
       comment_id: string
       reply_to_comment_id: string | null
     }>(
@@ -103,7 +152,7 @@ export const createCommentOnContractInternal = async (
   }
 
   const bet = replyToBetId
-    ? await pg
+    ? await db
         .one(`select * from contract_bets where bet_id = $1`, [replyToBetId])
         .then(convertBet)
     : undefined
@@ -111,8 +160,7 @@ export const createCommentOnContractInternal = async (
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
-    // TODO: generate ids in supabase instead
-    id: Math.random().toString(36).substring(2, 15),
+    id: id ?? newCommentId(),
     content: contentJson,
     createdTime: now,
 
@@ -133,8 +181,10 @@ export const createCommentOnContractInternal = async (
 
     isApi,
     isRepost,
+    socialPostId,
+    isModComment: isModComment || undefined,
   } as ContractComment)
-  await pg
+  await db
     .none(
       `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
               values ($1, $2, $3, $4, $5)`,
@@ -144,11 +194,22 @@ export const createCommentOnContractInternal = async (
       log.error(e)
       throw new APIError(500, 'Failed to create comment')
     })
-  broadcastNewComment(contractId, contract.visibility, creator, comment)
+  let announced = false
+  const announce = () => {
+    if (announced) return
+    announced = true
+    broadcastNewComment(contractId, contract.visibility, creator, comment)
+  }
+  if (!tx) announce()
 
   return {
     result: comment,
+    // In a caller's transaction, call this as soon as it commits, as an
+    // ordinary comment is announced right after its insert. The continuation
+    // announces it otherwise.
+    announce,
     continue: async () => {
+      announce()
       if (isApi) {
         await pg.tx((tx) =>
           runTxnInBetQueue(tx, {
@@ -175,8 +236,7 @@ export const createCommentOnContractInternal = async (
 
         const position = await getLargestPosition(pg, contract.id, creator.id)
 
-        updatedComment = removeUndefinedProps({
-          ...comment,
+        const denormalized = removeUndefinedProps({
           commentorPositionShares: position?.shares,
           commentorPositionOutcome: position?.outcome,
           commentorPositionAnswerId: position?.answer_id,
@@ -186,10 +246,12 @@ export const createCommentOnContractInternal = async (
               : undefined,
           ...denormalizeBet(bet, contract),
         })
-        await pg.none(
-          `update contract_comments set data = $1 where comment_id = $2`,
-          [updatedComment, comment.id]
-        )
+        updatedComment = { ...comment, ...denormalized }
+        // Merge these fields only: an edit or moderation since the insert stands.
+        await updateData(pg, 'contract_comments', 'comment_id', {
+          comment_id: comment.id,
+          ...denormalized,
+        })
       }
 
       await onCreateCommentOnContract({
@@ -232,10 +294,11 @@ export const validateComment = async (
   userId: string,
   content: JSONContent | undefined,
   html: string | undefined,
-  markdown: string | undefined
+  markdown: string | undefined,
+  // A caller's transaction reads through its own connection.
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
-  const pg = createSupabaseDirectClient()
-  const you = await getUser(userId)
+  const you = await getUser(userId, pg)
   const contract = await getContract(pg, contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
@@ -260,7 +323,8 @@ export const validateComment = async (
     )
   }
 
-  const contentJson = (content ? sanitizeJsonContent(content) : null) ||
+  const contentJson =
+    (content ? sanitizeJsonContent(content) : null) ||
     anythingToRichText({ html, markdown })
 
   if (!contentJson) {
