@@ -1,6 +1,12 @@
+import { BDL_LEAGUE_KEYS } from 'common/bdl/leagues'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { parseBdlEventId } from 'common/sports-ids'
+import { SPORTS_KICKOFF_TIMESTAMP_PATTERN } from 'common/sports-kickoff-interface'
+import { sportsProviderSql } from './sports-provider'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import {
   parsePollingRows,
+  sportForLeague,
   ScorePollingSettings,
 } from 'common/sports-score-polling'
 
@@ -57,4 +63,75 @@ export async function setScorePolling(
            updated_time = now()`,
     [target, intervalSeconds, userId]
   )
+}
+
+/** Pollable official games in the same time window as the legacy Odds panel.
+ * A busy provider cannot displace the other's game overrides. */
+export function getScorePollingGames(
+  pg: Pick<SupabaseDirectClient, 'manyOrNone'>
+) {
+  type Row = {
+    contractId: string
+    question: string
+    slug: string
+    label: string | null
+    provider: 'odds' | 'bdl'
+    event: string
+    startTime: string | number
+  }
+  return pg
+    .manyOrNone<Row>(
+      `with candidates as (
+       select c.id as "contractId", c.data->>'question' as question,
+              c.data->>'slug' as slug, c.data->>'sportsLeague' as label,
+              c.data->>'sportsLeagueKey' as stamped, c.data->>'sportsMarketType' as kind,
+              c.data->>'sportsEventId' as event, ${sportsProviderSql()} as provider,
+              (jsonb_path_query_first_tz(to_jsonb(regexp_replace(c.data->>'sportsStartTimestamp', 'Z$', '+00:00')),
+                '$.datetime()', '{}'::jsonb, true) #>> '{}')::timestamptz as kickoff
+         from contracts c
+        where c.creator_id = any($1) and c.resolution is null
+          and c.token = 'MANA' and c.visibility = 'public' and not coalesce(c.deleted, false)
+          and c.data->>'sportsEventId' is not null
+          and coalesce(c.data->'sportsFixture', 'false'::jsonb) = 'false'::jsonb
+          and not starts_with(c.data->>'sportsEventId', 'fixture:')
+          and c.close_time > now() - interval '6 hours'
+          and c.close_time < now() + interval '16 hours'
+          and c.data->>'sportsStartKnown' is distinct from 'false'
+          and c.data->>'sportsStartTimestamp' ~ $2
+     ), ordered as (
+       select *, row_number() over (partition by provider order by kickoff, "contractId") as position
+         from candidates
+        where kickoff < now() + interval '12 hours'
+          and (provider = 'odds' or (
+            provider = 'bdl' and kind = 'moneyline'
+            and split_part(event, ':', 1) = 'bdl'
+            and split_part(event, ':', 2) = any($3)
+            and (stamped is null or stamped = split_part(event, ':', 2))
+            and split_part(event, ':', 3) ~ '^[1-9][0-9]*$'))
+     )
+     select "contractId", question, slug, label, provider, event, extract(epoch from kickoff) * 1000 as "startTime"
+       from ordered where position <= 100 order by kickoff, "contractId"`,
+      [
+        MANIFOLD_SPORTS_USER_IDS,
+        SPORTS_KICKOFF_TIMESTAMP_PATTERN,
+        BDL_LEAGUE_KEYS.filter((k) => k !== 'f1'),
+      ]
+    )
+    .then((rows) =>
+      rows.flatMap((row) => {
+        const parsed =
+          row.provider === 'bdl' ? parseBdlEventId(row.event) : null
+        if (row.provider === 'bdl' && !parsed) return []
+        return [
+          {
+            contractId: row.contractId,
+            question: row.question,
+            slug: row.slug,
+            sport: sportForLeague(row.label ?? undefined),
+            startTime: Number(row.startTime),
+            ...(parsed && { leagueKey: parsed.league }),
+          },
+        ]
+      })
+    )
 }

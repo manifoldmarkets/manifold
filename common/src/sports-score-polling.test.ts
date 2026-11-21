@@ -1,5 +1,6 @@
 import {
   backedOff,
+  bdlLiveInterval,
   creditsPerDay,
   DEFAULT_FINALS_INTERVAL,
   finalsDue,
@@ -430,5 +431,39 @@ describe('on dev', () => {
       if (prev === undefined) delete process.env.NEXT_PUBLIC_FIREBASE_ENV
       else process.env.NEXT_PUBLIC_FIREBASE_ENV = prev
     }
+  })
+})
+
+describe('BDL league polling', () => {
+  it('keeps league, game and Odds sport settings separate, including explicit off', () => {
+    const settings = parsePollingRows([
+      { target: 'sport:nba', intervalSeconds: 30 },
+      { target: 'adaptive', intervalSeconds: 1 },
+      { target: 'league:nba', intervalSeconds: 120 },
+      { target: 'game:own', intervalSeconds: 0 },
+      { target: 'league:fifa/worldcup', intervalSeconds: 60 },
+    ])
+    expect(bdlLiveInterval('nba', 'own', settings)).toBe(0)
+    expect(bdlLiveInterval('nba', 'other', settings)).toBe(120)
+    expect(bdlLiveInterval('fifa/worldcup', null, settings)).toBe(60)
+    expect(bdlLiveInterval('wnba', null, settings)).toBe(0)
+    expect(bdlLiveInterval('nba', 'constructor', finalsOnlySettings())).toBe(0)
+    expect(settings.sports.nba).toBe(30)
+    expect(
+      pollingSettingError(pollingTarget.league('nba'), null)
+    ).toBeUndefined()
+  })
+  it.each([
+    ['league:nba:extra', 60],
+    ['league:toString', 60],
+    ['league:NBA', 60],
+    ['league:nba', 15],
+    ['league:', 30],
+    ['game:test:extra', 60],
+  ] as const)('rejects unsupported target or cadence %s %s', (key, seconds) => {
+    expect(pollingSettingError(key, seconds)).toBeDefined()
+    expect(
+      parsePollingRows([{ target: key, intervalSeconds: seconds }]).leagues
+    ).toBeUndefined()
   })
 })
