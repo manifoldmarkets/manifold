@@ -8,6 +8,10 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { nanoid, randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
+import {
+  deliverAnnouncement,
+  queueAnnouncementDelivery,
+} from 'shared/notifications/announcement-delivery'
 import { createNewPostFromFollowedUserNotification } from 'shared/notifications/create-new-post-notif'
 import {
   createSupabaseDirectClient,
@@ -66,11 +70,18 @@ export const createPost: APIHandler<'create-post'> =
         post,
       ])
 
+      const notify = visibility !== 'unlisted'
+      // Queued with the post, so an announcement is never left without a
+      // send: if the one below dies, the scheduler resumes it.
+      const announce = notify && !!isAnnouncement
+      if (announce) await queueAnnouncementDelivery(tx, post.id)
+
       return {
         result: { post },
         continue: async () => {
-          if (visibility === 'unlisted') return
-          await createNewPostFromFollowedUserNotification(post, creator, pg)
+          if (announce) await deliverAnnouncement(pg, post.id)
+          else if (notify)
+            await createNewPostFromFollowedUserNotification(post, creator, pg)
         },
       }
     })
