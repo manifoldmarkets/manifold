@@ -91,16 +91,25 @@ export async function loadUserAchievements(
           and c.token = 'MANA'
       ),
       account_age as (
-        -- Truncated, not rounded: the Account Age trophy needs whole years,
-        -- and rounding to 2 places reached 1.00 about two days early.
-        select trunc(
-          (
-            extract(epoch from (now() - u.created_time)) / (365.25*24*60*60)
-          )::numeric,
-          4
-        ) as account_age_years
-        from users u
-        where u.id = (select uid from base)
+        -- Whole calendar years since signup, plus the share of the current
+        -- year, to two places. The whole part only ticks over on the
+        -- anniversary (at most 0.99 before it), so the Account Age trophy is
+        -- never reached early, as it was with a 365.25-day year.
+        select a.whole + greatest(0, least(0.99, round((
+            extract(epoch from (now() - a.last_anniversary))
+            / extract(epoch from (a.next_anniversary - a.last_anniversary))
+          )::numeric, 2))) as account_age_years
+        from (
+          select
+            w.whole,
+            u.created_time + make_interval(years => w.whole) as last_anniversary,
+            u.created_time + make_interval(years => w.whole + 1) as next_anniversary
+          from users u
+          cross join lateral (
+            select extract(year from age(now(), u.created_time))::int as whole
+          ) w
+          where u.id = (select uid from base)
+        ) a
       ),
       trade_stats as (
         select

@@ -20,9 +20,11 @@ export type UserTrophies = APIResponse<'get-user-trophies'>
 //   unclaim made elsewhere still shows up.
 // - Pins are last-write-wins, and the user's latest choice wins: a load never
 //   replaces pins that changed since it started or are still being saved.
-// - Pin saves run one at a time; the last one sends the latest pins. A save is
-//   only sent while the signed-in user owns the profile. If it fails, the
-//   server's pins are shown again.
+// - Pin saves run one at a time; the last one sends the latest pins. A save
+//   names the profile, and the API refuses it unless that is the signed-in
+//   user. If it fails, the server's pins are shown again.
+// - Profiles nobody is showing are forgotten beyond MAX_IDLE, once nothing is
+//   loading or saving for them; a later visit reads them again.
 
 type Entry = {
   data?: UserTrophies
@@ -39,7 +41,10 @@ type Entry = {
   loading?: Promise<void>
   saving?: Promise<void>
   savePending: boolean
+  lastUsed: number
 }
+
+const MAX_IDLE = 20
 
 const entries = new Map<string, Entry>()
 const listeners = new Map<string, Set<() => void>>()
@@ -52,6 +57,7 @@ const getEntry = (userId: string): Entry =>
     pinsVersion: 0,
     pinsSaves: 0,
     savePending: false,
+    lastUsed: Date.now(),
   }
 
 const setEntry = (userId: string, patch: Partial<Entry>) => {
@@ -203,7 +209,7 @@ function savePinsUntilCurrent(userId: string) {
       }
       const pins = getEntry(userId).data?.pins ?? []
       try {
-        await api('set-showcase-pins', { pins })
+        await api('set-showcase-pins', { userId, pins })
         setEntry(userId, {
           confirmedPins: pins,
           pinsSaves: getEntry(userId).pinsSaves + 1,
@@ -221,8 +227,25 @@ function savePinsUntilCurrent(userId: string) {
         }
       }
     }
-  })().finally(() => setEntry(userId, { saving: undefined }))
+  })().finally(() => {
+    setEntry(userId, { saving: undefined })
+    pruneIdle()
+  })
   setEntry(userId, { saving })
+}
+
+// Forget the least recently shown profiles beyond MAX_IDLE. One still loading
+// or saving is kept, so its result has somewhere to land.
+const pruneIdle = () => {
+  const idle = [...entries.entries()]
+    .filter(
+      ([id, e]) =>
+        !listeners.has(id) && !e.loading && !e.saving && !e.savePending
+    )
+    .sort(([, a], [, b]) => a.lastUsed - b.lastUsed)
+  for (const [id] of idle.slice(0, Math.max(0, idle.length - MAX_IDLE))) {
+    entries.delete(id)
+  }
 }
 
 export function useUserTrophies(userId: string) {
@@ -237,7 +260,12 @@ export function useUserTrophies(userId: string) {
       return () => {
         const current = listeners.get(userId)
         current?.delete(listener)
-        if (current && current.size === 0) listeners.delete(userId)
+        if (current && current.size === 0) {
+          listeners.delete(userId)
+          const entry = entries.get(userId)
+          if (entry) entries.set(userId, { ...entry, lastUsed: Date.now() })
+          pruneIdle()
+        }
       }
     },
     [userId]

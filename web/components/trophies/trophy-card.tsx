@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
+import { findLastIndex } from 'lodash'
 import {
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -88,17 +89,24 @@ export function TrophyCard(props: {
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
 
-  const highestIdx = highestMilestone
-    ? milestones.findIndex((m) => m.id === highestMilestone.id)
-    : -1
-  // Start on the highest milestone reached, or the first one.
-  const [viewingIdx, setViewingIdx] = useState(Math.max(highestIdx, 0))
+  // The owner sees the milestones they have reached; a visitor sees only the
+  // ones the owner claimed.
+  const isEarned = (m: TrophyMilestone) =>
+    isOwnProfile ? isMilestoneReached(m, currentValue) : claimedIds.has(m.id)
+  const startIdx = isOwnProfile
+    ? highestMilestone
+      ? milestones.findIndex((m) => m.id === highestMilestone.id)
+      : -1
+    : findLastIndex(milestones, (m) => claimedIds.has(m.id))
+  // Start on the highest milestone earned, or the first one.
+  const [viewingIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
 
   const viewing = milestones[viewingIdx]
   if (!viewing) return null
 
   const isReached = isMilestoneReached(viewing, currentValue)
   const isClaimed = claimedIds.has(viewing.id)
+  const earned = isEarned(viewing)
   const style = TROPHY_TIER_STYLES[viewing.tier]
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < milestones.length - 1
@@ -113,7 +121,7 @@ export function TrophyCard(props: {
             className={clsx(
               'flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br transition-all',
               style.gradient,
-              isReached ? style.glow : 'opacity-40 grayscale'
+              earned ? style.glow : 'opacity-40 grayscale'
             )}
           >
             <span className="text-5xl" aria-hidden>
@@ -154,7 +162,7 @@ export function TrophyCard(props: {
         <span
           className={clsx(
             'text-base font-bold',
-            isReached ? style.textColor : 'text-ink-400'
+            earned ? style.textColor : 'text-ink-400'
           )}
         >
           {viewing.name}
@@ -168,7 +176,7 @@ export function TrophyCard(props: {
 
         <MilestoneDots
           milestones={milestones}
-          currentValue={currentValue}
+          isEarned={isEarned}
           viewingIndex={viewingIdx}
           onSelect={setViewingIdx}
         />
@@ -181,7 +189,7 @@ export function TrophyCard(props: {
             )}
             style={{
               width: `${progressPct * 100}%`,
-              opacity: isReached ? 1 : 0.4,
+              opacity: earned ? 1 : 0.4,
             }}
           />
         </div>
@@ -222,7 +230,9 @@ export function TrophyCard(props: {
             </Row>
           )
         ) : isReached ? (
-          <span className="text-ink-400 text-[11px]">Reached</span>
+          <span className="text-ink-400 text-[11px]">
+            {isOwnProfile ? 'Reached' : 'Not claimed yet'}
+          </span>
         ) : (
           <span className="text-ink-400 text-center text-[11px]">
             {formatRemaining(definition, viewing.threshold - currentValue)} to
@@ -236,16 +246,16 @@ export function TrophyCard(props: {
 
 function MilestoneDots(props: {
   milestones: TrophyMilestone[]
-  currentValue: number
+  isEarned: (m: TrophyMilestone) => boolean
   viewingIndex: number
   onSelect: (index: number) => void
 }) {
-  const { milestones, currentValue, viewingIndex, onSelect } = props
+  const { milestones, isEarned, viewingIndex, onSelect } = props
 
   return (
     <Row className="flex-wrap items-center justify-center gap-1.5">
       {milestones.map((m, i) => {
-        const reached = isMilestoneReached(m, currentValue)
+        const reached = isEarned(m)
         const style = TROPHY_TIER_STYLES[m.tier]
         return (
           <Tooltip key={m.id} text={m.name}>

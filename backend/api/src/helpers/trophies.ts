@@ -1,5 +1,17 @@
+import { APIError, AuthedUser } from 'api/helpers/endpoint'
 import { TrophyClaim } from 'common/trophies'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+
+// The page sends the profile it is changing. A session that switched accounts
+// after the page loaded must not change the other account's trophies.
+export function assertOwnProfile(userId: string, auth: AuthedUser) {
+  if (userId !== auth.uid) {
+    throw new APIError(
+      403,
+      'You are signed in as a different account. Reload the page.'
+    )
+  }
+}
 
 type TrophyClaimRow = {
   trophy_id: string

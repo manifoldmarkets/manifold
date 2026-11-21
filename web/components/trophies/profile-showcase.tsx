@@ -24,8 +24,8 @@ import {
   takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
+import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import { setShowcasePins, useUserTrophies } from 'web/hooks/use-user-trophies'
 
 // Pinned trophies under a user's name on their profile.
@@ -35,12 +35,7 @@ export function ProfileShowcase(props: {
 }) {
   const { userId, isOwnProfile } = props
 
-  const { data: achievements } = useAPIGetter(
-    'get-user-achievements',
-    { userId },
-    undefined,
-    `get-user-achievements-${userId}`
-  )
+  const { achievements } = useUserAchievements(userId)
   const { trophies } = useUserTrophies(userId)
   const league = useLeagueInfo(userId) // undefined while loading
 
@@ -60,7 +55,7 @@ export function ProfileShowcase(props: {
     ? [LEAGUE_PLACEHOLDER_BADGE]
     : []
   const badges = sortBadges([
-    ...getTrophyBadges(achievements ?? {}, claims),
+    ...getTrophyBadges(achievements, claims),
     ...leagueBadges,
   ])
   const badgeById = new Map(badges.map((b) => [b.id, b]))
@@ -248,23 +243,27 @@ const sortBadges = (badges: ShowcaseBadgeData[]) =>
         BADGE_TIER_ORDER.indexOf(a.tier) - BADGE_TIER_ORDER.indexOf(b.tier)
     )
 
-// One badge per trophy: its highest claimed milestone.
+// One badge per trophy: its highest claimed milestone. Without stats (still
+// loading, or failed) a badge shows no value rather than a wrong one.
 function getTrophyBadges(
-  stats: TrophyStats,
+  stats: TrophyStats | undefined,
   claims: TrophyClaim[]
 ): ShowcaseBadgeData[] {
   return TROPHY_DEFINITIONS.flatMap((def) => {
     const milestone = getHighestClaimedMilestone(def, claims)
     if (!milestone) return []
-    const value = formatTrophyValue(def, getTrophyStatValue(def, stats))
+    const value = stats
+      ? formatTrophyValue(def, getTrophyStatValue(def, stats))
+      : undefined
     return [
       {
         id: getTrophyPinId(def.id),
         label: milestone.name,
         stat: value,
-        detail: `${def.label}: ${value}${
-          def.formatPrefix ? '' : ` ${def.unit}`
-        }`,
+        detail:
+          value === undefined
+            ? def.label
+            : `${def.label}: ${value}${def.formatPrefix ? '' : ` ${def.unit}`}`,
         emoji: milestone.emoji,
         tier: milestone.tier,
       },

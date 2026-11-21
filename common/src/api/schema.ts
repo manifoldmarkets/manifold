@@ -3313,6 +3313,9 @@ export const API = (_apiTypeCheck = {
     returns: {} as { pins: string[] },
     props: z
       .object({
+        // The profile the pins are for. Must be the signed-in user, so a save
+        // made while the session switches accounts is refused.
+        userId: z.string().max(100),
         pins: z.array(z.string().max(100)).max(MAX_SHOWCASE_PINS),
       })
       .strict(),
@@ -3328,6 +3331,8 @@ export const API = (_apiTypeCheck = {
     },
     props: z
       .object({
+        // The profile the claim is for. Must be the signed-in user.
+        userId: z.string().max(100),
         trophyId: z.string().max(100),
         milestoneId: z.string().max(100),
       })
