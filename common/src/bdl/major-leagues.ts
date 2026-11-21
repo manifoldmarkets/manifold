@@ -45,6 +45,7 @@ export interface MajorCreationDecision {
   status: 'created' | 'dry-run' | 'skipped' | 'error'
   reason: string | null
   contractId?: string
+  answerLabels?: string[]
   line?: SportsOpeningLine
   ante?: number
 }

@@ -57,6 +57,8 @@ beforeAll(async () => {
   const migration = ddl('migrations/2026112102_sports_creation_settings.sql')
   await db.exec(migration)
   await db.exec(migration)
+  await db.exec(`create table groups(id text primary key, slug text, privacy_status text);
+    insert into groups values ('1','sports','curated'),('2','baseball','public'),('3','secret','private')`)
 })
 beforeEach(async () => {
   await db.exec('truncate sports_creation_settings')
@@ -272,6 +274,7 @@ it('serializes admin saves with both creators and records the current operator o
     tx: async (
       callback: (tx: {
         one: (sql: string) => Promise<unknown>
+        manyOrNone: (sql: string, params: unknown[]) => Promise<unknown[]>
         none: (sql: string, params: unknown[]) => Promise<unknown>
       }) => Promise<void>
     ) =>
@@ -281,6 +284,8 @@ it('serializes admin saves with both creators and records the current operator o
             executed.push(sql)
             return (await tx.query(sql)).rows[0]
           },
+          manyOrNone: async (sql, params) =>
+            (await tx.query(pgp.as.format(sql, params))).rows,
           none: async (sql, params) => {
             executed.push('write')
             await tx.query(pgp.as.format(sql, params))
@@ -297,7 +302,8 @@ it('serializes admin saves with both creators and records the current operator o
   await saveCreationSetting(
     writePg,
     { ...rows[0], cap: 60, startsOn: '2026-12-01' },
-    'bob'
+    'bob',
+    rows[0]
   )
   expect(executed).toEqual(
     Array(4).fill([SPORTS_CREATION_BUDGET_LOCK_SQL, 'write']).flat()
@@ -315,8 +321,40 @@ it('serializes admin saves with both creators and records the current operator o
       )
     ).rows
   ).toEqual([{ updated_by: 'bob' }])
+  const prior = stored[0]
+  const stopped = { ...prior, cap: 0 }
+  // An existing topic can become private. An operator can still stop funding.
+  await db.exec(
+    "update groups set privacy_status='private' where slug='baseball'"
+  )
+  await saveCreationSetting(writePg, stopped, 'operator', prior)
+  await db.exec(
+    "update groups set privacy_status='public' where slug='baseball'"
+  )
   await expect(
-    saveCreationSetting(writePg, { ...rows[0], cap: -1 }, 'carol')
+    saveCreationSetting(
+      writePg,
+      { ...prior, groupSlugs: ['sports'] },
+      'stale',
+      prior
+    )
+  ).rejects.toMatchObject({ code: 409 })
+  await expect(
+    saveCreationSetting(writePg, prior, 'stale-client')
+  ).rejects.toMatchObject({ code: 409 })
+  expect(await creationSettings(pg, [prior.scope])).toEqual([stopped])
+  for (const slug of ['missing', 'secret'])
+    await expect(
+      saveCreationSetting(
+        writePg,
+        { ...prior, groupSlugs: [slug] },
+        'operator',
+        stopped
+      )
+    ).rejects.toMatchObject({ code: 400 })
+  await saveCreationSetting(writePg, prior, 'operator', stopped)
+  await expect(
+    saveCreationSetting(writePg, { ...rows[0], cap: -1 }, 'carol', prior)
   ).rejects.toThrow()
   expect(await creationSettings(pg)).toEqual(stored)
   await expect(

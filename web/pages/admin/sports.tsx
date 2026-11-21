@@ -208,6 +208,7 @@ function Section(props: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
+  keepMounted?: boolean
 }) {
   const [open, setOpen] = useState(props.defaultOpen ?? true)
   return (
@@ -219,8 +220,11 @@ function Section(props: {
         <span className="text-ink-800 font-semibold">{props.title}</span>
         <span className="text-ink-400 text-sm">{open ? '▲' : '▼'}</span>
       </button>
-      {open && (
-        <div className={clsx('p-4', isSportsBdlEnabled() && 'overflow-x-auto')}>
+      {(open || props.keepMounted) && (
+        <div
+          hidden={!open}
+          className={clsx('p-4', isSportsBdlEnabled() && 'overflow-x-auto')}
+        >
           {props.children}
         </div>
       )}
@@ -836,7 +840,7 @@ function SportsAdmin() {
         </Section>
 
         {isSportsBdlEnabled() && admin && (
-          <Section title="US-major game creation">
+          <Section title="US-major game creation" keepMounted>
             <AdminBdlCreation />
           </Section>
         )}

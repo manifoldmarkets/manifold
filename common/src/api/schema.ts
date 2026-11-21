@@ -182,6 +182,23 @@ type APIGenericSchema = {
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
+const expectedCreationSetting = z
+  .object({
+    scope: z.string().max(100),
+    cap: z.number().int().nonnegative().max(MAX_SPORTS_CREATION_AMOUNT),
+    baseAnte: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(MAX_SPORTS_CREATION_AMOUNT)
+      .nullable(),
+    startsOn: z.string().length(10).nullable(),
+    groupSlugs: z.array(z.string().max(100)).max(8).nullable(),
+  })
+  .strict()
+  .nullable()
+  .optional()
+
 export const API = (_apiTypeCheck = {
   'refresh-all-clients': {
     method: 'POST',
@@ -5377,6 +5394,7 @@ export const API = (_apiTypeCheck = {
     props: z.union([
       z
         .object({
+          expected: expectedCreationSetting,
           league: z.string().refine(isBdlLeagueKey, 'Unknown league'),
           baseAnte: z.number().int().positive().max(MAX_SPORTS_CREATION_AMOUNT),
           startsOn: z
@@ -5396,6 +5414,7 @@ export const API = (_apiTypeCheck = {
         .strict(),
       z
         .object({
+          expected: expectedCreationSetting,
           scope: z.enum(['wave:1', 'wave:2', 'wave:3', 'global']),
           cap: z.number().int().nonnegative().max(MAX_SPORTS_CREATION_AMOUNT),
         })
@@ -5418,16 +5437,31 @@ export const API = (_apiTypeCheck = {
           .max(MAX_CREATION_GAME_KEYS)
           .optional(),
         force: z.boolean().optional(),
+        maxAntes: z
+          .record(
+            z.number().int().nonnegative().max(MAX_SPORTS_CREATION_AMOUNT)
+          )
+          .optional(),
       })
       .strict()
       .refine(
         (p) =>
           ((p.dryRun && !p.force) || !!p.keys?.length) &&
+          new Set(p.keys).size === (p.keys?.length ?? 0) &&
           (p.keys ?? []).every((key) => {
             const game = parseBdlEventId(key)
             return game?.league === p.league && !('suffix' in game)
           }),
         'Select game IDs from the chosen league before creating or forcing a run'
+      )
+      .refine(
+        (p) =>
+          !p.maxAntes ||
+          (p.keys?.length === Object.keys(p.maxAntes).length &&
+            p.keys.every((id) =>
+              Object.prototype.hasOwnProperty.call(p.maxAntes, id)
+            )),
+        'Each selected game must have one matching maximum ante'
       ),
     returns: {} as MajorCreationResult,
   },

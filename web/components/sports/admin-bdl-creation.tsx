@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import {
   MAJOR_LEAGUES,
@@ -6,6 +6,7 @@ import {
   MAX_CREATION_GAME_KEYS,
   MAJOR_WAVES,
   MajorCreationResult,
+  MajorCreationDecision,
   MajorLeague,
   MajorSettingRow,
   isMajorLeague,
@@ -17,7 +18,7 @@ import { Input } from 'web/components/widgets/input'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 
 const selectClass =
   'bg-canvas-0 border-ink-300 min-h-[40px] max-w-full rounded border px-2'
@@ -65,6 +66,7 @@ function BudgetForm({
         isMajorLeague(scope)
           ? {
               league: scope,
+              expected: row ?? null,
               cap,
               baseAnte: ante,
               startsOn: String(data.get('startsOn')),
@@ -73,11 +75,12 @@ function BudgetForm({
                 .map((v) => v.trim())
                 .filter(Boolean),
             }
-          : { scope, cap }
+          : { scope, cap, expected: row ?? null }
       )
       onSaved()
       toast.success('Budget saved')
     } catch (err) {
+      if (err instanceof APIError && err.code === 409) onSaved()
       toast.error(err instanceof Error ? err.message : String(err))
     } finally {
       setSaving(false)
@@ -154,7 +157,49 @@ function BudgetForm({
   )
 }
 
-function RunCreation({ league }: { league: MajorLeague }) {
+type Selection = {
+  league: MajorLeague
+  competitionId: string
+  keys: string[]
+  force: boolean
+  maxAntes: Record<string, number>
+}
+
+type Operation = {
+  selection: Selection
+  pending: boolean
+  result?: MajorCreationResult
+  error?: string
+}
+
+function DecisionDetails({ row }: { row: MajorCreationDecision }) {
+  return (
+    <>
+      {' · '}
+      {row.status}
+      {row.reason && ' · ' + row.reason}
+      {row.line && ' · ' + row.line.source}
+      {row.answerLabels?.length === row.line?.probs.length &&
+        row.answerLabels?.map((name, index) => (
+          <span key={index}>
+            {' '}
+            · {name} {formatSportsPrice(row.line!.probs[index])}
+          </span>
+        ))}
+      {row.ante != null && <> · Ṁ{row.ante}</>}
+    </>
+  )
+}
+
+function RunCreation({
+  league,
+  creating,
+  onCreate,
+}: {
+  league: MajorLeague
+  creating: boolean
+  onCreate: (selection: Selection) => Promise<void>
+}) {
   const competitions = Array.from(
     new Map(
       SPORTS_CALENDAR.filter(
@@ -164,12 +209,13 @@ function RunCreation({ league }: { league: MajorLeague }) {
   )
   const [id, setId] = useState(competitions[0]?.[0] ?? '')
   const [force, setForce] = useState(false)
-  const [forcedKeys, setForcedKeys] = useState('')
+  const [gameKeys, setGameKeys] = useState('')
   const [result, setResult] = useState<MajorCreationResult>()
   const [chosen, setChosen] = useState<string[]>([])
-  const [busy, setBusy] = useState(false)
+  const [previewing, setPreviewing] = useState(false)
+  const busy = previewing || creating
   const requested = Array.from(
-    new Set(forcedKeys.split(/[\s,]+/).filter(Boolean))
+    new Set(gameKeys.split(/[\s,]+/).filter(Boolean))
   )
   function reset() {
     setChosen([])
@@ -177,29 +223,51 @@ function RunCreation({ league }: { league: MajorLeague }) {
   }
   async function run(dryRun: boolean) {
     if (!id || busy || (!dryRun && !chosen.length)) return
-    setBusy(true)
+    if (!dryRun) {
+      if (!result) return
+      const maxAntes = Object.fromEntries(
+        result.log.flatMap((r) =>
+          r.eventId && chosen.includes(r.eventId) && r.ante != null
+            ? [[r.eventId, r.ante]]
+            : []
+        )
+      )
+      reset()
+      await onCreate({
+        league,
+        competitionId: id,
+        keys: chosen,
+        force,
+        maxAntes,
+      })
+      return
+    }
+    setPreviewing(true)
     try {
-      const list = dryRun ? (force ? requested : undefined) : chosen
       const report = await api('admin-sports-create-bdl-markets', {
         league,
         competitionId: id,
-        dryRun,
+        dryRun: true,
         force,
-        ...(list && { keys: list }),
+        ...(requested.length && { keys: requested }),
       })
       setResult(report)
       setChosen(
-        dryRun
-          ? report.log.flatMap((r) =>
-              r.status === 'dry-run' && r.eventId ? [r.eventId] : []
-            )
-          : []
+        report.log.flatMap((r) =>
+          r.status === 'dry-run' &&
+          r.eventId &&
+          r.ante != null &&
+          Number.isSafeInteger(r.ante) &&
+          r.ante >= 0
+            ? [r.eventId]
+            : []
+        )
       )
     } catch (err) {
       reset()
       toast.error(err instanceof Error ? err.message : String(err))
     } finally {
-      setBusy(false)
+      setPreviewing(false)
     }
   }
   if (!competitions.length)
@@ -238,28 +306,28 @@ function RunCreation({ league }: { league: MajorLeague }) {
         />{' '}
         Force a retry for specific games, including recreation after N/A
       </label>
-      {force && (
-        <label htmlFor="sports-creation-keys">
-          Game IDs, comma-separated
-          <Input
-            id="sports-creation-keys"
-            value={forcedKeys}
-            disabled={busy}
-            placeholder={'bdl:' + league + ':123'}
-            onChange={(e) => {
-              setForcedKeys(e.target.value)
-              reset()
-            }}
-          />
-        </label>
-      )}
+      <label htmlFor="sports-creation-keys">
+        {force
+          ? 'Game IDs, comma-separated'
+          : 'Game IDs, comma-separated (optional)'}
+        <Input
+          id="sports-creation-keys"
+          value={gameKeys}
+          disabled={busy}
+          placeholder={'bdl:' + league + ':123'}
+          onChange={(e) => {
+            setGameKeys(e.target.value)
+            reset()
+          }}
+        />
+      </label>
       <div className="flex flex-wrap gap-2">
         <Button
           size="sm"
           disabled={
             busy ||
-            (force &&
-              (!requested.length || requested.length > MAX_CREATION_GAME_KEYS))
+            (force && !requested.length) ||
+            requested.length > MAX_CREATION_GAME_KEYS
           }
           onClick={() => run(true)}
         >
@@ -278,8 +346,8 @@ function RunCreation({ league }: { league: MajorLeague }) {
       {result && (
         <div aria-live="polite" className="w-full min-w-0 text-sm">
           <p>
-            {result.wouldCreate} eligible · {result.created} created ·{' '}
-            {result.skipped} skipped · {result.errors} errors
+            {result.wouldCreate} eligible · {result.skipped} skipped ·{' '}
+            {result.errors} errors
           </p>
           {result.log.length === 0 ? (
             <p>No eligible games in this window.</p>
@@ -290,7 +358,9 @@ function RunCreation({ league }: { league: MajorLeague }) {
                   key={row.eventId ? row.eventId + '-' + i : i}
                   className="break-words"
                 >
-                  {row.status === 'dry-run' && row.eventId ? (
+                  {row.status === 'dry-run' &&
+                  row.eventId &&
+                  row.ante != null ? (
                     <label>
                       <input
                         type="checkbox"
@@ -307,26 +377,16 @@ function RunCreation({ league }: { league: MajorLeague }) {
                         }}
                       />{' '}
                       {row.question ?? row.eventId}
+                      <DecisionDetails row={row} />
                     </label>
                   ) : (
-                    <strong>
-                      {row.question ?? row.eventId ?? league.toUpperCase()}
-                    </strong>
-                  )}
-                  {' · '}
-                  {row.status}
-                  {row.reason && ' · ' + row.reason}
-                  {row.line && (
                     <>
-                      {' '}
-                      · {row.line.source}
-                      {row.line.probs.length
-                        ? ' · ' +
-                          row.line.probs.map(formatSportsPrice).join(' / ')
-                        : ''}
+                      <strong>
+                        {row.question ?? row.eventId ?? league.toUpperCase()}
+                      </strong>
+                      <DecisionDetails row={row} />
                     </>
                   )}
-                  {row.ante != null && <> · Ṁ{row.ante}</>}
                 </li>
               ))}
             </ul>
@@ -341,10 +401,85 @@ export function AdminBdlCreation() {
   const user = useUser()
   const admin = useAdmin()
   const authorized = useIsAuthorized()
-  return user && admin && authorized ? <CreationPanel key={user.id} /> : null
+  return user && admin && authorized ? (
+    <OperatorWorkspace key={user.id} />
+  ) : null
 }
 
-function CreationPanel() {
+function OperatorWorkspace() {
+  const [last, setLast] = useState<Operation>()
+  const pending = useRef(false)
+  async function submit(selection: Selection) {
+    if (pending.current) return
+    pending.current = true
+    setLast({ selection, pending: true })
+    try {
+      const result = await api('admin-sports-create-bdl-markets', {
+        ...selection,
+        dryRun: false,
+      })
+      setLast({ selection, pending: false, result })
+    } catch (err) {
+      setLast({
+        selection,
+        pending: false,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    } finally {
+      pending.current = false
+    }
+  }
+  return (
+    <div className="flex min-w-0 flex-col gap-4">
+      <CreationPanel creating={last?.pending ?? false} onCreate={submit} />
+      {last && (
+        <div
+          aria-live="polite"
+          className="border-ink-200 border-t pt-3 text-sm"
+        >
+          <h3 className="font-semibold">
+            Creation receipt · {last.selection.league.toUpperCase()}
+          </h3>
+          {last.pending && (
+            <p>Creating {last.selection.keys.length} selected games…</p>
+          )}
+          {last.error && (
+            <p>
+              Could not confirm the outcome for {last.selection.keys.join(', ')}
+              . Check the markets before retrying. {last.error}
+            </p>
+          )}
+          {last.result && (
+            <>
+              <p>
+                {last.result.created} created · {last.result.skipped} skipped ·{' '}
+                {last.result.errors} errors
+              </p>
+              <ul className="max-h-80 overflow-y-auto">
+                {last.result.log.map((r, i) => (
+                  <li key={i} className="break-words">
+                    {r.question ??
+                      r.eventId ??
+                      last.selection.league.toUpperCase()}
+                    <DecisionDetails row={r} />
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CreationPanel({
+  creating,
+  onCreate,
+}: {
+  creating: boolean
+  onCreate: (selection: Selection) => Promise<void>
+}) {
   const [rows, setRows] = useState<MajorSettingRow[]>()
   const [unavailable, setUnavailable] = useState(false)
   const [revision, setRevision] = useState(0)
@@ -429,7 +564,12 @@ function CreationPanel() {
             {info?.openOdds ?? 'Unknown'} · Closed awaiting resolution:{' '}
             {info?.closedOdds ?? 'Unknown'}
           </p>
-          <RunCreation key={scope + '-' + revision} league={scope} />
+          <RunCreation
+            key={scope + '-' + revision}
+            league={scope}
+            creating={creating}
+            onCreate={onCreate}
+          />
         </>
       )}
     </div>

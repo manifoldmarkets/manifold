@@ -6,6 +6,9 @@ import {
   MajorSettingRow,
   MajorSettings,
 } from 'common/bdl/major-leagues'
+import { APIError } from 'common/api/utils'
+import { isEqual } from 'lodash'
+import { existingMajorGroups } from './major-creation-store'
 import type { SupabaseDirectClient } from '../supabase/init'
 
 export const SPORTS_CREATION_BUDGET_LOCK_SQL =
@@ -37,12 +40,28 @@ export async function creationSettings(
 export async function saveCreationSetting(
   pg: Pick<SupabaseDirectClient, 'tx'>,
   row: MajorSettingRow,
-  userId: string
+  userId: string,
+  expected: MajorSettingRow | null = null
 ) {
   if (!isBdlLeagueKey(row.scope) && !sharedScopes.includes(row.scope))
     throw new Error('Unknown sports creation scope')
   await pg.tx(async (tx) => {
     await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+    const [stored] = await creationSettings(tx, [row.scope])
+    if (!isEqual(stored ?? null, expected))
+      throw new APIError(
+        409,
+        'Budget changed. Reload the current values before saving.'
+      )
+    if (
+      row.groupSlugs &&
+      !isEqual(row.groupSlugs, stored?.groupSlugs) &&
+      !(await existingMajorGroups(tx, row.groupSlugs))
+    )
+      throw new APIError(
+        400,
+        'One or more topics are missing or private. Choose public or curated topics.'
+      )
     await tx.none(
       `insert into sports_creation_settings (scope, ante_cap, base_ante, starts_on, group_slugs, updated_by)
        values ($1, $2, $3, $4, $5, $6)

@@ -68,7 +68,8 @@ it('persists league and shared caps as separate scopes with the operator identit
       startsOn: date,
       groupSlugs: ['nba'],
     },
-    'admin'
+    'admin',
+    null
   )
   await save({ scope: 'wave:2', cap: 0 }, admin)
   expect(saveCreationSetting).toHaveBeenCalledWith(
@@ -80,7 +81,8 @@ it('persists league and shared caps as separate scopes with the operator identit
       startsOn: null,
       groupSlugs: null,
     },
-    'admin'
+    'admin',
+    null
   )
   jest.mocked(creationSettings).mockResolvedValue([])
   await expect(read({}, admin)).resolves.toEqual({ settings: [] })
@@ -178,4 +180,31 @@ it('accepts registry league budgets independently of supported creation leagues'
       dryRun: true,
     }).success
   ).toBe(false)
+})
+
+it('requires confirmation of a maximum for every selected game before it can be funded', async () => {
+  const props = {
+    league: 'nba',
+    competitionId: 'nba-regular-2026-27',
+    keys: ['bdl:nba:7'],
+    dryRun: false,
+  }
+  await expect(create(props, admin)).rejects.toMatchObject({ code: 409 })
+  expect(runMajorCreation).not.toHaveBeenCalled()
+  const schema = API['admin-sports-create-bdl-markets'].props
+  for (const maxAntes of [
+    {},
+    { 'bdl:nba:8': 100 },
+    { 'bdl:nba:7': -1 },
+    { 'bdl:nba:7': 42.5 },
+    { 'bdl:nba:7': 100, 'bdl:nba:8': 100 },
+  ])
+    expect(schema.safeParse({ ...props, maxAntes }).success).toBe(false)
+  const maxAntes = { 'bdl:nba:7': 100 }
+  await create({ ...props, maxAntes }, admin)
+  expect(runMajorCreation).toHaveBeenCalledWith({
+    ...props,
+    maxAntes,
+    role: 'api',
+  })
 })

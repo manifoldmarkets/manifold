@@ -35,8 +35,19 @@ export const adminSetSportsCreationBudget: APIHandler<
           startsOn: props.startsOn,
           groupSlugs: [...new Set(props.groupSlugs)],
         }
-      : { ...props, baseAnte: null, startsOn: null, groupSlugs: null }
-  await saveCreationSetting(createSupabaseDirectClient(), row, auth.uid)
+      : {
+          scope: props.scope,
+          cap: props.cap,
+          baseAnte: null,
+          startsOn: null,
+          groupSlugs: null,
+        }
+  await saveCreationSetting(
+    createSupabaseDirectClient(),
+    row,
+    auth.uid,
+    props.expected ?? null
+  )
   return { saved: true }
 }
 
@@ -54,5 +65,10 @@ export const adminCreateBdlMarkets: APIHandler<
       'Competition does not belong to the selected league'
     )
   }
+  if (!props.dryRun && !props.maxAntes)
+    throw new APIError(
+      409,
+      'Preview again to confirm the maximum ante for each game.'
+    )
   return runMajorCreation({ ...props, role: isProd() ? 'api' : 'dev' })
 }

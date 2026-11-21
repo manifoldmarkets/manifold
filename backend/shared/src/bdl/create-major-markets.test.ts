@@ -541,3 +541,63 @@ it('caps accepted games per league and across a run in earliest-start order', as
     Object.defineProperty(settingsConstants, 'BDL_GLOBAL_RUN_CAP', original)
   }
 })
+
+it('holds higher transaction ante and accepts the exact confirmed maximum for that game', async () => {
+  schedule.mockResolvedValue([game(1), game(2)])
+  const result = await run({
+    keys: ['bdl:nba:1', 'bdl:nba:2'],
+    maxAntes: { 'bdl:nba:1': 174, 'bdl:nba:2': 175 },
+  })
+  expect(result).toMatchObject({
+    created: 1,
+    skipped: 1,
+    log: [
+      {
+        eventId: 'bdl:nba:1',
+        status: 'skipped',
+        reason: 'ante exceeds confirmed maximum; preview again',
+      },
+      {
+        eventId: 'bdl:nba:2',
+        status: 'created',
+        ante: 175,
+        answerLabels: ['Away', 'Home'],
+      },
+    ],
+  })
+  expect(requireBdlCreationBudget).toHaveBeenCalledTimes(2)
+})
+
+it('reconciles every explicit key with the fresh slate, without treating a failed list as a missing game', async () => {
+  const options = { keys: ['bdl:nba:1', 'bdl:nba:2'], dryRun: true }
+  expect(await run(options)).toMatchObject({
+    wouldCreate: 1,
+    skipped: 1,
+    log: [
+      {
+        eventId: 'bdl:nba:2',
+        reason: 'selected game missing from current slate',
+      },
+      { eventId: 'bdl:nba:1', answerLabels: ['Away', 'Home'] },
+    ],
+  })
+  schedule.mockRejectedValueOnce(Error('offline fixture read error'))
+  expect(await run(options)).toMatchObject({
+    errors: 2,
+    skipped: 0,
+    log: [
+      { eventId: 'bdl:nba:1', status: 'error', reason: 'league unavailable' },
+      { eventId: 'bdl:nba:2', status: 'error', reason: 'league unavailable' },
+    ],
+  })
+  switches.mockResolvedValue({})
+  expect((await run(options)).log).toEqual(
+    options.keys.map((eventId) =>
+      expect.objectContaining({
+        eventId,
+        status: 'skipped',
+        reason: 'phase disabled',
+      })
+    )
+  )
+})

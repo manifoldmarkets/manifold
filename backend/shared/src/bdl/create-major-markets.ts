@@ -65,6 +65,7 @@ export type MajorCreationOptions = {
   league?: MajorLeague
   competitionId?: string
   keys?: readonly string[]
+  maxAntes?: Readonly<Record<string, number>>
   dryRun?: boolean
   force?: boolean
   role?: 'api' | 'scheduler' | 'dev' | 'codex'
@@ -220,6 +221,20 @@ export async function runMajorCreation(
     else if (decision.status === 'error') result.errors++
     else result[decision.status]++
   }
+  const reportLeague = (
+    league: MajorLeague,
+    status: 'skipped' | 'error',
+    reason: string
+  ) => {
+    const unreported =
+      selected && options.league === league
+        ? [...selected].filter(
+            (id) => !result.log.some((r) => r.eventId === id)
+          )
+        : []
+    for (const eventId of unreported.length ? unreported : [null])
+      push({ league, eventId, question: null, status, reason })
+  }
   const reportLow = (low: boolean) => {
     if (low && !warnedLow) {
       warnedLow = true
@@ -235,26 +250,20 @@ export async function runMajorCreation(
         if (
           !eligiblePhases(league, began, began + maxLead, switches, options)
             .length
-        )
+        ) {
+          if (selected) reportLeague(league, 'skipped', 'phase disabled')
           continue
+        }
         const settings = await getMajorSettings(pg, league)
-        const reportLeague = (reason: string) =>
-          push({
-            league,
-            eventId: null,
-            question: null,
-            status: 'skipped',
-            reason,
-          })
         if (!settings && !options.dryRun) {
-          reportLeague('budget-unconfigured')
+          reportLeague(league, 'skipped', 'budget-unconfigured')
           continue
         }
         if (
           settings &&
           easternDay.format(began + maxLead) < settings.startsOn
         ) {
-          reportLeague('game before starts_on')
+          reportLeague(league, 'skipped', 'game before starts_on')
           continue
         }
         const client =
@@ -281,6 +290,19 @@ export async function runMajorCreation(
           easternDay.format(began + maxLead)
         )
         const seen = games.map((g) => bdlEventId(league, g.id))
+        if (selected && league === options.league) {
+          const present = new Set(seen)
+          for (const eventId of selected) {
+            if (!present.has(eventId))
+              push({
+                league,
+                eventId,
+                question: null,
+                status: 'skipped',
+                reason: 'selected game missing from current slate',
+              })
+          }
+        }
         const slate = games.map((game) => ({
           game,
           eventId: bdlEventId(league, game.id),
@@ -362,6 +384,7 @@ export async function runMajorCreation(
             decision.line = line
             const params = gameMarket(league, game, start, phase, line, [])
             decision.question = params.question
+            decision.answerLabels = [game.away.name, game.home.name]
             if (line.source === 'none') hold('no eligible moneyline')
             decision.ante = settings?.baseAnte ?? BDL_DEFAULT_STARTING_LIQUIDITY
             if (!settings) hold('budget-unconfigured')
@@ -448,6 +471,11 @@ export async function runMajorCreation(
                     ...budget,
                     ante: ante.ante,
                   })
+                  if (options.maxAntes) {
+                    const maximum = options.maxAntes[eventId]
+                    if (!Number.isSafeInteger(maximum) || ante.ante > maximum)
+                      hold('ante exceeds confirmed maximum; preview again')
+                  }
                   reportLow(status.lowBalance)
                   const [latest, current] = await Promise.all([
                     getCompetitionSwitches(tx),
@@ -528,13 +556,7 @@ export async function runMajorCreation(
           league,
           error: String(e),
         })
-        push({
-          league,
-          eventId: null,
-          question: null,
-          status: 'error',
-          reason: 'league unavailable',
-        })
+        reportLeague(league, 'error', 'league unavailable')
       }
     }
   } finally {
