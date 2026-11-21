@@ -51,10 +51,29 @@ launch; synthetic PostgreSQL tests are not a production performance guarantee.
 
 Seven-day rates use only fully matured browsers. Signup links use the signup
 token observed on a browser's exposure/toggle events; trades require funded,
-non-API, non-redemption buy orders. Reported assignment conflicts include changes
-to either cohort or variant. Keep original assignment after manual switching
-(intention to treat). Existing-account discovery is a diagnostic, not a reason to
-remove assigned browsers.
+non-API, non-redemption buy orders.
+
+The one-day columns (`mature_day_browsers`, `signups_1d`, `activated_1d`) use
+browsers at least a day old, so they can be read a week before the seven-day
+rates. They are an earlier look at the same two outcomes, not a new verdict.
+They were added while the v2 experiment was already running and after it had
+been read, so for v2 they are secondary. To make one of them a primary metric,
+say so before the next launch, as below.
+
+`signups_1d` is a signup within a day of the first visit. `activated_1d` is a
+day-one signup whose buy order filled within that day. A resting limit order
+counts from its first fill, not from when it was placed; the seven-day column
+still counts it from placement. A bet with no fill history counts from when it
+was placed, and one whose history holds no usable fill does not count.
+
+A one-day count can still rise a little on later runs. A signup made on a
+rotated device token is only linked to its browser when that token is next
+seen on Browse, which can be up to seven days after the first visit.
+
+Reported assignment conflicts include changes to either cohort or variant.
+Keep original assignment after manual switching (intention to treat).
+Existing-account discovery is a diagnostic, not a reason to remove assigned
+browsers.
 
 Use `new-visitor / signed_in_at_entry=false` for signup and activation comparisons.
 Voluntary adopters are not a randomized control. Preselect a primary metric,
@@ -63,6 +82,27 @@ shipping verdict. Browsers are not people: cleared storage, multiple devices,
 shared browsers and unidentified automated traffic limit interpretation. A signup
 after token rotation without another browse exposure cannot be attributed. Events
 are per Browse/Home visit or layout change, so monitor volume during rollout.
+
+## Changing New while v2 runs
+
+Changing the New layout while v2 is assigning changes what the treatment arm
+sees. Note the production deploy time and read before and after it separately;
+do not pool them into one v2 result. Assignment itself is unchanged.
+
+One such change (PR #4272) made New open on the list on every screen, fold
+only small house sports and race markets (perps stay in the feed), and treat a
+press of the hub-markets chips as a choice even when the tab already showed
+it. The same change links Sports and Perps from the sidebar, which Classic and
+New share, so both arms got those links at the same time.
+
+It also made New's search box send Classic's `search` event, with
+`location: 'browse-v2'`, once for each query the person types. A query
+restored on return or filled by a link is not sent unless the person edits it.
+Classic's event comes from a search box shared by many pages, has no
+`location` and is sent on every blur, empty or not, so it also counts a linked
+query the person only clicked into; `user_events` stores no path. So compare
+search between the arms per browser, counting distinct non-empty queries
+(trimmed, ignoring case) from any page, and only from that deploy on.
 
 ## Regression checks
 

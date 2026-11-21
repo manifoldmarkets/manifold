@@ -17,9 +17,10 @@ import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import { listGroupsBySlug } from 'web/lib/supabase/groups'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { BrowseTopicsProvider, useBrowseTopics } from './browse-topics'
 import { HubCards } from './hub-cards'
-import { isHubMarket } from './hub-fold'
+import { isHubMarket, SHOW_HUB_MARKETS_KEY } from './hub-fold'
 import {
   ALL_TOPICS,
   BrowseFilters,
@@ -81,8 +82,6 @@ function BrowseV2Inner() {
     'best',
     'browse-v2-lens'
   )
-  // Most browse clicks land several markets down the list, so phones default
-  // to the denser list view. A choice either way is remembered.
   const isMobile = useIsMobile()
   const [showRail, setShowRail] = useState(false)
   useEffect(() => {
@@ -99,16 +98,52 @@ function BrowseV2Inner() {
   const [savedLayout, setLayout] = usePersistentLocalState<
     BrowseLayout | undefined
   >(undefined, 'browse-v2-layout')
-  const layout: BrowseLayout = savedLayout ?? (isMobile ? 'list' : 'cards')
+  // Most browse clicks land several markets down the list, so every screen
+  // defaults to the denser list view: desktop cards showed fewer markets
+  // before the fold, and fewer were opened from them. Cards remain a choice,
+  // and a choice either way is remembered.
+  const layout: BrowseLayout = savedLayout ?? 'list'
   const [topicChoice, setTopicChoice] = usePersistentInMemoryState<TopicChoice>(
     ALL_TOPICS,
     'browse-v2-topic'
   )
-  const [filters, setFilters] = usePersistentInMemoryState<BrowseFilters>(
-    DEFAULT_FILTERS,
-    'browse-v2-filters'
+  const [sessionFilters, setSessionFilters] =
+    usePersistentInMemoryState<BrowseFilters>(
+      DEFAULT_FILTERS,
+      'browse-v2-filters'
+    )
+  // Wanting hub markets in the list is a habit like sort and layout: it was
+  // the filter people changed most, and it used to reset with the page. So
+  // it is remembered on this device, while the other filters still reset.
+  const [showHubMarkets, setShowHubMarkets] = usePersistentLocalState<boolean>(
+    false,
+    SHOW_HUB_MARKETS_KEY
   )
+  const filters: BrowseFilters = {
+    ...sessionFilters,
+    // Without storage the choice stays with the other filters, for the visit.
+    showHubMarkets: safeLocalStorage
+      ? showHubMarkets
+      : !!sessionFilters.showHubMarkets,
+  }
+  // The filters as the person set them: the hub choice in them is the one
+  // to remember. Filters set for them (a link, a wider search) go to
+  // setSessionFilters and carry the hub choice over as it was.
+  const setFilters = (next: BrowseFilters, choseHubMarkets = false) => {
+    // Written when the person changes it, and always when they choose it
+    // (its own chips, "Show them here", a reset), even if this tab already
+    // shows that choice. Not on any other change: a tab that never touched
+    // the choice must not undo what another tab chose.
+    if (choseHubMarkets || !!next.showHubMarkets !== showHubMarkets)
+      setShowHubMarkets(!!next.showHubMarkets)
+    setSessionFilters(next)
+  }
   const [input, setInput] = usePersistentInMemoryState('', 'browse-v2-term')
+  // Whether the person has typed since the box last sent its search event.
+  // The query is kept for the visit and the box is focused on arrival, so
+  // without this a restored or linked query would be sent again on the next
+  // tap, once for every market opened from the results.
+  const typedSinceSearchEvent = useRef(false)
   const [term, setTerm] = useState(input.trim())
   const [searchCategory, setSearchCategory] = useState<SearchCategory>('all')
   useEffect(() => {
@@ -166,12 +201,13 @@ function BrowseV2Inner() {
       (x) => li && x.key === Number(li)
     )?.key
     if (status || type || liquidity)
-      setFilters({
+      setSessionFilters((current) => ({
         ...DEFAULT_FILTERS,
+        showHubMarkets: current.showHubMarkets,
         ...(status ? { status } : {}),
         ...(type ? { contractType: type } : {}),
         ...(liquidity ? { liquidity } : {}),
-      })
+      }))
     setUrlReady(true)
   }, [router.isReady])
 
@@ -277,9 +313,9 @@ function BrowseV2Inner() {
     track('browse v2 topic', { topic: next.key })
     setTopicChoice(next)
   }
-  const onFilters = (next: BrowseFilters) => {
+  const onFilters = (next: BrowseFilters, choseHubMarkets?: boolean) => {
     track('browse v2 filters', { ...next })
-    setFilters(next)
+    setFilters(next, choseHubMarkets)
   }
   const onLayout = (next: BrowseLayout) => {
     track('browse v2 layout', { layout: next })
@@ -295,7 +331,7 @@ function BrowseV2Inner() {
   }
   const resetFilters = () => {
     setTopicChoice(ALL_TOPICS)
-    setFilters(DEFAULT_FILTERS)
+    setFilters(DEFAULT_FILTERS, true)
     setInput('')
   }
   const section = `browse-v2 ${searching ? 'search' : lens} ${layout}`
@@ -317,7 +353,17 @@ function BrowseV2Inner() {
               ref={searchInputRef}
               type="search"
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                typedSinceSearchEvent.current = true
+                setInput(e.target.value)
+              }}
+              // The event Classic's search box sends, once for each query
+              // the person types (see BROWSE_ROLLOUT.md on comparing them).
+              onBlur={() => {
+                if (!typedSinceSearchEvent.current || !input.trim()) return
+                typedSinceSearchEvent.current = false
+                track('search', { query: input, location: 'browse-v2' })
+              }}
               placeholder="Search markets, users, topics, and posts"
               className="text-ink-1000 placeholder:text-ink-400 min-w-0 flex-1 text-ellipsis border-0 bg-transparent p-0 text-base focus:outline-none focus:ring-0 sm:text-sm [&::-webkit-search-cancel-button]:hidden"
             />
@@ -425,7 +471,7 @@ function BrowseV2Inner() {
                     <button
                       type="button"
                       onClick={() =>
-                        onFilters({ ...filters, showHubMarkets: true })
+                        onFilters({ ...filters, showHubMarkets: true }, true)
                       }
                       className="text-primary-700 font-medium"
                     >
@@ -469,8 +515,14 @@ function BrowseV2Inner() {
                         error
                           ? () => retryMarkets()
                           : () => {
+                              // Hub markets are never folded out of search
+                              // results, so the choice has no part in this.
                               setTopicChoice(ALL_TOPICS)
-                              setFilters({ ...DEFAULT_FILTERS, status: 'all' })
+                              setSessionFilters((current) => ({
+                                ...DEFAULT_FILTERS,
+                                showHubMarkets: current.showHubMarkets,
+                                status: 'all',
+                              }))
                             }
                       }
                     >

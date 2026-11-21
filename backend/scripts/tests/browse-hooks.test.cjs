@@ -20,16 +20,20 @@ const useEvent = load('client-common/src/hooks/use-event.ts', {
   },
 })
 const json = load('common/src/util/json.ts', {})
-const persistent = load('web/hooks/use-persistent-local-state.ts', {
-  react: React,
-  'common/util/json': json,
-  'web/lib/util/local': { safeLocalStorage: undefined },
-  'client-common/hooks/use-persistent-in-memory-state': {
-    isFunction: (v) => typeof v === 'function',
-  },
-  'client-common/hooks/use-event': useEvent,
-  'web/hooks/use-is-client': { useIsClient: () => true },
-})
+const persistentWith = (safeLocalStorage) =>
+  load('web/hooks/use-persistent-local-state.ts', {
+    react: React,
+    'common/util/json': json,
+    'web/lib/util/local': { safeLocalStorage },
+    'client-common/hooks/use-persistent-in-memory-state': {
+      isFunction: (v) => typeof v === 'function',
+    },
+    'client-common/hooks/use-event': useEvent,
+    'web/hooks/use-is-client': { useIsClient: () => true },
+  })
+// Storage blocked, unless a test brings a device's own.
+const persistent = persistentWith(undefined)
+const hubFold = load('web/components/browse-v2/hub-fold.ts', {})
 const random = load('common/src/util/random.ts', {})
 const ab = load('common/src/ab-test.ts', { './util/random': random })
 const rules = load('common/src/browse-rollout.ts', { './ab-test': ab })
@@ -46,6 +50,7 @@ async function mount(render, renderValue = false) {
   }
   await act(async () => root.render(React.createElement(Probe)))
   return {
+    element,
     get value() {
       return value
     },
@@ -279,9 +284,19 @@ function markets(api) {
 }
 
 // Exercise the actual Browse caller and pagination hook, replacing only the
-// surrounding widgets and network boundary.
-function browsePageFixture(query = {}, results = []) {
+// surrounding widgets and network boundary. `local` is the device's
+// localStorage; without it storage is blocked. `memory` is the in-memory
+// state that outlives a remount within one visit; without it every mount
+// starts fresh, as a page load does.
+function browsePageFixture(
+  query = {},
+  results = [],
+  local,
+  memory,
+  options = {}
+) {
   const empty = () => null
+  const tracked = []
   const shared = {
     react: React,
     'react/jsx-runtime': require('react/jsx-runtime'),
@@ -293,13 +308,35 @@ function browsePageFixture(query = {}, results = []) {
       XIcon: empty,
     },
   }
-  const lenses = load('web/components/browse-v2/lens-bar.tsx', {
-    ...shared,
-    '@headlessui/react': {},
-    '@heroicons/react/solid': {},
-    'common/topics': { SEARCH_TOPICS_TO_SUBTOPICS: {} },
-    'common/util/string': { removeEmojis: (value) => value },
-  })
+  // The real lens bar. Its menus are stood in for by ones that are always
+  // open, so the filter chips and "Reset filters" are there to be pressed.
+  const icons = new Proxy({}, { get: () => empty })
+  const lenses = load(
+    'web/components/browse-v2/lens-bar.tsx',
+    {
+      ...shared,
+      '@heroicons/react/outline': icons,
+      '@heroicons/react/solid': icons,
+      '@headlessui/react': {
+        Popover: ({ children }) =>
+          React.createElement('div', null, children({ close() {} })),
+        PopoverButton: ({ children }) =>
+          React.createElement('button', { type: 'button' }, children),
+        PopoverPanel: ({ children }) =>
+          React.createElement('div', null, children),
+      },
+      'common/topics': { SEARCH_TOPICS_TO_SUBTOPICS: {} },
+      'common/util/string': { removeEmojis: (value) => value },
+    },
+    {
+      ...globals,
+      ResizeObserver: class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    }
+  )
   const calls = []
   let controls
   window.matchMedia = () => ({
@@ -307,25 +344,34 @@ function browsePageFixture(query = {}, results = []) {
     addEventListener() {},
     removeEventListener() {},
   })
-  const Market = ({ contract }) =>
-    React.createElement('div', { 'data-market-id': contract.id })
+  const marketIn =
+    (layout) =>
+    ({ contract }) =>
+      React.createElement('div', {
+        'data-market-id': contract.id,
+        'data-layout': layout,
+      })
   const { BrowseV2 } = load(
     'web/components/browse-v2/browse-v2.tsx',
     {
       ...shared,
-      'client-common/hooks/use-persistent-in-memory-state': {
+      'client-common/hooks/use-persistent-in-memory-state': memory ?? {
         usePersistentInMemoryState: React.useState,
       },
       'next/router': { useRouter: () => ({ isReady: true, query }) },
       'web/components/widgets/visibility-observer': {
         LoadMoreUntilNotVisible: empty,
       },
-      'web/hooks/use-persistent-local-state': persistent,
-      'web/hooks/use-is-mobile': { useIsMobile: () => false },
+      'web/hooks/use-persistent-local-state':
+        options.persistent ?? (local ? persistentWith(local) : persistent),
+      'web/hooks/use-is-mobile': { useIsMobile: () => !!options.mobile },
       'web/hooks/use-user': { useUser: () => null },
       'web/lib/firebase/users': { firebaseLogin: empty },
-      'web/lib/service/analytics': { track: empty },
+      'web/lib/service/analytics': {
+        track: (name, properties) => tracked.push({ name, ...properties }),
+      },
       'web/lib/supabase/groups': { listGroupsBySlug: async () => [] },
+      'web/lib/util/local': { safeLocalStorage: local },
       './browse-topics': {
         BrowseTopicsProvider: ({ children }) => children,
         useBrowseTopics: () => ({
@@ -335,17 +381,17 @@ function browsePageFixture(query = {}, results = []) {
         }),
       },
       './hub-cards': { HubCards: empty },
-      './hub-fold': { isHubMarket: () => false },
+      './hub-fold': hubFold,
       './lens-bar': {
         ...lenses,
         LensBar: (props) => {
           controls = props
-          return null
+          return React.createElement(lenses.LensBar, props)
         },
       },
       './market-card': {
-        MarketCard: Market,
-        MarketListRow: Market,
+        MarketCard: marketIn('cards'),
+        MarketListRow: marketIn('list'),
         MarketCardSkeleton: empty,
         MarketRowSkeleton: empty,
       },
@@ -369,12 +415,613 @@ function browsePageFixture(query = {}, results = []) {
   )
   return {
     calls,
+    tracked,
+    defaults: lenses.DEFAULT_FILTERS,
     get controls() {
       return controls
     },
     mount: () => mount(() => React.createElement(BrowseV2), true),
   }
 }
+
+function deviceStorage() {
+  const values = new Map()
+  return {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  }
+}
+// One small house market that belongs in a hub, and one that does not.
+const hubMarket = {
+  id: 'hub',
+  outcomeType: 'BINARY',
+  creatorUsername: 'ManifoldSports',
+  uniqueBettorCount: 3,
+}
+const plainMarket = {
+  id: 'plain',
+  outcomeType: 'BINARY',
+  creatorUsername: 'someone',
+  uniqueBettorCount: 3,
+}
+// A perp. Perps were folded at first; they stay in the feed now.
+const perpMarket = {
+  id: 'perp',
+  outcomeType: 'PERP',
+  creatorUsername: 'MNX',
+  uniqueBettorCount: 2,
+}
+const layoutsShown = () =>
+  [...document.querySelectorAll('[data-layout]')].map((element) =>
+    element.getAttribute('data-layout')
+  )
+const marketsShown = (scope = document) =>
+  [...scope.querySelectorAll('[data-market-id]')].map((element) =>
+    element.getAttribute('data-market-id')
+  )
+// Press a real button by its label, on the whole page or in one tab of it.
+const press = (label, scope = document) =>
+  act(async () =>
+    [...scope.querySelectorAll('button')]
+      .find((button) => button.textContent.trim() === label)
+      .click()
+  )
+const SHOW = 'Show in this list'
+const FOLD = 'In their hubs'
+// A page load ends: what was in memory is gone, what is on the device stays.
+const leavePage = async () => {
+  await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
+  document.body.innerHTML = ''
+}
+// The in-memory state itself, which outlives leaving Browse and coming back.
+const visitMemory = () =>
+  load('client-common/src/hooks/use-persistent-in-memory-state.ts', {
+    react: React,
+    'common/util/json': json,
+    'client-common/hooks/use-event': useEvent,
+  })
+
+test('the hub-markets choice is remembered on the device, and nothing else is', async () => {
+  const local = deviceStorage()
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+  const first = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await first.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  assert.equal(first.controls.filters.showHubMarkets, false)
+
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(first.controls.filters.showHubMarkets, true)
+  assert.equal(remembered(), 'true')
+  // A filter for this visit only.
+  await act(async () =>
+    first.controls.onFilters({ ...first.controls.filters, status: 'closed' })
+  )
+  assert.equal(first.calls.at(-1).filter, 'closed')
+  assert.equal(first.controls.filters.showHubMarkets, true)
+  await leavePage()
+
+  const second = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await second.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(second.controls.filters.showHubMarkets, true)
+  assert.equal(second.controls.filters.status, 'open')
+  assert.equal(second.calls.at(-1).filter, 'open')
+
+  // Turning it off in the filter panel is remembered too.
+  await press(FOLD)
+  assert.deepEqual(marketsShown(), ['plain'])
+  assert.equal(remembered(), 'false')
+  await leavePage()
+  const third = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await third.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  // And on again there.
+  await press(SHOW)
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(remembered(), 'true')
+})
+
+test('every reset of the filters also forgets the hub-markets choice', async () => {
+  const local = deviceStorage()
+  const remember = () => local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+
+  // "Reset filters" in the filter panel.
+  remember()
+  let page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  await press('Reset filters')
+  assert.deepEqual(marketsShown(), ['plain'])
+  assert.equal(remembered(), 'false')
+  await leavePage()
+
+  // "Clear search and filters" on an empty result.
+  remember()
+  page = browsePageFixture({ f: 'closed' }, [], local)
+  await page.mount()
+  assert.equal(page.controls.filters.status, 'closed')
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  await press('Clear search and filters')
+  assert.equal(page.controls.filters.status, 'open')
+  assert.equal(page.controls.filters.showHubMarkets, false)
+  assert.equal(remembered(), 'false')
+  await leavePage()
+  page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+})
+
+test('filters set by a link or by widening a search leave the hub-markets choice alone', async () => {
+  const local = deviceStorage()
+  local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+
+  // A link that sets a filter.
+  let page = browsePageFixture(
+    { ct: 'BINARY' },
+    [hubMarket, plainMarket],
+    local
+  )
+  await page.mount()
+  assert.equal(page.controls.filters.contractType, 'BINARY')
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  await leavePage()
+
+  // "Search all markets" on a search with no results.
+  page = browsePageFixture({ q: 'nothing like this', f: 'closed' }, [], local)
+  await page.mount()
+  assert.equal(page.calls.at(-1).filter, 'closed')
+  await press('Search all markets')
+  assert.equal(page.calls.at(-1).filter, 'all')
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  await leavePage()
+  page = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+})
+
+test('a tab that never touched the hub-markets choice cannot undo another tab, except by a reset', async () => {
+  const local = deviceStorage()
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+  // Two tabs open on the same device, both folded.
+  const tabA = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const a = (await tabA.mount()).element
+  const tabB = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const b = (await tabB.mount()).element
+  await press(SHOW, b)
+  assert.equal(remembered(), 'true')
+  assert.deepEqual(marketsShown(a), ['plain'])
+
+  // The first tab still thinks the choice is off. Changing another filter
+  // there, putting it back, and changing a different one are not choices
+  // about hub markets, even when every filter ends up at its default.
+  await act(async () =>
+    tabA.controls.onFilters({ ...tabA.controls.filters, status: 'closed' })
+  )
+  assert.equal(tabA.calls.at(-1).filter, 'closed')
+  assert.equal(remembered(), 'true')
+  await act(async () =>
+    tabA.controls.onFilters({ ...tabA.controls.filters, status: 'open' })
+  )
+  assert.equal(remembered(), 'true')
+  await press('Polls', a)
+  assert.equal(tabA.calls.at(-1).contractType, 'POLL')
+  assert.equal(remembered(), 'true')
+
+  // "Reset filters" there is the person saying so, and is written.
+  await press('Reset filters', a)
+  assert.equal(tabA.controls.filters.contractType, 'ALL')
+  assert.equal(remembered(), 'false')
+
+  // So is choosing it there, either way.
+  await press(SHOW, a)
+  assert.equal(remembered(), 'true')
+  await press(FOLD, a)
+  assert.equal(remembered(), 'false')
+})
+
+test('a tab that still shows hub markets cannot turn them back on for another tab', async () => {
+  const local = deviceStorage()
+  local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+  const tabA = browsePageFixture({}, [hubMarket, plainMarket], local)
+  await tabA.mount()
+  const tabB = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const b = (await tabB.mount()).element
+  await press(FOLD, b)
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'false')
+
+  // The first tab still shows them. Changing its other filters, and putting
+  // them back, is not a choice about hub markets.
+  assert.equal(tabA.controls.filters.showHubMarkets, true)
+  await act(async () =>
+    tabA.controls.onFilters({ ...tabA.controls.filters, status: 'closed' })
+  )
+  await act(async () =>
+    tabA.controls.onFilters({ ...tabA.controls.filters, status: 'open' })
+  )
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'false')
+})
+
+test('"Clear search and filters" in a tab that never touched the choice still clears it', async () => {
+  const local = deviceStorage()
+  // An empty result in the first tab, folded. The second tab turns hub
+  // markets on.
+  const tabA = browsePageFixture({ f: 'closed' }, [], local)
+  const a = (await tabA.mount()).element
+  const tabB = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const b = (await tabB.mount()).element
+  await press(SHOW, b)
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'true')
+  assert.equal(tabA.controls.filters.showHubMarkets, false)
+
+  await press('Clear search and filters', a)
+  assert.equal(tabA.controls.filters.status, 'open')
+  assert.equal(local.getItem(hubFold.SHOW_HUB_MARKETS_KEY), 'false')
+})
+
+test('with storage blocked the hub-markets choice lasts for the visit, like the other filters', async () => {
+  const memory = visitMemory()
+  const page = browsePageFixture(
+    {},
+    [hubMarket, plainMarket],
+    undefined,
+    memory
+  )
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  await leavePage()
+
+  // Back on Browse in the same visit: still shown.
+  const again = browsePageFixture(
+    {},
+    [hubMarket, plainMarket],
+    undefined,
+    memory
+  )
+  await again.mount()
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(again.controls.filters.showHubMarkets, true)
+  await press('Reset filters')
+  assert.deepEqual(marketsShown(), ['plain'])
+  await leavePage()
+
+  // A new page load has nothing to remember it by.
+  const reloaded = browsePageFixture({}, [hubMarket, plainMarket])
+  await reloaded.mount()
+  assert.deepEqual(marketsShown(), ['plain'])
+  await press(SHOW)
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+})
+
+test('with storage blocked, filters set by a link or a wider search still leave the choice alone', async () => {
+  const memory = visitMemory()
+  // Turned on during a search that finds nothing, then the search is widened.
+  const search = browsePageFixture(
+    { q: 'nothing like this', f: 'closed' },
+    [],
+    undefined,
+    memory
+  )
+  await search.mount()
+  await press(SHOW)
+  assert.equal(search.controls.filters.showHubMarkets, true)
+  await press('Search all markets')
+  assert.equal(search.calls.at(-1).filter, 'all')
+  assert.equal(search.controls.filters.showHubMarkets, true)
+  await leavePage()
+
+  // Back on Browse in the same visit, through a link that sets a filter.
+  const linked = browsePageFixture(
+    { ct: 'BINARY' },
+    [hubMarket, plainMarket],
+    undefined,
+    memory
+  )
+  await linked.mount()
+  assert.equal(linked.controls.filters.contractType, 'BINARY')
+  assert.equal(linked.controls.filters.showHubMarkets, true)
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+})
+
+test('perps stay in the general list; small house sports and race markets fold', async () => {
+  const page = browsePageFixture({}, [perpMarket, hubMarket, plainMarket])
+  await page.mount()
+  assert.deepEqual(marketsShown(), ['perp', 'plain'])
+  assert.ok(document.body.textContent.includes('1 market in hubs'))
+  await press('Show them here')
+  assert.deepEqual(marketsShown(), ['perp', 'hub', 'plain'])
+  // Popular house markets were never folded.
+  assert.equal(
+    hubFold.isHubMarket({ ...hubMarket, uniqueBettorCount: 20 }),
+    false
+  )
+  assert.equal(hubFold.isHubMarket(perpMarket), false)
+  assert.equal(
+    hubFold.isHubMarket({ ...hubMarket, creatorUsername: 'ManifoldPolitics' }),
+    true
+  )
+})
+
+test('every screen opens on the list, and a chosen layout is kept', async () => {
+  const local = deviceStorage()
+  // Desktop and phone, with no choice made: the list.
+  for (const mobile of [false, true]) {
+    const page = browsePageFixture({}, [plainMarket], local, undefined, {
+      mobile,
+    })
+    await page.mount()
+    assert.deepEqual(layoutsShown(), ['list'], `mobile ${mobile}`)
+    await leavePage()
+  }
+  // Choosing cards is remembered, on both.
+  const page = browsePageFixture({}, [plainMarket], local)
+  await page.mount()
+  await act(async () => page.controls.onLayout('cards'))
+  assert.deepEqual(layoutsShown(), ['cards'])
+  await leavePage()
+  for (const mobile of [false, true]) {
+    const again = browsePageFixture({}, [plainMarket], local, undefined, {
+      mobile,
+    })
+    await again.mount()
+    assert.deepEqual(layoutsShown(), ['cards'], `mobile ${mobile}`)
+    await leavePage()
+  }
+})
+
+test('pressing the hub chip a stale tab already shows as chosen still chooses it', async () => {
+  const local = deviceStorage()
+  const remembered = () => local.getItem(hubFold.SHOW_HUB_MARKETS_KEY)
+  // Both tabs folded; the second turns hub markets on.
+  const tabA = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const a = (await tabA.mount()).element
+  const tabB = browsePageFixture({}, [hubMarket, plainMarket], local)
+  const b = (await tabB.mount()).element
+  await press(SHOW, b)
+  assert.equal(remembered(), 'true')
+
+  // The first tab still shows "In their hubs" as chosen. Pressing it is the
+  // person choosing it, and is written.
+  assert.equal(tabA.controls.filters.showHubMarkets, false)
+  await press(FOLD, a)
+  assert.equal(remembered(), 'false')
+
+  // The same the other way round: the second tab still shows "Show in this
+  // list" as chosen, and pressing it is written.
+  assert.equal(tabB.controls.filters.showHubMarkets, true)
+  await press(SHOW, b)
+  assert.equal(remembered(), 'true')
+  await press(FOLD, b)
+  await press(SHOW, a)
+  assert.equal(remembered(), 'true')
+  await press(FOLD, b)
+  assert.equal(remembered(), 'false')
+  // "Show them here" in a tab that already shows them is not offered, and a
+  // tab that is folded offers it and writes it.
+  await press('Show them here', b)
+  assert.equal(remembered(), 'true')
+})
+
+test('on a full page load the remembered hub choice comes back after the first render, and loading writes nothing', async () => {
+  const local = deviceStorage()
+  local.setItem(hubFold.SHOW_HUB_MARKETS_KEY, 'true')
+  const writes = []
+  const watched = {
+    getItem: local.getItem,
+    setItem: (key, value) => {
+      writes.push([key, value])
+      local.setItem(key, value)
+    },
+    removeItem: local.removeItem,
+  }
+  // The real hook with the real client check: the first render is the
+  // server's, which knows nothing of the device.
+  const firstRenders = []
+  const isClient = load('web/hooks/use-is-client.ts', {
+    react: React,
+    'client-common/hooks/use-persistent-in-memory-state': {
+      usePersistentInMemoryState: React.useState,
+    },
+  })
+  const hook = load('web/hooks/use-persistent-local-state.ts', {
+    react: React,
+    'common/util/json': json,
+    'web/lib/util/local': { safeLocalStorage: watched },
+    'client-common/hooks/use-persistent-in-memory-state': {
+      isFunction: (v) => typeof v === 'function',
+    },
+    'client-common/hooks/use-event': useEvent,
+    'web/hooks/use-is-client': {
+      useIsClient: () => {
+        const client = isClient.useIsClient()
+        firstRenders.push(client)
+        return client
+      },
+    },
+  })
+  const page = browsePageFixture(
+    {},
+    [hubMarket, plainMarket],
+    watched,
+    undefined,
+    {
+      persistent: hook,
+    }
+  )
+  await page.mount()
+  assert.equal(firstRenders[0], false)
+  assert.deepEqual(marketsShown(), ['hub', 'plain'])
+  assert.equal(page.controls.filters.showHubMarkets, true)
+  assert.deepEqual(
+    writes.filter(([key]) => key === hubFold.SHOW_HUB_MARKETS_KEY),
+    []
+  )
+})
+
+test('the new search box sends the Classic search event once for each query typed, not for a restored or linked one', async () => {
+  // React DOM is loaded here before the test window exists, so it sees
+  // neither typing nor focus events: call the box's own handlers instead,
+  // as React would.
+  const box = () => {
+    const input = document.querySelector('input[type="search"]')
+    const key = Object.keys(input).find((k) => k.startsWith('__reactProps'))
+    return { input, props: input[key] }
+  }
+  const type = (value) =>
+    act(async () => box().props.onChange({ target: { value } }))
+  const blur = () => act(async () => box().props.onBlur())
+  const searches = (page) =>
+    page.tracked.filter((event) => event.name === 'search')
+  const sent = (query) => ({ name: 'search', query, location: 'browse-v2' })
+
+  // A linked query fills the box but was not typed: nothing is sent.
+  const linked = browsePageFixture({ q: 'climate' }, [plainMarket])
+  await linked.mount()
+  assert.equal(box().input.value, 'climate')
+  await blur()
+  assert.deepEqual(searches(linked), [])
+  await leavePage()
+
+  const memory = visitMemory()
+  const page = browsePageFixture({}, [plainMarket], undefined, memory)
+  await page.mount()
+  await blur()
+  await type('   ')
+  await blur()
+  assert.deepEqual(searches(page), [])
+  await type('climate')
+  await blur()
+  // Leaving the box again without typing sends nothing more.
+  await blur()
+  assert.deepEqual(searches(page), [sent('climate')])
+  await leavePage()
+
+  // Back on Browse in the same visit: the query is restored, not resent.
+  const back = browsePageFixture({}, [plainMarket], undefined, memory)
+  await back.mount()
+  assert.equal(box().input.value, 'climate')
+  await blur()
+  assert.deepEqual(searches(back), [])
+  await type('climate change')
+  await blur()
+  assert.deepEqual(searches(back), [sent('climate change')])
+})
+
+// The real sidebar, with every icon and widget a stand-in: which links it
+// shows, in which order.
+async function sidebarLinks({ user = null, isMobile = false } = {}) {
+  const Stub = () => null
+  const stubs = new Proxy(
+    {},
+    { get: (_, key) => (key === '__esModule' ? false : Stub) }
+  )
+  const Sidebar = load('web/components/nav/sidebar.tsx', {
+    react: React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    '@heroicons/react/outline': stubs,
+    clsx: { default: (...names) => names.filter(Boolean).join(' ') },
+    'web/lib/icons/trophy-icon.svg': { default: Stub },
+    'common/util/array': load('common/src/util/array.ts', {
+      lodash: require('lodash'),
+    }),
+    'common/shop/items': { SHOP_ITEMS: [] },
+    'common/sweepstakes': { getTotalPrizePool: () => 0 },
+    'common/util/time': { DAY_MS: 86400000, isAprilFools: () => false },
+    'next/dist/shared/lib/app-router-context.shared-runtime': {},
+    'next/navigation': {
+      usePathname: () => '/home',
+      useRouter: () => ({ push: () => {} }),
+    },
+    'react-icons/lu': stubs,
+    'react-icons/io5': stubs,
+    'react-icons/tb': stubs,
+    'web/components/buttons/app-badges-or-get-app-button': stubs,
+    'web/components/buttons/create-question-button': stubs,
+    'web/components/notifications-icon': stubs,
+    'web/hooks/use-admin': { useAdminOrMod: () => false },
+    'web/hooks/use-api-getter': { useAPIGetter: () => ({ data: undefined }) },
+    'web/hooks/use-theme': {
+      useTheme: () => ({ theme: 'auto', setTheme: Stub }),
+    },
+    'web/hooks/use-user': { useUser: () => user },
+    'web/lib/firebase/users': stubs,
+    'web/lib/service/analytics': { withTracking: (f) => f },
+    '../buttons/mobile-apps-qr-code-button': stubs,
+    '../buttons/sign-up-button': stubs,
+    '../layout/col': { Col: ({ children }) => children },
+    '../widgets/dropdown-menu': { default: Stub },
+    '../profile/add-funds-button': stubs,
+    '../reports-icon': stubs,
+    '../tv-icon': stubs,
+    '../tv/tv-schedule': { useTVIsLive: () => false },
+    './manifold-logo': stubs,
+    './profile-summary': stubs,
+    './sidebar-item': {
+      SidebarItem: ({ item }) =>
+        React.createElement('a', {
+          'data-nav': item.name,
+          'data-href': item.href ?? '',
+          'data-event': item.trackingEventName ?? '',
+        }),
+    },
+  }).default
+  await mount(() => React.createElement(Sidebar, { isMobile }), true)
+  const links = [...document.querySelectorAll('[data-nav]')].map((a) => ({
+    name: a.getAttribute('data-nav'),
+    href: a.getAttribute('data-href'),
+    event: a.getAttribute('data-event'),
+  }))
+  // The list the links sit in: on desktop it scrolls on its own, so the
+  // controls below it stay on a short screen.
+  const listScrolls = document
+    .querySelector('[data-nav]')
+    .closest('ul')
+    .className.split(' ')
+    .includes('overflow-y-auto')
+  await leavePage()
+  return Object.assign(links, { listScrolls })
+}
+
+test('the sidebar links Sports and Perps right after Browse, signed in or out, and first in the phone menu; not Elections', async () => {
+  const hubs = [
+    { name: 'Sports', href: '/sports', event: '' },
+    { name: 'Perps', href: '/perps', event: '' },
+  ]
+  const signedOut = await sidebarLinks()
+  assert.deepEqual(signedOut.slice(0, 3), [
+    { name: 'Browse', href: '/', event: '' },
+    ...hubs,
+  ])
+  const user = { id: 'u1', createdTime: 0 }
+  const signedIn = await sidebarLinks({ user })
+  assert.deepEqual(signedIn.slice(0, 3), [
+    { name: 'Browse', href: '/home', event: '' },
+    ...hubs,
+  ])
+  const phone = await sidebarLinks({ user, isMobile: true })
+  assert.deepEqual(phone.slice(0, 2), hubs)
+  // Each hub once in each list, including the lower links on the phone, and
+  // no election link in any of them.
+  for (const links of [signedOut, signedIn, phone]) {
+    for (const hub of hubs)
+      assert.equal(links.filter((link) => link.href === hub.href).length, 1)
+    assert.deepEqual(
+      links.filter((link) => /^\/election/.test(link.href)),
+      []
+    )
+  }
+  // With more links, the desktop list scrolls on a short screen rather
+  // than pushing "More" (theme, sign out) below it. The phone drawer scrolls
+  // as a whole.
+  assert.equal(signedOut.listScrolls, true)
+  assert.equal(signedIn.listScrolls, true)
+  assert.equal(phone.listScrolls, false)
+})
 
 test('Closing soonest preserves closing-week and substitutes open for all', async () => {
   const f = browsePageFixture({ s: 'close-date', f: 'closing-week' })
