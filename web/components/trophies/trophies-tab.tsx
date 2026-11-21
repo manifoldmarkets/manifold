@@ -13,12 +13,14 @@ import {
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
+  TrophyStats,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countReachedMilestones,
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getTotalPossibleMilestones,
+  getTrophyDefinitionsFor,
   getTrophyPinId,
 } from 'common/trophies'
 import {
@@ -61,9 +63,15 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const handleClaim = async (trophyId: string, milestoneId: string) => {
     setClaimingId(trophyId)
     try {
-      const { claims } = await api('claim-trophy', { trophyId, milestoneId })
+      const { claims, rewardAmount } = await api('claim-trophy', {
+        trophyId,
+        milestoneId,
+      })
       addTrophyClaims(userId, claims)
       setJustClaimed(trophyId)
+      if (rewardAmount > 0) {
+        toast.success(`Trophy claimed: +${formatMoney(rewardAmount)}`)
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -100,19 +108,26 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
     )
   }
 
-  const { claims } = trophies
-  const progressList = computeAllTrophyProgress(achievements)
-  const reached = countReachedMilestones(achievements)
-  const total = getTotalPossibleMilestones()
+  const { claims, starter } = trophies
+  // "Getting started" trophies, and their live counts, are for new accounts.
+  const earnableDefs = getTrophyDefinitionsFor(!!starter)
+  const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
+  const progressList = computeAllTrophyProgress(stats, earnableDefs)
+  const reached = countReachedMilestones(stats, earnableDefs)
+  const total = getTotalPossibleMilestones(earnableDefs)
   const claimedCount = countClaimedMilestones(claims)
-  const unclaimedCount = countUnclaimedReachedMilestones(achievements, claims)
+  const unclaimedCount = countUnclaimedReachedMilestones(
+    stats,
+    claims,
+    earnableDefs
+  )
 
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
   )
   // Other people's profiles show only trophies they have claimed.
   const visibleDefs = isOwnProfile
-    ? TROPHY_DEFINITIONS
+    ? earnableDefs
     : TROPHY_DEFINITIONS.filter((d) => claimedIdsByTrophy.get(d.id)?.size)
 
   const byCategory = new Map<TrophyCategory, TrophyDefinition[]>(
@@ -175,6 +190,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
               isOwnProfile={isOwnProfile}
+              showRewards={isOwnProfile && !!starter}
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}

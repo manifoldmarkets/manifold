@@ -13,6 +13,7 @@ import {
   formatTrophyValue,
   isMilestoneReached,
 } from 'common/trophies'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -23,6 +24,8 @@ export function TrophyGrid(props: {
   definitions: TrophyDefinition[]
   claimedIdsByTrophy: Map<string, Set<string>>
   isOwnProfile?: boolean
+  // Show the mana a milestone pays. Only for the owner of a new account.
+  showRewards?: boolean
   onClaim?: (trophyId: string, milestoneId: string) => void
   claimingId?: string | null
   justClaimedId?: string | null
@@ -33,6 +36,7 @@ export function TrophyGrid(props: {
     definitions,
     claimedIdsByTrophy,
     isOwnProfile,
+    showRewards,
     onClaim,
     claimingId,
     justClaimedId,
@@ -52,6 +56,7 @@ export function TrophyGrid(props: {
             progress={progress}
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
             isOwnProfile={isOwnProfile}
+            showRewards={showRewards}
             onClaim={onClaim}
             claiming={claimingId === def.id}
             justClaimed={justClaimedId === def.id}
@@ -70,6 +75,7 @@ export function TrophyCard(props: {
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
   isOwnProfile?: boolean
+  showRewards?: boolean
   onClaim?: (trophyId: string, milestoneId: string) => void
   claiming?: boolean
   justClaimed?: boolean
@@ -80,6 +86,7 @@ export function TrophyCard(props: {
     progress,
     claimedIds,
     isOwnProfile,
+    showRewards,
     onClaim,
     claiming,
     justClaimed,
@@ -165,6 +172,13 @@ export function TrophyCard(props: {
           {' · '}
           {formatStat(definition, currentValue)}
         </span>
+
+        {/* The base reward; a member's multiplier can make it more. */}
+        {showRewards && !!viewing.rewardMana && !isClaimed && (
+          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+            Pays {formatMoney(viewing.rewardMana)}
+          </span>
+        )}
 
         <MilestoneDots
           milestones={milestones}

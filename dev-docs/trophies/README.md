@@ -11,7 +11,7 @@ The full product plan, including how trophies fit new-user onboarding and the re
 | Trophy and milestone definitions, progress, claim and pin rules (pure, shared) | `common/src/trophies.ts`, tests in `common/src/trophies.test.ts` |
 | Stats a trophy measures | `get-user-achievements` (`backend/api/src/get-user-achievements.ts`), unchanged by trophies |
 | Claims and pins | `get-user-trophies`, `claim-trophy`, `set-showcase-pins`, admin `unclaim-trophy` in `backend/api/src/` |
-| Tables | `user_trophy_milestones`, `user_showcase` (`backend/supabase/migrations/2026112210_trophy_milestones.sql`) |
+| Tables | `user_trophy_milestones`, `user_showcase` (migrations `2026112210_trophy_milestones.sql`, `2026112211_trophy_milestone_rewards.sql`) |
 | UI | `web/components/trophies/`: Trophies tab on the profile, profile showcase under the name |
 
 Data flow:
@@ -23,6 +23,18 @@ Data flow:
 
 Both write endpoints run through `onlyUsersWhoCanPerformAction`: claiming is blocked by a posting or trading ban, pinning by a posting ban.
 
+## "Getting started" trophies (rewards)
+
+Three trophies for new accounts (First Trades, Markets Explored, Days Active) whose milestones each pay mana once when claimed (`rewardMana` on the milestone).
+
+- **Who gets them:** accounts created at or after `STARTER_TROPHIES_START_TIME` in `common/src/trophies.ts`. It is `null` on prod, which hides them and makes `claim-trophy` refuse them, and 1 Nov 2026 on dev. Older accounts never see them, so they can't collect the ladder in one go.
+- **What counts:** buys of M10 or more, not via the API, in mana markets, among the account's first 500 bets. First Trades counts at most one per market per Pacific day, so selling and buying the same market again doesn't climb it. `get-user-trophies` counts these live (`getStarterStats` in `backend/api/src/helpers/trophies.ts`), and only for those accounts.
+- **Paying once:** `claim-trophy` locks the user row, inserts the claim rows, and pays the sum of the newly inserted rows' rewards in the same transaction (`TROPHY_REWARD` txn from the bank), then records the txn on those rows (`reward_txn_id`). A repeat or concurrent claim inserts nothing, so it pays nothing; a failed payout rolls the claim back. The admin unclaim keeps paid rows.
+- **Amount:** the base reward times the same tier multiplier quests use: zero for flagged accounts, 0.2 for bonus-blocked, 1.5 to 3 for members.
+- **Tests:** `backend/shared/src/claim-trophy.test.ts` runs the real handlers and payout against an in-memory PostgreSQL built from the migrations.
+
+To switch on for prod: set the amounts, set `STARTER_TROPHIES_START_TIME.PROD` to the launch time, then deploy the API and web. To switch off: set it back to `null` and deploy the API (claims already made stay paid).
+
 Ids are stored in the database. Never change a trophy's or milestone's `id`; change its `name` instead. Claims of an id that no longer exists are ignored.
 
 ## Stages
@@ -31,9 +43,9 @@ Each stage is its own PR.
 
 | Stage | What | State |
 | --- | --- | --- |
-| 1 | Trophies v1, cosmetic: per-milestone claims, server-checked claims and pins, emoji badges | This code |
+| 1 | Trophies v1, cosmetic: per-milestone claims, server-checked claims and pins, emoji badges | Built |
 | 1b | Fresh trade counts: the `ach_trades` refresh job stopped in Sep 2025 | Separate PR off main |
-| 2 | Starter milestones for new users that pay mana once each, behind a flag | Next |
+| 2 | "Getting started" milestones for new accounts that pay mana once each, off on prod | Built |
 | 3 | A notification when a trophy is ready to claim, a celebration on claim, a "next trophy" card | Planned |
 | 4 | Days of Plus membership as rewards, never auto-renewing | Needs a product decision |
 | 5 | Badge art (`art-guide.md`, `badge-prompts.txt`, `composite-badge.ts`) | Needs a product decision |

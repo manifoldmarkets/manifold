@@ -1,10 +1,15 @@
 import {
   LEAGUE_SHOWCASE_PIN,
   MAX_SHOWCASE_PINS,
+  STARTER_STAT_KEYS,
   TROPHY_DEFINITIONS,
   TROPHY_STAT_KEYS,
   TrophyClaim,
   countClaimedMilestones,
+  getRewardManaTotal,
+  getTrophyDefinitionsFor,
+  isStarterTrophy,
+  isStarterTrophyAccount,
   countReachedMilestones,
   countUnclaimedReachedMilestones,
   formatTrophyValue,
@@ -193,8 +198,81 @@ describe('formatTrophyValue', () => {
     expect(formatTrophyValue(volume, 360_867)).toBe('361K')
     expect(formatTrophyValue(volume, 2_500_000)).toBe('2.5M')
     const charity = getTrophyDefinition('charity-donated')!
+    expect(formatTrophyValue(charity, 12.5)).toBe('describe('formatTrophyValue', () => {
+  it('shows whole numbers', () => {
+    const volume = getTrophyDefinition('trading-volume')!
+    expect(formatTrophyValue(volume, 360.867)).toBe('361')
+    expect(formatTrophyValue(volume, 360_867)).toBe('361K')
+    expect(formatTrophyValue(volume, 2_500_000)).toBe('2.5M')
+    const charity = getTrophyDefinition('charity-donated')!
     expect(formatTrophyValue(charity, 12.5)).toBe('$13')
     const comments = getTrophyDefinition('comments')!
+    expect(formatTrophyValue(comments, 1234)).toBe('1,234')3')
+    const comments = getTrophyDefinition('comments')!
     expect(formatTrophyValue(comments, 1234)).toBe('1,234')
+  })
+})
+
+describe('getting started trophies', () => {
+  const starterDefs = TROPHY_DEFINITIONS.filter(isStarterTrophy)
+
+  it('pay a positive, finite reward on every milestone, and only they pay', () => {
+    expect(starterDefs.length).toBeGreaterThan(0)
+    for (const def of TROPHY_DEFINITIONS) {
+      for (const m of def.milestones) {
+        if (isStarterTrophy(def)) {
+          expect(Number.isFinite(m.rewardMana)).toBe(true)
+          expect(m.rewardMana).toBeGreaterThan(0)
+        } else {
+          expect(m.rewardMana).toBeUndefined()
+        }
+      }
+    }
+  })
+
+  it('measure only the live starter stats', () => {
+    const keys = new Set<string>(STARTER_STAT_KEYS)
+    for (const def of TROPHY_DEFINITIONS) {
+      expect(keys.has(def.statKey)).toBe(isStarterTrophy(def))
+    }
+  })
+
+  it('are only for accounts created at or after the start time', () => {
+    const start = Date.UTC(2026, 11, 1)
+    expect(isStarterTrophyAccount(start - 1, start)).toBe(false)
+    expect(isStarterTrophyAccount(start, start)).toBe(true)
+    expect(isStarterTrophyAccount(start + 1, start)).toBe(true)
+    expect(isStarterTrophyAccount(start, null)).toBe(false)
+    expect(isStarterTrophyAccount(NaN, start)).toBe(false)
+  })
+
+  it('are left out for other accounts', () => {
+    expect(getTrophyDefinitionsFor(false).some(isStarterTrophy)).toBe(false)
+    expect(getTrophyDefinitionsFor(true)).toEqual(TROPHY_DEFINITIONS)
+  })
+
+  it('total rewards, skipping missing, negative and non-finite amounts', () => {
+    const base = starterDefs[0].milestones[0]
+    expect(
+      getRewardManaTotal([
+        { ...base, rewardMana: 50 },
+        { ...base, rewardMana: 100 },
+        { ...base, rewardMana: undefined },
+        { ...base, rewardMana: -10 },
+        { ...base, rewardMana: NaN },
+        { ...base, rewardMana: Infinity },
+      ])
+    ).toBe(150)
+  })
+
+  it('claiming a higher starter milestone pays the lower ones too', () => {
+    const trades = getTrophyDefinition('starter-trades')!
+    const toClaim = getMilestonesToClaim(trades, 'getting-going', 10)
+    expect(toClaim?.map((m) => m.id)).toEqual([
+      'first-trade',
+      'hat-trick',
+      'getting-going',
+    ])
+    expect(getRewardManaTotal(toClaim ?? [])).toBe(200)
   })
 })
