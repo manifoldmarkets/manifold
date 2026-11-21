@@ -57,6 +57,7 @@ import { sendMarketCloseEmails } from './send-market-close-emails'
 import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { unbanUsers } from './unban-users'
+import { updateAchTrades } from './update-ach-trades'
 import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
@@ -333,12 +334,18 @@ export function createJobs(jobSet: SchedulerJobSet) {
     //   '0 0 13 * * *', // 1 PM PT daily
     //   autoGenerateAndResolvePrizeDrawings
     // ),
-    // // Achievement MV refreshes (nightly, staggered ~10 mins apart)
-    // createJob(
-    //   'update-ach-trades',
-    //   '0 10 2 * * *', // 2:10 AM daily
-    //   updateAchTrades
-    // ),
+    createJob(
+      'update-ach-trades',
+      // Hourly at :38 LA, between update-contract-metrics (:21, :42) and off
+      // update-league's quarter hours. Skips 01:00-04:59 LA, the nightly batch
+      // train (the achievement MV refreshes below, update-stats). Each run
+      // applies at most 16 six-hour windows of bets or 3 minutes of work, so
+      // the backlog from Sep 2025 clears in about six days, then each run
+      // applies the hour since the last.
+      '0 38 0,5-23 * * *',
+      () => updateAchTrades()
+    ),
+    // Achievement MV refreshes (nightly, staggered ~10 mins apart)
     createJob(
       'refresh-ach-volume',
       '0 30 2 * * *', // daily at 2:30 AM LA
