@@ -98,9 +98,14 @@ export function MarketTeamScoreboard({
   if (!game) return null
   const view = applySportsLive(game, { liveScore: score })
   const mainAnswer = getMainBinaryMCAnswer(contract)
-  const tradable = !!mainAnswer && canBetOnScheduledGame(view, Date.now())
+  const tradable =
+    contract.outcomeType === 'MULTIPLE_CHOICE' &&
+    isMultiCpmm(contract) &&
+    !!mainAnswer &&
+    canBetOnScheduledGame(view, Date.now())
   const select = (id: string) => {
     if (
+      !tradable ||
       !canBetOnScheduledGame(view, Date.now()) ||
       !contract.answers.some((answer) => answer.id === id)
     )
@@ -117,7 +122,7 @@ export function MarketTeamScoreboard({
   return (
     <>
       <TeamScoreboard game={view} onBet={tradable ? select : undefined} />
-      {tradable && isMultiCpmm(contract) && selected && (
+      {tradable && selected && (
         <MarketBetDialog
           contract={contract}
           open
