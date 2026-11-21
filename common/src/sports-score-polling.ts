@@ -1,6 +1,11 @@
 import { groupBy, sum } from 'lodash'
 import { ENV } from './envs/constants'
-import { SPORT_LEAGUE_LABEL, SportId } from './sports-calendar'
+import { BDL_ESPORTS_FINALS_FROM_MINUTES } from './bdl/constants'
+import {
+  BDL_ADDITIONAL_SPORTS,
+  SPORT_LEAGUE_LABEL,
+  SportId,
+} from './sports-calendar'
 
 // ─── How often the resolver asks for scores ───────────────────────────────────
 //
@@ -28,7 +33,7 @@ export const OVERDUE_FINALS_INTERVAL = 30 * 60
  * Minutes after kickoff when a game is due to end: the usual length with
  * breaks, a little early so the final is caught soon after the whistle.
  */
-export const FINALS_FROM_MINUTES: Record<SportId, number> = {
+export const FINALS_FROM_MINUTES = {
   nfl: 180,
   cfb: 195,
   mlb: 150,
@@ -47,7 +52,14 @@ export const FINALS_FROM_MINUTES: Record<SportId, number> = {
   tennis: 120,
   f1: 90,
   tdf: 240,
-}
+  mma: 20,
+  golf: null, // The provider marks a round official independently of start time.
+  cs2: BDL_ESPORTS_FINALS_FROM_MINUTES[1],
+  valorant: BDL_ESPORTS_FINALS_FROM_MINUTES[1],
+  lol: BDL_ESPORTS_FINALS_FROM_MINUTES[1],
+  dota2: BDL_ESPORTS_FINALS_FROM_MINUTES[1],
+  cbase: 150,
+} satisfies Record<SportId, number | null>
 
 /** The admin settings, from the sports_score_polling table. */
 export interface ScorePollingSettings {
@@ -68,7 +80,10 @@ export const pollingTarget = {
   adaptive: 'adaptive',
 }
 
-const SPORT_IDS = Object.keys(SPORT_LEAGUE_LABEL) as SportId[]
+// These are the existing Odds API polling settings. New BDL leagues have their own targets.
+const SPORT_IDS = (Object.keys(SPORT_LEAGUE_LABEL) as SportId[]).filter(
+  (id) => !Object.prototype.hasOwnProperty.call(BDL_ADDITIONAL_SPORTS, id)
+)
 
 /** Why a setting can't be saved, or undefined when it can. */
 export function pollingSettingError(
@@ -184,7 +199,7 @@ export function finalsDue(
   const minutes = game.sport
     ? FINALS_FROM_MINUTES[game.sport]
     : FINALS_FROM_MINUTES.soccer
-  return now >= game.startTime + minutes * 60_000
+  return minutes !== null && now >= game.startTime + minutes * 60_000
 }
 
 const OVERDUE_AFTER_MS = 3 * 60 * 60 * 1000
