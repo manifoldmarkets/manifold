@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import { Contract } from 'common/contract'
-import { fresherContract, snapshotKey } from './fresher-contract'
+import { fresherContract, keepNewer, snapshotKey } from './fresher-contract'
 
 const market = (over: Partial<Contract>) =>
   ({ id: 'm', lastUpdatedTime: 1000, ...over } as unknown as Contract)
@@ -54,5 +54,30 @@ test('a page copy that differs gets a new subscription key', () => {
     snapshotKey(
       market({ lastUpdatedTime: 1000, answers: answers(4) } as object)
     )
+  )
+})
+
+test('a relabelled answer changes the key; an older refetch never wins', () => {
+  const withText = (text: string) =>
+    market({
+      lastUpdatedTime: 1000,
+      answers: [{ id: 'a', text }],
+    } as object)
+  assert.notEqual(
+    snapshotKey(withText('Pensylvania')),
+    snapshotKey(withText('Pennsylvania'))
+  )
+  // A resolution arrives by socket while a refetch is in flight; the
+  // refetch then answers with the older, open copy.
+  const resolved = market({ lastUpdatedTime: 3000, isResolved: true } as object)
+  const olderFetch = market({ lastUpdatedTime: 2000 })
+  assert.equal(keepNewer(resolved, olderFetch), resolved)
+  // Ties (an answer edit) and newer copies are taken.
+  const edit = market({ lastUpdatedTime: 3000 })
+  assert.equal(keepNewer(resolved, edit), edit)
+  assert.equal(keepNewer(undefined, olderFetch), olderFetch)
+  assert.equal(
+    keepNewer(market({ id: 'x', lastUpdatedTime: 9e9 }), olderFetch),
+    olderFetch
   )
 })

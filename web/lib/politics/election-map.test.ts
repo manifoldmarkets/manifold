@@ -25,6 +25,7 @@ import {
 } from './election-map'
 import { PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
+import { recordedShares, resolvedAnswerId } from './settlement'
 
 const view = (patch: Partial<MapView>): MapView => ({
   mode: 'president',
@@ -409,6 +410,46 @@ test('tipping points from the tipping-point market', () => {
   )
   near(shared[0].p, 0.6)
   assert.equal(tippingWinner(shared), undefined)
+  // All of it to one state through several answers (Nebraska and its
+  // districts): a win in full, though the shares add to just under 1.
+  const nebraska = marketTippingPoints(
+    market({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { ne: 70, ne1: 20, ne2: 10 },
+      answers: [
+        answer('ne', 'Nebraska', 0.5),
+        answer('ne1', 'NE-1', 0.2),
+        answer('ne2', 'NE-2', 0.2),
+        answer('o', 'Other', 0.1, true),
+      ],
+    })
+  )
+  assert.equal(tippingWinner(nebraska), 'NE')
+  // The page's other displays read the same shares (settlement.ts).
+  assert.deepEqual(
+    recordedShares({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { a: 60, b: 40 },
+    }),
+    { a: 60, b: 40 }
+  )
+  const tiny = recordedShares({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { a: 100, b: 0.05 },
+  })!
+  near(tiny.a, (100 * 100) / 100.05)
+  assert.equal(
+    resolvedAnswerId({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { a: 100, b: 0.05 },
+      answers: [{ id: 'a' }, { id: 'b' }],
+    }),
+    undefined
+  )
   // Open: no winner, however lopsided.
   assert.equal(
     tippingWinner(

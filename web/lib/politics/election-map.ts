@@ -6,7 +6,7 @@
 import { sortBy, sumBy } from 'lodash'
 
 import { getAnswerProbability } from 'common/calculate'
-import { Contract, isMultiCpmm, MultiContract } from 'common/contract'
+import { Contract, isMultiCpmm } from 'common/contract'
 import { shownPercent } from 'web/components/usa-map/election-display'
 import { ELECTORAL_UNITS, EV_TO_WIN, RatingBucket, ratingOf } from './ec-model'
 import { placeIn, placeName, TERRITORIES } from './official-markets'
@@ -482,13 +482,11 @@ export function marketTippingPoints(
   if (!contract || !isMultiCpmm(contract)) return []
   if (!contract.shouldAnswersSumToOne) return []
   if (contract.isResolved && contract.resolution === 'CANCEL') return []
-  const ranked =
-    splitPayout(contract) ??
-    rankedAnswers(
-      contract,
-      (id) => getAnswerProbability(contract, id),
-      contract.answers.length
-    )
+  const ranked = rankedAnswers(
+    contract,
+    (id) => getAnswerProbability(contract, id),
+    contract.answers.length
+  )
   const byState = new Map<string, number>()
   for (const { answer, p } of ranked) {
     if (answer.isOther) continue
@@ -502,30 +500,11 @@ export function marketTippingPoints(
   )
 }
 
-// A split resolution (CHOOSE_MULTIPLE) as each answer's share of the
-// payout: its weight over the weights' total, as the payout divides them,
-// so { PA: 100, Other: 0.05 } pays Pennsylvania just under all of it, not
-// all of it. Undefined for any other state of the market.
-function splitPayout(contract: MultiContract) {
-  const { resolutions } = contract
-  if (!contract.isResolved || contract.resolution !== 'CHOOSE_MULTIPLE')
-    return undefined
-  if (!resolutions) return undefined
-  const weight = (id: string) => {
-    const w = resolutions[id]
-    return Number.isFinite(w) && w > 0 ? w : 0
-  }
-  const total = sumBy(contract.answers, (a) => weight(a.id))
-  if (!(total > 0)) return undefined
-  return contract.answers
-    .map((answer) => ({ answer, p: weight(answer.id) / total }))
-    .filter((x) => x.p > 0)
-}
-
 // The state a resolved tipping-point market went to in full, or undefined
-// while it trades, and for a split or partial payout.
+// while it trades, and for a split or partial payout. Answers for one state
+// (Nebraska and its districts) add up, so allow for rounding in the sum.
 export const tippingWinner = (tips: TipChance[]) =>
-  tips.length === 1 && tips[0].p >= 1 ? tips[0].key : undefined
+  tips.length === 1 && tips[0].p >= 1 - 1e-9 ? tips[0].key : undefined
 
 // Lowercase, without the periods, commas and apostrophes names are written
 // with ("Washington, D.C.", "Maine's 2nd District").

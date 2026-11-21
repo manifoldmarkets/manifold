@@ -4,6 +4,7 @@ import { sortBy, uniq } from 'lodash'
 import Link from 'next/link'
 import {
   CSSProperties,
+  useCallback,
   useEffect,
   useId,
   useMemo,
@@ -74,7 +75,11 @@ import {
   tippingWinner,
 } from 'web/lib/politics/election-map'
 import type { ElectoralModel } from 'web/lib/politics/elections-2028'
-import { fresherContract, snapshotKey } from 'web/lib/politics/fresher-contract'
+import {
+  fresherContract,
+  keepNewer,
+  snapshotKey,
+} from 'web/lib/politics/fresher-contract'
 import { TERRITORIES } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
@@ -259,6 +264,10 @@ export function ElectionMap(props: {
   // The tipping-point market, live: whichever of the socket's copy and the
   // page's (refreshed every two minutes) changed last.
   const [tipUpdate, setTipUpdate] = useState<Contract>()
+  const onTipLive = useCallback(
+    (c: Contract) => setTipUpdate((held) => keepNewer(held, c)),
+    []
+  )
   const tipMarket = tippingContract
     ? fresherContract(tipUpdate, tippingContract)
     : undefined
@@ -797,7 +806,7 @@ export function ElectionMap(props: {
           <Subscribe
             key={snapshotKey(tippingContract)}
             contract={tippingContract}
-            onLive={setTipUpdate}
+            onLive={onTipLive}
           />
         )}
         {mode === 'primary' && <PrimaryControls view={view} update={update} />}
@@ -809,9 +818,13 @@ export function ElectionMap(props: {
             tipMarket={tipMarket}
             tipSettled={tipSettled}
             tipWinner={tipWinner}
-            onPreview={(key) => {
-              setTipPreview(key)
-              if (key) setPreview(undefined)
+            onPreview={(key, on) => {
+              // A chip's leave or blur clears only its own preview, not one
+              // focus or the pointer has since moved to another chip.
+              if (on) {
+                setTipPreview(key)
+                setPreview(undefined)
+              } else setTipPreview((cur) => (cur === key ? undefined : cur))
             }}
             onPick={(key, element) => {
               track('election map tipping point', { place: key })
@@ -1345,7 +1358,8 @@ function PresidentNotes(props: {
   tipSettled: boolean
   // The state it resolved to in full (not a split payout).
   tipWinner: string | undefined
-  onPreview: (key: string | undefined) => void
+  // A chip's preview on (pointer enter, focus) or off (leave, blur).
+  onPreview: (key: string, on: boolean) => void
   onPick: (key: string, element: HTMLElement) => void
 }) {
   const { model, tips, tipMarket, tipSettled, tipWinner, onPreview, onPick } =
@@ -1364,11 +1378,11 @@ function PresidentNotes(props: {
               type="button"
               onClick={(e) => onPick(t.key, e.currentTarget)}
               onPointerEnter={(e) => {
-                if (e.pointerType === 'mouse') onPreview(t.key)
+                if (e.pointerType === 'mouse') onPreview(t.key, true)
               }}
-              onPointerLeave={() => onPreview(undefined)}
-              onFocus={() => onPreview(t.key)}
-              onBlur={() => onPreview(undefined)}
+              onPointerLeave={() => onPreview(t.key, false)}
+              onFocus={() => onPreview(t.key, true)}
+              onBlur={() => onPreview(t.key, false)}
             >
               {t.key}
               {!tipWinner && <span>{formatOdds(t.p)}</span>}

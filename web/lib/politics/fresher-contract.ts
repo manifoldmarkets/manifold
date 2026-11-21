@@ -15,12 +15,30 @@ export function fresherContract<C extends Contract>(
   return changedAt(page) > changedAt(live) ? page : live
 }
 
-// Changes when the page's copy of a market differs from the one before it
-// (a later change, or an answer added without one): key a market's live
+// A live update to keep: the incoming copy unless the one held changed
+// strictly later. A refetch started before a socket update (a resolution)
+// can answer with the older copy after it; this keeps the newer one. Socket
+// patches that leave the timestamps alone (answer edits) tie, and are kept.
+export const keepNewer = <C extends Contract>(held: C | undefined, next: C) =>
+  held && held.id === next.id && changedAt(held) > changedAt(next) ? held : next
+
+// Changes when the page's copy of a market differs from the one before it:
+// a later change, or an answer added or relabelled without one (answer
+// edits leave the market's timestamps alone). Key a market's live
 // subscription on it, and a remount refetches the market, so later socket
 // patches build on the newest whole copy instead of an older one.
 export const snapshotKey = (c: Contract) =>
-  `${c.id}:${changedAt(c)}:${'answers' in c ? c.answers.length : 0}`
+  `${c.id}:${changedAt(c)}:${'answers' in c ? answersHash(c.answers) : 0}`
+
+// A short hash of the answers' ids and labels (djb2), so a key stays small.
+const answersHash = (answers: { id: string; text: string }[]) => {
+  let h = 5381
+  for (const a of answers) {
+    const s = `${a.id}\u0000${a.text}\u0001`
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0
+  }
+  return `${answers.length}.${(h >>> 0).toString(36)}`
+}
 
 const changedAt = (c: Contract) =>
   Math.max(
