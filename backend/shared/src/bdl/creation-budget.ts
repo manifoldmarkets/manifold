@@ -8,7 +8,7 @@ import type {
   SupabaseTransaction,
 } from '../supabase/init'
 import {
-  BDL_CREATION_BUDGET_LOCK_SQL,
+  SPORTS_CREATION_BUDGET_LOCK_SQL,
   getMajorSettings,
 } from './major-settings'
 
@@ -163,7 +163,7 @@ export async function requireBdlCreationBudget(
   checkInput(input, emptyPreview)
   // Serialize BDL creators across bot accounts before reading shared exposure.
   // A separate statement after this wait sees the preceding creator's commit.
-  await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+  await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
   await tx.oneOrNone('select id from users where id=$1 for update', [
     input.creatorId,
   ])

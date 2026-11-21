@@ -24,61 +24,25 @@ create index if not exists contracts_sports_event_id_idx on public.contracts ((d
 where
   data ->> 'sportsEventId' is not null;
 
--- Lifetime HTTP response totals for a published BDL endpoint and process role.
--- Writers use the OpenAPI path template (e.g. v1/games/{id}) with its league
--- removed. Upsert the counters atomically, keeping the latest request's status
--- and quota, and the greatest success time when attempts finish out of order.
+-- Lifetime HTTP response totals per provider, league, endpoint template and role.
+-- Each writer supplies a published template without request parameters. The
+-- upsert increments counts atomically and retains the most recent observation.
 create table if not exists
-  public.sports_bdl_request_stats (
+  public.sports_provider_request_stats (
+    provider text not null check (
+      provider collate "C" ~ '^[a-z][a-z0-9-]*$'
+      and provider in ('odds', 'bdl', 'football-data')
+    ),
     league_key text not null check (
-      league_key in (
-        'aba',
-        'acb',
-        'atp',
-        'bbl',
-        'bcl',
-        'bnxt',
-        'bsl',
-        'bundesliga',
-        'cba',
-        'cbb',
-        'cs',
-        'dota',
-        'epl',
-        'eurocup',
-        'euroleague',
-        'f1',
-        'fifa/worldcup',
-        'gbl',
-        'israel',
-        'laliga',
-        'lba',
-        'ligue1',
-        'lkl',
-        'lnb',
-        'lol',
-        'lpga',
-        'mlb',
-        'mls',
-        'mma',
-        'nba',
-        'ncaab',
-        'ncaaf',
-        'ncaaw',
-        'nfl',
-        'nhl',
-        'pga',
-        'seriea',
-        'ucl',
-        'valorant',
-        'vtb',
-        'wnba',
-        'wta'
-      )
+      length(league_key) <= 64
+      and league_key collate "C" ~ '^[A-Za-z0-9][A-Za-z0-9/_-]*$'
     ),
     endpoint_template text not null check (
-      length(endpoint_template) <= 128
-      and endpoint_template ~ '^v[1-9][0-9]*/[a-z][a-z_-]*(/([a-z][a-z_-]*|[{](id|category|type)[}]))*$'
+      length(endpoint_template) between 1 and 128
+      -- ECMAScript trim whitespace (ASCII controls are already disallowed below).
+      and endpoint_template collate "C" ~ U&'[^ \00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]'
+      -- A literal question mark or a Unicode C0/C1 control is never a template.
+      and endpoint_template collate "C" !~ U&'[?\0001-\001F\007F-\009F]'
     ),
     process_role text not null check (
       process_role in ('scheduler', 'api', 'dev', 'recorder', 'codex')
@@ -92,7 +56,12 @@ create table if not exists
     last_success_at timestamptz,
     quota_limit integer check (quota_limit >= 0),
     quota_remaining integer check (quota_remaining >= 0),
-    primary key (league_key, endpoint_template, process_role),
+    primary key (
+      provider,
+      league_key,
+      endpoint_template,
+      process_role
+    ),
     check (
       (success_count > 0) = (last_success_at is not null)
     ),
@@ -110,9 +79,9 @@ create table if not exists
 
 -- Service-owned aggregates. Supabase can grant table privileges by default,
 -- including TRUNCATE, which PostgreSQL row-level policies do not govern.
-alter table public.sports_bdl_request_stats enable row level security;
+alter table public.sports_provider_request_stats enable row level security;
 
-revoke all on public.sports_bdl_request_stats
+revoke all on public.sports_provider_request_stats
 from
   public,
   anon,
@@ -123,7 +92,7 @@ grant
 select
 ,
   insert,
-update on public.sports_bdl_request_stats to service_role;
+update on public.sports_provider_request_stats to service_role;
 
 -- Service-only scheduling state for all dev BDL API and scheduler processes.
 create table if not exists

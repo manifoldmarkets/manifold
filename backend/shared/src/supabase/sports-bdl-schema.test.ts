@@ -4,6 +4,7 @@ import { resolve } from 'path'
 import * as pgPromise from 'pg-promise'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { BDL_REQUESTS_PER_MINUTE } from 'common/bdl/constants'
+import { SPORTS_DATA_PROVIDERS } from 'common/sports-provider'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { findSportsMarket } from '../sports-market-dedupe'
 
@@ -13,12 +14,12 @@ jest.setTimeout(30_000)
 const migration = readFileSync(
   resolve(
     __dirname,
-    '../../../supabase/migrations/2026112101_sports_bdl_schema.sql'
+    '../../../supabase/migrations/2026112101_sports_provider_schema.sql'
   ),
   'utf8'
 )
 const pgp = pgPromise()
-const stats = 'public.sports_bdl_request_stats'
+const stats = 'public.sports_provider_request_stats'
 const slots = 'public.sports_bdl_dev_request_slots'
 const index = 'contracts_sports_event_id_idx'
 const schema = `
@@ -93,6 +94,7 @@ it('keeps the official lookup index sparse across game providers, resolutions an
 const when = '2026-11-21T00:03:00Z'
 const success = '2026-11-21T00:01:00Z'
 const good = {
+  provider: 'bdl',
   league_key: 'nba',
   endpoint_template: 'v1/games/{id}',
   process_role: 'scheduler',
@@ -110,18 +112,25 @@ type Change = Partial<Record<keyof typeof good, string | number | null>>
 const insertStats = (change: Change = {}) =>
   pgp.helpers.insert({ ...good, ...change }, undefined, {
     schema: 'public',
-    table: 'sports_bdl_request_stats',
+    table: 'sports_provider_request_stats',
   })
 
 const invalid: [string, Change, string][] = [
-  ['unsupported league', { league_key: 'imaginary' }, '23514'],
+  ['unknown provider', { provider: 'new-feed' }, '23514'],
+  ['fixture provider', { provider: 'fixture' }, '23514'],
+  ['legacy fallback', { provider: 'legacy' }, '23514'],
+  ['malformed provider', { provider: 'Odds API' }, '23514'],
+  ['empty provider', { provider: '' }, '23514'],
+  ['empty league', { league_key: '' }, '23514'],
+  ['invalid league prefix', { league_key: '/nba' }, '23514'],
+  ['invalid league character', { league_key: 'nba.east' }, '23514'],
+  ['newline in league', { league_key: 'nba\n' }, '23514'],
+  ['oversize league', { league_key: 'a'.repeat(65) }, '23514'],
   ['unknown role', { process_role: 'frontend' }, '23514'],
-  ['raw URL', { endpoint_template: 'https://api.example/v1/games' }, '23514'],
-  ['leading slash', { endpoint_template: '/v1/games' }, '23514'],
-  ['missing version', { endpoint_template: 'games/{id}' }, '23514'],
-  ['literal game id', { endpoint_template: 'v1/games/12345' }, '23514'],
-  ['query value', { endpoint_template: 'v1/games?cursor=1' }, '23514'],
-  ['unknown placeholder', { endpoint_template: 'v1/games/{secret}' }, '23514'],
+  ['empty template', { endpoint_template: '' }, '23514'],
+  ['blank template', { endpoint_template: '   ' }, '23514'],
+  ['control in template', { endpoint_template: 'games\n' }, '23514'],
+  ['query value', { endpoint_template: 'games?cursor=1' }, '23514'],
   [
     'oversize template',
     { endpoint_template: 'v1/' + 'a'.repeat(126) },
@@ -161,6 +170,7 @@ const invalid: [string, Change, string][] = [
   ['other status counter missing', { last_status: 503 }, '23514'],
   ...(
     [
+      'provider',
       'league_key',
       'process_role',
       'endpoint_template',
@@ -182,6 +192,36 @@ beforeEach(async () => {
 })
 it.each(invalid)('rejects %s', async (_name, change, code) => {
   await expect(db.exec(insertStats(change))).rejects.toMatchObject({ code })
+})
+
+it('admits registered feed names and generic provider dimensions independently of the BDL registry', async () => {
+  for (const provider of SPORTS_DATA_PROVIDERS)
+    await db.exec(
+      insertStats({
+        provider,
+        league_key: 'soccer/EPL_1-first',
+        endpoint_template: '/competitions/{competition_code}/matches',
+      })
+    )
+  for (const template of [
+    'scores',
+    'https://example.invalid/events/{sportId}',
+    'a'.repeat(128),
+    '𝄞'.repeat(128),
+  ])
+    await db.exec(
+      insertStats({
+        provider: 'football-data',
+        league_key: 'A'.repeat(64),
+        endpoint_template: template,
+      })
+    )
+  const providers = await db.query<{ provider: string }>(
+    'select distinct provider from ' + stats + ' order by provider'
+  )
+  expect(providers.rows.map((row) => row.provider)).toEqual(
+    [...SPORTS_DATA_PROVIDERS].sort()
+  )
 })
 
 it('accepts all registry leagues and process roles, status classes and unavailable quota headers', async () => {
@@ -226,10 +266,11 @@ it('accepts all registry leagues and process roles, status classes and unavailab
   expect(res.rows).toEqual([{ count: 2 }])
 })
 
-it('retains one row per league, endpoint and role when the migration is reapplied', async () => {
+it('retains one row per provider, league, endpoint and role when the migration is reapplied', async () => {
   await db.exec(insertStats())
   await expect(db.exec(insertStats())).rejects.toMatchObject({ code: '23505' })
   for (const extra of [
+    { provider: 'odds' },
     { league_key: 'nhl' },
     { endpoint_template: 'v2/games/{id}' },
     { process_role: 'api' },
@@ -244,7 +285,7 @@ it('retains one row per league, endpoint and role when the migration is reapplie
   expect((await objects()).rows).toEqual(before)
   expect(
     (await db.query(`select count(*)::int as count from ${stats}`)).rows
-  ).toEqual([{ count: 4 }])
+  ).toEqual([{ count: 5 }])
 })
 
 it('rolls back the whole telemetry transaction on an invalid observation', async () => {
@@ -345,8 +386,8 @@ it('denies client access including truncate and lets the backend maintain aggreg
 })
 
 it('starts unobserved counts at zero and preserves a failed-only endpoint without quota or a success time', async () => {
-  await db.exec(`insert into ${stats} (league_key,endpoint_template,process_role,unauthorized_count,last_status,last_request_at)
-    values ('nba','v1/standings','scheduler',1,401,'2026-11-21T00:00:00Z')`)
+  await db.exec(`insert into ${stats} (provider,league_key,endpoint_template,process_role,unauthorized_count,last_status,last_request_at)
+    values ('bdl','nba','v1/standings','scheduler',1,401,'2026-11-21T00:00:00Z')`)
   const result = await db.query(
     `select success_count::int,unauthorized_count::int,rate_limited_count::int,other_count::int,last_success_at,quota_limit,quota_remaining from ${stats}`
   )

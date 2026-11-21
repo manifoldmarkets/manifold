@@ -28,7 +28,7 @@ import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
@@ -343,7 +343,7 @@ export async function createOddsMarketsForCompetition(
           minLeadMs: MIN_CREATE_LEAD_MS,
           checkOddsCutover: competing.length
             ? async (tx) => {
-                await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+                await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
                 const latest = await getCompetitionSwitches(tx)
                 if (competing.some((p) => autoCreates(p, latest)))
                   throw new OddsCutoverHold(

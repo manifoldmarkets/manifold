@@ -1,3 +1,4 @@
+-- Apply after 2026112101_sports_provider_schema.sql and 2026112102_sports_creation_settings.sql.
 -- For a populated database, run each CREATE INDEX with CONCURRENTLY after
 -- INDEX as a separate autocommit statement before applying this migration.
 -- Verify the definitions and indisready/indisvalid in pg_index. If an aborted

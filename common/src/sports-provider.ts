@@ -1,5 +1,20 @@
 /** Provider adapters retain stable entrant identities even when the feed changes its listing order. */
-export type SportsProvider = 'odds' | 'bdl' | 'football-data' | 'fixture'
+export const SPORTS_DATA_PROVIDER_LABELS = {
+  odds: 'The Odds API',
+  bdl: 'BALLDONTLIE',
+  'football-data': 'football-data.org',
+} as const
+
+export type SportsDataProvider = keyof typeof SPORTS_DATA_PROVIDER_LABELS
+export const SPORTS_DATA_PROVIDERS = Object.keys(
+  SPORTS_DATA_PROVIDER_LABELS
+) as readonly SportsDataProvider[]
+export const isSportsDataProvider = (
+  value: unknown
+): value is SportsDataProvider =>
+  typeof value === 'string' &&
+  Object.prototype.hasOwnProperty.call(SPORTS_DATA_PROVIDER_LABELS, value)
+export type SportsProvider = SportsDataProvider | 'fixture'
 
 export const SPORTS_PROVIDER_PREFIXES: readonly (readonly [
   string,

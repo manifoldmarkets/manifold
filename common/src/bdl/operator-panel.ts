@@ -1,8 +1,9 @@
-import type { BdlLeagueKey } from './leagues'
+import type { SportsDataProvider } from '../sports-provider'
 import type { BDL_REQUESTS_PER_MINUTE } from './constants'
 
 /** Lifetime HTTP responses for one published endpoint and process role. */
 export type BdlOperatorRequests = {
+  provider: SportsDataProvider
   endpoint: string
   role: keyof typeof BDL_REQUESTS_PER_MINUTE
   lastRequest: string
@@ -30,7 +31,7 @@ export type BdlOperatorPhase = {
 }
 
 export type BdlOperatorLeague = {
-  league: BdlLeagueKey
+  league: string
   /** Null when the legacy Odds calendar has no verified league mapping. */
   openOdds: number | null
   /** Unresolved Odds moneylines whose trading window has closed. */

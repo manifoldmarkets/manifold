@@ -3463,85 +3463,10 @@ export type Database = {
         }
         Relationships: []
       }
-      sports_bdl_creation_settings: {
-        Row: {
-          ante_cap: number
-          base_ante: number | null
-          cutover_date: string | null
-          group_slugs: string[] | null
-          scope: string
-          updated_at: string
-          updated_by: string
-        }
-        Insert: {
-          ante_cap: number
-          base_ante?: number | null
-          cutover_date?: string | null
-          group_slugs?: string[] | null
-          scope: string
-          updated_at?: string
-          updated_by: string
-        }
-        Update: {
-          ante_cap?: number
-          base_ante?: number | null
-          cutover_date?: string | null
-          group_slugs?: string[] | null
-          scope?: string
-          updated_at?: string
-          updated_by?: string
-        }
-        Relationships: []
-      }
       sports_bdl_dev_request_slots: {
         Row: { scope: string; next_request_at: string }
         Insert: { scope: string; next_request_at: string }
         Update: { scope?: string; next_request_at?: string }
-        Relationships: []
-      }
-      sports_bdl_request_stats: {
-        Row: {
-          endpoint_template: string
-          last_request_at: string
-          last_status: number
-          last_success_at: string | null
-          league_key: string
-          other_count: number
-          process_role: string
-          quota_limit: number | null
-          quota_remaining: number | null
-          rate_limited_count: number
-          success_count: number
-          unauthorized_count: number
-        }
-        Insert: {
-          endpoint_template: string
-          last_request_at: string
-          last_status: number
-          last_success_at?: string | null
-          league_key: string
-          other_count?: number
-          process_role: string
-          quota_limit?: number | null
-          quota_remaining?: number | null
-          rate_limited_count?: number
-          success_count?: number
-          unauthorized_count?: number
-        }
-        Update: {
-          endpoint_template?: string
-          last_request_at?: string
-          last_status?: number
-          last_success_at?: string | null
-          league_key?: string
-          other_count?: number
-          process_role?: string
-          quota_limit?: number | null
-          quota_remaining?: number | null
-          rate_limited_count?: number
-          success_count?: number
-          unauthorized_count?: number
-        }
         Relationships: []
       }
       sports_competition_switches: {
@@ -3575,6 +3500,36 @@ export type Database = {
             referencedColumns: ['id']
           }
         ]
+      }
+      sports_creation_settings: {
+        Row: {
+          ante_cap: number
+          base_ante: number | null
+          group_slugs: string[] | null
+          scope: string
+          starts_on: string | null
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          ante_cap: number
+          base_ante?: number | null
+          group_slugs?: string[] | null
+          scope: string
+          starts_on?: string | null
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          ante_cap?: number
+          base_ante?: number | null
+          group_slugs?: string[] | null
+          scope?: string
+          starts_on?: string | null
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
       }
       sports_leaderboards: {
         Row: {
@@ -3624,6 +3579,54 @@ export type Database = {
           sport_key?: string
           updated_time?: string
           used_after?: number | null
+        }
+        Relationships: []
+      }
+      sports_provider_request_stats: {
+        Row: {
+          endpoint_template: string
+          last_request_at: string
+          last_status: number
+          last_success_at: string | null
+          league_key: string
+          other_count: number
+          process_role: string
+          provider: string
+          quota_limit: number | null
+          quota_remaining: number | null
+          rate_limited_count: number
+          success_count: number
+          unauthorized_count: number
+        }
+        Insert: {
+          endpoint_template: string
+          last_request_at: string
+          last_status: number
+          last_success_at?: string | null
+          league_key: string
+          other_count?: number
+          process_role: string
+          provider: string
+          quota_limit?: number | null
+          quota_remaining?: number | null
+          rate_limited_count?: number
+          success_count?: number
+          unauthorized_count?: number
+        }
+        Update: {
+          endpoint_template?: string
+          last_request_at?: string
+          last_status?: number
+          last_success_at?: string | null
+          league_key?: string
+          other_count?: number
+          process_role?: string
+          provider?: string
+          quota_limit?: number | null
+          quota_remaining?: number | null
+          rate_limited_count?: number
+          success_count?: number
+          unauthorized_count?: number
         }
         Relationships: []
       }

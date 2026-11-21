@@ -115,7 +115,10 @@ const event: OddsApiEvent = {
  * advisory lock serializes transactions, not the earlier preview lookup.
  * `onLock` runs as a transaction takes the lock. */
 function database(
-  opts: { onLock?: () => void; latestSwitches?: Record<string, boolean> } = {}
+  opts: {
+    onLock?: (sql: string) => void
+    latestSwitches?: Record<string, boolean>
+  } = {}
 ) {
   const contracts: Contract[] = []
   const writes: string[] = []
@@ -158,7 +161,7 @@ function database(
             new Promise<void>((resolve) => releases.set(key, resolve))
           )
           await previous
-          opts.onLock?.()
+          opts.onLock?.(query)
           return {}
         },
         none: async (encoded: string) => {
@@ -1684,7 +1687,9 @@ it.each(['off', 'dual', 'on'] as const)(
   async (state) => {
     process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
     const competitionId = 'nba-regular-2026-27'
+    const locks = jest.fn()
     const db = database({
+      onLock: locks,
       latestSwitches: {
         'Regular Season': state !== 'off',
         'Regular Season (BDL)': state === 'dual',
@@ -1704,6 +1709,9 @@ it.each(['off', 'dual', 'on'] as const)(
       { creator, switches: { [competitionId + ':Regular Season']: true } }
     )
     expect(result.log.filter((event) => event.status === 'error')).toEqual([])
+    expect(locks).toHaveBeenCalledWith(
+      "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+    )
     if (state === 'on') {
       expect(result.created).toBe(1)
       expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)

@@ -65,7 +65,7 @@ afterEach(() =>
 const writes = () =>
   none.mock.calls
     .filter(([query]) =>
-      query.startsWith('insert into sports_bdl_request_stats')
+      query.startsWith('insert into sports_provider_request_stats')
     )
     .map(([, params]) => params!)
 function build(
@@ -105,10 +105,10 @@ it('accounts each retry before returning one successful HTTP response and keeps 
   await expect(
     client.get(endpoint, { date: 'private-query-value' })
   ).resolves.toMatchObject({ status: 200, body: { data: [] } })
-  expect(writes().map((p) => [...p.slice(0, 8), p[9], p[10]])).toEqual([
-    ['nba', 'v1/games/{id}', 'scheduler', 0, 0, 0, 1, 503, 100, 80],
-    ['nba', 'v1/games/{id}', 'scheduler', 0, 0, 1, 0, 429, 100, 80],
-    ['nba', 'v1/games/{id}', 'scheduler', 1, 0, 0, 0, 200, 100, 80],
+  expect(writes().map((p) => [...p.slice(0, 9), p[10], p[11]])).toEqual([
+    ['bdl', 'nba', 'v1/games/{id}', 'scheduler', 0, 0, 0, 1, 503, 100, 80],
+    ['bdl', 'nba', 'v1/games/{id}', 'scheduler', 0, 0, 1, 0, 429, 100, 80],
+    ['bdl', 'nba', 'v1/games/{id}', 'scheduler', 1, 0, 0, 0, 200, 100, 80],
   ])
   expect(
     none.mock.calls.filter(([q]) => q === "set local statement_timeout = '2s'")
@@ -128,8 +128,8 @@ it.each([
   const result = build(transport, { role }).get(endpoint)
   await expect(result).rejects.toMatchObject({ status })
   expect(writes()).toHaveLength(1)
-  expect(writes()[0][2]).toBe(role)
-  expect(writes()[0][7]).toBe(status)
+  expect(writes()[0][3]).toBe(role)
+  expect(writes()[0][8]).toBe(status)
   expect(JSON.stringify(writes())).not.toContain('private-body')
   expect(transport).toHaveBeenCalledTimes(1)
 })
@@ -148,7 +148,7 @@ it('counts paginated responses once per page with one aggregate key', async () =
       { maxPages: 2, matches: () => true }
     )
   ).resolves.toEqual([1, 2])
-  expect(writes().map((p) => p[1])).toEqual(['v1/games', 'v1/games'])
+  expect(writes().map((p) => p[2])).toEqual(['v1/games', 'v1/games'])
   expect(JSON.stringify(writes())).not.toContain('private-cursor')
 })
 
@@ -164,7 +164,7 @@ it('counts successful HTTP even for malformed, unusable, or credential-echoing b
   await expect(
     client.getAll(endpoint, {}, { maxPages: 1, matches: () => false })
   ).rejects.toThrow('ignored')
-  expect(writes().map((p) => p[3])).toEqual([1, 1, 1])
+  expect(writes().map((p) => p[4])).toEqual([1, 1, 1])
   expect(JSON.stringify(writes())).not.toContain(secret)
 })
 
@@ -180,7 +180,7 @@ it('redacts a numeric credential echoed in a quota header', async () => {
     { key: '123456' }
   )
   await expect(clock.get(endpoint)).rejects.toThrow('Credential found')
-  expect(writes()[0].slice(9)).toEqual([null, 10])
+  expect(writes()[0].slice(10)).toEqual([null, 10])
 })
 
 it('awaits a slow accounting attempt without delaying body decoding', async () => {
@@ -314,8 +314,8 @@ it('accounts the default dev transport via ordinary fetch before returning', asy
     })
     await expect(client.get(endpoint)).resolves.toMatchObject({ status: 200 })
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(writes().map((p) => p.slice(0, 4))).toEqual([
-      ['nba', 'v1/games/{id}', 'dev', 1],
+    expect(writes().map((p) => p.slice(0, 5))).toEqual([
+      ['bdl', 'nba', 'v1/games/{id}', 'dev', 1],
     ])
   } finally {
     fetchMock.mockRestore()
