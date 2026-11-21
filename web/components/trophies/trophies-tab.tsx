@@ -141,6 +141,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   }
 
   const { claims, starter } = trophies
+  // A later refresh failed: the stats shown may be out of date.
+  const refreshFailed = !!achievementsError && !achievementsLoading
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
   const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
@@ -210,6 +212,18 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
           </span>
         )}
       </Col>
+
+      {refreshFailed && (
+        <Row className="text-ink-500 items-center gap-2 text-sm">
+          <span>Couldn't refresh these stats.</span>
+          <button
+            className="text-primary-600 font-medium hover:underline"
+            onClick={retryAchievements}
+          >
+            Try again
+          </button>
+        </Row>
+      )}
 
       {isOwnProfile && (
         <ShowcaseSlotTracker

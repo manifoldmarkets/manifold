@@ -17,6 +17,11 @@ export const unclaimTrophy: APIHandler<'unclaim-trophy'> = async (
 
   const pg = createSupabaseDirectClient()
   await pg.tx(async (tx) => {
+    // The same lock set-showcase-pins takes, so a pin save that checked the
+    // claims before this can't put the pin back afterwards.
+    await tx.none(`select 1 from users where id = $1 for no key update`, [
+      userId,
+    ])
     await tx.none(
       `delete from user_trophy_milestones where user_id = $1 and trophy_id = $2`,
       [userId, trophyId]

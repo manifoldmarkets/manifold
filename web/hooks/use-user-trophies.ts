@@ -24,7 +24,10 @@ export type UserTrophies = APIResponse<'get-user-trophies'>
 //   names the profile, and the API refuses it unless that is the signed-in
 //   user. If it fails, the server's pins are shown again.
 // - Profiles nobody is showing are forgotten beyond MAX_IDLE, once nothing is
-//   loading or saving for them; a later visit reads them again.
+//   loading or saving for them; a later visit reads them again. A claim that
+//   returns after its profile was forgotten waits for that read.
+// - Read again on each visit, and when the page regains focus once the last
+//   read is FRESH_MS old, so changes made in another tab show up.
 
 type Entry = {
   data?: UserTrophies
@@ -42,9 +45,13 @@ type Entry = {
   saving?: Promise<void>
   savePending: boolean
   lastUsed: number
+  loadedAt?: number
+  // Rewards a claim reported while there was no data, for the next read.
+  localRewarded?: UserTrophies['rewarded']
 }
 
 const MAX_IDLE = 20
+const FRESH_MS = 30_000
 
 const entries = new Map<string, Entry>()
 const listeners = new Map<string, Set<() => void>>()
@@ -128,11 +135,16 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
               ),
           pins: pinsBusy && current.data ? current.data.pins : fresh.pins,
           // Paid rewards are never removed; keep any this page added.
-          rewarded: mergeRefs(fresh.rewarded, current.data?.rewarded ?? []),
+          rewarded: mergeRefs(fresh.rewarded, [
+            ...(current.data?.rewarded ?? []),
+            ...(current.localRewarded ?? []),
+          ]),
         },
         localClaims: newerLocalClaims,
         confirmedPins: pinsBusy ? current.confirmedPins : fresh.pins,
         error: undefined,
+        loadedAt: Date.now(),
+        localRewarded: undefined,
       })
     })
     .catch((e) => {
@@ -144,6 +156,7 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
       if (getEntry(userId).loading === loading) {
         setEntry(userId, { loading: undefined })
       }
+      pruneIdle()
     })
   setEntry(userId, { loading })
   return loading
@@ -152,10 +165,13 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
 /** Adds claims returned by claim-trophy. */
 export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
   const entry = getEntry(userId)
-  if (!entry.data) return
   const version = entry.claimsVersion + 1
   setEntry(userId, {
-    data: { ...entry.data, claims: mergeClaims(entry.data.claims, claims) },
+    // With no data yet (the profile was forgotten while the claim was in
+    // flight), the claims wait in localClaims for the next read to merge.
+    ...(entry.data && {
+      data: { ...entry.data, claims: mergeClaims(entry.data.claims, claims) },
+    }),
     claimsVersion: version,
     localClaims: [
       ...entry.localClaims,
@@ -171,7 +187,13 @@ export function addTrophyRewards(
   rewarded: UserTrophies['rewarded']
 ) {
   const entry = getEntry(userId)
-  if (!entry.data) return
+  if (!entry.data) {
+    // The profile was forgotten while the claim was in flight.
+    setEntry(userId, {
+      localRewarded: mergeRefs(entry.localRewarded ?? [], rewarded),
+    })
+    return
+  }
   setEntry(userId, {
     data: {
       ...entry.data,
@@ -301,9 +323,25 @@ export function useUserTrophies(userId: string) {
   const getSnapshot = useCallback(() => entries.get(userId), [userId])
   const entry = useSyncExternalStore(subscribe, getSnapshot, () => undefined)
 
-  // Refetch on each mount, so the profile is fresh when revisited.
+  // Refetch on each mount, so the profile is fresh when revisited, and on
+  // focus once FRESH_MS old.
   useEffect(() => {
     loadUserTrophies(userId)
+    const onFocus = () => {
+      const { loadedAt } = getEntry(userId)
+      if (
+        document.visibilityState === 'visible' &&
+        (loadedAt === undefined || Date.now() - loadedAt >= FRESH_MS)
+      ) {
+        loadUserTrophies(userId)
+      }
+    }
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
+    return () => {
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
+    }
   }, [userId])
 
   return { trophies: entry?.data, error: entry?.error }

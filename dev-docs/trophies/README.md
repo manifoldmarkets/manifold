@@ -66,4 +66,6 @@ From the original plan, still true:
 
 ## Deploy
 
-Migration on dev, then prod, then the API, then web. The old design's `user_trophy_claims` table exists on dev only and is no longer read; drop it there by hand if wanted.
+**Before the Trophies tab goes live:** the live trade counts (`user_stats`, branch `feat/live-user-stats`) must be deployed and their backfill complete. Until then Trades Placed reads `ach_trades`, frozen since Sep 2025, so anyone who joined since shows 0 trades.
+
+Then the migration on dev, then prod, then the API, then web. The old design's `user_trophy_claims` table exists on dev only and is no longer read; drop it there by hand if wanted.
