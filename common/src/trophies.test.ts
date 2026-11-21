@@ -5,7 +5,9 @@ import {
   TROPHY_STAT_KEYS,
   TrophyClaim,
   countClaimedMilestones,
+  countEarnedMilestones,
   countReachedMilestones,
+  getAccountAnniversaryTime,
   countUnclaimedReachedMilestones,
   formatTrophyValue,
   getHighestClaimedMilestone,
@@ -129,6 +131,37 @@ describe('claims', () => {
         claim('account-age', 'newcomer'),
       ])
     ).toBe(2)
+  })
+
+  it('counts a claimed milestone as earned after its stat drops', () => {
+    const stats = { totalVolumeMana: 600_000 }
+    expect(countEarnedMilestones(stats, [])).toBe(4)
+    // Lucky (10 profitable markets) stays earned once claimed.
+    expect(
+      countEarnedMilestones(stats, [claim('profitable-markets', 'lucky')])
+    ).toBe(5)
+    expect(
+      countEarnedMilestones(stats, [claim('trading-volume', 'goldfish')])
+    ).toBe(4)
+  })
+})
+
+describe('account anniversaries', () => {
+  it('match Postgres interval addition, in UTC', () => {
+    const at = (s: string) => new Date(s).valueOf()
+    expect(getAccountAnniversaryTime(at('2023-03-01T00:00:00Z'), 1)).toBe(
+      at('2024-03-01T00:00:00Z')
+    )
+    // A Feb 29 signup turns one on Feb 28, and four on Feb 29.
+    expect(getAccountAnniversaryTime(at('2024-02-29T12:00:00Z'), 1)).toBe(
+      at('2025-02-28T12:00:00Z')
+    )
+    expect(getAccountAnniversaryTime(at('2024-02-29T12:00:00Z'), 4)).toBe(
+      at('2028-02-29T12:00:00Z')
+    )
+    expect(getAccountAnniversaryTime(at('2021-12-31T23:59:59.5Z'), 0)).toBe(
+      at('2021-12-31T23:59:59.5Z')
+    )
   })
 })
 

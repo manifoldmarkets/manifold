@@ -15,7 +15,7 @@ import {
   TrophyDefinition,
   computeAllTrophyProgress,
   countClaimedMilestones,
-  countReachedMilestones,
+  countEarnedMilestones,
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getTotalPossibleMilestones,
@@ -39,8 +39,13 @@ import {
 } from 'web/hooks/use-user-trophies'
 import { api } from 'web/lib/api/api'
 
-export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
-  const { userId, isOwnProfile } = props
+export function TrophiesTab(props: {
+  userId: string
+  isOwnProfile: boolean
+  // The account's signup time, for an exact Account Age countdown.
+  accountCreatedTime?: number
+}) {
+  const { userId, isOwnProfile, accountCreatedTime } = props
 
   // Both shared live with ProfileShowcase, so a claim shows up there at once
   // and both show the same stats.
@@ -121,7 +126,8 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   const { claims } = trophies
   const progressList = computeAllTrophyProgress(achievements)
-  const reached = countReachedMilestones(achievements)
+  // Reached or claimed: a claim stays even if the stat drops back.
+  const reached = countEarnedMilestones(achievements, claims)
   const total = getTotalPossibleMilestones()
   const claimedCount = countClaimedMilestones(claims)
   const unclaimedCount = countUnclaimedReachedMilestones(achievements, claims)
@@ -199,6 +205,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}
+              accountCreatedTime={accountCreatedTime}
               onPinToProfile={(trophyId) => {
                 setJustClaimed(null)
                 openShowcasePicker(userId, { pinId: getTrophyPinId(trophyId) })
