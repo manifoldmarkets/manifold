@@ -626,6 +626,20 @@ export const convertsToCpmmMulti2 = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType === 'MULTIPLE_CHOICE'
 
+// Whole-market liquidity on an independent multiple choice market (a user's
+// add, a house subsidy, the extra at creation) goes at once to the answers
+// open at the time, as their own pending subsidy, and the provision records
+// them (answerIds). Off, it goes to the market's pending pool with a provision
+// that names no answer, as it did before. Payouts read both kinds either way.
+//
+// Code from before this flag reads a recorded provision as amount / all
+// answers, in every answer. So this goes on only once no instance of such
+// code is serving (API and scheduler): deploy with it off, check every
+// instance runs that deploy, then turn it on and deploy again. To roll back,
+// turn it off and deploy. Never go back to code from before this flag once a
+// provision has been recorded.
+export const INDEPENDENT_LIQUIDITY_EARMARK_ENABLED = true
+
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
@@ -666,6 +680,8 @@ export type ContractParams = {
   /** Social preview card props, built before answers are truncated for the page */
   ogCardProps?: OgCardProps
   multiPointsString?: MultiBase64Points
+  /** The time of the latest bet among the rows pointsString / multiPointsString were made from. The points say nothing about the market after it */
+  pointsLatestBetTime?: number
   comments: ContractComment[]
   totalComments: number
   totalPositions: number

@@ -88,13 +88,25 @@ const COLORS = [
 ]
 
 export default function CharityGiveawayPage(props: { giveawayNum?: number }) {
+  // /charity and /charity/[giveawayNum] render this same component, so Next
+  // keeps its state when you switch giveaways. Key by giveaway so the reveal,
+  // wheel and entry form start fresh for each one.
+  return <CharityGiveaway key={props.giveawayNum ?? 'current'} {...props} />
+}
+
+function CharityGiveaway(props: { giveawayNum?: number }) {
   const { giveawayNum } = props
   const user = useUser()
   const isAdmin = useAdmin()
   const router = useRouter()
+  // useAPIGetter keys its cached data by `overrideKey ?? path`, not by props.
+  // Scope it per giveaway, or the last giveaway viewed shows until this one
+  // loads.
   const { data, refresh } = useAPIGetter(
     'get-charity-giveaway',
-    giveawayNum ? { giveawayNum } : {}
+    giveawayNum ? { giveawayNum } : {},
+    undefined,
+    `get-charity-giveaway-${giveawayNum ?? 'current'}`
   )
   const { data: giveawayListData } = useAPIGetter(
     'get-charity-giveaway-list',
@@ -1263,10 +1275,12 @@ function GiveawayPieChart(props: {
 
 function SalesHistory(props: { giveawayNum: number; refreshKey: number }) {
   const { giveawayNum, refreshKey } = props
-  const { data, refresh } = useAPIGetter('get-charity-giveaway-sales', {
-    giveawayNum,
-    limit: 50,
-  })
+  const { data, refresh } = useAPIGetter(
+    'get-charity-giveaway-sales',
+    { giveawayNum, limit: 50 },
+    undefined,
+    `get-charity-giveaway-sales-${giveawayNum}`
+  )
 
   // Refresh sales when refreshKey changes
   useEffect(() => {

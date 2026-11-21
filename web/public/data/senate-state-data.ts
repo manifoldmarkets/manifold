@@ -144,8 +144,7 @@ export const senate2024: StateElectionMarket[] = [
 export const senate2026: StateElectionMarket[] = [
   { state: 'AL', slug: 'which-party-will-win-the-2026-alaba' },
   // Retain the current pool/order depth pending clarification of its named R
-  // answer. The party-only alternative needs a subsidy first. Sullivan
-  // himself is available separately in senateCandidates2026.
+  // answer. The party-only alternative needs a subsidy first.
   { state: 'AK', slug: 'which-party-will-win-the-2026-alask' },
   { state: 'AR', slug: 'what-party-will-win-the-2026-arkans' },
   { state: 'CO', slug: 'which-party-will-win-the-2026-color' },
@@ -213,16 +212,6 @@ export const senate2026: StateElectionMarket[] = [
 // Candidate ("who will win") markets for marquee Senate races, surfaced in the
 // state detail card so people see and trade the actual candidates, not just the
 // party. Only races with a liquid general-election candidate market.
-export const senateCandidates2026: StateElectionMarket[] = [
-  { state: 'AK', slug: 'will-dan-sullivan-win-reelection-to' },
-  { state: 'TX', slug: 'who-will-win-the-2026-senate-electi' },
-  // Removed by the audit: who-will-maines-us-senate-election N/As unless
-  // Platner, Mills or Collins wins (creator b1w004pnjwk) and shows Collins 0.99.
-  { state: 'MN', slug: 'who-will-win-minnesotas-2026-senate' },
-  { state: 'OH', slug: 'who-will-win-the-2026-united-states' },
-  { state: 'IA', slug: 'who-will-win-the-2026-united-states-u09U0PqQSn' },
-]
-
 export interface CurrentSenateState {
   state: string
   name1: string

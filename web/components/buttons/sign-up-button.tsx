@@ -1,20 +1,28 @@
 import clsx from 'clsx'
 
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { withTracking } from 'web/lib/service/analytics'
 import { Button } from './button'
 import { PlayMoneyDisclaimer } from '../play-money-disclaimer'
 import { Col } from '../layout/col'
 import { Row } from 'web/components/layout/row'
 
-export const SidebarSignUpButton = (props: { className?: string }) => {
-  const { className } = props
+// Where the button sits, so sign-up clicks can be told apart by page.
+const signUp = (location: string) =>
+  withTracking(firebaseLogin, 'click sign up button', { location })
+
+export const SidebarSignUpButton = (props: {
+  className?: string
+  location?: string
+}) => {
+  const { className, location = 'sidebar' } = props
 
   return (
     <Col className={clsx('mt-4', className)}>
       <Button
         color="gradient"
         size="xl"
-        onClick={firebaseLogin}
+        onClick={signUp(location)}
         className="w-full"
       >
         Sign up
@@ -24,14 +32,17 @@ export const SidebarSignUpButton = (props: { className?: string }) => {
   )
 }
 
-export const SignUpButton = (props: { className?: string }) => {
-  const { className } = props
+export const SignUpButton = (props: {
+  className?: string
+  location: string
+}) => {
+  const { className, location } = props
 
   return (
     <Button
       color="gradient"
       size="md"
-      onClick={firebaseLogin}
+      onClick={signUp(location)}
       className={className}
     >
       Sign up

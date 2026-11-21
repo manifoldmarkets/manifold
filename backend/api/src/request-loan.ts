@@ -28,6 +28,7 @@ import {
   bulkIncrementBalancesQuery,
   UserUpdate,
 } from 'shared/supabase/users'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   accrueLoanTrackingQuery,
@@ -64,34 +65,6 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     throw new APIError(404, `User ${auth.uid} not found`)
   }
 
-  // Check if user has margin loan access (Pro or Premium tier required)
-  const entitlements = await getActiveSupporterEntitlements(pg, auth.uid)
-
-  if (!canAccessMarginLoans(entitlements)) {
-    throw new APIError(
-      403,
-      'Margin loans require a Manifold membership. Upgrade at manifold.markets/shop'
-    )
-  }
-
-  // Get tier-specific max loan percent
-  const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
-
-  const portfolioMetricRow = await pg.oneOrNone<
-    Row<'user_portfolio_history_latest'>
-  >(
-    `select *
-     from user_portfolio_history_latest
-     where user_id = $1`,
-    [auth.uid]
-  )
-  const portfolioMetric = portfolioMetricRow
-    ? convertPortfolioHistory(portfolioMetricRow)
-    : null
-  if (!portfolioMetric) {
-    throw new APIError(404, `No portfolio found for user ${auth.uid}`)
-  }
-
   // Market-specific loan - DISABLED
   if (contractId) {
     throw new APIError(
@@ -100,11 +73,9 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  const midnightPT = getMidnightPacific()
-
-  const { userUpdates, loanAmount, distributions } =
-    await betsQueue.enqueueFn(async () => {
-      return pg.tx(async (tx) => {
+  const loan = await betsQueue.enqueueFn(async () => {
+    return runTransactionWithRetries(
+      async (tx) => {
         // Lock the user row to serialize loan requests (and bets, which update
         // the balance before writing metrics) for this user across replicas.
         // Every loan input is read after this lock: computing from a snapshot
@@ -114,6 +85,36 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
           user.id,
         ])
         const now = Date.now()
+
+        // Check if user has margin loan access (Pro or Premium tier required)
+        const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+
+        if (!canAccessMarginLoans(entitlements)) {
+          throw new APIError(
+            403,
+            'Margin loans require a Manifold membership. Upgrade at manifold.markets/shop'
+          )
+        }
+
+        // Get tier-specific max loan percent
+        const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
+
+        const portfolioMetricRow = await tx.oneOrNone<
+          Row<'user_portfolio_history_latest'>
+        >(
+          `select *
+         from user_portfolio_history_latest
+         where user_id = $1`,
+          [auth.uid]
+        )
+        const portfolioMetric = portfolioMetricRow
+          ? convertPortfolioHistory(portfolioMetricRow)
+          : null
+        if (!portfolioMetric) {
+          throw new APIError(404, `No portfolio found for user ${auth.uid}`)
+        }
+
+        const midnightPT = getMidnightPacific()
 
         const { loanAmount, distributions } = await planGeneralLoan(
           tx,
@@ -152,8 +153,12 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         )
         const userUpdates = res[0] as UserUpdate[]
         return { userUpdates, loanAmount, distributions }
-      })
-    }, [auth.uid])
+      },
+      3,
+      { mode: 'default', isExpectedError: (error) => error instanceof APIError }
+    )
+  }, [auth.uid])
+  const { userUpdates, loanAmount, distributions } = loan
 
   broadcastUserUpdates(userUpdates)
   log(`User ${user.id} took general loan of ${loanAmount}`)

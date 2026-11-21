@@ -1,6 +1,5 @@
 import { filterDefined } from './util/array'
 import { notification_reason_types, NotificationReason } from './notification'
-import { getApiUrl } from './api/utils'
 import { DOMAIN } from './envs/constants'
 import { PrivateUser } from './user'
 
@@ -269,7 +268,6 @@ export const getNotificationDestinationsForUser = (
   reason: NotificationReason
 ) => {
   const notificationSettings = privateUser.notificationPreferences
-  const unsubscribeEndpoint = getApiUrl('unsubscribe')
   try {
     const notificationPreference = getNotificationPreference(reason)
     // Get default destinations if user has no settings for this preference
@@ -292,7 +290,6 @@ export const getNotificationDestinationsForUser = (
       sendToEmail: destinations.includes('email') && !optedOutOfEmail,
       sendToBrowser: destinations.includes('browser') && !optedOutOfBrowser,
       sendToMobile: destinations.includes('mobile') && !optedOutOfPush,
-      unsubscribeUrl: `${unsubscribeEndpoint}?id=${privateUser.id}&type=${notificationPreference}`,
       urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
       notificationPreference,
     }
@@ -305,7 +302,6 @@ export const getNotificationDestinationsForUser = (
       sendToEmail: false,
       sendToBrowser: false,
       sendToMobile: false,
-      unsubscribeUrl: '',
       urlToManageThisNotification: '',
     }
   }

@@ -13,6 +13,7 @@ import { BanBanner } from '../moderation/ban-banner'
 import { UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
 
+import { ResumePendingBet } from '../bet/resume-pending-bet'
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
 export function Page(props: {
@@ -24,6 +25,9 @@ export function Page(props: {
   hideBottomBar?: boolean
   hideFooter?: boolean
   banner?: ReactNode
+  // Desktop only: a column in the right margin, beside the content, that
+  // stays in view while the page scrolls.
+  rightSidebar?: ReactNode
   // Skip the Google One Tap sign-in prompt on this page (e.g. a landing page
   // where it would cover the content on a first visit).
   hideGoogleOneTap?: boolean
@@ -36,6 +40,7 @@ export function Page(props: {
     hideSidebar,
     hideBottomBar,
     banner,
+    rightSidebar,
     hideGoogleOneTap,
   } = props
 
@@ -72,6 +77,7 @@ export function Page(props: {
         <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       )}
       <FirstStreakModalManager />
+      <ResumePendingBet />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
@@ -103,6 +109,11 @@ export function Page(props: {
           {children}
           {!props.hideFooter && <Footer />}
         </main>
+        {rightSidebar && (
+          <aside className="sticky top-0 hidden max-h-screen self-start overflow-y-auto px-4 lg:col-span-3 lg:block">
+            {rightSidebar}
+          </aside>
+        )}
       </Col>
       {!hideBottomBar && <BottomNavBar />}
     </>

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { compareTwoStrings } from 'string-similarity'
+import { PollsDontCountNotice } from 'web/components/home/polls-dont-count-notice'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -1117,6 +1118,8 @@ export function NewContractPanel(props: {
           currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
           onSelectType={handleTypeChange}
         />
+        {/* At the top, so it's on screen before the mobile Create button is */}
+        {formState.outcomeType === 'POLL' && <PollsDontCountNotice />}
         {/* Multiple Choice Settings - Above Preview */}
         {formState.outcomeType === 'MULTIPLE_CHOICE' && (
           <Col className="bg-canvas-0 ring-ink-100 gap-4 rounded-lg p-4 shadow-md ring-1">

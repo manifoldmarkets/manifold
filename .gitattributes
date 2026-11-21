@@ -1,3 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 backend/api/deploy-api-windows.sh whitespace=cr-at-eol
+# Uploaded as a VM startup script; a CRLF checkout on Windows would break bash.
+backend/deploy/*.sh text eol=lf

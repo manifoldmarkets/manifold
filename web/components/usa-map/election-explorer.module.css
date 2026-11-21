@@ -67,10 +67,14 @@
   padding: 0 20px 1px;
   isolation: isolate;
   container: explorer / inline-size;
+  /* A host page with its own sticky bar above the map (Manifold TV's video on
+     phones) sets --explorer-sticky-top so the header and focusMap's scroll
+     stop below it. */
+  scroll-margin-top: var(--explorer-sticky-top, 0px);
 }
 .header {
   position: sticky;
-  top: 0;
+  top: var(--explorer-sticky-top, 0px);
   z-index: 10;
   margin: 0 -20px 12px;
   background: var(--paper);
@@ -108,11 +112,27 @@
   box-shadow: 0 1px 3px #00000012;
   font-weight: 600;
 }
+/* The selected tab's label is bold, and bold text is wider: each label
+   reserves its bold width up front, so switching tabs never resizes them. */
+.steadyLabel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+.steadyLabel::after {
+  content: attr(data-text);
+  font-weight: 600;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  user-select: none;
+  pointer-events: none;
+}
 .controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 270px));
   gap: 16px;
-  margin-bottom: 18px;
+  margin-top: 18px;
   justify-content: start;
 }
 .controlCard {
@@ -1059,9 +1079,19 @@
 .exploreState:hover {
   background: var(--soft);
 }
-.candidates {
-  border-top: 1px solid var(--line);
-  padding-top: 8px;
+/* "3 linked markets" on a hovered race, from the page's preloaded counts. */
+.linkedBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 /* "Linked markets 3": the props and lines on a race, closed by default. */
 .linked {
@@ -1369,7 +1399,7 @@
   }
   .controls {
     gap: 10px;
-    margin-bottom: 12px;
+    margin-top: 12px;
   }
   .controlCard {
     padding: 8px;
@@ -1569,6 +1599,116 @@
   color: var(--accent);
   background: var(--soft);
 }
+/* The rewind: the map's odds at an earlier time. Its toggle ends the
+   coverage line; the panel opens beneath it. */
+.coverageRow {
+  display: flex;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.coverageRow > .coverage {
+  flex: 1;
+  margin-top: 0;
+}
+.rewindToggle {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  height: 28px;
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.rewindToggle svg {
+  width: 16px;
+  height: 16px;
+}
+.rewindToggle:hover,
+.rewindToggle[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--soft);
+}
+.rewind {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+  font-size: 12px;
+}
+.rewindControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.rewindJumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.rewindControls button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.rewindControls button:hover {
+  color: var(--accent);
+}
+.rewindJumps button[aria-pressed='true'] {
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-primary-300) / 0.7);
+  font-weight: 600;
+}
+.rewindControls .rewindPlay {
+  margin-left: auto;
+  color: var(--accent);
+  font-weight: 600;
+}
+.rewindPlay svg {
+  width: 16px;
+  height: 16px;
+}
+.rewindSlider {
+  width: 100%;
+  accent-color: rgb(var(--color-primary-600));
+  cursor: pointer;
+}
+.rewindScale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 11px;
+}
+.rewindStatus {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.rewindStatus strong {
+  color: var(--ink);
+}
+@media (pointer: coarse) {
+  .rewindControls button {
+    min-height: 40px;
+  }
+  .rewindToggle {
+    height: 36px;
+  }
+}
 .search:focus-within {
   border-color: var(--ring);
   box-shadow: 0 0 0 1px var(--ring);
@@ -1579,12 +1719,6 @@
 .detailActions svg {
   width: 100%;
   height: 100%;
-}
-.candidateHeading {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
 }
 @container mapheader (max-width: 760px) {
   .toolButton span,

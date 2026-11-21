@@ -81,6 +81,7 @@ import { resolveOddsSportsMarkets } from './sports-odds-resolve'
 import { createF1SportsMarkets } from './sports-f1-create'
 import { resolveF1SportsMarkets } from './sports-f1-resolve'
 import { updateSportsLeaderboards } from './update-sports-leaderboards'
+import { updateElectionLeaderboards } from './update-election-leaderboards'
 
 // Which subset of jobs this process runs. The 2s oracle tick (and the other
 // PERP jobs that apply funding and liquidations) must not share an event loop
@@ -504,11 +505,22 @@ export function createJobs(jobSet: SchedulerJobSet) {
       createUpcomingSportsMarkets
     ),
     // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
-    // create the coming two weeks' game markets daily
+    // create the coming two weeks' game markets, twice a day. Lines for a
+    // day's games are often posted only that morning, so one failed morning
+    // call used to cost a day's slate (EPL and the NBA on 31 Oct and 7 Nov
+    // 2026: a 502 and a 429 at the top of the hour, when every customer's
+    // cron hits the provider). Hence off the hour, a midday run that retries
+    // a failed morning and picks up late lines, and an alert only when the
+    // midday run fails too.
     createJob(
       'sports-odds-create',
-      '0 0 6 * * *', // daily at 6:00 AM LA
-      createOddsSportsMarkets
+      '0 7 6 * * *', // daily at 6:07 AM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: false })
+    ),
+    createJob(
+      'sports-odds-create-midday',
+      '0 7 12 * * *', // daily at 12:07 PM LA
+      () => createOddsSportsMarkets({ lastRunOfDay: true })
     ),
     // ...and while a game is on, ask for its sport's scores as often as
     // /admin/sports says (live scores, and finals once a game is due to end),
@@ -550,6 +562,17 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'update-sports-leaderboards',
       '0 33 * * * *', // hourly at :33
       updateSportsLeaderboards
+    ),
+    // The /election page's leaderboards: profit and creators per election
+    // scope. Each run rebuilds only the boards that are due: the cycle boards
+    // hourly, and the US elections and US politics boards every 6 hours,
+    // because the US politics board reads positions on tens of thousands of
+    // markets. After update-contract-metrics at :42, which refreshes the
+    // profits it reads.
+    createJob(
+      'update-election-leaderboards',
+      '0 47 * * * *', // hourly at :47
+      updateElectionLeaderboards
     ),
   ])
   if (jobSet === 'perps' && jobs.length !== PERP_JOB_NAMES.size)

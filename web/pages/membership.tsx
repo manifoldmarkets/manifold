@@ -27,10 +27,11 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { refreshUserEntitlements } from 'client-common/hooks/use-websocket-user'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { api } from 'web/lib/api/api'
+import { APIError, api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import {
   TierBadge,
@@ -54,6 +55,9 @@ export default function SupporterPage() {
     useState<SupporterTier | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [membershipRefreshByUser, setMembershipRefreshByUser] = useState<
+    Record<string, 'refreshing' | 'failed' | undefined>
+  >({})
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
   const [selectedTier, setSelectedTier] = useState<SupporterTier>('plus')
 
@@ -92,6 +96,29 @@ export default function SupporterPage() {
       })
     : null
 
+  const refreshMembership = async () => {
+    if (!user) return
+    const setStatus = (status: 'refreshing' | 'failed' | undefined) =>
+      setMembershipRefreshByUser((previous) => ({
+        ...previous,
+        [user.id]: status,
+      }))
+    setStatus('refreshing')
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await refreshUserEntitlements(user.id, (id) =>
+          api('user/by-id/:id', { id })
+        )
+        setStatus(undefined)
+        return
+      } catch {
+        if (attempt === 0)
+          await new Promise((resolve) => setTimeout(resolve, 500))
+      }
+    }
+    setStatus('failed')
+  }
+
   const handlePurchase = async (tier: SupporterTier) => {
     if (!user) return
     const item = TIER_ITEMS[tier]
@@ -101,14 +128,20 @@ export default function SupporterPage() {
       setPurchasedTier(tier)
       setShowCelebration(true)
       toast.success('Thank you for your support!')
+      await refreshMembership()
     } catch (e: any) {
       toast.error(e.message || 'Failed to purchase')
+      // 409: the membership changed since this page loaded, so show it
+      if (e instanceof APIError && e.code === 409) {
+        await refreshMembership()
+      }
     } finally {
       setPurchasing(null)
     }
   }
 
   const handleCancelSubscription = async () => {
+    if (!user) return
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
@@ -116,6 +149,7 @@ export default function SupporterPage() {
         'Subscription cancelled. Your membership will remain active until the end of the current period.'
       )
       setConfirmingCancel(false)
+      await refreshMembership()
     } catch (e: any) {
       toast.error(e.message || 'Failed to cancel subscription')
     } finally {
@@ -125,6 +159,9 @@ export default function SupporterPage() {
 
   const effectiveBalance = user?.balance ?? 0
   const isAutoRenewing = currentEntitlement?.autoRenew ?? false
+  const membershipRefreshStatus = user && membershipRefreshByUser[user.id]
+  const refreshingMembership = membershipRefreshStatus === 'refreshing'
+  const membershipRefreshFailed = membershipRefreshStatus === 'failed'
 
   // Active tier for highlighting (hovered or selected)
   const activeTier = hoveredTier ?? selectedTier
@@ -264,13 +301,34 @@ export default function SupporterPage() {
         />
 
         {/* Subscribe/Upgrade Button */}
+        {membershipRefreshFailed && (
+          <Col className="border-ink-200 bg-canvas-0 gap-2 rounded-xl border p-4">
+            <p role="alert" className="text-ink-700">
+              We couldn't refresh your membership. Refresh its status before
+              making another change.
+            </p>
+            <Button
+              color="gray-outline"
+              onClick={refreshMembership}
+              loading={refreshingMembership}
+            >
+              Refresh membership
+            </Button>
+          </Col>
+        )}
         {activeTier && (
           <SubscribeButton
             tier={activeTier}
             currentTier={currentTier}
             effectiveBalance={effectiveBalance}
             loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
-            disabled={!user || !!purchasing || cancelling}
+            disabled={
+              !user ||
+              !!purchasing ||
+              cancelling ||
+              refreshingMembership ||
+              membershipRefreshFailed
+            }
             onClick={() => setConfirmingPurchase(activeTier)}
             onCancelClick={() => setConfirmingCancel(true)}
             entitlements={user?.entitlements}

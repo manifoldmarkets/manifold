@@ -178,8 +178,11 @@ export async function updateUserMetricPeriods(
       (c) => !contractsById[c]
     )
     log('Loading contracts, answers, users, and current contract metrics...')
+    // A Set, not Array.includes: whales hold 10k+ positions, and the scan was
+    // quadratic, blocking the event loop for seconds per call.
+    const contractIdsWithoutActivitySet = new Set(contractIdsWithoutActivity)
     const contractIdsWithActivity = allContractIds.filter(
-      (contractId) => !contractIdsWithoutActivity.includes(contractId)
+      (contractId) => !contractIdsWithoutActivitySet.has(contractId)
     )
     // We could cache the contracts and answers to query for less data
     const results = await pg.multi(
@@ -238,6 +241,10 @@ export async function updateUserMetricPeriods(
       currentContractMetrics,
       (m) => m.userId
     )
+    const metricsWithoutActivityByUserId = groupBy(
+      contractMetricsWithoutRecentActivity,
+      (m) => m.userId
+    )
     const perpMetricTargets = currentContractMetrics
       .filter(
         (metric) =>
@@ -267,9 +274,7 @@ export async function updateUserMetricPeriods(
     for (const userId of activeUserIds) {
       const userMetricRelevantBets = metricRelevantBets[userId] ?? []
       const userMetricsWithoutActivity =
-        contractMetricsWithoutRecentActivity.filter(
-          (metric) => metric.userId === userId
-        )
+        metricsWithoutActivityByUserId[userId] ?? []
 
       // Calculate ordinary metrics for contracts with recent bets.
       const metricRelevantBetsByContract = groupBy(
@@ -307,12 +312,16 @@ export async function updateUserMetricPeriods(
           (m) => m.contractId + m.answerId
         )
       }
+      // Index once instead of a .find per fresh metric, which was quadratic in
+      // the user's positions (the top frame in API event-loop stall profiles).
+      // Keeps the first match and strict answerId equality, as .find did.
+      const currentMetricByKey = new Map<string, ContractMetric>()
+      for (const metric of currentMetricsForUser) {
+        const key = metricKey(metric)
+        if (!currentMetricByKey.has(key)) currentMetricByKey.set(key, metric)
+      }
       for (const freshMetric of freshMetrics) {
-        const currentMetric = currentMetricsForUser.find(
-          (metric) =>
-            freshMetric.contractId === metric.contractId &&
-            freshMetric.answerId === metric.answerId
-        )
+        const currentMetric = currentMetricByKey.get(metricKey(freshMetric))
         if (!currentMetric) {
           if (!isEmptyMetric(freshMetric)) {
             log.error(
@@ -392,6 +401,11 @@ export async function updateUserMetricPeriods(
   log('Finished running user metrics period update')
   return { metricsByUser, contractsById }
 }
+
+// String(answerId) keeps null ('null') and undefined ('undefined') distinct,
+// matching the strict equality of the lookup this replaced.
+const metricKey = (m: Pick<ContractMetric, 'contractId' | 'answerId'>) =>
+  `${m.contractId}\u0000${String(m.answerId)}`
 
 const getContractIdsWithRecentMetricActivity = async (
   pg: SupabaseDirectClient,

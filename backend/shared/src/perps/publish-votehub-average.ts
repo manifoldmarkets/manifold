@@ -13,7 +13,12 @@ import {
 } from 'common/perps/votehub-average'
 
 import { insertOraclePrices } from 'shared/oracle'
-import { getOracleFeed, validateOraclePoint } from 'shared/oracle-feeds'
+import {
+  OracleFeedLifecycle,
+  describeOracleFeedLifecycle,
+  getOracleFeed,
+  validateOraclePoint,
+} from 'shared/oracle-feeds'
 import { applyOraclePointToLivePerps } from 'shared/perps/apply-oracle-point'
 import { advisoryLockQuery } from 'shared/perps/queries'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -73,6 +78,9 @@ export type VoteHubPublishResult =
   | { status: 'unchanged'; price: number; reason: string }
   | { status: 'no-polls'; reason: string }
   | { status: 'rejected'; reason: string }
+  /** The feed is retired or its series does not exist yet: nothing was
+   * fetched and nothing is wrong. Jobs treat this as silence. */
+  | { status: 'inactive'; phase: OracleFeedLifecycle['phase']; reason: string }
 
 /**
  * Publish ONE observation of VoteHub's current average for `spec`, stamped
@@ -94,6 +102,22 @@ export const publishVoteHubPoint = async (
 ): Promise<VoteHubPublishResult> => {
   const { feedId, rules } = spec
   const today = voteHubDay(spec)
+
+  // Static, so decided before any network or database work. A retired series
+  // (the 2026 ballot after its market settled) or one the provider has not
+  // started (the 2028 pair) has nothing to publish, and a 5-minute job that
+  // kept fetching an ended series logged a stale-feed ERROR per attempt for
+  // a market that no longer existed. The job stays silent on this; the
+  // manual script reports it as the reason nothing was published.
+  const feed = getOracleFeed(feedId)
+  if (!feed)
+    return { status: 'rejected', reason: `missing OracleFeedDef for ${feedId}` }
+  if (feed.lifecycle)
+    return {
+      status: 'inactive',
+      phase: feed.lifecycle.phase,
+      reason: `${feedId} is ${describeOracleFeedLifecycle(feed.lifecycle)}`,
+    }
 
   // Keep request start, so an in-flight response cannot fill orders that
   // arrived after sampling had already begun.
@@ -234,12 +258,6 @@ export const publishVoteHubPoint = async (
     }
 
   const point = { price: published.price, ts: observedAt, sourceTs }
-  const feed = getOracleFeed(feedId)
-  if (!feed)
-    return {
-      status: 'rejected',
-      reason: `missing OracleFeedDef for ${feedId}`,
-    }
 
   // Serialize the decide-and-write against every other publisher on this
   // feed. Croner's `protect` only covers one Cron object inside one process,

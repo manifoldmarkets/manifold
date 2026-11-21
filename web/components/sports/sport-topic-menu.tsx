@@ -33,7 +33,8 @@ export function SportTopicMenu(props: { topic: Group }) {
   const { topic } = props
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
+  const { isFollowing, setIsFollowing, loadFailed, reload } =
+    useIsFollowingTopic(topic.slug)
   // Always the account's own state, which the block endpoint's write
   // broadcasts back. After a block or unblock here the button waits, dimmed,
   // until the account shows it, for a few seconds at most.
@@ -62,9 +63,19 @@ export function SportTopicMenu(props: { topic: Group }) {
     }
   }
   // The follow helpers toast their own failures and resolve whether it went
-  // through: a failure leaves the button as it was.
+  // through: a failure leaves the button as it was. If the follow state never
+  // loaded, it's asked for first (following a topic twice is an error):
+  // already following, nothing to do; still unknown, say so and stop.
   const follow = () =>
     run(async () => {
+      if (isFollowing === undefined && user) {
+        const following = await reload()
+        if (following === undefined) {
+          toast.error(`Couldn't check whether you follow ${name}. Try again.`)
+          return
+        }
+        if (following) return
+      }
       if (await internalFollowTopic(user, topic)) setIsFollowing(true)
     })
   const unfollow = () =>
@@ -138,7 +149,11 @@ export function SportTopicMenu(props: { topic: Group }) {
     <DropdownMenu
       items={items}
       closeOnClick
-      buttonDisabled={busy || (!!user && isFollowing === undefined)}
+      // Waits for the follow state, unless it failed to load: Block still
+      // works then, and Follow checks the state again first.
+      buttonDisabled={
+        busy || (!!user && isFollowing === undefined && !loadFailed)
+      }
       menuWidth="w-72"
       anchor={{ to: 'bottom end', gap: 8, padding: 8 }}
       buttonContent={(open) => (

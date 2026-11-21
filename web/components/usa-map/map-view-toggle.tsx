@@ -24,7 +24,9 @@ export function MapViewToggle(props: {
         onClick={() => onChange('map')}
       >
         <MapIcon aria-hidden />
-        <span>Map</span>
+        <span className={styles.steadyLabel} data-text="Map">
+          Map
+        </span>
       </button>
       <button
         aria-pressed={view === 'cartogram'}
@@ -33,7 +35,9 @@ export function MapViewToggle(props: {
         onClick={() => onChange('cartogram')}
       >
         <ViewGridIcon aria-hidden />
-        <span>{cartogramName}</span>
+        <span className={styles.steadyLabel} data-text={cartogramName}>
+          {cartogramName}
+        </span>
       </button>
     </div>
   )

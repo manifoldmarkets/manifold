@@ -55,7 +55,6 @@ describe('tagged_all_traders preferences', () => {
       sendToEmail: true,
       sendToMobile: true,
       notificationPreference: 'tagged_all_traders',
-      unsubscribeUrl: expect.stringContaining('type=tagged_all_traders'),
     })
   })
 })

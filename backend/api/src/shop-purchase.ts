@@ -24,6 +24,7 @@ import {
   getMaxStreakFreezes,
 } from 'common/supporter-config'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { DAY_MS } from 'common/util/time'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
@@ -270,6 +271,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       const supporterEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
       existingSupporter = supporterEntitlements[0] ?? null
 
+      // Buying the tier you already have on auto-renew would charge for a
+      // month the renewal covers anyway. Only a stale page offers it (e.g. a
+      // second confirm while the first purchase was still in flight).
+      if (
+        existingSupporter?.entitlementId === entitlementId &&
+        existingSupporter.autoRenew
+      ) {
+        throw new APIError(
+          409,
+          `You're already a ${item.name} member, and it renews automatically.`
+        )
+      }
+
       // Calculate prorated credit from remaining time on existing tier
       if (existingSupporter?.expiresTime) {
         const msRemaining = existingSupporter.expiresTime - Date.now()
@@ -483,6 +497,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   }),
     [auth.uid]
   )
+
+  // Entitlements live outside the users row, so nothing else tells the
+  // user's open pages (e.g. Yap's member check) that they changed.
+  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
 
   return result
 }

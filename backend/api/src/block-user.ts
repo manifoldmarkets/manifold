@@ -1,5 +1,6 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUser } from 'shared/utils'
 import { updatePrivateUser } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { followUserInternal } from './follow-user'
@@ -14,6 +15,8 @@ export const blockUser: APIHandler<'user/by-id/:id/block'> = async (
     throw new APIError(400, 'You cannot block an admin or mod')
   }
   const pg = createSupabaseDirectClient()
+  const target = await getUser(id, pg)
+  if (!target) throw new APIError(404, 'User not found')
   await pg.tx(async (tx) => {
     await updatePrivateUser(tx, auth.uid, {
       blockedUserIds: FieldVal.arrayConcat(id),

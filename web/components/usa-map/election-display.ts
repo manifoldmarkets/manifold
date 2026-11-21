@@ -1,16 +1,16 @@
 // Display helpers shared by every number, label and swatch in the election
 // explorer, so the map, the seat bar and the race panels never disagree.
 
-// Whole percentages, with one decimal only where rounding would hide the
-// tails: 0.4%, 7%, 50%, 93%, 99.4%. Probabilities are clamped to [0, 1].
+// Whole percentages: <1%, 7%, 50%, 93%, >99%. Markets trade between 1% and
+// 99%, so odds past either bound read as the bound, never a finer figure.
+// Probabilities are clamped to [0, 1].
 export function formatOdds(p: number): string {
   if (!Number.isFinite(p)) return '—'
   if (p <= 0) return '0%'
   if (p >= 1) return '100%'
   const tenths = Math.round(p * 1000) / 10
-  if (tenths < 0.1) return '<0.1%'
-  if (tenths > 99.9) return '>99.9%'
-  if (tenths < 1 || tenths > 99) return `${tenths.toFixed(1)}%`
+  if (tenths < 1) return '<1%'
+  if (tenths > 99) return '>99%'
   return `${Math.round(p * 100)}%`
 }
 

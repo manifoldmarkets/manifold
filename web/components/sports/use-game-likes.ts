@@ -14,8 +14,11 @@ type LikeState = {
   error: boolean
 }
 
-/** Account likes for loaded games, using the same records/API as market hearts. */
-export function useGameLikes(gameIds: string[]) {
+/**
+ * Account likes for loaded games, using the same records/API as market hearts.
+ * `location` tags the like event (Manifold TV's election board reuses this).
+ */
+export function useGameLikes(gameIds: string[], location = 'sports') {
   const user = useUser()
   const userId = user?.id
   const idsKey = JSON.stringify([...new Set(gameIds)].sort())
@@ -135,8 +138,7 @@ export function useGameLikes(gameIds: string[]) {
         reactionType: 'like',
         remove: previous,
       })
-      if (!previous)
-        track('like', { itemId: id, contractId: id, location: 'sports' })
+      if (!previous) track('like', { itemId: id, contractId: id, location })
     } catch {
       if (mounted.current && account.current === user.id) {
         setState((old) => ({

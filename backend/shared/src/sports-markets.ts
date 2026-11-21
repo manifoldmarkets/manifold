@@ -31,7 +31,7 @@ import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import { ContractComment } from 'common/comment'
 import { millisToTs } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
+import { completeMarketCreationQuests } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
 import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
@@ -750,12 +750,7 @@ export async function runSportsMarketPostCreate(
   const eventId = contract.id + '-on-create'
 
   // Quest progress — a no-op for the bot account, kept for parity.
-  await completeCalculatedQuestFromTrigger(
-    creator,
-    'MARKETS_CREATED',
-    eventId,
-    contract.id
-  )
+  await completeMarketCreationQuests(creator, contract)
 
   // Creator follows its own market so resolution updates reach it (replicates
   // followContractInternal, which lives in backend/api).
