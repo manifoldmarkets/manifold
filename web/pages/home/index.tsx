@@ -3,7 +3,7 @@ import Router from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { DowntimeBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, HolidaySaleBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
@@ -25,6 +25,7 @@ export default function Home() {
       <Welcome />
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
+      <HolidaySaleBanner />
       <DowntimeBanner />
       {/* Renders only for admin-flagged accounts, which earn zero bonuses
           until they verify. Nobody else is prompted to verify here. */}

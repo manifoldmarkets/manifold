@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { Button, SizeType } from '../buttons/button'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AddFundsOfferBadge } from './add-funds-offer-badge'
@@ -16,6 +17,7 @@ export function AddFundsButton(props: {
   const router = useRouter()
   const { pendingCount, activeCount, nextExpiresAt } =
     usePersonalizedManaOffers()
+  const holidaySale = useActiveHolidaySale()
 
   if (!userId || user?.id !== userId) return null
 
@@ -37,11 +39,15 @@ export function AddFundsButton(props: {
       >
         Get mana <ManaCoin className="ml-1" />
       </Button>
-      <AddFundsOfferBadge
-        pendingCount={pendingCount}
-        activeCount={activeCount}
-        nextExpiresAt={nextExpiresAt}
-      />
+      {/* /checkout hides personalized offers during a holiday sale, so don't
+          advertise one here then. */}
+      {!holidaySale && (
+        <AddFundsOfferBadge
+          pendingCount={pendingCount}
+          activeCount={activeCount}
+          nextExpiresAt={nextExpiresAt}
+        />
+      )}
     </span>
   )
 }
