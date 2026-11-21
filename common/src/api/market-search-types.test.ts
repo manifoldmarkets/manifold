@@ -1,4 +1,10 @@
-import { getMarketSearchRoute, searchProps } from './market-search-types'
+import {
+  fullSearchProps,
+  getMarketSearchRoute,
+  parseSportsDiscoveryCursor,
+  searchProps,
+  shouldExcludeOfficialSports,
+} from './market-search-types'
 import { API } from './schema'
 
 describe('searchProps', () => {
@@ -33,6 +39,94 @@ describe('searchProps', () => {
       discoveryVariant: 'treatment',
     })
     expect(() => searchProps.parse({ discoveryVariant: 'preview' })).toThrow()
+  })
+})
+
+describe('official sports discovery', () => {
+  it('limits intent and composite cursor to the undocumented full endpoint', () => {
+    const query = {
+      sort: 'newest',
+      sportsDiscovery: 'new',
+      sportsDiscoveryCursor: '1700000000000:a_B-5',
+    }
+    expect(API['search-markets-full'].props.safeParse(query).success).toBe(true)
+    expect(API['search-markets'].props.safeParse(query).success).toBe(false)
+    expect(API['recent-markets'].props.safeParse(query).success).toBe(false)
+    expect(
+      fullSearchProps.safeParse({ ...query, sportsDiscovery: 'other' }).success
+    ).toBe(false)
+    expect(parseSportsDiscoveryCursor(query.sportsDiscoveryCursor)).toEqual({
+      beforeTime: 1700000000000,
+      beforeId: 'a_B-5',
+    })
+    for (const cursor of [
+      '0:x',
+      '01:x',
+      'NaN:x',
+      '8640000000000000:x',
+      '1:/page',
+      '1:x\n',
+      '1:' + 'x'.repeat(129),
+    ])
+      expect(
+        fullSearchProps.safeParse({ ...query, sportsDiscoveryCursor: cursor })
+          .success
+      ).toBe(false)
+  })
+  it('opts in unscoped Home, Browse New and the sitemap', () => {
+    expect(
+      shouldExcludeOfficialSports({
+        sportsDiscovery: 'home',
+        sort: 'score',
+        forYou: '1',
+      })
+    ).toBe(true)
+    expect(
+      shouldExcludeOfficialSports({
+        sportsDiscovery: 'home',
+        sort: 'daily-score',
+      })
+    ).toBe(true)
+    expect(
+      shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'newest' })
+    ).toBe(true)
+    expect(
+      shouldExcludeOfficialSports({ sportsDiscovery: 'sitemap', sort: 'score' })
+    ).toBe(true)
+    expect(shouldExcludeOfficialSports({ sort: 'newest' })).toBe(false)
+    expect(
+      shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'score' })
+    ).toBe(false)
+    expect(
+      shouldExcludeOfficialSports({
+        sportsDiscovery: 'sitemap',
+        sort: 'newest',
+      })
+    ).toBe(false)
+    expect(
+      shouldExcludeOfficialSports({
+        sportsDiscovery: 'new',
+        sort: 'newest',
+        forYou: '1',
+      })
+    ).toBe(false)
+  })
+  it('keeps explicit market, topic, creator and position searches', () => {
+    for (const scope of [
+      { term: 'hockey' },
+      { topicSlug: 'sports' },
+      { topicSlug: 'followed' },
+      { gids: 'hockey' },
+      { creatorId: 'house' },
+      { hasBets: '1' as const },
+    ])
+      expect(
+        shouldExcludeOfficialSports({
+          sportsDiscovery: 'home',
+          sort: 'newest',
+          ...scope,
+        })
+      ).toBe(false)
   })
 })
 
