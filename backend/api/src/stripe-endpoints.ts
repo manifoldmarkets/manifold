@@ -30,6 +30,10 @@ import {
   PAYMENT_PENDING_LOCK_MINUTES,
 } from 'common/personalized-mana-offer'
 import { getOrCreateStripePromotionCodeForOffer } from './helpers/stripe-offer-promotion-code'
+import {
+  getActiveHolidaySale,
+  getSaleCheckoutExpiresAt,
+} from 'common/holiday-sale'
 
 // Stripe Price ID for the "20% off 5K mana" personalized-offer SKU ($50
 // base). The Coupon referenced by STRIPE_20_OFF_5K_COUPON_ID must be
@@ -48,6 +52,8 @@ const OFFER_STRIPE_PRICE_ID = () => {
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
+  // Cents Stripe charged, after any discount.
+  amount_total?: number | null
   metadata: {
     userId: string
     priceInDollars?: string
@@ -55,6 +61,7 @@ export type StripeSession = Stripe.Event.Data.Object & {
     contractId?: string
     postId?: string
     offerId?: string
+    holidaySaleId?: string
   }
 }
 
@@ -243,7 +250,7 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
   }
   const priceId = isProd() ? price.prodStripeId : price.devStripeId
 
-  const session = await stripe.checkout.sessions.create({
+  const baseSession = {
     metadata: {
       userId,
       priceInDollars: String(price.priceInDollars),
@@ -254,11 +261,42 @@ export const createcheckoutsession = async (req: Request, res: Response) => {
         quantity: 1,
       },
     ],
-    mode: 'payment',
-    allow_promotion_codes: true,
+    mode: 'payment' as const,
     success_url: `${referrer}?purchaseSuccess=true`,
     cancel_url: `${referrer}?purchaseSuccess=false`,
-  })
+  }
+
+  // Black Friday / Cyber Monday: attach the sale coupon in place of the promo
+  // code box (Stripe refuses both on one session). The mana granted stays the
+  // pack's; only the price drops. If the coupon is missing or Stripe refuses
+  // it, the buyer still gets a full-price checkout and we log it.
+  const now = Date.now()
+  // No grace here (unlike merch): Stripe shows the buyer the real price
+  // before they pay, so the coupon stops exactly when the sale ends.
+  const sale = getActiveHolidaySale(now)
+  let session: Stripe.Checkout.Session | undefined
+  if (sale) {
+    try {
+      session = await stripe.checkout.sessions.create({
+        ...baseSession,
+        metadata: { ...baseSession.metadata, holidaySaleId: sale.id },
+        discounts: [{ coupon: sale.manaStripeCouponId }],
+        expires_at: Math.floor(getSaleCheckoutExpiresAt(sale, now) / 1000),
+      })
+    } catch (e) {
+      log.error('Holiday sale coupon not applied; checkout at full price', {
+        saleId: sale.id,
+        couponId: sale.manaStripeCouponId,
+        error: e instanceof Error ? e.message : String(e),
+      })
+    }
+  }
+  if (!session) {
+    session = await stripe.checkout.sessions.create({
+      ...baseSession,
+      allow_promotion_codes: true,
+    })
+  }
 
   res.redirect(303, session.url || '')
 }
@@ -301,12 +339,23 @@ export const stripewebhook = async (req: Request, res: Response) => {
 
 const issueMoneys = async (session: StripeSession) => {
   const { id: sessionId } = session
-  const { userId, priceInDollars, offerId } = session.metadata
+  const { userId, priceInDollars, offerId, holidaySaleId } = session.metadata
   if (priceInDollars === undefined) {
     log('skipping session', sessionId, '; no mana amount')
     return
   }
   const price = Number.parseInt(priceInDollars)
+  // A holiday sale session charges less than the pack's list price, so record
+  // what Stripe took. paidInCents holds dollars for Stripe rows (see below);
+  // fractional dollars like 18.75 are fine for its readers.
+  const amountTotal = session.amount_total
+  const paidDollars =
+    holidaySaleId &&
+    typeof amountTotal === 'number' &&
+    Number.isFinite(amountTotal) &&
+    amountTotal > 0
+      ? amountTotal / 100
+      : price
   // For non-offer sessions deposit is the matching WEB_PRICES tier. For offer
   // sessions, the actual deposit is decided inside the tx after we attempt to
   // atomically claim the offer — if the claim fails (already redeemed,
@@ -459,10 +508,11 @@ const issueMoneys = async (session: StripeSession) => {
           // admin-get-top-whale-users.ts) compensate by multiplying Stripe
           // rows by 100. Don't change this without backfilling historical
           // txns and updating those consumers in lockstep.
-          paidInCents: price,
+          paidInCents: paidDollars,
           ...(offerClaimed
             ? { offerId: claimedOfferId, personalizedOffer: true }
             : {}),
+          ...(holidaySaleId ? { holidaySaleId } : {}),
         },
         description: offerClaimed
           ? 'Personalized mana sale (Stripe)'
@@ -497,13 +547,20 @@ const issueMoneys = async (session: StripeSession) => {
     if (!privateUser) throw new APIError(500, 'Private user not found')
 
     await sendThankYouEmail(user, privateUser)
-    log('stripe revenue', price)
+    log('stripe revenue', paidDollars)
 
     await trackPublicEvent(
       userId,
       'M$ purchase',
-      { amount: deposit, sessionId, priceInDollars },
-      { revenue: price }
+      {
+        amount: deposit,
+        sessionId,
+        priceInDollars,
+        // priceInDollars is the pack's list price; on a sale it isn't what
+        // the buyer paid. (trackPublicEvent ignores its 4th argument.)
+        ...(holidaySaleId ? { holidaySaleId, paidInDollars: paidDollars } : {}),
+      },
+      { revenue: paidDollars }
     )
   }
 }

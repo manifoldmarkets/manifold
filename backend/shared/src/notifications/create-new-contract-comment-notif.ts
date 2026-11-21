@@ -1,3 +1,4 @@
+import { getSocialRow, notifySocial } from 'shared/social-posts'
 import {
   CommentNotificationData,
   Notification,
@@ -65,6 +66,19 @@ export const createCommentOnContractNotification = async (
     `select follow_id from contract_follows where contract_id = $1`,
     [sourceContract.id],
     (r) => r.follow_id
+  )
+  // People following the comment's Yap thread. Those who have not muted it
+  // get Yap's one grouped in-app alert. Muting the thread turns that alert off
+  // and nothing else: the market's alerts are the market's, and a muted
+  // follower gets them as any other follower of the market does.
+  const threadSubscribers = await pg.manyOrNone<{
+    user_id: string
+    muted: boolean
+    reply_id: string
+    parent_id: string
+  }>(
+    'select sub.user_id,sub.muted,s.id as reply_id,s.parent_id from social_thread_subscriptions sub join social_posts s on s.root_id=sub.root_id where s.market_comment_id=$1 and s.parent_id is not null and s.deleted_time is null and s.hidden_time is null',
+    [sourceId]
   )
   const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
@@ -200,19 +214,6 @@ export const createCommentOnContractNotification = async (
     usersToReceivedNotifications[userId] = receivedNotifications
   }
 
-  log('notifying replies')
-  if (repliedUsersInfo) {
-    await Promise.all(
-      Object.keys(repliedUsersInfo).map(async (userId) =>
-        sendNotificationsIfSettingsPermit(
-          userId,
-          repliedUsersInfo[userId].repliedToType === 'answer'
-            ? 'reply_to_users_answer'
-            : 'reply_to_users_comment'
-        )
-      )
-    )
-  }
   log('notifying tagged users')
   if (taggedUserIds && taggedUserIds.length > 0) {
     await Promise.all(
@@ -226,6 +227,19 @@ export const createCommentOnContractNotification = async (
       sendNotificationsIfSettingsPermit(userId, 'tagged_all_traders')
     )
   )
+  log('notifying replies')
+  if (repliedUsersInfo) {
+    await Promise.all(
+      Object.keys(repliedUsersInfo).map(async (userId) =>
+        sendNotificationsIfSettingsPermit(
+          userId,
+          repliedUsersInfo[userId].repliedToType === 'answer'
+            ? 'reply_to_users_answer'
+            : 'reply_to_users_comment'
+        )
+      )
+    )
+  }
   log('notifying creator')
   await sendNotificationsIfSettingsPermit(
     sourceContract.creatorId,
@@ -249,8 +263,45 @@ export const createCommentOnContractNotification = async (
       )
     )
   )
+  // Someone who gets the grouped Yap alert would be told twice by the market's
+  // in-app alert, so that one is dropped, and only once the Yap alert is
+  // stored. Creator and explicit tag alerts stay on the market, email and push
+  // always follow the market preference, and a muted thread stores no Yap
+  // alert, so its followers keep everything the market sends.
+  const delivered = new Set<string>()
+  const thread = threadSubscribers.find((s) => !s.muted)
+  if (thread) {
+    const keepMarketAlert = new Set(
+      bulkNotifications
+        .filter(
+          (n) =>
+            n.userId === sourceContract.creatorId ||
+            needNotFollowContractReasons.includes(n.reason)
+        )
+        .map((n) => n.userId)
+    )
+    try {
+      await notifySocial(
+        pg,
+        await getSocialRow(pg, thread.parent_id),
+        sourceUser,
+        'reply',
+        thread.reply_id,
+        keepMarketAlert,
+        delivered
+      )
+    } catch (error) {
+      log.error('Failed to group market comment notifications on Yap', {
+        sourceId,
+        error,
+      })
+    }
+  }
   await createPushNotifications(bulkPushNotifications)
-  await bulkInsertNotifications(bulkNotifications, pg)
+  await bulkInsertNotifications(
+    bulkNotifications.filter((n) => !delivered.has(n.userId)),
+    pg
+  )
   await sendBulkEmails(
     `Comment on ${sourceContract.question}`,
     'market-comment-bulk',

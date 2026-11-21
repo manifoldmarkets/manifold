@@ -30,6 +30,11 @@ import {
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import {
+  applyShopDiscount,
+  formatDiscountPercent,
+  getShopDiscount,
+} from 'common/holiday-sale'
+import {
   getUserSupporterTier,
   getSupporterEntitlement as getSupporterEnt,
   SUPPORTER_TIERS,
@@ -116,6 +121,7 @@ import {
 import { NewBadge } from 'web/components/shop/new-badge'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
@@ -408,6 +414,21 @@ export default function ShopPage() {
     }
   }, [user?.streakForgiveness])
 
+  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
+  // stays stable for the duration of the page visit — otherwise the WebSocket
+  // update triggered by our own me/update call below would collapse the NEW
+  // section mid-view, and stickers would vanish while the user is still
+  // looking. The snapshot only refreshes on login/logout. It sits above the
+  // Custom404 return so hooks run in the same order on every render.
+  //
+  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
+  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const lastShopVisit = useMemo(
+    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
+    [user?.id]
+  )
+
   // Allow admins to access shop for testing even when feature flag is off
   if (!SPEND_MANA_ENABLED && !isAdminOrMod) {
     return <Custom404 />
@@ -422,21 +443,8 @@ export default function ShopPage() {
 
   // "NEW to user" predicate. Falls back to createdTime so fresh signups don't
   // see every historically-added item flagged. Suppresses NEW for items the
-  // user already owns (nothing "new to discover" there).
-  //
-  // lastShopVisit is snapshotted via useMemo([user?.id]) so that the value
-  // stays stable for the duration of the page visit — otherwise the WebSocket
-  // update triggered by our own me/update call below would collapse the NEW
-  // section mid-view, and stickers would vanish while the user is still
-  // looking. The snapshot only refreshes on login/logout.
-  //
-  // DO NOT add user.lastShopVisitTime or user.createdTime to the deps list —
-  // the eslint-auto-fix would reintroduce the mid-view collapse bug.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const lastShopVisit = useMemo(
-    () => user?.lastShopVisitTime ?? user?.createdTime ?? 0,
-    [user?.id]
-  )
+  // user already owns (nothing "new to discover" there). lastShopVisit is
+  // snapshotted above the Custom404 return.
   const isItemNewToUser = (item: ShopItem): boolean =>
     !!user && // logged-out visitors never see NEW (matches the sidebar badge)
     !!item.visibleSinceTime &&
@@ -792,6 +800,8 @@ export default function ShopPage() {
           </Row>
         )}
 
+        <HolidaySaleShopNote />
+
         {/* Featured supporter card */}
         <SupporterCard
           entitlements={effectiveEntitlements}
@@ -1037,6 +1047,21 @@ type ShippingRate = {
  *  merch filter, since the page header already names the section). Pulled out
  *  so the shop page can render it in two positions: promoted above the regular
  *  grid when any merch item is NEW to the user, or in its default spot below. */
+// Black Friday / Cyber Monday: one note for the whole shop. Every price on the
+// page already includes the sale; memberships aren't in it.
+function HolidaySaleShopNote() {
+  const sale = useActiveHolidaySale()
+  if (!sale) return null
+  return (
+    <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
+      <span className="font-semibold">
+        {sale.name}: {formatDiscountPercent(sale.shopDiscount)} off everything
+      </span>{' '}
+      except memberships & shipping
+    </div>
+  )
+}
+
 function MerchSection(props: {
   user: User | null | undefined
   entitlements: UserEntitlement[]
@@ -1110,9 +1135,14 @@ function MerchItemCard(props: {
     onPurchased,
   } = props
   const tryOfferReview = useStoreReviewNudge('shop-order')
-  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice =
-    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  // Same rule the API charges by: supporter discount, or the holiday sale's
+  // merch discount if bigger.
+  const holidaySale = useActiveHolidaySale()
+  const { fraction: shopDiscount, sale: discountSale } = getShopDiscount(
+    getBenefit(allEntitlements, 'shopDiscount', 0),
+    holidaySale
+  )
+  const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0
   // Distinct colours offered by this item (in catalog order). Empty for
   // single-colour items (caps, AGGC tee) — colour selector hides when empty.
@@ -1601,7 +1631,8 @@ function MerchItemCard(props: {
                   : formatMoney(item.price)}
                 {hasDiscount && (
                   <span className="ml-1 text-xs text-green-600">
-                    ({Math.round(shopDiscount * 100)}% off)
+                    ({formatDiscountPercent(shopDiscount)} off
+                    {discountSale ? `, ${discountSale.name}` : ''})
                   </span>
                 )}
               </div>
@@ -2228,7 +2259,16 @@ function SupporterCard(props: {
   return (
     <>
       <div
+        role="link"
+        tabIndex={0}
         onClick={() => Router.push('/membership')}
+        onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            Router.push('/membership')
+          }
+        }}
         className={clsx(
           'group relative mb-6 w-full cursor-pointer overflow-hidden rounded-xl p-1 text-left transition-all duration-300',
           'bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-800',
@@ -5542,10 +5582,14 @@ function ShopItemCard(props: {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
 
-  // Calculate supporter discount
-  const shopDiscount = getBenefit(allEntitlements, 'shopDiscount', 0)
-  const discountedPrice =
-    shopDiscount > 0 ? Math.floor(item.price * (1 - shopDiscount)) : item.price
+  // Same rule the API charges by: supporter discount, or the holiday sale's
+  // shop discount if bigger. (Memberships never reach this card.)
+  const holidaySale = useActiveHolidaySale()
+  const { fraction: shopDiscount } = getShopDiscount(
+    getBenefit(allEntitlements, 'shopDiscount', 0),
+    holidaySale
+  )
+  const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0 && !owned
 
   const canPurchase = user && user.balance >= discountedPrice

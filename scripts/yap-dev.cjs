@@ -1,0 +1,18 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const { spawn } = require('node:child_process');
+const root = path.resolve(__dirname, '..');
+const mode = process.argv[2];
+if (!['api', 'web', 'check-db'].includes(mode)) throw new Error('Usage: node scripts/yap-dev.cjs api|web|check-db');
+const credentialPath = process.env.YAP_DEV_CREDENTIALS || 'C:/Projects/secretmanifoldkey/dev-mantic-markets-firebase-adminsdk.json';
+if (JSON.parse(fs.readFileSync(credentialPath, 'utf8')).project_id !== 'dev-mantic-markets') throw new Error('A DEV service account is required');
+const configHome = path.join(root, '.local-yap', 'config');
+fs.mkdirSync(path.join(configHome, 'configstore'), { recursive: true });
+fs.writeFileSync(path.join(configHome, 'configstore', 'firebase-tools.json'), JSON.stringify({activeProjects: {[root]: 'dev'}}));
+const env = { ...process.env, NODE_ENV: 'development', NEXT_PUBLIC_FIREBASE_ENV: 'DEV', GOOGLE_APPLICATION_CREDENTIALS: credentialPath, GOOGLE_APPLICATION_CREDENTIALS_DEV: credentialPath, XDG_CONFIG_HOME: configHome, NEXT_PUBLIC_API_URL: 'localhost:8088', NEXT_TELEMETRY_DISABLED: '1' };
+for (const key of ['GOOGLE_CLOUD_PROJECT','NODE_OPTIONS','VSCODE_INSPECTOR_OPTIONS','NODE_INSPECT_RESUME_ON_START','LOCAL_ONLY','NEXT_PUBLIC_LOCAL_ONLY','NEXT_PUBLIC_LOCAL_TEST_USER','NEXT_PUBLIC_LOCAL_TEST_USER_ID','SUPABASE_HOST','SUPABASE_PORT','SUPABASE_INSTANCE_ID','SUPABASE_REST_INSTANCE_ID','SUPABASE_URL','SUPABASE_KEY','SUPABASE_PASSWORD','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_KEY','DEV_FIREBASE_SERVICE_ACCOUNT_KEY','PROD_FIREBASE_SERVICE_ACCOUNT_KEY','READ_ONLY']) delete env[key];
+const args = mode === 'check-db' ? [path.join(root,'scripts/yap-dev-db.cjs'),...process.argv.slice(3)] : mode === 'api' ? ['--max-old-space-size=1536','-r',path.join(root,'node_modules/ts-node/register/transpile-only'),'-r',path.join(root,'node_modules/tsconfig-paths/register'),'src/serve.ts'] : ['--max-old-space-size=2048',path.join(root,'node_modules/next/dist/bin/next'),'dev','--hostname','127.0.0.1','--port','3000'];
+if (mode === 'api') env.PORT = '8088';
+const child = spawn(process.execPath, args, {cwd: mode === 'check-db' ? root : path.join(root,mode === 'api'?'backend/api':'web'), env, stdio:'inherit', windowsHide:true});
+child.on('exit', code => { process.exitCode = code || 0 });
+for (const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));

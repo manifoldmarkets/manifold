@@ -1355,9 +1355,10 @@ function CommentNotification(props: {
   } = notification
 
   const reasonText =
-    reason === 'social_replies' ||
-    reason === 'reply_to_users_answer' ||
-    reason === 'reply_to_users_comment'
+    reason === 'social_replies'
+      ? 'replied in '
+      : reason === 'reply_to_users_answer' ||
+        reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
 
@@ -1628,10 +1629,14 @@ function UserLikeNotification(props: {
   const { sourceUserName, sourceType, sourceText } = notification
   const relatedNotifications: Notification[] = notification.data
     ?.relatedNotifications ?? [notification]
+  const reactorCount =
+    sourceType === 'social_repost'
+      ? notification.data?.repostCount ?? 1
+      : relatedNotifications.length
   const reactorsText =
-    relatedNotifications.length > 1
-      ? `${sourceUserName} & ${relatedNotifications.length - 1} other${
-          relatedNotifications.length > 2 ? 's' : ''
+    reactorCount > 1
+      ? `${sourceUserName} & ${reactorCount - 1} other${
+          reactorCount > 2 ? 's' : ''
         }`
       : sourceUserName
   return (
@@ -1641,15 +1646,20 @@ function UserLikeNotification(props: {
       highlighted={highlighted}
       setHighlighted={setHighlighted}
       icon={
-        <MultipleAvatarIcons
-          notification={notification}
-          symbol={'💖'}
-          setOpen={setOpen}
-        />
+        sourceType === 'social_repost' ? (
+          <AvatarNotificationIcon notification={notification} symbol={'🔁'} />
+        ) : (
+          <MultipleAvatarIcons
+            notification={notification}
+            symbol={'💖'}
+            setOpen={setOpen}
+          />
+        )
       }
       link={getSourceUrl(notification)}
       subtitle={
         sourceType === 'social_post_like' ||
+        sourceType === 'social_repost' ||
         sourceType === 'comment_like' ||
         sourceType === 'post_comment_like' ? (
           <Linkify text={sourceText} />
@@ -1658,11 +1668,13 @@ function UserLikeNotification(props: {
         )
       }
     >
-      {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
-      your
+      {reactorsText && <PrimaryNotificationLink text={reactorsText} />}{' '}
+      {sourceType === 'social_repost' ? 're-yapped' : 'liked'} your
       {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
-        : sourceType === 'post_like' || sourceType === 'social_post_like'
+        : sourceType === 'post_like' ||
+          sourceType === 'social_post_like' ||
+          sourceType === 'social_repost'
         ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
