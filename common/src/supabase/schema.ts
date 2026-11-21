@@ -3463,6 +3463,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_bdl_creation_settings: {
+        Row: {
+          ante_cap: number
+          base_ante: number | null
+          cutover_date: string | null
+          group_slugs: string[] | null
+          scope: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          ante_cap: number
+          base_ante?: number | null
+          cutover_date?: string | null
+          group_slugs?: string[] | null
+          scope: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          ante_cap?: number
+          base_ante?: number | null
+          cutover_date?: string | null
+          group_slugs?: string[] | null
+          scope?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: []
+      }
       sports_bdl_request_stats: {
         Row: {
           endpoint_template: string

@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "id": 1101,
+      "game_id": 301,
+      "vendor": "draftkings",
+      "moneyline_home_odds": 155,
+      "moneyline_away_odds": -175,
+      "updated_at": "2026-05-13T14:00:00Z"
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}

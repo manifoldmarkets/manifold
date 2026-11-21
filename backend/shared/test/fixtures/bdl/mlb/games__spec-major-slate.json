@@ -1,0 +1,53 @@
+{
+  "data": [
+    {
+      "id": 402,
+      "date": "2026-05-14T23:10:00Z",
+      "season": 2026,
+      "season_type": "regular",
+      "postseason": false,
+      "status_state": "scheduled",
+      "period": 0,
+      "home_team": {
+        "id": 41,
+        "display_name": "Lake City Cranes"
+      },
+      "away_team": {
+        "id": 42,
+        "display_name": "Northport Oaks"
+      },
+      "home_team_data": {
+        "runs": 0
+      },
+      "away_team_data": {
+        "runs": 0
+      }
+    },
+    {
+      "id": 401,
+      "date": "2026-05-14T18:10:00Z",
+      "season": 2026,
+      "season_type": "regular",
+      "postseason": false,
+      "status_state": "suspended",
+      "period": 6,
+      "home_team": {
+        "id": 41,
+        "display_name": "Lake City Cranes"
+      },
+      "away_team": {
+        "id": 42,
+        "display_name": "Northport Oaks"
+      },
+      "home_team_data": {
+        "runs": 4
+      },
+      "away_team_data": {
+        "runs": 2
+      }
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}

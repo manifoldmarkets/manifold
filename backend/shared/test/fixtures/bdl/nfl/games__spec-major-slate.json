@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": 501,
+      "date": "2026-11-20T01:15:00Z",
+      "season": 2026,
+      "status_state": "final",
+      "postseason": false,
+      "week": 11,
+      "home_team": {
+        "id": 51,
+        "full_name": "Lake City Wolves"
+      },
+      "visitor_team": {
+        "id": 52,
+        "full_name": "Northport Bobcats"
+      },
+      "home_team_score": 24,
+      "visitor_team_score": 24
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}

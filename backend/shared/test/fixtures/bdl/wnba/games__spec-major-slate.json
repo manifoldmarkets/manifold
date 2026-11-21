@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": 301,
+      "date": "2026-05-15T00:30:00Z",
+      "season": 2026,
+      "status_state": "final",
+      "postseason": false,
+      "period": 4,
+      "time": "0.0",
+      "home_team": {
+        "id": 31,
+        "full_name": "Lake City Herons"
+      },
+      "visitor_team": {
+        "id": 32,
+        "full_name": "Northport Comets"
+      },
+      "home_score": 84,
+      "away_score": 78
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}

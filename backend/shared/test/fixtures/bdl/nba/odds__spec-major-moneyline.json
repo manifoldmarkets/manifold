@@ -1,0 +1,15 @@
+{
+  "data": [
+    {
+      "id": 901,
+      "game_id": 101,
+      "vendor": "kalshi",
+      "moneyline_home_odds": 150,
+      "moneyline_away_odds": -150,
+      "updated_at": "2026-05-13T14:00:00Z"
+    }
+  ],
+  "meta": {
+    "next_cursor": null
+  }
+}

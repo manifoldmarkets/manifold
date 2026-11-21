@@ -1,6 +1,7 @@
 import { mapValues } from 'lodash'
 
 import { BDL_ESPORTS_CLOSE_HOURS } from './bdl/constants'
+import { isMajorLeague, MajorLeague } from './bdl/major-leagues'
 import { additionalFeedCalendar } from './sports-feeds'
 import type { SportKey } from './sports-schedule'
 import { ENV } from './envs/constants'
@@ -84,6 +85,7 @@ export interface SportsCalendarEntry {
    * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
    */
   provider?: 'bdl-f1' | 'bdl'
+  bdlLeagueKey?: MajorLeague
   /**
    * F1: how many rounds the season was announced with. The season title
    * markets need it to pay out: the provider must list at least this many
@@ -612,6 +614,37 @@ export const SPORTS_CALENDAR: SportsCalendarEntry[] = [
     oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
   })),
   ...additionalFeedCalendar(),
+  ...ENTRIES.flatMap((entry): SportsCalendarEntry[] =>
+    isMajorLeague(entry.sport) &&
+    entry.sport !== 'nfl' &&
+    !entry.locked &&
+    !/preseason|exhibition|all.star/i.test(entry.phase)
+      ? [
+          {
+            ...entry,
+            phase: entry.phase + ' (BDL)',
+            provider: 'bdl',
+            bdlLeagueKey: entry.sport,
+            autoCreate: false,
+            autoResolve: true,
+            notes: undefined,
+          },
+        ]
+      : []
+  ),
+  {
+    sport: 'nfl',
+    competition: 'NFL 2027 season',
+    competitionId: 'nfl-regular-2027',
+    phase: 'Regular Season (BDL)',
+    startDate: '2027-09-01',
+    endDate: '2028-01-31',
+    // The adapter checks provider season and phase. These dates bound discovery.
+    autoCreate: false,
+    autoResolve: true,
+    provider: 'bdl',
+    bdlLeagueKey: 'nfl',
+  },
 ]
 
 export function calendarStatus(
@@ -657,11 +690,16 @@ export function calendarEntriesOverlapping(
   })
 }
 
-/** All phases of one competition. */
+/** The existing feed and its BDL successor may share a competition ID during cutover. */
 export function calendarEntriesFor(
-  competitionId: string
+  competitionId: string,
+  provider?: 'bdl'
 ): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => e.competitionId === competitionId)
+  return SPORTS_CALENDAR.filter(
+    (e) =>
+      e.competitionId === competitionId &&
+      (provider === 'bdl' ? e.provider === 'bdl' : e.provider !== 'bdl')
+  )
 }
 
 /**
@@ -718,7 +756,8 @@ export function autoCreates(
 export function competitionSwitchError(
   competitionId: string,
   phase: string,
-  on: boolean
+  on: boolean,
+  switches?: CompetitionSwitches
 ): string | undefined {
   const entry = SPORTS_CALENDAR.find(
     (e) => e.competitionId === competitionId && e.phase === phase
@@ -727,6 +766,21 @@ export function competitionSwitchError(
   if (!entry.oddsKey && !entry.provider)
     return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
+  if (on && switches && (entry.oddsKey || entry.provider === 'bdl')) {
+    const window = phaseWindow(entry)
+    const conflict = SPORTS_CALENDAR.find((other) => {
+      if (
+        other.sport !== entry.sport ||
+        !(entry.oddsKey ? other.provider === 'bdl' : other.oddsKey) ||
+        !autoCreates(other, switches)
+      )
+        return false
+      const otherWindow = phaseWindow(other)
+      return window.from <= otherWindow.to && otherWindow.from <= window.to
+    })
+    if (conflict)
+      return `Switch off ${conflict.competition} / ${conflict.phase} first`
+  }
   return undefined
 }
 

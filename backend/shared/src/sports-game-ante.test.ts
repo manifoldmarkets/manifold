@@ -25,9 +25,16 @@ jest.mock('shared/complete-quest-internal', () => ({
 }))
 jest.mock('shared/notifications/create-new-contract-notif', () => ({}))
 jest.mock('shared/notifications/create-new-contract-comment-notif', () => ({}))
-jest.mock('shared/helpers/embeddings', () => ({}))
+jest.mock('shared/helpers/embeddings', () => ({
+  upsertGroupEmbedding: jest.fn().mockResolvedValue(undefined),
+}))
 jest.mock('shared/publish-sports-live-score', () => ({}))
 
+import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import {
+  runSportsMarketPostCreate,
+  flushSportsGroupEmbeddings,
+} from './sports-markets'
 import { createHash } from 'crypto'
 import { CPMMMultiContract } from 'common/contract'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -325,3 +332,52 @@ it.each([
     expect(insertLiquidity).not.toHaveBeenCalled()
   }
 )
+
+it('collects each public group once per batch and preserves immediate legacy refreshes', async () => {
+  const { pg } = database()
+  Object.assign(pg, {
+    map: jest.fn().mockResolvedValue(['league', 'all-sports']),
+    none: jest.fn(),
+  })
+  const batch = new Set<string>()
+  const first = await createSportsContract(pg, creator, legacy, {
+    groupEmbeddingBatch: batch,
+  })
+  await createSportsContract(
+    pg,
+    creator,
+    { ...legacy, question: 'Another game' },
+    { groupEmbeddingBatch: batch }
+  )
+  expect(upsertGroupEmbedding).not.toHaveBeenCalled()
+  expect([...batch]).toEqual(['league', 'all-sports'])
+  await flushSportsGroupEmbeddings(pg, batch)
+  expect(
+    jest.mocked(upsertGroupEmbedding).mock.calls.map(([, id]) => id)
+  ).toEqual(['league', 'all-sports'])
+  await flushSportsGroupEmbeddings(pg, batch)
+  await runSportsMarketPostCreate(
+    pg,
+    { ...first, visibility: 'unlisted' },
+    creator,
+    { groupEmbeddingBatch: batch }
+  )
+  expect(batch.size).toBe(0)
+  expect(upsertGroupEmbedding).toHaveBeenCalledTimes(2)
+  await createSportsContract(pg, creator, legacy)
+  expect(upsertGroupEmbedding).toHaveBeenCalledTimes(4)
+})
+
+it('keeps failed group embeddings for retry without repeating successful groups', async () => {
+  const { pg } = database()
+  const error = new Error('embedding failed')
+  jest.mocked(upsertGroupEmbedding).mockRejectedValueOnce(error)
+  const batch = new Set(['first', 'second'])
+  await expect(flushSportsGroupEmbeddings(pg, batch)).rejects.toBe(error)
+  expect([...batch]).toEqual(['first'])
+  await flushSportsGroupEmbeddings(pg, batch)
+  expect(
+    jest.mocked(upsertGroupEmbedding).mock.calls.map(([, id]) => id)
+  ).toEqual(['first', 'second', 'first'])
+  expect(batch.size).toBe(0)
+})
