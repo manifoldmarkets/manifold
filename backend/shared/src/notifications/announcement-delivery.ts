@@ -29,7 +29,9 @@ export const STALLED_AFTER_MINUTES = 2
 // Characters of the post's text a notification carries.
 const SOURCE_TEXT_LENGTH = 200
 
-type NotificationTemplate = Omit<Notification, 'id' | 'userId'>
+// What every recipient's notification shares; the insert adds id, userId
+// and createdTime.
+type NotificationTemplate = Omit<Notification, 'id' | 'userId' | 'createdTime'>
 
 export type AnnouncementDeliveryResult = {
   postId: string
@@ -319,14 +321,12 @@ async function sendNextBatch(
   }
 
   if (recipients.length > 0) {
-    // Stamped as it is sent, not when it was queued: the notifications page
-    // fetches only what is newer than the newest notification it has, and a
-    // batch sent late would otherwise sort behind notifications that user
-    // got in the meantime and never be fetched.
-    const data: NotificationTemplate = {
-      ...notificationTemplate(post.data),
-      createdTime: Date.now(),
-    }
+    // Stamped as it is sent, not when it was queued, and by the database's
+    // clock, not the sending machine's (a script runs on a developer's
+    // machine): the notifications page fetches only what is newer than the
+    // newest notification it has, so a batch stamped early could sort behind
+    // notifications that user got in the meantime and never be fetched.
+    //
     // A fresh random id per user, as every other notification has: some
     // queries still join user_notifications on notification_id, and one
     // shared id would match every user's row (see #4143). The ids and user
@@ -335,9 +335,17 @@ async function sendNextBatch(
     await tx.none(
       `insert into user_notifications (user_id, notification_id, data)
        select n.user_id, n.notification_id,
-         $3::jsonb || jsonb_build_object('id', n.notification_id, 'userId', n.user_id)
+         $3::jsonb || jsonb_build_object(
+           'id', n.notification_id,
+           'userId', n.user_id,
+           'createdTime', (extract(epoch from statement_timestamp()) * 1000)::bigint
+         )
        from unnest($1::text[], $2::text[]) as n(user_id, notification_id)`,
-      [recipients, recipients.map(() => nanoid(6)), JSON.stringify(data)]
+      [
+        recipients,
+        recipients.map(() => nanoid(6)),
+        JSON.stringify(notificationTemplate(post.data)),
+      ]
     )
   }
   const inserted = recipients.length
@@ -357,9 +365,7 @@ async function sendNextBatch(
   return { sent: inserted, totalSent, finished }
 }
 
-function notificationTemplate(
-  post: TopLevelPost
-): Omit<NotificationTemplate, 'createdTime'> {
+function notificationTemplate(post: TopLevelPost): NotificationTemplate {
   return {
     reason: 'admin',
     isSeen: false,

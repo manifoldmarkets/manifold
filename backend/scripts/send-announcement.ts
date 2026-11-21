@@ -93,18 +93,6 @@ if (require.main === module) {
     console.log(
       `Sample:    ${sample.already} of ${SAMPLE_SIZE} random users already have it`
     )
-    console.log(
-      `Check:     ${
-        noSkipCheck
-          ? 'off (--no-skip-check): sends without checking who has it'
-          : 'on: skips users who have it (reads their notifications)'
-      }`
-    )
-    if (noSkipCheck && sample.already > 0)
-      throw new Error(
-        'Some users already have this post, so --no-skip-check would send them a second one. Run without it.'
-      )
-
     // A finished row with an error was closed early: the post was unlisted
     // or not an announcement when a batch read it.
     const closed = delivery?.finished_time ? delivery.last_error : null
@@ -117,6 +105,29 @@ if (require.main === module) {
         `This send was closed early (${closed}). If the post is listed again and should go out, pass --reopen.`
       )
     }
+
+    // --no-skip-check only decides for a send that doesn't exist yet. A send
+    // already under way keeps its check, and this run can only turn it on:
+    // turning it off part way could reach users ahead of the cursor who
+    // have the post.
+    const check = delivery
+      ? delivery.skip_existing || !noSkipCheck || !!closed
+      : !noSkipCheck
+    console.log(
+      `Check:     ${
+        check
+          ? 'on: skips users who have it'
+          : 'off (--no-skip-check): sends without checking who has it'
+      }${
+        delivery && noSkipCheck && check
+          ? ' (--no-skip-check ignored: this send already checks)'
+          : ''
+      }`
+    )
+    if (!delivery && noSkipCheck && sample.already > 0)
+      throw new Error(
+        'Some users already have this post, so --no-skip-check would send them a second one. Run without it.'
+      )
     if (!apply) {
       console.log(`Dry run. Pass --apply${closed ? ' --reopen' : ''} to send.`)
       return
@@ -136,11 +147,12 @@ if (require.main === module) {
     await queueAnnouncementDelivery(pg, postId, {
       skipUsersWhoHaveIt: !noSkipCheck,
     })
-    // An unfinished send queued by an earlier run takes this run's setting.
+    // A send already under way can have its check turned on, never off.
     await pg.none(
-      `update announcement_deliveries set skip_existing = $2
+      `update announcement_deliveries
+       set skip_existing = skip_existing or $2
        where post_id = $1 and finished_time is null`,
-      [postId, !noSkipCheck]
+      [postId, check]
     )
     const result = await deliverAnnouncement(pg, postId)
     if (!result.finished || result.closed)

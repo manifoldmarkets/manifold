@@ -251,23 +251,30 @@ describe('deliverAnnouncement', () => {
   it('stamps each batch with the time it is sent, not when it was queued', async () => {
     // The notifications page fetches only what is newer than its newest
     // notification, so a late batch must not carry an earlier time.
+    // (The stamp is the database's clock. PGlite runs in this process, so
+    // here the two are the same; the real-Postgres harness checks it with a
+    // wrong machine clock.)
     await addUsers(4)
     await addPost('p1')
     await queueAnnouncementDelivery(pg, 'p1')
-    let clock = 1_000_000
-    const now = jest
-      .spyOn(Date, 'now')
-      .mockImplementation(() => (clock += 1000))
-    try {
-      await deliverAnnouncement(pg, 'p1', { batchSize: 2 })
-    } finally {
-      now.mockRestore()
-    }
+    const before = Date.now()
+    let inserts = 0
+    // The first batch, then a pause, then the rest.
+    failStatement = (sql) => insertsIntoNotifications(sql) && ++inserts > 1
+    await deliverAnnouncement(pg, 'p1', { batchSize: 2, retryDelayMs: 0 })
+    failStatement = () => false
+    await new Promise((r) => setTimeout(r, 20))
+    await deliverAnnouncement(pg, 'p1', { batchSize: 2 })
+    const after = Date.now()
 
     const times = (await notificationsFor('p1')).map((n) => n.data.createdTime)
     expect(times[0]).toBe(times[1])
     expect(times[2]).toBe(times[3])
     expect(times[2]).toBeGreaterThan(times[0])
+    for (const t of times) {
+      expect(t).toBeGreaterThanOrEqual(before - 1000)
+      expect(t).toBeLessThanOrEqual(after + 1000)
+    }
   })
 
   it('retries a failed batch, and nobody gets it twice', async () => {
