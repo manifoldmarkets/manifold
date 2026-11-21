@@ -601,3 +601,25 @@ it('reconciles every explicit key with the fresh slate, without treating a faile
     )
   )
 })
+
+it('a force retry cannot fund an inactive regular season when NBA playoffs are on', async () => {
+  const playoffs = SPORTS_CALENDAR.find(
+    (entry) =>
+      entry.bdlLeagueKey === 'nba' &&
+      entry.competitionId === 'nba-playoffs-2027'
+  )!
+  const siblingOnly = { [calendarPhaseKey(playoffs)]: true }
+  const opts = {
+    competitionId: firstPhase('nba').competitionId,
+    force: true,
+    keys: ['bdl:nba:1'],
+  }
+  switches.mockResolvedValue(siblingOnly)
+  expect((await run(opts)).created).toBe(0)
+  expect(schedule).not.toHaveBeenCalled()
+  expect(save).not.toHaveBeenCalled()
+  switches.mockResolvedValueOnce(enabled('nba')).mockResolvedValue(siblingOnly)
+  const retry = await run(opts)
+  expect(retry.created).toBe(0)
+  expect(retry.log[0].reason).toBe('phase disabled')
+})

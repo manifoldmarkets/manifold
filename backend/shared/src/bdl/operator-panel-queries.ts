@@ -1,54 +1,24 @@
-import { groupBy } from 'lodash'
 import { BDL_LEAGUES, BDL_LEAGUE_KEYS, BdlLeagueKey } from 'common/bdl/leagues'
 import type {
   BdlOperatorLeague,
   BdlOperatorPanel,
   BdlOperatorRequests,
 } from 'common/bdl/operator-panel'
-import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   autoCreates,
   SPORTS_CALENDAR,
   SPORT_LEAGUE_LABEL,
-  SportsCalendarEntry,
-  SportId,
 } from 'common/sports-calendar'
 import type { SupabaseDirectClient } from '../supabase/init'
 import { getCompetitionSwitches } from '../supabase/sports-competition-switches'
-import { sportsProviderSql } from '../supabase/sports-provider'
-
-// Several Odds competitions share a generic sport label such as Soccer.
-const leagueByOddsKey: Partial<Record<string, BdlLeagueKey>> = {
-  soccer_epl: 'epl',
-  soccer_usa_mls: 'mls',
-  soccer_spain_la_liga: 'laliga',
-  soccer_italy_serie_a: 'seriea',
-  soccer_germany_bundesliga: 'bundesliga',
-  soccer_france_ligue_one: 'ligue1',
-  soccer_uefa_champs_league: 'ucl',
-  soccer_uefa_champs_league_qualification: 'ucl',
-  soccer_fifa_world_cup: 'fifa/worldcup',
-  basketball_euroleague: 'euroleague',
-}
-
-const leaguesBySport = groupBy(
-  BDL_LEAGUE_KEYS,
-  (key) => BDL_LEAGUES[key].sportId
-)
-function uniqueLeagueForSport(sport: SportId) {
-  const matches = leaguesBySport[sport]
-  return matches?.length === 1 ? matches[0] : undefined
-}
-
-function calendarLeague(entry: SportsCalendarEntry) {
-  const unique = uniqueLeagueForSport(entry.sport)
-  if (unique) return unique
-  if (!entry.oddsKey) return undefined
-  if (entry.oddsKey.startsWith('tennis_atp_')) return 'atp'
-  if (entry.oddsKey.startsWith('tennis_wta_')) return 'wta'
-  return leagueByOddsKey[entry.oddsKey]
-}
+import {
+  calendarLeague,
+  uniqueLeagueForSport,
+  oddsEventKeySql,
+  oddsLegacyLabelSql,
+  oddsMoneylineSql,
+} from './odds-moneyline-identity'
 
 type RequestRow = Omit<BdlOperatorRequests, 'lastSuccess' | 'lastRequest'> & {
   league: string
@@ -70,21 +40,14 @@ export async function getBdlOperatorPanel(
     getCompetitionSwitches(pg),
     pg.manyOrNone<Inventory>(
       `with unresolved_odds as (
-        select c.data->>'sportsEventId' as event, c.data->>'sportsLeague' as label,
+        select ${oddsEventKeySql} as "oddsKey", ${oddsLegacyLabelSql} as "legacyLabel",
           (c.close_time is null or c.close_time > $2::timestamptz) as trading
         from contracts c
         where c.creator_id = any($1) and c.token = 'MANA' and c.visibility = 'public'
           and c.resolution is null and c.deleted is not true
-          and (c.data->>'sportsMarketType' = 'moneyline' or (
-            c.data->>'sportsMarketType' is null and c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
-            and c.data->>'sportsEventId' ~ '^odds:[^:]+:.+$'
-          ))
-          and c.data->>'sportsFixture' is distinct from 'true'
-          and not starts_with(c.data->>'sportsEventId', 'fixture:')
-          and ${sportsProviderSql()} = 'odds'
+          and ${oddsMoneylineSql()}
       )
-      select substring(event from '^odds:([^:]+):.+$') as "oddsKey",
-        case when event <> '' and event !~ '^(odds:|bdl[-:]|fd-)' then label end as "legacyLabel",
+      select "oddsKey", "legacyLabel",
         trading, count(*)::int as count
       from unresolved_odds group by 1, 2, 3`,
       [MANIFOLD_SPORTS_USER_IDS, asOf]

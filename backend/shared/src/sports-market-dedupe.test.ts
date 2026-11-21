@@ -72,7 +72,7 @@ async function insert(
 beforeAll(async () => {
   pg = new PGlite()
   await pg.exec(
-    'create table contracts(id text primary key,creator_id text,token text,resolution text,close_time timestamptz,deleted boolean,data jsonb)'
+    "create table contracts(id text primary key,creator_id text,token text,resolution text,close_time timestamptz,deleted boolean,data jsonb,mechanism text default 'cpmm-multi-2')"
   )
 })
 beforeEach(async () => {
@@ -227,7 +227,11 @@ const unmatched: [string, Record<string, unknown>, RecordOptions][] = [
   ],
   ['invalid kickoff', { sportsStartTimestamp: 'unknown' }, {}],
   ['mismatched opponent', { sportsHomeTeam: 'Another club' }, {}],
-  ['other SportId', { sportsLeague: 'NBA' }, {}],
+  [
+    'other SportId',
+    { sportsEventId: 'odds:basketball_nba:123', sportsLeague: 'NBA' },
+    {},
+  ],
   ['a different BDL event', { sportsEventId: 'bdl:mlb:421' }, {}],
   ['another type', { sportsMarketType: 'spread' }, {}],
   ['unofficial creator', {}, { creator: 'unofficial' }],
@@ -315,4 +319,17 @@ it('protects an open BDL moneyline when an operator switches back to Odds withou
       true
     )
   ).rejects.toThrow('deduplication')
+})
+
+it('uses the Odds event key for an open pre-metadata market inside the funding transaction', async () => {
+  await insert('historical', {
+    ...odds,
+    sportsLeague: undefined,
+    sportsMarketType: undefined,
+  })
+  expect(
+    await findLockedSportsMarket(tx, candidate, 'moneyline')
+  ).toMatchObject({ id: 'historical' })
+  await pg.exec("update contracts set mechanism = 'cpmm-1'")
+  expect(await findLockedSportsMarket(tx, candidate, 'moneyline')).toBeNull()
 })

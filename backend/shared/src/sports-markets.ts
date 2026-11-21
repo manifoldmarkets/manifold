@@ -1363,6 +1363,12 @@ export async function createSportsContract(
       : opts.deduplicateMarketType
   if (params.sportsProvider === 'bdl' && !dedupeType)
     throw new Error('BDL creation requires a market type for deduplication')
+  const assertLeadTime = () => {
+    if (opts.minLeadMs == null) return
+    const start = Date.parse(params.sportsStartTimestamp ?? '')
+    if (!(start > Date.now() + opts.minLeadMs))
+      throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
+  }
   const result = await pg.tx(async (tx) => {
     if (dedupeType) {
       const existing = await findLockedSportsMarket(
@@ -1374,11 +1380,7 @@ export async function createSportsContract(
       )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
-    if (opts.minLeadMs != null) {
-      const start = Date.parse(params.sportsStartTimestamp ?? '')
-      if (!(start > Date.now() + opts.minLeadMs))
-        throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
-    }
+    assertLeadTime()
     if (opts.checkOddsCutover) await opts.checkOddsCutover(tx)
     const decision = await opts.chooseAnte?.(tx)
     if (
@@ -1386,6 +1388,8 @@ export async function createSportsContract(
       (!decision || !Number.isFinite(decision.ante) || decision.ante <= 0)
     )
       throw new Error('Invalid sports ante decision')
+    // Both callbacks can wait on another transaction before funding the game.
+    if (opts.checkOddsCutover || opts.chooseAnte) assertLeadTime()
     const { contract, multi, contractQuery, insertAnswersQuery, ante } =
       legacyRows ?? buildRows(decision)
     if (insertAnswersQuery) {
