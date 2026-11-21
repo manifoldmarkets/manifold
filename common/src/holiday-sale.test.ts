@@ -52,6 +52,19 @@ describe('getActiveHolidaySale', () => {
     expect(getActiveHolidaySale(cyberMonday.endTime)).toBeUndefined()
   })
 
+  it('gives shop purchases an hour of grace either side (Tod, 21 Nov)', () => {
+    // A buyer getting the sale a little early or late is fine; being charged
+    // more than the page showed isn't. An hour covers real device clock error.
+    expect(HOLIDAY_SALE_CHARGE_GRACE_MS).toBe(60 * 60 * 1000)
+    const g = HOLIDAY_SALE_CHARGE_GRACE_MS
+    // A page on a clock 45 minutes slow still shows the sale 45 minutes after
+    // the end; the server must still charge the sale price then.
+    const fortyFiveMinutes = 45 * 60 * 1000
+    expect(
+      getActiveHolidaySale(cyberMonday.endTime + fortyFiveMinutes, g)
+    ).toBe(cyberMonday)
+  })
+
   it('keeps charging the sale price for the grace after the last sale ends', () => {
     const g = HOLIDAY_SALE_CHARGE_GRACE_MS
     expect(getActiveHolidaySale(cyberMonday.endTime + g - 1, g)).toBe(

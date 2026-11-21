@@ -63,14 +63,15 @@ export const HOLIDAY_SALES: readonly HolidaySale[] = [
   },
 ]
 
-// The API charges the sale merch price from this long before a sale starts
-// until this long after it ends. Merch takes mana with no second
-// confirmation, so the server must never charge more than the form showed:
-// a form opened at 11:58pm, or a device clock a few minutes fast, shows the
-// sale price. The error only ever runs in the buyer's favour. Merch only:
-// card checkouts show Stripe's real price before payment, so they follow the
-// exact window. Web never uses the grace.
-export const HOLIDAY_SALE_CHARGE_GRACE_MS = 15 * MINUTE_MS
+// The API charges the sale shop price (merch and everything else in the shop)
+// from this long before a sale starts until this long after it ends. Shop
+// purchases take mana with no second confirmation, so the server must never
+// charge more than the page showed, even when the buyer's device clock is
+// well off. Tod, 21 Nov: a buyer getting the sale a little early or late is
+// fine; overcharging isn't. So the error only ever runs in the buyer's
+// favour. Not for card checkouts: Stripe shows the real price before
+// payment, so they follow the exact window. Web never uses the grace.
+export const HOLIDAY_SALE_CHARGE_GRACE_MS = 60 * MINUTE_MS
 
 export function getActiveHolidaySale(
   now: number,
