@@ -27,8 +27,13 @@ import { sendDevBdlRequest } from './bdl/dev-admission'
 
 const BASE_URL = 'https://api.balldontlie.io/f1/v1'
 
-export const hasBalldontlieKey = () =>
-  !!process.env.BALLDONTLIE_API_KEY && (isProd() || isSportsBdlEnabled())
+export function getF1ClientStatus():
+  | 'ready'
+  | 'missing-key'
+  | 'rollout-disabled' {
+  if (!process.env.BALLDONTLIE_API_KEY) return 'missing-key'
+  return isProd() || isSportsBdlEnabled() ? 'ready' : 'rollout-disabled'
+}
 
 async function devF1Enabled() {
   if (!isSportsBdlEnabled()) return false
@@ -92,14 +97,17 @@ async function getAll<T>(
     url.searchParams.set('per_page', String(PER_PAGE))
     if (cursor) url.searchParams.set('cursor', cursor)
 
+    const prod = isProd()
     const send = () =>
       fetch(url.toString(), {
         headers: { Authorization: apiKey() },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        // Each dev HTTP request needs its own shared admission.
+        ...(!prod && { redirect: 'error' as const }),
       })
-    if (!isProd() && !isSportsBdlEnabled())
+    if (!prod && !isSportsBdlEnabled())
       throw new Error('[sports-bdl-client] League disabled')
-    const res = isProd()
+    const res = prod
       ? await send()
       : await sendDevBdlRequest('f1', devF1Enabled, send)
     if (!res.ok) {

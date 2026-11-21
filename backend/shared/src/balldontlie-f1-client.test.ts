@@ -32,7 +32,7 @@ import {
   getF1Events,
   getF1SessionResults,
   getF1Sessions,
-  hasBalldontlieKey,
+  getF1ClientStatus,
 } from './balldontlie-f1-client'
 
 type Call = { url: URL; headers: Record<string, string> }
@@ -129,17 +129,17 @@ it('stops a runaway cursor', async () => {
 })
 
 it('reports whether a key is configured without throwing', () => {
-  expect(hasBalldontlieKey()).toBe(true)
+  expect(getF1ClientStatus()).toBe('ready')
   delete process.env.BALLDONTLIE_API_KEY
-  expect(hasBalldontlieKey()).toBe(false)
+  expect(getF1ClientStatus()).toBe('missing-key')
 })
 
 it('keeps prod F1 available while blocking dev transport with the rollout or F1 phases off', async () => {
   jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
-  expect(hasBalldontlieKey()).toBe(true)
+  expect(getF1ClientStatus()).toBe('ready')
   await getF1Events(2026)
   jest.mocked(isProd).mockReturnValue(false)
-  expect(hasBalldontlieKey()).toBe(false)
+  expect(getF1ClientStatus()).toBe('rollout-disabled')
   await expect(getF1Events(2026)).rejects.toThrow('League disabled')
   expect(getCompetitionSwitches).not.toHaveBeenCalled()
   jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
@@ -157,4 +157,18 @@ it('rechecks explicit F1 authorization across pages on dev', async () => {
   jest.mocked(global.fetch).mockResolvedValue(page([], 10) as Response)
   await expect(getF1Events(2026)).rejects.toThrow('League disabled')
   expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+
+it('prevents a redirect from spending a second dev slot and preserves legacy prod options', async () => {
+  const f1 = SPORTS_CALENDAR.find((e) => e.provider === 'bdl-f1')!
+  jest
+    .mocked(getCompetitionSwitches)
+    .mockResolvedValue({ [calendarPhaseKey(f1)]: true })
+  await getF1Events(2026)
+  jest.mocked(isProd).mockReturnValue(false)
+  await getF1Events(2026)
+  const requests = jest.mocked(global.fetch).mock.calls
+  expect(requests).toHaveLength(2)
+  expect(requests[0][1]).not.toHaveProperty('redirect')
+  expect(requests[1][1]).toMatchObject({ redirect: 'error' })
 })

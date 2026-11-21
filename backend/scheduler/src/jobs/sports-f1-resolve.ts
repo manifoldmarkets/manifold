@@ -9,7 +9,7 @@
 
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
+import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
 import {
   resolveF1Markets,
   resolveF1TitleMarkets,
@@ -22,7 +22,9 @@ const alerted = new Set<string>()
 let warnedNoKey = false
 
 export async function resolveF1SportsMarkets() {
-  if (!hasBalldontlieKey()) {
+  const status = getF1ClientStatus()
+  if (status === 'rollout-disabled') return
+  if (status === 'missing-key') {
     if (!warnedNoKey) {
       log('[sports-f1-resolve] BALLDONTLIE_API_KEY not set — skipping')
       warnedNoKey = true

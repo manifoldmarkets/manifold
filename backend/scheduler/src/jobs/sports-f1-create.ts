@@ -5,11 +5,13 @@
 
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
+import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
 import { createF1MarketsForActiveCalendar } from 'shared/f1-markets'
 
 export async function createF1SportsMarkets() {
-  if (!hasBalldontlieKey()) {
+  const status = getF1ClientStatus()
+  if (status === 'rollout-disabled') return
+  if (status === 'missing-key') {
     log('[sports-f1-create] BALLDONTLIE_API_KEY not set — skipping')
     return
   }
