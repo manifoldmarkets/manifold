@@ -76,7 +76,11 @@ export const validateiap: APIHandler<'validateIap'> = async (props, auth) => {
   const revenue = priceData.priceInDollars * quantity * 0.7 // Apple takes 30%
 
   log('payout', manaPayout)
-  const iapTransRef = firestore.collection('iaps').doc()
+  // Key the doc on the Apple transaction id and create() it, which fails if a
+  // doc with that id already exists. The dedupe query above is not atomic with
+  // the write (and wrote under a random id), so parallel replays of one
+  // receipt could each pass the check and credit the purchase several times.
+  const iapTransRef = firestore.collection('iaps').doc(`apple-${transactionId}`)
   const iapTransaction: IapTransaction = {
     userId,
     manaQuantity: manaPayout,
@@ -93,7 +97,18 @@ export const validateiap: APIHandler<'validateIap'> = async (props, auth) => {
     id: iapTransRef.id,
   }
   log('iap transaction:', iapTransaction)
-  await firestore.collection('iaps').doc(iapTransRef.id).set(iapTransaction)
+  try {
+    await iapTransRef.create(iapTransaction)
+  } catch (e: unknown) {
+    const code = (e as { code?: number })?.code
+    const message = e instanceof Error ? e.message : ''
+    // gRPC ALREADY_EXISTS: another concurrent request created this doc first.
+    if (code === 6 || /already exists/i.test(message)) {
+      log('transactionId', transactionId, 'already processed (create raced)')
+      throw new APIError(403, 'iap transaction already processed')
+    }
+    throw e
+  }
 
   const manaPurchaseTxn = {
     fromId: 'EXTERNAL',
