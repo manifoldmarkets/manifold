@@ -220,6 +220,10 @@ drop index if exists contracts_slug;
 
 create index contracts_slug on public.contracts using btree (slug);
 
+create index if not exists contracts_sports_event_id_idx on public.contracts ((data ->> 'sportsEventId'))
+where
+  data ->> 'sportsEventId' is not null;
+
 drop index if exists contracts_visibility_public;
 
 create index contracts_visibility_public on public.contracts using btree (id)
