@@ -12,13 +12,19 @@ import {
 // the plan; pass --apply to send.
 //
 //   npx ts-node send-announcement.ts --post=<postId> [--apply] [--reopen]
+//     [--no-skip-check]
 //
-// Run it only once the new API is live, so no old-style send is still going.
+// Run it only when no old-style send of the post is still going.
 // A send this script queues checks each user for a notification for the post
 // before sending them one, so users the old sender reached are skipped. The
 // delivery row keeps that setting, so a send the scheduler resumes keeps
 // skipping them too. (A heavy user whose copy was pruned by
 // clean-old-notifications gets it again: they no longer have one.)
+//
+// That check reads every user's notifications: on prod (~30M rows, 49 GB on
+// 2026-11-22) most of the table, from disk. For a post nobody has yet, pass
+// --no-skip-check on the --apply run to send without it. It is refused if
+// the sample finds anyone who has the post.
 //
 // A send closed early because the post was unlisted stays closed; --reopen
 // carries it on once the post is listed again. Exits nonzero unless everyone
@@ -30,6 +36,7 @@ if (require.main === module) {
   runScript(async ({ pg }) => {
     const apply = process.argv.includes('--apply')
     const reopen = process.argv.includes('--reopen')
+    const noSkipCheck = process.argv.includes('--no-skip-check')
     const postId = process.argv
       .find((arg) => arg.startsWith('--post='))
       ?.slice('--post='.length)
@@ -80,12 +87,23 @@ if (require.main === module) {
             }${
               delivery.last_error ? `, last error: ${delivery.last_error}` : ''
             }${delivery.skip_existing ? ', skipping users who have it' : ''}`
-          : 'none yet (this run skips users who have it)'
+          : 'none yet'
       }`
     )
     console.log(
       `Sample:    ${sample.already} of ${SAMPLE_SIZE} random users already have it`
     )
+    console.log(
+      `Check:     ${
+        noSkipCheck
+          ? 'off (--no-skip-check): sends without checking who has it'
+          : 'on: skips users who have it (reads their notifications)'
+      }`
+    )
+    if (noSkipCheck && sample.already > 0)
+      throw new Error(
+        'Some users already have this post, so --no-skip-check would send them a second one. Run without it.'
+      )
 
     // A finished row with an error was closed early: the post was unlisted
     // or not an announcement when a batch read it.
@@ -115,7 +133,15 @@ if (require.main === module) {
         [postId]
       )
     }
-    await queueAnnouncementDelivery(pg, postId, { skipUsersWhoHaveIt: true })
+    await queueAnnouncementDelivery(pg, postId, {
+      skipUsersWhoHaveIt: !noSkipCheck,
+    })
+    // An unfinished send queued by an earlier run takes this run's setting.
+    await pg.none(
+      `update announcement_deliveries set skip_existing = $2
+       where post_id = $1 and finished_time is null`,
+      [postId, !noSkipCheck]
+    )
     const result = await deliverAnnouncement(pg, postId)
     if (!result.finished || result.closed)
       throw new Error(
