@@ -1056,10 +1056,8 @@ function HolidaySaleShopNote() {
     <div className="mb-6 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200">
       <span className="font-semibold">
         {sale.name}: {formatDiscountPercent(sale.shopDiscount)} off everything
-        in the shop
       </span>{' '}
-      except memberships. The prices below include it; merch shipping is full
-      price.
+      except memberships & shipping
     </div>
   )
 }
