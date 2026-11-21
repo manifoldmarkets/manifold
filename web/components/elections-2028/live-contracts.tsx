@@ -2,6 +2,7 @@ import { ReactNode, useCallback, useEffect, useState } from 'react'
 
 import { Contract } from 'common/contract'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { fresherContract } from 'web/lib/politics/fresher-contract'
 
 // Live copies of a list of markets, for a picture drawn from several at once
 // (a tile map, a grid, a list of lines): one useLiveContract per market, as
@@ -21,7 +22,7 @@ export function LiveContracts(props: {
       setUpdates((u) => (u[c.id] === c ? u : { ...u, [c.id]: c })),
     []
   )
-  const live = contracts.map((c) => updates[c.id] ?? c)
+  const live = contracts.map((c) => fresherContract(updates[c.id], c))
   return (
     <>
       {contracts.map((c) => (

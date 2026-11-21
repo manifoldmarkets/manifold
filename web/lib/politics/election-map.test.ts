@@ -21,6 +21,7 @@ import {
   SENATE_NOT_UP_2028,
   statePanel,
   tippingPlaces,
+  tippingWinner,
 } from './election-map'
 import { PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
@@ -275,19 +276,20 @@ test('tipping points: every state showing 5% or more, with no cap', () => {
 })
 
 test('tipping points from the tipping-point market', () => {
-  const answer = (id: string, text: string, p: number) => ({
+  const answer = (id: string, text: string, p: number, isOther = false) => ({
     id,
     text,
     poolYes: (1 - p) * 100,
     poolNo: p * 100,
     prob: p,
+    isOther,
   })
   const market = (over: object) =>
     ({
       id: 'tip',
       slug: 'which-state-will-be-the-tipping-point',
       outcomeType: 'MULTIPLE_CHOICE',
-      mechanism: 'cpmm-multi-1',
+      mechanism: 'cpmm-multi-2',
       shouldAnswersSumToOne: true,
       answers: [
         answer('pa', 'Pennsylvania', 0.3),
@@ -300,7 +302,7 @@ test('tipping points from the tipping-point market', () => {
         answer('me2', "Maine's 2nd District", 0.03),
         answer('pr', 'Puerto Rico', 0.02),
         answer('xx', 'Atlantis', 0.03),
-        answer('o', 'Other', 0.1),
+        answer('o', 'Other', 0.1, true),
       ],
       ...over,
     } as unknown as Contract)
@@ -331,14 +333,66 @@ test('tipping points from the tipping-point market', () => {
   assert.equal(twice.length, 1)
   near(twice[0].p, 0.07)
 
+  // Only a whole label names a state: DC however it's written, districts by
+  // name or key, and nothing for a phrase that merely mentions a state.
+  const labels = (texts: string[]) =>
+    marketTippingPoints(
+      market({ answers: texts.map((t, i) => answer(`a${i}`, t, 0.1)) })
+    ).map((t) => t.key)
+  assert.deepEqual(labels(['Washington DC']), ['DC'])
+  assert.deepEqual(labels(['D.C.']), ['DC'])
+  assert.deepEqual(labels(['District of Columbia']), ['DC'])
+  assert.deepEqual(labels(['NE-2']), ['NE'])
+  assert.deepEqual(labels(['Nebraska 2nd']), ['NE'])
+  assert.deepEqual(labels(["Maine's 2nd congressional district"]), ['ME'])
+  assert.deepEqual(labels(['pennsylvania ']), ['PA'])
+  assert.deepEqual(labels(['Iowa or Ohio']), [])
+  assert.deepEqual(labels(['Kansas City']), [])
+  assert.deepEqual(labels(['Virginia Beach']), [])
+
   // Resolved to Georgia: Georgia alone, at 100%, whatever the pools say.
-  assert.deepEqual(
-    marketTippingPoints(market({ isResolved: true, resolution: 'ga' })),
-    [{ key: 'GA', p: 1 }]
+  const georgia = marketTippingPoints(
+    market({ isResolved: true, resolution: 'ga' })
   )
-  // Resolved to Other: no state.
+  assert.deepEqual(georgia, [{ key: 'GA', p: 1 }])
+  assert.equal(tippingWinner(georgia), 'GA')
+  // Resolved to Other: no state, even when Other's label names one.
   assert.deepEqual(
-    marketTippingPoints(market({ isResolved: true, resolution: 'o' })),
+    marketTippingPoints(
+      market({
+        isResolved: true,
+        resolution: 'o',
+        answers: [
+          answer('ia', 'Ohio', 0.2),
+          answer('o', 'Iowa', 0.8, true),
+        ],
+      })
+    ),
+    []
+  )
+  // A split payout (95% Other, 5% Pennsylvania): Pennsylvania at its share,
+  // and no winner.
+  const split = marketTippingPoints(
+    market({
+      isResolved: true,
+      resolution: 'CHOOSE_MULTIPLE',
+      resolutions: { o: 95, pa: 5 },
+    })
+  )
+  assert.deepEqual(split, [{ key: 'PA', p: 0.05 }])
+  assert.equal(tippingWinner(split), undefined)
+  // Open: no winner, however lopsided.
+  assert.equal(
+    tippingWinner(
+      marketTippingPoints(
+        market({ answers: [answer('pa', 'Pennsylvania', 0.99)] })
+      )
+    ),
+    undefined
+  )
+  // Independent answers aren't shares of one outcome: nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ shouldAnswersSumToOne: false })),
     []
   )
   // N/A (nobody reached 270): nothing to draw.

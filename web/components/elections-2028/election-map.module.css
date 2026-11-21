@@ -142,6 +142,10 @@
   background: var(--soft);
   border-color: var(--accent);
 }
+/* DC's chip when DC is a tipping point the cartogram has no tile to outline. */
+.chips button[data-tip] {
+  border: 1.5px dashed var(--tip);
+}
 .chips i {
   width: 9px;
   height: 9px;

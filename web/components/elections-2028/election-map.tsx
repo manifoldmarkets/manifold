@@ -71,8 +71,10 @@ import {
   TIP_HIGHLIGHT_PERCENT,
   TipChance,
   tippingPlaces,
+  tippingWinner,
 } from 'web/lib/politics/election-map'
 import type { ElectoralModel } from 'web/lib/politics/elections-2028'
+import { fresherContract } from 'web/lib/politics/fresher-contract'
 import { TERRITORIES } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
@@ -254,20 +256,34 @@ export function ElectionMap(props: {
     () => mapTracker(view, races, primaries),
     [view, races, primaries]
   )
-  // The tipping-point market, live: the page's copy until the first update.
+  // The tipping-point market, live: whichever of the socket's copy and the
+  // page's (refreshed every two minutes) changed last.
   const [tipUpdate, setTipUpdate] = useState<Contract>()
-  const tipMarket =
-    tipUpdate && tipUpdate.id === tippingContract?.id
-      ? tipUpdate
-      : tippingContract ?? undefined
+  const tipMarket = tippingContract
+    ? fresherContract(tipUpdate, tippingContract)
+    : undefined
   const tipChances = useMemo(() => marketTippingPoints(tipMarket), [tipMarket])
   const tips = useMemo(() => tippingPlaces(tipChances), [tipChances])
+  const tipKeys = useMemo(() => new Set(tips.map((t) => t.key)), [tips])
   const tipChance = useMemo(
     () => Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
     [tipChances]
   )
+  // A Maine or Nebraska district's card shows its state's chance, since
+  // the market resolves a district to its state.
+  const tipFor = (id: string | undefined) =>
+    id === undefined ? undefined : tipChance[id] ?? tipChance[id.split('-')[0]]
   const tipSettled =
     !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
+  // Resolved to one state in full; a split payout keeps its shares on show.
+  const tipWinner = tipSettled ? tippingWinner(tipChances) : undefined
+  // A tipping chip under the pointer or focus, while it's still a chip (a
+  // live update can remove it before its leave or blur fires).
+  const [tipPreview, setTipPreview] = useState<string>()
+  const tipPreviewKey =
+    tipPreview && tips.some((t) => t.key === tipPreview)
+      ? tipPreview
+      : undefined
   const more = useMemo<PlacedMarket[]>(
     () =>
       props.offYear.map((c) => ({
@@ -319,12 +335,19 @@ export function ElectionMap(props: {
     [tracker, groups]
   )
   const previewPlaces = useMemo(() => {
+    if (tipPreviewKey)
+      return new Set([
+        tipPreviewKey,
+        ...shapes
+          .filter((s) => s.id.startsWith(`${tipPreviewKey}-`))
+          .map((s) => s.id),
+      ])
     if (!preview) return new Set<string>()
     if (preview.startsWith('tip:')) return new Set([preview.slice(4)])
     return new Set(
       tracker.segments.find((s) => s.key === preview)?.places ?? []
     )
-  }, [tracker, preview])
+  }, [tracker, preview, tipPreviewKey, shapes])
   const searching = query.trim().length > 0
   const searchHits = useMemo(
     () =>
@@ -773,7 +796,8 @@ export function ElectionMap(props: {
             tips={tips}
             tipMarket={tipMarket}
             tipSettled={tipSettled}
-            onPreview={(key) => setPreview(key ? `tip:${key}` : undefined)}
+            tipWinner={tipWinner}
+            onPreview={setTipPreview}
             onPick={(key, element) => {
               track('election map tipping point', { place: key })
               choose(key, element)
@@ -1094,6 +1118,9 @@ export function ElectionMap(props: {
                 key={k}
                 type="button"
                 aria-pressed={selected === k}
+                // DC has no tile in the cartogram: its chip carries the
+                // tipping outline instead.
+                data-tip={president && tipKeys.has(k) ? '' : undefined}
                 onClick={(e) => choose(k, e.currentTarget)}
                 onPointerEnter={(e) => {
                   // Only a chip whose place is also drawn (DC) has an
@@ -1120,7 +1147,7 @@ export function ElectionMap(props: {
           tipping={
             !president || tips.length === 0
               ? undefined
-              : tipSettled
+              : tipWinner
               ? 'Tipping point'
               : `Tipping point: ${TIP_HIGHLIGHT_PERCENT}% or more`
           }
@@ -1164,7 +1191,7 @@ export function ElectionMap(props: {
                 view={view}
                 sections={selectedSections}
                 primaries={primaries}
-                tipping={president ? tipChance[selected] : undefined}
+                tipping={president ? tipFor(selected) : undefined}
               />
             ) : (
               <HoverFacts
@@ -1172,7 +1199,7 @@ export function ElectionMap(props: {
                 view={view}
                 fill={fills[detailId]}
                 races={races}
-                tipping={president ? tipChance[detailId] : undefined}
+                tipping={president ? tipFor(detailId) : undefined}
               />
             )}
           </RaceDetailsPanel>
@@ -1301,17 +1328,20 @@ function PresidentNotes(props: {
   tips: TipChance[]
   tipMarket: Contract | undefined
   tipSettled: boolean
+  // The state it resolved to in full (not a split payout).
+  tipWinner: string | undefined
   onPreview: (key: string | undefined) => void
   onPick: (key: string, element: HTMLElement) => void
 }) {
-  const { model, tips, tipMarket, tipSettled, onPreview, onPick } = props
+  const { model, tips, tipMarket, tipSettled, tipWinner, onPreview, onPick } =
+    props
   return (
     <div className={own.notes}>
       {model && <ModelLine model={model} partyContract={props.partyContract} />}
       {tips.length > 0 && (
         <div className={own.tips}>
           <span className={own.modelLabel}>
-            {tipSettled ? 'Tipping point' : 'Tipping points'}
+            {tipWinner ? 'Tipping point' : 'Tipping points'}
           </span>
           {tips.map((t) => (
             <button
@@ -1326,13 +1356,15 @@ function PresidentNotes(props: {
               onBlur={() => onPreview(undefined)}
             >
               {t.key}
-              {!tipSettled && <span>{formatOdds(t.p)}</span>}
+              {!tipWinner && <span>{formatOdds(t.p)}</span>}
             </button>
           ))}
           {tipMarket && (
             <span className={own.muted}>
-              {tipSettled
+              {tipWinner
                 ? 'The state that gave the winner their 270th electoral vote. '
+                : tipSettled
+                ? `How the market paid out, for every state at ${TIP_HIGHLIGHT_PERCENT}% or more. `
                 : `Every state traders give ${TIP_HIGHLIGHT_PERCENT}% or more to deliver the winner's 270th electoral vote. `}
               <Link href={contractPath(tipMarket)} className={own.marketLink}>
                 Market →

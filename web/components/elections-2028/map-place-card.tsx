@@ -30,6 +30,7 @@ import {
   Summary,
   viewRaces,
 } from 'web/lib/politics/election-map'
+import { placeName } from 'web/lib/politics/official-markets'
 import { PrimaryRow } from 'web/lib/politics/primaries'
 import { BoardRace } from 'web/lib/politics/race-board'
 import { settledOrPrice } from 'web/lib/politics/settlement'
@@ -159,13 +160,21 @@ function OtherRaces(props: { st: string; view: MapView; races: BoardRace[] }) {
 }
 
 // A state's chance in the tipping-point market (from <1%), or, once it has
-// resolved there, that it was the tipping point.
-function TippingLine(props: { p: number | undefined }) {
-  const { p } = props
+// resolved there in full, that it was the tipping point. A Maine or
+// Nebraska district shows its state's, named, since the market counts the
+// state.
+function TippingLine(props: { p: number | undefined; place: string }) {
+  const { p, place } = props
   if (p === undefined || !Number.isFinite(p) || p < 0.005) return null
+  const state = place.includes('-') ? placeName(place.split('-')[0]) : undefined
+  const label = state ? `${state} tipping point` : 'Tipping point'
   return (
     <span className={own.tipping}>
-      {p >= 1 ? 'The tipping point' : `Tipping point: ${formatOdds(p)}`}
+      {p >= 1
+        ? state
+          ? `${state} was the tipping point`
+          : 'The tipping point'
+        : `${label}: ${formatOdds(p)}`}
     </span>
   )
 }
@@ -196,7 +205,7 @@ export function HoverFacts(props: {
           No {OFFICE_WORD[view.mode]} race in 2028
         </span>
       )}
-      <TippingLine p={tipping} />
+      <TippingLine p={tipping} place={place} />
       {!place.includes('-') && <OtherRaces st={st} view={view} races={races} />}
     </>
   )
@@ -239,7 +248,7 @@ export function PinnedPlace(props: {
             <span className={own.focusLabel}>{focus.label}</span>
             <SummaryText summary={focus.summary} />
           </div>
-          <TippingLine p={tipping} />
+          <TippingLine p={tipping} place={place} />
           <RaceMarket slug={focus.slug} creator={focus.creator} />
         </div>
       ) : (
