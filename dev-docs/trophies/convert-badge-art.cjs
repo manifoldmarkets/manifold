@@ -5,8 +5,8 @@
 // <source dir> holds <trophyId>/<milestoneId>.png (1024 px, transparent
 // background), as image generation saves them (see art-guide.md). Writes
 // web/public/trophy-badges/<trophyId>/<milestoneId>.webp: 256 px, enough for
-// the 96 px card image on a 2x or 3x screen. Run from the repo root; it uses
-// web's sharp.
+// the 96 px card image on a 2x screen (3x scales it up slightly). Run from
+// the repo root; it uses web's sharp.
 const fs = require('fs')
 const path = require('path')
 const sharp = require(require.resolve('sharp', {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { findLastIndex } from 'lodash'
 import {
@@ -13,6 +13,7 @@ import {
   type TrophyMilestone,
   formatTrophyValue,
   getAccountAnniversaryTime,
+  getTrophyBadgeImagePath,
   getRewardManaTotal,
   isMilestoneReached,
 } from 'common/trophies'
@@ -128,6 +129,16 @@ export function TrophyCard(props: {
       : -1,
     findLastIndex(shown, (m) => claimedIds.has(m.id))
   )
+  // Fetch the other milestones' art up front, so stepping through them
+  // doesn't show an empty circle while each one loads.
+  const shownKey = shown.map((m) => m.id).join(',')
+  useEffect(() => {
+    for (const m of shown) {
+      new Image().src = getTrophyBadgeImagePath(definition.id, m.id)
+    }
+    // shownKey stands for shown.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [definition.id, shownKey])
   // Start on the highest milestone earned, or the first one.
   const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
   // Claims can be removed (admin unclaim) while the card is showing.

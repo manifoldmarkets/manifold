@@ -1,6 +1,6 @@
 # Trophy badge art
 
-Each milestone has one image: a 3D clay-style subject on a transparent background. The page draws the tier-coloured circle, glow and ring around it in code (`trophy-card.tsx`, `profile-showcase.tsx`), so the art stays the same if tier colours change. A milestone without art shows its emoji.
+Each milestone has one image: a 3D clay-style subject on a transparent background. The page draws the tier-coloured circle, glow and ring around it in code (`trophy-card.tsx`, `profile-showcase.tsx`), so the art stays the same if tier colours change. Every milestone must have art: `common/src/trophies-art.test.ts` fails CI otherwise. The emoji only shows if an image fails to load.
 
 | File                                                     | What                                                                              |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -26,7 +26,7 @@ Point the brief at the batch file in place of `badge-art-manifest.json`. Codex w
 ## Adding a milestone
 
 1. Add its subject to `badge-art-manifest.json`: one clear object or creature, no text, readable at 20 px in the showcase pill.
-2. Generate it with the brief, convert it, and check it on its tier circle in both themes. The emoji shows until the image exists.
+2. Generate it with the brief, convert it, and check it on its tier circle in both themes. The art test fails until the image is committed.
 
 ## Style rules
 

@@ -65,6 +65,21 @@ module.exports = {
 
     return config
   },
+  async headers() {
+    return [
+      {
+        // Trophy badge art: cache for a day, then revalidate in the
+        // background. Not immutable: regenerated art keeps its file name.
+        source: '/trophy-badges/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+    ]
+  },
   async redirects() {
     return [
       {
