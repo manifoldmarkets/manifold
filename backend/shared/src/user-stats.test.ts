@@ -163,11 +163,15 @@ const cancel = (id: string) =>
     [id]
   )
 
+// Each user's count: their live row plus their backfilled history.
 const counters = async () =>
   Object.fromEntries(
     (
       await tradeRows(
-        `select user_id, trades from user_stats where trades <> 0 order by user_id`
+        `select user_id, coalesce(s.trades, 0) + coalesce(b.trades, 0) as trades
+         from user_stats s full join user_stats_baseline b using (user_id)
+         where coalesce(s.trades, 0) + coalesce(b.trades, 0) <> 0
+         order by user_id`
       )
     ).map((r) => [r.user_id, r.trades])
   )
@@ -188,7 +192,9 @@ const directCounts = async () =>
     ).map((r) => [r.user_id, r.trades])
   )
 
-const backfillAll = async (window = '1 day') => {
+const DAY = 86_400
+
+const backfillAll = async (window = DAY) => {
   for (let i = 0; i < 10_000; i++) {
     const step = await backfillUserStatsWindow(pg, window)
     if (step.completed) return
@@ -254,6 +260,14 @@ describe('counting trades as they happen', () => {
     expect(await counters()).toEqual(await directCounts())
   })
 
+  it("refuses to change a market's token", async () => {
+    await bet('b1', 'u1')
+    await expect(
+      db.exec(`update contracts set token = 'CASH' where id = 'm1'`)
+    ).rejects.toThrow(/token cannot change/)
+    expect(await counters()).toEqual({ u1: 1 })
+  })
+
   it('refuses to truncate contract_bets', async () => {
     await expect(db.exec('truncate contract_bets')).rejects.toThrow(
       /user_stats/
@@ -313,8 +327,8 @@ describe('backfill', () => {
     await bet('new1', 'alice')
 
     // Part of the way: the windows up to about 26 days ago.
-    await backfillUserStatsWindow(pg, '4 days')
-    await backfillUserStatsWindow(pg, '1 day')
+    await backfillUserStatsWindow(pg, 4 * DAY)
+    await backfillUserStatsWindow(pg, DAY)
 
     // An old order whose window is done fills, and one whose window isn't.
     await fill('h9', 2)
@@ -326,7 +340,7 @@ describe('backfill', () => {
       `update contract_bets set data = data || '{"userId":"zed"}' where bet_id = 'h7'`
     )
 
-    await backfillAll('3 days')
+    await backfillAll(3 * DAY)
     await bet('new2', 'dave')
     await fill('h10', 9, true)
 
@@ -342,6 +356,45 @@ describe('backfill', () => {
     })
   })
 
+  it('writes history only to the baseline, never the rows bets write', async () => {
+    await seedHistory()
+    await install()
+    await backfillAll()
+    expect(await run(`select * from user_stats`)).toEqual([])
+    expect(await counters()).toEqual(await directCounts())
+  })
+
+  it('counts once a later bet moved back to before the bound', async () => {
+    await seedHistory()
+    await install()
+    await bet('later', 'alice', { ago: '0 seconds' })
+    // Moved to before the bound (the newest bet at the install).
+    await run(
+      `update contract_bets set created_time = created_time - interval '2 days'
+       where bet_id = 'later'`
+    )
+    await backfillAll()
+    expect(await counters()).toEqual(await directCounts())
+    expect((await counters()).alice).toBe(3)
+  })
+
+  it('refuses a window that is not positive, and leaves progress alone', async () => {
+    await seedHistory()
+    await install()
+    await backfillUserStatsWindow(pg, 2 * DAY)
+    const before = await run(
+      `select done_before::text from user_stats_backfill`
+    )
+    for (const bad of [0, -2 * DAY, 0.5]) {
+      await expect(backfillUserStatsWindow(pg, bad)).rejects.toThrow(/Window/)
+    }
+    expect(
+      await run(`select done_before::text from user_stats_backfill`)
+    ).toEqual(before)
+    await backfillAll()
+    expect(await counters()).toEqual(await directCounts())
+  })
+
   it('does nothing more once complete, and survives running the migration again', async () => {
     await seedHistory()
     await install()
@@ -355,7 +408,7 @@ describe('backfill', () => {
     await install() // a second run keeps the bound and the counts
     const after = (await run(`select bound::text from user_stats_backfill`))[0]
     expect(after).toEqual({ bound })
-    expect((await backfillUserStatsWindow(pg, '1 day')).completed).toBe(true)
+    expect((await backfillUserStatsWindow(pg, DAY)).completed).toBe(true)
     expect(await counters()).toEqual({ ...before, alice: before.alice + 1 })
     expect(await counters()).toEqual(await directCounts())
   })
@@ -374,7 +427,7 @@ describe('backfill', () => {
     await run(
       `alter function user_stats_bet_trades rename to user_stats_bet_trades_off`
     )
-    await expect(backfillUserStatsWindow(pg, '100 days')).rejects.toThrow()
+    await expect(backfillUserStatsWindow(pg, 100 * DAY)).rejects.toThrow()
     await run(
       `alter function user_stats_bet_trades_off rename to user_stats_bet_trades`
     )

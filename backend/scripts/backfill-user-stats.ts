@@ -2,10 +2,7 @@ import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
 import { log } from 'shared/utils'
-import {
-  backfillUserStatsWindow,
-  isUserStatsTradesReady,
-} from 'shared/user-stats-backfill'
+import { backfillUserStatsWindow } from 'shared/user-stats-backfill'
 import { runScript } from './run-script'
 
 // Adds every trade made before the user_stats triggers were installed
@@ -22,6 +19,8 @@ const MIN_WINDOW_S = 60
 const MAX_WINDOW_S = 30 * 24 * 3600
 // Aim for windows of about this long, so each transaction stays short.
 const TARGET_MS = 1_500
+// Give up after this many timeouts in a row at the smallest window.
+const MAX_MIN_WINDOW_TIMEOUTS = 3
 
 if (require.main === module) {
   const argv = yargs(hideBin(process.argv))
@@ -36,7 +35,7 @@ if (require.main === module) {
     .option('verify', {
       type: 'string',
       description:
-        'Compare one user’s counter with a direct count (only meaningful once complete, and while they are not trading)',
+        'Compare one user’s count with a direct count, read at the same moment; exits 1 on a mismatch once the backfill is complete',
     })
     .parseSync()
 
@@ -52,27 +51,43 @@ if (require.main === module) {
     }
 
     if (argv.verify) {
+      // One statement, so the counter and the direct count are read at the
+      // same moment.
       const userId = argv.verify
-      const { counter } = await pg.one(
-        `select coalesce((select trades from user_stats where user_id = $1), 0) as counter`,
-        [userId]
-      )
-      const { direct } = await pg.one(
-        `select count(*)::int as direct
-         from contract_bets b
-         join contracts c on c.id = b.contract_id and c.token = 'MANA'
-         where b.user_id = $1
-           and user_stats_bet_trades(
-             b.amount, b.is_redemption, b.is_api,
-             coalesce(b.data ->> 'isAutoRedemption' = 'true', false)
-           ) = 1`,
+      const { counter, direct, ready } = await pg.one<{
+        counter: number
+        direct: number
+        ready: boolean
+      }>(
+        `select
+           coalesce((select trades from user_stats where user_id = $1), 0)
+             + coalesce((select trades from user_stats_baseline where user_id = $1), 0)
+             as counter,
+           (select count(*)::int
+            from contract_bets b
+            join contracts c on c.id = b.contract_id and c.token = 'MANA'
+            where b.user_id = $1
+              and user_stats_bet_trades(
+                b.amount, b.is_redemption, b.is_api,
+                coalesce(b.data ->> 'isAutoRedemption' = 'true', false)
+              ) = 1) as direct,
+           coalesce((select completed_time is not null from user_stats_backfill
+                     where stat = 'trades'), false) as ready`,
         [userId]
       )
       log(
-        `${userId}: user_stats ${counter}, direct count ${direct}${
+        `${userId}: counted ${counter}, direct count ${direct}${
           counter === direct ? ' (match)' : ' (MISMATCH)'
-        }; ready: ${await isUserStatsTradesReady(pg)}`
+        }; backfill complete: ${ready}`
       )
+      if (ready && counter !== direct) process.exitCode = 1
+      return
+    }
+
+    const windowHours = argv['window-hours']
+    if (!(windowHours > 0) || Math.round(windowHours * 3600) < MIN_WINDOW_S) {
+      log(`--window-hours must be at least ${MIN_WINDOW_S / 3600}`)
+      process.exitCode = 1
       return
     }
 
@@ -84,13 +99,15 @@ if (require.main === module) {
     const deadline = argv['max-minutes']
       ? Date.now() + argv['max-minutes'] * 60_000
       : Infinity
-    let windowS = Math.round(argv['window-hours'] * 3600)
+    let windowS = Math.round(windowHours * 3600)
     let bets = 0
     let windows = 0
+    let minWindowTimeouts = 0
     while (Date.now() < deadline) {
       const start = Date.now()
       try {
-        const step = await backfillUserStatsWindow(pg, `${windowS} seconds`)
+        const step = await backfillUserStatsWindow(pg, windowS)
+        minWindowTimeouts = 0
         const ms = Date.now() - start
         if (step.completed && !step.from) {
           log('user_stats.trades is complete.')
@@ -110,11 +127,21 @@ if (require.main === module) {
           windowS = Math.max(Math.round(windowS / 2), MIN_WINDOW_S)
       } catch (e) {
         const code = (e as { code?: string }).code
-        // 55P03: gave way to a bet holding a stats row; 57014: the window
-        // was too big for the statement timeout. Nothing was applied.
+        // 55P03: another run held the progress row; 57014: the window was
+        // too big for the statement timeout. Nothing was applied.
         if (code === '55P03') {
-          log('A bet held a stats row; retrying the window.')
+          log('Another run is applying a window; retrying.')
         } else if (code === '57014') {
+          if (
+            windowS === MIN_WINDOW_S &&
+            ++minWindowTimeouts >= MAX_MIN_WINDOW_TIMEOUTS
+          ) {
+            log(
+              `Timed out ${minWindowTimeouts} times on the smallest window (${MIN_WINDOW_S} s). Progress is unchanged; stopping.`
+            )
+            process.exitCode = 1
+            return
+          }
           windowS = Math.max(Math.round(windowS / 4), MIN_WINDOW_S)
           log(`Window timed out; retrying with ${windowS} s.`)
         } else {

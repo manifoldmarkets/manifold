@@ -1,8 +1,9 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 // Adds the trades made before the user_stats triggers were installed, one
-// created_time window per call. See dev-docs/user-stats.md and the migration
-// 2026112220_user_stats.sql.
+// created_time window per call, into user_stats_baseline (never user_stats,
+// which bets write: a bet can't wait on this or fail to serialize because of
+// it). See dev-docs/user-stats.md and the migration 2026112220_user_stats.sql.
 //
 // Each window runs in one transaction that first locks the stat's progress
 // row, so two runs can never add the same window, and moves the progress in
@@ -23,13 +24,18 @@ export type UserStatsBackfillStep = {
 
 export async function backfillUserStatsWindow(
   pg: SupabaseDirectClient,
-  window: string // a Postgres interval, e.g. '6 hours'
+  windowSeconds: number
 ): Promise<UserStatsBackfillStep> {
+  // A window that isn't positive would move the progress back, and the next
+  // run would add those trades again.
+  if (!Number.isInteger(windowSeconds) || windowSeconds < 1) {
+    throw new Error(
+      `Window must be a whole number of seconds, at least 1: ${windowSeconds}`
+    )
+  }
   return await pg.tx(async (tx) => {
-    // Give way to bets: a bet holds its users' stats rows for milliseconds,
-    // and this gives up on a wait well before the deadlock detector (1 s)
-    // could pick a bet to fail. The caller retries the window.
-    await tx.none(`set local lock_timeout = '500ms'`)
+    // Only another run of this holds the progress row; don't queue behind it.
+    await tx.none(`set local lock_timeout = '5s'`)
     await tx.none(`set local statement_timeout = '120s'`)
 
     const progress = await tx.oneOrNone<{
@@ -50,11 +56,14 @@ export async function backfillUserStatsWindow(
        select
          case when lo <= bound then lo::text end as from,
          case when lo <= bound
-           then least(lo + $1::interval, bound + interval '1 microsecond')::text
+           then least(
+             lo + make_interval(secs => $1),
+             bound + interval '1 microsecond'
+           )::text
          end as to,
          completed_time is not null as completed
        from p`,
-      [window]
+      [windowSeconds]
     )
     if (!progress) {
       throw new Error(
@@ -100,14 +109,13 @@ export async function backfillUserStatsWindow(
            ) = 1
        ),
        added as (
-         insert into user_stats as s (user_id, trades, updated_time)
-         select user_id, count(*), now()
+         insert into user_stats_baseline as s (user_id, trades)
+         select user_id, count(*)
          from counted
          group by user_id
          order by user_id
          on conflict (user_id) do update
-           set trades = s.trades + excluded.trades,
-               updated_time = excluded.updated_time
+           set trades = s.trades + excluded.trades
          returning 1
        )
        select
@@ -116,15 +124,24 @@ export async function backfillUserStatsWindow(
       [progress.from, progress.to]
     )
 
-    const { completed } = await tx.one<{ completed: boolean }>(
+    // Progress only moves forward; anything else is a bug, so stop.
+    const moved = await tx.oneOrNone<{ completed: boolean }>(
       `update user_stats_backfill
-       set done_before = $1::timestamptz,
-         completed_time = case when $1::timestamptz > bound then now() end,
+       set done_before = $2::timestamptz,
+         completed_time = case when $2::timestamptz > bound then now() end,
          updated_time = now()
        where stat = 'trades'
+         and $2::timestamptz > $1::timestamptz
+         and (done_before is null or done_before = $1::timestamptz)
        returning completed_time is not null as completed`,
-      [progress.to]
+      [progress.from, progress.to]
     )
+    if (!moved) {
+      throw new Error(
+        `Backfill progress did not move forward from ${progress.from} to ${progress.to}`
+      )
+    }
+    const { completed } = moved
     return { from: progress.from, to: progress.to, bets, users, completed }
   })
 }

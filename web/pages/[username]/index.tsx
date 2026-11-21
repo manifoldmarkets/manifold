@@ -298,7 +298,9 @@ function UserProfile(props: {
                   headerStuck && 'opacity-100'
                 )}
                 role="button"
-                tabIndex={0}
+                // Only reachable while shown (it fades in once the header sticks).
+                tabIndex={headerStuck ? 0 : -1}
+                aria-hidden={!headerStuck}
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {

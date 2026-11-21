@@ -84,19 +84,32 @@ async function loadTrades(
   userId: string
 ): Promise<{ count: number; rank: number | null }> {
   if (await userStatsReady(pg)) {
-    const row = await pg.oneOrNone<{ trades: number }>(
-      `select trades from user_stats where user_id = $1`,
+    // Count and rank in one statement, so a trade landing in between can't
+    // rank someone below themselves. A user's count is their live row plus
+    // their backfilled history. Competition rank among everyone with a
+    // counted trade, by one pass over the two narrow tables (no index on
+    // trades, which keeps the per-bet updates HOT); none for 0.
+    const row = await pg.one<{ count: number; rank: number | null }>(
+      `with totals as (
+         select user_id, coalesce(s.trades, 0) + coalesce(b.trades, 0) as trades
+         from user_stats s
+         full join user_stats_baseline b using (user_id)
+       ),
+       mine as (
+         select coalesce((select trades from totals where user_id = $1), 0) as trades
+       )
+       select
+         mine.trades as count,
+         case when mine.trades > 0
+           then (select count(*) + 1 from totals where totals.trades > mine.trades)
+         end as rank
+       from mine`,
       [userId]
     )
-    const count = Math.max(0, Number(row?.trades ?? 0))
-    if (!(count > 0)) return { count, rank: null }
-    // Competition rank among everyone with a counted trade: one pass over a
-    // narrow table (no index on trades, which keeps the per-bet updates HOT).
-    const { rank } = await pg.one<{ rank: number }>(
-      `select (count(*) + 1)::int as rank from user_stats where trades > $1`,
-      [count]
-    )
-    return { count, rank }
+    return {
+      count: Math.max(0, Number(row.count)),
+      rank: row.rank === null ? null : Number(row.rank),
+    }
   }
   const row = await pg.oneOrNone<{ count: number; rank: number | null }>(
     `select total_trades_count as count, trades_rank as rank
@@ -304,13 +317,16 @@ const STATS_QUERY = `with
       'modTickets', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = $1),
       'charityDonated', (select charity_donated_rank from mv_ach_txns_achievements where user_id = $1)
     ) as ranks_json
-  from metrics
-  cross join creators
-  cross join referrals
-  cross join mod_tickets
-  cross join charity
-  cross join leagues_cte
-  cross join comments
-  cross join created
-  cross join account_age
-  cross join longest_streak`
+  -- One row even when there is no users row (e.g. an imported comment's
+  -- author): the parts that only need the id still count.
+  from (select 1) base
+  left join metrics on true
+  left join creators on true
+  left join referrals on true
+  left join mod_tickets on true
+  left join charity on true
+  left join leagues_cte on true
+  left join comments on true
+  left join created on true
+  left join account_age on true
+  left join longest_streak on true`

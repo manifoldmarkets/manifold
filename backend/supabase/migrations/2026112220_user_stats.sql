@@ -1,35 +1,42 @@
 -- Live per-user stats, kept by the database in the same transaction as the
 -- write that changes them. First stat: trades (see user_stats_bet_trades).
--- Design and rollout: dev-docs/user-stats.md.
+-- Design and rollout: dev-docs/user-stats.md. Deploy the API first, so no
+-- running server writes full-set redemption legs without isAutoRedemption.
 --
--- Run this file as ONE transaction (it says begin/commit). It briefly blocks
--- writes to contract_bets while it installs the triggers; if a write holds the
--- table for more than 5 seconds it gives up, and it can simply be run again.
+-- Two transactions. The first briefly blocks writes to contract_bets while it
+-- installs the triggers; if a write holds the table for more than 5 seconds
+-- it gives up, and the file can simply be run again.
 begin;
 
 set local lock_timeout = '5s';
 
--- One row per user who has ever had a counted trade. Only the primary key is
--- indexed, so the per-bet increments are HOT updates; the fill factor leaves
--- room on each page for them.
+-- First, before touching anything a bet's trigger uses: no writes to
+-- contract_bets from here to commit, and no lock-order clash with a bet that
+-- is already writing.
+lock table contract_bets in share row exclusive mode;
+
+-- One row per user with a counted trade since the install. Only the primary
+-- key is indexed, so the per-bet increments are HOT updates; the fill factor
+-- leaves room on each page for them. Only the triggers write it.
 create table if not exists user_stats (
   user_id text primary key,
-  -- Can dip below the true value while the backfill is running (a pre-install
-  -- bet deleted before its window is subtracted first); never compared to 0
-  -- for that reason, and not constrained.
   trades integer not null default 0,
   updated_time timestamptz not null default now()
 ) with (fillfactor = 80);
 
-alter table user_stats enable row level security;
-
-drop policy if exists "public read" on user_stats;
-
-create policy "public read" on user_stats for select using (true);
+-- The trades made before the install, added by the backfill
+-- (backend/scripts/backfill-user-stats.ts). Kept apart from user_stats so
+-- the backfill never writes a row a bet transaction also writes: a bet can't
+-- wait on it or fail to serialize because of it. A user's count is the sum
+-- of their rows in both tables.
+create table if not exists user_stats_baseline (
+  user_id text primary key,
+  trades integer not null default 0
+);
 
 -- Whether a contract_bets row counts as a trade: a bet in a mana market (checked
 -- by the caller) whose filled amount is not zero, placed by a person (not via
--- the API), and not a redemption, including the automatic sell-all legs that
+-- the API), and not a redemption, including the automatic sell legs that
 -- redeem a full set of a multiple-choice market (isAutoRedemption in data).
 -- A limit order counts once, when it first fills; a market buy or sell counts
 -- at once.
@@ -49,17 +56,18 @@ $$;
 
 -- Backfill support. While the backfill adds up history, the first time a bet
 -- that existed when the triggers were installed changes or is deleted, its
--- state at that moment is saved here, and a bet inserted after the install but
--- dated at or before the bound is recorded as not having existed. The backfill
--- then counts each bet dated at or before the bound exactly once, as it was at
--- the install; the triggers count every change since. Dropped, with the saving
--- step of the triggers, once the backfill is done (a later migration).
+-- state at that moment is saved here, and a bet that comes to be dated at or
+-- before the bound after the install (inserted, or moved there) is recorded
+-- as not having existed. The backfill then counts each bet dated at or before
+-- the bound exactly once, as it was at the install; the triggers count every
+-- change since. Dropped, with the saving step of the triggers, once the
+-- backfill is done (a later migration).
 create table if not exists user_stats_bet_journal (
   bet_id text primary key,
   user_id text not null,
   contract_id text not null,
   created_time timestamptz not null,
-  -- false: inserted after the install; the remaining columns are null.
+  -- false: did not exist at the install; the remaining columns are null.
   existed boolean not null,
   amount numeric,
   is_redemption boolean,
@@ -69,9 +77,7 @@ create table if not exists user_stats_bet_journal (
 
 create index if not exists user_stats_bet_journal_created_time on user_stats_bet_journal (created_time);
 
-alter table user_stats_bet_journal enable row level security;
-
--- Progress of backend/scripts/backfill-user-stats.ts, one row per stat.
+-- Progress of the backfill, one row per stat.
 create table if not exists user_stats_backfill (
   stat text primary key,
   -- The newest created_time in contract_bets at the install. Every bet that
@@ -83,16 +89,43 @@ create table if not exists user_stats_backfill (
   updated_time timestamptz not null default now()
 );
 
+-- Readable by everyone through RLS; written only by the server (which
+-- bypasses RLS). TRUNCATE ignores RLS, so the API roles keep nothing but
+-- SELECT on the two count tables and nothing at all on the others.
+alter table user_stats enable row level security;
+
+alter table user_stats_baseline enable row level security;
+
+alter table user_stats_bet_journal enable row level security;
+
 alter table user_stats_backfill enable row level security;
 
--- No writes to contract_bets from here to commit.
-lock table contract_bets in share row exclusive mode;
+drop policy if exists "public read" on user_stats;
+
+create policy "public read" on user_stats for select using (true);
+
+drop policy if exists "public read" on user_stats_baseline;
+
+create policy "public read" on user_stats_baseline for select using (true);
+
+do $$
+declare
+  r text;
+begin
+  foreach r in array array['anon', 'authenticated'] loop
+    if exists (select 1 from pg_roles where rolname = r) then
+      execute format('revoke all on user_stats, user_stats_baseline, user_stats_bet_journal, user_stats_backfill from %I', r);
+      execute format('grant select on user_stats, user_stats_baseline to %I', r);
+    end if;
+  end loop;
+end
+$$;
 
 -- The bound is written into a function rather than read from
 -- user_stats_backfill by the triggers: a serializable bet transaction that
 -- started before this commits would not see that row, but always runs the
--- current trigger and function definitions.
--- Running this file again keeps the bound it recorded the first time.
+-- current trigger and function definitions. Running this file again keeps
+-- the bound it recorded the first time.
 do $$
 declare
   b timestamptz;
@@ -141,6 +174,7 @@ $$;
 -- and write nothing.
 create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
 begin
+  -- First the state at the install of any bet that existed then...
   insert into user_stats_bet_journal (
     bet_id, user_id, contract_id, created_time, existed,
     amount, is_redemption, is_api, is_auto_redemption
@@ -151,12 +185,12 @@ begin
   from old_bets o
   where o.created_time <= user_stats_bet_bound()
   on conflict (bet_id) do nothing;
-  -- A bet id that only exists after this update didn't exist at the install.
+  -- ...then any row now dated at or before the bound that has no journal row
+  -- yet (a new bet id, or a later bet moved back) did not exist at the install.
   insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
   select n.bet_id, n.user_id, n.contract_id, n.created_time, false
   from new_bets n
   where n.created_time <= user_stats_bet_bound()
-    and not exists (select 1 from old_bets o where o.bet_id = n.bet_id)
   on conflict (bet_id) do nothing;
 
   insert into user_stats as s (user_id, trades, updated_time)
@@ -223,31 +257,47 @@ begin
 end
 $$;
 
-drop trigger if exists user_stats_bets_inserted on contract_bets;
-
-create trigger user_stats_bets_inserted
+-- create or replace (not drop and create): running this file again needs
+-- only the share row exclusive lock taken above.
+create or replace trigger user_stats_bets_inserted
 after insert on contract_bets
 referencing new table as new_bets
 for each statement execute function user_stats_bets_inserted ();
 
-drop trigger if exists user_stats_bets_updated on contract_bets;
-
-create trigger user_stats_bets_updated
+create or replace trigger user_stats_bets_updated
 after update on contract_bets
 referencing old table as old_bets new table as new_bets
 for each statement execute function user_stats_bets_updated ();
 
-drop trigger if exists user_stats_bets_deleted on contract_bets;
-
-create trigger user_stats_bets_deleted
+create or replace trigger user_stats_bets_deleted
 after delete on contract_bets
 referencing old table as old_bets
 for each statement execute function user_stats_bets_deleted ();
 
-drop trigger if exists user_stats_bets_truncated on contract_bets;
-
-create trigger user_stats_bets_truncated
+create or replace trigger user_stats_bets_truncated
 before truncate on contract_bets
 for each statement execute function user_stats_bets_truncated ();
+
+commit;
+
+-- A bet counts by its market's token when it is written. Nothing changes a
+-- market's token after creation; this keeps it so. It fires only for an
+-- UPDATE that names token, which no code does, so it costs nothing.
+begin;
+
+set local lock_timeout = '5s';
+
+create or replace function contracts_token_fixed () returns trigger language plpgsql as $$
+begin
+  if new.token is distinct from old.token then
+    raise exception 'contracts.token cannot change: user_stats counts trades by it (dev-docs/user-stats.md)';
+  end if;
+  return new;
+end
+$$;
+
+create or replace trigger contracts_token_fixed
+before update of token on contracts
+for each row execute function contracts_token_fixed ();
 
 commit;
