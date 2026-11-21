@@ -615,6 +615,43 @@ export function countUnclaimedReachedMilestones(
   return count
 }
 
+/** The moment an account created at createdTime is `years` years old, in
+ * UTC, as get-user-achievements counts it (Postgres interval addition): a
+ * Feb 29 signup turns one on Feb 28. */
+export function getAccountAnniversaryTime(createdTime: number, years: number) {
+  const d = new Date(createdTime)
+  const year = d.getUTCFullYear() + years
+  const month = d.getUTCMonth()
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
+  return Date.UTC(
+    year,
+    month,
+    Math.min(d.getUTCDate(), lastDay),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+    d.getUTCMilliseconds()
+  )
+}
+
+/** Milestones reached or already claimed: a claim is kept even if the stat
+ * later drops below its threshold. */
+export function countEarnedMilestones(
+  stats: TrophyStats,
+  claims: TrophyClaim[],
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
+): number {
+  let count = 0
+  for (const def of defs) {
+    const value = getTrophyStatValue(def, stats)
+    const claimed = getClaimedMilestoneIds(claims, def.id)
+    count += def.milestones.filter(
+      (m) => isMilestoneReached(m, value) || claimed.has(m.id)
+    ).length
+  }
+  return count
+}
+
 // ---------------------------------------------------------------------------
 // Profile showcase
 // ---------------------------------------------------------------------------

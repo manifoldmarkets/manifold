@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
+import { findLastIndex } from 'lodash'
 import {
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -11,6 +12,7 @@ import {
   type TrophyDefinition,
   type TrophyMilestone,
   formatTrophyValue,
+  getAccountAnniversaryTime,
   getRewardManaTotal,
   isMilestoneReached,
 } from 'common/trophies'
@@ -35,6 +37,8 @@ export function TrophyGrid(props: {
   claimingId?: string | null
   justClaimedId?: string | null
   onPinToProfile?: (trophyId: string) => void
+  // For an exact Account Age countdown.
+  accountCreatedTime?: number
 }) {
   const {
     progressList,
@@ -47,6 +51,7 @@ export function TrophyGrid(props: {
     claimingId,
     justClaimedId,
     onPinToProfile,
+    accountCreatedTime,
   } = props
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
 
@@ -68,6 +73,7 @@ export function TrophyGrid(props: {
             claiming={claimingId === def.id}
             justClaimed={justClaimedId === def.id}
             onPinToProfile={onPinToProfile}
+            accountCreatedTime={accountCreatedTime}
           />
         )
       })}
@@ -88,6 +94,7 @@ export function TrophyCard(props: {
   claiming?: boolean
   justClaimed?: boolean
   onPinToProfile?: (trophyId: string) => void
+  accountCreatedTime?: number
 }) {
   const {
     definition,
@@ -100,6 +107,7 @@ export function TrophyCard(props: {
     claiming,
     justClaimed,
     onPinToProfile,
+    accountCreatedTime,
   } = props
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
@@ -109,13 +117,16 @@ export function TrophyCard(props: {
   const shown = isOwnProfile
     ? milestones
     : milestones.filter((m) => claimedIds.has(m.id))
+  // A claim stays earned even if the stat drops back below it.
   const isEarned = (m: TrophyMilestone) =>
-    isOwnProfile ? isMilestoneReached(m, currentValue) : claimedIds.has(m.id)
-  const startIdx = isOwnProfile
-    ? highestMilestone
+    claimedIds.has(m.id) ||
+    (!!isOwnProfile && isMilestoneReached(m, currentValue))
+  const startIdx = Math.max(
+    highestMilestone
       ? shown.findIndex((m) => m.id === highestMilestone.id)
-      : -1
-    : shown.length - 1
+      : -1,
+    findLastIndex(shown, (m) => claimedIds.has(m.id))
+  )
   // Start on the highest milestone earned, or the first one.
   const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
   // Claims can be removed (admin unclaim) while the card is showing.
@@ -207,7 +218,7 @@ export function TrophyCard(props: {
         <span className="text-ink-500 text-center text-xs">
           {definition.label}
           {' · '}
-          {formatStat(definition, currentValue)}
+          {formatStat(definition, currentValue, accountCreatedTime)}
         </span>
 
         {unpaidReward && !isClaimed && (
@@ -293,8 +304,13 @@ export function TrophyCard(props: {
           </span>
         ) : (
           <span className="text-ink-400 text-center text-[11px]">
-            {formatRemaining(definition, viewing.threshold - currentValue)} to
-            go
+            {formatRemaining(
+              definition,
+              viewing.threshold - currentValue,
+              accountCreatedTime &&
+                getAccountAnniversaryTime(accountCreatedTime, viewing.threshold)
+            )}{' '}
+            to go
           </span>
         )}
       </Col>
@@ -334,21 +350,41 @@ function MilestoneDots(props: {
 }
 
 const DAYS_PER_YEAR = 365
+const DAY_MS = 24 * 60 * 60 * 1000
 
-function formatStat(def: TrophyDefinition, value: number) {
+const days = (n: number) => `${n.toLocaleString()} ${n === 1 ? 'day' : 'days'}`
+
+// Account age is shown in days. With the signup time, counted exactly;
+// otherwise from the years value, rounded down.
+function formatStat(
+  def: TrophyDefinition,
+  value: number,
+  accountCreatedTime?: number
+) {
   if (def.unit === 'years') {
-    // Rounded down, so it never shows a full year before the anniversary.
-    return `${Math.floor(value * DAYS_PER_YEAR).toLocaleString()} days`
+    return days(
+      accountCreatedTime
+        ? Math.floor((Date.now() - accountCreatedTime) / DAY_MS)
+        : Math.floor(value * DAYS_PER_YEAR)
+    )
   }
   if (def.formatPrefix) return formatTrophyValue(def, value)
   return `${formatTrophyValue(def, value)} ${def.unit}`
 }
 
-function formatRemaining(def: TrophyDefinition, remaining: number) {
+// Days left until the anniversary when given, so the countdown is exact.
+function formatRemaining(
+  def: TrophyDefinition,
+  remaining: number,
+  anniversaryTime?: number
+) {
   const value = Math.max(remaining, 0)
   if (def.unit === 'years') {
-    const days = Math.ceil(value * DAYS_PER_YEAR)
-    return `${days.toLocaleString()} ${days === 1 ? 'day' : 'days'}`
+    return days(
+      anniversaryTime
+        ? Math.max(1, Math.ceil((anniversaryTime - Date.now()) / DAY_MS))
+        : Math.ceil(value * DAYS_PER_YEAR)
+    )
   }
   return formatTrophyValue(def, value)
 }

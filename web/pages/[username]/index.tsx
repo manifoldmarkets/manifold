@@ -508,6 +508,7 @@ function UserProfile(props: {
                   <TrophiesTab
                     userId={user.id}
                     isOwnProfile={!!isCurrentUser}
+                    accountCreatedTime={user.createdTime}
                   />
                 ),
               },
