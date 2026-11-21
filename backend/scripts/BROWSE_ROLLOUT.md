@@ -92,8 +92,8 @@ do not pool them into one v2 result. Assignment itself is unchanged.
 One such change (PR #4272) made New open on the list on every screen, fold
 only small house sports and race markets (perps stay in the feed), and treat a
 press of the hub-markets chips as a choice even when the tab already showed
-it. The same change links the hubs from the sidebar, which Classic and New
-share, so both arms got those links at the same time.
+it. The same change links Sports and Perps from the sidebar, which Classic and
+New share, so both arms got those links at the same time.
 
 It also made New's search box send Classic's `search` event, with
 `location: 'browse-v2'`, once for each query the person types. A query

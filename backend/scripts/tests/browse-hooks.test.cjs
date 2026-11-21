@@ -987,31 +987,35 @@ async function sidebarLinks({ user = null, isMobile = false } = {}) {
   return Object.assign(links, { listScrolls })
 }
 
-test('the sidebar links the three hubs right after Browse, signed in or out, and first in the phone menu', async () => {
+test('the sidebar links Sports and Perps right after Browse, signed in or out, and first in the phone menu; not Elections', async () => {
   const hubs = [
     { name: 'Sports', href: '/sports', event: '' },
     { name: 'Perps', href: '/perps', event: '' },
-    // The Elections link keeps the event name the old sidebar link sent.
-    { name: 'Elections', href: '/election', event: 'Election' },
   ]
   const signedOut = await sidebarLinks()
-  assert.deepEqual(signedOut.slice(0, 4), [
+  assert.deepEqual(signedOut.slice(0, 3), [
     { name: 'Browse', href: '/', event: '' },
     ...hubs,
   ])
   const user = { id: 'u1', createdTime: 0 }
   const signedIn = await sidebarLinks({ user })
-  assert.deepEqual(signedIn.slice(0, 4), [
+  assert.deepEqual(signedIn.slice(0, 3), [
     { name: 'Browse', href: '/home', event: '' },
     ...hubs,
   ])
   const phone = await sidebarLinks({ user, isMobile: true })
-  assert.deepEqual(phone.slice(0, 3), hubs)
-  // Each hub once in each list, including the lower links on the phone.
-  for (const links of [signedOut, signedIn, phone])
+  assert.deepEqual(phone.slice(0, 2), hubs)
+  // Each hub once in each list, including the lower links on the phone, and
+  // no election link in any of them.
+  for (const links of [signedOut, signedIn, phone]) {
     for (const hub of hubs)
       assert.equal(links.filter((link) => link.href === hub.href).length, 1)
-  // With three more links, the desktop list scrolls on a short screen rather
+    assert.deepEqual(
+      links.filter((link) => /^\/election/.test(link.href)),
+      []
+    )
+  }
+  // With more links, the desktop list scrolls on a short screen rather
   // than pushing "More" (theme, sign out) below it. The phone drawer scrolls
   // as a whole.
   assert.equal(signedOut.listScrolls, true)

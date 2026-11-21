@@ -6,7 +6,6 @@ import {
   DotsHorizontalIcon,
   GiftIcon,
   HeartIcon,
-  LibraryIcon,
   LoginIcon,
   LogoutIcon,
   MoonIcon,
@@ -326,20 +325,12 @@ export default function Sidebar(props: {
   )
 }
 
-// The hub pages, beside Browse in every nav. Visitors reached the election
-// pages mostly through the sidebar while it linked them, and Sports, which it
-// never linked, is where new visitors go on to bet most often.
+// The hub pages, beside Browse in every nav. Sports, which the sidebar never
+// linked, is where new visitors go on to bet most often. Elections stays out
+// of the sidebar for now.
 const HUB_NAV_ITEMS: NavItem[] = [
   { name: 'Sports', href: '/sports', icon: TbBallBasketball },
   { name: 'Perps', href: '/perps', icon: TrendingUpIcon },
-  {
-    name: 'Elections',
-    // The event name the sidebar link had before, so its clicks line up.
-    trackingEventName: 'Election',
-    href: '/election',
-    icon: LibraryIcon,
-    flagHover: true,
-  },
 ]
 
 const getDesktopNav = (
