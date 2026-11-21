@@ -2,10 +2,16 @@
 // streaks, markets created...). Users claim a milestone once they reach it,
 // keep it forever, and can pin trophies to their profile.
 //
-// The stats come from `get-user-achievements`. Claims live in
-// `user_trophy_milestones`, one row per claimed milestone. The server is the
-// authority on what can be claimed (claim-trophy recomputes the stat); the
+// The stats come from `get-user-achievements`, apart from the "Getting
+// started" trophies, whose stats `get-user-trophies` counts live. Claims live
+// in `user_trophy_milestones`, one row per claimed milestone. The server is
+// the authority on what can be claimed (claim-trophy recomputes the stat); the
 // helpers here are shared so the web shows the same answer.
+//
+// "Getting started" milestones pay mana once, when claimed. They exist only
+// for accounts created at or after STARTER_TROPHIES_START_TIME.
+
+import { ENV } from 'common/envs/constants'
 
 export type TrophyTier =
   | 'green'
@@ -33,11 +39,20 @@ export type TrophyMilestone = {
   emoji: string
   threshold: number
   tier: TrophyTier
+  // Mana paid once when the milestone is claimed, before the claimant's tier
+  // multiplier. Only "Getting started" milestones have one.
+  rewardMana?: number
 }
 
-export type TrophyCategory = 'trading' | 'creating' | 'social' | 'prestige'
+export type TrophyCategory =
+  | 'starter'
+  | 'trading'
+  | 'creating'
+  | 'social'
+  | 'prestige'
 
 export const CATEGORY_LABELS: Record<TrophyCategory, string> = {
+  starter: 'Getting started',
   trading: 'Trading',
   creating: 'Creating',
   social: 'Social',
@@ -45,14 +60,54 @@ export const CATEGORY_LABELS: Record<TrophyCategory, string> = {
 }
 
 export const CATEGORY_ORDER: TrophyCategory[] = [
+  'starter',
   'trading',
   'creating',
   'social',
   'prestige',
 ]
 
-// Numeric fields of the get-user-achievements response that trophies use.
+// Stats of the "Getting started" trophies, counted live by get-user-trophies
+// from the account's first bets (see getStarterStats in backend/api). They
+// count buys of M10 or more, not via the API, in mana markets:
+// - starterTrades: at most one per market per Pacific day, so buying and
+//   selling the same market again does not count again
+// - starterMarkets: distinct markets
+// - starterDays: distinct Pacific days
+export const STARTER_STAT_KEYS = [
+  'starterTrades',
+  'starterMarkets',
+  'starterDays',
+] as const
+export type StarterStatKey = (typeof STARTER_STAT_KEYS)[number]
+export type StarterStats = Record<StarterStatKey, number>
+export const STARTER_MIN_TRADE_AMOUNT = 10
+
+// Accounts created at or after this time get the "Getting started" trophies.
+// null switches them off: they are hidden, and claim-trophy refuses them.
+// The reward amounts below are placeholders until this is set for prod.
+const STARTER_TROPHIES_START_TIMES: Record<typeof ENV, number | null> = {
+  PROD: null,
+  DEV: Date.UTC(2026, 10, 1),
+}
+export const STARTER_TROPHIES_START_TIME: number | null =
+  STARTER_TROPHIES_START_TIMES[ENV] ?? null
+
+export function isStarterTrophyAccount(
+  accountCreatedTime: number,
+  startTime: number | null = STARTER_TROPHIES_START_TIME
+): boolean {
+  return (
+    startTime !== null &&
+    Number.isFinite(accountCreatedTime) &&
+    accountCreatedTime >= startTime
+  )
+}
+
+// Numeric fields of the get-user-achievements response that trophies use,
+// plus the starter stats.
 export const TROPHY_STAT_KEYS = [
+  ...STARTER_STAT_KEYS,
   'totalVolumeMana',
   'totalTradesCount',
   'longestBettingStreak',
@@ -86,10 +141,58 @@ const m = (
   name: string,
   emoji: string,
   threshold: number,
-  tier: TrophyTier
-): TrophyMilestone => ({ id, name, emoji, threshold, tier })
+  tier: TrophyTier,
+  rewardMana?: number
+): TrophyMilestone =>
+  rewardMana === undefined
+    ? { id, name, emoji, threshold, tier }
+    : { id, name, emoji, threshold, tier, rewardMana }
 
 export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
+  // --- Getting started (new accounts only; each milestone pays once) ---
+  {
+    id: 'starter-trades',
+    label: 'First Trades',
+    description:
+      'Trades of M10 or more, counting one per market per day. Each milestone pays mana once',
+    category: 'starter',
+    statKey: 'starterTrades',
+    unit: 'trades',
+    milestones: [
+      m('first-trade', 'First Trade', '\u{1F423}', 1, 'green', 50),
+      m('hat-trick', 'Hat Trick', '\u{1F3A9}', 3, 'green', 50),
+      m('getting-going', 'Getting Going', '\u{1F6B2}', 10, 'blue', 100),
+      m('in-the-groove', 'In the Groove', '\u{1F3B6}', 25, 'purple', 150),
+    ],
+  },
+  {
+    id: 'starter-markets',
+    label: 'Markets Explored',
+    description:
+      'Different markets you have traded M10 or more in. Each milestone pays mana once',
+    category: 'starter',
+    statKey: 'starterMarkets',
+    unit: 'markets',
+    milestones: [
+      m('curious', 'Curious', '\u{1F9ED}', 3, 'green', 50),
+      m('explorer', 'Explorer', '\u{1F5FA}', 10, 'blue', 100),
+    ],
+  },
+  {
+    id: 'starter-days',
+    label: 'Days Active',
+    description:
+      'Days you have traded M10 or more. Each milestone pays mana once',
+    category: 'starter',
+    statKey: 'starterDays',
+    unit: 'days',
+    milestones: [
+      m('back-again', 'Back Again', '\u{1F44B}', 2, 'green', 100),
+      m('three-days', 'Three Days', '\u{1F4C5}', 3, 'green', 100),
+      m('full-week', 'Full Week', '\u{1F5D3}', 7, 'blue', 150),
+    ],
+  },
+
   // --- Trading ---
   {
     id: 'trading-volume',
@@ -315,6 +418,26 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
 
 const DEFINITIONS_BY_ID = new Map(TROPHY_DEFINITIONS.map((d) => [d.id, d]))
 
+export const isStarterTrophy = (def: TrophyDefinition) =>
+  def.category === 'starter'
+
+/** The trophies an account can earn: starter ones only for new accounts. */
+export function getTrophyDefinitionsFor(
+  isStarterAccount: boolean
+): TrophyDefinition[] {
+  return isStarterAccount
+    ? TROPHY_DEFINITIONS
+    : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
+}
+
+/** Mana the given milestones pay, before the claimant's tier multiplier. */
+export function getRewardManaTotal(milestones: TrophyMilestone[]): number {
+  return milestones.reduce((sum, m) => {
+    const reward = m.rewardMana ?? 0
+    return Number.isFinite(reward) && reward > 0 ? sum + reward : sum
+  }, 0)
+}
+
 export function getTrophyDefinition(
   trophyId: string
 ): TrophyDefinition | undefined {
@@ -384,23 +507,29 @@ export function computeTrophyProgress(
 }
 
 export function computeAllTrophyProgress(
-  stats: TrophyStats
+  stats: TrophyStats,
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
 ): ComputedTrophyProgress[] {
-  return TROPHY_DEFINITIONS.map((def) => computeTrophyProgress(def, stats))
+  return defs.map((def) => computeTrophyProgress(def, stats))
 }
 
-/** Milestones reached across all trophies. */
-export function countReachedMilestones(stats: TrophyStats): number {
+/** Milestones reached across the given trophies. */
+export function countReachedMilestones(
+  stats: TrophyStats,
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
+): number {
   let count = 0
-  for (const def of TROPHY_DEFINITIONS) {
+  for (const def of defs) {
     const value = getTrophyStatValue(def, stats)
     count += def.milestones.filter((m) => isMilestoneReached(m, value)).length
   }
   return count
 }
 
-export function getTotalPossibleMilestones(): number {
-  return TROPHY_DEFINITIONS.reduce((sum, d) => sum + d.milestones.length, 0)
+export function getTotalPossibleMilestones(
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
+): number {
+  return defs.reduce((sum, d) => sum + d.milestones.length, 0)
 }
 
 // ---------------------------------------------------------------------------
@@ -464,13 +593,14 @@ export function getMilestonesToClaim(
   return def.milestones.filter((m) => m.threshold <= target.threshold)
 }
 
-/** Reached milestones not yet claimed, across all trophies. */
+/** Reached milestones not yet claimed, across the given trophies. */
 export function countUnclaimedReachedMilestones(
   stats: TrophyStats,
-  claims: TrophyClaim[]
+  claims: TrophyClaim[],
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
 ): number {
   let count = 0
-  for (const def of TROPHY_DEFINITIONS) {
+  for (const def of defs) {
     const value = getTrophyStatValue(def, stats)
     const claimed = getClaimedMilestoneIds(claims, def.id)
     count += def.milestones.filter(

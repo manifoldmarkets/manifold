@@ -52,7 +52,11 @@ import {
   JobSeekerInterest,
 } from 'common/job-seeker'
 import { League } from 'common/leagues'
-import { MAX_SHOWCASE_PINS, type TrophyClaim } from 'common/trophies'
+import {
+  MAX_SHOWCASE_PINS,
+  type StarterStats,
+  type TrophyClaim,
+} from 'common/trophies'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
@@ -3299,6 +3303,9 @@ export const API = (_apiTypeCheck = {
       // null: never set, so the profile shows the best trophies by default.
       // []: the user removed every pin.
       pins: string[] | null
+      // Counts for the "Getting started" trophies, or null for accounts that
+      // don't get them (see isStarterTrophyAccount).
+      starter: StarterStats | null
     },
     props: z
       .object({
@@ -3317,7 +3324,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Claims a reached milestone and every lower one.
+  // Claims a reached milestone and every lower one, paying any reward once.
   'claim-trophy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3325,6 +3332,8 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       newlyClaimed: TrophyClaim[]
       claims: TrophyClaim[]
+      // Mana paid for the newly claimed milestones, after the tier multiplier.
+      rewardAmount: number
     },
     props: z
       .object({

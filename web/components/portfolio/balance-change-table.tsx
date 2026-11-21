@@ -740,6 +740,7 @@ const TxnBalanceChangeRow = (props: {
                 'SIGNUP_BONUS',
                 'KYC_BONUS',
                 'QUEST_REWARD',
+                'TROPHY_REWARD',
                 'MARKET_BOOST_REDEEM',
                 'LEAGUE_PRIZE',
                 'BOUNTY_AWARDED',
@@ -853,6 +854,8 @@ const txnTitle = (change: TxnBalanceChange) => {
   switch (type) {
     case 'QUEST_REWARD':
       return questType ? questTypeToDescription(questType) : ''
+    case 'TROPHY_REWARD':
+      return change.description ?? 'Trophy reward'
     case 'BETTING_STREAK_BONUS':
       return 'Prediction streak bonus' // usually the question instead
     case 'ADMIN_REWARD':
@@ -927,6 +930,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'Thank you!'
     case 'QUEST_REWARD':
       return 'Quests'
+    case 'TROPHY_REWARD':
+      return 'Trophies'
     case 'CONTRACT_UNDO_PRODUCE_SPICE':
     case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
       return 'Unresolve'

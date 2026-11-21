@@ -49,6 +49,7 @@ type AnyTxnType =
   | Loan
   | LoanPayment
   | PushNotificationBonus
+  | TrophyReward
   | LikePurchase
   | ContractUndoOldResolutionPayout
   | ContractAnte
@@ -589,6 +590,23 @@ type PushNotificationBonus = {
   token: 'M$'
 }
 
+// Paid by claim-trophy for "Getting started" milestones, once per milestone:
+// the user_trophy_milestones rows it pays for record this txn's id.
+type TrophyReward = {
+  category: 'TROPHY_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    trophyId: string
+    milestoneIds: string[]
+    // Sum of the milestones' rewardMana, before the multiplier.
+    baseAmount: number
+    effectiveTier: string
+    multiplier: number
+  }
+}
+
 type LikePurchase = {
   category: 'LIKE_PURCHASE'
   fromType: 'USER'
@@ -889,6 +907,7 @@ export type MarginLoanTxn = Txn & MarginLoan
 export type LoanTxn = Txn & Loan
 export type LoanPaymentTxn = Txn & LoanPayment
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
+export type TrophyRewardTxn = Txn & TrophyReward
 export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet

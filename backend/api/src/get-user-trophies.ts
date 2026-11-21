@@ -1,14 +1,23 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { getShowcasePins, getTrophyClaims } from 'api/helpers/trophies'
+import {
+  getIsStarterTrophyAccount,
+  getShowcasePins,
+  getStarterStats,
+  getTrophyClaims,
+} from 'api/helpers/trophies'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
   userId,
 }) => {
   const pg = createSupabaseDirectClient()
-  const [claims, pins] = await Promise.all([
+  const [claims, pins, isStarterAccount] = await Promise.all([
     getTrophyClaims(pg, userId),
     getShowcasePins(pg, userId),
+    getIsStarterTrophyAccount(pg, userId),
   ])
-  return { claims, pins }
+  // Only new accounts get the starter trophies, so only they pay for the
+  // live count.
+  const starter = isStarterAccount ? await getStarterStats(pg, userId) : null
+  return { claims, pins, starter }
 }

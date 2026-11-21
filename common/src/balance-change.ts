@@ -114,6 +114,7 @@ export const BALANCE_CHANGE_TYPE_LABELS: Record<
   UNIQUE_BETTOR_BONUS: 'Unique trader bonus',
   MANA_PAYMENT: 'User payment',
   QUEST_REWARD: 'Quest reward',
+  TROPHY_REWARD: 'Trophy reward',
   // Perp types
   perp_liquidation: 'Perp position liquidated',
   PERP_OPEN_MARGIN: 'Opened perp position',
