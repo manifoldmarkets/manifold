@@ -44,6 +44,11 @@ const LABEL_BY_LEAGUE: Record<string, string> = {
   [WORLD_CUP_2026.sportsLeague]: 'WC26',
 }
 
+export function legacyOddsLeagueLabel(eventId: string) {
+  const odds = parseOddsEventId(eventId)
+  return odds ? LABEL_BY_ODDS_KEY[odds.sportKey] : undefined
+}
+
 /** Exported for the test that keeps it in step with the calendar. */
 export const LEAGUE_LABEL_ODDS_KEYS = Object.keys(LABEL_BY_ODDS_KEY)
 
@@ -106,10 +111,7 @@ export function getSportsLeagueLabel(
       return 'F1'
     return officialBdlLeague(contract)?.shortLabel
   }
-  if (provider === 'odds') {
-    const odds = parseOddsEventId(sportsEventId)
-    return odds ? LABEL_BY_ODDS_KEY[odds.sportKey] : undefined
-  }
+  if (provider === 'odds') return legacyOddsLeagueLabel(sportsEventId)
   return provider !== 'fixture' && sportsLeague
     ? LABEL_BY_LEAGUE[sportsLeague]
     : undefined

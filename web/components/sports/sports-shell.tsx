@@ -18,6 +18,7 @@ import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
 import { HideBlockedTopics, HidesBlocked } from './blocked-topics'
 import { SportRail } from './sport-rail'
+import { SportsNavigation } from './sports-navigation-context'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -55,7 +56,7 @@ export function SportsShell(props: {
     trackPageView,
     children,
   } = props
-  return (
+  const page = (
     <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
       <Col className="w-full min-w-0 gap-3 px-3 pt-5 sm:px-6 sm:pt-7">
@@ -119,6 +120,7 @@ export function SportsShell(props: {
       </Col>
     </Page>
   )
+  return <SportsNavigation sport={selected}>{page}</SportsNavigation>
 }
 
 /**

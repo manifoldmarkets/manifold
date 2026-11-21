@@ -17,6 +17,9 @@ import {
   RaceWeekend,
 } from 'common/race-weekends'
 import { ScheduleGame } from 'common/sports-schedule'
+import { BDL_LEAGUES } from 'common/bdl/leagues'
+import { useSportsNavigation } from './sports-navigation-context'
+import { gameLeagueKey } from 'common/bdl/league-navigation'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -96,6 +99,8 @@ export function GameFeed(props: {
     belowFeatured,
     empty,
   } = props
+  const navigation = useSportsNavigation()
+  const league = navigation?.league
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
   const [date, setDate] = useState('all')
@@ -106,12 +111,15 @@ export function GameFeed(props: {
     'sports-game-view'
   )
   const active = games.filter(
-    (game) => game.status === 'upcoming' || game.status === 'live'
+    (game) =>
+      (game.status === 'upcoming' || game.status === 'live') &&
+      (!league || gameLeagueKey(game) === league)
   )
-  const sessions = raceSessionEvents(props.raceWeekends ?? [])
+  const weekends = !league || league === 'f1' ? props.raceWeekends ?? [] : []
+  const sessions = raceSessionEvents(weekends)
   // Every market of the weekends, finished sessions too: the featured card's
   // pills reach them.
-  const raceMarketIds = (props.raceWeekends ?? []).flatMap((w) =>
+  const raceMarketIds = weekends.flatMap((w) =>
     w.sessions.flatMap((s) => s.markets.map((m) => m.id))
   )
   const likes = useGameLikes([
@@ -140,7 +148,8 @@ export function GameFeed(props: {
   }
   const stakedCount = Object.keys(stakes).length
   const normalized = query.trim().toLowerCase()
-  const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const hasSearchFilters = filter !== 'all' || date !== 'all' || !!normalized
+  const hasFilters = hasSearchFilters || !!league
   const everything: FeedItem[] = [...active, ...sessions]
   const selectedFeatured = selectFeaturedGame(
     everything,
@@ -151,7 +160,7 @@ export function GameFeed(props: {
     if (selectedFeatured) setFeaturedId(selectedFeatured.id)
   }, [selectedFeatured?.id])
   const featured =
-    view === 'cards' && !hasFilters ? selectedFeatured : undefined
+    view === 'cards' && !hasSearchFilters ? selectedFeatured : undefined
   const onSelectedDay = (item: FeedItem) =>
     date === 'all' || scheduleDayKey(item) === date
   const filteredGames = active.filter(
@@ -208,6 +217,7 @@ export function GameFeed(props: {
   const needsSignIn =
     (filter === 'liked' || filter === 'mine') && likes.user === null
   const reset = () => {
+    if (league) navigation.chooseLeague('')
     setQuery('')
     setDate('all')
     setFilter('all')
@@ -253,7 +263,7 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (everything.length === 0) return <>{empty}</>
+  if (everything.length === 0 && !league) return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -280,6 +290,23 @@ export function GameFeed(props: {
                 </button>
               )}
             </div>
+            {navigation && navigation.choices.length > 1 && (
+              <select
+                aria-label="League"
+                className="border-ink-200 bg-canvas-0 text-ink-700 focus:ring-primary-500 min-h-[44px] max-w-[11rem] rounded-lg border py-1.5 pl-2 pr-7 text-xs font-medium"
+                value={league ?? ''}
+                onChange={(event) =>
+                  navigation.chooseLeague(event.target.value)
+                }
+              >
+                <option value="">All leagues</option>
+                {navigation.choices.map((key) => (
+                  <option key={key} value={key}>
+                    {BDL_LEAGUES[key].label}
+                  </option>
+                ))}
+              </select>
+            )}
             <label className="text-ink-500 flex items-center gap-2 text-xs">
               <span className="sr-only sm:not-sr-only">Sort</span>
               <select
@@ -456,8 +483,10 @@ export function GameFeed(props: {
                 <MyBetsSummary stakes={myStakes} />
               ) : (
                 <span>
-                  {filtered.length} of {everything.length} loaded{' '}
-                  {sessions.length > 0 ? 'events' : 'games'}
+                  {league && !hasSearchFilters
+                    ? filtered.length
+                    : `${filtered.length} of ${everything.length}`}{' '}
+                  loaded {sessions.length > 0 ? 'events' : 'games'}
                 </span>
               )}
               <button
@@ -548,6 +577,10 @@ export function GameFeed(props: {
                 ? 'Heart a game to add it to your Manifold likes.'
                 : filter === 'mine'
                 ? 'Tap a price to back a team. Your picks and open orders show up here.'
+                : league
+                ? hasMore
+                  ? 'Try another league or load more games.'
+                  : 'Try another league.'
                 : 'Try another date, team, or filter.'}
             </p>
             <button
@@ -581,7 +614,7 @@ export function GameFeed(props: {
             {renderItems(day.items)}
           </Col>
         ))}
-        {hasMore && filter !== 'live' ? (
+        {hasMore && (filter !== 'live' || !!league) ? (
           <>
             {hasFilters ? (
               <button
