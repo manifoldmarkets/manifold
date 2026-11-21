@@ -668,6 +668,13 @@ export function getMaxShowcasePins(claimedCount: number): number {
 export const LEAGUE_SHOWCASE_PIN = 'league'
 const TROPHY_PIN_PREFIX = 'trophy-'
 
+/** Where a milestone's badge art is served from (web/public/trophy-badges):
+ * a 256 px WebP of the subject on a transparent background. */
+export const getTrophyBadgeImagePath = (
+  trophyId: string,
+  milestoneId: string
+) => `/trophy-badges/${trophyId}/${milestoneId}.webp`
+
 export const getTrophyPinId = (trophyId: string) =>
   `${TROPHY_PIN_PREFIX}${trophyId}`
 

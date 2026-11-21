@@ -21,6 +21,7 @@ import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
 
 export function TrophyGrid(props: {
@@ -171,9 +172,12 @@ export function TrophyCard(props: {
               earned ? style.glow : 'opacity-40 grayscale'
             )}
           >
-            <span className="text-5xl" aria-hidden>
-              {viewing.emoji}
-            </span>
+            <TrophyBadgeImage
+              trophyId={definition.id}
+              milestone={viewing}
+              className="h-24 w-24"
+              emojiClassName="text-5xl"
+            />
           </div>
         </div>
 
