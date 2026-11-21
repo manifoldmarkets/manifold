@@ -21,14 +21,14 @@ const schedules = {
     eligible: true,
   },
   nhl: {
-    id: 201,
-    slateDate: '2026-05-14',
-    status: 'in_progress',
-    home: { id: 21, name: 'Lake City Waves' },
-    away: { id: 22, name: 'Northport Bears' },
-    homeScore: 1,
-    awayScore: 2,
-    postseason: true,
+    id: 3328405,
+    slateDate: '2026-11-19',
+    status: 'final',
+    home: { id: 57, name: 'Seattle Kraken' },
+    away: { id: 60, name: 'Vancouver Canucks' },
+    homeScore: 5,
+    awayScore: 1,
+    postseason: false,
     eligible: true,
   },
   wnba: {
@@ -65,7 +65,7 @@ const schedules = {
     eligible: true,
   },
 } as const
-const recordedSchedules: MajorLeague[] = ['nba']
+const recordedSchedules: MajorLeague[] = ['nba', 'nhl']
 const recordedOdds: MajorLeague[] = ['nba']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
@@ -136,8 +136,7 @@ it.each(leagues)(
       ])
     if (league === 'nfl')
       expect(urls[0].searchParams.getAll('season_types[]')).toEqual(['2', '3'])
-    if (league === 'nhl')
-      expect(games[0]).toMatchObject({ period: '3', clock: '05:21' })
+    if (league === 'nhl') expect(games[0].clock).toBeUndefined()
   }
 )
 
@@ -591,5 +590,36 @@ it('maps the recorded Celtics at Pistons final with home and visitor identities 
     homeScore: 121,
     away: { id: 2, name: 'Boston Celtics' },
     awayScore: 113,
+  })
+})
+
+it('preserves period and clock on a synthetic live NHL playoff game', async () => {
+  const base = fixture('nhl', 'games').data[0]
+  const client = localClient(() => ({
+    data: [
+      {
+        ...base,
+        status_state: 'in_progress',
+        postseason: true,
+        period: 3,
+        time_remaining: '05:21',
+        home_score: 1,
+        away_score: 2,
+      },
+    ],
+  })).client
+  const [game] = await fetchMajorGames(
+    client,
+    'nhl',
+    dateFor('nhl'),
+    dateFor('nhl')
+  )
+  expect(game).toMatchObject({
+    status: 'in_progress',
+    postseason: true,
+    period: '3',
+    clock: '05:21',
+    homeScore: 1,
+    awayScore: 2,
   })
 })
