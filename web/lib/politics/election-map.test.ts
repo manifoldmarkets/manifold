@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
+import { Contract } from 'common/contract'
 import {
   availableModes,
   describeFill,
@@ -12,6 +13,7 @@ import {
   mapFills,
   NO_LEADER_COLOR,
   mapTracker,
+  marketTippingPoints,
   matchesPlace,
   OTHER_LEADER_COLOR,
   placeTitle,
@@ -19,6 +21,7 @@ import {
   SENATE_NOT_UP_2028,
   statePanel,
   tippingPlaces,
+  tippingWinnerOf,
 } from './election-map'
 import { PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
@@ -240,20 +243,244 @@ test('primary trackers count contests by leader or by how sure', () => {
   )
 })
 
-test('tipping points: the likeliest few, above a floor', () => {
+test('tipping points: every state showing 5% or more, with no cap', () => {
   const tips = [
-    { key: 'PA', p: 0.22 },
-    { key: 'MI', p: 0.15 },
-    { key: 'WI', p: 0.1 },
-    { key: 'NE-2', p: 0.02 },
+    { key: 'PA', p: 0.26 },
+    { key: 'GA', p: 0.13 },
+    { key: 'NC', p: 0.12 },
+    { key: 'WI', p: 0.113 },
+    { key: 'MI', p: 0.113 },
+    { key: 'NV', p: 0.062 },
+    { key: 'AZ', p: 0.056 },
+    { key: 'OH', p: 0.0451 }, // shows "5%", so it's outlined
+    { key: 'TX', p: 0.04 },
+    { key: 'FL', p: 0.014 },
   ]
   assert.deepEqual(
     tippingPlaces(tips).map((t) => t.key),
-    ['PA', 'MI', 'WI']
+    ['PA', 'GA', 'NC', 'WI', 'MI', 'NV', 'AZ', 'OH']
+  )
+  // Election night: one state runs away with it, the rest lose their outline.
+  assert.deepEqual(
+    tippingPlaces([
+      { key: 'PA', p: 0.93 },
+      { key: 'MI', p: 0.04 },
+      { key: 'WI', p: 0.03 },
+    ]).map((t) => t.key),
+    ['PA']
   )
   assert.deepEqual(
-    tippingPlaces(tips, 2).map((t) => t.key),
-    ['PA', 'MI']
+    tippingPlaces(tips, 12).map((t) => t.key),
+    ['PA', 'GA', 'NC']
+  )
+})
+
+test('tipping points from the tipping-point market', () => {
+  const answer = (id: string, text: string, p: number, isOther = false) => ({
+    id,
+    text,
+    poolYes: (1 - p) * 100,
+    poolNo: p * 100,
+    prob: p,
+    isOther,
+  })
+  const market = (over: object) =>
+    ({
+      id: 'tip',
+      slug: 'which-state-will-be-the-tipping-point',
+      outcomeType: 'MULTIPLE_CHOICE',
+      mechanism: 'cpmm-multi-2',
+      shouldAnswersSumToOne: true,
+      answers: [
+        answer('pa', 'Pennsylvania', 0.3),
+        answer('ga', 'Georgia', 0.2),
+        answer('wv', 'West Virginia', 0.05),
+        answer('va', 'Virginia', 0.1),
+        answer('dc', 'Washington, D.C.', 0.01),
+        answer('wa', 'Washington', 0.04),
+        answer('nc', 'NC', 0.12),
+        answer('me2', "Maine's 2nd District", 0.03),
+        answer('pr', 'Puerto Rico', 0.02),
+        answer('xx', 'Atlantis', 0.03),
+        answer('o', 'Other', 0.1, true),
+      ],
+      ...over,
+    } as unknown as Contract)
+  const near = (x: number, y: number) =>
+    assert.ok(Math.abs(x - y) < 1e-9, `${x} ≈ ${y}`)
+
+  // Open: each state by its postal code, likeliest first. Other, a
+  // territory and a name that's no state are left out; a district reads as
+  // its state.
+  const open = marketTippingPoints(market({}))
+  assert.deepEqual(
+    open.map((t) => t.key),
+    ['PA', 'GA', 'NC', 'VA', 'WV', 'WA', 'ME', 'DC']
+  )
+  near(open[0].p, 0.3)
+  near(open.find((t) => t.key === 'WV')!.p, 0.05)
+  near(open.find((t) => t.key === 'DC')!.p, 0.01)
+
+  // Two answers for one state add up.
+  const twice = marketTippingPoints(
+    market({
+      answers: [
+        answer('me', 'Maine', 0.04),
+        answer('me2', "Maine's 2nd District", 0.03),
+      ],
+    })
+  )
+  assert.equal(twice.length, 1)
+  near(twice[0].p, 0.07)
+
+  // Only a whole label names a state: DC however it's written, districts by
+  // name or key, and nothing for a phrase that merely mentions a state.
+  const labels = (texts: string[]) =>
+    marketTippingPoints(
+      market({ answers: texts.map((t, i) => answer(`a${i}`, t, 0.1)) })
+    ).map((t) => t.key)
+  assert.deepEqual(labels(['Washington DC']), ['DC'])
+  assert.deepEqual(labels(['D.C.']), ['DC'])
+  assert.deepEqual(labels(['District of Columbia']), ['DC'])
+  assert.deepEqual(labels(['NE-2']), ['NE'])
+  assert.deepEqual(labels(['Nebraska 2nd']), ['NE'])
+  assert.deepEqual(labels(["Maine's 2nd congressional district"]), ['ME'])
+  assert.deepEqual(labels(['pennsylvania ']), ['PA'])
+  assert.deepEqual(labels(['NE-3']), ['NE'])
+  assert.deepEqual(labels(['NE-9']), [])
+  assert.deepEqual(labels(['Maine 3rd district']), [])
+  assert.deepEqual(labels(['Iowa or Ohio']), [])
+  assert.deepEqual(labels(['Kansas City']), [])
+  assert.deepEqual(labels(['Virginia Beach']), [])
+
+  // Resolved to Georgia: Georgia alone, at 100%, whatever the pools say.
+  const georgia = marketTippingPoints(
+    market({ isResolved: true, resolution: 'ga' })
+  )
+  assert.deepEqual(georgia, [{ key: 'GA', p: 1 }])
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'ga' })),
+    'GA'
+  )
+  // Resolved to Other: no state, even when Other's label names one.
+  assert.deepEqual(
+    marketTippingPoints(
+      market({
+        isResolved: true,
+        resolution: 'o',
+        answers: [answer('ia', 'Ohio', 0.2), answer('o', 'Iowa', 0.8, true)],
+      })
+    ),
+    []
+  )
+  // A split payout (95% Other, 5% Pennsylvania): Pennsylvania at its share,
+  // and no winner.
+  const splitMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { o: 95, pa: 5 },
+  })
+  assert.deepEqual(marketTippingPoints(splitMarket), [{ key: 'PA', p: 0.05 }])
+  assert.equal(tippingWinnerOf(splitMarket), undefined)
+  // Any payout to Other, however small, means no state won in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 100, o: 0.00000001 },
+      })
+    ),
+    undefined
+  )
+  // Two states share it: each at its share, no winner.
+  const sharedMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { pa: 60, ga: 40 },
+  })
+  const shared = marketTippingPoints(sharedMarket)
+  assert.deepEqual(
+    shared.map((t) => t.key),
+    ['PA', 'GA']
+  )
+  near(shared[0].p, 0.6)
+  assert.equal(tippingWinnerOf(sharedMarket), undefined)
+  // All of it to one state through several answers (Nebraska and its
+  // districts): a win in full, decided by who was paid, not by the sum.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 20, ne2: 10 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.2),
+          answer('ne2', 'NE-2', 0.2),
+          answer('o', 'Other', 0.1, true),
+        ],
+      })
+    ),
+    'NE'
+  )
+  // Nebraska's answers adding to all of it with a sliver to Other: no
+  // winner, whatever the shares sum to.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 30, o: 0.05 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.3),
+          answer('o', 'Other', 0.2, true),
+        ],
+      })
+    ),
+    undefined
+  )
+  // A paid answer missing from this copy of the market: not a win in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 60, ga: 40 },
+        answers: [answer('pa', 'Pennsylvania', 0.6)],
+      })
+    ),
+    undefined
+  )
+  // Cancelled: no winner.
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'CANCEL' })),
+    undefined
+  )
+  // Open: no winner, however lopsided.
+  assert.equal(
+    tippingWinnerOf(market({ answers: [answer('pa', 'Pennsylvania', 0.99)] })),
+    undefined
+  )
+  // Independent answers aren't shares of one outcome: nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ shouldAnswersSumToOne: false })),
+    []
+  )
+  // N/A (nobody reached 270): nothing to draw.
+  assert.deepEqual(
+    marketTippingPoints(market({ isResolved: true, resolution: 'CANCEL' })),
+    []
+  )
+  // No market, or not a multiple choice one.
+  assert.deepEqual(marketTippingPoints(null), [])
+  assert.deepEqual(
+    marketTippingPoints({
+      outcomeType: 'BINARY',
+      mechanism: 'cpmm-1',
+    } as unknown as Contract),
+    []
   )
 })
 

@@ -925,7 +925,7 @@ describe('admin switches', () => {
         ['nhl-2026-27', 'Regular Season', true],
       ])
     )
-    await createOddsMarketsForActiveCalendar(db.client)
+    await createOddsMarketsForActiveCalendar(db.client, { spacingMs: 0 })
     expect(requestedKeys()).toContain('icehockey_nhl')
     expect(requestedKeys()).toContain('soccer_epl')
     expect(requestedKeys()).not.toContain('americanfootball_nfl')
@@ -936,7 +936,9 @@ describe('admin switches', () => {
     // would create games an admin switched off.
     const db = database()
     db.pg.map.mockRejectedValue(new Error('relation does not exist'))
-    expect(await createOddsMarketsForActiveCalendar(db.client)).toEqual({})
+    expect(
+      await createOddsMarketsForActiveCalendar(db.client, { spacingMs: 0 })
+    ).toEqual({ results: {}, failed: {} })
     expect(getUpcomingOdds).not.toHaveBeenCalled()
     expect(log.error).toHaveBeenCalledWith(
       expect.stringContaining('creates nothing')
@@ -984,7 +986,7 @@ describe('admin switches', () => {
       .mockImplementation(async (key) =>
         key === 'americanfootball_nfl' ? [moved, fresh] : []
       )
-    await createOddsMarketsForActiveCalendar(db.client)
+    await createOddsMarketsForActiveCalendar(db.client, { spacingMs: 0 })
     expect(requestedKeys()).toContain('americanfootball_nfl')
     expect(db.pg.none).toHaveBeenCalledWith(
       expect.stringContaining('update contracts'),
@@ -1546,19 +1548,29 @@ describe('score polling settings', () => {
   })
 })
 
-it("logs an error when a competition can't run, so it alerts", async () => {
-  // An exhausted quota or a provider outage fails the odds fetch.
+it('reports a competition whose odds call failed, and runs the others', async () => {
+  // A throttle that outlasted the client's retries, an exhausted quota or a
+  // provider outage fails the odds fetch for one competition. The run says
+  // which and why, and leaves the severity to the job: in the morning the
+  // midday run tries again; after the day's last run it alerts.
   jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-01T12:00:00Z'))
-  jest
-    .mocked(getUpcomingOdds)
-    .mockRejectedValue(
-      new Error(
-        'Odds API /odds error for americanfootball_nfl: 401 Unauthorized'
+  jest.mocked(getUpcomingOdds).mockImplementation(async (key) => {
+    if (key === 'americanfootball_nfl')
+      throw new Error(
+        'Odds API /odds error for americanfootball_nfl: 429 Too Many Requests (after 4 attempts)'
       )
-    )
-  await createOddsMarketsForActiveCalendar(database().client)
-  expect(log.error).toHaveBeenCalledWith(
-    expect.stringContaining("nfl-regular-2026 didn't run")
+    return []
+  })
+  const run = await createOddsMarketsForActiveCalendar(database().client, {
+    spacingMs: 0,
+  })
+  expect(run.failed).toEqual({
+    'nfl-regular-2026': expect.stringContaining('429 Too Many Requests'),
+  })
+  expect(run.results).not.toHaveProperty('nfl-regular-2026')
+  expect(jest.mocked(getUpcomingOdds).mock.calls.length).toBeGreaterThan(1)
+  expect(log.error).not.toHaveBeenCalledWith(
+    expect.stringContaining("didn't run")
   )
 })
 

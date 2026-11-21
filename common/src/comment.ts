@@ -27,6 +27,7 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   hidden?: boolean
   hiddenTime?: number
   hiderId?: string
+  hiddenOnYap?: boolean
   pinned?: boolean
   pinnedTime?: number
   pinnerId?: string
@@ -36,6 +37,8 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   visibility: Visibility
   editedTime?: number
   isApi?: boolean
+  // Posted by a mod or admin acting as a moderator (shows a "Mod comment" label)
+  isModComment?: boolean
 } & T
 
 export type OnContract = {
@@ -72,7 +75,12 @@ export type OnContract = {
   betReplyAmountsByOutcome?: { [outcome: string]: number }
 
   isRepost?: boolean
+  // The Yap post this comment was posted alongside
+  socialPostId?: string
 }
+
+// Comment content is capped by its serialized JSON size.
+export const MAX_COMMENT_JSON_LENGTH = 20000
 
 export type ContractComment = Comment<OnContract>
 

@@ -124,7 +124,7 @@ export async function calculateImportanceScore(
     'previously active contracts'
   )
 
-  const todayComments = await getTodayComments(pg)
+  const todayDiscussion = await getTodayDiscussion(pg)
   const todayLikesByContract = await getRecentContractLikes(pg, dayAgo)
   const thisWeekLikesByContract = await getRecentContractLikes(pg, weekAgo)
 
@@ -159,7 +159,7 @@ export async function calculateImportanceScore(
     } = computeContractScores(
       now,
       contract,
-      todayComments[contract.id] ?? 0,
+      todayDiscussion[contract.id] ?? 0,
       todayLikesByContract[contract.id] ?? 0,
       thisWeekLikesByContract[contract.id] ?? 0,
       todayTradersByContract[contract.id] ?? 0,
@@ -320,12 +320,44 @@ export async function calculateImportanceScore(
   }
 }
 
-export const getTodayComments = async (pg: SupabaseDirectClient) => {
-  const counts = await pg.func<
-    { contract_id: string; comment_count: number }[]
-  >('count_recent_comments_by_contract')
+// One independent person's discussion signal per market per day, across all
+// entry points. Mirrors, repeated comments and undo/re-Yap cycles cannot stack.
+export const getTodayDiscussion = async (pg: SupabaseDirectClient) => {
+  const counts = await pg.manyOrNone<{ contract_id: string; n: number }>(`
+    with activity as (
+      select cc.contract_id,cc.user_id from contract_comments cc
+      where cc.created_time>=now()-interval '1 day'
+        and not coalesce((cc.data->>'deleted')::boolean,false)
+        and not coalesce((cc.data->>'hidden')::boolean,false)
+      union
+      select m.contract_id,s.user_id from social_posts s
+      join social_post_markets m on m.post_id=s.id
+      join social_posts root on root.id=s.root_id
+      where root.hidden_time is null and s.created_time>=now()-interval '1 day' and s.deleted_time is null and s.hidden_time is null
+      union
+      select markets.contract_id,r.user_id from social_reposts r
+      join social_posts s on s.id=r.post_id
+      join social_posts root on root.id=s.root_id
+      cross join lateral (
+        select m.contract_id from social_post_markets m where m.post_id=s.id
+        union select s.source_contract_id where s.source_contract_id is not null
+        union select cc.contract_id from contract_comments cc where cc.comment_id=s.market_comment_id
+      ) markets
+      where root.hidden_time is null and r.active and r.bumped_time>=now()-interval '1 day' and s.deleted_time is null and s.hidden_time is null
+    )
+    select a.contract_id,count(distinct a.user_id)::int as n from activity a
+    join contracts c on c.id=a.contract_id join users u on u.id=a.user_id
+    where a.user_id<>c.creator_id and not u.is_bot and c.visibility='public'
+      and not coalesce((c.data->>'deleted')::boolean,false)
+    group by a.contract_id`)
+  return Object.fromEntries(counts.map((c) => [c.contract_id, Number(c.n)]))
+}
 
-  return Object.fromEntries(counts.map((c) => [c.contract_id, c.comment_count]))
+export const mergeCounts = (...sources: [string, number][][]) => {
+  const totals: Record<string, number> = {}
+  for (const [id, n] of sources.flat())
+    if (Number.isFinite(n)) totals[id] = (totals[id] ?? 0) + n
+  return totals
 }
 
 export const getContractTraders = async (

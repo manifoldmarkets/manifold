@@ -30,6 +30,9 @@ export const adminSportsCreateOddsMarkets: APIHandler<
     dryRun,
     eventIds,
     switches,
+    // One quick retry on a throttle or an outage: an admin is waiting on the
+    // click, so a fast answer beats the scheduler's minute-long schedule.
+    retryDelaysMs: [2_000],
   })
   return {
     created: r.created,

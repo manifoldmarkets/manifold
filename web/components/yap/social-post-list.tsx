@@ -34,7 +34,7 @@ export function SocialPostList({
   }, [parentId, user?.id])
   const load = useCallback(
     async (cursor?: string) => {
-      if (!user || pending.current) return
+      if (user === undefined || pending.current) return
       const current = generation.current
       pending.current = true
       setLoading(true)
@@ -62,7 +62,8 @@ export function SocialPostList({
               boundary &&
               last &&
               last.id !== boundary.id &&
-              last.createdTimeMs >= boundary.createdTimeMs
+              (last.feedTimeMs ?? last.createdTimeMs) >=
+                (boundary.feedTimeMs ?? boundary.createdTimeMs)
             )
           }
           while (next.nextCursor && needsMore()) {
@@ -140,7 +141,7 @@ export function SocialPostList({
           continueThread={depth > 0 && index < page.posts.length - 1}
         />
       ))}
-      {!loading && !error && !page.posts.length && (
+      {!loading && !error && !page.posts.length && !page.nextCursor && (
         <div className="text-ink-500 px-5 py-10 text-center">
           {parentId
             ? 'No replies yet. Start the conversation.'

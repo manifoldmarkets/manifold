@@ -5,10 +5,14 @@
 
 import { sortBy, sumBy } from 'lodash'
 
+import { getAnswerProbability } from 'common/calculate'
+import { Contract, isMultiCpmm } from 'common/contract'
+import { shownPercent } from 'web/components/usa-map/election-display'
 import { ELECTORAL_UNITS, EV_TO_WIN, RatingBucket, ratingOf } from './ec-model'
 import { placeIn, placeName, TERRITORIES } from './official-markets'
 import { PrimaryCell, PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
+import { rankedAnswers } from './settlement'
 
 export type MapMode = 'president' | 'senate' | 'governor' | 'house' | 'primary'
 export type PrimaryOffice = 'P' | 'S' | 'G'
@@ -463,14 +467,121 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
   }
 }
 
-// The electoral units most likely to decide 2028, for the map's outlines and
-// the tracker's chips: up to `limit`, each a tipping point in at least
-// `floor` of simulations.
+export type TipChance = { key: string; p: number }
+
+// The tipping-point market's odds by state (postal code), likeliest first:
+// its live prices, or once it resolves, what it paid each state as every
+// result on the page reads it (settlement.ts). Other, an
+// answer that isn't the whole name of one state, and a cancelled market give
+// nothing; so does a market whose answers don't sum to one, since its
+// prices aren't shares of one outcome. The market resolves a Maine or
+// Nebraska district that tips it to its state, so every key is a state (or
+// DC).
+export function marketTippingPoints(
+  contract: Contract | null | undefined
+): TipChance[] {
+  if (!contract || !isMultiCpmm(contract)) return []
+  if (!contract.shouldAnswersSumToOne) return []
+  if (contract.isResolved && contract.resolution === 'CANCEL') return []
+  const ranked = rankedAnswers(
+    contract,
+    (id) => getAnswerProbability(contract, id),
+    contract.answers.length
+  )
+  const byState = new Map<string, number>()
+  for (const { answer, p } of ranked) {
+    if (answer.isOther) continue
+    const key = tippingStateOf(answer.text)
+    if (!key || !Number.isFinite(p)) continue
+    byState.set(key, (byState.get(key) ?? 0) + p)
+  }
+  return sortBy(
+    [...byState].map(([key, p]) => ({ key, p: Math.min(1, Math.max(0, p)) })),
+    (t) => -t.p
+  )
+}
+
+// The state a resolved tipping-point market went to in full: every answer
+// it paid anything names that one state (Nebraska and its districts count
+// as Nebraska). Undefined while it trades, when cancelled, and when any
+// payout went to Other, to an answer that names no state, or to a second
+// state, however small. Decided by which answers were paid, not by adding
+// their shares, so rounding can't make or unmake a winner.
+export function tippingWinnerOf(
+  contract: Contract | null | undefined
+): string | undefined {
+  if (!contract || !isMultiCpmm(contract) || !contract.isResolved)
+    return undefined
+  const { resolution, resolutions } = contract
+  if (!resolution || resolution === 'CANCEL') return undefined
+  const split = resolution === 'CHOOSE_MULTIPLE' || resolution === 'MKT'
+  // Every answer id the market paid: from the payouts themselves, so a paid
+  // answer missing from this copy of the market can't be skipped.
+  const paidIds = split
+    ? Object.keys(resolutions ?? {}).filter((id) => {
+        const w = resolutions?.[id]
+        return w !== undefined && Number.isFinite(w) && w > 0
+      })
+    : [resolution]
+  const byId = new Map(contract.answers.map((a) => [a.id, a]))
+  const paid = paidIds.map((id) => byId.get(id))
+  if (paid.length === 0 || paid.some((a) => !a || a.isOther)) return undefined
+  const states = new Set(paid.map((a) => (a ? tippingStateOf(a.text) : '')))
+  if (states.size !== 1) return undefined
+  return [...states][0]
+}
+
+// Lowercase, without the periods, commas and apostrophes names are written
+// with ("Washington, D.C.", "Maine's 2nd District").
+const labelOf = (text: string) =>
+  text
+    .toLowerCase()
+    .replace(/[.,'’]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+// Every whole label that names a state: its name, its postal code, a
+// district's name or key (to its state), and DC's other names.
+const STATE_BY_LABEL = new Map<string, string>([
+  ...ELECTORAL_UNITS.flatMap((u): [string, string][] => [
+    [labelOf(u.name), u.state],
+    [labelOf(u.key), u.state],
+  ]),
+  ['washington dc', 'DC'],
+  ['washington d c', 'DC'],
+])
+
+// "Nebraska 2nd", "NE2", "Maine's 2nd congressional district".
+const DISTRICT_LABEL =
+  /^(maine|nebraska|me|ne)s?[ -]?(\d)(?:st|nd|rd|th)?(?: congressional)?(?: district)?$/
+
+const UNIT_KEYS = new Set(ELECTORAL_UNITS.map((u) => u.key))
+
+// The state an answer names, only when the answer is that name and nothing
+// else, so "Other (e.g. Iowa)" or a sentence naming a state reads as none.
+// A district counts only if it exists ("NE-9" is none).
+function tippingStateOf(text: string): string | undefined {
+  const label = labelOf(text)
+  const state = STATE_BY_LABEL.get(label)
+  if (state) return state
+  const [, name, n] = DISTRICT_LABEL.exec(label) ?? []
+  if (!name) return undefined
+  const st = name.startsWith('m') ? 'ME' : 'NE'
+  return UNIT_KEYS.has(`${st}-${n}`) ? st : undefined
+}
+
+// Where the map draws a tipping point: every state showing at least this
+// chance, however many that is. As the market settles on one state, the
+// rest drop below it and lose their outline.
+export const TIP_HIGHLIGHT_PERCENT = 5
+
+// The states the map outlines and lists as chips: each showing
+// TIP_HIGHLIGHT_PERCENT or more (as rounded for display, so a "5%" chip is
+// always outlined), likeliest first.
 export const tippingPlaces = (
-  tips: { key: string; p: number }[],
-  limit = 5,
-  floor = 0.03
-) => tips.filter((t) => t.p >= floor).slice(0, limit)
+  tips: TipChance[],
+  percent = TIP_HIGHLIGHT_PERCENT
+) => tips.filter((t) => shownPercent(t.p) >= percent)
 
 // ---------------------------------------------------------------------------
 // A place's card

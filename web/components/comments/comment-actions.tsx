@@ -75,7 +75,7 @@ export function CommentActions(props: {
           buttonClassName={'mr-1 min-w-[60px]'}
         />
       )}
-      {user && (
+      {user && !comment.isModComment && (
         <IconButton
           size={'xs'}
           aria-label="Post comment to Yap"

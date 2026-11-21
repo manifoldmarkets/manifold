@@ -19,6 +19,12 @@ import {
 } from 'common/shop/items'
 import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 import {
+  applyShopDiscount,
+  getActiveHolidaySale,
+  getShopDiscount,
+  HOLIDAY_SALE_CHARGE_GRACE_MS,
+} from 'common/holiday-sale'
+import {
   SUPPORTER_ENTITLEMENT_IDS,
   getBenefit,
   getMaxStreakFreezes,
@@ -308,12 +314,23 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       currentEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
     }
 
-    // Get discount from supporter benefits (0 for non-supporters)
-    const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
-    const basePrice =
-      shopDiscount > 0
-        ? Math.floor(item.price * (1 - shopDiscount))
-        : item.price
+    // Discount: the supporter benefit (0 for non-supporters), or a Black
+    // Friday / Cyber Monday sale's if bigger; they don't stack. Memberships
+    // get neither: tier changes credit unused time at the full tier price.
+    // The grace keeps a buy button opened just before a sale ended (or a fast
+    // device clock just before it started) at the price it showed.
+    const supporterDiscount = getBenefit(
+      currentEntitlements,
+      'shopDiscount',
+      0
+    )
+    const { fraction: shopDiscount, sale } = getShopDiscount(
+      supporterDiscount,
+      isSupporterTierPurchase
+        ? undefined
+        : getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+    )
+    const basePrice = applyShopDiscount(item.price, shopDiscount)
 
     // Apply upgrade credit (for supporter tier upgrades)
     const price = Math.max(0, basePrice - upgradeCredit)
@@ -329,7 +346,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       const discountPercent = Math.round(shopDiscount * 100)
       const descriptionParts = [`Purchased ${item.name}`]
       if (discountPercent > 0) {
-        descriptionParts.push(`(${discountPercent}% supporter discount)`)
+        descriptionParts.push(
+          `(${discountPercent}% ${sale ? sale.name : 'supporter'} discount)`
+        )
       }
       if (upgradeCredit > 0) {
         descriptionParts.push(`(M$${upgradeCredit} credit from previous tier)`)
@@ -357,7 +376,14 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             amount: price,
             token: 'M$',
             description: descriptionParts.join(' '),
-            data: { itemId, supporterDiscount: shopDiscount },
+            data: {
+              itemId,
+              // The discount actually applied, under the key it was named for.
+              supporterDiscount: sale ? 0 : shopDiscount,
+              ...(sale
+                ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
+                : {}),
+            },
           }
 
       const txn = await runTxnOutsideBetQueue(tx, txnData)

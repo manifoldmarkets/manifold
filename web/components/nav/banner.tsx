@@ -8,6 +8,12 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import Link from 'next/link'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import { useUser } from 'web/hooks/use-user'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
+import {
+  formatDiscountPercent,
+  HolidaySale,
+  HolidaySaleKind,
+} from 'common/holiday-sale'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -15,8 +21,17 @@ export function Banner(props: {
   children: React.ReactNode
   link?: string
   target?: '_blank' | '_self'
+  // For banners on a dark background, where the default icon colour is lost.
+  dismissIconClassName?: string
 }) {
-  const { setShowBanner, className, children, link, target = '_blank' } = props
+  const {
+    setShowBanner,
+    className,
+    children,
+    link,
+    target = '_blank',
+    dismissIconClassName = 'text-ink-700',
+  } = props
   return (
     <Row
       className={clsx(
@@ -46,7 +61,7 @@ export function Banner(props: {
             setShowBanner(false)
           }}
         >
-          <XIcon className="text-ink-700 h-5 w-5" />
+          <XIcon className={clsx(dismissIconClassName, 'h-5 w-5')} />
         </IconButton>
       )}
     </Row>
@@ -269,26 +284,71 @@ export const ManaForeverBanner = () => {
   )
 }
 
-export const CyberMondayBanner = () => {
-  const [showBanner, hideBanner] = useBanner('cyber-monday-2025')
+// Last year's Black Friday and Cyber Monday banner looks, picked by date from
+// common/holiday-sale.ts, so nobody has to deploy at midnight to swap them.
+const HOLIDAY_SALE_BANNER_STYLES: Record<
+  HolidaySaleKind,
+  { background: string; accent: string; chip: string; emoji: string }
+> = {
+  'black-friday': {
+    background: 'bg-gradient-to-r from-gray-900 to-black',
+    accent: 'text-amber-400',
+    chip: 'bg-amber-400',
+    emoji: '🛍️',
+  },
+  'cyber-monday': {
+    background: 'bg-gradient-to-r from-blue-950 via-indigo-900 to-violet-950',
+    accent: 'text-cyan-400',
+    chip: 'bg-cyan-400',
+    emoji: '💻',
+  },
+}
+
+export const HolidaySaleBanner = () => {
+  const sale = useActiveHolidaySale()
+  if (!sale) return null
+  return <HolidaySaleBannerContent key={sale.id} sale={sale} />
+}
+
+const HolidaySaleBannerContent = (props: { sale: HolidaySale }) => {
+  const { sale } = props
+  const [showBanner, hideBanner] = useBanner(sale.id)
   if (!showBanner) return null
+  const style = HOLIDAY_SALE_BANNER_STYLES[sale.kind]
   return (
     <Banner
-      className="items-center bg-gradient-to-r from-blue-950 via-indigo-900 to-violet-950 py-3 transition-colors"
-      link="/add-funds"
+      className={clsx(style.background, 'items-center py-3 transition-colors')}
+      link="/checkout"
       target="_self"
       setShowBanner={hideBanner}
+      dismissIconClassName="text-white/70 hover:text-white"
     >
       <Row className="items-center gap-2">
-        <span className="text-lg">💻</span>
+        <span className="text-lg">{style.emoji}</span>
         <div className="font-medium text-white">
-          <span className="font-bold text-cyan-400">Cyber Monday:</span> 25% off
-          mana using code{' '}
-          <span className="rounded bg-cyan-400 px-2 py-0.5 font-mono font-bold text-gray-900">
-            CYBMON
-          </span>
+          <span className={clsx('font-bold', style.accent)}>{sale.name}:</span>{' '}
+          {sale.manaDiscount === sale.shopDiscount ? (
+            <>
+              <span
+                className={clsx(
+                  style.chip,
+                  'rounded px-2 py-0.5 font-bold text-gray-900'
+                )}
+              >
+                {formatDiscountPercent(sale.manaDiscount)} off
+              </span>{' '}
+              mana and the shop
+            </>
+          ) : (
+            <>
+              {formatDiscountPercent(sale.manaDiscount)} off mana,{' '}
+              {formatDiscountPercent(sale.shopDiscount)} off the shop
+            </>
+          )}
         </div>
-        <ArrowRightIcon className="ml-1 h-4 w-4 text-cyan-400" />
+        <ArrowRightIcon
+          className={clsx('ml-1 h-4 w-4 shrink-0', style.accent)}
+        />
       </Row>
     </Banner>
   )

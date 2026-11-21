@@ -15,6 +15,9 @@ import { useEffect, useRef, useState } from 'react'
 import { usePersonalizedManaOffers } from 'web/hooks/use-personalized-mana-offers'
 import { PersonalizedOfferCard } from 'web/components/checkout/personalized-offer-card'
 import { HiddenOfferChip } from 'web/components/checkout/hidden-offer-chip'
+import { HolidaySaleNote } from 'web/components/checkout/holiday-sale-note'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
+import { getActiveHolidaySale } from 'common/holiday-sale'
 import { checkoutURL } from 'web/lib/service/stripe'
 import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -216,16 +219,26 @@ function CheckoutContent() {
   const overrideShowOffer =
     router.query.showOffer === '1' && offers.dismissedCount > 0
 
+  // During a Black Friday / Cyber Monday sale every card pack is cheaper than
+  // the personalized offer, so /checkout shows the standard buy screen and
+  // leaves offers alone until the sale ends.
+  const holidaySale = useActiveHolidaySale()
+
   const activatedRef = useRef(false)
   useEffect(() => {
     if (!user?.id || activatedRef.current) return
+    // Don't start an offer's clock during a holiday sale: the offer card is
+    // hidden then, so it would run out unseen. The clock is read directly
+    // because the hook is still unset on first paint; re-runs when the sale
+    // ends, so an open tab picks the offer up then.
+    if (holidaySale || getActiveHolidaySale(Date.now())) return
     if (offers.pendingCount > 0) {
       activatedRef.current = true
       api('activate-personalized-mana-offers', {})
         .then(() => offers.refresh())
         .catch((e) => console.error('Offer activation failed:', e))
     }
-  }, [user?.id, offers.pendingCount])
+  }, [user?.id, offers.pendingCount, holidaySale?.id])
 
   // Two ways the card can be visible: (1) the user has non-dismissed active
   // offers, (2) override path from the notification when they only have
@@ -359,10 +372,18 @@ function CheckoutContent() {
   // renders nothing, leaving the page blank.
   const offerRemaining =
     effectiveNextExpiresAt != null ? effectiveNextExpiresAt - now : 0
+  // Holiday sale: show the standard buy screen instead of the offer card
+  // (unless a payment for the offer is already in flight). The offer itself
+  // is untouched and shows again after the sale if it hasn't expired.
   const showOfferCard =
-    effectiveActiveCount > 0 && (offerRemaining > 0 || cryptoLoading)
+    effectiveActiveCount > 0 &&
+    (offerRemaining > 0 || cryptoLoading) &&
+    (!holidaySale || cryptoLoading)
   const showHiddenChip =
-    !showOfferCard && offers.dismissedCount > 0 && offers.activeCount === 0
+    !holidaySale &&
+    !showOfferCard &&
+    offers.dismissedCount > 0 &&
+    offers.activeCount === 0
 
   return (
     <Col className="mx-auto w-full max-w-xl gap-4 px-4 py-6 sm:py-8">
@@ -473,6 +494,8 @@ function CheckoutContent() {
                 still renders below. */}
             {!showOfferCard && (
               <>
+                <HolidaySaleNote />
+
                 {/* Mana Image */}
                 <div className="flex justify-center">
                   <Image
@@ -666,6 +689,7 @@ function CheckoutContent() {
           <h2 className="text-primary-700 text-xl font-semibold sm:text-2xl">
             Buy mana with credit card
           </h2>
+          <HolidaySaleNote />
           <CreditCardPurchaseGrid />
         </Col>
       </Modal>

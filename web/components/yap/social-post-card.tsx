@@ -20,6 +20,7 @@ import {
   SocialPost,
   SocialLikerPage,
   socialPostPath,
+  socialPostMarkets,
   SOCIAL_POST_MAX_MARKETS,
   isSocialPostEditable,
 } from 'common/social-post'
@@ -27,7 +28,7 @@ import { api } from 'web/lib/api/api'
 import { socialRichContentToText } from 'common/social-rich-content'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
-import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { SocialAvatar } from './social-avatar'
 import { SocialUserLink } from './social-user-link'
 import { RelativeTimestamp } from '../relative-timestamp'
@@ -78,6 +79,7 @@ function SocialPostCardContent({
   const router = useRouter()
   const user = useUser()
   const mod = useAdminOrMod()
+  const admin = useAdmin()
   const replyDraft = useReplyDraftContext()?.drafts[post.id]
   const [replying, setReplying] = useState(
     () =>
@@ -92,6 +94,7 @@ function SocialPostCardContent({
   const [reposting, setReposting] = useState(false)
   const [editing, setEditing] = useState<SocialPost>()
   const [loadingEdit, setLoadingEdit] = useState(false)
+  const [editOnMarket, setEditOnMarket] = useState<string>()
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -130,23 +133,58 @@ function SocialPostCardContent({
       setBusy(false)
     }
   }
+  const [localVersion, setLocalVersion] = useState(0)
+  const refresh = () => {
+    setLocalVersion((v) => v + 1)
+    onChanged()
+  }
   const changed = () => {
     setEditing(undefined)
     setReplying(false)
-    onChanged()
+    refresh()
   }
-  const own = user?.id === post.author.id
-  const canEdit = useSocialEditWindow(own ? post.createdTimeMs : undefined)
+  const isSourceCard = !!post.canonicalKey?.match(/^(market|bet):/)
+  const markets = socialPostMarkets(post)
+  const own = user?.id === post.author.id && !isSourceCard
+  const withinEditWindow = useSocialEditWindow(
+    own ? post.createdTimeMs : undefined
+  )
+  const canEdit = post.marketCommentId ? own || admin : own && withinEditWindow
+  async function reYap(remove = false) {
+    if (!user) {
+      await firebaseLogin()
+      return
+    }
+    if (busy) return
+    setBusy(true)
+    setError(undefined)
+    try {
+      await api('repost-social-post', { source: { postId: post.id }, remove })
+      onChanged()
+    } catch (e) {
+      setError((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
   async function beginEdit() {
-    if (loadingEdit || !isSocialPostEditable(post.createdTimeMs)) return
+    if (loadingEdit || !canEdit) return
     setLoadingEdit(true)
+    setEditOnMarket(undefined)
     setError(undefined)
     try {
       // Feed content is redacted for display. Fetch the author's editable
       // document so an unrelated edit cannot replace mentions with placeholders.
       const result = await api('get-social-post', { id: post.id })
-      if (!isSocialPostEditable(result.post.createdTimeMs))
+      if (
+        !result.post.marketCommentId &&
+        !isSocialPostEditable(result.post.createdTimeMs)
+      )
         throw new Error('The 30-minute editing window has ended.')
+      if (result.editOnMarket) {
+        setEditOnMarket(result.editOnMarket)
+        return
+      }
       if (result.post.removed || result.editContent === undefined)
         throw new Error(
           'This post is not available to edit. Please refresh and try again.'
@@ -192,6 +230,20 @@ function SocialPostCardContent({
       }
       aria-label={`Post by ${post.author.name}`}
     >
+      {!!post.repostCount && !!post.repostedBy?.length && (
+        <div className="text-ink-500 flex items-center gap-2 px-4 pt-3 text-xs">
+          <BiRepost className="h-4 w-4" />
+          <span>
+            {post.repostedBy[0].name}
+            {post.repostCount > 1
+              ? ` and ${post.repostCount - 1} other${
+                  post.repostCount === 2 ? '' : 's'
+                }`
+              : ''}{' '}
+            re-yapped
+          </span>
+        </div>
+      )}
       <div
         className="hover:bg-canvas-50/50 grid cursor-pointer grid-cols-[2rem_minmax(0,1fr)] gap-x-3 px-4 py-3 transition-colors"
         role="link"
@@ -266,6 +318,24 @@ function SocialPostCardContent({
                 <DropdownMenu
                   closeOnClick
                   items={[
+                    {
+                      name: post.threadMuted
+                        ? 'Unmute discussion'
+                        : post.threadFollowing
+                        ? 'Mute discussion'
+                        : 'Follow discussion',
+                      onClick: async () => {
+                        try {
+                          await api('set-social-thread-subscription', {
+                            id: post.id,
+                            muted: !!post.threadFollowing,
+                          })
+                          onChanged()
+                        } catch (e) {
+                          setError((e as Error).message)
+                        }
+                      },
+                    },
                     ...(canEdit ? [{ name: 'Edit', onClick: beginEdit }] : []),
                     ...(own || mod
                       ? [
@@ -344,8 +414,8 @@ function SocialPostCardContent({
               )}
               <SocialLinkPreview text={post.text} />
               {post.source && <SocialQuoteCard quote={post.source} />}
-              <div className={post.markets.length ? 'mt-3 space-y-2' : ''}>
-                {post.markets
+              <div className={markets.length ? 'mt-3 space-y-2' : ''}>
+                {markets
                   .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
                   .map((market) => (
                     <Link
@@ -387,14 +457,14 @@ function SocialPostCardContent({
                     </Link>
                   ))}
               </div>
-              {post.markets.length > 3 && (
+              {markets.length > 3 && (
                 <button
                   className="text-primary-700 mt-2 text-sm"
                   onClick={() => setAllMarkets(!allMarkets)}
                 >
                   {allMarkets
                     ? 'Show fewer markets'
-                    : `Show all ${post.markets.length} markets`}
+                    : `Show all ${markets.length} markets`}
                 </button>
               )}
               {post.unavailableMarketCount > 0 && (
@@ -420,14 +490,40 @@ function SocialPostCardContent({
                     {replyCountButton}
                   </div>
                 )}
-                <button
-                  aria-label="Repost to Yap"
-                  title="Repost to Yap"
-                  className="hover:text-primary-700 hover:bg-primary-500/10 rounded-full p-2 transition-colors"
-                  onClick={() => setReposting(true)}
-                >
-                  <BiRepost className="h-5 w-5" />
-                </button>
+                <div className={post.reposted ? 'text-teal-600' : ''}>
+                  <DropdownMenu
+                    closeOnClick
+                    buttonContent={
+                      <span
+                        className="flex items-center gap-1 p-2"
+                        aria-label={
+                          post.reposted
+                            ? 'Re-yapped: share options'
+                            : 'Re-Yap or quote'
+                        }
+                      >
+                        <BiRepost className="h-5 w-5" />
+                        {!!post.repostCount && (
+                          <span className="text-xs">{post.repostCount}</span>
+                        )}
+                      </span>
+                    }
+                    items={
+                      busy
+                        ? []
+                        : [
+                            {
+                              name: post.reposted ? 'Undo re-Yap' : 'Re-Yap',
+                              onClick: () => void reYap(!!post.reposted),
+                            },
+                            {
+                              name: 'Quote',
+                              onClick: () => setReposting(true),
+                            },
+                          ]
+                    }
+                  />
+                </div>
                 <Tooltip
                   text={
                     likeCount > 0 ? (
@@ -473,6 +569,14 @@ function SocialPostCardContent({
               </div>
             </>
           )}
+          {editOnMarket && (
+            <p className="mt-2 text-sm">
+              This comment uses formatting Yap can’t edit.{' '}
+              <Link className="text-primary-700 underline" href={editOnMarket}>
+                Edit on the market
+              </Link>
+            </p>
+          )}
           {error && (
             <p role="alert" className="mt-2 text-sm text-red-600">
               {error}
@@ -483,6 +587,7 @@ function SocialPostCardContent({
       {replying && !post.removed && (
         <SocialComposer
           parentId={post.id}
+          parentPost={post}
           onPosted={changed}
           onCancel={() => setReplying(false)}
           focusOnMount
@@ -493,8 +598,8 @@ function SocialPostCardContent({
           <SocialPostList
             parentId={post.id}
             depth={depth + 1}
-            refreshKey={refreshKey}
-            onChanged={onChanged}
+            refreshKey={refreshKey + localVersion}
+            onChanged={refresh}
           />
         </div>
       ) : (
@@ -504,10 +609,10 @@ function SocialPostCardContent({
               <SocialPostCard
                 key={reply.id}
                 post={reply}
-                onChanged={onChanged}
+                onChanged={refresh}
                 previews={false}
                 depth={depth + 1}
-                refreshKey={refreshKey}
+                refreshKey={refreshKey + localVersion}
                 connectedAbove
                 continueThread={index < post.replyPreviews.length - 1}
               />
@@ -526,9 +631,10 @@ function SocialPostCardContent({
       {reposting && (
         <RepostModal
           post={post}
+          quoteMode
           open={reposting}
           setOpen={setReposting}
-          onPosted={onChanged}
+          onPosted={refresh}
         />
       )}
       <ReportModal
@@ -550,6 +656,10 @@ function SocialPostCardContent({
             {own ? 'Delete this post?' : 'Remove this post?'}
           </h2>
           <p className="text-ink-500 my-3 text-sm">
+            {post.marketCommentId &&
+              (own
+                ? 'Your comment stays on its market. '
+                : 'This also removes the same comment from the market. ')}
             Existing replies remain visible. Removing a top-level post closes
             the discussion to new replies.
           </p>

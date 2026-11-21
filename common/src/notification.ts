@@ -86,6 +86,7 @@ export type notification_source_types =
   | 'social_reply'
   | 'social_mention'
   | 'social_post_like'
+  | 'social_repost'
   | 'post_like'
   | 'post_comment_like'
   | love_notification_source_types
@@ -307,8 +308,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
       'Opt out of all notifications excluding your own question closure notifications',
   },
   user_liked_your_content: {
-    simple: 'A user liked your content',
-    detailed: 'A user liked your comment, market, or other content',
+    simple: 'Likes and re-Yaps',
+    detailed: 'A user liked your content or re-yapped a post',
   },
   bounty_awarded: {
     simple: 'Bounties you receive',
@@ -644,6 +645,7 @@ export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
   'social_post_like',
+  'social_repost',
   'post_like',
   'post_comment_like',
 ]
@@ -670,7 +672,7 @@ export const DELETE_PUSH_TOKEN = 'delete'
 
 export function combineReactionNotifications(notifications: Notification[]) {
   const groupedNotificationsBySourceType = groupBy(notifications, (n) => {
-    if (n.sourceType === 'social_post_like')
+    if (n.sourceType === 'social_post_like' || n.sourceType === 'social_repost')
       return `${n.sourceType}-${n.sourceId}`
     const title = n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
     return `${n.sourceType}-${title}-${n.sourceText}`

@@ -295,3 +295,28 @@ export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
     return f(props, auth, req)
   }
 }
+
+// The same ban check for a handler that performs the action only sometimes,
+// such as a Yap removal that also deletes a market comment.
+export const throwIfBannedFromAction = async (
+  pg: SupabaseDirectClient,
+  userId: string,
+  action: string
+) => {
+  const activeBans = await pg.manyOrNone<UserBan>(
+    `select * from user_bans where user_id = $1 and ended_at is null and (end_time is null or end_time > now())`,
+    [userId]
+  )
+  for (const banType of getBanTypesForAction(action)) {
+    if (isUserBanned(activeBans, banType)) {
+      const message = getUserBanMessage(activeBans, banType)
+      const displayName = getActionDisplayName(action)
+      throw new APIError(
+        403,
+        message
+          ? `You are banned from ${displayName}. Reason: ${message}`
+          : `You are banned from ${displayName}`
+      )
+    }
+  }
+}
