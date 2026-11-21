@@ -42,9 +42,11 @@ import {
 import {
   buildF1MarketParams,
   buildF1TitleMarketParams,
+  F1_ATTENTION_AFTER_MS,
   F1_CANCEL_CONFIRM_HOURS,
   F1_DAYS_AHEAD,
   F1_MARKETS_BY_SESSION,
+  F1_POSTPONED_ATTENTION_MS,
   F1_RESOLVE_DELAY_HOURS,
   F1_SEASON_END_TOLERANCE_DAYS,
   F1_TITLE_KINDS,
@@ -752,18 +754,6 @@ export async function createF1MarketsForActiveCalendar(
 const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
 
 /**
- * An unresolved market this long after it was due to pay out needs a person.
- * The provider posts results about ten minutes after a session, so a market
- * still waiting by then has a feed problem, and in late 2026 those lasted
- * days.
- */
-const ATTENTION_AFTER_MS = 2 * HOUR_MS
-/**
- * A postponed session waits this long past its old time for a new date or
- * a cancellation before its market needs a person.
- */
-const POSTPONED_ATTENTION_MS = 14 * DAY_MS
-/**
  * The resolver and the sync read every unresolved session market, however
  * old, so a session postponed for months is still followed and paid; one
  * waiting for a person stays in view until it's resolved. F1 makes a few a
@@ -965,7 +955,7 @@ const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
  * the rest). Anything else waits. What only a person can settle, a
  * classification that doesn't check out, an answer already resolved the
  * other way, or a session still not final or without results
- * ATTENTION_AFTER_MS after it was due (POSTPONED_ATTENTION_MS for a
+ * F1_ATTENTION_AFTER_MS after it was due (F1_POSTPONED_ATTENTION_MS for a
  * postponed one), is logged as an error once per market for the life of
  * `alerted`, and never guessed.
  */
@@ -1021,7 +1011,7 @@ export async function resolveF1Markets(
     const wait = (
       reason: string,
       dueAt: number,
-      after = ATTENTION_AFTER_MS
+      after = F1_ATTENTION_AFTER_MS
     ) => {
       const overdue = now - dueAt
       if (overdue < after) add(contract, 'waiting', reason)
@@ -1081,8 +1071,8 @@ export async function resolveF1Markets(
           `the session is ${session.status_state}`,
           settleAt,
           session.status_state === 'postponed'
-            ? POSTPONED_ATTENTION_MS
-            : ATTENTION_AFTER_MS
+            ? F1_POSTPONED_ATTENTION_MS
+            : F1_ATTENTION_AFTER_MS
         )
         continue
       }
@@ -1372,7 +1362,7 @@ const MAX_TITLE_MARKETS = 20
  * person can settle, standings that don't add up or check out, a missing
  * weekend, a champion the
  * field doesn't list, an answer already resolved against them, or a season
- * still not over ATTENTION_AFTER_MS after the market was due, is logged as
+ * still not over F1_ATTENTION_AFTER_MS after the market was due, is logged as
  * an error once per market for the life of `alerted`, and never guessed.
  */
 export async function resolveF1TitleMarkets(
@@ -1405,7 +1395,7 @@ export async function resolveF1TitleMarkets(
     // Waiting turns into a person's job once the market is long overdue.
     const wait = (reason: string) => {
       const overdueFor = now - ((contract.closeTime ?? now) + delayMs)
-      if (overdueFor < ATTENTION_AFTER_MS) add(contract, 'waiting', reason)
+      if (overdueFor < F1_ATTENTION_AFTER_MS) add(contract, 'waiting', reason)
       else
         attention(
           contract,
