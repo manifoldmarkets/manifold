@@ -79,5 +79,8 @@ it('serializes a switch change and rechecks conflicting providers after opt-in',
     .mockResolvedValue({ [legacy.competitionId + ':' + legacy.phase]: true })
   await expect(set(bdl, auth)).rejects.toMatchObject({ code: 400 })
   expect(tx.one).toHaveBeenCalledTimes(1)
+  expect(tx.one).toHaveBeenCalledWith(
+    "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+  )
   expect(setCompetitionSwitch).not.toHaveBeenCalled()
 })

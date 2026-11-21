@@ -16,7 +16,7 @@ export const MAJOR_WAVES: Record<MajorLeague, number> = {
 export interface MajorSettings {
   league: MajorLeague
   baseAnte: number
-  cutoverDate: string
+  startsOn: string
   groupSlugs: string[]
   waveLeagueKeys: MajorLeague[]
   limits: {
@@ -30,7 +30,7 @@ export type MajorSettingRow = {
   scope: string
   cap: number
   baseAnte: number | null
-  cutoverDate: string | null
+  startsOn: string | null
   groupSlugs: string[] | null
 }
 

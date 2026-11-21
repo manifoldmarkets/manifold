@@ -1,8 +1,12 @@
 import { useState } from 'react'
+import { groupBy } from 'lodash'
+import {
+  SPORTS_DATA_PROVIDERS,
+  SPORTS_DATA_PROVIDER_LABELS,
+} from 'common/sports-provider'
 import {
   BDL_LEAGUES,
   BDL_LEAGUE_KEYS,
-  BdlLeagueKey,
   isBdlLeagueKey,
 } from 'common/bdl/leagues'
 import {
@@ -24,41 +28,45 @@ const timestamp = (value: string | null | undefined) =>
     : 'Unknown'
 
 export function AdminBdlPolling({ leagues, pending, save }: Props) {
-  const [key, setKey] = useState<BdlLeagueKey>('nba')
+  const [key, setKey] = useState('nba')
   const { data, error, refresh, loading } = useAPIGetter(
     'admin-sports-bdl-competitions',
     {}
   )
   const summary = data?.leagues?.find((row) => row.league === key)
   const setting = leagues?.find((row) => row.leagueKey === key)
-  const target = pollingTarget.league(key)
-  const busy = target in pending
+  const target = setting && pollingTarget.league(setting.leagueKey)
+  const busy = target !== undefined && target in pending
   const value = busy ? pending[target] ?? 0 : setting?.intervalSeconds ?? 0
+  const keys = data?.leagues?.map((row) => row.league) ?? BDL_LEAGUE_KEYS
+  // API versions predating provider-neutral telemetry returned BDL rows only.
+  const requestsByProvider = groupBy(
+    summary?.requests,
+    (row) => row.provider ?? 'bdl'
+  )
   return (
     <section
-      aria-label="BALLDONTLIE operations"
+      aria-label="Sports provider operations"
       className="@container border-ink-200 min-w-0 space-y-3 rounded-lg border p-3 text-sm"
     >
-      <h3 className="text-ink-900 font-semibold">BALLDONTLIE operations</h3>
+      <h3 className="text-ink-900 font-semibold">Sports provider operations</h3>
       <div className="flex flex-wrap items-end gap-3">
         <label className="text-ink-700 grid min-w-0 gap-1">
-          BDL league
+          League
           <select
             className="bg-canvas-0 border-ink-300 min-h-[40px] max-w-full rounded border px-2"
-            aria-label="BDL league"
+            aria-label="League"
             value={key}
-            onChange={(e) => {
-              if (isBdlLeagueKey(e.target.value)) setKey(e.target.value)
-            }}
+            onChange={(e) => setKey(e.target.value)}
           >
-            {BDL_LEAGUE_KEYS.map((k) => (
+            {keys.map((k) => (
               <option key={k} value={k}>
-                {BDL_LEAGUES[k].label}
+                {isBdlLeagueKey(k) ? BDL_LEAGUES[k].label : k}
               </option>
             ))}
           </select>
         </label>
-        {setting && (
+        {setting && target && (
           <label className="text-ink-700 grid gap-1">
             BDL live score interval
             <select
@@ -80,7 +88,7 @@ export function AdminBdlPolling({ leagues, pending, save }: Props) {
             </select>
           </label>
         )}
-        {setting && !setting.isDefault && (
+        {target && setting && !setting.isDefault && (
           <button
             type="button"
             className="text-primary-700 min-h-[40px] underline"
@@ -95,9 +103,9 @@ export function AdminBdlPolling({ leagues, pending, save }: Props) {
         <p className="text-ink-600 text-xs">
           The default is off. A game override takes precedence over its league.
         </p>
-      ) : (
+      ) : isBdlLeagueKey(key) ? (
         <p className="text-ink-600">BDL polling controls unavailable.</p>
-      )}
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-ink-800 font-medium">League status</h4>
         <button
@@ -176,35 +184,47 @@ export function AdminBdlPolling({ leagues, pending, save }: Props) {
           )}
           <h4 className="text-ink-800 font-medium">HTTP requests</h4>
           {summary.requests?.length ? (
-            <ul className="divide-ink-200 divide-y">
-              {summary.requests.map((row) => (
-                <li
-                  key={row.role + '/' + row.endpoint}
-                  className="text-ink-700 space-y-1 py-2 text-xs"
-                >
-                  <div className="break-all font-semibold">
-                    {row.endpoint} · {row.role}
-                  </div>
-                  <div>
-                    Successful {row.successes ?? 'Unknown'} · HTTP 401{' '}
-                    {row.unauthorized ?? 'Unknown'} · HTTP 429{' '}
-                    {row.throttled ?? 'Unknown'} · Other{' '}
-                    {row.other ?? 'Unknown'}
-                  </div>
-                  <div>
-                    Last request {timestamp(row.lastRequest)} · HTTP{' '}
-                    {row.status ?? 'Unknown'}
-                  </div>
-                  <div>
-                    Last successful HTTP response {timestamp(row.lastSuccess)}
-                  </div>
-                  <div>
-                    Quota remaining {row.remaining ?? 'Unknown'} · Limit{' '}
-                    {row.limit ?? 'Unknown'}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            SPORTS_DATA_PROVIDERS.map((provider) => {
+              const rows = requestsByProvider[provider]
+              if (!rows) return null
+              return (
+                <div key={provider}>
+                  <h5 className="text-ink-800 font-medium">
+                    {SPORTS_DATA_PROVIDER_LABELS[provider]}
+                  </h5>
+                  <ul className="divide-ink-200 divide-y">
+                    {rows.map((row) => (
+                      <li
+                        key={row.role + '/' + row.endpoint}
+                        className="text-ink-700 space-y-1 py-2 text-xs"
+                      >
+                        <div className="break-all font-semibold">
+                          {row.endpoint} · {row.role}
+                        </div>
+                        <div>
+                          Successful {row.successes ?? 'Unknown'} · HTTP 401{' '}
+                          {row.unauthorized ?? 'Unknown'} · HTTP 429{' '}
+                          {row.throttled ?? 'Unknown'} · Other{' '}
+                          {row.other ?? 'Unknown'}
+                        </div>
+                        <div>
+                          Last request {timestamp(row.lastRequest)} · HTTP{' '}
+                          {row.status ?? 'Unknown'}
+                        </div>
+                        <div>
+                          Last successful HTTP response{' '}
+                          {timestamp(row.lastSuccess)}
+                        </div>
+                        <div>
+                          Quota remaining {row.remaining ?? 'Unknown'} · Limit{' '}
+                          {row.limit ?? 'Unknown'}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            })
           ) : (
             <p className="text-ink-600">
               {summary.requests

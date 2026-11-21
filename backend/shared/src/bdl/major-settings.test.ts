@@ -18,12 +18,12 @@ const pg = {
 function seed(setting: MajorSettingRow) {
   return db.query(
     pgp.as.format(
-      "insert into sports_bdl_creation_settings (scope,ante_cap,base_ante,cutover_date,group_slugs,updated_by) values ($1,$2,$3,$4,$5,'test-admin')",
+      "insert into sports_creation_settings (scope,ante_cap,base_ante,starts_on,group_slugs,updated_by) values ($1,$2,$3,$4,$5,'test-admin')",
       [
         setting.scope,
         setting.cap,
         setting.baseAnte,
-        setting.cutoverDate,
+        setting.startsOn,
         setting.groupSlugs,
       ]
     )
@@ -34,14 +34,14 @@ const league: MajorSettingRow = {
   scope: 'mlb',
   cap: 500,
   baseAnte: 100,
-  cutoverDate: '2026-03-01',
+  startsOn: '2026-03-01',
   groupSlugs: ['sports', 'baseball'],
 }
 const shared = (scope: string, cap: number): MajorSettingRow => ({
   scope,
   cap,
   baseAnte: null,
-  cutoverDate: null,
+  startsOn: null,
   groupSlugs: null,
 })
 beforeAll(async () => {
@@ -49,14 +49,12 @@ beforeAll(async () => {
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;
     alter default privileges in schema public grant all on tables to public,anon,authenticated,service_role;
 `)
-  const migration = ddl(
-    'migrations/2026112102_sports_bdl_creation_settings.sql'
-  )
+  const migration = ddl('migrations/2026112102_sports_creation_settings.sql')
   await db.exec(migration)
   await db.exec(migration)
 })
 beforeEach(async () => {
-  await db.exec('truncate sports_bdl_creation_settings')
+  await db.exec('truncate sports_creation_settings')
 })
 afterAll(async () => db.close())
 
@@ -75,7 +73,7 @@ it('keeps missing settings disabled and reads only the selected league, wave and
   expect(initial).toMatchObject({
     league: 'mlb',
     baseAnte: 100,
-    cutoverDate: '2026-03-01',
+    startsOn: '2026-03-01',
     groupSlugs: ['sports', 'baseball'],
     limits: {
       perLeagueDailyAnte: 500,
@@ -95,21 +93,54 @@ it('keeps missing settings disabled and reads only the selected league, wave and
     shared('wave:1', 11),
   ])
   await db.exec(
-    "update sports_bdl_creation_settings set ante_cap=0 where scope='mlb'"
+    "update sports_creation_settings set ante_cap=0 where scope='mlb'"
   )
   expect((await getMajorSettings(pg, 'mlb'))?.limits.perLeagueDailyAnte).toBe(0)
   expect((await getMajorSettings(pg, 'nfl'))?.limits.perLeagueDailyAnte).toBe(
     800
   )
 })
+it('stores other league settings without enabling a major or spending its budget', async () => {
+  const epl = { ...league, scope: 'epl' }
+  const worldCup = { ...league, scope: 'fifa/worldcup' }
+  const future = { ...league, scope: 'X9/other-league_' + 'a'.repeat(48) }
+  expect(future.scope).toHaveLength(64)
+  for (const row of [
+    epl,
+    worldCup,
+    future,
+    shared('wave:1', 500),
+    shared('global', 500),
+  ])
+    await seed(row)
+  expect(await creationSettings(pg, ['epl', 'fifa/worldcup'])).toEqual([
+    epl,
+    worldCup,
+  ])
+  expect((await creationSettings(pg)).map((row) => row.scope)).not.toContain(
+    future.scope
+  )
+  for (const unknown of [future.scope, 'other:scope', 'wave:4', 'toString'])
+    await expect(creationSettings(pg, [unknown])).rejects.toThrow(
+      'Unknown sports creation scope'
+    )
+  expect(await getMajorSettings(pg, 'nba')).toBeNull()
+})
+
 const invalid: [string, MajorSettingRow][] = [
-  ['unsupported scope', { ...league, scope: 'other' }],
+  ['empty scope', { ...league, scope: '' }],
+  ['illegal league separator', { ...league, scope: 'bad:league' }],
+  ['nonalphanumeric first character', { ...league, scope: '-nba' }],
+  ['space in league', { ...league, scope: 'nba us' }],
+  ['non-ASCII league', { ...league, scope: 'ligu\u00e9' }],
+  ['overlong league', { ...league, scope: 'a'.repeat(65) }],
+  ['league settings on global scope', { ...league, scope: 'global' }],
   ['negative league cap', { ...league, cap: -1 }],
   ['negative global cap', shared('global', -1)],
   ['zero ante', { ...league, baseAnte: 0 }],
   ['missing ante', { ...league, baseAnte: null }],
-  ['missing cutover', { ...league, cutoverDate: null }],
-  ['infinite cutover', { ...league, cutoverDate: 'infinity' }],
+  ['missing cutover', { ...league, startsOn: null }],
+  ['infinite cutover', { ...league, startsOn: 'infinity' }],
   ['missing groups', { ...league, groupSlugs: null }],
   ['empty groups', { ...league, groupSlugs: [] }],
   [
@@ -127,7 +158,7 @@ const invalid: [string, MajorSettingRow][] = [
     { ...league, groupSlugs: [['baseball']] as unknown as string[] },
   ],
   ['wave with ante', { ...shared('wave:1', 1), baseAnte: 10 }],
-  ['wave with date', { ...shared('wave:2', 1), cutoverDate: '2026-01-01' }],
+  ['wave with date', { ...shared('wave:2', 1), startsOn: '2026-01-01' }],
   ['global with groups', { ...shared('global', 1), groupSlugs: ['sports'] }],
 ]
 it.each(invalid)('rejects invalid setting: %s', async (_name, setting) => {
@@ -135,7 +166,7 @@ it.each(invalid)('rejects invalid setting: %s', async (_name, setting) => {
   expect(await creationSettings(pg)).toEqual([])
 })
 it('restricts settings to the service role despite permissive Supabase default grants', async () => {
-  const table = 'public.sports_bdl_creation_settings'
+  const table = 'public.sports_creation_settings'
   expect(
     (
       await db.query(
@@ -147,7 +178,7 @@ it('restricts settings to the service role despite permissive Supabase default g
   expect(
     (
       await db.query(
-        "select policyname from pg_policies where tablename='sports_bdl_creation_settings'"
+        "select policyname from pg_policies where tablename='sports_creation_settings'"
       )
     ).rows
   ).toEqual([])
@@ -192,7 +223,7 @@ it('defers incomplete backfilled settings and attaches all independent caps only
       shared('global', 1000),
     ],
     [
-      { ...league, cutoverDate: null },
+      { ...league, startsOn: null },
       shared('wave:3', 2000),
       shared('global', 1000),
     ],
@@ -213,17 +244,17 @@ it('defers incomplete backfilled settings and attaches all independent caps only
 it('requires an audit user, timestamp, and cap and rejects an unknown shared-budget scope', async () => {
   await expect(
     db.query(
-      "insert into sports_bdl_creation_settings (scope,ante_cap) values('global',1)"
+      "insert into sports_creation_settings (scope,ante_cap) values('global',1)"
     )
   ).rejects.toThrow()
   await expect(
     db.query(
-      "insert into sports_bdl_creation_settings (scope,ante_cap,updated_by,updated_at) values('global',1,'admin',null)"
+      "insert into sports_creation_settings (scope,ante_cap,updated_by,updated_at) values('global',1,'admin',null)"
     )
   ).rejects.toThrow()
   await expect(
     db.query(
-      "insert into sports_bdl_creation_settings (scope,updated_by) values('global','admin')"
+      "insert into sports_creation_settings (scope,updated_by) values('global','admin')"
     )
   ).rejects.toThrow()
   await expect(seed(shared('wave:4', 55))).rejects.toThrow()

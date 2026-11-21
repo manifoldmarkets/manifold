@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SportsAttentionPage } from 'common/bdl/attention'
 import type { SportsMarket } from 'common/sports'
+import { SPORTS_DATA_PROVIDER_LABELS } from 'common/sports-provider'
 import { api, APIError } from 'web/lib/api/api'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
@@ -25,10 +26,8 @@ type PageState =
   | { kind: 'unavailable' | 'denied' | 'error' }
 
 const providerLabels = {
-  odds: 'The Odds API',
+  ...SPORTS_DATA_PROVIDER_LABELS,
   unknown: 'Unknown provider',
-  bdl: 'BALLDONTLIE',
-  'football-data': 'football-data.org',
 }
 
 function queueStatus(state: PageState | undefined, page: number) {

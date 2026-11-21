@@ -1,4 +1,8 @@
 import { BDL_LEAGUES, isBdlLeagueKey } from 'common/bdl/leagues'
+import {
+  isSportsDataProvider,
+  type SportsDataProvider,
+} from 'common/sports-provider'
 import { matchBdlEndpoint } from '../balldontlie-request'
 import { log } from '../monitoring/log'
 import type { SupabaseDirectClient } from '../supabase/init'
@@ -38,15 +42,51 @@ export function bdlStatsEndpoint(path: string) {
     .split('/')
     .map((s) => (/^[1-9]\d*$/.test(s) ? '{id}' : s))
     .join('/')
-  const config = BDL_LEAGUES[league]
-  const base = priceResources.has(template)
-    ? config.oddsApiBase
-    : serviceResources.has(template)
-    ? config.apiBase
-    : null
-  if (base === '/' + league + '/' + version)
+  if (isBdlStatsRoute(league, version, template))
     return { league, template: version + '/' + template }
   return undefined
+}
+
+function isBdlStatsRoute(league: string, version: string, resource: string) {
+  if (!isBdlLeagueKey(league)) return false
+  const config = BDL_LEAGUES[league]
+  const base = priceResources.has(resource)
+    ? config.oddsApiBase
+    : serviceResources.has(resource)
+    ? config.apiBase
+    : null
+  return base === '/' + league + '/' + version
+}
+
+type StatsKey = {
+  provider: SportsDataProvider
+  league: string
+  template: string
+}
+type ResponseObservation = Pick<ResponseMetadata, 'status' | 'rateLimit'> & {
+  at: string
+}
+
+/** Each source supplies its own classified template. Never pass raw request parameters. */
+function isStatsKey({ provider, league, template }: StatsKey) {
+  if (
+    !isSportsDataProvider(provider) ||
+    typeof league !== 'string' ||
+    league.length > 64 ||
+    !/^[A-Za-z0-9]/.test(league) ||
+    /[^A-Za-z0-9/_-]/.test(league) ||
+    typeof template !== 'string' ||
+    !template.trim() ||
+    [...template].length > 128 ||
+    /[?\p{Cc}]/u.test(template)
+  )
+    return false
+  if (provider !== 'bdl') return true
+  const slash = template.indexOf('/')
+  return (
+    slash > 0 &&
+    isBdlStatsRoute(league, template.slice(0, slash), template.slice(slash + 1))
+  )
 }
 
 type Issue =
@@ -72,6 +112,21 @@ export async function recordBdlAttempt(
     reportBdlRequestIssue(role, 'unclassified response')
     return
   }
+  return recordSportsProviderResponse(pg, { provider: 'bdl', ...route }, role, {
+    at: attempt.request.at,
+    status: attempt.status,
+    rateLimit: attempt.rateLimit,
+  })
+}
+
+export async function recordSportsProviderResponse(
+  pg: Pick<SupabaseDirectClient, 'none'>,
+  route: StatsKey,
+  role: BdlServiceRole,
+  attempt: ResponseObservation
+) {
+  if (!isStatsKey(route))
+    throw new Error('Invalid sports request statistics key')
   const quota = (value: number | null) =>
     value !== null &&
     Number.isSafeInteger(value) &&
@@ -84,11 +139,11 @@ export async function recordBdlAttempt(
   const unauthorized = Number(status === 401)
   const throttled = Number(status === 429)
   await pg.none(
-    `insert into sports_bdl_request_stats as s
-      (league_key,endpoint_template,process_role,success_count,unauthorized_count,rate_limited_count,other_count,
+    `insert into sports_provider_request_stats as s
+      (provider,league_key,endpoint_template,process_role,success_count,unauthorized_count,rate_limited_count,other_count,
        last_status,last_request_at,last_success_at,quota_limit,quota_remaining)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,case when $4::integer=1 then $9::timestamptz end,$10,$11)
-     on conflict (league_key,endpoint_template,process_role) do update set
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,case when $5::integer=1 then $10::timestamptz end,$11,$12)
+     on conflict (provider,league_key,endpoint_template,process_role) do update set
        success_count=s.success_count+excluded.success_count,
        unauthorized_count=s.unauthorized_count+excluded.unauthorized_count,
        rate_limited_count=s.rate_limited_count+excluded.rate_limited_count, other_count=s.other_count+excluded.other_count,
@@ -98,6 +153,7 @@ export async function recordBdlAttempt(
        quota_remaining=case when excluded.last_request_at>=s.last_request_at then excluded.quota_remaining else s.quota_remaining end,
        last_request_at=greatest(s.last_request_at,excluded.last_request_at)`,
     [
+      route.provider,
       route.league,
       route.template,
       role,
@@ -106,7 +162,7 @@ export async function recordBdlAttempt(
       throttled,
       1 - success - unauthorized - throttled,
       status,
-      attempt.request.at,
+      attempt.at,
       quota(attempt.rateLimit.limit),
       quota(attempt.rateLimit.remaining),
     ]

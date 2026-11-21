@@ -40,7 +40,7 @@ beforeAll(async () => {
     insert into users values ('admin');
     create table contracts(id text primary key, creator_id text, token text, visibility text,
       resolution text, deleted boolean, close_time timestamptz, mechanism text, data jsonb);`)
-  await db.exec(ddl('sports_bdl_request_stats.sql'))
+  await db.exec(ddl('sports_provider_request_stats.sql'))
   await db.exec(ddl('sports_competition_switches.sql'))
 })
 afterAll(async () => db.close())
@@ -170,18 +170,19 @@ it('preserves lifetime HTTP totals, process scope, timestamps, absent quota and 
   const stamp = asOf.toISOString()
   const prior = '2026-11-19T00:15:00.000Z'
   await db.query(
-    `insert into sports_bdl_request_stats
-    (league_key,endpoint_template,process_role,success_count,unauthorized_count,rate_limited_count,
+    `insert into sports_provider_request_stats
+    (provider,league_key,endpoint_template,process_role,success_count,unauthorized_count,rate_limited_count,
      other_count,last_status,last_request_at,last_success_at,quota_limit,quota_remaining) values
-    ('nba','v2/odds','api',9007199254740993,2,3,4,429,$1,$2,600,0),
-    ('nba','v2/odds','scheduler',0,1,0,0,401,$2,null,null,null),
-    ('fifa/worldcup','v1/matches/{id}','recorder',1,0,0,0,200,$1,$1,null,null)`,
+    ('bdl','nba','v2/odds','api',9007199254740993,2,3,4,429,$1,$2,600,0),
+    ('bdl','nba','v2/odds','scheduler',0,1,0,0,401,$2,null,null,null),
+    ('bdl','fifa/worldcup','v1/matches/{id}','recorder',1,0,0,0,200,$1,$1,null,null)`,
     [stamp, prior]
   )
   const { leagues } = await getBdlOperatorPanel(pg, asOf)
   expect(leagues.map((l) => l.league)).toEqual(BDL_LEAGUE_KEYS)
   expect(leagues.find((l) => l.league === 'nba')?.requests).toEqual([
     {
+      provider: 'bdl',
       endpoint: 'v2/odds',
       role: 'api',
       successes: '9007199254740993',
@@ -195,6 +196,7 @@ it('preserves lifetime HTTP totals, process scope, timestamps, absent quota and 
       limit: 600,
     },
     {
+      provider: 'bdl',
       endpoint: 'v2/odds',
       role: 'scheduler',
       successes: '0',
@@ -274,7 +276,7 @@ it('shows the service’s real HTTP aggregates in the admin panel without exposi
   const role = 'dev'
   const endpoint = 'v1/games/{id}'
   await pg.none(
-    'delete from sports_bdl_request_stats where league_key = $1 and endpoint_template = $2 and process_role = $3',
+    "delete from sports_provider_request_stats where provider = 'bdl' and league_key = $1 and endpoint_template = $2 and process_role = $3",
     ['nba', endpoint, role]
   )
   for (const [id, status, minute, remaining] of [
@@ -301,6 +303,7 @@ it('shows the service’s real HTTP aggregates in the admin panel without exposi
   )
   expect(matching).toHaveLength(1)
   expect(matching[0]).toMatchObject({
+    provider: 'bdl',
     successes: '1',
     unauthorized: '1',
     throttled: '1',
@@ -314,4 +317,41 @@ it('shows the service’s real HTTP aggregates in the admin panel without exposi
   expect(JSON.stringify(nba)).not.toMatch(
     /sample-page-cursor|sample-provider-body|games\/104[123]/
   )
+})
+
+it('keeps providers distinct for one endpoint and includes leagues outside the BDL registry', async () => {
+  await db.query(
+    `insert into sports_provider_request_stats
+      (provider, league_key, endpoint_template, process_role, last_status,
+       success_count, last_request_at, last_success_at)
+     values ('bdl','epl','v1/matches/{id}','api',200,2,$1,$1),
+            ('football-data','epl','v1/matches/{id}','api',200,7,$1,$1),
+            ('football-data','ENG-CH','/competitions/{code}/matches','api',200,3,$1,$1)`,
+    [asOf.toISOString()]
+  )
+  const { leagues } = await getBdlOperatorPanel(pg, asOf)
+  const epl = leagues.find((row) => row.league === 'epl')!
+  expect(
+    epl.requests.map(({ provider, endpoint, role, successes }) => [
+      provider,
+      endpoint,
+      role,
+      successes,
+    ])
+  ).toEqual([
+    ['bdl', 'v1/matches/{id}', 'api', '2'],
+    ['football-data', 'v1/matches/{id}', 'api', '7'],
+  ])
+  expect(leagues.find((row) => row.league === 'ENG-CH')).toMatchObject({
+    openOdds: null,
+    closedOdds: null,
+    phases: [],
+    requests: [
+      {
+        provider: 'football-data',
+        endpoint: '/competitions/{code}/matches',
+        successes: '3',
+      },
+    ],
+  })
 })

@@ -1,3 +1,4 @@
+import { BDL_LEAGUE_KEYS, isBdlLeagueKey } from 'common/bdl/leagues'
 import {
   MAJOR_LEAGUES,
   MAJOR_WAVES,
@@ -7,21 +8,28 @@ import {
 } from 'common/bdl/major-leagues'
 import type { SupabaseDirectClient } from '../supabase/init'
 
-export const BDL_CREATION_BUDGET_LOCK_SQL =
-  "select pg_advisory_xact_lock(hashtext('sports-bdl-creation-budget'))"
+export const SPORTS_CREATION_BUDGET_LOCK_SQL =
+  "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
 export type { MajorSettings }
-type CreationSetting = MajorSettingRow
+const sharedScopes = ['global', 'wave:1', 'wave:2', 'wave:3']
+const knownScopes = [...BDL_LEAGUE_KEYS, ...sharedScopes]
 
-export function creationSettings(
+export async function creationSettings(
   pg: Pick<SupabaseDirectClient, 'manyOrNone'>,
-  scopes?: string[]
+  scopes: readonly string[] = knownScopes
 ) {
-  return pg.manyOrNone<CreationSetting>(
+  if (
+    scopes.some(
+      (scope) => !isBdlLeagueKey(scope) && !sharedScopes.includes(scope)
+    )
+  )
+    throw new Error('Unknown sports creation scope')
+  return pg.manyOrNone<MajorSettingRow>(
     `select scope, ante_cap as cap, base_ante as "baseAnte",
-       to_char(cutover_date,'YYYY-MM-DD') as "cutoverDate", group_slugs as "groupSlugs"
-     from sports_bdl_creation_settings where ($1::text[] is null or scope = any($1))
+       to_char(starts_on,'YYYY-MM-DD') as "startsOn", group_slugs as "groupSlugs"
+     from sports_creation_settings where scope = any($1::text[])
      order by scope`,
-    [scopes ?? null]
+    [scopes]
   )
 }
 
@@ -40,7 +48,7 @@ export async function getMajorSettings(
   const global = settings.find((s) => s.scope === 'global')
   if (
     !local?.baseAnte ||
-    !local.cutoverDate ||
+    !local.startsOn ||
     !local.groupSlugs?.length ||
     !waveLimit ||
     !global
@@ -49,7 +57,7 @@ export async function getMajorSettings(
   return {
     league,
     baseAnte: local.baseAnte,
-    cutoverDate: local.cutoverDate,
+    startsOn: local.startsOn,
     groupSlugs: local.groupSlugs,
     waveLeagueKeys: MAJOR_LEAGUES.filter((key) => MAJOR_WAVES[key] === wave),
     limits: {

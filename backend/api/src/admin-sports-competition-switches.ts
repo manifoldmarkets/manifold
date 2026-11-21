@@ -6,7 +6,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { log } from 'shared/utils'
 import {
   getCompetitionSwitchRows,
@@ -84,7 +84,7 @@ export const adminSportsSetCompetitionSwitch: APIHandler<
   } else {
     await createSupabaseDirectClient().tx(async (tx) => {
       // Two operators enabling different providers must see each other's changes.
-      await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+      await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
       const switches = await getCompetitionSwitches(tx)
       const error = competitionSwitchError(competitionId, phase, on, switches)
       if (error) throw new APIError(400, error)

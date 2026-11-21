@@ -3,7 +3,12 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import * as pgPromise from 'pg-promise'
 import type { SupabaseDirectClient } from '../supabase/init'
-import { bdlStatsEndpoint, recordBdlAttempt } from './request-stats'
+import {
+  bdlStatsEndpoint,
+  recordBdlAttempt,
+  recordSportsProviderResponse,
+} from './request-stats'
+import type { SportsDataProvider } from 'common/sports-provider'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 jest.mock('../monitoring/log', () => ({ log: { warn: jest.fn() } }))
 
@@ -22,13 +27,13 @@ beforeAll(async () => {
   )
   await db.exec(
     readFileSync(
-      resolve(__dirname, '../../../supabase/sports_bdl_request_stats.sql'),
+      resolve(__dirname, '../../../supabase/sports_provider_request_stats.sql'),
       'utf8'
     )
   )
 })
 beforeEach(async () => {
-  await db.exec('truncate sports_bdl_request_stats')
+  await db.exec('truncate sports_provider_request_stats')
 })
 afterAll(async () => db.close())
 
@@ -89,7 +94,7 @@ it('aggregates each HTTP outcome across retries, keeps the most recent quota and
   const { rows } =
     await db.query(`select league_key,endpoint_template,process_role,success_count::int as ok,unauthorized_count::int as unauthorized,
     rate_limited_count::int as limited,other_count::int as other,last_status,quota_limit,quota_remaining,
-    extract(minute from last_success_at)::int as success_minute, extract(minute from last_request_at)::int as last_minute from sports_bdl_request_stats order by league_key, endpoint_template,process_role`)
+    extract(minute from last_success_at)::int as success_minute, extract(minute from last_request_at)::int as last_minute from sports_provider_request_stats order by league_key, endpoint_template,process_role`)
   expect(rows).toHaveLength(4)
   expect(rows).toContainEqual({
     league_key: 'nba',
@@ -115,7 +120,7 @@ it('stores malformed or out-of-range numeric quota headers as unknown', async ()
   expect(
     (
       await db.query(
-        'select quota_limit,quota_remaining from sports_bdl_request_stats'
+        'select quota_limit,quota_remaining from sports_provider_request_stats'
       )
     ).rows
   ).toEqual([{ quota_limit: null, quota_remaining: null }])
@@ -142,7 +147,7 @@ it('keeps both boundaries of HTTP success, integer quotas and null headers on th
   }
   const { rows } =
     await db.query(`select success_count::int as ok,other_count::int as other,
-    last_status,quota_limit,quota_remaining,extract(minute from last_success_at)::int as good from sports_bdl_request_stats`)
+    last_status,quota_limit,quota_remaining,extract(minute from last_success_at)::int as good from sports_provider_request_stats`)
   expect(rows).toEqual([
     {
       ok: 2,
@@ -197,3 +202,96 @@ it.each([
   await recordBdlAttempt(sink, 'dev', attempt(path, 401, 1, 100, 0))
   expect(sink.none).not.toHaveBeenCalled()
 })
+
+it('keeps simultaneous same-key responses atomic within each provider', async () => {
+  const observed = {
+    at: '2026-06-01T12:02:00Z',
+    status: 200,
+    rateLimit: { limit: 100, remaining: 75 },
+  }
+  const stale = {
+    at: '2026-06-01T12:01:00Z',
+    status: 429,
+    rateLimit: { limit: 100, remaining: 0 },
+  }
+  const key = { league: 'nba', template: 'v1/games/{id}' }
+  await Promise.all(
+    Array.from({ length: 5 }, () =>
+      recordSportsProviderResponse(
+        pg,
+        { ...key, provider: 'odds' },
+        'dev',
+        observed
+      )
+    )
+  )
+  await Promise.all([
+    recordSportsProviderResponse(
+      pg,
+      { ...key, provider: 'odds' },
+      'dev',
+      stale
+    ),
+    recordBdlAttempt(pg, 'dev', attempt('/nba/v1/games/11', 401, 3, 90, 1)),
+  ])
+  const { rows } = await db.query(
+    'select provider, success_count::int,rate_limited_count::int,unauthorized_count::int,last_status,quota_remaining from sports_provider_request_stats order by provider'
+  )
+  expect(rows).toEqual([
+    {
+      provider: 'bdl',
+      success_count: 0,
+      rate_limited_count: 0,
+      unauthorized_count: 1,
+      last_status: 401,
+      quota_remaining: 1,
+    },
+    {
+      provider: 'odds',
+      success_count: 5,
+      rate_limited_count: 1,
+      unauthorized_count: 0,
+      last_status: 200,
+      quota_remaining: 75,
+    },
+  ])
+})
+
+it.each([
+  ['unknown-feed', 'nba', 'games'],
+  ['fixture', 'nba', 'games'],
+  ['legacy', 'nba', 'games'],
+  ['toString', 'nba', 'games'],
+  ['odds', '', 'games'],
+  ['odds', '/nba', 'games'],
+  ['odds', 'nba?secret', 'games'],
+  ['odds', 'nba\n', 'games'],
+  ['odds', 'a'.repeat(65), 'games'],
+  ['odds', 'nba', ''],
+  ['odds', 'nba', '   '],
+  ['odds', 'nba', 'games?key=value'],
+  ['odds', 'nba', 'games\n'],
+  ['odds', 'nba', 'a'.repeat(129)],
+  ['bdl', 'foreign', 'v1/games'],
+  ['bdl', 'nba', 'v1/games/73'],
+  ['bdl', 'nba', 'v2/games'],
+  ['bdl', 'nba', 'unclassified'],
+])(
+  'rejects invalid stats dimensions before touching SQL: %j %j %j',
+  async (provider, league, template) => {
+    const sink = { none: jest.fn() }
+    await expect(
+      recordSportsProviderResponse(
+        sink,
+        { provider: provider as SportsDataProvider, league, template },
+        'dev',
+        {
+          status: 200,
+          at: '2026-06-01T12:00:00Z',
+          rateLimit: { limit: null, remaining: null },
+        }
+      )
+    ).rejects.toThrow('Invalid sports request statistics key')
+    expect(sink.none).not.toHaveBeenCalled()
+  }
+)

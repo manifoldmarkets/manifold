@@ -39,7 +39,7 @@ const input: BdlBudgetInput = {
 }
 const fresh = {
   league: 'nba' as const,
-  cutoverDate: '2026-11-20',
+  startsOn: '2026-11-20',
   groupSlugs: ['nba'],
   baseAnte: 100,
   waveLeagueKeys: ['nba', 'nhl'] as const,
@@ -222,7 +222,9 @@ it.each([
 it('serializes distinct creators before rereading the payer and current settings', async () => {
   jest.mocked(getMajorSettings).mockImplementationOnce(async () => {
     expect(statements).toHaveLength(2)
-    expect(statements[0]).toContain('pg_advisory_xact_lock')
+    expect(statements[0]).toBe(
+      "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+    )
     expect(statements[1]).toContain('for update')
     return {
       ...fresh,

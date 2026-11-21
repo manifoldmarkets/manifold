@@ -252,9 +252,9 @@ export async function runMajorCreation(
         }
         if (
           settings &&
-          easternDay.format(began + maxLead) < settings.cutoverDate
+          easternDay.format(began + maxLead) < settings.startsOn
         ) {
-          reportLeague('before cutover date')
+          reportLeague('game before starts_on')
           continue
         }
         const client =
@@ -350,8 +350,8 @@ export async function runMajorCreation(
             if (new Set(phases.map((p) => p.competitionId)).size !== 1)
               hold('no unique enabled phase')
             const phase = phases[0]
-            if (settings && easternDay.format(start) < settings.cutoverDate)
-              hold('before cutover date')
+            if (settings && easternDay.format(start) < settings.startsOn)
+              hold('game before starts_on')
             const target = {
               league,
               eventId,
@@ -455,7 +455,7 @@ export async function runMajorCreation(
                   ])
                   if (
                     !current ||
-                    current.cutoverDate !== settings.cutoverDate ||
+                    current.startsOn !== settings.startsOn ||
                     !isEqual(current.groupSlugs, settings.groupSlugs)
                   )
                     hold('settings-changed')

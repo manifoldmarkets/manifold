@@ -88,7 +88,7 @@ const enabled = (league: MajorLeague) => ({
 const settings = (league: MajorLeague): MajorSettings => ({
   league,
   baseAnte: 175,
-  cutoverDate: '2026-10-01',
+  startsOn: '2026-10-01',
   groupSlugs: ['sports'],
   waveLeagueKeys: [league],
   limits: {
@@ -234,6 +234,20 @@ it('makes zero provider calls when all phases are off or switches cannot be read
   expect(schedule).not.toHaveBeenCalled()
   expect(save).not.toHaveBeenCalled()
 })
+it('ignores an enabled EPL competition in the major creation job', async () => {
+  const epl = SPORTS_CALENDAR.find(
+    (phase) => phase.competitionId === 'epl-2026-27'
+  )!
+  switches.mockResolvedValue({ [calendarPhaseKey(epl)]: true })
+  expect(await run({ league: undefined })).toMatchObject({
+    created: 0,
+    log: [],
+  })
+  expect(readSettings).not.toHaveBeenCalled()
+  expect(schedule).not.toHaveBeenCalled()
+  expect(save).not.toHaveBeenCalled()
+})
+
 it('checks the enable state for the requested league even when another league is enabled', async () => {
   switches.mockResolvedValue(enabled('nba'))
   expect((await run({ league: 'mlb' })).log).toEqual([])
@@ -269,10 +283,29 @@ it('only allows a targeted force and never bypasses cutover or budget', async ()
   expect((await run(opts)).wouldCreate).toBe(1)
   readSettings.mockResolvedValue({
     ...settings('nba'),
-    cutoverDate: '2026-10-25',
+    startsOn: '2026-10-25',
   })
-  expect((await run(opts)).log[0].reason).toBe('before cutover date')
+  expect((await run(opts)).log[0].reason).toBe('game before starts_on')
 })
+it('funds games from starts_on inclusive using the Eastern kickoff date', async () => {
+  readSettings.mockResolvedValue({ ...settings('nba'), startsOn: '2026-10-24' })
+  schedule.mockResolvedValue([
+    game(1, { startTime: '2026-10-24T03:59:59Z' }),
+    game(2, { startTime: '2026-10-24T04:00:00Z' }),
+  ])
+  const result = await run()
+  expect(result.log).toMatchObject([
+    {
+      eventId: bdlEventId('nba', 1),
+      status: 'skipped',
+      reason: 'game before starts_on',
+    },
+    { eventId: bdlEventId('nba', 2), status: 'created', ante: 175 },
+  ])
+  expect(save).toHaveBeenCalledTimes(1)
+  expect(jest.mocked(requireBdlCreationBudget)).toHaveBeenCalledTimes(1)
+})
+
 it('only fetches or creates on phases inside the horizon; missing settings block spending', async () => {
   readSettings.mockResolvedValue(null)
   expect((await run()).log[0].reason).toBe('budget-unconfigured')
@@ -284,10 +317,10 @@ it('only fetches or creates on phases inside the horizon; missing settings block
   })
   readSettings.mockResolvedValue({
     ...settings('nba'),
-    cutoverDate: '2028-01-01',
+    startsOn: '2028-01-01',
   })
   schedule.mockClear()
-  expect((await run()).log[0].reason).toBe('before cutover date')
+  expect((await run()).log[0].reason).toBe('game before starts_on')
   expect(schedule).not.toHaveBeenCalled()
 })
 it('defers games with an unknown start, non-scheduled status or unsupported stage and returns only selected keys', async () => {
@@ -432,7 +465,7 @@ it('checks the switch, current cutoff configuration, remaining lead and opening 
   expect((await run()).log[0].reason).toBe('phase disabled')
   readSettings
     .mockResolvedValueOnce(settings('nba'))
-    .mockResolvedValueOnce({ ...settings('nba'), cutoverDate: '2026-10-25' })
+    .mockResolvedValueOnce({ ...settings('nba'), startsOn: '2026-10-25' })
   expect((await run()).log[0].reason).toBe('settings-changed')
   jest.mocked(requireBdlCreationBudget).mockImplementationOnce(async () => {
     clock.now.mockReturnValue(initial + DAY_MS)

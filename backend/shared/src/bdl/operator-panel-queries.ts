@@ -51,7 +51,7 @@ function calendarLeague(entry: SportsCalendarEntry) {
 }
 
 type RequestRow = Omit<BdlOperatorRequests, 'lastSuccess' | 'lastRequest'> & {
-  league: BdlLeagueKey
+  league: string
   lastRequest: string | Date
   lastSuccess: string | Date | null
 }
@@ -90,17 +90,22 @@ export async function getBdlOperatorPanel(
       [MANIFOLD_SPORTS_USER_IDS, asOf]
     ),
     pg.manyOrNone<RequestRow>(
-      `select league_key as league, endpoint_template as endpoint, process_role as role,
+      `select provider, league_key as league, endpoint_template as endpoint, process_role as role,
          last_success_at as "lastSuccess", last_request_at as "lastRequest", last_status as status,
          success_count::text as successes, unauthorized_count::text as unauthorized,
          rate_limited_count::text as throttled, other_count::text as other,
          quota_remaining as remaining, quota_limit as "limit"
-       from sports_bdl_request_stats order by league_key, endpoint_template, process_role`
+       from sports_provider_request_stats order by league_key, provider, endpoint_template, process_role`
     ),
   ])
 
-  const leagues = new Map<BdlLeagueKey, BdlOperatorLeague>(
-    BDL_LEAGUE_KEYS.map((league) => [
+  // Keep configured BDL leagues first, then include leagues reported by other providers.
+  const keys = new Set<string>([
+    ...BDL_LEAGUE_KEYS,
+    ...requests.map((row) => row.league),
+  ])
+  const leagues = new Map<string, BdlOperatorLeague>(
+    Array.from(keys, (league) => [
       league,
       {
         league,
