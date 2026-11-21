@@ -60,7 +60,9 @@ function ShowcaseSlotTracker(props: {
   ).length
   const hintText =
     nextSlot && nextSlot.type === 'free'
-      ? `Claim ${nextSlot.requiredClaims - claimedCount} more trophies to unlock pin ${unlockedCount + 1}`
+      ? `Claim ${
+          nextSlot.requiredClaims - claimedCount
+        } more trophies to unlock pin ${unlockedCount + 1}`
       : null
 
   return (
@@ -137,10 +139,11 @@ function ShowcaseSlotTracker(props: {
 export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const { userId, isOwnProfile } = props
 
-  const { data: achievements, refresh, setData } = useAPIGetter(
-    'get-user-achievements',
-    { userId }
-  )
+  const {
+    data: achievements,
+    refresh,
+    setData,
+  } = useAPIGetter('get-user-achievements', { userId })
 
   const currentUser = useUser()
   const isAdmin = currentUser ? isAdminId(currentUser.id) : false
@@ -192,7 +195,9 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const progressList = computeAllTrophyProgress(achievements)
   const reached = countReachedMilestones(progressList)
   const total = getTotalPossibleMilestones()
-  const claimedCount = countClaimedMilestones(achievements.claimedTrophies ?? [])
+  const claimedCount = countClaimedMilestones(
+    achievements.claimedTrophies ?? []
+  )
   const unclaimedCount = reached - claimedCount
 
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
@@ -208,8 +213,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   // Group definitions by category
   const byCategory = new Map<string, typeof TROPHY_DEFINITIONS>()
   for (const cat of CATEGORY_ORDER) byCategory.set(cat, [])
-  for (const def of visibleDefs)
-    byCategory.get(def.category)?.push(def)
+  for (const def of visibleDefs) byCategory.get(def.category)?.push(def)
 
   return (
     <Col className="gap-6 pt-4">
@@ -232,14 +236,19 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
         </Row>
         {isOwnProfile && (
           <span className="text-ink-500 text-sm">
-            Earn trophies by trading, creating markets, and being active.
-            Claim trophies to pin them to your profile showcase.
+            Earn trophies by trading, creating markets, and being active. Claim
+            trophies to pin them to your profile showcase.
           </span>
         )}
       </Col>
 
       {/* Showcase slot unlock tracker — own profile only */}
-      {isOwnProfile && <ShowcaseSlotTracker claimedCount={claimedCount} reachedCount={reached} />}
+      {isOwnProfile && (
+        <ShowcaseSlotTracker
+          claimedCount={claimedCount}
+          reachedCount={reached}
+        />
+      )}
 
       {/* Categories */}
       {CATEGORY_ORDER.map((category) => {
@@ -279,16 +288,23 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
                   new CustomEvent('open-showcase-picker', {
                     detail: {
                       pinId: `trophy-${trophyId}`,
-                      badge: m && def
-                        ? {
-                            id: `trophy-${trophyId}`,
-                            label: m.name,
-                            stat: formatTrophyValue(def, progress?.currentValue ?? m.threshold),
-                            detail: `${def.label}: ${formatTrophyValue(def, progress?.currentValue ?? m.threshold)} ${def.unit}`,
-                            emoji: m.emoji,
-                            tier: m.tier,
-                          }
-                        : undefined,
+                      badge:
+                        m && def
+                          ? {
+                              id: `trophy-${trophyId}`,
+                              label: m.name,
+                              stat: formatTrophyValue(
+                                def,
+                                progress?.currentValue ?? m.threshold
+                              ),
+                              detail: `${def.label}: ${formatTrophyValue(
+                                def,
+                                progress?.currentValue ?? m.threshold
+                              )} ${def.unit}`,
+                              emoji: m.emoji,
+                              tier: m.tier,
+                            }
+                          : undefined,
                     },
                   })
                 )
@@ -304,7 +320,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
       {/* Admin tools: unclaim trophies */}
       {isAdmin && isOwnProfile && achievements.claimedTrophies?.length > 0 && (
         <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
-          <span className="text-ink-500 text-xs font-mono">
+          <span className="text-ink-500 font-mono text-xs">
             [ADMIN] Unclaim trophies
           </span>
           <Row className="flex-wrap gap-2">
@@ -320,7 +336,6 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
           </Row>
         </Col>
       )}
-
     </Col>
   )
 }
@@ -353,13 +368,26 @@ const RANK_KEY_BY_ID: Record<string, keyof RanksType> = {
 }
 
 const ACHIEVEMENT_IMAGE_KEYS = [
-  'accountAgeYears', 'charityDonatedMana', 'creatorTraders',
-  'largestProfitableTradeValue', 'largestLeagueSeasonEarnings',
-  'largestUnprofitableTradeValue', 'longestBettingStreak', 'modTicketsResolved',
-  'numberOfComments', 'profitableMarketsCount', 'seasonsDiamondOrHigher',
-  'seasonsMasters', 'seasonsPlatinumOrHigher', 'totalLiquidityCreatedMarkets',
-  'totalMarketsCreated', 'totalReferrals', 'totalReferredProfitMana',
-  'totalTradesCount', 'totalVolumeMana', 'unprofitableMarketsCount',
+  'accountAgeYears',
+  'charityDonatedMana',
+  'creatorTraders',
+  'largestProfitableTradeValue',
+  'largestLeagueSeasonEarnings',
+  'largestUnprofitableTradeValue',
+  'longestBettingStreak',
+  'modTicketsResolved',
+  'numberOfComments',
+  'profitableMarketsCount',
+  'seasonsDiamondOrHigher',
+  'seasonsMasters',
+  'seasonsPlatinumOrHigher',
+  'totalLiquidityCreatedMarkets',
+  'totalMarketsCreated',
+  'totalReferrals',
+  'totalReferredProfitMana',
+  'totalTradesCount',
+  'totalVolumeMana',
+  'unprofitableMarketsCount',
 ] as const
 
 const ACHIEVEMENT_IMAGES: Record<string, string> = Object.fromEntries(
@@ -406,34 +434,133 @@ function AchievementsSection(props: { data: Record<string, any> }) {
   const { data } = props
 
   const defs = [
-    { id: 'totalVolumeMana', title: 'Any Whales?', desc: 'Total trading volume.', fmt: () => formatMoney(data.totalVolumeMana, 'MANA') },
-    { id: 'totalReferrals', title: 'Manifold Hype Man', desc: 'Friends you brought to Manifold.', fmt: () => formatWithCommas(data.totalReferrals) },
-    { id: 'totalReferredProfitMana', title: 'Proud Parent', desc: 'Profit earned by your referrals.', fmt: () => formatMoney(data.totalReferredProfitMana, 'MANA') },
-    { id: 'creatorTraders', title: 'Fan Favorite', desc: 'Unique traders on your markets.', fmt: () => formatWithCommas(data.creatorTraders) },
-    { id: 'totalLiquidityCreatedMarkets', title: 'No Slippage Here', desc: 'Total liquidity across all your created markets.', fmt: () => formatMoney(data.totalLiquidityCreatedMarkets, 'MANA') },
-    { id: 'profitableMarketsCount', title: 'Market Maven', desc: 'Number of markets you made a profit on.', fmt: () => formatWithCommas(data.profitableMarketsCount) },
-    { id: 'unprofitableMarketsCount', title: 'Ineffective Altruism', desc: 'Number of markets you lost mana on.', fmt: () => formatWithCommas(data.unprofitableMarketsCount) },
-    { id: 'largestProfitableTradeValue', title: 'Biggest Win', desc: 'Largest profit made on a single market.', fmt: () => formatMoney(data.largestProfitableTradeValue, 'MANA') },
-    { id: 'largestUnprofitableTradeValue', title: 'Wealth Redistributor', desc: 'Largest loss made on a single market.', fmt: () => formatMoney(data.largestUnprofitableTradeValue, 'MANA') },
-    { id: 'seasonsPlatinumOrHigher', title: 'Positively Platinum', desc: 'Seasons finished Platinum or higher.', fmt: () => formatWithCommas(data.seasonsPlatinumOrHigher) },
-    { id: 'seasonsDiamondOrHigher', title: 'Diamond Hands', desc: 'Seasons finished Diamond or higher.', fmt: () => formatWithCommas(data.seasonsDiamondOrHigher) },
-    { id: 'seasonsMasters', title: 'Master Mind', desc: 'Seasons finished Masters.', fmt: () => formatWithCommas(data.seasonsMasters) },
-    { id: 'largestLeagueSeasonEarnings', title: 'Sensational Season', desc: 'Largest earnings in a single season.', fmt: () => formatMoney(data.largestLeagueSeasonEarnings, 'MANA') },
-    { id: 'numberOfComments', title: 'Chatterbox', desc: 'Comments posted with at least 1 like.', fmt: () => formatWithCommas(data.numberOfComments) },
-    { id: 'totalTradesCount', title: 'High Frequency Trader', desc: 'Total trades executed (excludes API trades).', fmt: () => formatWithCommas(data.totalTradesCount) },
-    { id: 'totalMarketsCreated', title: 'Doing The Hard Part', desc: 'Markets you\u2019ve created.', fmt: () => formatWithCommas(data.totalMarketsCreated) },
     {
-      id: 'accountAgeYears', title: 'Age Is Just A Number', desc: 'Account age in years.',
+      id: 'totalVolumeMana',
+      title: 'Any Whales?',
+      desc: 'Total trading volume.',
+      fmt: () => formatMoney(data.totalVolumeMana, 'MANA'),
+    },
+    {
+      id: 'totalReferrals',
+      title: 'Manifold Hype Man',
+      desc: 'Friends you brought to Manifold.',
+      fmt: () => formatWithCommas(data.totalReferrals),
+    },
+    {
+      id: 'totalReferredProfitMana',
+      title: 'Proud Parent',
+      desc: 'Profit earned by your referrals.',
+      fmt: () => formatMoney(data.totalReferredProfitMana, 'MANA'),
+    },
+    {
+      id: 'creatorTraders',
+      title: 'Fan Favorite',
+      desc: 'Unique traders on your markets.',
+      fmt: () => formatWithCommas(data.creatorTraders),
+    },
+    {
+      id: 'totalLiquidityCreatedMarkets',
+      title: 'No Slippage Here',
+      desc: 'Total liquidity across all your created markets.',
+      fmt: () => formatMoney(data.totalLiquidityCreatedMarkets, 'MANA'),
+    },
+    {
+      id: 'profitableMarketsCount',
+      title: 'Market Maven',
+      desc: 'Number of markets you made a profit on.',
+      fmt: () => formatWithCommas(data.profitableMarketsCount),
+    },
+    {
+      id: 'unprofitableMarketsCount',
+      title: 'Ineffective Altruism',
+      desc: 'Number of markets you lost mana on.',
+      fmt: () => formatWithCommas(data.unprofitableMarketsCount),
+    },
+    {
+      id: 'largestProfitableTradeValue',
+      title: 'Biggest Win',
+      desc: 'Largest profit made on a single market.',
+      fmt: () => formatMoney(data.largestProfitableTradeValue, 'MANA'),
+    },
+    {
+      id: 'largestUnprofitableTradeValue',
+      title: 'Wealth Redistributor',
+      desc: 'Largest loss made on a single market.',
+      fmt: () => formatMoney(data.largestUnprofitableTradeValue, 'MANA'),
+    },
+    {
+      id: 'seasonsPlatinumOrHigher',
+      title: 'Positively Platinum',
+      desc: 'Seasons finished Platinum or higher.',
+      fmt: () => formatWithCommas(data.seasonsPlatinumOrHigher),
+    },
+    {
+      id: 'seasonsDiamondOrHigher',
+      title: 'Diamond Hands',
+      desc: 'Seasons finished Diamond or higher.',
+      fmt: () => formatWithCommas(data.seasonsDiamondOrHigher),
+    },
+    {
+      id: 'seasonsMasters',
+      title: 'Master Mind',
+      desc: 'Seasons finished Masters.',
+      fmt: () => formatWithCommas(data.seasonsMasters),
+    },
+    {
+      id: 'largestLeagueSeasonEarnings',
+      title: 'Sensational Season',
+      desc: 'Largest earnings in a single season.',
+      fmt: () => formatMoney(data.largestLeagueSeasonEarnings, 'MANA'),
+    },
+    {
+      id: 'numberOfComments',
+      title: 'Chatterbox',
+      desc: 'Comments posted with at least 1 like.',
+      fmt: () => formatWithCommas(data.numberOfComments),
+    },
+    {
+      id: 'totalTradesCount',
+      title: 'High Frequency Trader',
+      desc: 'Total trades executed (excludes API trades).',
+      fmt: () => formatWithCommas(data.totalTradesCount),
+    },
+    {
+      id: 'totalMarketsCreated',
+      title: 'Doing The Hard Part',
+      desc: 'Markets you\u2019ve created.',
+      fmt: () => formatWithCommas(data.totalMarketsCreated),
+    },
+    {
+      id: 'accountAgeYears',
+      title: 'Age Is Just A Number',
+      desc: 'Account age in years.',
       fmt: () => {
         const totalMonths = Math.round(data.accountAgeYears * 12)
         const years = Math.floor(totalMonths / 12)
         const months = totalMonths % 12
-        return `${years} ${years === 1 ? 'year' : 'years'} ${months} ${months === 1 ? 'month' : 'months'}`
+        return `${years} ${years === 1 ? 'year' : 'years'} ${months} ${
+          months === 1 ? 'month' : 'months'
+        }`
       },
     },
-    { id: 'longestBettingStreak', title: 'Longest Daily Streak', desc: 'Longest consecutive days trading.', fmt: () => formatWithCommas(data.longestBettingStreak) },
-    { id: 'modTicketsResolved', title: 'Helpful Moderator', desc: 'Mod tickets resolved (since mod rewards).', fmt: () => formatWithCommas(data.modTicketsResolved) },
-    { id: 'charityDonatedMana', title: 'Giver', desc: 'Total donated to charity (USD).', fmt: () => formatMoneyUSD(data.charityDonatedMana, true) },
+    {
+      id: 'longestBettingStreak',
+      title: 'Longest Daily Streak',
+      desc: 'Longest consecutive days trading.',
+      fmt: () => formatWithCommas(data.longestBettingStreak),
+    },
+    {
+      id: 'modTicketsResolved',
+      title: 'Helpful Moderator',
+      desc: 'Mod tickets resolved (since mod rewards).',
+      fmt: () => formatWithCommas(data.modTicketsResolved),
+    },
+    {
+      id: 'charityDonatedMana',
+      title: 'Giver',
+      desc: 'Total donated to charity (USD).',
+      fmt: () => formatMoneyUSD(data.charityDonatedMana, true),
+    },
   ] as const
 
   const achs = defs.map(({ id, title, desc, fmt }) => {
@@ -441,21 +568,36 @@ function AchievementsSection(props: { data: Record<string, any> }) {
     const raw = data[id] ?? 0
     const rk = key ? data.ranks?.[key]?.rank ?? null : null
     const pc = key ? data.ranks?.[key]?.percentile ?? null : null
-    return { id, title, desc, value: fmt(), rank: raw === 0 ? null : rk, percentile: raw === 0 ? null : pc }
+    return {
+      id,
+      title,
+      desc,
+      value: fmt(),
+      rank: raw === 0 ? null : rk,
+      percentile: raw === 0 ? null : pc,
+    }
   })
 
   const byBucket: Record<AchievementBucket, typeof achs> = {
-    'Top 50 Users': [], 'Top 200 Users': [], 'Top 1000 Users': [],
-    'Top 5000 Users': [], 'Top 20,000 Users': [], 'To Earn': [],
+    'Top 50 Users': [],
+    'Top 200 Users': [],
+    'Top 1000 Users': [],
+    'Top 5000 Users': [],
+    'Top 20,000 Users': [],
+    'To Earn': [],
   }
-  achs.forEach((a) => { byBucket[bucketOf(a.rank)].push(a) })
+  achs.forEach((a) => {
+    byBucket[bucketOf(a.rank)].push(a)
+  })
 
   return (
     <Col className="gap-6">
       <Col className="gap-1">
         <Row className="items-center gap-2">
           <span className="text-2xl">{'\u{2728}'}</span>
-          <span className="text-ink-900 text-lg font-bold">Stats & Achievements</span>
+          <span className="text-ink-900 text-lg font-bold">
+            Stats & Achievements
+          </span>
         </Row>
         <span className="text-ink-500 text-sm">
           Your rank among all Manifold users for each stat.
@@ -486,7 +628,10 @@ function AchievementsSection(props: { data: Record<string, any> }) {
                   value={a.value}
                   rank={a.rank}
                   percentile={a.percentile}
-                  imageSrc={ACHIEVEMENT_IMAGES[a.id] || '/achievement-badges/totalVolumeMana.png'}
+                  imageSrc={
+                    ACHIEVEMENT_IMAGES[a.id] ||
+                    '/achievement-badges/totalVolumeMana.png'
+                  }
                   bucket={bucket}
                 />
               ))}
@@ -507,7 +652,8 @@ function AchievementBadgeCard(props: {
   bucket: AchievementBucket
   imageSrc?: string
 }) {
-  const { title, description, value, rank, percentile, bucket, imageSrc } = props
+  const { title, description, value, rank, percentile, bucket, imageSrc } =
+    props
 
   return (
     <div
@@ -550,7 +696,9 @@ function AchievementBadgeCard(props: {
               bucket === 'To Earn' && 'opacity-40'
             )}
           >
-            <div className="text-ink-900 text-sm font-semibold leading-tight">{title}</div>
+            <div className="text-ink-900 text-sm font-semibold leading-tight">
+              {title}
+            </div>
             <div className="text-ink-600 text-xs leading-snug">
               {description}
             </div>
@@ -559,12 +707,12 @@ function AchievementBadgeCard(props: {
 
           <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
             <div className="bg-canvas-50 text-ink-900 border-ink-200 w-56 rounded-md border p-2.5 shadow-xl">
-              <div className="text-sm font-semibold">
-                Rank: {rank ?? 'N/A'}
-              </div>
+              <div className="text-sm font-semibold">Rank: {rank ?? 'N/A'}</div>
               <div className="text-ink-600 my-0.5 text-xs">
                 {percentile != null
-                  ? `Top ${Number(Math.max(percentile, 0.01).toFixed(2))}% of all users`
+                  ? `Top ${Number(
+                      Math.max(percentile, 0.01).toFixed(2)
+                    )}% of all users`
                   : 'N/A'}
               </div>
               <div className="text-ink-600 text-xs">Value: {value}</div>
@@ -575,4 +723,3 @@ function AchievementBadgeCard(props: {
     </div>
   )
 }
-

@@ -74,7 +74,16 @@ export function TrophyCard(props: {
   justClaimed?: boolean
   onPinToProfile?: (trophyId: string) => void
 }) {
-  const { definition, progress, claimedMilestone, isOwnProfile, onClaim, claiming, justClaimed, onPinToProfile } = props
+  const {
+    definition,
+    progress,
+    claimedMilestone,
+    isOwnProfile,
+    onClaim,
+    claiming,
+    justClaimed,
+    onPinToProfile,
+  } = props
   const { milestones } = definition
   const { currentValue, highestMilestone } = progress
 
@@ -90,6 +99,9 @@ export function TrophyCard(props: {
   // Default view: the current milestone, or the first one if none reached
   const defaultIdx = highestIdx >= 0 ? highestIdx : 0
   const [viewingIdx, setViewingIdx] = useState(defaultIdx)
+  // Declared before the early return below: hooks must run in the same order
+  // on every render.
+  const [imgError, setImgError] = useState<Record<string, boolean>>({})
 
   const viewing = milestones[viewingIdx]
   if (!viewing) return null
@@ -103,7 +115,6 @@ export function TrophyCard(props: {
   const nextMilestone = getNextMilestone(definition, highestMilestone)
 
   const badgeUrl = getTrophyBadgeUrl(definition.id, viewing.name)
-  const [imgError, setImgError] = useState<Record<string, boolean>>({})
   const hasBadgeImage = !imgError[badgeUrl]
 
   // Progress toward the viewed milestone (0-1)
@@ -122,7 +133,7 @@ export function TrophyCard(props: {
       <div className="relative">
         {/* Background: the badge image or emoji, full-width */}
         {hasBadgeImage ? (
-          <div className="flex items-center justify-center px-6 pt-5 pb-2">
+          <div className="flex items-center justify-center px-6 pb-2 pt-5">
             <div
               className={clsx(
                 'rounded-full bg-gradient-to-br transition-all',
@@ -135,8 +146,8 @@ export function TrophyCard(props: {
                 src={badgeUrl}
                 alt={viewing.name}
                 className={clsx(
-                  'h-28 w-28 rounded-full object-cover brightness-125 contrast-110 dark:brightness-100 dark:contrast-100',
-                  !isReached && 'grayscale opacity-60'
+                  'contrast-110 h-28 w-28 rounded-full object-cover brightness-125 dark:brightness-100 dark:contrast-100',
+                  !isReached && 'opacity-60 grayscale'
                 )}
                 onError={() =>
                   setImgError((prev) => ({ ...prev, [badgeUrl]: true }))
@@ -145,7 +156,7 @@ export function TrophyCard(props: {
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-center px-6 pt-5 pb-2">
+          <div className="flex items-center justify-center px-6 pb-2 pt-5">
             <div
               className={clsx(
                 'flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br',
@@ -203,7 +214,9 @@ export function TrophyCard(props: {
           {' \u00B7 '}
           {definition.unit === 'years'
             ? `${Math.round(currentValue * 365)} days`
-            : `${formatTrophyValue(definition, currentValue)} ${definition.unit}`}
+            : `${formatTrophyValue(definition, currentValue)} ${
+                definition.unit
+              }`}
         </span>
 
         {/* Dot navigation */}
@@ -257,16 +270,25 @@ export function TrophyCard(props: {
             </button>
           ) : (
             <Row className="mt-0.5 items-center gap-1 text-[11px]">
-              <CheckCircleIcon className={clsx('h-3.5 w-3.5', style.textColor)} />
-              <span className={clsx('font-medium', style.textColor)}>Claimed</span>
+              <CheckCircleIcon
+                className={clsx('h-3.5 w-3.5', style.textColor)}
+              />
+              <span className={clsx('font-medium', style.textColor)}>
+                Claimed
+              </span>
             </Row>
           )
         ) : nextMilestone ? (
           <span className="text-ink-400 text-[11px]">
             {definition.unit === 'years'
-              ? `${Math.round((nextMilestone.threshold - currentValue) * 365)} days`
-              : formatTrophyValue(definition, nextMilestone.threshold - currentValue)}{' '}more for{' '}
-            {nextMilestone.name}
+              ? `${Math.round(
+                  (nextMilestone.threshold - currentValue) * 365
+                )} days`
+              : formatTrophyValue(
+                  definition,
+                  nextMilestone.threshold - currentValue
+                )}{' '}
+            more for {nextMilestone.name}
           </span>
         ) : (
           <span className="text-[11px] font-medium text-amber-500">
@@ -292,7 +314,16 @@ export function TrophyGrid(props: {
   justClaimedId?: string | null
   onPinToProfile?: (trophyId: string) => void
 }) {
-  const { progressList, definitions, claimedTrophies, isOwnProfile, onClaim, claimingId, justClaimedId, onPinToProfile } = props
+  const {
+    progressList,
+    definitions,
+    claimedTrophies,
+    isOwnProfile,
+    onClaim,
+    claimingId,
+    justClaimedId,
+    onPinToProfile,
+  } = props
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
   const claimedMap = new Map(
     (claimedTrophies ?? []).map((c) => [c.trophyId, c.milestone])

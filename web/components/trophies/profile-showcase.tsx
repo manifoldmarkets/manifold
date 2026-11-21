@@ -34,13 +34,34 @@ const TIER_STYLES: Record<
   ShowcaseBadgeData['tier'],
   { gradient: string; text: string }
 > = {
-  gray: { gradient: 'from-zinc-400 to-zinc-500', text: 'text-zinc-600 dark:text-zinc-400' },
-  green: { gradient: 'from-emerald-400 to-emerald-600', text: 'text-emerald-600 dark:text-emerald-400' },
-  blue: { gradient: 'from-sky-400 to-blue-600', text: 'text-blue-600 dark:text-blue-400' },
-  purple: { gradient: 'from-violet-400 to-purple-600', text: 'text-violet-600 dark:text-violet-400' },
-  crimson: { gradient: 'from-red-500 to-rose-700', text: 'text-red-600 dark:text-red-400' },
-  gold: { gradient: 'from-amber-400 to-yellow-600', text: 'text-amber-600 dark:text-amber-400' },
-  prismatic: { gradient: 'from-pink-400 via-cyan-400 to-yellow-400', text: 'bg-gradient-to-r from-pink-500 via-cyan-500 to-yellow-500 bg-clip-text text-transparent' },
+  gray: {
+    gradient: 'from-zinc-400 to-zinc-500',
+    text: 'text-zinc-600 dark:text-zinc-400',
+  },
+  green: {
+    gradient: 'from-emerald-400 to-emerald-600',
+    text: 'text-emerald-600 dark:text-emerald-400',
+  },
+  blue: {
+    gradient: 'from-sky-400 to-blue-600',
+    text: 'text-blue-600 dark:text-blue-400',
+  },
+  purple: {
+    gradient: 'from-violet-400 to-purple-600',
+    text: 'text-violet-600 dark:text-violet-400',
+  },
+  crimson: {
+    gradient: 'from-red-500 to-rose-700',
+    text: 'text-red-600 dark:text-red-400',
+  },
+  gold: {
+    gradient: 'from-amber-400 to-yellow-600',
+    text: 'text-amber-600 dark:text-amber-400',
+  },
+  prismatic: {
+    gradient: 'from-pink-400 via-cyan-400 to-yellow-400',
+    text: 'bg-gradient-to-r from-pink-500 via-cyan-500 to-yellow-500 bg-clip-text text-transparent',
+  },
 }
 
 // ---------------------------------------------------------------------------
@@ -74,7 +95,9 @@ function generateBadgesFromTrophies(
   stats: Record<string, unknown>,
   claimedTrophies: { trophyId: string; milestone: string }[]
 ): ShowcaseBadgeData[] {
-  const claimedMap = new Map(claimedTrophies.map((c) => [c.trophyId, c.milestone]))
+  const claimedMap = new Map(
+    claimedTrophies.map((c) => [c.trophyId, c.milestone])
+  )
   const progressList = computeAllTrophyProgress(stats)
   const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
   const badges: ShowcaseBadgeData[] = []
@@ -91,7 +114,9 @@ function generateBadgesFromTrophies(
       id: `trophy-${def.id}`,
       label: m.name,
       stat: formatTrophyValue(def, currentValue),
-      detail: `${def.label}: ${formatTrophyValue(def, currentValue)} ${def.unit}`,
+      detail: `${def.label}: ${formatTrophyValue(def, currentValue)} ${
+        def.unit
+      }`,
       emoji: m.emoji,
       badgeImageUrl: getTrophyBadgeUrl(def.id, m.name),
       tier: m.tier,
@@ -105,9 +130,11 @@ function generateBadgesFromTrophies(
 // Badge generation: from league data
 // ---------------------------------------------------------------------------
 
-function generateLeagueBadge(
-  league: { division: number; rank: number; season: number }
-): ShowcaseBadgeData | null {
+function generateLeagueBadge(league: {
+  division: number
+  rank: number
+  season: number
+}): ShowcaseBadgeData | null {
   if (league.division < 2) return null
   const divName = DIVISION_NAMES[league.division] ?? 'Unknown'
   return {
@@ -123,10 +150,7 @@ function generateLeagueBadge(
 // Badge UI
 // ---------------------------------------------------------------------------
 
-function BadgeIcon(props: {
-  badge: ShowcaseBadgeData
-  size: 'sm' | 'lg'
-}) {
+function BadgeIcon(props: { badge: ShowcaseBadgeData; size: 'sm' | 'lg' }) {
   const { badge, size } = props
   const [imgError, setImgError] = useState(false)
   const px = size === 'lg' ? 28 : 20
@@ -144,9 +168,7 @@ function BadgeIcon(props: {
     )
   }
   return (
-    <span className={size === 'lg' ? 'text-lg' : 'text-sm'}>
-      {badge.emoji}
-    </span>
+    <span className={size === 'lg' ? 'text-lg' : 'text-sm'}>{badge.emoji}</span>
   )
 }
 
@@ -173,10 +195,7 @@ function ShowcaseBadge(props: {
         onClick={onClick}
       >
         <div
-          className={clsx(
-            'rounded-[5px] bg-gradient-to-br',
-            style.gradient
-          )}
+          className={clsx('rounded-[5px] bg-gradient-to-br', style.gradient)}
         >
           <Row
             className={clsx(
@@ -241,13 +260,18 @@ export function ProfileShowcase(props: {
   const { userId, isOwnProfile } = props
 
   // Fetch achievements (includes showcasePins from server)
-  const { data: achievements, refresh } = useAPIGetter('get-user-achievements', {
-    userId,
-  })
+  const { data: achievements, refresh } = useAPIGetter(
+    'get-user-achievements',
+    {
+      userId,
+    }
+  )
   const league = useLeagueInfo(userId)
 
   // Dynamic max pins based on claimed milestone count
-  const claimedCount = countClaimedMilestones(achievements?.claimedTrophies ?? [])
+  const claimedCount = countClaimedMilestones(
+    achievements?.claimedTrophies ?? []
+  )
   const maxPinned = getMaxPinned(claimedCount)
   const maxPinnedRef = useRef(maxPinned)
   maxPinnedRef.current = maxPinned
@@ -274,7 +298,9 @@ export function ProfileShowcase(props: {
             const parsed = JSON.parse(stored)
             if (Array.isArray(parsed) && parsed.length > 0) {
               setLocalPins(parsed.slice(0, maxPinnedRef.current))
-              api('set-showcase-pins', { pins: parsed.slice(0, maxPinnedRef.current) })
+              api('set-showcase-pins', {
+                pins: parsed.slice(0, maxPinnedRef.current),
+              })
               localStorage.removeItem(`showcase-pins-${userId}`)
             }
           }
@@ -339,23 +365,19 @@ export function ProfileShowcase(props: {
     return () => window.removeEventListener('open-showcase-picker', handler)
   }, [isOwnProfile, refresh])
 
-
-  const togglePin = useCallback(
-    (id: string, validIds: Set<string>) => {
-      const current = (localPinsRef.current ?? []).filter((x) => validIds.has(x))
-      let next: string[]
-      if (current.includes(id)) {
-        next = current.filter((x) => x !== id)
-      } else if (current.length >= maxPinnedRef.current) {
-        return
-      } else {
-        next = [...current, id]
-      }
-      setLocalPins(next)
-      api('set-showcase-pins', { pins: next })
-    },
-    []
-  )
+  const togglePin = useCallback((id: string, validIds: Set<string>) => {
+    const current = (localPinsRef.current ?? []).filter((x) => validIds.has(x))
+    let next: string[]
+    if (current.includes(id)) {
+      next = current.filter((x) => x !== id)
+    } else if (current.length >= maxPinnedRef.current) {
+      return
+    } else {
+      next = [...current, id]
+    }
+    setLocalPins(next)
+    api('set-showcase-pins', { pins: next })
+  }, [])
 
   // Build badges from whatever data sources are available
   const allBadges: ShowcaseBadgeData[] = []
@@ -363,7 +385,10 @@ export function ProfileShowcase(props: {
 
   // 1. From claimed trophy milestones only
   if (achievements) {
-    for (const b of generateBadgesFromTrophies(achievements, achievements.claimedTrophies ?? [])) {
+    for (const b of generateBadgesFromTrophies(
+      achievements,
+      achievements.claimedTrophies ?? []
+    )) {
       if (!seenIds.has(b.id)) {
         seenIds.add(b.id)
         allBadges.push(b)
@@ -393,8 +418,18 @@ export function ProfileShowcase(props: {
   }
 
   // Sort by tier quality (best first)
-  const tierOrder = ['prismatic', 'gold', 'crimson', 'purple', 'blue', 'green', 'gray']
-  allBadges.sort((a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier))
+  const tierOrder = [
+    'prismatic',
+    'gold',
+    'crimson',
+    'purple',
+    'blue',
+    'green',
+    'gray',
+  ]
+  allBadges.sort(
+    (a, b) => tierOrder.indexOf(a.tier) - tierOrder.indexOf(b.tier)
+  )
 
   if (allBadges.length === 0 && !isOwnProfile) return null
 
@@ -443,7 +478,10 @@ export function ProfileShowcase(props: {
             </span>
             <button
               className="text-ink-500 text-xs hover:underline"
-              onClick={() => { setShowPicker(false); setPickerMessage(null) }}
+              onClick={() => {
+                setShowPicker(false)
+                setPickerMessage(null)
+              }}
             >
               Done
             </button>

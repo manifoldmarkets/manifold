@@ -313,7 +313,15 @@ function UserProfile(props: {
                   'self-center opacity-0 transition-opacity first:ml-4',
                   headerStuck && 'opacity-100'
                 )}
+                role="button"
+                tabIndex={0}
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    window.scrollTo({ top: 0, behavior: 'smooth' })
+                  }
+                }}
               >
                 <UserLink user={user} noLink />
               </div>
@@ -505,7 +513,12 @@ function UserProfile(props: {
                 title: 'Trophies',
                 prerender: true,
                 stackedTabIcon: <TrophyIcon className="h-5" />,
-                content: <TrophiesTab userId={user.id} isOwnProfile={!!isCurrentUser} />,
+                content: (
+                  <TrophiesTab
+                    userId={user.id}
+                    isOwnProfile={!!isCurrentUser}
+                  />
+                ),
               },
               {
                 title: 'Balance log',
@@ -624,7 +637,6 @@ function ProfilePublicStats(props: {
     </Row>
   )
 }
-
 
 function FollowsDialog(props: {
   user: User
