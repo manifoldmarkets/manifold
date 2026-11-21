@@ -66,7 +66,7 @@ const schedules = {
   },
 } as const
 const recordedSchedules: MajorLeague[] = ['nba', 'nhl', 'nfl']
-const recordedOdds: MajorLeague[] = ['nba', 'nhl']
+const recordedOdds: MajorLeague[] = ['nba', 'nhl', 'nfl']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
     kind === 'games'
