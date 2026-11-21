@@ -386,5 +386,5 @@ function formatRemaining(
         : Math.ceil(value * DAYS_PER_YEAR)
     )
   }
-  return formatTrophyValue(def, value)
+  return formatTrophyValue(def, value, 'up')
 }
