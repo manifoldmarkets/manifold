@@ -10,26 +10,32 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { useAPIGetter } from './use-api-getter'
 
+// The user's league this season: undefined until known, null for none. The
+// stored result names its season, so a row from an earlier season is never
+// shown as this season's, even when this season's lookup fails.
 export const useLeagueInfo = (userId: string | null | undefined) => {
-  const [leagueInfo, setLeagueInfo] = usePersistentLocalState<
-    league_user_info | null | undefined
-  >(undefined, `league-info-${userId}`)
+  const [stored, setStored] = usePersistentLocalState<
+    { season: number; info: league_user_info | null } | undefined
+  >(undefined, `league-info-by-season-${userId}`)
   const { data: seasonInfo } = useAPIGetter('get-season-info', {})
+  const season = seasonInfo?.season
 
   useEffect(() => {
-    if (userId && seasonInfo?.season) {
-      getLeagueInfo(userId, seasonInfo.season)
+    if (userId && season) {
+      getLeagueInfo(userId, season)
         .then((result) => {
-          setLeagueInfo(result as league_user_info | null)
+          setStored({ season, info: result as league_user_info | null })
         })
         .catch(() => {
           // Keep the last known value: a failed lookup isn't "no league" (the
           // profile showcase would otherwise drop a saved league pin).
         })
     }
-  }, [userId, seasonInfo?.season])
+  }, [userId, season])
 
-  return leagueInfo
+  return stored && season !== undefined && stored.season === season
+    ? stored.info
+    : undefined
 }
 
 export const useLeagueChats = (season: number) => {
