@@ -31,7 +31,6 @@ export const DEFAULT_FINALS_INTERVAL = 300
 export const OVERDUE_FINALS_INTERVAL = 30 * 60
 
 export { FINALS_FROM_MINUTES }
-import { FINALS_FROM_MINUTES } from './sports-finals-timing'
 
 /** The admin settings, from the sports_score_polling table. */
 export interface ScorePollingSettings {
