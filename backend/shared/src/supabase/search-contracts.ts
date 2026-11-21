@@ -36,6 +36,7 @@ import {
 } from 'shared/topic-interests'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
+import { officialSportsGameSql } from './official-sports-game'
 
 const DEFAULT_THRESHOLD = 1000
 const GROUP_SCORE_POWER = 4
@@ -170,8 +171,10 @@ type SharedSearchArgs = {
   liquidity?: number
   isPrizeMarket?: boolean
   beforeTime?: number
+  beforeId?: string
   seenMarketCutoffTime?: number
   discoveryVariant?: DiscoveryExperimentVariant
+  excludeOfficialSports?: boolean
 }
 
 export const getForYouTopicRankSql = (
@@ -211,8 +214,9 @@ export async function getForYouSQL(
 
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   if (
-    importanceScoreThreshold === undefined ||
-    freshnessScoreThreshold === undefined
+    !args.excludeOfficialSports &&
+    (importanceScoreThreshold === undefined ||
+      freshnessScoreThreshold === undefined)
   ) {
     await loadScoreThresholds(threshold)
   }
@@ -236,6 +240,26 @@ export async function getForYouSQL(
     })
   }
   const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
+  // In discovery, the top N must be drawn from markets that can appear there.
+  // Both score columns are NOT NULL. When fewer than N eligible scores
+  // exist, the lower bound admits every score. Keeping the outer column
+  // bare lets PostgreSQL range-scan the same score index for candidates.
+  const useScoreCutoff =
+    offset <= threshold / 2 && (sort === 'score' || sort === 'freshness-score')
+  const cachedThreshold =
+    sort === 'score' ? importanceScoreThreshold : freshnessScoreThreshold
+  const scoreCutoff = args.excludeOfficialSports
+    ? where(
+        `contracts.${sortByScore} >= coalesce((
+          select c.${sortByScore} from contracts c
+          where not (${officialSportsGameSql('c')})
+            and c.${sortByScore} is not null
+          order by c.${sortByScore} desc limit 1 offset $1
+        ), '-Infinity'::numeric)`,
+        [threshold - 1]
+      )
+    : cachedThreshold &&
+      where(`contracts.${sortByScore} > $1`, [cachedThreshold])
   const forYou = renderSql(
     buildArray(
       select(
@@ -287,14 +311,7 @@ export async function getForYouSQL(
         ...args,
         hideStonks: true,
       }),
-      offset <= threshold / 2 &&
-        sort === 'score' &&
-        importanceScoreThreshold &&
-        where(`contracts.importance_score > $1`, [importanceScoreThreshold]),
-      offset <= threshold / 2 &&
-        sort === 'freshness-score' &&
-        freshnessScoreThreshold &&
-        where(`contracts.freshness_score > $1`, [freshnessScoreThreshold]),
+      useScoreCutoff && scoreCutoff,
       lim(limit, offset),
       groupBy('contracts.id'),
       // If user has contract-topic scores, use ONLY the defined topic scores when ranking
@@ -328,7 +345,11 @@ export const basicSearchSQL = (
     select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
     userBetsJoin,
-    orderBy(`${sortByScore} desc`),
+    orderBy(
+      args.excludeOfficialSports
+        ? `${sortByScore} desc, contracts.id collate "C"`
+        : `${sortByScore} desc`
+    ),
     getSearchContractWhereSQL({
       ...rest,
       hideStonks: true,
@@ -581,8 +602,19 @@ export function getSearchContractSQL(
         ),
     ],
 
-    orderBy(getSearchContractSortSQL(sort)),
-    beforeTime && where(`created_time < millis_to_ts($1)`, [beforeTime]),
+    orderBy(
+      args.excludeOfficialSports && sort === 'newest'
+        ? 'contracts.created_time desc, contracts.id collate "C"'
+        : getSearchContractSortSQL(sort)
+    ),
+    beforeTime &&
+      (args.excludeOfficialSports && sort === 'newest' && args.beforeId
+        ? where(
+            `created_time < millis_to_ts($1)
+             or (created_time = millis_to_ts($1) and contracts.id collate "C" > $2)`,
+            [beforeTime, args.beforeId]
+          )
+        : where(`created_time < millis_to_ts($1)`, [beforeTime])),
     sqlLimit(limit, beforeTime ? 0 : offset)
   )
   // log('Search SQL:', sql)
@@ -597,6 +629,7 @@ function getSearchContractWhereSQL(args: {
   uid?: string
   hideStonks?: boolean
   hideLove?: boolean
+  excludeOfficialSports?: boolean
   isPrizeMarket?: boolean
   token: TokenInputType
   liquidity?: number
@@ -700,6 +733,7 @@ function getSearchContractWhereSQL(args: {
     where(filterSQL[filter]),
     where(stonkFilter),
     where(resolvedSportsFilter),
+    args.excludeOfficialSports && where(`not (${officialSportsGameSql()})`),
     where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),

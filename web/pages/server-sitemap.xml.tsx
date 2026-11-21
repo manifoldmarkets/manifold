@@ -1,9 +1,10 @@
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
-import { searchContracts } from 'web/lib/api/api'
+import { searchDiscoveryMarkets } from 'web/lib/api/discovery-markets'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const contracts = await searchContracts({
+  const contracts = await searchDiscoveryMarkets({
+    sportsDiscovery: 'sitemap',
     term: '',
     filter: 'all',
     sort: 'score',

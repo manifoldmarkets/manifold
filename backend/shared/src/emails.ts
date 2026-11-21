@@ -536,6 +536,7 @@ export const sendInterestingMarketsEmail = async (
   privateUser: PrivateUser,
   contractsToSend: Contract[]
 ) => {
+  if (contractsToSend.length < 6) return false
   if (!privateUser || !privateUser.email) {
     log.error('No private user or email to send interesting markets email to', {
       userName,
@@ -551,7 +552,7 @@ export const sendInterestingMarketsEmail = async (
 
   const firstName = userName.split(' ')[0]
 
-  await sendTemplateEmail(
+  const sent = await sendTemplateEmail(
     privateUser.email,
     `${contractsToSend[0].question} & 5 more interesting markets on Manifold`,
     'interesting-markets',
@@ -578,6 +579,7 @@ export const sendInterestingMarketsEmail = async (
       question6ImgSrc: imageSourceUrl(contractsToSend[5]),
     }
   )
+  return Boolean(sent)
 }
 
 export const sendBonusWithInterestingMarketsEmail = async (
@@ -599,6 +601,17 @@ export const sendBonusWithInterestingMarketsEmail = async (
 
   const { name } = user
   const firstName = name.split(' ')[0]
+
+  if (contractsToSend.length < 6) {
+    await sendTextEmail(
+      privateUser.email,
+      `Your Manifold signup bonus`,
+      `Hi ${firstName},\n\nWe added ${formatMoneyEmail(
+        bonusAmount
+      )} to your balance.\n\nUnsubscribe: ${unsubscribeUrl}`
+    )
+    return
+  }
 
   await sendTemplateEmail(
     privateUser.email,

@@ -8,9 +8,14 @@ export type FullMarketSearchResult = Contract & {
   // lexical/post ranking without promoting the semantic tail. It remains
   // optional so old workers and non-text search routes stay compatible.
   searchMatchType?: 'lexical' | 'semantic'
+  // Response-only acknowledgement on the last row of a filtered discovery page.
+  sportsDiscoveryFiltered?: true
 }
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
+
+export const MAX_MARKET_SEARCH_OFFSET = 1000
+export const MAX_MARKET_SEARCH_LIMIT = 1000
 
 export const searchProps = z
   .object({
@@ -69,7 +74,7 @@ export const searchProps = z
       ])
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),
-    limit: z.coerce.number().gt(0).lte(1000).default(100),
+    limit: z.coerce.number().gt(0).lte(MAX_MARKET_SEARCH_LIMIT).default(100),
     // Cursor for efficient pagination: pass the createdTime of the last
     // result from the previous page. Only works with sort=newest.
     beforeTime: z.coerce.number().optional(),
@@ -119,6 +124,44 @@ export const searchProps = z
     discoveryVariant: z.enum(['control', 'treatment']).optional(),
   })
   .strict()
+
+// Both fields travel together so a worker predating this cursor cannot apply
+// only its timestamp and skip markets sharing the boundary millisecond.
+export function parseSportsDiscoveryCursor(value: string) {
+  const match = /^([1-9][0-9]{0,15}):([A-Za-z0-9_-]{1,128})$/.exec(value)
+  if (!match || match[0] !== value) return null
+  const beforeTime = Number(match[1])
+  if (!Number.isSafeInteger(beforeTime) || beforeTime >= 8_640_000_000_000_000)
+    return null
+  return { beforeTime, beforeId: match[2] }
+}
+
+export const fullSearchProps = searchProps.extend({
+  sportsDiscovery: z.enum(['home', 'new', 'sitemap']).optional(),
+  sportsDiscoveryCursor: z
+    .string()
+    .max(145)
+    .refine((s) => !!parseSportsDiscoveryCursor(s))
+    .optional(),
+})
+
+export function shouldExcludeOfficialSports(
+  props: z.input<typeof fullSearchProps>
+) {
+  if (
+    props.term?.trim() ||
+    props.topicSlug ||
+    props.gids ||
+    props.creatorId ||
+    props.hasBets === '1'
+  )
+    return false
+  if (props.sportsDiscovery === 'home') return true
+  if (props.forYou === '1') return false
+  return props.sportsDiscovery === 'new'
+    ? props.sort === 'newest'
+    : props.sportsDiscovery === 'sitemap' && props.sort === 'score'
+}
 
 type SearchProps = z.infer<typeof searchProps>
 

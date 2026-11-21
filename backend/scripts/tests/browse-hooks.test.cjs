@@ -269,13 +269,40 @@ afterEach(async () => {
   await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
   document.body.innerHTML = ''
 })
+const zod = require('zod')
+const marketSearchTypes = load('common/src/api/market-search-types.ts', {
+  zod,
+  './zod-types': load('common/src/api/zod-types.ts', { zod }),
+})
+
 function markets(api) {
-  return load('web/components/browse-v2/use-browse-markets.ts', {
-    react: React,
-    lodash: require('lodash'),
-    'client-common/hooks/use-event': useEvent,
-    'web/lib/api/api': { api },
-  }).useBrowseMarkets
+  const transport = {
+    APIError: class APIError extends Error {},
+    api: async (name, params, options) => {
+      const page = await api(name, params, options)
+      if (!params.sportsDiscovery || !page.length) return page
+      return page.map((row, i) =>
+        i === page.length - 1 ? { ...row, sportsDiscoveryFiltered: true } : row
+      )
+    },
+  }
+  const discovery = load('web/lib/api/discovery-markets.ts', {
+    'common/api/market-search-types': marketSearchTypes,
+    // The existing lifecycle fixtures contain only ordinary markets.
+    'common/sports-discovery': { isOfficialSportsGameMarket: () => false },
+    './api': transport,
+  })
+  return load(
+    'web/components/browse-v2/use-browse-markets.ts',
+    {
+      react: React,
+      lodash: require('lodash'),
+      'next/router': { useRouter: () => ({ pathname: '/browse' }) },
+      'client-common/hooks/use-event': useEvent,
+      'web/lib/api/discovery-markets': discovery,
+    },
+    { AbortController }
+  ).useBrowseMarkets
 }
 
 // Exercise the actual Browse caller and pagination hook, replacing only the
@@ -527,14 +554,14 @@ for (const sort of ['score', 'newest']) {
   test(`failed ${sort} page retries the same cursor and preserves existing results`, async () => {
     const calls = []
     const first = [
-      { id: 'a', createdTime: 20 },
+      { id: 'a', createdTime: 10 },
       { id: 'b', createdTime: 10 },
     ]
     const useMarkets = markets(async (_, args) => {
       calls.push(args)
       if (calls.length === 1) return first
       if (calls.length === 2) throw new Error('offline')
-      return [{ id: 'c', createdTime: 5 }]
+      return [{ id: 'c', createdTime: 10 }]
     })
     const probe = await mount(() => useMarkets({ sort }, 2))
     await act(async () => probe.value.loadMore())
@@ -547,7 +574,11 @@ for (const sort of ['score', 'newest']) {
     await act(async () => probe.value.retry())
     assert.deepEqual(calls[2], calls[1])
     assert.equal(calls[2].offset, sort === 'newest' ? 0 : 2)
-    assert.equal(calls[2].beforeTime, sort === 'newest' ? 10 : undefined)
+    assert.equal(calls[2].beforeTime, undefined)
+    assert.equal(
+      calls[2].sportsDiscoveryCursor,
+      sort === 'newest' ? '10:b' : undefined
+    )
     assert.deepEqual(
       probe.value.contracts.map((c) => c.id),
       ['a', 'b', 'c']
