@@ -1,0 +1,253 @@
+-- Live per-user stats, kept by the database in the same transaction as the
+-- write that changes them. First stat: trades (see user_stats_bet_trades).
+-- Design and rollout: dev-docs/user-stats.md.
+--
+-- Run this file as ONE transaction (it says begin/commit). It briefly blocks
+-- writes to contract_bets while it installs the triggers; if a write holds the
+-- table for more than 5 seconds it gives up, and it can simply be run again.
+begin;
+
+set local lock_timeout = '5s';
+
+-- One row per user who has ever had a counted trade. Only the primary key is
+-- indexed, so the per-bet increments are HOT updates; the fill factor leaves
+-- room on each page for them.
+create table if not exists user_stats (
+  user_id text primary key,
+  -- Can dip below the true value while the backfill is running (a pre-install
+  -- bet deleted before its window is subtracted first); never compared to 0
+  -- for that reason, and not constrained.
+  trades integer not null default 0,
+  updated_time timestamptz not null default now()
+) with (fillfactor = 80);
+
+alter table user_stats enable row level security;
+
+drop policy if exists "public read" on user_stats;
+
+create policy "public read" on user_stats for select using (true);
+
+-- Whether a contract_bets row counts as a trade: a bet in a mana market (checked
+-- by the caller) whose filled amount is not zero, placed by a person (not via
+-- the API), and not a redemption, including the automatic sell-all legs that
+-- redeem a full set of a multiple-choice market (isAutoRedemption in data).
+-- A limit order counts once, when it first fills; a market buy or sell counts
+-- at once.
+create or replace function user_stats_bet_trades (
+  amount numeric,
+  is_redemption boolean,
+  is_api boolean,
+  is_auto_redemption boolean
+) returns integer language sql immutable parallel safe as $$
+  select case
+    when amount <> 0
+      and is_redemption is not true
+      and is_api is not true
+      and is_auto_redemption is not true
+    then 1 else 0 end
+$$;
+
+-- Backfill support. While the backfill adds up history, the first time a bet
+-- that existed when the triggers were installed changes or is deleted, its
+-- state at that moment is saved here, and a bet inserted after the install but
+-- dated at or before the bound is recorded as not having existed. The backfill
+-- then counts each bet dated at or before the bound exactly once, as it was at
+-- the install; the triggers count every change since. Dropped, with the saving
+-- step of the triggers, once the backfill is done (a later migration).
+create table if not exists user_stats_bet_journal (
+  bet_id text primary key,
+  user_id text not null,
+  contract_id text not null,
+  created_time timestamptz not null,
+  -- false: inserted after the install; the remaining columns are null.
+  existed boolean not null,
+  amount numeric,
+  is_redemption boolean,
+  is_api boolean,
+  is_auto_redemption boolean
+);
+
+create index if not exists user_stats_bet_journal_created_time on user_stats_bet_journal (created_time);
+
+alter table user_stats_bet_journal enable row level security;
+
+-- Progress of backend/scripts/backfill-user-stats.ts, one row per stat.
+create table if not exists user_stats_backfill (
+  stat text primary key,
+  -- The newest created_time in contract_bets at the install. Every bet that
+  -- existed then is dated at or before it.
+  bound timestamptz not null,
+  -- Every bet dated before this has been added (null: not started).
+  done_before timestamptz,
+  completed_time timestamptz,
+  updated_time timestamptz not null default now()
+);
+
+alter table user_stats_backfill enable row level security;
+
+-- No writes to contract_bets from here to commit.
+lock table contract_bets in share row exclusive mode;
+
+-- The bound is written into a function rather than read from
+-- user_stats_backfill by the triggers: a serializable bet transaction that
+-- started before this commits would not see that row, but always runs the
+-- current trigger and function definitions.
+-- Running this file again keeps the bound it recorded the first time.
+do $$
+declare
+  b timestamptz;
+begin
+  select bound into b from user_stats_backfill where stat = 'trades';
+  if b is null then
+    select max(created_time) into b from contract_bets;
+    b := coalesce(b, now());
+    insert into user_stats_backfill (stat, bound) values ('trades', b);
+  end if;
+  execute format(
+    'create or replace function user_stats_bet_bound() returns timestamptz '
+    'language sql immutable parallel safe as $f$ select %L::timestamptz $f$',
+    b
+  );
+end
+$$;
+
+create or replace function user_stats_bets_inserted () returns trigger language plpgsql as $$
+begin
+  insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
+  select n.bet_id, n.user_id, n.contract_id, n.created_time, false
+  from new_bets n
+  where n.created_time <= user_stats_bet_bound()
+  on conflict (bet_id) do nothing;
+
+  insert into user_stats as s (user_id, trades, updated_time)
+  select n.user_id, count(*), now()
+  from new_bets n
+  join contracts c on c.id = n.contract_id and c.token = 'MANA'
+  where user_stats_bet_trades(
+    n.amount, n.is_redemption, n.is_api,
+    coalesce(n.data ->> 'isAutoRedemption' = 'true', false)
+  ) = 1
+  group by n.user_id
+  order by n.user_id
+  on conflict (user_id) do update
+    set trades = s.trades + excluded.trades, updated_time = excluded.updated_time;
+  return null;
+end
+$$;
+
+-- An update counts as the old row removed and the new one added, each for its
+-- own user and contract, so a change of user, contract or flags is counted
+-- right. Most updates (later fills, cancellations, expiries) change nothing
+-- and write nothing.
+create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
+begin
+  insert into user_stats_bet_journal (
+    bet_id, user_id, contract_id, created_time, existed,
+    amount, is_redemption, is_api, is_auto_redemption
+  )
+  select o.bet_id, o.user_id, o.contract_id, o.created_time, true,
+    o.amount, o.is_redemption, o.is_api,
+    coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
+  from old_bets o
+  where o.created_time <= user_stats_bet_bound()
+  on conflict (bet_id) do nothing;
+  -- A bet id that only exists after this update didn't exist at the install.
+  insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
+  select n.bet_id, n.user_id, n.contract_id, n.created_time, false
+  from new_bets n
+  where n.created_time <= user_stats_bet_bound()
+    and not exists (select 1 from old_bets o where o.bet_id = n.bet_id)
+  on conflict (bet_id) do nothing;
+
+  insert into user_stats as s (user_id, trades, updated_time)
+  select d.user_id, sum(d.trades), now()
+  from (
+    select n.user_id, 1 as trades
+    from new_bets n
+    join contracts c on c.id = n.contract_id and c.token = 'MANA'
+    where user_stats_bet_trades(
+      n.amount, n.is_redemption, n.is_api,
+      coalesce(n.data ->> 'isAutoRedemption' = 'true', false)
+    ) = 1
+    union all
+    select o.user_id, -1 as trades
+    from old_bets o
+    join contracts c on c.id = o.contract_id and c.token = 'MANA'
+    where user_stats_bet_trades(
+      o.amount, o.is_redemption, o.is_api,
+      coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
+    ) = 1
+  ) d
+  group by d.user_id
+  having sum(d.trades) <> 0
+  order by d.user_id
+  on conflict (user_id) do update
+    set trades = s.trades + excluded.trades, updated_time = excluded.updated_time;
+  return null;
+end
+$$;
+
+create or replace function user_stats_bets_deleted () returns trigger language plpgsql as $$
+begin
+  insert into user_stats_bet_journal (
+    bet_id, user_id, contract_id, created_time, existed,
+    amount, is_redemption, is_api, is_auto_redemption
+  )
+  select o.bet_id, o.user_id, o.contract_id, o.created_time, true,
+    o.amount, o.is_redemption, o.is_api,
+    coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
+  from old_bets o
+  where o.created_time <= user_stats_bet_bound()
+  on conflict (bet_id) do nothing;
+
+  insert into user_stats as s (user_id, trades, updated_time)
+  select o.user_id, -count(*), now()
+  from old_bets o
+  join contracts c on c.id = o.contract_id and c.token = 'MANA'
+  where user_stats_bet_trades(
+    o.amount, o.is_redemption, o.is_api,
+    coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
+  ) = 1
+  group by o.user_id
+  order by o.user_id
+  on conflict (user_id) do update
+    set trades = s.trades + excluded.trades, updated_time = excluded.updated_time;
+  return null;
+end
+$$;
+
+-- TRUNCATE skips the delete trigger, so the counts would silently go wrong.
+create or replace function user_stats_bets_truncated () returns trigger language plpgsql as $$
+begin
+  raise exception 'contract_bets feeds user_stats: delete rows instead of truncating, or rebuild user_stats';
+end
+$$;
+
+drop trigger if exists user_stats_bets_inserted on contract_bets;
+
+create trigger user_stats_bets_inserted
+after insert on contract_bets
+referencing new table as new_bets
+for each statement execute function user_stats_bets_inserted ();
+
+drop trigger if exists user_stats_bets_updated on contract_bets;
+
+create trigger user_stats_bets_updated
+after update on contract_bets
+referencing old table as old_bets new table as new_bets
+for each statement execute function user_stats_bets_updated ();
+
+drop trigger if exists user_stats_bets_deleted on contract_bets;
+
+create trigger user_stats_bets_deleted
+after delete on contract_bets
+referencing old table as old_bets
+for each statement execute function user_stats_bets_deleted ();
+
+drop trigger if exists user_stats_bets_truncated on contract_bets;
+
+create trigger user_stats_bets_truncated
+before truncate on contract_bets
+for each statement execute function user_stats_bets_truncated ();
+
+commit;
