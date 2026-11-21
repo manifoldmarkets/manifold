@@ -53,6 +53,8 @@ export const hideComment: APIHandler<'hide-comment'> =
       }
 
       const comment = await getComment(pg, commentId)
+      if (comment.contractId !== contractId)
+        throw new APIError(400, 'Comment does not belong to this market')
 
       if (
         (isAdminId(comment.userId) || isModId(comment.userId)) &&

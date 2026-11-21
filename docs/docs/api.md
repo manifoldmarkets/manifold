@@ -1315,7 +1315,7 @@ Distribute a bounty market reward.
 Parameters:
 
 - `amount`: Amount of M$ to add
-- `commentId`: The comment to award the bounty to.
+- `commentId`: The comment to award the bounty to. Must be a comment on this market.
 
 [Requires Auth](#authentication).
 
