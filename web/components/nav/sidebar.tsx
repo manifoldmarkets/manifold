@@ -232,7 +232,11 @@ export default function Sidebar(props: {
           'm-0 mb-4 flex list-none flex-col gap-1 p-0',
           // On a short desktop screen the links scroll, so "More" (theme,
           // sign out) stays on screen. The phone drawer scrolls as a whole.
-          !isMobile && 'min-h-0 overflow-y-auto overflow-x-hidden'
+          // The 4px of padding, taken back by the negative margin, and the
+          // matching scroll padding keep a focus outline (2px, 2px out)
+          // inside the scroll box.
+          !isMobile &&
+            '-mx-1 -mt-1 min-h-0 scroll-p-1 overflow-y-auto overflow-x-hidden p-1'
         )}
       >
         {navOptions.map((item) => (
