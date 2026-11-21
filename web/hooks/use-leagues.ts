@@ -18,9 +18,14 @@ export const useLeagueInfo = (userId: string | null | undefined) => {
 
   useEffect(() => {
     if (userId && seasonInfo?.season) {
-      getLeagueInfo(userId, seasonInfo.season).then((result) => {
-        setLeagueInfo(result as league_user_info | null)
-      })
+      getLeagueInfo(userId, seasonInfo.season)
+        .then((result) => {
+          setLeagueInfo(result as league_user_info | null)
+        })
+        .catch(() => {
+          // Keep the last known value: a failed lookup isn't "no league" (the
+          // profile showcase would otherwise drop a saved league pin).
+        })
     }
   }, [userId, seasonInfo?.season])
 
