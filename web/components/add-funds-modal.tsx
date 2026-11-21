@@ -20,6 +20,11 @@ import { TokenNumber } from './widgets/token-number'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { checkoutURL } from 'web/lib/service/stripe'
+import { getSaleCardPriceInDollars } from 'common/holiday-sale'
+import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
+
+const formatDollars = (dollars: number) =>
+  Number.isInteger(dollars) ? String(dollars) : dollars.toFixed(2)
 
 const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/10k.png',
@@ -99,6 +104,14 @@ export function PriceTile(props: {
   const { loadingPrice, onClick, amounts, index, user } = props
   const { mana, priceInDollars, bonusInDollars } = amounts
 
+  // Holiday sale: the API puts the coupon on the card checkout, so show the
+  // price Stripe will charge.
+  const holidaySale = useActiveHolidaySale()
+  const discounted = holidaySale
+    ? getSaleCardPriceInDollars(priceInDollars, holidaySale.manaDiscount)
+    : priceInDollars
+  const salePrice = discounted < priceInDollars ? discounted : undefined
+
   const isCurrentlyLoading = loadingPrice === priceInDollars
   const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
 
@@ -170,7 +183,16 @@ export function PriceTile(props: {
           'bg-indigo-600'
         )}
       >
-        Buy ${priceInDollars}
+        {salePrice !== undefined ? (
+          <>
+            <span className="mr-1.5 text-sm font-normal text-white/70 line-through sm:text-base">
+              ${priceInDollars}
+            </span>
+            Buy ${formatDollars(salePrice)}
+          </>
+        ) : (
+          <>Buy ${priceInDollars}</>
+        )}
       </div>
     </button>
   )

@@ -214,7 +214,10 @@ type ManaPurchase = {
         type: 'stripe'
         // Stripe historically stored priceInDollars in paidInCents (i.e. dollars, not cents).
         // Some historical rows are missing this; use getPaidDollarsFromManaPurchase.
+        // Holiday sale rows store the dollars Stripe charged (e.g. 18.75).
         paidInCents?: number
+        // Set when the Black Friday / Cyber Monday coupon was applied.
+        holidaySaleId?: string
       }
     | {
         transactionId: string

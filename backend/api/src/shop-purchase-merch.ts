@@ -9,6 +9,12 @@ import {
   requiresRecipientEmail,
 } from 'common/shop/printful-address'
 import { getBenefit } from 'common/supporter-config'
+import {
+  applyShopDiscount,
+  getActiveHolidaySale,
+  getShopDiscount,
+  HOLIDAY_SALE_CHARGE_GRACE_MS,
+} from 'common/holiday-sale'
 import { convertEntitlement } from 'common/shop/types'
 import { betsQueue } from 'shared/helpers/fn-queue'
 
@@ -139,16 +145,25 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
           }
         }
 
-        // Get supporter discount (applies to item price only, not shipping)
+        // Discount applies to the item price only, not shipping: the
+        // supporter discount, or a Black Friday / Cyber Monday sale's merch
+        // discount if bigger (they don't stack). The grace keeps a form opened
+        // just before a sale ended at the price it showed.
         const entRows = await tx.manyOrNone(
           `SELECT * FROM user_entitlements WHERE user_id = $1`,
           [auth.uid]
         )
         const currentEntitlements = entRows.map(convertEntitlement)
-        const shopDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
-        const discountedItemPrice = shopDiscount > 0
-          ? Math.floor(item.price * (1 - shopDiscount))
-          : item.price
+        const supporterDiscount = getBenefit(
+          currentEntitlements,
+          'shopDiscount',
+          0
+        )
+        const { fraction: shopDiscount, sale } = getShopDiscount(
+          supporterDiscount,
+          getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+        )
+        const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
         const totalCharge = discountedItemPrice + shippingCost
 
         // Check balance
@@ -168,7 +183,9 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
           `Purchased ${item.name}${variant.color ? ` (${variant.color})` : ''}`,
         ]
         if (discountPercent > 0) {
-          descriptionParts.push(`(${discountPercent}% supporter discount)`)
+          descriptionParts.push(
+            `(${discountPercent}% ${sale ? sale.name : 'supporter'} discount)`
+          )
         }
         if (shippingCost > 0) {
           descriptionParts.push(`+ M$${shippingCost} shipping`)
@@ -182,7 +199,17 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
           amount: totalCharge,
           token: 'M$',
           description: descriptionParts.join(' '),
-          data: { itemId, variantId, merchOrder: true, supporterDiscount: shopDiscount, shippingCost },
+          data: {
+            itemId,
+            variantId,
+            merchOrder: true,
+            // The discount actually applied, under the key it was named for.
+            supporterDiscount: sale ? 0 : shopDiscount,
+            ...(sale
+              ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
+              : {}),
+            shippingCost,
+          },
         }
 
         const txn = await runTxnOutsideBetQueue(tx, txnData)
