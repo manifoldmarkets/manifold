@@ -42,6 +42,8 @@ jest.mock('./social-discussion', () => ({
   // No id in these cases is a comment's own, so nothing is looked up first.
   isMarketCommentPostId: (id: string) => id.startsWith('mc-'),
   materializeSocialPost: jest.fn(),
+  // The top-level comment of the thread that the comment answered is in.
+  marketReplyTarget: jest.fn(async () => 'thread'),
   ensureMarketCommentPost: jest.fn(async () => ({ id: 'original' })),
   isCommentYapRepresentable: jest.fn(() => true),
   subscribeToSocialThread: jest.fn(),
@@ -71,6 +73,7 @@ import {
 } from 'api/social-posts'
 import {
   isCommentYapRepresentable,
+  marketReplyTarget,
   materializeSocialPost,
 } from './social-discussion'
 import { createSupabaseDirectClient } from './supabase/init'
@@ -171,11 +174,8 @@ beforeEach(() => {
         inTx = false
       }
     }),
-    // The insert returns the row; the thread lookup resolves a reply to its
-    // top-level comment.
-    one: jest.fn(async (sql: string, _values: unknown, map?: (r: any) => any) =>
-      /replyToCommentId/.test(sql) ? map!({ id: 'thread' }) : row
-    ),
+    // The insert returns the row.
+    one: jest.fn(async () => row),
     oneOrNone: jest.fn().mockResolvedValue(quotedComment()),
     none: jest.fn(async () => {
       noneInTx.push(inTx)
@@ -259,6 +259,9 @@ test('a Yap shared from a comment also replies in that comment thread', async ()
   expect(commentAnnounce.mock.invocationCallOrder[0]).toBeLessThan(
     jest.mocked(hydrateSocialPosts).mock.invocationCallOrder[0]
   )
+  // The market comment replies to the top-level comment of the quoted
+  // comment's thread, looked up on that comment's market in the transaction.
+  expect(marketReplyTarget).toHaveBeenCalledWith(pg, 'market', 'reply')
   expect(createCommentOnContractInternal).toHaveBeenCalledWith(
     'market',
     auth,

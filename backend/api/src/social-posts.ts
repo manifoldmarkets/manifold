@@ -22,6 +22,7 @@ import {
   isMarketCommentPostId,
   listCardComments,
   listCommentReplies,
+  marketReplyTarget,
   materializeSocialPost,
   subscribeToSocialThread,
 } from 'shared/social-discussion'
@@ -318,13 +319,10 @@ async function commentFromSocialPost(
   commentId: string,
   auth: AuthedUser
 ) {
+  // In the thread of the comment answered: under its top-level comment, however
+  // many replies to replies lie between the two in older data.
   const replyToCommentId = source.commentId
-    ? await tx.one<string>(
-        `select coalesce(data->>'replyToCommentId', comment_id) as id
-        from contract_comments where comment_id = $1`,
-        [source.commentId],
-        (r) => r.id
-      )
+    ? await marketReplyTarget(tx, source.contractId, source.commentId)
     : undefined
   const {
     result,

@@ -186,8 +186,16 @@ export async function ensureMarketCommentPost(
     // meanwhile), it gets no post. Without this it would become a post of
     // its own, which is what sharing a comment does and nothing else should.
     inDiscussion?: boolean
+    // The comments already gone through on the way up from the one being
+    // placed. Older data can hold two comments that reply to each other, or
+    // one that replies to itself. Followed without this, the request would
+    // go round them until the server stopped, holding its connection and the
+    // comments' locks. Such a comment has no place on Yap and is refused.
+    seen?: ReadonlySet<string>
   } = {}
 ): Promise<SocialRow> {
+  if (options.seen?.has(commentId))
+    throw new APIError(404, 'This comment is unavailable')
   const row = await pg.oneOrNone<{
     data: ContractComment
     contract_id: string
@@ -255,7 +263,11 @@ export async function ensureMarketCommentPost(
         pg,
         comment.replyToCommentId,
         row.contract_id,
-        { asParent: true, inDiscussion: options.inDiscussion }
+        {
+          asParent: true,
+          inDiscussion: options.inDiscussion,
+          seen: new Set(options.seen).add(commentId),
+        }
       )
     : await marketDiscussionParent(pg, row.contract_id, comment.betId)
   if (!parent && options.inDiscussion) throw placeChanged(true)
@@ -815,6 +827,50 @@ export async function materializeSocialPost(
     pending.source_contract_id ?? undefined,
     { sharer, inDiscussion: true }
   )
+}
+
+// The comment that a new market comment names as the one it replies to, when
+// it is written on Yap in answer to `commentId`: the top-level comment of that
+// comment's thread. The market takes replies to top-level comments only, and
+// its own pages put an answer to a reply under the top-level comment too.
+//
+// Usually that is the comment itself or the one it replies to. Older data has
+// replies to replies, so the way up can take more steps. It is followed inside
+// the comment's own market, and never through the same comment twice. A reply
+// id that is empty counts as none, as it does where comments are written.
+//
+// If the way up does not end at a top-level comment (the comment replied to is
+// missing, or the replies go round in a circle), the answer is the one given
+// before this walk existed: the comment's own parent. The market then refuses
+// the write itself, as it did.
+//
+// No thread on a market is anywhere near MARKET_REPLY_MAX_STEPS deep. The
+// limit only keeps one request from walking an absurd chain.
+const MARKET_REPLY_MAX_STEPS = 50
+export async function marketReplyTarget(
+  pg: DB,
+  contractId: string,
+  commentId: string
+) {
+  const found = await pg.oneOrNone<{ id: string | null }>(
+    `with recursive up as (
+       select cc.comment_id, nullif(cc.data->>'replyToCommentId','') as reply_to,
+         array[cc.comment_id] as path
+       from contract_comments cc where cc.contract_id=$1 and cc.comment_id=$2
+       union all
+       select parent.comment_id, nullif(parent.data->>'replyToCommentId',''),
+         up.path || parent.comment_id
+       from up join contract_comments parent
+         on parent.contract_id=$1 and parent.comment_id=up.reply_to
+       where parent.comment_id<>all(up.path) and cardinality(up.path)<$3
+     )
+     select coalesce(
+       (select comment_id from up where reply_to is null),
+       (select reply_to from up where cardinality(path)=1)
+     ) as id`,
+    [contractId, commentId, MARKET_REPLY_MAX_STEPS]
+  )
+  return found?.id ?? commentId
 }
 
 // A comment written on its market joins a discussion that is already on Yap:

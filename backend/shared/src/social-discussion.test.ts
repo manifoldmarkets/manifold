@@ -38,6 +38,7 @@ import {
   findSocialSource,
   isCommentYapRepresentable,
   linkCommentToOpenDiscussion,
+  marketReplyTarget,
   materializeSocialPost,
   syncSocialPostFromComment,
 } from './social-discussion'
@@ -477,6 +478,59 @@ describe('adding a market to Yap, and the comments it already has', () => {
     expect(await count('social_posts')).toBe(0)
   })
 
+  test('sharing a comment in a circle of replies is refused, not followed for ever', async () => {
+    // Older data: two comments that reply to each other, one that replies to
+    // itself, and a reply that hangs off the pair.
+    await insertComment('first', { data: { replyToCommentId: 'second' } })
+    await insertComment('second', { data: { replyToCommentId: 'first' } })
+    await insertComment('own', { data: { replyToCommentId: 'own' } })
+    await insertComment('under-first', { data: { replyToCommentId: 'first' } })
+    const inCircle = ['first', 'second', 'own', 'under-first']
+    // Placing a comment takes a handful of statements. They are counted here,
+    // so that going round the circle fails this test instead of never ending.
+    let statements = 0
+    const counting = Object.fromEntries(
+      Object.entries(client).map(([name, run]) => [
+        name,
+        (...args: unknown[]) => {
+          if (++statements > 40)
+            throw new Error('went round the circle of replies')
+          return (run as (...args: unknown[]) => unknown)(...args)
+        },
+      ])
+    ) as unknown as SupabaseDirectClient
+    for (const id of inCircle) {
+      statements = 0
+      await expect(ensureMarketCommentPost(counting, id)).rejects.toMatchObject(
+        {
+          code: 404,
+          message: 'This comment is unavailable',
+        }
+      )
+    }
+    // The same through a share, in its transaction, with and without a card.
+    for (const withCard of [false, true]) {
+      if (withCard) await ensureSocialSource(pg, { contractId: 'market' })
+      for (const id of inCircle)
+        await expect(
+          pg.tx((tx) =>
+            ensureSocialSource(tx, { contractId: 'market', commentId: id })
+          )
+        ).rejects.toMatchObject({ code: 404 })
+    }
+    expect(await count('social_posts', 'market_comment_id is not null')).toBe(0)
+
+    // A thread with no circle in it is placed as before, reply to reply too.
+    await insertComment('top')
+    await insertComment('reply', { data: { replyToCommentId: 'top' } })
+    await insertComment('deeper', { data: { replyToCommentId: 'reply' } })
+    const deeper = await pg.tx((tx) =>
+      ensureSocialSource(tx, { contractId: 'market', commentId: 'deeper' })
+    )
+    expect(deeper.parent_id).toBe('mc-reply')
+    expect((await post('mc-reply'))!.parent_id).toBe('mc-top')
+  })
+
   test('sharing a comment its author took off Yap says so, to a sharer with no block; other refusals stay general', async () => {
     for (const id of ['mine', 'moderated', 'hidden-on-yap']) {
       await insertComment(id)
@@ -766,6 +820,71 @@ describe('a comment written on the market', () => {
       await findSocialSource(pg, { contractId: 'other', commentId: 'c1' })
     ).toBeNull()
     expect((await findSocialSource(pg, { postId: card.id }))!.id).toBe(card.id)
+  })
+})
+
+describe('the market comment that a reply written on Yap is put under', () => {
+  const target = (commentId: string, contract = 'market') =>
+    marketReplyTarget(pg, contract, commentId)
+  const reply = (id: string, to: string, contract = 'market') =>
+    insertComment(id, { contract, data: { replyToCommentId: to } })
+
+  test('is the top-level comment of the thread, however deep the comment answered sits', async () => {
+    await insertComment('top')
+    await reply('reply', 'top')
+    // Older data: replies to replies, which the market no longer takes.
+    await reply('deeper', 'reply')
+    await reply('deepest', 'deeper')
+    for (const id of ['top', 'reply', 'deeper', 'deepest'])
+      expect(await target(id)).toBe('top')
+    // An empty reply id is no reply id, as where comments are written.
+    await reply('blank', '')
+    await reply('under-blank', 'blank')
+    expect(await target('blank')).toBe('blank')
+    expect(await target('under-blank')).toBe('blank')
+  })
+
+  test("is looked for on the comment's own market only", async () => {
+    // The same ids on another market, where the thread leads somewhere else.
+    await insertComment('top', { contract: 'other' })
+    await reply('reply', 'top', 'other')
+    await insertComment('top')
+    await insertComment('second-top')
+    await reply('reply', 'second-top')
+    expect(await target('reply')).toBe('second-top')
+    expect(await target('reply', 'other')).toBe('top')
+    // A reply whose parent is on the other market only has no way up here,
+    // though that parent has one there.
+    await insertComment('far-top', { contract: 'other' })
+    await reply('elsewhere', 'far-top', 'other')
+    await reply('stray', 'elsewhere')
+    expect(await target('stray')).toBe('elsewhere')
+    // And a comment asked for on a market it is not on is not found.
+    expect(await target('stray', 'other')).toBe('stray')
+  })
+
+  test('is the comment replied to, as before, where the way up has no top: the market then refuses the write', async () => {
+    // The comment replied to is gone.
+    await reply('orphan', 'gone')
+    expect(await target('orphan')).toBe('gone')
+    // Replies that go round in a circle.
+    await reply('first', 'second')
+    await reply('second', 'first')
+    await reply('own', 'own')
+    await reply('under-first', 'first')
+    expect(await target('first')).toBe('second')
+    expect(await target('second')).toBe('first')
+    expect(await target('own')).toBe('own')
+    expect(await target('under-first')).toBe('first')
+    // A comment that does not exist.
+    expect(await target('nobody')).toBe('nobody')
+  })
+
+  test('goes up fifty comments and no further', async () => {
+    await insertComment('c1')
+    for (let i = 2; i <= 51; i++) await reply(`c${i}`, `c${i - 1}`)
+    expect(await target('c50')).toBe('c1')
+    expect(await target('c51')).toBe('c50')
   })
 })
 
