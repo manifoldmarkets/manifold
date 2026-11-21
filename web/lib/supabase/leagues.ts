@@ -2,13 +2,16 @@ import { league_user_info } from 'common/leagues'
 import { convertSQLtoTS, tsToMillis } from 'common/supabase/utils'
 import { db } from './db'
 
+// null: no league this season. Throws if the lookup fails, so a failure isn't
+// mistaken for "no league".
 export async function getLeagueInfo(userId: string, season: number) {
-  const { data } = await db
+  const { data, error } = await db
     .from('user_league_info')
     .select('*')
     .eq('user_id', userId)
     .eq('season', season)
     .limit(1)
+  if (error) throw error
   if (data && data.length > 0) {
     return data[0]
   }
