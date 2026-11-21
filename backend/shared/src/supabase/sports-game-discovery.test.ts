@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 jest.mock('shared/supabase/init', () => ({
   pgp: jest.requireActual('pg-promise')(),
   createSupabaseDirectClient: jest.fn(),
@@ -305,6 +309,39 @@ describe('interesting-market selection for the weekly and onboarding templates',
       ).toEqual([{ weekly_trending_email_sent: accepted }])
     }
   )
+  it('retains official games in weekly and signup recommendations and legacy weekly accounting with rollout off', async () => {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+    try {
+      const games = await getForYouMarkets('personalized', 6, recipient)
+      expect(games.slice(0, 6).every((c) => c.id.startsWith('game'))).toBe(true)
+      expect(games.length).toBeGreaterThanOrEqual(6)
+      jest.mocked(sendTemplateEmail).mockResolvedValue(null)
+      await sendWeeklyMarketsEmails()
+      expect(
+        (await db.query('select weekly_trending_email_sent from private_users'))
+          .rows
+      ).toEqual([{ weekly_trending_email_sent: true }])
+      await sendBonusWithInterestingMarketsEmail(
+        { name: 'Test User' } as User,
+        recipient,
+        games,
+        50
+      )
+      expect(sendTemplateEmail).toHaveBeenCalledWith(
+        recipient.email,
+        expect.any(String),
+        'signup-bonus-with-interesting-markets',
+        expect.objectContaining({
+          question1Link: 'https://example.invalid/' + games[0].id,
+          question6Link: 'https://example.invalid/' + games[5].id,
+        })
+      )
+      expect(sendTextEmail).not.toHaveBeenCalled()
+    } finally {
+      jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+    }
+  })
+
   it('keeps a sparse weekly recipient eligible and the onboarding bonus confirmation well formed', async () => {
     await db.exec(
       "delete from contracts where id in ('community6','community7')"

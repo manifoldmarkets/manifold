@@ -27,6 +27,7 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
@@ -308,7 +309,9 @@ export async function createOddsMarketsForCompetition(
           ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
-      const atKickoff = calendarEntriesOverlapping(start, start)
+      const atKickoff = isSportsBdlEnabled()
+        ? calendarEntriesOverlapping(start, start)
+        : []
       const competing = atKickoff.filter(
         (p) => p.provider === 'bdl' && p.sport === entry.sport
       )

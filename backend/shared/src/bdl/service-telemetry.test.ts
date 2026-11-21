@@ -1,3 +1,19 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+jest.mock('./dev-admission', () => ({
+  sendDevBdlRequest: jest.fn(
+    async (
+      _league: string,
+      enabled: () => Promise<boolean>,
+      send: () => Promise<unknown>
+    ) => {
+      if (!(await enabled()))
+        throw new Error('[sports-bdl-client] League disabled')
+      return send()
+    }
+  ),
+}))
 jest.mock('../supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('../monitoring/log', () => ({ log: { warn: jest.fn() } }))
 
@@ -142,7 +158,7 @@ it('counts successful HTTP even for malformed, unusable, or credential-echoing b
     .mockResolvedValueOnce(response(200, ','))
     .mockResolvedValueOnce(response(200, JSON.stringify({ echo: secret })))
     .mockResolvedValueOnce(response(200, '{"data":[2]}'))
-  const client = build(transport)
+  const client = build(transport, { maxAttempts: 1 })
   await expect(client.get(endpoint)).rejects.toThrow('Invalid JSON')
   await expect(client.get(endpoint)).rejects.toThrow('Credential found')
   await expect(
@@ -228,7 +244,7 @@ it('reports a bounded statusless connection warning without inventing an HTTP ro
       .mockImplementationOnce(() => {
         throw Error(secret)
       }),
-    { role: 'dev' }
+    { role: 'dev', maxAttempts: 1 }
   )
   for (let i = 0; i < 2; i++)
     await expect(c.get(endpoint)).rejects.toThrow('BDL connection failed')
@@ -246,13 +262,14 @@ it('disabled, unknown, and manual paths do not initialize the service database',
   await expect(off.get(endpoint)).rejects.toThrow('League disabled')
   await expect(
     off.getAll(endpoint, {}, { maxPages: 2, matches: () => true })
-  ).resolves.toEqual([])
+  ).rejects.toThrow('League disabled')
   expect(t).not.toHaveBeenCalled()
-  for (const role of ['codex', 'recorder', 'dev'] as const)
+  expect(() => build(t, { role: 'codex' })).toThrow('Codex replay requires')
+  for (const role of ['recorder', 'dev'] as const)
     await build(t, { role }).get(
       role === 'dev' ? '/nba/v1/private-resource' : endpoint
     )
-  expect(t).toHaveBeenCalledTimes(3)
+  expect(t).toHaveBeenCalledTimes(2)
   expect(createSupabaseDirectClient).not.toHaveBeenCalled()
   expect(JSON.stringify(jest.mocked(log.warn).mock.calls)).not.toContain(
     'private-resource'

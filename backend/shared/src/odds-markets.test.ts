@@ -1646,9 +1646,43 @@ it('backs off across the switch from live polls to a finals check', async () => 
   ])
 })
 
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+})
+it('preserves legacy NBA creation without BDL locks or switch rechecks when rollout is off', async () => {
+  process.env = { ...process.env }
+  delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  const competitionId = 'nba-regular-2026-27'
+  const locks = jest.fn()
+  const db = database({
+    onLock: locks,
+    latestSwitches: { 'Regular Season (BDL)': true },
+  })
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+  jest.mocked(getUpcomingOdds).mockResolvedValue([
+    {
+      ...event,
+      sport_key: 'basketball_nba',
+      commence_time: '2026-11-22T00:00:00Z',
+    },
+  ])
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    competitionId,
+    {
+      creator,
+      switches: { [competitionId + ':Regular Season']: true },
+    }
+  )
+  expect(result.created).toBe(1)
+  expect(locks).toHaveBeenCalledTimes(1)
+  expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+})
 it.each(['off', 'dual', 'on'] as const)(
   'rechecks a legacy game at the BDL cutover before funding when the current Odds state is %s',
   async (state) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
     const competitionId = 'nba-regular-2026-27'
     const db = database({
       latestSwitches: {

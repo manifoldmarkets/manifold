@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
 import { z } from 'zod'
 import type { ScheduleGame } from './sports-schedule'
 
@@ -114,6 +115,23 @@ export const publicSportsScoreSchema = z.object({
   sportsResumptionTime: time.nullable().optional(),
   sportsFinalQualifier: qualifier.nullable().optional(),
 })
+
+export const legacySportsScoreSchema = publicSportsScoreSchema
+  .pick({
+    sportsHomeScore: true,
+    sportsAwayScore: true,
+    sportsLiveMinute: true,
+    sportsLiveUpdatedTime: true,
+    sportsScoreUpdatedTime: true,
+  })
+  .extend({
+    sportsLiveStatus: z.enum(['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED']),
+  })
+
+/** The API and publisher expose the same score protocol for this deployment. */
+export const rolloutSportsScoreSchema = z.lazy(() =>
+  isSportsBdlEnabled() ? publicSportsScoreSchema : legacySportsScoreSchema
+)
 
 export type ScheduleScoreFields = {
   gameState?: SportsGameState

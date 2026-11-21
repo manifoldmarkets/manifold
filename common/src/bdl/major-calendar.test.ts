@@ -1,6 +1,7 @@
 import {
   autoCreates,
   calendarPhaseKey,
+  getSportsCalendar,
   competitionSwitchError,
   SPORTS_CALENDAR,
 } from '../sports-calendar'
@@ -23,7 +24,32 @@ it('starts all five major leagues off and keeps the previous NFL season with its
     SPORTS_CALENDAR.length
   )
 })
+it('shows the legacy calendar and rejects hidden BDL phase changes by default', () => {
+  const previous = process.env
+  process.env = { ...process.env }
+  try {
+    delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    expect(getSportsCalendar()).toEqual(
+      SPORTS_CALENDAR.filter((p) => p.provider !== 'bdl')
+    )
+    expect(
+      competitionSwitchError(nba.competitionId, nba.phase, true)
+    ).toContain('No calendar phase')
+    expect(
+      competitionSwitchError(legacy.competitionId, legacy.phase, true, {
+        [calendarPhaseKey(nba)]: true,
+      })
+    ).toBeUndefined()
+  } finally {
+    process.env = previous
+  }
+})
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+})
 it('allows one creator per league across overlapping phase switches in either direction', () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
   const check = (
     p: typeof nba,
     on: boolean,

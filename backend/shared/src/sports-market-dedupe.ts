@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_OPEN_ODDS_MATCH_WINDOW_MS } from 'common/bdl/constants'
 import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -87,7 +88,8 @@ export async function findLockedSportsMarket(
       )
   )
   if (exact || marketType !== 'moneyline') return exact
-  if (!bdl && providerOf(candidate) !== 'odds') return null
+  if (!bdl && (!isSportsBdlEnabled() || providerOf(candidate) !== 'odds'))
+    return null
 
   const sport: SportId | null | undefined = bdl
     ? candidate.sportsLeagueKey &&

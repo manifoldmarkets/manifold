@@ -270,7 +270,10 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 const zod = require('zod')
+let bdlEnabled = true
+const rollout = { isSportsBdlEnabled: () => bdlEnabled }
 const marketSearchTypes = load('common/src/api/market-search-types.ts', {
+  '../bdl/rollout': rollout,
   zod,
   './zod-types': load('common/src/api/zod-types.ts', { zod }),
 })
@@ -300,6 +303,7 @@ function markets(api) {
       'next/router': { useRouter: () => ({ pathname: '/browse' }) },
       'client-common/hooks/use-event': useEvent,
       'web/lib/api/discovery-markets': discovery,
+      'common/bdl/rollout': rollout,
     },
     { AbortController }
   ).useBrowseMarkets
@@ -548,6 +552,60 @@ test('the real Home page disables enrollment for loading and signed-out users', 
   user = null
   await probe.rerender()
   assert.equal(events.length, 0)
+})
+
+test('disabled rollout keeps the original browse pagination and sitemap entries for official sports', async () => {
+  bdlEnabled = false
+  try {
+    const sport = {
+      id: 'game',
+      creatorUsername: 'ManifoldSports',
+      slug: 'game',
+      sportsEventId: 'fd-90',
+      createdTime: 100,
+      volume24Hours: 20,
+    }
+    const calls = []
+    const useMarkets = markets(async (_name, params) => {
+      calls.push(params)
+      return calls.length === 1 ? [sport] : []
+    })
+    const probe = await mount(() => useMarkets({ sort: 'newest' }, 1))
+    await act(async () => probe.value.loadMore())
+    assert.equal(probe.value.contracts[0].id, sport.id)
+    assert.equal(calls.length, 2)
+    assert.equal(calls[1].beforeTime, 100)
+    for (const params of calls) {
+      assert.equal(Object.hasOwn(params, 'sportsDiscovery'), false)
+      assert.equal(Object.hasOwn(params, 'sportsDiscoveryCursor'), false)
+    }
+
+    const reads = []
+    const discovery = load('web/lib/api/discovery-markets.ts', {
+      'common/api/market-search-types': marketSearchTypes,
+      'common/sports-discovery': { isOfficialSportsGameMarket: () => true },
+      './api': {
+        api: async (name, params) => {
+          reads.push([name, params])
+          return [sport]
+        },
+      },
+    })
+    const sitemap = load('web/pages/server-sitemap.xml.tsx', {
+      'next-sitemap': { getServerSideSitemap: (_ctx, fields) => fields },
+      'web/lib/api/discovery-markets': discovery,
+    })
+    const fields = await sitemap.getServerSideProps({})
+    assert.equal(fields[0].loc, 'https://manifold.markets/ManifoldSports/game')
+    assert.equal(reads.length, 1)
+    assert.equal(reads[0][0], 'search-markets-full')
+    assert.deepEqual(
+      { ...reads[0][1] },
+      { term: '', filter: 'all', sort: 'score', limit: 1000 }
+    )
+  } finally {
+    bdlEnabled = true
+  }
 })
 
 for (const sort of ['score', 'newest']) {

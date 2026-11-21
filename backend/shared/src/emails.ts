@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { formatOraclePrice } from 'common/perps/oracle-display'
 import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
@@ -536,7 +537,7 @@ export const sendInterestingMarketsEmail = async (
   privateUser: PrivateUser,
   contractsToSend: Contract[]
 ) => {
-  if (contractsToSend.length < 6) return false
+  if (isSportsBdlEnabled() && contractsToSend.length < 6) return false
   if (!privateUser || !privateUser.email) {
     log.error('No private user or email to send interesting markets email to', {
       userName,
@@ -579,7 +580,7 @@ export const sendInterestingMarketsEmail = async (
       question6ImgSrc: imageSourceUrl(contractsToSend[5]),
     }
   )
-  return Boolean(sent)
+  return isSportsBdlEnabled() ? Boolean(sent) : undefined
 }
 
 export const sendBonusWithInterestingMarketsEmail = async (
@@ -602,7 +603,7 @@ export const sendBonusWithInterestingMarketsEmail = async (
   const { name } = user
   const firstName = name.split(' ')[0]
 
-  if (contractsToSend.length < 6) {
+  if (isSportsBdlEnabled() && contractsToSend.length < 6) {
     await sendTextEmail(
       privateUser.email,
       `Your Manifold signup bonus`,

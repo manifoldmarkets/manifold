@@ -232,3 +232,39 @@ it('does not put an older score push over a newer persisted score', () => {
   }
   expect(applySportsLive(newer, live).liveScore?.home).toBe(14)
 })
+
+it('preserves legacy scores and terminal state when extended score handling is off', () => {
+  const row = {
+    sportsHomeScore: 2,
+    sportsAwayScore: 1,
+    sportsLiveStatus: 'IN_PLAY',
+    sportsLiveMinute: '63',
+    sportsLiveUpdatedTime: 250,
+    sportsLivePeriod: '2H',
+  }
+  // An opted-in writer can attach detail an older browser would ignore.
+  const tick = decodeSportsScoreTick(
+    { ...row, sportsLivePeriod: 'extra' },
+    false
+  )!
+  expect(
+    decodeSportsScoreTick({ ...row, sportsLiveStatus: 'SUSPENDED' }, false)
+  ).toBeUndefined()
+  expect(tick.value).toEqual({
+    home: 2,
+    away: 1,
+    minute: '63',
+    status: 'IN_PLAY',
+  })
+  expect(tick.fields).toBeUndefined()
+  const final = decodeSportsScoreTick(
+    { ...row, sportsLiveStatus: 'FINISHED' },
+    false
+  )!
+  expect(newerSportsScoreTick(tick, final, false)).toBe(final)
+  const result = applySportsLive(game, { liveScore: final }, 0, false)
+  expect(result.status).toBe('finished')
+  expect(result.finalScore).toBeNull()
+  expect(result.liveScore).toBeNull()
+  expect(result).not.toHaveProperty('gameState')
+})

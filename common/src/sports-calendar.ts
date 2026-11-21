@@ -1,5 +1,6 @@
 import { mapValues } from 'lodash'
 
+import { isSportsBdlEnabled } from './bdl/rollout'
 import { BDL_ESPORTS_CLOSE_HOURS } from './bdl/constants'
 import { isMajorLeague, MajorLeague } from './bdl/major-leagues'
 import { additionalFeedCalendar } from './sports-feeds'
@@ -647,6 +648,12 @@ export const SPORTS_CALENDAR: SportsCalendarEntry[] = [
   },
 ]
 
+const legacyCalendar = SPORTS_CALENDAR.filter((e) => e.provider !== 'bdl')
+
+/** The production-facing calendar excludes staged BDL phases until rollout. */
+export const getSportsCalendar = () =>
+  isSportsBdlEnabled() ? SPORTS_CALENDAR : legacyCalendar
+
 export function calendarStatus(
   entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>,
   now = Date.now()
@@ -660,7 +667,7 @@ export function calendarStatus(
 
 /** Entries whose window contains `now`. */
 export function activeCalendarEntries(now = Date.now()): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => calendarStatus(e, now) === 'active')
+  return getSportsCalendar().filter((e) => calendarStatus(e, now) === 'active')
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -684,7 +691,7 @@ export function calendarEntriesOverlapping(
   from: number,
   to: number
 ): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => {
+  return getSportsCalendar().filter((e) => {
     const w = phaseWindow(e)
     return w.from <= to && w.to >= from
   })
@@ -759,7 +766,7 @@ export function competitionSwitchError(
   on: boolean,
   switches?: CompetitionSwitches
 ): string | undefined {
-  const entry = SPORTS_CALENDAR.find(
+  const entry = getSportsCalendar().find(
     (e) => e.competitionId === competitionId && e.phase === phase
   )
   if (!entry) return `No calendar phase ${competitionId} / ${phase}`
@@ -768,7 +775,7 @@ export function competitionSwitchError(
   if (on && entry.locked) return entry.locked
   if (on && switches && (entry.oddsKey || entry.provider === 'bdl')) {
     const window = phaseWindow(entry)
-    const conflict = SPORTS_CALENDAR.find((other) => {
+    const conflict = getSportsCalendar().find((other) => {
       if (
         other.sport !== entry.sport ||
         !(entry.oddsKey ? other.provider === 'bdl' : other.oddsKey) ||

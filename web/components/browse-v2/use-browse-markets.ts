@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useEvent } from 'client-common/hooks/use-event'
 import { APIParams } from 'common/api/schema'
 import { Contract } from 'common/contract'
@@ -34,9 +35,14 @@ export function useBrowseMarkets(
   // Changing this refetches the same query (e.g. after following a topic).
   refreshKey: string | number = 0
 ) {
-  const surface = useRouter().pathname === '/home' ? 'home' : 'new'
+  const { pathname } = useRouter()
+  const surface = isSportsBdlEnabled()
+    ? pathname === '/home'
+      ? 'home'
+      : 'new'
+    : undefined
   const key = query
-    ? `${surface}|${JSON.stringify(query)}|${refreshKey}`
+    ? `${surface ? surface + '|' : ''}${JSON.stringify(query)}|${refreshKey}`
     : undefined
   const compatibility = useRef<DiscoverySearchSession>({})
   const pending = useRef<AbortController>()

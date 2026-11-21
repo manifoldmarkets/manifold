@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import clsx from 'clsx'
 import { Group } from 'common/group'
 import { buildArray } from 'common/util/array'
@@ -118,8 +119,17 @@ function LegacyBrowseContent() {
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
       <Search
-        key={browseDefault.persistPrefix + router.pathname}
-        sportsDiscovery={router.pathname === '/home' ? 'home' : 'new'}
+        key={
+          browseDefault.persistPrefix +
+          (isSportsBdlEnabled() ? router.pathname : '')
+        }
+        sportsDiscovery={
+          isSportsBdlEnabled()
+            ? router.pathname === '/home'
+              ? 'home'
+              : 'new'
+            : undefined
+        }
         showTopicsFilterPills
         showHotTopics
         persistPrefix={browseDefault.persistPrefix}

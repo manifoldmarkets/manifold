@@ -56,10 +56,11 @@ export const BDL_ESPORTS_FINALS_FROM_MINUTES = {
 export const BDL_REQUESTS_PER_MINUTE = {
   scheduler: 300,
   api: 30,
-  dev: 150,
+  dev: 2,
   recorder: 60,
   codex: 60,
 } as const
+export const BDL_DEV_LEAGUE_REQUESTS_PER_MINUTE = 2
 export const BDL_QUOTA_SLOW_FRACTION = 0.2
 export const BDL_QUOTA_PAUSE_FRACTION = 0.05
 export const BDL_WEBHOOK_TIMESTAMP_TOLERANCE_MS = 5 * MINUTE_MS

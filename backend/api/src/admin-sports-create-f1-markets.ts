@@ -5,7 +5,7 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
+import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
 import { createF1Markets } from 'shared/f1-markets'
 import { calendarEntriesFor } from 'common/sports-calendar'
 
@@ -17,7 +17,13 @@ export const adminSportsCreateF1Markets: APIHandler<
   if (calendarEntriesFor(competitionId)[0]?.sport !== 'f1') {
     throw new APIError(400, `${competitionId} is not an F1 competition`)
   }
-  if (!hasBalldontlieKey()) {
+  const status = getF1ClientStatus()
+  if (status === 'rollout-disabled')
+    throw new APIError(
+      503,
+      'F1 market creation is disabled on this dev deployment.'
+    )
+  if (status === 'missing-key') {
     throw new APIError(500, 'BALLDONTLIE_API_KEY is not set on the server')
   }
 

@@ -73,60 +73,76 @@ describe('official sports discovery', () => {
           .success
       ).toBe(false)
   })
-  it('opts in unscoped Home, Browse New and the sitemap', () => {
-    expect(
-      shouldExcludeOfficialSports({
-        sportsDiscovery: 'home',
-        sort: 'score',
-        forYou: '1',
-      })
-    ).toBe(true)
-    expect(
-      shouldExcludeOfficialSports({
-        sportsDiscovery: 'home',
-        sort: 'daily-score',
-      })
-    ).toBe(true)
-    expect(
-      shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'newest' })
-    ).toBe(true)
-    expect(
-      shouldExcludeOfficialSports({ sportsDiscovery: 'sitemap', sort: 'score' })
-    ).toBe(true)
-    expect(shouldExcludeOfficialSports({ sort: 'newest' })).toBe(false)
-    expect(
-      shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'score' })
-    ).toBe(false)
-    expect(
-      shouldExcludeOfficialSports({
-        sportsDiscovery: 'sitemap',
-        sort: 'newest',
-      })
-    ).toBe(false)
-    expect(
-      shouldExcludeOfficialSports({
-        sportsDiscovery: 'new',
-        sort: 'newest',
-        forYou: '1',
-      })
-    ).toBe(false)
-  })
-  it('keeps explicit market, topic, creator and position searches', () => {
-    for (const scope of [
-      { term: 'hockey' },
-      { topicSlug: 'sports' },
-      { topicSlug: 'followed' },
-      { gids: 'hockey' },
-      { creatorId: 'house' },
-      { hasBets: '1' as const },
-    ])
+  describe.each([undefined, 'false', 'true'])('rollout flag %s', (flag) => {
+    let previous: string | undefined
+    beforeEach(() => {
+      previous = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+      if (flag === undefined) delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+      else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = flag
+    })
+    afterEach(() => {
+      if (previous === undefined)
+        delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+      else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = previous
+    })
+    it('excludes official sports only on the eligible Home, Browse New and sitemap routes', () => {
       expect(
         shouldExcludeOfficialSports({
           sportsDiscovery: 'home',
+          sort: 'score',
+          forYou: '1',
+        })
+      ).toBe(flag === 'true')
+      expect(
+        shouldExcludeOfficialSports({
+          sportsDiscovery: 'home',
+          sort: 'daily-score',
+        })
+      ).toBe(flag === 'true')
+      expect(
+        shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'newest' })
+      ).toBe(flag === 'true')
+      expect(
+        shouldExcludeOfficialSports({
+          sportsDiscovery: 'sitemap',
+          sort: 'score',
+        })
+      ).toBe(flag === 'true')
+      expect(shouldExcludeOfficialSports({ sort: 'newest' })).toBe(false)
+      expect(
+        shouldExcludeOfficialSports({ sportsDiscovery: 'new', sort: 'score' })
+      ).toBe(false)
+      expect(
+        shouldExcludeOfficialSports({
+          sportsDiscovery: 'sitemap',
           sort: 'newest',
-          ...scope,
         })
       ).toBe(false)
+      expect(
+        shouldExcludeOfficialSports({
+          sportsDiscovery: 'new',
+          sort: 'newest',
+          forYou: '1',
+        })
+      ).toBe(false)
+    })
+    it('keeps explicit market, topic, creator and position searches', () => {
+      for (const scope of [
+        { term: 'hockey' },
+        { topicSlug: 'sports' },
+        { topicSlug: 'followed' },
+        { gids: 'hockey' },
+        { creatorId: 'house' },
+        { hasBets: '1' as const },
+      ])
+        expect(
+          shouldExcludeOfficialSports({
+            sportsDiscovery: 'home',
+            sort: 'newest',
+            ...scope,
+          })
+        ).toBe(false)
+    })
   })
 })
 

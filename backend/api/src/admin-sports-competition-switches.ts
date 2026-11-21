@@ -5,6 +5,7 @@ import { uniq } from 'lodash'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { log } from 'shared/utils'
 import {
@@ -18,7 +19,7 @@ import {
   calendarStatus,
   competitionSwitchError,
   overlappingPhases,
-  SPORTS_CALENDAR,
+  getSportsCalendar,
 } from 'common/sports-calendar'
 
 export const adminSportsCompetitionSwitches: APIHandler<
@@ -44,7 +45,7 @@ export const adminSportsCompetitionSwitches: APIHandler<
 
   const now = Date.now()
   // Phases a scheduled job creates from: an Odds API key or another feed.
-  const scheduled = SPORTS_CALENDAR.filter((e) => e.oddsKey || e.provider)
+  const scheduled = getSportsCalendar().filter((e) => e.oddsKey || e.provider)
   return {
     switches: scheduled.map((e) => {
       const row = byKey[calendarPhaseKey(e)]
@@ -75,19 +76,21 @@ export const adminSportsSetCompetitionSwitch: APIHandler<
 > = async (props, auth) => {
   throwErrorIfNotAdmin(auth.uid)
   const { competitionId, phase, on } = props
-  await createSupabaseDirectClient().tx(async (tx) => {
-    // Two operators enabling different providers must see each other's changes.
-    await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
-    const switches = await getCompetitionSwitches(tx)
-    const error = competitionSwitchError(competitionId, phase, on, switches)
+  const change = { competitionId, phase, on, userId: auth.uid }
+  if (!isSportsBdlEnabled()) {
+    const error = competitionSwitchError(competitionId, phase, on)
     if (error) throw new APIError(400, error)
-    await setCompetitionSwitch(tx, {
-      competitionId,
-      phase,
-      on,
-      userId: auth.uid,
+    await setCompetitionSwitch(createSupabaseDirectClient(), change)
+  } else {
+    await createSupabaseDirectClient().tx(async (tx) => {
+      // Two operators enabling different providers must see each other's changes.
+      await tx.one(BDL_CREATION_BUDGET_LOCK_SQL)
+      const switches = await getCompetitionSwitches(tx)
+      const error = competitionSwitchError(competitionId, phase, on, switches)
+      if (error) throw new APIError(400, error)
+      await setCompetitionSwitch(tx, change)
     })
-  })
+  }
   log(
     `[sports] ${auth.uid} switched ${competitionId} / ${phase} ${
       on ? 'on' : 'off'

@@ -3493,6 +3493,12 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_bdl_dev_request_slots: {
+        Row: { scope: string; next_request_at: string }
+        Insert: { scope: string; next_request_at: string }
+        Update: { scope?: string; next_request_at?: string }
+        Relationships: []
+      }
       sports_bdl_request_stats: {
         Row: {
           endpoint_template: string

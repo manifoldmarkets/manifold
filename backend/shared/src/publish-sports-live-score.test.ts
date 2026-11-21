@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 jest.mock('shared/utils', () => ({
   __esModule: true,
   get LOCAL_DEV() {
@@ -84,4 +88,23 @@ it('never contacts a deployed API from a local scheduler', async () => {
   const fetch = jest.spyOn(globalThis, 'fetch')
   await publishSportsLiveScore('game', score)
   expect(fetch).not.toHaveBeenCalled()
+})
+
+it('only publishes the legacy score protocol with rollout off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  process.env.API_SECRET = 'test-secret'
+  const send = jest
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValue(new Response('{}'))
+  try {
+    await publishSportsLiveScore('game', { ...score, sportsLivePeriod: 1 })
+    await publishSportsLiveScore('game', {
+      ...score,
+      sportsLiveStatus: 'SUSPENDED',
+    })
+    expect(send).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(send.mock.calls[0][1]?.body)).score).toEqual(score)
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })

@@ -28,16 +28,18 @@ export function toOfficialGame(
   answers: Answer[],
   groupIds: string[],
   index: SportsIndex | undefined,
-  now: number
+  now: number,
+  bdlEnabled = true
 ): ScheduleGame | null {
   if (!isSportsContract(c) || !c.sportsEventId || !isMultiCpmm(c)) return null
   const d = c as typeof c & Partial<SportsLiveScore>
   const sportsEventId = d.sportsEventId
-  const leagueKey = officialBdlLeagueKey(c)
+  const leagueKey = bdlEnabled ? officialBdlLeagueKey(c) : undefined
   const provider = providerOf(c)
-  if (d.sportsFixture || provider === 'fixture') return null
+  if (bdlEnabled && (d.sportsFixture || provider === 'fixture')) return null
   const league = leagueKey ? BDL_LEAGUES[leagueKey] : undefined
   if (
+    bdlEnabled &&
     (provider === 'bdl' || parseBdlEventId(sportsEventId)) &&
     (!league ||
       !['team-2way', 'team-3way'].includes(league.archetype) ||
@@ -45,7 +47,7 @@ export function toOfficialGame(
   )
     return null
   const isResolved = !!c.resolution
-  const isCanceled = c.resolution === 'CANCEL'
+  const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
   const label = league?.shortLabel || d.sportsLeague || ''
   const details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
@@ -76,7 +78,7 @@ export function toOfficialGame(
       : null
 
   const kickoff =
-    d.sportsStartKnown === false
+    bdlEnabled && d.sportsStartKnown === false
       ? null
       : parseSportsStart(d.sportsStartTimestamp)
   // Without a parseable kickoff the close time is the only deadline we have
@@ -90,14 +92,18 @@ export function toOfficialGame(
     closeTime,
     isResolved,
     gameState: details?.gameState,
-    kickoffKnown: kickoff != null,
+    kickoffKnown: bdlEnabled ? kickoff != null : undefined,
     liveStatus,
     liveUpdatedTime,
     now,
   })
 
-  const homeScore = validScore(d.sportsHomeScore)
-  const awayScore = validScore(d.sportsAwayScore)
+  const homeScore = bdlEnabled
+    ? validScore(d.sportsHomeScore)
+    : d.sportsHomeScore ?? null
+  const awayScore = bdlEnabled
+    ? validScore(d.sportsAwayScore)
+    : d.sportsAwayScore ?? null
   const terminalScore =
     !league || /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '')
   const liveScore =

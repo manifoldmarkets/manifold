@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import * as pgPromise from 'pg-promise'
 import { fullSearchProps, searchProps } from 'common/api/market-search-types'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -345,5 +349,40 @@ it('uses the existing time and score indexes on a selective ordered page', async
     const nodes = JSON.stringify(plan.rows)
     expect(nodes).toContain(index)
     expect(nodes).toContain(' >= COALESCE(')
+  }
+})
+
+it('keeps the unfiltered legacy search and cursor on all public discovery surfaces with rollout off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    const historical = await search({
+      sort: 'newest',
+      sportsDiscovery: 'new',
+      beforeTime: base + 5,
+      limit: 30,
+    })
+    expect(ids(historical)).toEqual(
+      expect.arrayContaining(['fd', 'odds', 'f1'])
+    )
+    for (const [sportsDiscovery, sort] of [
+      ['home', 'score'],
+      ['new', 'newest'],
+      ['sitemap', 'score'],
+    ]) {
+      const legacy = await search({ sort, limit: 10 })
+      const result = await search({
+        sportsDiscovery,
+        sort,
+        limit: 10,
+        sportsDiscoveryCursor: `${base + 4}:A`,
+      })
+      expect(ids(result)).toEqual(ids(legacy))
+      expect(ids(result).some((id) => id.startsWith('flood'))).toBe(true)
+      expect(result.every((r) => r.sportsDiscoveryFiltered === undefined)).toBe(
+        true
+      )
+    }
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   }
 })

@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
@@ -37,7 +38,7 @@ import clsx from 'clsx'
 import {
   calendarEntriesFor,
   SPORT_LEAGUE_LABEL,
-  SPORTS_CALENDAR,
+  getSportsCalendar,
   SportId,
 } from 'common/sports-calendar'
 
@@ -115,7 +116,7 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
 function calendarCompetitions(sport: SportId): CompetitionOption[] {
   const seen = new Set<string>()
   const out: CompetitionOption[] = []
-  for (const e of SPORTS_CALENDAR) {
+  for (const e of getSportsCalendar()) {
     if (e.sport !== sport || seen.has(e.competitionId)) continue
     seen.add(e.competitionId)
     const locked = calendarEntriesFor(e.competitionId).every((p) => p.locked)
@@ -252,6 +253,10 @@ function OddsApiSelectAll(props: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SportsAdminPage() {
+  return isSportsBdlEnabled() ? <ScopedSportsAdmin /> : <SportsAdmin />
+}
+
+function ScopedSportsAdmin() {
   const user = useUser()
   return <SportsAdmin key={user?.id ?? 'signed-out'} />
 }
@@ -515,6 +520,7 @@ function SportsAdmin() {
 
   // Alerts: markets needing attention
   const alertMarkets = markets.filter((m) => m.needsAttention)
+  const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set())
 
   if (!isAdmin) return <></>
 
@@ -1707,7 +1713,8 @@ function SportsAdmin() {
                   All: 'ALL',
                   Open: 'OPEN',
                   Resolved: 'RESOLVED',
-                  'Closed over 3h': 'OVERDUE',
+                  [isSportsBdlEnabled() ? 'Closed over 3h' : 'Needs attention']:
+                    'OVERDUE',
                 }}
                 setChoice={(v) => setMarketFilter(v as string)}
                 color="indigo-dark"
@@ -1716,6 +1723,14 @@ function SportsAdmin() {
                 {marketsLoading ? 'Loading…' : 'Refresh'}
               </Button>
             </Row>
+
+            {!isSportsBdlEnabled() && alertMarkets.length > 0 && (
+              <AlertBox
+                title={`${alertMarkets.length} market(s) need attention`}
+              >
+                Past close time and unresolved — check the Alerts section below.
+              </AlertBox>
+            )}
 
             {marketsLoading ? (
               <LoadingIndicator />
@@ -1754,7 +1769,9 @@ function SportsAdmin() {
                           </a>
                           {m.needsAttention && (
                             <span className="ml-2 text-xs font-medium text-red-600">
-                              Closed over 3h
+                              {isSportsBdlEnabled()
+                                ? 'Closed over 3h'
+                                : '⚠ overdue'}
                             </span>
                           )}
                         </td>
@@ -1883,9 +1900,85 @@ function SportsAdmin() {
           </Col>
         </Section>
 
-        <Section title="6. Markets needing attention">
-          <AdminSportsAttention overdue={alertMarkets} />
-        </Section>
+        {isSportsBdlEnabled() ? (
+          <Section title="6. Markets needing attention">
+            <AdminSportsAttention overdue={alertMarkets} />
+          </Section>
+        ) : (
+          <Section
+            title={`6. Alerts${
+              alertMarkets.length > 0
+                ? ` (${
+                    alertMarkets.filter((m) => !handledAlerts.has(m.id)).length
+                  } active)`
+                : ''
+            }`}
+          >
+            <Col className="gap-3">
+              {alertMarkets.filter((m) => !handledAlerts.has(m.id)).length ===
+              0 ? (
+                <p className="text-sm text-green-600">✅ No active alerts.</p>
+              ) : (
+                alertMarkets
+                  .filter((m) => !handledAlerts.has(m.id))
+                  .map((m) => (
+                    <Row
+                      key={m.id}
+                      className="items-start justify-between rounded border border-red-200 bg-red-50 p-3"
+                    >
+                      <Col className="gap-1">
+                        <span className="text-sm font-medium text-red-700">
+                          ⚠ Unresolved past close time
+                        </span>
+                        <a
+                          href={m.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary-600 text-sm hover:underline"
+                        >
+                          {m.question}
+                        </a>
+                        <span className="text-ink-500 text-xs">
+                          Closed:{' '}
+                          {new Date(m.closeTime).toLocaleString('en-GB', {
+                            timeZone: 'UTC',
+                          })}{' '}
+                          UTC
+                        </span>
+                      </Col>
+                      <Button
+                        size="xs"
+                        color="gray-outline"
+                        onClick={() =>
+                          setHandledAlerts((prev) => new Set([...prev, m.id]))
+                        }
+                      >
+                        Mark handled
+                      </Button>
+                    </Row>
+                  ))
+              )}
+
+              {/* Handled alerts (collapsed) */}
+              {handledAlerts.size > 0 && (
+                <details className="text-ink-400 text-xs">
+                  <summary className="cursor-pointer">
+                    {handledAlerts.size} handled alert(s)
+                  </summary>
+                  <Col className="mt-2 gap-1">
+                    {alertMarkets
+                      .filter((m) => handledAlerts.has(m.id))
+                      .map((m) => (
+                        <span key={m.id} className="line-through">
+                          {m.question}
+                        </span>
+                      ))}
+                  </Col>
+                </details>
+              )}
+            </Col>
+          </Section>
+        )}
 
         {/* ── 7. Community Markets ── */}
         <Section title="7. Community Markets">

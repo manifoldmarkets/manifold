@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
@@ -84,7 +85,8 @@ export function useSportsSchedule(
         MAX_SCHEDULE_LIMIT,
         (limit, cursor) =>
           api('sports-schedule', { sport, topic, limit, cursor }),
-        () => gen === generation.current
+        () => gen === generation.current,
+        isSportsBdlEnabled()
       )
       if (!result || gen !== generation.current) return
       setLive((prev) => result.pages.reduce(pruneLiveForPage, prev))
@@ -111,7 +113,12 @@ export function useSportsSchedule(
   const loadMore = useEvent(async () => {
     const current = feedRef.current
     const cursor = current?.cursor
-    if (!current || !cursor || loadingMore.current || refreshing.current)
+    if (
+      !current ||
+      !cursor ||
+      loadingMore.current ||
+      (isSportsBdlEnabled() && refreshing.current)
+    )
       return false
     loadingMore.current = true
     const gen = generation.current
@@ -179,7 +186,7 @@ export function useSportsSchedule(
       // The poller only broadcasts around kickoff, so the topic is idle until
       // then; subscribing early means the first in-play tick flips the row to
       // live without waiting for a refetch. Community games have no feed.
-      if (g.kickoffKnown || g.sportsLeagueKey)
+      if (g.kickoffKnown || (isSportsBdlEnabled() && g.sportsLeagueKey))
         out.push(`contract/${g.id}/sports-live`)
     }
     return out
@@ -215,10 +222,14 @@ export function useSportsSchedule(
           return { ...prev, [id]: { ...prev[id], probs } }
         })
       } else if (topic.endsWith('/sports-live')) {
-        const tick = decodeSportsScoreTick(data)
+        const tick = decodeSportsScoreTick(data, isSportsBdlEnabled())
         if (!tick) return
         setLive((prev) => {
-          const liveScore = newerSportsScoreTick(prev[id]?.liveScore, tick)
+          const liveScore = newerSportsScoreTick(
+            prev[id]?.liveScore,
+            tick,
+            isSportsBdlEnabled()
+          )
           return liveScore === prev[id]?.liveScore
             ? prev
             : {
@@ -250,7 +261,12 @@ export function useSportsSchedule(
     return {
       ...feed.response,
       games: feed.games.map((g) =>
-        applySportsLive(g, live[g.id], feed.snapshotTimes[g.id])
+        applySportsLive(
+          g,
+          live[g.id],
+          feed.snapshotTimes[g.id],
+          isSportsBdlEnabled()
+        )
       ),
       nextCursor: feed.cursor,
     }
