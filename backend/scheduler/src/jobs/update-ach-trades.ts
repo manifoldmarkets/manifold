@@ -27,9 +27,12 @@ import { log } from 'shared/utils'
 //   ach_trades_open_orders and are counted when they fill (dropped if
 //   cancelled, or after OPEN_ORDER_HORIZON). Without this, the 4-5% of trades
 //   that are limit orders filling after their window would never count.
-// - A run applies at most MAX_WINDOWS_PER_RUN windows or RUN_BUDGET_MS of work,
-//   so the 14-month backlog spreads over several days of hourly runs, and every
-//   statement runs under server-side statement and lock timeouts.
+// - A run starts no window after MAX_WINDOWS_PER_RUN windows or RUN_BUDGET_MS,
+//   so the 14-month backlog spreads over several days of hourly runs. Every
+//   statement runs under a server-side statement and lock timeout, so even a
+//   run whose last window starts just inside the budget, and whose statements
+//   all hit their timeouts, ends within about a quarter hour. A normal run
+//   takes about a minute.
 // - Windows stop LAG short of now(). A bet's created_time is set inside its
 //   transaction, before the commit, so a window must not pass bets still in
 //   flight. API statements and idle transactions time out after 60 s, so 30
@@ -71,26 +74,30 @@ export const updateAchTrades = async (
   const startedAt = Date.now()
   const { maxWindows, budgetMs, lag = LAG } = options
 
-  // First run only: ach_trades already holds every trade up to its newest
-  // last_updated. With no rows (a fresh database), start before the first bet.
-  await pg.none(
-    `insert into job_watermarks (job_name, watermark)
-     select $1, coalesce(
-       (select max(last_updated) from ach_trades),
-       (select min(created_time) from contract_bets) - interval '1 millisecond',
-       now() - $2::interval
-     )
-     where not exists (select 1 from job_watermarks where job_name = $1)
-     on conflict (job_name) do nothing`,
-    [JOB_NAME, lag]
-  )
-
-  // One cutoff for the whole run, so the last window is not followed by a
-  // string of seconds-long ones as now() moves.
-  const { cutoff } = await pg.one<{ cutoff: string }>(
-    `select (now() - $1::interval)::text as cutoff`,
-    [lag]
-  )
+  const cutoff = await cappedTx(pg, async (tx) => {
+    // First run only: ach_trades already holds every trade up to its newest
+    // last_updated. With no rows (a fresh database), start before the first
+    // bet.
+    await tx.none(
+      `insert into job_watermarks (job_name, watermark)
+       select $1, coalesce(
+         (select max(last_updated) from ach_trades),
+         (select min(created_time) from contract_bets) - interval '1 millisecond',
+         now() - $2::interval
+       )
+       where not exists (select 1 from job_watermarks where job_name = $1)
+       on conflict (job_name) do nothing`,
+      [JOB_NAME, lag]
+    )
+    // One cutoff for the whole run, so the last window is not followed by a
+    // string of seconds-long ones as now() moves.
+    return (
+      await tx.one<{ cutoff: string }>(
+        `select (now() - $1::interval)::text as cutoff`,
+        [lag]
+      )
+    ).cutoff
+  })
 
   let windows = 0
   let trades = 0
@@ -151,17 +158,26 @@ export const updateAchTrades = async (
   )
 }
 
-// Runs fn in a transaction that first caps its statements and lock waits and
-// takes the job's row lock in job_watermarks. Every write the job makes to
-// ach_trades and ach_trades_open_orders happens under that lock, so two
-// overlapping runs serialize instead of interleaving.
-const lockedTx = <T>(
+// Runs fn in a transaction whose statements and lock waits are capped
+// server-side (the scheduler client's default statement_timeout is 59 minutes).
+const cappedTx = <T>(
   pg: SupabaseDirectClient,
-  fn: (tx: SupabaseDirectClient, watermark: string | null) => Promise<T>
+  fn: (tx: SupabaseDirectClient) => Promise<T>
 ) =>
   pg.tx(async (tx) => {
     await tx.none(`set local statement_timeout = $1`, [STATEMENT_TIMEOUT])
     await tx.none(`set local lock_timeout = $1`, [LOCK_TIMEOUT])
+    return await fn(tx)
+  })
+
+// A capped transaction that first takes the job's row lock in job_watermarks.
+// Every write the job makes to ach_trades and ach_trades_open_orders happens
+// under that lock, so two overlapping runs serialize instead of interleaving.
+const lockedTx = <T>(
+  pg: SupabaseDirectClient,
+  fn: (tx: SupabaseDirectClient, watermark: string | null) => Promise<T>
+) =>
+  cappedTx(pg, async (tx) => {
     const row = await tx.oneOrNone<{ watermark: string }>(
       `select watermark::text as watermark from job_watermarks
        where job_name = $1 for update`,
