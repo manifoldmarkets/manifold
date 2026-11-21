@@ -66,7 +66,7 @@ const schedules = {
   },
 } as const
 const recordedSchedules: MajorLeague[] = ['nba']
-const recordedOdds: MajorLeague[] = []
+const recordedOdds: MajorLeague[] = ['nba']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
     kind === 'games'
@@ -187,7 +187,7 @@ it.each(leagues)(
       },
       quote.updatedAtMs
     )
-    expect(line.source).toBe(league === 'nba' ? 'kalshi' : 'books')
+    expect(line.source).toBe('books')
     expect(line.probs[0]).toBeGreaterThan(line.probs[1])
   }
 )
@@ -452,7 +452,9 @@ it('rejects invalid schedule dates and nonattributable quotes before price selec
   )
   for (const fields of [{ vendor: '' }, { updated_at: 'yesterday' }]) {
     const odds = localClient(() => ({
-      data: [{ ...fixture('nba', 'odds').data[0], ...fields }],
+      data: [
+        { ...fixture('nba', 'odds').data[0], game_id: game.id, ...fields },
+      ],
     }))
     await expect(fetchMajorOdds(odds.client, 'nba', [game])).rejects.toThrow(
       'vendor or timestamp'
