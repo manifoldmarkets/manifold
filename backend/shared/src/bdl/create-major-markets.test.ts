@@ -8,6 +8,7 @@ import { bdlEventId } from 'common/sports-ids'
 import { ProviderOdds } from 'common/sports-provider'
 import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
 import { DAY_MS } from 'common/util/time'
+import * as fundingSeam from '../sports-game-ante'
 import { createBdlClient } from '../balldontlie-client'
 import {
   createSportsContract,
@@ -354,6 +355,109 @@ it('uses completed schedule IDs to rule out a reissue without attempting to crea
   expect(report.log.map((x) => x.eventId)).toEqual(['bdl:nba:1'])
   expect(hold.mock.calls[0][1].seenEventIds).toEqual(['bdl:nba:2', 'bdl:nba:1'])
 })
+it('opens a genuinely date-only NBA game with the base ante, its original slate date and a bounded safety close', async () => {
+  const g = game(1, {
+    startTime: null,
+    slateDate: '2026-10-24',
+    dateOnly: { date: '2026-10-24' },
+  })
+  schedule.mockResolvedValue([g])
+  readSettings.mockResolvedValue({
+    ...settings('nba'),
+    startsOn: '2026-10-24',
+  })
+  const fund = jest.spyOn(fundingSeam, 'resolveSportsGameAnte')
+  const report = await run()
+  expect(report).toMatchObject({
+    created: 1,
+    log: [{ ante: 175, question: 'Away at Home, Oct 24' }],
+  })
+  expect(schedule.mock.calls[0][2]).toBe('2026-10-13')
+  const params = save.mock.calls[0][2]
+  expect(params).toMatchObject({
+    sportsStartKnown: false,
+    sportsStartTimestamp: '2026-10-23T10:00:00.000Z',
+    sportsLatestPossibleStartTimestamp: '2026-10-25T11:59:59.999Z',
+    closeTime: Date.parse('2026-10-25T14:59:59.999Z'),
+    sportsEventId: 'bdl:nba:1',
+  })
+  expect(fund.mock.calls[0][1].startKnown).toBe(false)
+  expect(await fund.mock.results[0].value).toMatchObject({ ante: 175 })
+  expect(await fund.mock.results[0].value).not.toHaveProperty('kickoffBudget')
+  const preview = await run({ dryRun: true })
+  expect(preview.log[0]).toMatchObject({ status: 'dry-run', ante: 175 })
+})
+it('requires the entire possible day within the five-minute, 14-day and phase windows', async () => {
+  schedule.mockResolvedValue([
+    game(1, {
+      startTime: null,
+      slateDate: '2026-10-23',
+      dateOnly: { date: '2026-10-23' },
+    }),
+    game(2, {
+      startTime: null,
+      slateDate: '2026-11-05',
+      dateOnly: { date: '2026-11-05' },
+    }),
+  ])
+  const edge = Date.parse('2026-10-22T10:00:00Z') - BDL_MIN_CREATION_LEAD_MS
+  clock.now.mockReturnValue(edge)
+  expect(
+    (await run({ keys: ['bdl:nba:1', 'bdl:nba:2'] })).log.map((d) => d.reason)
+  ).toEqual(['outside creation window', 'outside creation window'])
+  expect(odds.mock.calls[0][2]).toEqual([])
+  // The regular season opens on Oct 21; the unknown venue could start on Oct 20 UTC.
+  const beforeSeason = Date.parse('2026-10-18T12:00:00Z')
+  clock.now.mockReturnValue(beforeSeason)
+  const boundary = game(3, {
+    startTime: null,
+    slateDate: '2026-10-21',
+    dateOnly: { date: '2026-10-21' },
+  })
+  schedule.mockResolvedValue([boundary])
+  expect((await run({ dryRun: true })).log[0].reason).toBe(
+    'no unique enabled phase'
+  )
+})
+it('does not convert contradictory timing, a mismatched slate date, or malformed non-null time into an opening', async () => {
+  const dateOnly = { date: '2026-10-24' }
+  schedule.mockResolvedValue([
+    game(1, { dateOnly }),
+    game(2, { startTime: null, slateDate: '2026-10-23', dateOnly }),
+    game(3, { startTime: 'invalid', slateDate: dateOnly.date, dateOnly }),
+  ])
+  expect(
+    (await run({ keys: [1, 2, 3].map((n) => bdlEventId('nba', n)) })).log.map(
+      (d) => d.reason
+    )
+  ).toEqual(Array(3).fill('unconfirmed kickoff'))
+  expect(save).not.toHaveBeenCalled()
+})
+it('only a published kickoff can be reported as known and use a normal start-time close', async () => {
+  const dateOnly = { date: '2026-10-24', venueTimeZone: 'Etc/GMT+12' }
+  schedule.mockResolvedValue([
+    game(1, { startTime: null, slateDate: dateOnly.date, dateOnly }),
+  ])
+  await run()
+  expect(save.mock.calls[0][2].sportsStartTimestamp).toBe(
+    '2026-10-24T12:00:00.000Z'
+  )
+  const timed = game(1, {
+    startTime: '2026-10-24T18:00:00Z',
+    slateDate: '2026-10-24',
+  })
+  schedule.mockResolvedValue([timed])
+  await run()
+  expect(save.mock.calls[1][2]).toMatchObject({
+    sportsStartKnown: true,
+    sportsStartTimestamp: '2026-10-24T18:00:00.000Z',
+    closeTime: Date.parse('2026-10-24T21:00:00Z'),
+  })
+  expect(
+    save.mock.calls[1][2].sportsLatestPossibleStartTimestamp
+  ).toBeUndefined()
+})
+
 it('checks the five-minute cutoff and fourteen-day horizon including exact boundaries', async () => {
   schedule.mockResolvedValue(
     [

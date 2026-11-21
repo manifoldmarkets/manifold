@@ -99,6 +99,100 @@ it('counts an official cancelled BDL event only when opted in, including hidden 
   expect(locks).toEqual(['sports-moneyline:' + candidate.sportsEventId])
 })
 
+it('matches both providers across the entire date-only interval plus six hours and locks every affected Eastern date', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  const first = Date.parse('2099-11-20T10:00:00Z'),
+    last = first + 50 * 3600000 - 1
+  const day = {
+    ...candidate,
+    sportsStartKnown: false,
+    sportsStartTimestamp: new Date(first).toISOString(),
+    sportsLatestPossibleStartTimestamp: new Date(last).toISOString(),
+  }
+  const legacy = {
+    ...odds,
+    sportsStartTimestamp: new Date(
+      last + BDL_OPEN_ODDS_MATCH_WINDOW_MS
+    ).toISOString(),
+  }
+  await insert('legacy', legacy)
+  expect(await findLockedSportsMarket(tx, day, 'moneyline')).toMatchObject({
+    id: 'legacy',
+  })
+  expect(
+    locks.filter((k) => k.includes(':mlb:2099-11-')).map((k) => k.split(':')[2])
+  ).toEqual(['2099-11-19', '2099-11-20', '2099-11-21', '2099-11-22'])
+  await pg.exec('truncate contracts')
+  await insert('date-only', { ...day, sportsMarketType: 'moneyline' })
+  expect(
+    await findLockedSportsMarket(tx, legacy, 'moneyline', undefined, true)
+  ).toMatchObject({ id: 'date-only' })
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      {
+        ...legacy,
+        sportsStartTimestamp: new Date(
+          last + BDL_OPEN_ODDS_MATCH_WINDOW_MS + 1
+        ).toISOString(),
+      },
+      'moneyline',
+      undefined,
+      true
+    )
+  ).toBeNull()
+  await pg.exec('truncate contracts')
+  await insert('known', {
+    ...day,
+    sportsMarketType: 'moneyline',
+    sportsStartKnown: true,
+  })
+  expect(
+    await findLockedSportsMarket(tx, legacy, 'moneyline', undefined, true)
+  ).toBeNull()
+})
+it('uses the entire possible date-only interval for older candidates without a stored upper bound', async () => {
+  await insert('older', {
+    ...odds,
+    sportsStartTimestamp: new Date(
+      Date.parse(candidate.sportsStartTimestamp) + 49 * 3600000
+    ).toISOString(),
+  })
+  expect(
+    await findLockedSportsMarket(
+      tx,
+      { ...candidate, sportsStartKnown: false },
+      'moneyline'
+    )
+  ).toMatchObject({ id: 'older' })
+})
+it('rejects an invalid date-only candidate interval before taking any matchup lock', async () => {
+  for (const upper of [
+    'not-time',
+    new Date(Date.parse(candidate.sportsStartTimestamp) + 24 * 3600000)
+      .toISOString()
+      .slice(0, -1),
+    new Date(Date.parse(candidate.sportsStartTimestamp) - 1).toISOString(),
+    new Date(
+      Date.parse(candidate.sportsStartTimestamp) + 51 * 3600000
+    ).toISOString(),
+  ]) {
+    await expect(
+      findLockedSportsMarket(
+        tx,
+        {
+          ...candidate,
+          sportsStartKnown: false,
+          sportsLatestPossibleStartTimestamp: upper,
+        },
+        'moneyline'
+      )
+    ).rejects.toThrow(
+      'BDL cutover moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
+    )
+  }
+})
+
 it('exempts only the individually selected canceled moneyline and still detects a replacement', async () => {
   const matching = { ...candidate, sportsMarketType: 'moneyline' }
   await insert('canceled', matching, { resolution: 'CANCEL' })

@@ -5,6 +5,10 @@ import {
   BDL_REISSUED_EVENT_MATCH_WINDOW_MS,
 } from 'common/bdl/constants'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import {
+  bdlGameDayBounds,
+  BDL_MAX_DATE_ONLY_SPAN_MS,
+} from 'common/bdl/game-day'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import {
   MAJOR_LEAGUES,
@@ -22,12 +26,14 @@ import {
   calendarEntriesOverlapping,
   CompetitionSwitches,
   competitionSwitchError,
+  phaseWindow,
   SPORT_LEAGUE_LABEL,
   SportsCalendarEntry,
 } from 'common/sports-calendar'
 import { bdlEventId } from 'common/sports-ids'
 import {
   chooseSportsGameAnte,
+  parseSportsKickoffMs,
   SportsOpeningLine,
 } from 'common/sports-kickoff-interface'
 import { manifoldSportsUserId } from 'common/sports'
@@ -118,7 +124,12 @@ function eligiblePhases(
   )
   // A schedule window can span several phases. For a particular game, every
   // indistinguishable phase covering its kickoff must permit creation.
-  return game && enabled.length !== applicable.length ? [] : enabled
+  if (game && enabled.length !== applicable.length) return []
+  if (!game || from === to) return enabled
+  return enabled.filter((phase) => {
+    const window = phaseWindow(phase)
+    return window.from <= from && to <= window.to
+  })
 }
 
 function matchesGameStage(phase: SportsCalendarEntry, game: MajorGame) {
@@ -128,10 +139,22 @@ function matchesGameStage(phase: SportsCalendarEntry, game: MajorGame) {
   return true
 }
 
+function kickoffBounds(game: MajorGame) {
+  if (game.startTime === null && game.dateOnly?.date === game.slateDate) {
+    const day = bdlGameDayBounds(game.slateDate, game.dateOnly.venueTimeZone)
+    if (day) return day
+  }
+  const start = game.dateOnly
+    ? NaN
+    : parseSportsKickoffMs(game.startTime ?? undefined)
+  return { start, latestStart: start }
+}
+
 function gameMarket(
   league: MajorLeague,
   game: MajorGame,
   start: number,
+  latestStart: number,
   phase: SportsCalendarEntry,
   line: SportsOpeningLine,
   groupIds: string[]
@@ -140,7 +163,10 @@ function gameMarket(
   const home = game.home.name,
     away = game.away.name
   const suffix = league === 'mlb' && game.gameNumber === 2 ? ' (Game 2)' : ''
-  const question = `${away} at ${home}, ${titleDate.format(start)}${suffix}`
+  const known = game.startTime !== null
+  // Noon UTC renders as this same civil date in the US leagues' Eastern title zone.
+  const titleTime = known ? start : Date.parse(game.slateDate + 'T12:00:00Z')
+  const question = `${away} at ${home}, ${titleDate.format(titleTime)}${suffix}`
   const codes = [teamCode(league, away), teamCode(league, home)]
   const colors = gameAnswerColors(league, home, away, false)
   const tie =
@@ -160,19 +186,26 @@ function gameMarket(
     answerShortTexts: codes.every((c): c is string => !!c) ? codes : undefined,
     answerColors: colors ? [colors[1], colors[0]] : undefined,
     closeTime:
-      start + (config.closeAtStart ? 0 : config.closeBufferHours! * HOUR_MS),
+      known && config.closeAtStart
+        ? start
+        : latestStart + config.closeBufferHours! * HOUR_MS,
     sportsStartTimestamp: new Date(start).toISOString(),
     sportsEventId: bdlEventId(league, game.id),
     sportsMarketType: 'moneyline',
     sportsProvider: 'bdl',
     sportsLeagueKey: league,
     sportsCompetitionId: phase.competitionId,
+    sportsCompetitionPhase: phase.phase,
+    sportsEntrantIds: [game.away.id, game.home.id],
     sportsLeague: SPORT_LEAGUE_LABEL[league],
     sportsHomeTeam: home,
     sportsAwayTeam: away,
     sportsHomeTeamId: String(game.home.id),
     sportsAwayTeamId: String(game.away.id),
-    sportsStartKnown: true,
+    sportsStartKnown: known,
+    sportsLatestPossibleStartTimestamp: known
+      ? undefined
+      : new Date(latestStart).toISOString(),
     openingLineSource: line.source,
     openingProbs: line.probs,
     openingBookCount: line.bookCount,
@@ -277,21 +310,25 @@ export async function runMajorCreation(
         const games = await fetchMajorGames(
           client,
           league,
-          easternDay.format(began - BDL_REISSUED_EVENT_MATCH_WINDOW_MS),
+          easternDay.format(
+            began -
+              BDL_REISSUED_EVENT_MATCH_WINDOW_MS -
+              BDL_MAX_DATE_ONLY_SPAN_MS
+          ),
           easternDay.format(began + maxLead)
         )
         const seen = games.map((g) => bdlEventId(league, g.id))
         const slate = games.map((game) => ({
           game,
           eventId: bdlEventId(league, game.id),
-          start: Date.parse(game.startTime ?? ''),
+          ...kickoffBounds(game),
         }))
         const candidates = slate.filter(
-          ({ game, start }) =>
+          ({ game, start, latestStart }) =>
             game.eligible &&
             game.status === 'scheduled' &&
             start > began + BDL_MIN_CREATION_LEAD_MS &&
-            start <= began + maxLead
+            latestStart <= began + maxLead
         )
         const odds = await fetchMajorOdds(
           client,
@@ -317,7 +354,7 @@ export async function runMajorCreation(
         }
         let perLeague = 0,
           groupIds: string[] | null | undefined
-        for (const { game, start, eventId } of slate.sort(
+        for (const { game, start, latestStart, eventId } of slate.sort(
           (a, b) => a.start - b.start || a.game.id - b.game.id
         )) {
           if (selected && !selected.has(eventId)) continue
@@ -336,13 +373,13 @@ export async function runMajorCreation(
             if (!Number.isFinite(start)) hold('unconfirmed kickoff')
             if (
               start <= now + BDL_MIN_CREATION_LEAD_MS ||
-              start > now + maxLead
+              latestStart > now + maxLead
             )
               hold('outside creation window')
             const phases = eligiblePhases(
               league,
               start,
-              start,
+              latestStart,
               switches,
               options,
               game
@@ -350,7 +387,10 @@ export async function runMajorCreation(
             if (new Set(phases.map((p) => p.competitionId)).size !== 1)
               hold('no unique enabled phase')
             const phase = phases[0]
-            if (settings && easternDay.format(start) < settings.startsOn)
+            const startDate = game.dateOnly
+              ? game.slateDate
+              : easternDay.format(start)
+            if (settings && startDate < settings.startsOn)
               hold('game before starts_on')
             const target = {
               league,
@@ -360,7 +400,15 @@ export async function runMajorCreation(
             const rows = odds.get(game.id) ?? []
             const line = selectOpeningLine(rows, target, now)
             decision.line = line
-            const params = gameMarket(league, game, start, phase, line, [])
+            const params = gameMarket(
+              league,
+              game,
+              start,
+              latestStart,
+              phase,
+              line,
+              []
+            )
             decision.question = params.question
             if (line.source === 'none') hold('no eligible moneyline')
             decision.ante = settings?.baseAnte ?? BDL_DEFAULT_STARTING_LIQUIDITY
@@ -393,7 +441,7 @@ export async function runMajorCreation(
               creatorId,
               competitionId: phase.competitionId,
               kickoffTime: start,
-              startKnown: true,
+              startKnown: game.startTime !== null,
               baseAnte: settings.baseAnte,
               line,
             }
@@ -463,7 +511,7 @@ export async function runMajorCreation(
                     !eligiblePhases(
                       league,
                       start,
-                      start,
+                      latestStart,
                       latest,
                       options,
                       game

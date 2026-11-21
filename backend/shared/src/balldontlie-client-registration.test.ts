@@ -4,7 +4,7 @@ import { runInNewContext } from 'vm'
 import { ModuleKind, transpileModule } from 'typescript'
 
 it.each([false, true])(
-  'registers the BDL creator only after opt-in and keeps the recorder out of production (rollout %s)',
+  'registers the BDL creator and lifecycle only after opt-in and keeps the recorder out of production (rollout %s)',
   (enabled) => {
     // The real registration function starts Cron jobs during construction. Capture
     // every constructor call while preventing any of their handlers from running.
@@ -42,12 +42,18 @@ it.each([false, true])(
     if (!registry.createJobs)
       throw new Error('Cannot exercise scheduler registration')
     registry.createJobs('main')
-    expect(started.includes('sports-bdl-create')).toBe(enabled)
+    const jobs = [
+      'sports-bdl-create',
+      'sports-bdl-sync',
+      'sports-bdl-resolve',
+      'sports-bdl-watch',
+    ]
+    for (const job of jobs) expect(started.includes(job)).toBe(enabled)
     expect(started).toContain('sports-f1-create')
     expect(started).toContain('sports-odds-create')
     const mainCount = started.length
     registry.createJobs('perps')
-    expect(started.slice(mainCount)).not.toContain('sports-bdl-create')
+    for (const job of jobs) expect(started.slice(mainCount)).not.toContain(job)
     expect(
       started.filter((name) => /bdl.*record|record.*bdl/i.test(name))
     ).toEqual([])

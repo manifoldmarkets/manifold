@@ -1,4 +1,10 @@
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import {
+  BDL_MAX_DATE_ONLY_SPAN_MS,
+  storedGameDayEnd,
+} from 'common/bdl/game-day'
+import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
+import { HOUR_MS } from 'common/util/time'
 import { BDL_OPEN_ODDS_MATCH_WINDOW_MS } from 'common/bdl/constants'
 import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -36,6 +42,8 @@ type Market = {
   sportsHomeTeam?: string
   sportsAwayTeam?: string
   sportsStartTimestamp: string
+  sportsStartKnown?: boolean
+  sportsLatestPossibleStartTimestamp?: string
 }
 
 const easternDate = new Intl.DateTimeFormat('en-CA', {
@@ -61,6 +69,8 @@ type OpenMoneyline = {
   home: string | null
   away: string | null
   start: string | null
+  date_only: boolean | null
+  latest_start: string | null
 }
 
 /** Call inside the same transaction as the insert and the ante. The Odds pipeline
@@ -97,7 +107,20 @@ export async function findLockedSportsMarket(
     : sportForLeague(candidate.sportsLeague)
   const teams = teamPair(candidate.sportsHomeTeam, candidate.sportsAwayTeam)
   const start = Date.parse(candidate.sportsStartTimestamp)
-  if (!sport || !teams || !Number.isFinite(start)) {
+  const end =
+    candidate.sportsStartKnown !== false
+      ? start
+      : candidate.sportsLatestPossibleStartTimestamp === undefined
+      ? start + BDL_MAX_DATE_ONLY_SPAN_MS
+      : parseSportsKickoffMs(candidate.sportsLatestPossibleStartTimestamp)
+  if (
+    !sport ||
+    !teams ||
+    !Number.isFinite(start) ||
+    !Number.isFinite(end) ||
+    end < start ||
+    end - start > BDL_MAX_DATE_ONLY_SPAN_MS
+  ) {
     if (bdl || checkOpenBdl)
       throw new Error(
         'BDL cutover moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
@@ -106,14 +129,17 @@ export async function findLockedSportsMarket(
   }
   // The six-hour window can cross Eastern midnight. Lock all touched dates in
   // the same order so overlapping runs coordinate at midnight and across DST.
-  const lockDays = [
-    ...new Set(
-      [-1, 0, 1].map((offset) =>
-        easternDate.format(start + offset * BDL_OPEN_ODDS_MATCH_WINDOW_MS)
-      )
-    ),
-  ].sort()
-  for (const day of lockDays)
+  const last = end + BDL_OPEN_ODDS_MATCH_WINDOW_MS
+  const lockDays = new Set([easternDate.format(last)])
+  // Sampling every half day visits every Eastern calendar date, including on
+  // a DST change, across a date-only game's entire possible matchup window.
+  for (
+    let t = start - BDL_OPEN_ODDS_MATCH_WINDOW_MS;
+    t < last;
+    t += 12 * HOUR_MS
+  )
+    lockDays.add(easternDate.format(t))
+  for (const day of [...lockDays].sort())
     await lock(`sports-moneyline:${sport}:${day}:${teams}`)
   if (!bdl && !checkOpenBdl) return null
 
@@ -121,7 +147,9 @@ export async function findLockedSportsMarket(
   // after a manual change. Normalize both sides in TS using the same team rules.
   const open = await tx.manyOrNone<OpenMoneyline>(
     `select c.id, c.data->>'sportsHomeTeam' as home, c.data->>'sportsAwayTeam' as away,
-            c.data->>'sportsStartTimestamp' as start
+            c.data->>'sportsStartTimestamp' as start,
+            (c.data->>'sportsStartKnown') = 'false' as date_only,
+            c.data->>'sportsLatestPossibleStartTimestamp' as latest_start
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA'
         and c.resolution is null and c.deleted is not true
@@ -133,12 +161,18 @@ export async function findLockedSportsMarket(
     [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport], bdl ? 'odds' : 'bdl']
   )
   return (
-    open.find(
-      (row) =>
-        row.start &&
-        Math.abs(start - Date.parse(row.start)) <=
-          BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
+    open.find((row) => {
+      const otherStart = Date.parse(row.start ?? '')
+      const otherEnd = storedGameDayEnd(
+        otherStart,
+        row.date_only,
+        row.latest_start
+      )
+      return (
+        start <= otherEnd + BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
+        otherStart <= end + BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
         teamPair(row.home, row.away) === teams
-    ) ?? null
+      )
+    }) ?? null
   )
 }

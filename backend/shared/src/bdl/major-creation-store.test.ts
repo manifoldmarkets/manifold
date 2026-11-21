@@ -88,6 +88,25 @@ it('resolves only configured existing public or curated groups, in requested ord
   expect(await existingMajorGroups(db, ['two', 'absent'])).toBeNull()
   expect(await existingMajorGroups(db, ['hidden'])).toBeNull()
 })
+it('keeps a possible reissue within seven days of a missing date-only game’s possible start', async () => {
+  const old = new Date(
+    start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS - 3600000
+  ).toISOString()
+  const last = new Date(
+    start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS + 3600000
+  ).toISOString()
+  await insert({
+    ...bdl,
+    sportsStartTimestamp: old,
+    sportsStartKnown: false,
+    sportsLatestPossibleStartTimestamp: last,
+  })
+  expect(await majorCreationHold(db, input)).toBe('possible-reid: prior')
+  expect(
+    await majorCreationHold(db, { ...input, seenEventIds: [bdl.sportsEventId] })
+  ).toBeNull()
+})
+
 it('holds only an earlier kickoff than the latest open official legacy Odds market', async () => {
   await insert(odds)
   expect(await majorCreationHold(db, input)).toBe(

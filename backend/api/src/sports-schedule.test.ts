@@ -205,6 +205,29 @@ it('rail counts and the week feed stay stable across sports, limits and includeR
   }
 })
 
+it('keeps an explicit date-only game upcoming after its placeholder, until the provider observes a live start', async () => {
+  const now = Date.now(),
+    close = now + 8 * 60 * 60 * 1000
+  const row = {
+    ...official[0].data,
+    sportsStartKnown: false,
+    sportsStartTimestamp: new Date(now - 2 * 60 * 60 * 1000).toISOString(),
+    closeTime: close,
+  }
+  officialRows = [{ data: row }]
+  const getSchedule = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const result = await getSchedule({ sport: 'nfl' })
+  const body = 'result' in result ? result.result : result
+  expect(body.games[0]).toMatchObject({
+    kickoffKnown: false,
+    startTime: close,
+    closeTime: close,
+    status: 'upcoming',
+  })
+})
+
 it('returns the provider observation time as well as the receipt time', async () => {
   const received = Date.now()
   officialRows = [

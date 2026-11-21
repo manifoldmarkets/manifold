@@ -24,13 +24,15 @@ const standing = z
   .object({
     wins: seasonCount,
     losses: seasonCount,
+    overtimeLosses: seasonCount.optional().catch(undefined),
     ties: seasonCount.optional().catch(undefined),
     rank: seasonCount.min(1).optional().catch(undefined),
   })
-  .transform(({ wins, losses, ties, rank }) => ({
+  .transform(({ wins, losses, ties, rank, overtimeLosses }) => ({
     wins,
     losses,
     ...(ties !== undefined && { ties }),
+    ...(overtimeLosses !== undefined && { overtimeLosses }),
     ...(rank !== undefined && { rank }),
   }))
 const teamStanding = standing.optional().catch(undefined)

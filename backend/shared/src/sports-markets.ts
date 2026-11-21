@@ -1120,6 +1120,7 @@ export interface SportsContractParams
     | 'sportsProvider'
     | 'sportsLeagueKey'
     | 'sportsCompetitionId'
+    | 'sportsCompetitionPhase'
     | 'sportsHomeTeamId'
     | 'sportsAwayTeamId'
     | 'openingLineSource'
@@ -1128,6 +1129,7 @@ export interface SportsContractParams
     | 'openingLineVendors'
     | 'openingSampledTime'
     | 'sportsStartKnown'
+    | 'sportsLatestPossibleStartTimestamp'
     | 'sportsFixture'
   > {
   question: string
@@ -1300,6 +1302,7 @@ export async function createSportsContract(
         sportsProvider: params.sportsProvider,
         sportsLeagueKey: params.sportsLeagueKey,
         sportsCompetitionId: params.sportsCompetitionId,
+        sportsCompetitionPhase: params.sportsCompetitionPhase,
         sportsHomeTeamId: params.sportsHomeTeamId,
         sportsAwayTeamId: params.sportsAwayTeamId,
         openingLineSource: params.openingLineSource,
@@ -1308,6 +1311,8 @@ export async function createSportsContract(
         openingLineVendors: params.openingLineVendors,
         openingSampledTime: params.openingSampledTime,
         sportsStartKnown: params.sportsStartKnown,
+        sportsLatestPossibleStartTimestamp:
+          params.sportsLatestPossibleStartTimestamp,
         sportsFixture: params.sportsFixture,
         sportsSeededStartTimestamp:
           params.sportsProvider || opts.chooseAnte

@@ -77,6 +77,7 @@ import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
+import { majorSportsJob } from './sports-bdl-lifecycle'
 import { createMajorSportsMarkets } from './sports-bdl-create'
 import { createOddsSportsMarkets } from './sports-odds-create'
 import { resolveOddsSportsMarkets } from './sports-odds-resolve'
@@ -508,6 +509,16 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     isSportsBdlEnabled() &&
       createJob('sports-bdl-create', '0 11 * * * *', createMajorSportsMarkets),
+    isSportsBdlEnabled() &&
+      createJob('sports-bdl-sync', '0 */15 * * * *', majorSportsJob('sync')),
+    isSportsBdlEnabled() &&
+      createJob(
+        'sports-bdl-resolve',
+        '*/10 * * * * *',
+        majorSportsJob('resolve')
+      ),
+    isSportsBdlEnabled() &&
+      createJob('sports-bdl-watch', '0 37 * * * *', majorSportsJob('watch')),
     // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
     // create the coming two weeks' game markets, twice a day. Lines for a
     // day's games are often posted only that morning, so one failed morning

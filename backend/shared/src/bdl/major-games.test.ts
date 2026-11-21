@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { selectOpeningLine } from 'common/bdl/opening-line'
+import { fetchMajorSnapshots } from './major-snapshots'
 import { createBdlClient } from '../balldontlie-client'
 import { fetchMajorGames, fetchMajorOdds, MajorLeague } from './major-games'
 
@@ -19,7 +20,9 @@ function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
     )
   )
 }
-function localClient(response: (url: URL) => Page) {
+function localClient(
+  response: (url: URL) => { data: unknown; meta?: Page['meta'] }
+) {
   let now = 0
   const urls: URL[] = []
   const client = createBdlClient({
@@ -499,4 +502,120 @@ it('maps the recorded Celtics at Pistons final with home and visitor identities 
     away: { id: 2, name: 'Boston Celtics' },
     awayScore: 113,
   })
+})
+
+it.each(leagues)(
+  'reads exact %s events with the documented endpoint and only the participating standings',
+  async (league) => {
+    const raw = fixture(league, 'games').data[0]
+    const id = Number(raw.id),
+      season = Number(raw.season)
+    const h = raw.home_team as Raw,
+      a = (raw.away_team ?? raw.visitor_team) as Raw
+    const record = (id: unknown, wins: number) => ({
+      team: { id },
+      season,
+      wins,
+      losses: 3,
+      ties: 0,
+      ot_losses: 2,
+    })
+    const { client, urls } = localClient((url) => {
+      if (url.pathname.endsWith('standings')) {
+        expect(url.searchParams.get('season')).toBe(String(season))
+        return {
+          data: [
+            record(h.id, 10),
+            record(a.id, 8),
+            record(99999, 5),
+            { ...record(h.id, 99), season: season - 1 },
+          ],
+        }
+      }
+      if (league === 'nhl') {
+        expect(url.searchParams.getAll('game_ids[]')).toEqual([String(id)])
+        return { data: [raw] }
+      }
+      expect(url.pathname.endsWith('/games/' + id)).toBe(true)
+      return { data: raw }
+    })
+    const games = await fetchMajorSnapshots(client, league, [{ id }], {
+      standings: true,
+    })
+    expect(games.get(id)).toMatchObject({
+      id,
+      detail: {
+        standings: {
+          home: {
+            wins: 10,
+            losses: 3,
+            ...(league === 'nhl' && { overtimeLosses: 2 }),
+            ...(league === 'nfl' && { ties: 0 }),
+          },
+          away: { wins: 8, losses: 3 },
+        },
+      },
+    })
+    expect(urls).toHaveLength(2)
+  }
+)
+
+it('preserves line score gaps and actual zeros, falls back to the same moved ID and skips optional standings errors', async () => {
+  const raw = fixture('nba', 'games').data[0]
+  const row = {
+    ...raw,
+    home_q1: 0,
+    visitor_q1: 19,
+    home_q3: 22,
+    visitor_q3: null,
+  }
+  const when = '2026-05-14T22:00:00Z'
+  const { client, urls } = localClient((url) => {
+    if (url.pathname.endsWith('/standings')) return { data: null }
+    if (url.pathname.endsWith('/games/2'))
+      return {
+        data: {
+          ...row,
+          id: 2,
+          date: '2026-05-18',
+          datetime: '2026-05-18T22:00:00Z',
+        },
+      }
+    return { data: [{ ...row, id: 1 }] }
+  })
+  const result = await fetchMajorSnapshots(
+    client,
+    'nba',
+    [
+      { id: 1, startTime: when },
+      { id: 2, startTime: when },
+    ],
+    { standings: true }
+  )
+  expect(urls.map((url) => url.pathname)).toEqual([
+    '/nba/v1/games',
+    '/nba/v1/games/2',
+    '/nba/v1/standings',
+  ])
+  expect(result.get(2)?.slateDate).toBe('2026-05-18')
+  expect(result.get(1)?.detail).toEqual({
+    periodScores: [
+      { home: 0, away: 19 },
+      { home: null, away: null },
+      { home: 22, away: null },
+    ],
+  })
+})
+
+it('rejects incorrect detail identities and repeated IDs before sending a settlement candidate', async () => {
+  const raw = fixture('nba', 'games').data[0]
+  const { client } = localClient(() => ({ data: raw }))
+  await expect(fetchMajorSnapshots(client, 'nba', [{ id: 9 }])).rejects.toThrow(
+    'different game ID'
+  )
+  const nhl = fixture('nhl', 'games').data[0]
+  const duplicate = localClient(() => ({ data: [nhl, nhl] })).client
+  await expect(
+    fetchMajorSnapshots(duplicate, 'nhl', [{ id: Number(nhl.id) }])
+  ).rejects.toThrow('duplicate')
 })

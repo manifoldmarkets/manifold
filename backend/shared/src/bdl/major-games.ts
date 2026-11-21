@@ -10,13 +10,17 @@ import {
   ProviderGameStatus,
   ProviderOdds,
 } from 'common/sports-provider'
+import type {
+  SportsFinalQualifier,
+  SportsScoreboard,
+} from 'common/sports-scoreboard'
 import { DAY_MS } from 'common/util/time'
 
 import type { BdlParams, createBdlClient } from '../balldontlie-client'
 
 export type { MajorLeague } from 'common/bdl/major-leagues'
 type Client = Pick<ReturnType<typeof createBdlClient>, 'getAll'>
-type Team = { id: number; name: string }
+type Team = { id: number; name: string; code?: string }
 export type MajorGame = {
   id: number
   home: Team
@@ -31,6 +35,12 @@ export type MajorGame = {
   clock?: string
   postseason?: boolean
   gameNumber?: number
+  detail?: SportsScoreboard
+  finalQualifier?: SportsFinalQualifier
+  irregular?: boolean
+  observedAt?: number
+  scoreUpdatedTime?: number
+  resumptionTime?: number
   eligible: boolean
   season: number
 }
@@ -117,23 +127,33 @@ function team(league: MajorLeague, value: unknown): Team {
   const exact = teams.find(
     ([candidate]) => normalizeTeam(candidate) === normalized
   )
-  if (exact) return { id: row.id, name: exact[0] }
+  const rawCode = league === 'nhl' ? row.tricode : row.abbreviation
+  const code =
+    typeof rawCode === 'string' && /^[A-Z0-9]{2,5}$/.test(rawCode)
+      ? rawCode
+      : undefined
+  if (exact) return { id: row.id, name: exact[0], ...(code && { code }) }
 
   // Use a unique matching team code and nickname for provider name variants
   // such as "LA Clippers". Shared or reassigned abbreviations stay ambiguous.
-  const code = league === 'nhl' ? row.tricode : row.abbreviation
   const lastWord = normalized.split(' ').pop()
   const aliases = teams.filter(
     ([candidate, abbr]) =>
       abbr === code && normalizeTeam(candidate).split(' ').pop() === lastWord
   )
-  return { id: row.id, name: aliases.length === 1 ? aliases[0][0] : trimmed }
+  return {
+    id: row.id,
+    name: aliases.length === 1 ? aliases[0][0] : trimmed,
+    ...(code && { code }),
+  }
 }
 
 const unknownOpponent = /^(tbd|tba|to be (determined|announced))$/i
 const exhibition =
   /\b(pre[ -]?season|spring training|exhibition|all[ -]?stars?|pro bowl|rising stars)\b/i
-function mapGame(league: MajorLeague, row: Row): MajorGame {
+export function mapMajorGame(league: MajorLeague, raw: unknown): MajorGame {
+  const row = asRow(raw)
+  if (!row) throw new Error('[sports-bdl-' + league + '] Invalid game record')
   if (!isId(row.id) || !isId(row.season))
     throw new Error('[sports-bdl-' + league + '] Invalid game ID or season')
   const { startTime, slateDate, dateOnly } = scheduleTime(league, row)
@@ -177,6 +197,21 @@ function mapGame(league: MajorLeague, row: Row): MajorGame {
     ![home.name, away.name, row.status, row.summary].some(
       (value) => typeof value === 'string' && exhibition.test(value)
     )
+  const detail = scoreDetail(league, row)
+  const changed = league === 'nfl' ? providerMs(row.updated_at) : NaN
+  const overtime =
+    status === 'final' &&
+    (((league === 'nba' || league === 'wnba') &&
+      isId(row.period) &&
+      row.period > 4) ||
+      (league === 'nfl' &&
+        (score(row.home_team_ot) !== null ||
+          score(row.visitor_team_ot) !== null)))
+  const irregular = [row.status, row.summary, row.period_detail].some(
+    (value) =>
+      typeof value === 'string' &&
+      /\b(?:forfeit(?:ed|ure)?|awarded|no contest)\b/i.test(value)
+  )
   return {
     id: row.id,
     home,
@@ -191,6 +226,10 @@ function mapGame(league: MajorLeague, row: Row): MajorGame {
     status,
     homeScore,
     awayScore,
+    ...(detail && { detail }),
+    ...(Number.isFinite(changed) && { scoreUpdatedTime: changed }),
+    ...(overtime && { finalQualifier: 'OT' as const }),
+    ...(irregular && { irregular: true }),
     eligible,
     ...(isId(row.period) ? { period: String(row.period) } : {}),
     ...(status === 'in_progress' &&
@@ -199,6 +238,50 @@ function mapGame(league: MajorLeague, row: Row): MajorGame {
       ? { clock }
       : {}),
   }
+}
+
+function scoreDetail(
+  league: MajorLeague,
+  row: Row
+): SportsScoreboard | undefined {
+  if (league === 'nhl') {
+    const home = score(row.home_sog),
+      away = score(row.away_sog)
+    return home !== null || away !== null
+      ? { shots: { home, away } }
+      : undefined
+  }
+  let home: unknown[] = [],
+    away: unknown[] = []
+  if (league === 'mlb') {
+    const h = asRow(row.home_team_data)?.inning_scores
+    const a = asRow(row.away_team_data)?.inning_scores
+    home = Array.isArray(h) ? h : []
+    away = Array.isArray(a) ? a : []
+  } else if (league === 'nba' || league === 'nfl') {
+    const periods =
+      league === 'nba'
+        ? ['q1', 'q2', 'q3', 'q4', 'ot1', 'ot2', 'ot3']
+        : ['q1', 'q2', 'q3', 'q4', 'ot']
+    const field = league === 'nba' ? '_' : '_team_'
+    home = periods.map((period) => row['home' + field + period])
+    away = periods.map((period) => row['visitor' + field + period])
+  }
+  const pairs = Array.from(
+    { length: Math.min(32, Math.max(home.length, away.length)) },
+    (_, i) => ({
+      home: score(home[i]),
+      away: score(away[i]),
+    })
+  )
+  // Keep missing periods in position and omit future periods that have no observations.
+  while (
+    pairs.length &&
+    pairs[pairs.length - 1].home === null &&
+    pairs[pairs.length - 1].away === null
+  )
+    pairs.pop()
+  return pairs.length ? { periodScores: pairs } : undefined
 }
 
 function numberDoubleheaders(games: MajorGame[]) {
@@ -286,7 +369,7 @@ export async function fetchMajorGames(
         }
       )
       for (const raw of rows) {
-        const game = mapGame(league, raw as Row)
+        const game = mapMajorGame(league, raw)
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
         if (prior && JSON.stringify(prior) !== JSON.stringify(game))

@@ -432,6 +432,7 @@ export type Sports = {
   sportsProvider?: import('./sports-provider').SportsProvider
   sportsLeagueKey?: import('./bdl/leagues').BdlLeagueKey
   sportsCompetitionId?: string
+  sportsCompetitionPhase?: string
   sportsHomeTeamId?: string
   sportsAwayTeamId?: string
   openingLineSource?: import('./sports-kickoff-interface').OpeningLineSource
@@ -442,6 +443,8 @@ export type Sports = {
   /** Kickoff as known at creation. Schedule changes only update sportsStartTimestamp. */
   readonly sportsSeededStartTimestamp?: string
   sportsStartKnown?: boolean
+  /** Latest possible kickoff on a date-only scheduled day. Ignore once the start is known. */
+  sportsLatestPossibleStartTimestamp?: string
   sportsKickoffBudget?: number
   sportsObservedStartTime?: number
   sportsFixture?: true
