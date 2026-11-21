@@ -71,6 +71,16 @@ create table if not exists
 
 create unique index if not exists ach_trades_user_id_idx on public.ach_trades (user_id);
 
+-- Limit orders still open when update-ach-trades applied their window, counted
+-- into ach_trades when they fill; see migrations/2026112201_ach_trades_incremental.sql.
+create table if not exists
+  ach_trades_open_orders (
+    bet_id text primary key,
+    created_time timestamp with time zone not null
+  );
+
+alter table ach_trades_open_orders enable row level security;
+
 -- Comments (liked-only)
 create materialized view if not exists
   mv_ach_comments as

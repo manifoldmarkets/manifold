@@ -6,8 +6,8 @@ import { SupabaseDirectClient } from './supabase/init'
 import { updateAchTrades } from '../../scheduler/src/jobs/update-ach-trades'
 
 // The job's real SQL runs against an in-memory PostgreSQL holding the real
-// contract_bets table and trigger, the real ach_trades table and the
-// job_watermarks migration.
+// contract_bets table and trigger, the real ach_trades tables and the job's
+// migration.
 jest.mock('./supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(() => {
     throw new Error('This test must not create a network database client')
@@ -22,31 +22,31 @@ jest.setTimeout(60_000)
 const UNLIMITED = { maxWindows: 10_000, budgetMs: 600_000 }
 const pgp = pgPromise()
 let db: PGlite
-// When set, the Nth window's insert into ach_trades throws, after the window
-// has been read and locked: a crash in the middle of a window.
-let failApplyOnCall: number | undefined
-let applyCalls = 0
+// When set, the `call`th statement containing `match` throws instead of
+// running: a lost connection at that point.
+let failOn: { match: string; call: number } | undefined
+let matchedCalls = 0
 
-const format = (sql: string, params?: unknown) => pgp.as.format(sql, params)
+const run = async (sql: string, params?: unknown) => {
+  if (failOn && sql.includes(failOn.match) && ++matchedCalls === failOn.call)
+    throw new Error('connection lost')
+  return (await db.query(pgp.as.format(sql, params))).rows
+}
 const client = {
   one: async (sql: string, params?: unknown[]) => {
-    if (sql.includes('insert into ach_trades')) {
-      applyCalls++
-      if (applyCalls === failApplyOnCall) throw new Error('connection lost')
-    }
-    const { rows } = await db.query(format(sql, params))
+    const rows = await run(sql, params)
     if (rows.length !== 1)
       throw new Error(`Expected one row, got ${rows.length}`)
     return rows[0]
   },
   oneOrNone: async (sql: string, params?: unknown[]) => {
-    const { rows } = await db.query(format(sql, params))
+    const rows = await run(sql, params)
     if (rows.length > 1)
       throw new Error(`Expected at most one row, got ${rows.length}`)
     return rows[0] ?? null
   },
   none: async (sql: string, params?: unknown[]) => {
-    const { rows } = await db.query(format(sql, params))
+    const rows = await run(sql, params)
     if (rows.length) throw new Error(`Expected no rows, got ${rows.length}`)
   },
   tx: async <T>(fn: (tx: unknown) => Promise<T>) => {
@@ -84,6 +84,14 @@ const addBets = async (bets: SeedBet[]) => {
     )
 }
 
+// What place-bet and cancel-bet do to a limit order; the trigger updates the
+// is_filled and is_cancelled columns from data.
+const setOrder = (id: string, flags: Partial<SeedBet>) =>
+  db.query(
+    `update contract_bets set data = data || $2::jsonb where bet_id = $1`,
+    [id, JSON.stringify(flags)]
+  )
+
 // A row as the last full pass left it: its newest counted trade is `betId`.
 const addRow = async (userId: string, count: number, betId: string) =>
   db.query(
@@ -106,12 +114,24 @@ const counts = async () =>
     Object.entries(await rows()).map(([user, { n }]) => [user, n])
   )
 
+const openOrders = async () =>
+  (
+    await db.query<{ bet_id: string }>(
+      `select bet_id from ach_trades_open_orders order by bet_id`
+    )
+  ).rows.map((r) => r.bet_id)
+
 const watermark = async () =>
   (
     await db.query<{ w: string }>(
       `select watermark::text as w from job_watermarks where job_name = 'update-ach-trades'`
     )
   ).rows[0]?.w
+
+const moveWatermarkBack = (interval: string) =>
+  db.query(`update job_watermarks set watermark = watermark - $1::interval`, [
+    interval,
+  ])
 
 // The counting rules applied directly to every bet after `after`: what the
 // incremental windows must add up to.
@@ -122,7 +142,7 @@ const directCounts = async (after: string) =>
         `select b.user_id, count(*)::int as n
          from contract_bets b join contracts c on c.id = b.contract_id
          where b.created_time > $1::timestamptz
-           and b.created_time <= now() - interval '10 minutes'
+           and b.created_time <= now() - interval '30 minutes'
            and coalesce(b.is_redemption, false) = false
            and coalesce(b.is_filled, true) = true
            and coalesce(b.is_cancelled, false) = false
@@ -166,7 +186,7 @@ beforeAll(async () => {
     readFileSync(
       resolve(
         __dirname,
-        '../../supabase/migrations/2026112201_job_watermarks.sql'
+        '../../supabase/migrations/2026112201_ach_trades_incremental.sql'
       ),
       'utf8'
     )
@@ -174,9 +194,11 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
-  await db.exec('truncate contract_bets, ach_trades, job_watermarks')
-  failApplyOnCall = undefined
-  applyCalls = 0
+  await db.exec(
+    'truncate contract_bets, ach_trades, ach_trades_open_orders, job_watermarks'
+  )
+  failOn = undefined
+  matchedCalls = 0
 })
 
 afterAll(async () => {
@@ -197,7 +219,7 @@ describe('updateAchTrades', () => {
       // Counted: isFilled and isApi absent count as filled and not API.
       { id: 'a1', userId: 'alice', ago: '2 days' },
       { id: 'a2', userId: 'alice', ago: '1 day', isFilled: true },
-      { id: 'a3', userId: 'alice', ago: '30 minutes', isApi: false },
+      { id: 'a3', userId: 'alice', ago: '40 minutes', isApi: false },
       { id: 'b1', userId: 'bob', ago: '2 days' },
       { id: 'c1', userId: 'carol', ago: '1 day' },
       { id: 'c2', userId: 'carol', ago: '2 hours' },
@@ -205,12 +227,11 @@ describe('updateAchTrades', () => {
       { id: 'd2', userId: 'dave', ago: '20 hours' },
       // Not trades.
       { id: 'x1', userId: 'alice', ago: '1 day', isRedemption: true },
-      { id: 'x2', userId: 'alice', ago: '1 day', isFilled: false },
       { id: 'x3', userId: 'alice', ago: '1 day', isCancelled: true },
       { id: 'x4', userId: 'alice', ago: '1 day', isApi: true },
       { id: 'x5', userId: 'alice', ago: '1 day', contractId: 'cash' },
       { id: 'x6', userId: 'erin', ago: '1 day', isApi: true },
-      // Inside the 10-minute lag: left for the next run.
+      // Inside the 30-minute lag: left for the next run.
       { id: 'a-recent', userId: 'alice', ago: '5 minutes' },
     ])
     await addRow('alice', 5, 'a-last')
@@ -241,6 +262,93 @@ describe('updateAchTrades', () => {
     expect(await counts()).toEqual({ alice: 9, bob: 3, carol: 2, dave: 2 })
   })
 
+  it('counts a limit order once it fills, and never one that is cancelled', async () => {
+    await addBets([
+      { id: 'base', userId: 'alice', ago: '3 days' },
+      // Open when their window is applied.
+      { id: 'o-fills', userId: 'alice', ago: '2 days', isFilled: false },
+      { id: 'o-cancelled', userId: 'alice', ago: '2 days', isFilled: false },
+      { id: 'o-stays-open', userId: 'bob', ago: '2 days', isFilled: false },
+      // Alice trades again after placing them, so her last_updated moves
+      // past both orders.
+      { id: 'a1', userId: 'alice', ago: '1 day' },
+    ])
+    await addRow('alice', 1, 'base')
+
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await counts()).toEqual({ alice: 2 })
+    expect(await openOrders()).toEqual([
+      'o-cancelled',
+      'o-fills',
+      'o-stays-open',
+    ])
+
+    await setOrder('o-fills', { isFilled: true })
+    await setOrder('o-cancelled', { isCancelled: true })
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await rows()).toEqual({ alice: { n: 3, rank: 1 } })
+    expect(await openOrders()).toEqual(['o-stays-open'])
+
+    // Counted once: later runs, and a watermark moved back over the orders'
+    // window, add nothing.
+    await updateAchTrades(pg, UNLIMITED)
+    await moveWatermarkBack('5 days')
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await counts()).toEqual({ alice: 3 })
+
+    await setOrder('o-stays-open', { isFilled: true })
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await rows()).toEqual({
+      alice: { n: 3, rank: 1 },
+      bob: { n: 1, rank: 2 },
+    })
+    expect(await openOrders()).toEqual([])
+  })
+
+  it('counts an order that fills before a replayed window once', async () => {
+    await addBets([
+      { id: 'base', userId: 'alice', ago: '3 days' },
+      { id: 'order', userId: 'alice', ago: '2 days', isFilled: false },
+    ])
+    await addRow('alice', 1, 'base')
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await openOrders()).toEqual(['order'])
+
+    // The order fills, and the watermark is moved back before the next run:
+    // the replayed window sees it filled and must leave it to the open-order
+    // pass, which counts it.
+    await setOrder('order', { isFilled: true })
+    await moveWatermarkBack('5 days')
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await counts()).toEqual({ alice: 2 })
+    expect(await openOrders()).toEqual([])
+  })
+
+  it('keeps open orders for 30 days only', async () => {
+    await addBets([
+      { id: 'base', userId: 'alice', ago: '50 days' },
+      // Already more than 30 days old when its window is applied: never
+      // tracked.
+      { id: 'old-order', userId: 'alice', ago: '40 days', isFilled: false },
+      { id: 'order', userId: 'alice', ago: '10 days', isFilled: false },
+    ])
+    await addRow('alice', 1, 'base')
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await openOrders()).toEqual(['order'])
+
+    // A tracked order still open 30 days after it was placed is dropped.
+    await db.query(
+      `update ach_trades_open_orders set created_time = now() - interval '31 days'`
+    )
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await openOrders()).toEqual([])
+
+    await setOrder('old-order', { isFilled: true })
+    await setOrder('order', { isFilled: true })
+    await updateAchTrades(pg, UNLIMITED)
+    expect(await counts()).toEqual({ alice: 1 })
+  })
+
   it('spreads a backlog over capped runs and adds up to a direct count', async () => {
     // Deterministic pseudo-random bets over the past four days.
     let seed = 42
@@ -251,8 +359,8 @@ describe('updateAchTrades', () => {
       bets.push({
         id: `bet-${i}`,
         userId: users[Math.floor(next() * users.length)],
-        // At least 30 minutes old, so no bet sits near the moving cutoff.
-        ago: `${30 + Math.floor(next() * (4 * 24 * 60 - 60))} minutes`,
+        // At least an hour old, so no bet sits near the moving cutoff.
+        ago: `${60 + Math.floor(next() * (4 * 24 * 60 - 120))} minutes`,
         contractId: next() < 0.1 ? 'cash' : 'mana',
         isRedemption: next() < 0.1,
         isFilled: next() < 0.1 ? false : undefined,
@@ -298,24 +406,25 @@ describe('updateAchTrades', () => {
       )
   })
 
-  it('commits a window and its watermark together, so a crash neither skips nor double counts', async () => {
+  it('rolls a window back whole when it fails after counting', async () => {
     await addBets([
       { id: 'base', userId: 'alice', ago: '3 days' },
       { id: 'w1', userId: 'alice', ago: '2 days 23 hours' },
       { id: 'w2', userId: 'alice', ago: '2 days' },
+      { id: 'w2-open', userId: 'alice', ago: '2 days', isFilled: false },
       { id: 'w3', userId: 'bob', ago: '1 day' },
     ])
     await addRow('alice', 1, 'base')
 
-    failApplyOnCall = 2
+    // The second window's counts and open orders are written, then its
+    // watermark advance fails.
+    failOn = { match: 'update job_watermarks', call: 2 }
     await expect(updateAchTrades(pg, UNLIMITED)).rejects.toThrow(
       'connection lost'
     )
-    // The first window (w1) committed with its watermark; the second rolled
-    // back whole.
     expect(await counts()).toEqual({ alice: 2 })
+    expect(await openOrders()).toEqual([])
     const afterCrash = await watermark()
-    expect(afterCrash).toBeDefined()
     expect(
       (
         await db.query<{ ok: boolean }>(
@@ -326,9 +435,10 @@ describe('updateAchTrades', () => {
       ).rows[0].ok
     ).toBe(true)
 
-    failApplyOnCall = undefined
+    failOn = undefined
     await updateAchTrades(pg, UNLIMITED)
     expect(await counts()).toEqual({ alice: 3, bob: 1 })
+    expect(await openOrders()).toEqual(['w2-open'])
   })
 
   it('does not recount when the watermark is moved back', async () => {
@@ -342,9 +452,7 @@ describe('updateAchTrades', () => {
     await updateAchTrades(pg, UNLIMITED)
     expect(await counts()).toEqual({ alice: 3, bob: 1 })
 
-    await db.exec(
-      `update job_watermarks set watermark = watermark - interval '5 days'`
-    )
+    await moveWatermarkBack('5 days')
     await updateAchTrades(pg, UNLIMITED)
     expect(await counts()).toEqual({ alice: 3, bob: 1 })
   })
@@ -359,7 +467,6 @@ describe('updateAchTrades', () => {
     // 400 days is 1,600 six-hour windows; starting each window at the next
     // bet needs three plus the empty tail to the cutoff.
     await updateAchTrades(pg, { maxWindows: 4, budgetMs: 600_000 })
-    expect(await counts()).toEqual({ alice: 2, bob: 1 })
     expect(await rows()).toEqual({
       alice: { n: 2, rank: 1 },
       bob: { n: 1, rank: 2 },

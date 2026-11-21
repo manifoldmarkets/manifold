@@ -15,26 +15,34 @@ import { log } from 'shared/utils'
 // contract_bets forward in created_time windows on contract_bets_created_time_only,
 // from a watermark in job_watermarks, and adds each window's counts per user.
 //
-// - A window and its watermark advance commit together, under a row lock on
-//   the watermark, so a crash or an overlapping run can neither skip a window
-//   nor count one twice.
-// - The first run starts at max(ach_trades.last_updated): the bet the last
-//   full pass saw last. Nothing at or before it is counted again, and the
-//   per-user guard (created_time > the row's last_updated) means a watermark
-//   that is ever moved back cannot double count either.
+// - A window's counts and its watermark advance commit together, under a row
+//   lock on the watermark, so a crash or an overlapping run can neither skip a
+//   window nor count one twice.
+// - The first run starts at max(ach_trades.last_updated): the newest trade the
+//   last full pass counted. Prod samples before it found every trader with a
+//   row and no uncounted trades except limit orders that filled afterwards.
+//   The per-user guard (created_time > the row's last_updated) means a
+//   watermark that is ever moved back cannot double count.
+// - Limit orders still open when their window is applied go to
+//   ach_trades_open_orders and are counted when they fill (dropped if
+//   cancelled, or after OPEN_ORDER_HORIZON). Without this, the 4-5% of trades
+//   that are limit orders filling after their window would never count.
 // - A run applies at most MAX_WINDOWS_PER_RUN windows or RUN_BUDGET_MS of work,
-//   so the 14-month backlog spreads over several days of hourly runs.
-// - Windows stop LAG short of now(): a bet's created_time is set in Node before
-//   its transaction commits, and a window must not pass a bet still in flight.
-//
-// A bet counts if it qualifies when its window is applied, as in the first
-// version. A limit order that fills after that is not counted later: 4-5% of
-// trades at this 10-minute lag, ~2% at a one-day lag (two prod samples, Nov 2026).
+//   so the 14-month backlog spreads over several days of hourly runs, and every
+//   statement runs under server-side statement and lock timeouts.
+// - Windows stop LAG short of now(). A bet's created_time is set inside its
+//   transaction, before the commit, so a window must not pass bets still in
+//   flight. API statements and idle transactions time out after 60 s, so 30
+//   minutes is a wide margin, not a guarantee: a bet committed later than that
+//   would be missed.
 const JOB_NAME = 'update-ach-trades'
 const WINDOW = '6 hours'
-const LAG = '10 minutes'
+const LAG = '30 minutes'
+const OPEN_ORDER_HORIZON = '30 days'
 const MAX_WINDOWS_PER_RUN = 16
 const RUN_BUDGET_MS = 3 * 60 * 1000
+const STATEMENT_TIMEOUT = '2min'
+const LOCK_TIMEOUT = '1min'
 
 export type AchTradesRunOptions = {
   maxWindows: number
@@ -53,6 +61,7 @@ type AppliedWindow = {
   hi: string
   users: number
   trades: number
+  opened: number
 }
 
 export const updateAchTrades = async (
@@ -84,101 +93,185 @@ export const updateAchTrades = async (
   )
 
   let windows = 0
-  let users = 0
   let trades = 0
+  let opened = 0
   let watermark: string | undefined
   while (windows < maxWindows && Date.now() - startedAt < budgetMs) {
     const windowStart = Date.now()
     const applied = await applyNextWindow(pg, cutoff)
     if (!applied) break
     windows++
-    users += applied.users
     trades += applied.trades
+    opened += applied.opened
     watermark = applied.hi
     log(
       `update-ach-trades: applied (${applied.lo}, ${applied.hi}]: ${
         applied.trades
-      } trades by ${applied.users} users in ${Date.now() - windowStart}ms`
+      } trades by ${applied.users} users, ${
+        applied.opened
+      } open limit orders in ${Date.now() - windowStart}ms`
     )
   }
 
-  if (windows === 0) {
-    log('update-ach-trades: up to date, nothing to apply')
-    return
-  }
+  const settled = await settleOpenOrders(pg)
 
-  const { changed } = await pg.tx(async (tx) => {
-    // The same lock as the windows, so two overlapping runs never update
-    // ach_trades rows in opposite orders.
-    await lockWatermark(tx)
-    return await tx.one<{ changed: number }>(
-      `with ranks as (
-         select user_id, rank() over (order by total_trades_count desc) as r
-         from ach_trades
-       ),
-       changed as (
-         update ach_trades t
-         set trades_rank = ranks.r
-         from ranks
-         where t.user_id = ranks.user_id
-           and t.trades_rank is distinct from ranks.r
-         returning 1
-       )
-       select count(*)::int as changed from changed`
+  let ranksChanged = 0
+  if (windows > 0 || settled.trades > 0) {
+    ranksChanged = await lockedTx(
+      pg,
+      async (tx) =>
+        (
+          await tx.one<{ changed: number }>(
+            `with ranks as (
+               select user_id, rank() over (order by total_trades_count desc) as r
+               from ach_trades
+             ),
+             changed as (
+               update ach_trades t
+               set trades_rank = ranks.r
+               from ranks
+               where t.user_id = ranks.user_id
+                 and t.trades_rank is distinct from ranks.r
+               returning 1
+             )
+             select count(*)::int as changed from changed`
+          )
+        ).changed
     )
-  })
+  }
 
   log(
-    `update-ach-trades: ${windows} windows, ${trades} trades, ${users} row upserts, ${changed} ranks changed; watermark ${watermark}, cutoff ${cutoff}, ${
-      Date.now() - startedAt
-    }ms`
+    `update-ach-trades: ${windows} windows (${trades} trades, ${opened} open limit orders), ${
+      settled.trades
+    } filled limit orders counted, ${
+      settled.dropped
+    } open orders aged out, ${ranksChanged} ranks changed; watermark ${
+      watermark ?? 'unchanged'
+    }, cutoff ${cutoff}, ${Date.now() - startedAt}ms`
   )
 }
 
-const lockWatermark = (tx: SupabaseDirectClient) =>
-  tx.oneOrNone(`select 1 from job_watermarks where job_name = $1 for update`, [
-    JOB_NAME,
-  ])
+// Runs fn in a transaction that first caps its statements and lock waits and
+// takes the job's row lock in job_watermarks. Every write the job makes to
+// ach_trades and ach_trades_open_orders happens under that lock, so two
+// overlapping runs serialize instead of interleaving.
+const lockedTx = <T>(
+  pg: SupabaseDirectClient,
+  fn: (tx: SupabaseDirectClient, watermark: string | null) => Promise<T>
+) =>
+  pg.tx(async (tx) => {
+    await tx.none(`set local statement_timeout = $1`, [STATEMENT_TIMEOUT])
+    await tx.none(`set local lock_timeout = $1`, [LOCK_TIMEOUT])
+    const row = await tx.oneOrNone<{ watermark: string }>(
+      `select watermark::text as watermark from job_watermarks
+       where job_name = $1 for update`,
+      [JOB_NAME]
+    )
+    return await fn(tx, row?.watermark ?? null)
+  })
 
 // Applies the window after the watermark and advances the watermark, in one
 // transaction. Returns null once the watermark has reached the cutoff.
 const applyNextWindow = (pg: SupabaseDirectClient, cutoff: string) =>
-  pg.tx(async (tx): Promise<AppliedWindow | null> => {
+  lockedTx(pg, async (tx, lo): Promise<AppliedWindow | null> => {
+    if (lo === null) return null
     // A window starts at the next bet, so a stretch with no bets (on a fresh
     // or quiet database) costs one window, not one per 6 hours. Timestamps go
     // to and from Postgres as text to keep their microseconds.
-    const bounds = await tx.oneOrNone<{ lo: string; hi: string }>(
-      `select w.watermark::text as lo,
+    const { hi } = await tx.one<{ hi: string | null }>(
+      `select case when $1::timestamptz < $2::timestamptz then
          least(
            coalesce(
              (select min(b.created_time) from contract_bets b
-              where b.created_time > w.watermark),
+              where b.created_time > $1::timestamptz),
              $2::timestamptz
            ) + $3::interval,
            $2::timestamptz
-         )::text as hi
-       from job_watermarks w
-       where w.job_name = $1 and w.watermark < $2::timestamptz
-       for update`,
-      [JOB_NAME, cutoff, WINDOW]
+         )::text
+       end as hi`,
+      [lo, cutoff, WINDOW]
     )
-    if (!bounds) return null
+    if (hi === null) return null
 
-    const { users, trades } = await tx.one<{ users: number; trades: number }>(
-      `with deltas as (
-         select b.user_id, count(*)::int as trades, max(b.created_time) as last_trade
+    const applied = await tx.one<{
+      users: number
+      trades: number
+      opened: number
+    }>(
+      `with window_bets as (
+         select b.bet_id, b.user_id, b.created_time,
+           coalesce(b.is_filled, true) as is_filled,
+           coalesce(b.is_cancelled, false) as is_cancelled
          from contract_bets b
          join contracts c on c.id = b.contract_id
-         left join ach_trades t on t.user_id = b.user_id
          where b.created_time > $1::timestamptz
            and b.created_time <= $2::timestamptz
            and coalesce(b.is_redemption, false) = false
-           and coalesce(b.is_filled, true) = true
-           and coalesce(b.is_cancelled, false) = false
            and (b.is_api is null or b.is_api = false)
            and c.token = 'MANA'
-           and b.created_time > coalesce(t.last_updated, '-infinity'::timestamptz)
-         group by b.user_id
+       ),
+       deltas as (
+         select w.user_id, count(*)::int as trades, max(w.created_time) as last_trade
+         from window_bets w
+         left join ach_trades t on t.user_id = w.user_id
+         where w.is_filled and not w.is_cancelled
+           and w.created_time > coalesce(t.last_updated, '-infinity'::timestamptz)
+           -- An order already waiting to fill is counted only by settleOpenOrders.
+           and not exists (
+             select 1 from ach_trades_open_orders o where o.bet_id = w.bet_id
+           )
+         group by w.user_id
+       ),
+       applied as (
+         insert into ach_trades (user_id, total_trades_count, last_updated)
+         select user_id, trades, last_trade from deltas
+         on conflict (user_id) do update
+           set total_trades_count = ach_trades.total_trades_count + excluded.total_trades_count,
+               last_updated = greatest(ach_trades.last_updated, excluded.last_updated)
+         returning 1
+       ),
+       opened as (
+         insert into ach_trades_open_orders (bet_id, created_time)
+         select bet_id, created_time from window_bets
+         where not is_filled and not is_cancelled
+           and created_time > now() - $3::interval
+         on conflict (bet_id) do nothing
+         returning 1
+       )
+       select (select count(*) from applied)::int as users,
+              (select coalesce(sum(trades), 0) from deltas)::int as trades,
+              (select count(*) from opened)::int as opened`,
+      [lo, hi, OPEN_ORDER_HORIZON]
+    )
+
+    await tx.none(
+      `update job_watermarks
+       set watermark = $2::timestamptz, updated_time = now()
+       where job_name = $1`,
+      [JOB_NAME, hi]
+    )
+    return { lo, hi, ...applied }
+  })
+
+// Counts the open limit orders that have since filled, forgets those that were
+// cancelled, and drops any older than OPEN_ORDER_HORIZON (mostly orders on
+// markets that closed with the order still open).
+const settleOpenOrders = (pg: SupabaseDirectClient) =>
+  lockedTx(pg, async (tx) => {
+    const { trades } = await tx.one<{ trades: number }>(
+      `with settled as (
+         delete from ach_trades_open_orders o
+         using contract_bets b
+         where b.bet_id = o.bet_id
+           and (coalesce(b.is_filled, true) or coalesce(b.is_cancelled, false))
+         returning b.user_id, b.created_time,
+           coalesce(b.is_filled, true) and not coalesce(b.is_cancelled, false) as is_trade
+       ),
+       deltas as (
+         select user_id, count(*)::int as trades, max(created_time) as last_trade
+         from settled
+         where is_trade
+         group by user_id
        ),
        applied as (
          insert into ach_trades (user_id, total_trades_count, last_updated)
@@ -188,16 +281,17 @@ const applyNextWindow = (pg: SupabaseDirectClient, cutoff: string) =>
                last_updated = greatest(ach_trades.last_updated, excluded.last_updated)
          returning 1
        )
-       select (select count(*) from applied)::int as users,
-              (select coalesce(sum(trades), 0) from deltas)::int as trades`,
-      [bounds.lo, bounds.hi]
+       select (select coalesce(sum(trades), 0) from deltas)::int as trades,
+              (select count(*) from applied)::int as upserts`
     )
-
-    await tx.none(
-      `update job_watermarks
-       set watermark = $2::timestamptz, updated_time = now()
-       where job_name = $1`,
-      [JOB_NAME, bounds.hi]
+    const { dropped } = await tx.one<{ dropped: number }>(
+      `with dropped as (
+         delete from ach_trades_open_orders
+         where created_time <= now() - $1::interval
+         returning 1
+       )
+       select count(*)::int as dropped from dropped`,
+      [OPEN_ORDER_HORIZON]
     )
-    return { ...bounds, users, trades }
+    return { trades, dropped }
   })
