@@ -1,3 +1,4 @@
+import { AdminBdlPolling } from './admin-bdl-polling'
 import Link from 'next/link'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
@@ -24,14 +25,15 @@ type Pending = Record<string, number | null>
 // How often the resolver asks The Odds API for scores, and what it spends.
 // Changes apply on the scheduler's next 10-second tick.
 export function AdminScorePolling() {
-  const { data, refresh } = useAPIGetter('admin-sports-score-polling', {})
+  const { data, error, refresh } = useAPIGetter(
+    'admin-sports-score-polling',
+    {}
+  )
   // Each setting saves on its own: while one is in flight its select shows
   // the value asked for and is disabled, and the others still work. A select
   // stays disabled until its own save lands, so two saves on one target
   // can't overtake each other.
   const [pending, setPending] = useState<Pending>({})
-
-  if (!data) return <LoadingIndicator />
 
   const save = async (target: string, intervalSeconds: number | null) => {
     setPending((p) => ({ ...p, [target]: intervalSeconds }))
@@ -45,8 +47,24 @@ export function AdminScorePolling() {
     }
   }
 
+  const bdlPanel = (
+    <AdminBdlPolling leagues={data?.leagues} pending={pending} save={save} />
+  )
+  if (!data)
+    return (
+      <Col className="gap-4">
+        {bdlPanel}
+        {error ? (
+          <p>Score polling settings unavailable.</p>
+        ) : (
+          <LoadingIndicator />
+        )}
+      </Col>
+    )
+
   return (
     <Col className="gap-6">
+      {bdlPanel}
       <Credits usage={data.usage} />
       <Col className="gap-1">
         <label className="text-ink-800 flex items-center gap-2 text-sm font-medium">
@@ -261,15 +279,19 @@ function GamesNow(props: {
         Games on now or in the next 12 hours
       </span>
       <span className="text-ink-500 text-xs">
-        Speed up one big game without changing its sport. It costs the same as
-        changing the whole league, but only while that game is on.
+        Override the live score interval for one game.
       </span>
       {data.games.length === 0 && (
         <span className="text-ink-500 text-sm">No games in that window.</span>
       )}
       {data.games.map((g) => {
         const target = pollingTarget.game(g.contractId)
-        const follows = g.sport ? sportSeconds[g.sport] : undefined
+        const follows = g.leagueKey
+          ? data.leagues?.find((row) => row.leagueKey === g.leagueKey)
+              ?.intervalSeconds
+          : g.sport
+          ? sportSeconds[g.sport]
+          : undefined
         const override = target in pending ? pending[target] : g.overrideSeconds
         return (
           <Row
@@ -289,6 +311,9 @@ function GamesNow(props: {
               className="text-ink-900 hover:text-primary-700 min-w-0 flex-1 truncate"
             >
               {g.question}
+              {g.leagueKey && (
+                <span className="text-ink-600 ml-1 text-xs">BDL</span>
+              )}
             </Link>
             <select
               aria-label={`Live score interval for ${g.question}`}
@@ -303,7 +328,7 @@ function GamesNow(props: {
               }
             >
               <option value="">
-                Same as sport
+                {g.leagueKey ? 'Same as BDL league' : 'Same as sport'}
                 {follows !== undefined ? ` (${intervalLabel(follows)})` : ''}
               </option>
               {LIVE_INTERVALS.map((i) => (

@@ -10,6 +10,10 @@ import {
   requireBdlLocalOnly,
 } from './balldontlie-fixture'
 import { BdlParams, bdlUrl } from './balldontlie-request'
+import {
+  recordServiceBdlResponse,
+  reportBdlRequestIssue,
+} from './bdl/request-stats'
 
 export { type BdlParams, bdlRecordingPathParts } from './balldontlie-request'
 
@@ -228,6 +232,10 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       '[sports-bdl-client] Fake time requires fixtures for BDL requests'
     )
   const role = options.role ?? (fixture ? 'codex' : 'dev')
+  const serviceRole =
+    !fixture && (role === 'api' || role === 'scheduler' || role === 'dev')
+      ? role
+      : undefined
   if (options.recorderRate !== undefined && role !== 'recorder')
     throw new Error(
       '[sports-bdl-client] Only the manual recorder can override its role budget'
@@ -272,16 +280,22 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         throw new Error('[sports-bdl-client] League disabled')
       const requestedAt = clock.now()
       const request = { path, params, at: new Date(requestedAt).toISOString() }
-      const res = fixture
-        ? await fixture(path, params)
-        : await (options.transport ?? fetch)(url.toString(), {
+      let res: Response
+      if (fixture) res = await fixture(path, params)
+      else {
+        try {
+          res = await (options.transport ?? fetch)(url.toString(), {
             method: 'GET',
             headers: { Authorization: key as string },
             signal: AbortSignal.timeout(15_000),
             redirect: 'error',
-          }).catch(() => {
-            throw new Error('[sports-bdl-client] BDL connection failed')
           })
+        } catch {
+          if (serviceRole)
+            reportBdlRequestIssue(serviceRole, 'connection failed')
+          throw new Error('[sports-bdl-client] BDL connection failed')
+        }
+      }
 
       const rateLimit = {
         limit: numericHeader(res.headers, 'x-ratelimit-limit'),
@@ -300,6 +314,20 @@ export function createBdlClient(options: BdlClientOptions = {}) {
           )
         )
       }
+      // Count HTTP responses independently of body validity, once per actual attempt.
+      // Decode while PostgreSQL writes, then finish accounting before returning/retrying.
+      const safeQuota = (value: number | null) =>
+        key && value !== null && String(value).includes(key) ? null : value
+      const accounting =
+        serviceRole &&
+        recordServiceBdlResponse(serviceRole, {
+          request: { path, at: request.at },
+          status: res.status,
+          rateLimit: {
+            limit: safeQuota(rateLimit.limit),
+            remaining: safeQuota(rateLimit.remaining),
+          },
+        })
       let body: unknown
       try {
         body = await res.json()
@@ -307,6 +335,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         if (res.ok && res.status !== 204 && res.status !== 205)
           throw new Error('[sports-bdl-client] Invalid JSON from provider')
         body = null
+      } finally {
+        await accounting
       }
       if (
         key &&

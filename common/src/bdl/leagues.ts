@@ -2,10 +2,10 @@ import { mapValues } from 'lodash'
 
 import {
   CLOSE_BUFFER_HOURS,
+  FINALS_FROM_MINUTES,
   SPORT_ID_TO_SPORT_KEY,
   SportId,
 } from '../sports-calendar'
-import { FINALS_FROM_MINUTES } from '../sports-score-polling'
 import {
   BDL_DEFAULT_MAX_LEAD_DAYS,
   BDL_PER_LEAGUE_RUN_CAP,
