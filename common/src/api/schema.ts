@@ -74,6 +74,7 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { publicSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
 import { ScorePollingPanel } from 'common/sports-score-polling'
@@ -1511,19 +1512,7 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         contractId: z.string().min(1),
-        score: z.object({
-          sportsHomeScore: z.number().finite().nonnegative().nullable(),
-          sportsAwayScore: z.number().finite().nonnegative().nullable(),
-          sportsLiveStatus: z.enum([
-            'IN_PLAY',
-            'PAUSED',
-            'FINISHED',
-            'AWARDED',
-          ]),
-          sportsLiveMinute: z.string().nullable(),
-          sportsLiveUpdatedTime: z.number().finite(),
-          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
-        }),
+        score: publicSportsScoreSchema,
       })
       .strict(),
   },

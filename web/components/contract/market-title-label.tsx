@@ -1,10 +1,10 @@
 import clsx from 'clsx'
 import Link from 'next/link'
-import { Contract, isSportsContract, SportsContract } from 'common/contract'
-import { parseOddsEventId } from 'common/odds-markets'
-import { WORLD_CUP_2026 } from 'common/sports'
-import { getSportsLeagueLabel } from 'common/sports-league-label'
-import { sportForMarket, sportPath } from 'common/sports-schedule'
+import { Contract, isSportsContract } from 'common/contract'
+import {
+  getSportsLeagueLabel,
+  sportsLeagueHref,
+} from 'common/sports-league-label'
 
 import { PerpMarketBadge } from '../perps/perp-market-badge'
 import { OFFICIAL_SPORTS_MARKET_DESCRIPTION } from '../sports/sports-market-badge'
@@ -35,16 +35,6 @@ export function MarketTitleLabel(props: {
       className={className}
     />
   )
-}
-
-// The sport's page, or the World Cup's own page for the football-data markets.
-function sportsLeagueHref(contract: SportsContract) {
-  const { sportsEventId, sportsLeague } = contract
-  const odds = parseOddsEventId(sportsEventId)
-  if (!odds && sportsLeague === WORLD_CUP_2026.sportsLeague)
-    return WORLD_CUP_2026.dashboardPath
-  const sport = sportForMarket({ sportsLeague: odds?.sportKey ?? sportsLeague })
-  return sport === 'other' ? '/sports' : sportPath(sport)
 }
 
 // The perp ticker's look in saddle brown: bold monospace at the size of the

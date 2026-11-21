@@ -1,3 +1,8 @@
+import { BDL_LEAGUES } from './bdl/leagues'
+import type { Sports } from './contract'
+import { parseBdlEventId } from './sports-ids'
+import { providerOf } from './sports-provider'
+import { sportForMarket, sportPath } from './sports-schedule'
 import { ADDITIONAL_SPORTS_FEEDS } from './sports-feeds'
 import { parseF1EventId, parseF1TitleEventId } from './f1-markets'
 import { parseOddsEventId } from './odds-markets'
@@ -41,25 +46,81 @@ const LABEL_BY_LEAGUE: Record<string, string> = {
 /** Exported for the test that keeps it in step with the calendar. */
 export const LEAGUE_LABEL_ODDS_KEYS = Object.keys(LABEL_BY_ODDS_KEY)
 
+type SportsTitle = { creatorId: string } & Partial<
+  Pick<
+    Sports,
+    | 'sportsEventId'
+    | 'sportsLeague'
+    | 'sportsProvider'
+    | 'sportsLeagueKey'
+    | 'sportsFixture'
+  >
+>
+
+/** Identity for a public-facing league badge, including markets predating the explicit key. */
+export function officialBdlLeagueKey(market: SportsTitle) {
+  if (
+    market.sportsFixture ||
+    !MANIFOLD_SPORTS_USER_IDS.includes(market.creatorId) ||
+    providerOf(market) !== 'bdl'
+  )
+    return undefined
+  const event = parseBdlEventId(market.sportsEventId)
+  if (
+    !event ||
+    (market.sportsLeagueKey && event.league !== market.sportsLeagueKey)
+  )
+    return undefined
+  return event.league
+}
+
+export function officialBdlLeague(market: SportsTitle) {
+  const key = officialBdlLeagueKey(market)
+  return key ? BDL_LEAGUES[key] : undefined
+}
+
 /**
  * The league label for an official game market, or undefined for anything
  * else. Only markets @ManifoldSports created count: anyone can set the sports
  * fields on a market they make, and the label vouches for the market.
  */
-export function getSportsLeagueLabel(contract: {
-  creatorId: string
-  sportsEventId?: string
-  sportsLeague?: string
-}): string | undefined {
+export function getSportsLeagueLabel(
+  contract: SportsTitle
+): string | undefined {
   if (!MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId)) return undefined
   const { sportsEventId, sportsLeague } = contract
   if (!sportsEventId) return undefined
-  const odds = parseOddsEventId(sportsEventId)
-  if (odds) return LABEL_BY_ODDS_KEY[odds.sportKey]
-  // BALLDONTLIE's F1 pipeline: session markets and the season's titles.
-  if (parseF1EventId(sportsEventId) || parseF1TitleEventId(sportsEventId))
-    return 'F1'
-  return sportsLeague ? LABEL_BY_LEAGUE[sportsLeague] : undefined
+  if (contract.sportsFixture) return undefined
+  const provider = providerOf(contract)
+  if (provider === 'bdl') {
+    if (parseF1EventId(sportsEventId) || parseF1TitleEventId(sportsEventId))
+      return 'F1'
+    return officialBdlLeague(contract)?.shortLabel
+  }
+  if (provider === 'odds') {
+    const odds = parseOddsEventId(sportsEventId)
+    return odds ? LABEL_BY_ODDS_KEY[odds.sportKey] : undefined
+  }
+  return provider !== 'fixture' && sportsLeague
+    ? LABEL_BY_LEAGUE[sportsLeague]
+    : undefined
+}
+
+export function sportsLeagueHref(contract: SportsTitle): string {
+  const bdl = officialBdlLeague(contract)
+  if (bdl) return sportPath(bdl.sportKey)
+  const provider = providerOf(contract)
+  if (
+    (provider === 'football-data' || provider === 'legacy') &&
+    contract.sportsLeague === WORLD_CUP_2026.sportsLeague
+  )
+    return WORLD_CUP_2026.dashboardPath
+  const odds =
+    provider === 'odds' ? parseOddsEventId(contract.sportsEventId) : null
+  const sport = sportForMarket({
+    sportsLeague: odds?.sportKey ?? contract.sportsLeague,
+  })
+  return sport === 'other' ? '/sports' : sportPath(sport)
 }
 
 /** What the old pipeline appended to every game market's title. */

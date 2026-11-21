@@ -40,41 +40,18 @@ import {
 } from './game-positions'
 import {
   compareGameStartTime,
+  scheduleDayKey,
+  groupScheduleDays,
   compareGameVolume,
   selectFeaturedGame,
 } from './game-feed-utils'
 
-type DaySection<T> = { key: string; label: string; items: T[] }
+export { groupByDay } from './game-feed-utils'
 
 /** A row of the feed: a game, or an F1 session listed like one. */
 type FeedItem = ScheduleGame | RaceSessionEvent
 const isSession = (item: FeedItem): item is RaceSessionEvent =>
   'session' in item
-
-function dayLabel(ms: number, now = Date.now()): string {
-  const d = dayjs(ms)
-  const today = dayjs(now)
-  if (d.isSame(today, 'day')) return 'Today'
-  if (d.isSame(today.add(1, 'day'), 'day')) return 'Tomorrow'
-  return d.format('dddd')
-}
-
-/** Group items by the local calendar day of `time(item)`, keeping their order. */
-export function groupByDay<T>(
-  items: readonly T[],
-  time: (item: T) => number,
-  now = Date.now()
-): DaySection<T>[] {
-  const map = new Map<string, DaySection<T>>()
-  for (const item of items) {
-    const ms = time(item)
-    const key = dayjs(ms).format('YYYY-MM-DD')
-    const section = map.get(key)
-    if (section) section.items.push(item)
-    else map.set(key, { key, label: dayLabel(ms, now), items: [item] })
-  }
-  return [...map.values()]
-}
 
 /**
  * A filterable board of live and upcoming games, grouped by local date.
@@ -175,12 +152,14 @@ export function GameFeed(props: {
   }, [selectedFeatured?.id])
   const featured =
     view === 'cards' && !hasFilters ? selectedFeatured : undefined
+  const onSelectedDay = (item: FeedItem) =>
+    date === 'all' || scheduleDayKey(item) === date
   const filteredGames = active.filter(
     (game) =>
       (filter !== 'live' || game.status === 'live') &&
       (filter !== 'liked' || likes.liked.has(game.id)) &&
       (filter !== 'mine' || !!stakes[game.id]) &&
-      (date === 'all' || dayjs(game.startTime).format('YYYY-MM-DD') === date) &&
+      onSelectedDay(game) &&
       (!normalized ||
         `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
           .toLowerCase()
@@ -195,8 +174,7 @@ export function GameFeed(props: {
           (s) =>
             (filter !== 'live' || s.status === 'live') &&
             (filter !== 'liked' || sessionLiked(s)) &&
-            (date === 'all' ||
-              dayjs(s.startTime).format('YYYY-MM-DD') === date) &&
+            onSelectedDay(s) &&
             (!normalized || raceSessionSearchText(s).includes(normalized))
         )
   const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
@@ -214,12 +192,8 @@ export function GameFeed(props: {
     .filter((g) => g.status === 'live' && listed(g))
     .sort(compareGameStartTime)
   const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
-  const days = groupByDay(upcoming, (g) => g.startTime).sort((a, b) =>
-    a.key.localeCompare(b.key)
-  )
-  const allDays = groupByDay(everything, (item) => item.startTime).sort(
-    (a, b) => a.key.localeCompare(b.key)
-  )
+  const days = groupScheduleDays(upcoming)
+  const allDays = groupScheduleDays(everything)
   // A section with a session in it counts events, not games.
   const unitFor = (items: FeedItem[]) =>
     items.some(isSession) ? 'event' : 'game'

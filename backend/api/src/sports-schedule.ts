@@ -1,11 +1,14 @@
 import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  READ_ONLY_REPEATABLE_MODE,
+} from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { getMarketLinksForFeed } from 'shared/supabase/market-links'
 import { getSportsIndex } from 'shared/supabase/sports-index'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { Contract, isMultiCpmm, OutcomeType } from 'common/contract'
+import { OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -18,22 +21,19 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
-import { teamCodeForLeague } from 'common/sports-team-codes'
+import { scheduleFeedTime } from 'common/sports-game-feed'
+import { BDL_LEAGUES } from 'common/bdl/leagues'
+import { toOfficialGame } from 'common/sports-official-game'
+export { homeAndAway } from 'common/sports-official-game'
 import {
   AnySportKey,
   findRelatedMarkets,
-  gameStatus,
-  isDrawAnswer,
-  parseSportsStart,
   RelatedCandidate,
-  RelatedRef,
   relatedGroupForLink,
   ScheduleGame,
-  ScheduleTeam,
   sportForMarket,
   SportsIndex,
   SportsScheduleResponse,
-  splitFlag,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
@@ -45,7 +45,7 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 // for a while after kickoff (their markets can still be matched) but never
 // returned: the page is a feed of what's on and what's next.
 const FINISHED_GRACE_HOURS = 18
-const MAX_OFFICIAL_GAMES = 400
+const OFFICIAL_PAGE_SIZE = 200
 const MAX_CANDIDATES = 1000
 const MAX_RELATED_PER_GAME = 25
 const UPCOMING_DAYS = 7
@@ -100,7 +100,15 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       ? getRaceChampionships(pg, index, now)
       : Promise.resolve([]),
   ])
-  const games = official.filter((g) => g.startTime < horizon)
+  const games = official.filter((g) => {
+    if (
+      (g.gameState === 'suspended' || g.gameState === 'postponed') &&
+      g.resumptionTime != null &&
+      g.resumptionTime <= now
+    )
+      return false
+    return scheduleFeedTime(g) < horizon
+  })
   // F1 weekends with something still to come before `until`.
   const onBefore = (until: number) => (w: RaceWeekend) =>
     w.status !== 'finished' &&
@@ -121,7 +129,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         ? -g.volume
         : g.status === 'finished'
         ? -g.startTime
-        : g.startTime,
+        : scheduleFeedTime(g),
     (g) => g.id
   )
 
@@ -368,9 +376,8 @@ async function orWithoutLinks<T>(read: () => Promise<T>, fallback: T) {
 
 // ─── Paging ───────────────────────────────────────────────────────────────────
 
-// `<kickoff ms>_<contract id>` of the last upcoming game on the previous page.
-const scheduleCursor = (g: Pick<ScheduleGame, 'startTime' | 'id'>) =>
-  `${g.startTime}_${g.id}`
+// `<event ms>_<contract id>` of the last upcoming game on the previous page.
+const scheduleCursor = (g: ScheduleGame) => `${scheduleFeedTime(g)}_${g.id}`
 
 function parseScheduleCursor(cursor: string | undefined) {
   if (!cursor) return undefined
@@ -383,12 +390,12 @@ function parseScheduleCursor(cursor: string | undefined) {
 
 // Same order as the sort above: kickoff, then id.
 function isAfterCursor(
-  g: Pick<ScheduleGame, 'startTime' | 'id'>,
+  g: ScheduleGame,
   cursor: { startTime: number; id: string }
 ) {
   return (
-    g.startTime > cursor.startTime ||
-    (g.startTime === cursor.startTime && g.id > cursor.id)
+    scheduleFeedTime(g) > cursor.startTime ||
+    (scheduleFeedTime(g) === cursor.startTime && g.id > cursor.id)
   )
 }
 
@@ -407,49 +414,88 @@ async function getOfficialGames(
   index: SportsIndex,
   daysAhead: number,
   now: number
-): Promise<{
-  games: ScheduleGame[]
-  /** Each game's topic ids. */
-  groupIds: Record<string, string[]>
-}> {
-  const rows = await pg.manyOrNone(
-    `select ${contractColumnsToSelect}
-     from contracts
-     where data->>'sportsEventId' is not null
-       and creator_id = any($2)
-       and token = 'MANA'
-       and visibility = 'public'
-       and coalesce(deleted, false) = false
-       and resolution is distinct from 'CANCEL'
-       and close_time > now() - interval '${FINISHED_GRACE_HOURS} hours'
-       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
-     order by close_time asc
-     limit ${MAX_OFFICIAL_GAMES}`,
-    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
-  )
-  // Rows come soonest first, so hitting the cap drops the latest games.
-  if (rows.length === MAX_OFFICIAL_GAMES)
-    log.warn(
-      `[sports-schedule] ${MAX_OFFICIAL_GAMES} official games in the window; later games are cut off`
-    )
-  const contracts = rows.map((r) => convertContract(r))
-  const ids = contracts.map((c) => c.id)
-  const [answersByContract, groupIdsByContract] = await Promise.all([
-    getAnswers(pg, ids),
-    getGroupIds(pg, ids),
-  ])
-  const games = contracts
-    .map((c) =>
-      toOfficialGame(
-        c,
-        answersByContract[c.id] ?? [],
-        groupIdsByContract[c.id] ?? [],
-        index,
-        now
-      )
-    )
-    .filter((g): g is ScheduleGame => g !== null)
-  return { games, groupIds: groupIdsByContract }
+) {
+  // Rescheduling, deleting or privatizing a contract during this request must
+  // not move it between pages or mix its answers with a different snapshot.
+  return pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
+    const games: ScheduleGame[] = []
+    const groupIds: Record<string, string[]> = {}
+    const earliestClose = new Date(now - FINISHED_GRACE_HOURS * HOUR_MS)
+    const horizon = now + daysAhead * DAY_MS
+    // The two scans are disjoint. The second handles games that were postponed
+    // beyond their original close and now have a confirmed resumption in view.
+    for (const resuming of [false, true]) {
+      const key = resuming ? "(data->'sportsResumptionTime')" : 'close_time'
+      const cast = resuming ? 'jsonb' : 'timestamptz'
+      const lower = resuming ? String(now) : earliestClose
+      const upper = resuming ? String(horizon) : new Date(horizon + DAY_MS)
+      type Row = Parameters<typeof convertContract>[0] & {
+        id: string
+        page_time: string
+      }
+      let after: Row | undefined
+      for (;;) {
+        const boundary = after
+          ? `(${key}, id) > ($1::${cast}, $3::text)`
+          : `${key} > $1::${cast}`
+        const rows: Row[] = await tx.manyOrNone<Row>(
+          `select ${contractColumnsToSelect}, id, ${key}::text as page_time
+           from contracts
+           where data->>'sportsEventId' is not null
+             and creator_id = any($4)
+             and token = 'MANA'
+             and visibility = 'public'
+             and coalesce(deleted, false) = false
+             and resolution is distinct from 'CANCEL'
+             and ${boundary} and ${key} < $2::${cast}
+             ${
+               resuming
+                 ? `and close_time <= $5 and resolution is null
+                and jsonb_typeof(data->'sportsResumptionTime') = 'number'
+                and upper(data->>'sportsLiveStatus') in ('SUSPENDED','POSTPONED')`
+                 : ''
+             }
+           order by ${key}, id
+           limit ${OFFICIAL_PAGE_SIZE}`,
+          [
+            after?.page_time ?? lower,
+            upper,
+            after?.id,
+            MANIFOLD_SPORTS_USER_IDS,
+            earliestClose,
+          ]
+        )
+        const ids = rows.map((r) => r.id)
+        const answers = await getAnswers(tx, ids)
+        const groups = await getGroupIds(tx, ids)
+        for (const row of rows) {
+          const contract = convertContract(row)
+          const topics = groups[contract.id] ?? []
+          const game = toOfficialGame(
+            contract,
+            answers[contract.id] ?? [],
+            topics,
+            index,
+            now
+          )
+          if (
+            !game ||
+            (resuming &&
+              (!game.sportsLeagueKey ||
+                BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors' ||
+                !game.resumptionTime))
+          )
+            continue
+          games.push(game)
+          groupIds[game.id] = topics
+        }
+        if (rows.length < OFFICIAL_PAGE_SIZE) break
+        // Keep the exact database key (including submillisecond precision).
+        after = rows[rows.length - 1]
+      }
+    }
+    return { games, groupIds }
+  })
 }
 
 // F1 weekends: @ManifoldSports markets on a `bdl-f1:` session, which a game
@@ -546,143 +592,8 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
   )
 }
 
-// A game market is multiple choice: home, away, and Draw for soccer. Binary
-// game markets from an early build (dev only) don't get a row.
-function toOfficialGame(
-  c: Contract,
-  answers: Answer[],
-  groupIds: string[],
-  index: SportsIndex,
-  now: number
-): ScheduleGame | null {
-  const d = c as any
-  const sportsEventId: string | undefined = d.sportsEventId
-  if (!sportsEventId) return null
-  const isResolved = !!c.resolution
-  if (!isMultiCpmm(c)) return null
-
-  const ordered = sortBy(answers, 'index')
-  const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
-  const teams = ordered.filter((a) => a !== drawAnswer)
-  if (teams.length !== 2) return null
-  const [homeAnswer, awayAnswer] = homeAndAway(
-    teams,
-    d.sportsHomeTeam,
-    d.sportsAwayTeam
-  )
-  const home = toTeam(homeAnswer, d.sportsLeague)
-  const away = toTeam(awayAnswer, d.sportsLeague)
-  const draw = drawAnswer
-    ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
-    : null
-  const winnerAnswerId = isResolved
-    ? ordered.find((a) => a.id === c.resolution)?.id ??
-      ordered.find((a) => a.resolution === 'YES')?.id ??
-      null
-    : null
-
-  const kickoff = parseSportsStart(d.sportsStartTimestamp)
-  // Without a parseable kickoff the close time is the only deadline we have
-  // (the row then says "Closes").
-  const closeTime = c.closeTime ?? (kickoff ?? now) + 3 * HOUR_MS
-  const startTime = kickoff ?? closeTime
-  const liveStatus: string | null = d.sportsLiveStatus ?? null
-  const liveUpdatedTime: number | null = d.sportsLiveUpdatedTime ?? null
-  const status = gameStatus({
-    startTime,
-    closeTime,
-    isResolved,
-    liveStatus,
-    liveUpdatedTime,
-    now,
-  })
-
-  const homeScore: number | null = d.sportsHomeScore ?? null
-  const awayScore: number | null = d.sportsAwayScore ?? null
-  const liveScore =
-    status === 'live' && liveStatus
-      ? {
-          home: homeScore,
-          away: awayScore,
-          minute: (d.sportsLiveMinute as string | null) ?? null,
-          status: liveStatus,
-        }
-      : null
-  const finalScore =
-    isResolved && homeScore != null && awayScore != null
-      ? { home: homeScore, away: awayScore }
-      : null
-
-  return {
-    id: c.id,
-    slug: c.slug,
-    creatorUsername: c.creatorUsername,
-    question: c.question,
-    sport: sportForMarket({ sportsLeague: d.sportsLeague, groupIds }, index),
-    groupSlugs: c.groupSlugs ?? [],
-    league: d.sportsLeague ?? '',
-    sportsEventId,
-    startTime,
-    kickoffKnown: kickoff != null,
-    closeTime,
-    status,
-    isResolved,
-    winnerAnswerId,
-    resolutionTime: c.resolutionTime ?? null,
-    home,
-    away,
-    draw,
-    volume: c.volume ?? 0,
-    uniqueBettorCount: c.uniqueBettorCount ?? 0,
-    liveScore,
-    liveUpdatedTime,
-    scoreUpdatedTime: d.sportsScoreUpdatedTime ?? null,
-    finalScore,
-    related: [] as RelatedRef[],
-    relatedCount: 0,
-  }
-}
-
-/**
- * A game market's two team answers as [home, away]. Versus markets list away
- * first and soccer lists home first, so the stored team names decide; markets
- * without them (or whose answers were renamed) were created home first.
- */
-export function homeAndAway(
-  teams: Answer[],
-  homeTeam: string | undefined,
-  awayTeam: string | undefined
-): [Answer, Answer] {
-  const norm = (s: string) => splitFlag(s).name.trim().toLowerCase()
-  const byName = (name: string | undefined) =>
-    name ? teams.find((a) => norm(a.text) === norm(name)) : undefined
-  const home = byName(homeTeam)
-  const away = byName(awayTeam)
-  if (home && home !== teams[0] && away !== home) return [teams[1], teams[0]]
-  if (!home && away === teams[0]) return [teams[1], teams[0]]
-  return [teams[0], teams[1]]
-}
-
-// Markets made before every league had team codes fall back to the code for
-// the market's league.
-function toTeam(answer: Answer, league: string | undefined): ScheduleTeam {
-  const { flag, name } = splitFlag(answer.text)
-  const short = answer.shortText
-    ? splitFlag(answer.shortText).name
-    : teamCodeForLeague(league, name)
-  return {
-    answerId: answer.id,
-    name,
-    shortName: short || name,
-    flag,
-    imageUrl: answer.imageUrl ?? null,
-    color: answer.color ?? null,
-    prob: answer.prob,
-  }
-}
-
 async function getAnswers(
-  pg: Pg,
+  pg: Pick<Pg, 'manyOrNone'>,
   contractIds: string[]
 ): Promise<Record<string, Answer[]>> {
   if (contractIds.length === 0) return {}
@@ -694,7 +605,7 @@ async function getAnswers(
 }
 
 async function getGroupIds(
-  pg: Pg,
+  pg: Pick<Pg, 'manyOrNone'>,
   contractIds: string[]
 ): Promise<Record<string, string[]>> {
   if (contractIds.length === 0) return {}

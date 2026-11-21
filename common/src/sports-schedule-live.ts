@@ -1,8 +1,14 @@
 import {
   ScheduleGame,
   SportsScheduleResponse,
-  TERMINAL_STATUSES,
+  LIVE_STATUSES,
+  gameStatus,
 } from './sports-schedule'
+import {
+  publicSportsScoreSchema,
+  scheduleScoreFields,
+  ScheduleScoreFields,
+} from './sports-scoreboard'
 
 /** Times come from the server, never the browser's arrival clock. */
 export type Stamped<T> = { value: T; at: number }
@@ -11,7 +17,59 @@ export type LiveGameState = {
   liveScore?: Stamped<ScheduleGame['liveScore']> & {
     status: string
     scoreUpdatedTime?: number | null
+    fields?: ScheduleScoreFields
+    finalScore?: ScheduleGame['finalScore']
   }
+}
+
+export type SportsScoreTick = NonNullable<LiveGameState['liveScore']>
+
+/** Interpret one complete public score observation. Its receipt orders it against snapshots. */
+export function decodeSportsScoreTick(
+  raw: unknown
+): SportsScoreTick | undefined {
+  const parsed = publicSportsScoreSchema.safeParse(raw)
+  if (!parsed.success) return
+  const score = parsed.data
+  const {
+    sportsHomeScore: home,
+    sportsAwayScore: away,
+    sportsLiveStatus: status,
+  } = score
+  const fields = scheduleScoreFields(score, false)
+  const showScore =
+    LIVE_STATUSES.has(status) ||
+    fields.gameState === 'live' ||
+    fields.gameState === 'settling' ||
+    fields.gameState === 'suspended'
+  const hasFinal =
+    fields.gameState === 'settling' && home != null && away != null
+  return {
+    at: score.sportsLiveUpdatedTime,
+    scoreUpdatedTime: score.sportsScoreUpdatedTime ?? null,
+    status,
+    fields,
+    value: showScore
+      ? {
+          home,
+          away,
+          minute: score.sportsLiveMinute,
+          status,
+          ...(fields.period != null && { period: fields.period }),
+          ...(fields.clock != null && { clock: fields.clock }),
+        }
+      : null,
+    finalScore: hasFinal ? { home, away } : null,
+  }
+}
+
+export function newerSportsScoreTick(
+  previous?: SportsScoreTick,
+  incoming?: SportsScoreTick
+) {
+  return incoming && (!previous || incoming.at > previous.at)
+    ? incoming
+    : previous
 }
 
 export function pruneSportsLive(
@@ -71,11 +129,23 @@ export function applySportsLive(
     scoreUpdatedTime: score
       ? score.scoreUpdatedTime ?? null
       : game.scoreUpdatedTime,
-    status:
-      score && TERMINAL_STATUSES.has(score.status)
-        ? 'finished'
-        : liveScore && game.status === 'upcoming'
-        ? 'live'
-        : game.status,
+    ...(score && {
+      // Each push is a full observation. Dropping absent detail clears a prior
+      // suspension, final or period after the provider corrects the state.
+      gameState: score.fields?.gameState,
+      period: score.fields?.period,
+      clock: score.fields?.clock,
+      scoreboard: score.fields?.scoreboard,
+      resumptionTime: score.fields?.resumptionTime,
+      finalQualifier: score.fields?.finalQualifier,
+      finalScore: score.finalScore ?? null,
+      status: gameStatus({
+        ...game,
+        gameState: score.fields?.gameState,
+        liveStatus: score.status,
+        liveUpdatedTime: score.at,
+        now: score.at,
+      }),
+    }),
   }
 }

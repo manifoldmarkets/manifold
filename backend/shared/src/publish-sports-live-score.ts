@@ -1,5 +1,6 @@
 import { getApiUrl } from 'common/api/utils'
 import { SportsLiveScore } from 'common/sports-schedule'
+import { publicSportsScoreSchema } from 'common/sports-scoreboard'
 import { LOCAL_DEV, log } from 'shared/utils'
 
 /**
@@ -20,13 +21,18 @@ export async function publishSportsLiveScore(
     return
   }
 
+  const payload = publicSportsScoreSchema.safeParse(score)
+  if (!payload.success) {
+    log.error(`[sports-live] invalid score for ${contractId}; skipping push`)
+    return
+  }
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 2_000)
   try {
     const response = await fetch(getApiUrl('internal-sports-broadcast'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ apiSecret, contractId, score }),
+      body: JSON.stringify({ apiSecret, contractId, score: payload.data }),
       signal: controller.signal,
     })
     await response.arrayBuffer()
