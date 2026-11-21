@@ -110,7 +110,14 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
   const startPinsVersion = entry.pinsVersion
   const startPinsSaves = entry.pinsSaves
   const loading = api('get-user-trophies', { userId })
-    .then((fresh) => {
+    .then((response) => {
+      // An API from before starter rewards (stage 1, e.g. mid-deploy) sends
+      // neither field.
+      const fresh: UserTrophies = {
+        ...response,
+        starter: response.starter ?? null,
+        rewarded: response.rewarded ?? [],
+      }
       const current = getEntry(userId)
       const newerLocalClaims = current.localClaims.filter(
         (l) => l.version > startClaimsVersion
@@ -184,8 +191,10 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
  * removed, so they merge. */
 export function addTrophyRewards(
   userId: string,
-  rewarded: UserTrophies['rewarded']
+  // Missing from a stage 1 API's response (mid-deploy).
+  rewardedOrMissing: UserTrophies['rewarded'] | undefined
 ) {
+  const rewarded = rewardedOrMissing ?? []
   const entry = getEntry(userId)
   if (!entry.data) {
     // The profile was forgotten while the claim was in flight.
