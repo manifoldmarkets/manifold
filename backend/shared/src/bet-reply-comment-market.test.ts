@@ -616,12 +616,34 @@ describe("the list of a market's bets that reply to comments", () => {
 
   test('applies it across several markets and across all of them', async () => {
     const reply = await write(replyBet('market-a', 'on-a', 'YES', 5))
-    await write(replyBet('market-a', 'on-b', 'YES', 5))
+    // A stray bet on one of the markets asked for below.
+    await write(replyBet('market-b', 'on-a', 'YES', 5))
 
     expect(await replies(['market-b', 'market-b-cash'])).toEqual([
       'bet-2',
       'bet-1',
     ])
     expect(await replies()).toEqual([reply.id, 'bet-2', 'bet-1'])
+  })
+
+  test("follows the sibling link from the bet's market, not the other way", async () => {
+    // A market that names market A as its sibling, while market A names none.
+    // Real pairs name each other. This pins the direction on-create-bet reads:
+    // the sibling of the market the bet is on.
+    await rows(
+      `insert into contracts (id, data, visibility) values ($1, $2, $3)`,
+      ['market-c', { id: 'market-c', siblingContractId: 'market-a' }, 'public']
+    )
+    const c = comment('on-c', 'market-c')
+    await rows(
+      `insert into contract_comments (contract_id, comment_id, data)
+      values ($1, $2, $3)`,
+      [c.contractId, c.id, c]
+    )
+    const outward = await write(replyBet('market-c', 'on-a', 'YES', 5))
+    await write(replyBet('market-a', 'on-c', 'YES', 5))
+
+    expect(await replies('market-c')).toEqual([outward.id])
+    expect(await replies('market-a')).toEqual([])
   })
 })
