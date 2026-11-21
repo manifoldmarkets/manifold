@@ -651,3 +651,28 @@ it('keeps both scores on a synthetic tied NFL final', async () => {
   )
   expect(game).toMatchObject({ status: 'final', homeScore: 24, awayScore: 24 })
 })
+
+it('keeps archived opening odds separate from current game quotes', async () => {
+  const page: Page = JSON.parse(
+    readFileSync(
+      join(
+        __dirname,
+        '../../test/fixtures/bdl/nba/odds-opening__recorded-synthetic-moneyline.json'
+      ),
+      'utf8'
+    )
+  )
+  const { client } = localClient((url) =>
+    url.pathname.endsWith('/odds') ? page : fixture('nba', 'games')
+  )
+  const day = dateFor('nba')
+  const [game] = await fetchMajorGames(client, 'nba', day, day)
+  expect(page.data[0]).toMatchObject({
+    game_id: game.id,
+    opened_at: expect.any(String),
+  })
+  expect(Number.isFinite(Date.parse(String(page.data[0].opened_at)))).toBe(true)
+  await expect(fetchMajorOdds(client, 'nba', [game])).rejects.toThrow(
+    'vendor or timestamp'
+  )
+})
