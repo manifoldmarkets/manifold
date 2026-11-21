@@ -7,8 +7,12 @@ import {
   canClaimDailyFreeLoan,
   calculateTotalFreeLoanAvailable,
   filterLoanEquityMetrics,
+  getMarginLoanCapacity,
+  getMarginLoanPositions,
+  getMaxPositionLoanToValue,
   isMarketEligibleForLoan,
   getMidnightPacific,
+  keyContractsWithLiveAnswers,
   sumExcludedPerpEquity,
 } from 'common/loans'
 import {
@@ -21,7 +25,7 @@ import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
 } from 'shared/update-user-portfolio-histories-core'
-import { keyBy, sumBy } from 'lodash'
+import { sumBy } from 'lodash'
 import { Contract } from 'common/contract'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { type Row } from 'common/supabase/utils'
@@ -69,9 +73,10 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   const maxLoanPercent = getMaxLoanNetWorthPercent(entitlements)
   const freeLoanRate = getFreeLoanRate(entitlements)
 
-  const { metrics, contracts } =
+  const { metrics, contracts, answers } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [userId])
-  const contractsById = keyBy(contracts, 'id')
+  // Value answers at their live probability, as request-loan does.
+  const contractsById = keyContractsWithLiveAnswers(contracts, answers)
   // Perps neither receive loans nor collateralize them — exclude from equity.
   const { value: portfolioValueNet } = getUnresolvedStatsForToken(
     'MANA',
@@ -135,6 +140,14 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     }).eligible
   })
 
+  // Margin loans also stop at each eligible position's loan-to-value cap
+  // (request-loan rejects more), which can bind before the limits above.
+  const maxPositionLoanToValue = getMaxPositionLoanToValue(maxLoanPercent)
+  const marginLoanCapacity = getMarginLoanCapacity(
+    getMarginLoanPositions(metrics, contractsById),
+    maxPositionLoanToValue
+  )
+
   const freeLoanAvailable = canClaimFreeLoan
     ? Math.min(
         calculateTotalFreeLoanAvailable(
@@ -162,6 +175,8 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     freeLoanAvailable,
     canClaimFreeLoan: canClaimFreeLoan && freeLoanAvailable >= 1,
     hasMarginLoanAccess,
+    marginLoanCapacity,
+    maxPositionLoanToValue,
     // Equity-based calculation fields (equity = portfolioValue - loans)
     equity,
     portfolioValue,
