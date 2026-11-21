@@ -569,17 +569,25 @@ export function getShowcasePinsError(
 // Display
 // ---------------------------------------------------------------------------
 
+// Rounded down by default, so a stat never shows a threshold it hasn't
+// reached (9,999.75 is 9.9K, not 10K); 'up' for an amount still to go, so a
+// positive gap never shows as 0.
 export function formatTrophyValue(
   def: TrophyDefinition,
-  value: number
+  value: number,
+  rounding: 'down' | 'up' = 'down'
 ): string {
-  if (def.unit === 'years') return `${value.toFixed(1)}yr`
+  const round = rounding === 'up' ? Math.ceil : Math.floor
+  if (def.unit === 'years') return `${(round(value * 10) / 10).toFixed(1)}yr`
   // Whole numbers: volume and dollar stats come with decimals.
-  const whole = Math.round(value).toLocaleString('en-US')
+  const whole = round(value).toLocaleString('en-US')
   const prefix = def.formatPrefix ?? ''
+  const short = (n: number, suffix: string) =>
+    `${prefix}${n.toFixed(1).replace(/.0$/, '')}${suffix}`
   if (prefix || def.unit === 'mana') {
-    if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`
-    if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`
+    if (value >= 1_000_000) return short(round(value / 100_000) / 10, 'M')
+    if (value >= 100_000) return `${prefix}${round(value / 1_000)}K`
+    if (value >= 1_000) return short(round(value / 100) / 10, 'K')
     return `${prefix}${whole}`
   }
   return whole

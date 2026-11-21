@@ -2,13 +2,16 @@
 -- longest of any streak a bonus was paid for, the longest ended streak (kept
 -- by reset-betting-streaks from this deploy on) and the current one. Before,
 -- the rank counted paid bonuses only, so accounts that can't get streak
--- bonuses ranked at zero. Rebuilds the view under the same name; the profile
--- endpoint waits on it while it builds. Run as one transaction.
-begin;
+-- bonuses ranked at zero.
+--
+-- Built under another name first, so profiles keep reading the old view
+-- during the build (it scans txns), then swapped in a short transaction. If
+-- the swap can't get its lock within 5 s it gives up; run the file again.
 
-drop materialized view if exists mv_ach_txns_achievements;
+-- 1. Build.
+drop materialized view if exists mv_ach_txns_achievements_next;
 
-create materialized view mv_ach_txns_achievements as
+create materialized view mv_ach_txns_achievements_next as
 with
   mod_tickets_agg as (
     select
@@ -113,6 +116,17 @@ from
   left join charity_agg c on c.user_id = u.user_id
   left join streaks_agg s on s.user_id = u.user_id;
 
-create unique index if not exists mv_ach_txns_achievements_user_id_idx on public.mv_ach_txns_achievements (user_id);
+create unique index mv_ach_txns_achievements_next_user_id_idx on mv_ach_txns_achievements_next (user_id);
+
+-- 2. Swap. The drop takes the view's exclusive lock, waiting at most 5 s.
+begin;
+
+set local lock_timeout = '5s';
+
+drop materialized view mv_ach_txns_achievements;
+
+alter materialized view mv_ach_txns_achievements_next rename to mv_ach_txns_achievements;
+
+alter index mv_ach_txns_achievements_next_user_id_idx rename to mv_ach_txns_achievements_user_id_idx;
 
 commit;
