@@ -33,6 +33,27 @@ export async function creationSettings(
   )
 }
 
+/** Serialize budget changes with both creation writers and record the operator. */
+export async function saveCreationSetting(
+  pg: Pick<SupabaseDirectClient, 'tx'>,
+  row: MajorSettingRow,
+  userId: string
+) {
+  if (!isBdlLeagueKey(row.scope) && !sharedScopes.includes(row.scope))
+    throw new Error('Unknown sports creation scope')
+  await pg.tx(async (tx) => {
+    await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+    await tx.none(
+      `insert into sports_creation_settings (scope, ante_cap, base_ante, starts_on, group_slugs, updated_by)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (scope) do update set ante_cap = excluded.ante_cap,
+         base_ante = excluded.base_ante, starts_on = excluded.starts_on,
+         group_slugs = excluded.group_slugs, updated_by = excluded.updated_by, updated_at = now()`,
+      [row.scope, row.cap, row.baseAnte, row.startsOn, row.groupSlugs, userId]
+    )
+  })
+}
+
 export async function getMajorSettings(
   pg: Pick<SupabaseDirectClient, 'manyOrNone'>,
   league: MajorLeague

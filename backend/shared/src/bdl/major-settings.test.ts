@@ -4,7 +4,12 @@ import { resolve } from 'path'
 import * as pgPromise from 'pg-promise'
 import { MajorSettingRow } from 'common/bdl/major-leagues'
 import type { SupabaseDirectClient } from '../supabase/init'
-import { creationSettings, getMajorSettings } from './major-settings'
+import {
+  creationSettings,
+  getMajorSettings,
+  saveCreationSetting,
+  SPORTS_CREATION_BUDGET_LOCK_SQL,
+} from './major-settings'
 jest.setTimeout(30_000)
 
 const pgp = pgPromise()
@@ -259,4 +264,66 @@ it('requires an audit user, timestamp, and cap and rejects an unknown shared-bud
   ).rejects.toThrow()
   await expect(seed(shared('wave:4', 55))).rejects.toThrow()
   expect(await creationSettings(pg)).toEqual([])
+})
+
+it('serializes admin saves with both creators and records the current operator on every upsert', async () => {
+  const executed: string[] = []
+  const writePg = {
+    tx: async (
+      callback: (tx: {
+        one: (sql: string) => Promise<unknown>
+        none: (sql: string, params: unknown[]) => Promise<unknown>
+      }) => Promise<void>
+    ) =>
+      db.transaction(async (tx) =>
+        callback({
+          one: async (sql) => {
+            executed.push(sql)
+            return (await tx.query(sql)).rows[0]
+          },
+          none: async (sql, params) => {
+            executed.push('write')
+            await tx.query(pgp.as.format(sql, params))
+          },
+        })
+      ),
+  } as unknown as Pick<SupabaseDirectClient, 'tx'>
+  const rows = [
+    { ...league, scope: 'epl' },
+    shared('wave:1', 0),
+    shared('global', 900),
+  ]
+  for (const row of rows) await saveCreationSetting(writePg, row, 'alice')
+  await saveCreationSetting(
+    writePg,
+    { ...rows[0], cap: 60, startsOn: '2026-12-01' },
+    'bob'
+  )
+  expect(executed).toEqual(
+    Array(4).fill([SPORTS_CREATION_BUDGET_LOCK_SQL, 'write']).flat()
+  )
+  const stored = await creationSettings(pg)
+  expect(stored).toEqual([
+    { ...rows[0], cap: 60, startsOn: '2026-12-01' },
+    rows[2],
+    rows[1],
+  ])
+  expect(
+    (
+      await db.query(
+        "select updated_by from sports_creation_settings where scope='epl'"
+      )
+    ).rows
+  ).toEqual([{ updated_by: 'bob' }])
+  await expect(
+    saveCreationSetting(writePg, { ...rows[0], cap: -1 }, 'carol')
+  ).rejects.toThrow()
+  expect(await creationSettings(pg)).toEqual(stored)
+  await expect(
+    saveCreationSetting(
+      writePg,
+      { ...rows[0], scope: 'not-registered' },
+      'alice'
+    )
+  ).rejects.toThrow('Unknown sports creation scope')
 })

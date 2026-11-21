@@ -245,6 +245,11 @@ import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
 import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
+import {
+  adminSportsCreationSettings,
+  adminSetSportsCreationBudget,
+  adminCreateBdlMarkets,
+} from './admin-sports-bdl'
 import { adminSportsBdlCompetitions } from './admin-sports-bdl-competitions'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
@@ -668,6 +673,9 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'link-market': linkMarket,
   'unlink-market': unlinkMarket,
   'get-market-links': getMarketLinksHandler,
+  'admin-sports-creation-settings': adminSportsCreationSettings,
+  'admin-sports-set-creation-budget': adminSetSportsCreationBudget,
+  'admin-sports-create-bdl-markets': adminCreateBdlMarkets,
   'admin-sports-bdl-competitions': adminSportsBdlCompetitions,
   'admin-sports-competition-switches': adminSportsCompetitionSwitches,
   'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,

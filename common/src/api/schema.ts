@@ -82,6 +82,16 @@ import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
+import { isBdlLeagueKey } from 'common/bdl/leagues'
+import {
+  MAJOR_LEAGUES,
+  MAX_SPORTS_CREATION_AMOUNT,
+  MAX_CREATION_GAME_KEYS,
+  MajorCreationResult,
+  MajorSettingRow,
+} from 'common/bdl/major-leagues'
+import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
+import { parseBdlEventId } from 'common/sports-ids'
 import type { BdlOperatorPanel } from 'common/bdl/operator-panel'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
@@ -5352,6 +5362,75 @@ export const API = (_apiTypeCheck = {
     returns: {} as MarketLinks,
   },
 
+  'admin-sports-creation-settings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as { settings: MajorSettingRow[] },
+  },
+  'admin-sports-set-creation-budget': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.union([
+      z
+        .object({
+          league: z.string().refine(isBdlLeagueKey, 'Unknown league'),
+          baseAnte: z.number().int().positive().max(MAX_SPORTS_CREATION_AMOUNT),
+          startsOn: z
+            .string()
+            .length(10)
+            .refine(
+              (date) =>
+                Number.isFinite(parseSportsKickoffMs(date + 'T00:00:00Z')),
+              'Invalid start date'
+            ),
+          groupSlugs: z
+            .array(z.string().regex(/^[a-z0-9-]{1,100}$/))
+            .min(1)
+            .max(8),
+          cap: z.number().int().nonnegative().max(MAX_SPORTS_CREATION_AMOUNT),
+        })
+        .strict(),
+      z
+        .object({
+          scope: z.enum(['wave:1', 'wave:2', 'wave:3', 'global']),
+          cap: z.number().int().nonnegative().max(MAX_SPORTS_CREATION_AMOUNT),
+        })
+        .strict(),
+    ]),
+    returns: {} as { saved: true },
+  },
+  'admin-sports-create-bdl-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        league: z.enum(MAJOR_LEAGUES),
+        competitionId: z.string().min(1).max(100),
+        dryRun: z.boolean(),
+        keys: z
+          .array(z.string().min(1).max(100))
+          .min(1)
+          .max(MAX_CREATION_GAME_KEYS)
+          .optional(),
+        force: z.boolean().optional(),
+      })
+      .strict()
+      .refine(
+        (p) =>
+          ((p.dryRun && !p.force) || !!p.keys?.length) &&
+          (p.keys ?? []).every((key) => {
+            const game = parseBdlEventId(key)
+            return game?.league === p.league && !('suffix' in game)
+          }),
+        'Select game IDs from the chosen league before creating or forcing a run'
+      ),
+    returns: {} as MajorCreationResult,
+  },
   'admin-sports-bdl-competitions': {
     method: 'GET',
     visibility: 'undocumented',

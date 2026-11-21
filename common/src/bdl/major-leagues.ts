@@ -1,5 +1,9 @@
 import type { SportsOpeningLine } from '../sports-kickoff-interface'
 
+/** PostgreSQL integer columns hold whole-mana funding settings. */
+export const MAX_SPORTS_CREATION_AMOUNT = 2_147_483_647
+export const MAX_CREATION_GAME_KEYS = 200
+
 export const MAJOR_LEAGUES = ['nba', 'nhl', 'wnba', 'mlb', 'nfl'] as const
 export type MajorLeague = (typeof MAJOR_LEAGUES)[number]
 export const isMajorLeague = (key: string): key is MajorLeague =>
