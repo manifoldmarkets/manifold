@@ -515,13 +515,18 @@ export function tippingWinnerOf(
   const { resolution, resolutions } = contract
   if (!resolution || resolution === 'CANCEL') return undefined
   const split = resolution === 'CHOOSE_MULTIPLE' || resolution === 'MKT'
-  const paid = contract.answers.filter((a) => {
-    if (!split) return a.id === resolution
-    const w = resolutions?.[a.id]
-    return w !== undefined && Number.isFinite(w) && w > 0
-  })
-  if (paid.length === 0 || paid.some((a) => a.isOther)) return undefined
-  const states = new Set(paid.map((a) => tippingStateOf(a.text)))
+  // Every answer id the market paid: from the payouts themselves, so a paid
+  // answer missing from this copy of the market can't be skipped.
+  const paidIds = split
+    ? Object.keys(resolutions ?? {}).filter((id) => {
+        const w = resolutions?.[id]
+        return w !== undefined && Number.isFinite(w) && w > 0
+      })
+    : [resolution]
+  const byId = new Map(contract.answers.map((a) => [a.id, a]))
+  const paid = paidIds.map((id) => byId.get(id))
+  if (paid.length === 0 || paid.some((a) => !a || a.isOther)) return undefined
+  const states = new Set(paid.map((a) => (a ? tippingStateOf(a.text) : '')))
   if (states.size !== 1) return undefined
   return [...states][0]
 }

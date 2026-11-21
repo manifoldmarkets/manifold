@@ -159,24 +159,26 @@ function OtherRaces(props: { st: string; view: MapView; races: BoardRace[] }) {
   )
 }
 
-// A state's chance in the tipping-point market (from <1%), or, once it has
-// resolved there in full, that it was the tipping point. A Maine or
-// Nebraska district shows its state's, named, since the market counts the
-// state.
-function TippingLine(props: { p: number | undefined; place: string }) {
-  const { p, place } = props
-  if (p === undefined || !Number.isFinite(p) || p < 0.005) return null
+// A state's chance in the tipping-point market (from <1%), or, when the
+// market went to its state in full (`won`, decided by who was paid, not by
+// the number), that it was the tipping point. A Maine or Nebraska district
+// shows its state's, named, since the market counts the state.
+function TippingLine(props: {
+  p: number | undefined
+  won?: boolean
+  place: string
+}) {
+  const { p, won, place } = props
   const state = place.includes('-') ? placeName(place.split('-')[0]) : undefined
+  if (won)
+    return (
+      <span className={own.tipping}>
+        {state ? `${state} was the tipping point` : 'The tipping point'}
+      </span>
+    )
+  if (p === undefined || !Number.isFinite(p) || p < 0.005) return null
   const label = state ? `${state} tipping point` : 'Tipping point'
-  return (
-    <span className={own.tipping}>
-      {p >= 1
-        ? state
-          ? `${state} was the tipping point`
-          : 'The tipping point'
-        : `${label}: ${formatOdds(p)}`}
-    </span>
-  )
+  return <span className={own.tipping}>{`${label}: ${formatOdds(p)}`}</span>
 }
 
 // The few lines a hovered place shows next to the pointer.
@@ -186,8 +188,9 @@ export function HoverFacts(props: {
   fill: Fill | undefined
   races: BoardRace[]
   tipping?: number
+  tipWon?: boolean
 }) {
-  const { place, view, fill, races, tipping } = props
+  const { place, view, fill, races, tipping, tipWon } = props
   const st = place.split('-')[0]
   if (view.mode === 'primary')
     return fill ? (
@@ -205,7 +208,7 @@ export function HoverFacts(props: {
           No {OFFICE_WORD[view.mode]} race in 2028
         </span>
       )}
-      <TippingLine p={tipping} place={place} />
+      <TippingLine p={tipping} won={tipWon} place={place} />
       {!place.includes('-') && <OtherRaces st={st} view={view} races={races} />}
     </>
   )
@@ -219,8 +222,9 @@ export function PinnedPlace(props: {
   sections: PanelSection[]
   primaries: PrimaryRow[]
   tipping?: number
+  tipWon?: boolean
 }) {
-  const { place, view, sections, primaries, tipping } = props
+  const { place, view, sections, primaries, tipping, tipWon } = props
   const st = place.split('-')[0]
   const focusKey = useMemo(
     () =>
@@ -248,7 +252,7 @@ export function PinnedPlace(props: {
             <span className={own.focusLabel}>{focus.label}</span>
             <SummaryText summary={focus.summary} />
           </div>
-          <TippingLine p={tipping} place={place} />
+          <TippingLine p={tipping} won={tipWon} place={place} />
           <RaceMarket slug={focus.slug} creator={focus.creator} />
         </div>
       ) : (
@@ -260,7 +264,7 @@ export function PinnedPlace(props: {
           </p>
           {/* A district with no market of its own still shows its state's
               tipping chance, as its hover card does. */}
-          <TippingLine p={tipping} place={place} />
+          <TippingLine p={tipping} won={tipWon} place={place} />
         </>
       )}
       {restCount > 0 && (

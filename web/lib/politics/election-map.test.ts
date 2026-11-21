@@ -424,6 +424,35 @@ test('tipping points from the tipping-point market', () => {
     ),
     'NE'
   )
+  // Nebraska's answers adding to all of it with a sliver to Other: no
+  // winner, whatever the shares sum to.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 30, o: 0.05 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.3),
+          answer('o', 'Other', 0.2, true),
+        ],
+      })
+    ),
+    undefined
+  )
+  // A paid answer missing from this copy of the market: not a win in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 60, ga: 40 },
+        answers: [answer('pa', 'Pennsylvania', 0.6)],
+      })
+    ),
+    undefined
+  )
   // Cancelled: no winner.
   assert.equal(
     tippingWinnerOf(market({ isResolved: true, resolution: 'CANCEL' })),

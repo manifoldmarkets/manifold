@@ -278,15 +278,14 @@ export function ElectionMap(props: {
     !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
   // Resolved to one state in full; a split payout keeps its shares on show.
   const tipWinner = useMemo(() => tippingWinnerOf(tipMarket), [tipMarket])
-  // The winner reads as won on every card (its shares can add to a hair
-  // under 1 across Nebraska's answers).
   const tipChance = useMemo(
-    () => ({
-      ...Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
-      ...(tipWinner ? { [tipWinner]: 1 } : {}),
-    }),
-    [tipChances, tipWinner]
+    () => Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
+    [tipChances]
   )
+  // Whether a place's state is the one the market went to in full, for the
+  // cards' wording (a combined 100% across answers isn't a win in full).
+  const tipWonAt = (id: string | undefined) =>
+    !!tipWinner && id !== undefined && id.split('-')[0] === tipWinner
   // A Maine or Nebraska district's card shows its state's chance, since
   // the market resolves a district to its state.
   const tipFor = (id: string | undefined) =>
@@ -1225,6 +1224,7 @@ export function ElectionMap(props: {
                 sections={selectedSections}
                 primaries={primaries}
                 tipping={president ? tipFor(selected) : undefined}
+                tipWon={president && tipWonAt(selected)}
               />
             ) : (
               <HoverFacts
@@ -1233,6 +1233,7 @@ export function ElectionMap(props: {
                 fill={fills[detailId]}
                 races={races}
                 tipping={president ? tipFor(detailId) : undefined}
+                tipWon={president && tipWonAt(detailId)}
               />
             )}
           </RaceDetailsPanel>
