@@ -253,6 +253,8 @@ const getActionDisplayName = (action: string): string => {
     review: 'leaving reviews',
     addTopic: 'adding topics',
     pollVote: 'voting in polls',
+    claimTrophy: 'claiming trophies',
+    setShowcasePins: 'pinning trophies',
   }
   return actionNames[action] || action
 }

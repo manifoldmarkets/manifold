@@ -1,7 +1,26 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import Image from 'next/image'
+import toast from 'react-hot-toast'
+
 import { RanksType } from 'common/achievements'
+import { APIResponse } from 'common/api/schema'
+import { isAdminId } from 'common/envs/constants'
+import {
+  CATEGORY_LABELS,
+  CATEGORY_ORDER,
+  SHOWCASE_SLOT_UNLOCKS,
+  TROPHY_DEFINITIONS,
+  TrophyCategory,
+  TrophyClaim,
+  TrophyDefinition,
+  computeAllTrophyProgress,
+  countClaimedMilestones,
+  countReachedMilestones,
+  getClaimedMilestoneIds,
+  getTotalPossibleMilestones,
+  getTrophyPinId,
+} from 'common/trophies'
 import {
   formatMoney,
   formatMoneyUSD,
@@ -9,72 +28,203 @@ import {
 } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { openShowcasePicker } from 'web/components/trophies/open-showcase-picker'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
-import { api } from 'web/lib/api/api'
-import { isAdminId } from 'common/envs/constants'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
-import {
-  TROPHY_DEFINITIONS,
-  CATEGORY_ORDER,
-  CATEGORY_LABELS,
-  computeAllTrophyProgress,
-  countReachedMilestones,
-  countClaimedMilestones,
-  getTotalPossibleMilestones,
-  formatTrophyValue,
-} from 'common/trophies'
+import { useUserTrophies } from 'web/hooks/use-user-trophies'
+import { api } from 'web/lib/api/api'
 
-// ---------------------------------------------------------------------------
-// Showcase slot unlock tracker
-// ---------------------------------------------------------------------------
+export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
+  const { userId, isOwnProfile } = props
 
-type SlotDef =
-  | { type: 'free'; requiredClaims: number }
-  | { type: 'purchase'; price: number }
+  const { data: achievements } = useAPIGetter('get-user-achievements', {
+    userId,
+  })
+  // Shared with ProfileShowcase, so a claim shows up there at once.
+  const { trophies, update } = useUserTrophies(userId)
 
-const SHOWCASE_SLOTS: SlotDef[] = [
-  { type: 'free', requiredClaims: 0 },
-  { type: 'free', requiredClaims: 25 },
-  { type: 'free', requiredClaims: 50 },
-  // Future: purchasable slots
-  // { type: 'purchase', price: 2_500 },
-  // { type: 'purchase', price: 5_000 },
-]
+  const currentUser = useUser()
+  const isAdmin = !!currentUser && isAdminId(currentUser.id)
+
+  const [claimingId, setClaimingId] = useState<string | null>(null)
+  const [justClaimed, setJustClaimed] = useState<string | null>(null)
+
+  const setClaims = (claims: TrophyClaim[]) =>
+    update({ claims, pins: trophies?.pins ?? null })
+
+  const handleClaim = async (trophyId: string, milestoneId: string) => {
+    setClaimingId(trophyId)
+    try {
+      const { claims } = await api('claim-trophy', { trophyId, milestoneId })
+      setClaims(claims)
+      setJustClaimed(trophyId)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    } finally {
+      setClaimingId(null)
+    }
+  }
+
+  const handleUnclaim = async (trophyId: string) => {
+    try {
+      const { claims } = await api('unclaim-trophy', { trophyId, userId })
+      setClaims(claims)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e))
+    }
+  }
+
+  if (!achievements || !trophies) {
+    return (
+      <Col className="items-center py-8">
+        <div className="text-ink-400 text-sm">Loading trophies...</div>
+      </Col>
+    )
+  }
+
+  const { claims } = trophies
+  const progressList = computeAllTrophyProgress(achievements)
+  const reached = countReachedMilestones(achievements)
+  const total = getTotalPossibleMilestones()
+  const claimedCount = countClaimedMilestones(claims)
+  const unclaimedCount = Math.max(reached - claimedCount, 0)
+
+  const claimedIdsByTrophy = new Map(
+    TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
+  )
+  // Other people's profiles show only trophies they have claimed.
+  const visibleDefs = isOwnProfile
+    ? TROPHY_DEFINITIONS
+    : TROPHY_DEFINITIONS.filter((d) => claimedIdsByTrophy.get(d.id)?.size)
+
+  const byCategory = new Map<TrophyCategory, TrophyDefinition[]>(
+    CATEGORY_ORDER.map((c) => [c, []])
+  )
+  for (const def of visibleDefs) byCategory.get(def.category)?.push(def)
+
+  const claimedTrophyIds = TROPHY_DEFINITIONS.filter(
+    (d) => claimedIdsByTrophy.get(d.id)?.size
+  ).map((d) => d.id)
+
+  return (
+    <Col className="gap-6 pt-4">
+      <Col className="gap-1">
+        <Row className="items-center gap-2">
+          <span className="text-2xl" aria-hidden>
+            {'\u{1F3C6}'}
+          </span>
+          <Col className="gap-0">
+            <span className="text-ink-900 text-lg font-bold">
+              {isOwnProfile
+                ? `${reached} of ${total} trophies earned`
+                : `${claimedCount} ${
+                    claimedCount === 1 ? 'trophy' : 'trophies'
+                  } claimed`}
+            </span>
+            {isOwnProfile && unclaimedCount > 0 && (
+              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                {unclaimedCount} ready to claim
+              </span>
+            )}
+          </Col>
+        </Row>
+        {isOwnProfile && (
+          <span className="text-ink-500 text-sm">
+            Earn trophies by trading, creating markets and being active. Claim
+            them to pin them to your profile.
+          </span>
+        )}
+      </Col>
+
+      {isOwnProfile && (
+        <ShowcaseSlotTracker
+          claimedCount={claimedCount}
+          reachedCount={reached}
+        />
+      )}
+
+      {CATEGORY_ORDER.map((category) => {
+        const defs = byCategory.get(category)
+        if (!defs?.length) return null
+        return (
+          <Col key={category} className="gap-3">
+            <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
+              {CATEGORY_LABELS[category]}
+              <span className="bg-ink-200 h-px flex-1" />
+            </div>
+            <TrophyGrid
+              progressList={progressList}
+              definitions={defs}
+              claimedIdsByTrophy={claimedIdsByTrophy}
+              isOwnProfile={isOwnProfile}
+              onClaim={handleClaim}
+              claimingId={claimingId}
+              justClaimedId={justClaimed}
+              onPinToProfile={(trophyId) => {
+                setJustClaimed(null)
+                openShowcasePicker({ pinId: getTrophyPinId(trophyId) })
+              }}
+            />
+          </Col>
+        )
+      })}
+
+      <AchievementsSection data={achievements} />
+
+      {isAdmin && isOwnProfile && claimedTrophyIds.length > 0 && (
+        <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
+          <span className="text-ink-500 font-mono text-xs">
+            [ADMIN] Unclaim trophies
+          </span>
+          <Row className="flex-wrap gap-2">
+            {claimedTrophyIds.map((trophyId) => (
+              <button
+                key={trophyId}
+                className="bg-scarlet-100 text-scarlet-700 hover:bg-scarlet-200 rounded px-2 py-1 text-xs"
+                onClick={() => handleUnclaim(trophyId)}
+              >
+                {trophyId}
+              </button>
+            ))}
+          </Row>
+        </Col>
+      )}
+    </Col>
+  )
+}
 
 function ShowcaseSlotTracker(props: {
   claimedCount: number
-  reachedCount: number // trophies earned by stats but not yet claimed
+  reachedCount: number // earned, whether claimed or not
 }) {
   const { claimedCount, reachedCount } = props
-  const max = SHOWCASE_SLOTS[SHOWCASE_SLOTS.length - 1]
-  const maxClaims = max.type === 'free' ? max.requiredClaims : 50
+  const maxClaims = SHOWCASE_SLOT_UNLOCKS[SHOWCASE_SLOT_UNLOCKS.length - 1]
   const claimedPct = Math.min(claimedCount / maxClaims, 1) * 100
   const ghostPct = Math.min(reachedCount / maxClaims, 1) * 100
 
-  const nextSlot = SHOWCASE_SLOTS.find(
-    (s) => s.type === 'free' && claimedCount < s.requiredClaims
-  )
-  const unlockedCount = SHOWCASE_SLOTS.filter(
-    (s) => s.type === 'free' && claimedCount >= s.requiredClaims
+  const unlockedCount = SHOWCASE_SLOT_UNLOCKS.filter(
+    (needed) => claimedCount >= needed
   ).length
-  const hintText =
-    nextSlot && nextSlot.type === 'free'
-      ? `Claim ${
-          nextSlot.requiredClaims - claimedCount
-        } more trophies to unlock pin ${unlockedCount + 1}`
-      : null
+  const nextUnlock = SHOWCASE_SLOT_UNLOCKS.find(
+    (needed) => claimedCount < needed
+  )
 
   return (
     <Col className="gap-2.5 rounded-xl border border-amber-400/40 bg-amber-50/50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-950/10">
       <Row className="items-center gap-2">
-        <span className="text-base">{'\u{1F3C6}'}</span>
+        <span className="text-base" aria-hidden>
+          {'\u{1F3C6}'}
+        </span>
         <Col className="min-w-0 flex-1 gap-0.5">
           <span className="text-ink-900 text-sm font-semibold">
-            {unlockedCount} / {SHOWCASE_SLOTS.length} showcase pins
+            {unlockedCount} / {SHOWCASE_SLOT_UNLOCKS.length} profile pins
           </span>
-          {hintText ? (
-            <span className="text-ink-500 text-xs">{hintText}</span>
+          {nextUnlock !== undefined ? (
+            <span className="text-ink-500 text-xs">
+              Claim {nextUnlock - claimedCount} more milestones to unlock pin{' '}
+              {unlockedCount + 1}
+            </span>
           ) : (
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
               All pins unlocked!
@@ -83,30 +233,26 @@ function ShowcaseSlotTracker(props: {
         </Col>
       </Row>
 
-      {/* Progress bar with ghost + slot markers */}
       <div className="relative">
         <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-amber-300/60 bg-amber-100/30 dark:border-amber-700/40 dark:bg-amber-900/30">
-          {/* Ghost bar: reached but unclaimed trophies */}
+          {/* Earned but unclaimed */}
           {ghostPct > claimedPct && (
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-300/60 to-yellow-400/50 dark:from-amber-600/30 dark:to-yellow-600/30"
               style={{ width: `${ghostPct}%` }}
             />
           )}
-          {/* Solid bar: claimed trophies */}
           <div
             className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 transition-all"
             style={{ width: `${claimedPct}%` }}
           />
         </div>
 
-        {/* Slot markers below the bar */}
         <Row className="mt-1.5 justify-between">
-          {SHOWCASE_SLOTS.map((slot, i) => {
-            if (slot.type !== 'free') return null
-            const unlocked = claimedCount >= slot.requiredClaims
+          {SHOWCASE_SLOT_UNLOCKS.map((needed, i) => {
+            const unlocked = claimedCount >= needed
             return (
-              <Row key={i} className="items-center gap-1">
+              <Row key={needed} className="items-center gap-1">
                 <div
                   className={clsx(
                     'flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold',
@@ -125,217 +271,13 @@ function ShowcaseSlotTracker(props: {
                       : 'text-ink-400'
                   )}
                 >
-                  {unlocked ? 'Unlocked' : `${slot.requiredClaims}`}
+                  {unlocked ? 'Unlocked' : `${needed}`}
                 </span>
               </Row>
             )
           })}
         </Row>
       </div>
-    </Col>
-  )
-}
-
-export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
-  const { userId, isOwnProfile } = props
-
-  const {
-    data: achievements,
-    refresh,
-    setData,
-  } = useAPIGetter('get-user-achievements', { userId })
-
-  const currentUser = useUser()
-  const isAdmin = currentUser ? isAdminId(currentUser.id) : false
-
-  const [claimingId, setClaimingId] = useState<string | null>(null)
-  const [justClaimed, setJustClaimed] = useState<string | null>(null)
-
-  const handleClaim = async (trophyId: string, milestone: string) => {
-    setClaimingId(trophyId)
-    try {
-      await api('claim-trophy', { trophyId, milestone })
-      // Optimistically update shared cache so ProfileShowcase sees new claim instantly
-      if (achievements) {
-        const existingClaims = achievements.claimedTrophies ?? []
-        const updatedClaims = [
-          ...existingClaims.filter((c) => c.trophyId !== trophyId),
-          { trophyId, milestone, claimedAt: new Date().toISOString() },
-        ]
-        setData({ ...achievements, claimedTrophies: updatedClaims } as any)
-      }
-      setJustClaimed(trophyId)
-      // Delay refresh so the server cache (1s TTL) expires before we re-fetch,
-      // otherwise stale data overwrites the optimistic setData above
-      setTimeout(() => refresh(), 2000)
-    } catch (e) {
-      console.error('Failed to claim trophy:', e)
-    } finally {
-      setClaimingId(null)
-    }
-  }
-
-  const handleUnclaim = async (trophyId: string) => {
-    try {
-      await api('unclaim-trophy', { trophyId, userId })
-      refresh()
-    } catch (e) {
-      console.error('Failed to unclaim trophy:', e)
-    }
-  }
-
-  if (!achievements) {
-    return (
-      <Col className="items-center py-8">
-        <div className="text-ink-400 text-sm">Loading trophies...</div>
-      </Col>
-    )
-  }
-
-  const progressList = computeAllTrophyProgress(achievements)
-  const reached = countReachedMilestones(progressList)
-  const total = getTotalPossibleMilestones()
-  const claimedCount = countClaimedMilestones(
-    achievements.claimedTrophies ?? []
-  )
-  const unclaimedCount = reached - claimedCount
-
-  const progressMap = new Map(progressList.map((p) => [p.trophyId, p]))
-
-  // When viewing someone else's profile, only show trophies they've claimed
-  const claimedIds = new Set(
-    (achievements.claimedTrophies ?? []).map((c) => c.trophyId)
-  )
-  const visibleDefs = isOwnProfile
-    ? TROPHY_DEFINITIONS
-    : TROPHY_DEFINITIONS.filter((d) => claimedIds.has(d.id))
-
-  // Group definitions by category
-  const byCategory = new Map<string, typeof TROPHY_DEFINITIONS>()
-  for (const cat of CATEGORY_ORDER) byCategory.set(cat, [])
-  for (const def of visibleDefs) byCategory.get(def.category)?.push(def)
-
-  return (
-    <Col className="gap-6 pt-4">
-      {/* Hero summary */}
-      <Col className="gap-1">
-        <Row className="items-center gap-2">
-          <span className="text-2xl">{'\u{1F3C6}'}</span>
-          <Col className="gap-0">
-            <span className="text-ink-900 text-lg font-bold">
-              {isOwnProfile
-                ? `${reached} of ${total} trophies earned`
-                : `${claimedCount} trophies claimed`}
-            </span>
-            {isOwnProfile && unclaimedCount > 0 && (
-              <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                {unclaimedCount} unclaimed
-              </span>
-            )}
-          </Col>
-        </Row>
-        {isOwnProfile && (
-          <span className="text-ink-500 text-sm">
-            Earn trophies by trading, creating markets, and being active. Claim
-            trophies to pin them to your profile showcase.
-          </span>
-        )}
-      </Col>
-
-      {/* Showcase slot unlock tracker — own profile only */}
-      {isOwnProfile && (
-        <ShowcaseSlotTracker
-          claimedCount={claimedCount}
-          reachedCount={reached}
-        />
-      )}
-
-      {/* Categories */}
-      {CATEGORY_ORDER.map((category) => {
-        const defs = byCategory.get(category)
-        if (!defs?.length) return null
-        const catProgress = defs
-          .map((d) => progressMap.get(d.id))
-          .filter(Boolean) as typeof progressList
-
-        return (
-          <Col key={category} className="gap-3">
-            <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
-              {CATEGORY_LABELS[category]}
-              <span className="bg-ink-200 h-px flex-1" />
-            </div>
-            <TrophyGrid
-              progressList={catProgress}
-              definitions={defs}
-              claimedTrophies={achievements.claimedTrophies}
-              isOwnProfile={isOwnProfile}
-              onClaim={handleClaim}
-              claimingId={claimingId}
-              justClaimedId={justClaimed}
-              onPinToProfile={(trophyId: string) => {
-                setJustClaimed(null)
-                // Build badge data so ProfileShowcase can render it
-                // without waiting for its own data refresh
-                const def = TROPHY_DEFINITIONS.find((d) => d.id === trophyId)
-                const progress = progressMap.get(trophyId)
-                const claimed = achievements.claimedTrophies?.find(
-                  (c) => c.trophyId === trophyId
-                )
-                const m = def?.milestones.find(
-                  (ms) => ms.name === claimed?.milestone
-                )
-                window.dispatchEvent(
-                  new CustomEvent('open-showcase-picker', {
-                    detail: {
-                      pinId: `trophy-${trophyId}`,
-                      badge:
-                        m && def
-                          ? {
-                              id: `trophy-${trophyId}`,
-                              label: m.name,
-                              stat: formatTrophyValue(
-                                def,
-                                progress?.currentValue ?? m.threshold
-                              ),
-                              detail: `${def.label}: ${formatTrophyValue(
-                                def,
-                                progress?.currentValue ?? m.threshold
-                              )} ${def.unit}`,
-                              emoji: m.emoji,
-                              tier: m.tier,
-                            }
-                          : undefined,
-                    },
-                  })
-                )
-              }}
-            />
-          </Col>
-        )
-      })}
-
-      {/* Achievements / Stats section */}
-      <AchievementsSection data={achievements} />
-
-      {/* Admin tools: unclaim trophies */}
-      {isAdmin && isOwnProfile && achievements.claimedTrophies?.length > 0 && (
-        <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
-          <span className="text-ink-500 font-mono text-xs">
-            [ADMIN] Unclaim trophies
-          </span>
-          <Row className="flex-wrap gap-2">
-            {achievements.claimedTrophies.map((c) => (
-              <button
-                key={c.trophyId}
-                className="rounded bg-red-100 px-2 py-1 text-xs text-red-600 hover:bg-red-200"
-                onClick={() => handleUnclaim(c.trophyId)}
-              >
-                {c.trophyId}: {c.milestone}
-              </button>
-            ))}
-          </Row>
-        </Col>
-      )}
     </Col>
   )
 }
@@ -430,7 +372,9 @@ function bucketOf(rank: number | null): AchievementBucket {
   return 'To Earn'
 }
 
-function AchievementsSection(props: { data: Record<string, any> }) {
+function AchievementsSection(props: {
+  data: APIResponse<'get-user-achievements'>
+}) {
   const { data } = props
 
   const defs = [
@@ -515,7 +459,7 @@ function AchievementsSection(props: { data: Record<string, any> }) {
     {
       id: 'numberOfComments',
       title: 'Chatterbox',
-      desc: 'Comments posted with at least 1 like.',
+      desc: 'Comments you’ve posted.',
       fmt: () => formatWithCommas(data.numberOfComments),
     },
     {

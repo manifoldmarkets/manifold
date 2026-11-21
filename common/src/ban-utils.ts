@@ -35,22 +35,31 @@ export function isBanActive(ban: UserBan): boolean {
 
 // Check if user has an active ban of a specific type
 export function isUserBanned(bans: UserBan[], banType: BanType): boolean {
-  return bans.some(ban => ban.ban_type === banType && isBanActive(ban))
+  return bans.some((ban) => ban.ban_type === banType && isBanActive(ban))
 }
 
 // Get the active ban for a specific type (if any)
-export function getActiveBan(bans: UserBan[], banType: BanType): UserBan | undefined {
-  return bans.find(ban => ban.ban_type === banType && isBanActive(ban))
+export function getActiveBan(
+  bans: UserBan[],
+  banType: BanType
+): UserBan | undefined {
+  return bans.find((ban) => ban.ban_type === banType && isBanActive(ban))
 }
 
 // Get ban message/reason for a specific ban type
-export function getUserBanMessage(bans: UserBan[], banType: BanType): string | undefined {
+export function getUserBanMessage(
+  bans: UserBan[],
+  banType: BanType
+): string | undefined {
   const activeBan = getActiveBan(bans, banType)
   return activeBan?.reason ?? undefined
 }
 
 // Get time remaining for a temp ban (in ms)
-export function getBanTimeRemaining(bans: UserBan[], banType: BanType): number | undefined {
+export function getBanTimeRemaining(
+  bans: UserBan[],
+  banType: BanType
+): number | undefined {
   const activeBan = getActiveBan(bans, banType)
   if (!activeBan?.end_time) return undefined
 
@@ -77,30 +86,33 @@ export function getActiveBanRecords(bans: UserBan[]): UserBan[] {
 // Mapping: which ban types block which actions
 export function getBanTypesForAction(action: string): BanType[] {
   const actionMap: Record<string, BanType[]> = {
-    'comment': ['posting'],
-    'createMarket': ['marketControl'],
-    'updateMarket': ['marketControl'],
-    'resolveMarket': ['marketControl'],
-    'editAnswer': ['marketControl'],
+    comment: ['posting'],
+    createMarket: ['marketControl'],
+    updateMarket: ['marketControl'],
+    resolveMarket: ['marketControl'],
+    editAnswer: ['marketControl'],
     // Adding answers affects liquidity (trading), market structure (marketControl), and content (posting)
-    'createAnswer': ['posting', 'marketControl', 'trading'],
-    'hideComment': ['marketControl'],
-    'hidePerpSuggestion': ['marketControl'],
-    'trade': ['trading'],
-    'bet': ['trading'],
-    'managram': ['posting', 'trading'],  // Blocked by either
-    'removeLiquidity': ['trading'],
-    'addLiquidity': ['trading'],
-    'boost': ['trading'],
-    'message': ['posting'],
-    'post': ['posting'],
-    'editComment': ['posting'],
-    'review': ['posting'],
-    'addTopic': ['marketControl'],
+    createAnswer: ['posting', 'marketControl', 'trading'],
+    hideComment: ['marketControl'],
+    hidePerpSuggestion: ['marketControl'],
+    trade: ['trading'],
+    bet: ['trading'],
+    managram: ['posting', 'trading'], // Blocked by either
+    removeLiquidity: ['trading'],
+    addLiquidity: ['trading'],
+    boost: ['trading'],
+    message: ['posting'],
+    post: ['posting'],
+    editComment: ['posting'],
+    review: ['posting'],
+    addTopic: ['marketControl'],
     // Poll voting affects market outcome (trading), market structure (marketControl), and is a form of participation (posting)
-    'pollVote': ['posting', 'marketControl', 'trading'],
+    pollVote: ['posting', 'marketControl', 'trading'],
     // Purchasing mana
-    'purchase': ['purchase'],
+    purchase: ['purchase'],
+    // Trophies show on the public profile, and later milestones pay rewards
+    claimTrophy: ['posting', 'trading'],
+    setShowcasePins: ['posting'],
   }
   return actionMap[action] || []
 }
@@ -115,10 +127,14 @@ export function formatBanTimeRemaining(ms: number): string {
   const minutes = Math.floor((ms % HOUR_MS) / MINUTE_MS)
 
   if (days > 0) {
-    return `${days} day${days > 1 ? 's' : ''}${hours > 0 ? ` ${hours} hour${hours > 1 ? 's' : ''}` : ''}`
+    return `${days} day${days > 1 ? 's' : ''}${
+      hours > 0 ? ` ${hours} hour${hours > 1 ? 's' : ''}` : ''
+    }`
   }
   if (hours > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` ${minutes} min` : ''}`
+    return `${hours} hour${hours > 1 ? 's' : ''}${
+      minutes > 0 ? ` ${minutes} min` : ''
+    }`
   }
   if (minutes > 0) {
     return `${minutes} minute${minutes > 1 ? 's' : ''}`
@@ -139,9 +155,12 @@ export function getBanTypeDisplayName(banType: BanType): string {
 
 export function getBanTypeDescription(banType: BanType): string {
   const descriptions: Record<BanType, string> = {
-    posting: 'commenting, messaging, creating posts, adding answers, poll voting',
-    marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers, poll voting',
-    trading: 'betting, managrams, liquidity changes, adding answers, poll voting',
+    posting:
+      'commenting, messaging, creating posts, adding answers, poll voting',
+    marketControl:
+      'creating, editing, resolving markets, hiding comments, adding/editing answers, poll voting',
+    trading:
+      'betting, managrams, liquidity changes, adding answers, poll voting',
     purchase: 'buying mana',
     modAlert: 'warning message from moderators (no actions blocked)',
   }
@@ -150,10 +169,10 @@ export function getBanTypeDescription(banType: BanType): string {
 
 // Get active bans that actually block actions (excludes modAlert)
 export function getActiveBlockingBans(bans: UserBan[]): BanType[] {
-  return getActiveBans(bans).filter(t => t !== 'modAlert')
+  return getActiveBans(bans).filter((t) => t !== 'modAlert')
 }
 
 // Get all active mod alerts (can be multiple - they stack)
 export function getActiveModAlerts(bans: UserBan[]): UserBan[] {
-  return bans.filter(ban => ban.ban_type === 'modAlert' && isBanActive(ban))
+  return bans.filter((ban) => ban.ban_type === 'modAlert' && isBanActive(ban))
 }

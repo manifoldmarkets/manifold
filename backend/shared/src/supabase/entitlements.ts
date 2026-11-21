@@ -10,10 +10,6 @@ import { convertEntitlement, UserEntitlement } from 'common/shop/types'
  * scheduler run.  This must be the single source of truth for "is this
  * supporter entitlement active?" on the backend – do NOT inline the query
  * elsewhere.
- *
- * Note: getUserSupporterTier in common/src/supporter-config.ts has a
- * parallel grace period check in TypeScript for frontend use. Keep them
- * in sync if the grace window changes.
  */
 export async function getActiveSupporterEntitlements(
   pg: ITask<any> | { manyOrNone: ITask<any>['manyOrNone'] },
@@ -27,15 +23,14 @@ export async function getActiveSupporterEntitlements(
     enabled: boolean
     auto_renew: boolean
   }>(
-    `select user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew
-     from user_entitlements
-     where user_id = $1
-       and entitlement_id = any($2)
-       and enabled = true
-       and (expires_time is null
-            or expires_time > now()
-            or (auto_renew = true and expires_time > now() - interval '25 hours'))
-     order by expires_time desc nulls first`,
+    `SELECT user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew
+     FROM user_entitlements
+     WHERE user_id = $1
+       AND entitlement_id = ANY($2)
+       AND enabled = true
+       AND (expires_time IS NULL
+            OR expires_time > NOW()
+            OR (auto_renew = true AND expires_time > NOW() - interval '25 hours'))`,
     [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
   )
   return rows.map(convertEntitlement)

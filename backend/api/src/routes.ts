@@ -316,6 +316,7 @@ import { getUserAchievements } from './get-user-achievements'
 import { setShowcasePins } from './set-showcase-pins'
 import { claimTrophy } from './claim-trophy'
 import { unclaimTrophy } from './unclaim-trophy'
+import { getUserTrophies } from './get-user-trophies'
 import { getUserCalibration } from './get-user-calibration'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
@@ -624,6 +625,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'set-showcase-pins': setShowcasePins,
   'claim-trophy': claimTrophy,
   'unclaim-trophy': unclaimTrophy,
+  'get-user-trophies': getUserTrophies,
   'get-user-calibration': getUserCalibration,
   'get-monthly-bets-2025': getmonthlybets2025,
   'get-max-min-profit-2025': getmaxminprofit2025,

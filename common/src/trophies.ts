@@ -1,9 +1,11 @@
-// Trophy system — each trophy has named milestones with unique identities
-// Data source: `get-user-achievements` API (no new backend needed)
-
-// ---------------------------------------------------------------------------
-// Tier colors (visual progression)
-// ---------------------------------------------------------------------------
+// Trophies: named milestones on a user's long-running stats (volume, trades,
+// streaks, markets created...). Users claim a milestone once they reach it,
+// keep it forever, and can pin trophies to their profile.
+//
+// The stats come from `get-user-achievements`. Claims live in
+// `user_trophy_milestones`, one row per claimed milestone. The server is the
+// authority on what can be claimed (claim-trophy recomputes the stat); the
+// helpers here are shared so the web shows the same answer.
 
 export type TrophyTier =
   | 'green'
@@ -13,70 +15,24 @@ export type TrophyTier =
   | 'gold'
   | 'prismatic'
 
-export const TROPHY_TIER_STYLES: Record<
-  TrophyTier,
-  { gradient: string; textColor: string; label: string; bgTint: string; ringWidth: string; glow: string }
-> = {
-  green: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    textColor: 'text-emerald-600 dark:text-emerald-400',
-    label: 'Green',
-    bgTint: 'bg-emerald-50 dark:bg-emerald-900/40',
-    ringWidth: 'p-[2px]',
-    glow: '',
-  },
-  blue: {
-    gradient: 'from-sky-400 to-blue-600',
-    textColor: 'text-blue-600 dark:text-blue-400',
-    label: 'Blue',
-    bgTint: 'bg-blue-50 dark:bg-blue-900/40',
-    ringWidth: 'p-[2.5px]',
-    glow: 'shadow-[0_0_8px_rgba(56,189,248,0.4)]',
-  },
-  purple: {
-    gradient: 'from-violet-400 to-purple-600',
-    textColor: 'text-violet-600 dark:text-violet-400',
-    label: 'Purple',
-    bgTint: 'bg-violet-50 dark:bg-violet-900/40',
-    ringWidth: 'p-[3px]',
-    glow: 'shadow-[0_0_12px_rgba(139,92,246,0.5)]',
-  },
-  crimson: {
-    gradient: 'from-red-500 to-rose-700',
-    textColor: 'text-red-600 dark:text-red-400',
-    label: 'Crimson',
-    bgTint: 'bg-red-50 dark:bg-red-900/40',
-    ringWidth: 'p-[3px]',
-    glow: 'shadow-[0_0_16px_rgba(239,68,68,0.5)]',
-  },
-  gold: {
-    gradient: 'from-amber-400 to-yellow-600',
-    textColor: 'text-amber-600 dark:text-amber-400',
-    label: 'Gold',
-    bgTint: 'bg-amber-50 dark:bg-amber-900/40',
-    ringWidth: 'p-[3.5px]',
-    glow: 'shadow-[0_0_20px_rgba(245,158,11,0.5)]',
-  },
-  prismatic: {
-    gradient: 'from-pink-400 via-cyan-400 to-yellow-400',
-    textColor: 'text-purple-600 dark:text-purple-400',
-    label: 'Prismatic',
-    bgTint:
-      'bg-gradient-to-br from-pink-50/50 via-cyan-50/50 to-yellow-50/50 dark:from-pink-900/30 dark:via-cyan-900/30 dark:to-yellow-900/30',
-    ringWidth: 'p-[4px]',
-    glow: 'shadow-[0_0_24px_rgba(236,72,153,0.4),0_0_24px_rgba(34,211,238,0.4)]',
-  },
-}
-
-// ---------------------------------------------------------------------------
-// Trophy definition types
-// ---------------------------------------------------------------------------
+// Best first.
+export const TROPHY_TIER_ORDER: TrophyTier[] = [
+  'prismatic',
+  'gold',
+  'crimson',
+  'purple',
+  'blue',
+  'green',
+]
 
 export type TrophyMilestone = {
-  name: string // "Minnow", "Big Fish", "Shark", "Whale"
-  emoji: string // unique per milestone
-  threshold: number // stat value required
-  tier: TrophyTier // controls gradient/colors
+  // Stored in user_trophy_milestones.milestone_id. Never change an id once
+  // shipped; rename `name` instead.
+  id: string
+  name: string
+  emoji: string
+  threshold: number
+  tier: TrophyTier
 }
 
 export type TrophyCategory = 'trading' | 'creating' | 'social' | 'prestige'
@@ -95,56 +51,79 @@ export const CATEGORY_ORDER: TrophyCategory[] = [
   'prestige',
 ]
 
+// Numeric fields of the get-user-achievements response that trophies use.
+export const TROPHY_STAT_KEYS = [
+  'totalVolumeMana',
+  'totalTradesCount',
+  'longestBettingStreak',
+  'profitableMarketsCount',
+  'totalMarketsCreated',
+  'creatorTraders',
+  'numberOfComments',
+  'totalReferrals',
+  'charityDonatedMana',
+  'seasonsMasters',
+  'accountAgeYears',
+] as const
+export type TrophyStatKey = (typeof TROPHY_STAT_KEYS)[number]
+export type TrophyStats = Partial<Record<TrophyStatKey, number>>
+
 export type TrophyDefinition = {
+  // Stored in user_trophy_milestones.trophy_id. Never change once shipped.
   id: string
-  label: string // short display name for the trophy line
-  description: string // one-line explainer shown on the card
+  label: string
+  description: string
   category: TrophyCategory
-  statKey: string // maps to get-user-achievements field
-  unit: string // "mana", "days", "markets", etc.
-  formatPrefix?: string // e.g. "$" — shown before the value instead of unit after
-  milestones: TrophyMilestone[] // ordered low→high
+  statKey: TrophyStatKey
+  unit: string
+  formatPrefix?: string // e.g. "$", shown before the value instead of the unit
+  milestones: TrophyMilestone[] // ascending thresholds
 }
 
-// ---------------------------------------------------------------------------
-// Trophy definitions — each with uniquely named milestones
-// ---------------------------------------------------------------------------
+// Compact milestone constructor so each milestone fits on one line.
+const m = (
+  id: string,
+  name: string,
+  emoji: string,
+  threshold: number,
+  tier: TrophyTier
+): TrophyMilestone => ({ id, name, emoji, threshold, tier })
 
 export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   // --- Trading ---
   {
     id: 'trading-volume',
     label: 'Trading Volume',
-    description: 'Total mana wagered across all your trades',
+    description: 'Total mana traded across all your trades',
     category: 'trading',
     statKey: 'totalVolumeMana',
     unit: 'mana',
     milestones: [
-      { name: 'Goldfish', emoji: '\u{1F421}', threshold: 10_000, tier: 'green' },
-      { name: 'Minnow', emoji: '\u{1F41F}', threshold: 100_000, tier: 'green' },
-      { name: 'Swordfish', emoji: '\u{1F420}', threshold: 500_000, tier: 'blue' },
-      { name: 'Shark', emoji: '\u{1F988}', threshold: 2_000_000, tier: 'purple' },
-      { name: 'Orca', emoji: '\u{1F42C}', threshold: 5_000_000, tier: 'crimson' },
-      { name: 'Whale', emoji: '\u{1F433}', threshold: 10_000_000, tier: 'gold' },
-      { name: 'Leviathan', emoji: '\u{1F30A}', threshold: 50_000_000, tier: 'prismatic' },
-      { name: 'Kraken', emoji: '\u{1F991}', threshold: 100_000_000, tier: 'prismatic' },
+      m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'green'),
+      m('minnow', 'Minnow', '\u{1F41F}', 100_000, 'green'),
+      m('swordfish', 'Swordfish', '\u{1F420}', 500_000, 'blue'),
+      m('shark', 'Shark', '\u{1F988}', 2_000_000, 'purple'),
+      m('orca', 'Orca', '\u{1F42C}', 5_000_000, 'crimson'),
+      m('whale', 'Whale', '\u{1F433}', 10_000_000, 'gold'),
+      m('leviathan', 'Leviathan', '\u{1F30A}', 50_000_000, 'prismatic'),
+      m('kraken', 'Kraken', '\u{1F991}', 100_000_000, 'prismatic'),
     ],
   },
   {
     id: 'total-trades',
     label: 'Trades Placed',
-    description: 'Number of individual trades you\'ve made',
+    description: "Number of individual trades you've made",
     category: 'trading',
     statKey: 'totalTradesCount',
     unit: 'trades',
     milestones: [
-      { name: 'Rookie', emoji: '\u{1F3AF}', threshold: 10, tier: 'green' },
-      { name: 'Dabbler', emoji: '\u{1F3B2}', threshold: 50, tier: 'green' },
-      { name: 'Regular', emoji: '\u{1F4CA}', threshold: 250, tier: 'blue' },
-      { name: 'Hustler', emoji: '\u{1F4B9}', threshold: 1_000, tier: 'purple' },
-      { name: 'Machine', emoji: '\u{2699}', threshold: 5_000, tier: 'crimson' },
-      { name: 'Terminator', emoji: '\u{1F916}', threshold: 25_000, tier: 'gold' },
-      { name: 'Singularity', emoji: '\u{1F300}', threshold: 100_000, tier: 'prismatic' },
+      m('rookie', 'Rookie', '\u{1F3AF}', 10, 'green'),
+      m('dabbler', 'Dabbler', '\u{1F3B2}', 50, 'green'),
+      m('regular', 'Regular', '\u{1F4CA}', 250, 'blue'),
+      m('hustler', 'Hustler', '\u{1F4B9}', 1_000, 'purple'),
+      m('machine', 'Machine', '\u{2699}', 5_000, 'crimson'),
+      m('terminator', 'Terminator', '\u{1F916}', 25_000, 'gold'),
+      m('singularity', 'Singularity', '\u{1F300}', 100_000, 'prismatic'),
     ],
   },
   {
@@ -155,15 +134,15 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'longestBettingStreak',
     unit: 'days',
     milestones: [
-      { name: 'Spark', emoji: '\u{2728}', threshold: 14, tier: 'green' },
-      { name: 'Ember', emoji: '\u{1F525}', threshold: 30, tier: 'blue' },
-      { name: 'Blaze', emoji: '\u{1F4A5}', threshold: 60, tier: 'purple' },
-      { name: 'Inferno', emoji: '\u{1F30B}', threshold: 100, tier: 'crimson' },
-      { name: 'Phoenix', emoji: '\u{1F426}\u{200D}\u{1F525}', threshold: 200, tier: 'gold' },
-      { name: 'Eternal Flame', emoji: '\u{2600}', threshold: 365, tier: 'gold' },
-      { name: 'Undying', emoji: '\u{1F9BF}', threshold: 700, tier: 'prismatic' },
-      { name: 'Timeless', emoji: '\u{231B}', threshold: 1_065, tier: 'prismatic' },
-      { name: 'Immortal', emoji: '\u{23F3}', threshold: 1_500, tier: 'prismatic' },
+      m('spark', 'Spark', '\u{2728}', 14, 'green'),
+      m('ember', 'Ember', '\u{1F525}', 30, 'blue'),
+      m('blaze', 'Blaze', '\u{1F4A5}', 60, 'purple'),
+      m('inferno', 'Inferno', '\u{1F30B}', 100, 'crimson'),
+      m('phoenix', 'Phoenix', '\u{1F426}\u{200D}\u{1F525}', 200, 'gold'),
+      m('eternal-flame', 'Eternal Flame', '\u{2600}', 365, 'gold'),
+      m('undying', 'Undying', '\u{1F9BF}', 700, 'prismatic'),
+      m('timeless', 'Timeless', '\u{231B}', 1_065, 'prismatic'),
+      m('immortal', 'Immortal', '\u{23F3}', 1_500, 'prismatic'),
     ],
   },
   {
@@ -174,14 +153,14 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'profitableMarketsCount',
     unit: 'markets',
     milestones: [
-      { name: 'Lucky', emoji: '\u{1F340}', threshold: 10, tier: 'green' },
-      { name: 'Savvy', emoji: '\u{1F9E0}', threshold: 25, tier: 'green' },
-      { name: 'Sharp', emoji: '\u{1F52A}', threshold: 75, tier: 'blue' },
-      { name: 'Tactician', emoji: '\u{265F}', threshold: 150, tier: 'blue' },
-      { name: 'Oracle', emoji: '\u{1F52E}', threshold: 300, tier: 'purple' },
-      { name: 'Sage', emoji: '\u{1F9D9}', threshold: 500, tier: 'crimson' },
-      { name: 'Clairvoyant', emoji: '\u{1F441}', threshold: 800, tier: 'gold' },
-      { name: 'Omniscient', emoji: '\u{1F31F}', threshold: 1_500, tier: 'prismatic' },
+      m('lucky', 'Lucky', '\u{1F340}', 10, 'green'),
+      m('savvy', 'Savvy', '\u{1F9E0}', 25, 'green'),
+      m('sharp', 'Sharp', '\u{1F52A}', 75, 'blue'),
+      m('tactician', 'Tactician', '\u{265F}', 150, 'blue'),
+      m('oracle', 'Oracle', '\u{1F52E}', 300, 'purple'),
+      m('sage', 'Sage', '\u{1F9D9}', 500, 'crimson'),
+      m('clairvoyant', 'Clairvoyant', '\u{1F441}', 800, 'gold'),
+      m('omniscient', 'Omniscient', '\u{1F31F}', 1_500, 'prismatic'),
     ],
   },
 
@@ -189,42 +168,48 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'markets-created',
     label: 'Markets Created',
-    description: 'Questions you\'ve created for the community to trade on',
+    description: "Questions you've created for the community to trade on",
     category: 'creating',
     statKey: 'totalMarketsCreated',
     unit: 'markets',
     milestones: [
-      { name: 'Apprentice', emoji: '\u{1F528}', threshold: 5, tier: 'green' },
-      { name: 'Journeyman', emoji: '\u{1F6E0}', threshold: 15, tier: 'green' },
-      { name: 'Builder', emoji: '\u{1F3D7}', threshold: 50, tier: 'blue' },
-      { name: 'Architect', emoji: '\u{1F4D0}', threshold: 150, tier: 'blue' },
-      { name: 'City Planner', emoji: '\u{1F306}', threshold: 400, tier: 'purple' },
-      { name: 'Visionary', emoji: '\u{1F52D}', threshold: 800, tier: 'crimson' },
-      { name: 'World Builder', emoji: '\u{1F30D}', threshold: 1_500, tier: 'gold' },
-      { name: 'Titan of Questions', emoji: '\u{1F3D4}', threshold: 3_000, tier: 'gold' },
-      { name: 'Infinite Curiosity', emoji: '\u{267E}', threshold: 5_000, tier: 'prismatic' },
+      m('apprentice', 'Apprentice', '\u{1F528}', 5, 'green'),
+      m('journeyman', 'Journeyman', '\u{1F6E0}', 15, 'green'),
+      m('builder', 'Builder', '\u{1F3D7}', 50, 'blue'),
+      m('architect', 'Architect', '\u{1F4D0}', 150, 'blue'),
+      m('city-planner', 'City Planner', '\u{1F306}', 400, 'purple'),
+      m('visionary', 'Visionary', '\u{1F52D}', 800, 'crimson'),
+      m('world-builder', 'World Builder', '\u{1F30D}', 1_500, 'gold'),
+      m('titan-of-questions', 'Titan of Questions', '\u{1F3D4}', 3_000, 'gold'),
+      m(
+        'infinite-curiosity',
+        'Infinite Curiosity',
+        '\u{267E}',
+        5_000,
+        'prismatic'
+      ),
     ],
   },
   {
     id: 'creator-traders',
     label: 'Creator Popularity',
-    description: 'Unique traders who\'ve bet on your markets',
+    description: "Unique traders who've bet on your markets",
     category: 'creating',
     statKey: 'creatorTraders',
     unit: 'unique traders',
     milestones: [
-      { name: 'Invisible', emoji: '\u{1F47B}', threshold: 10, tier: 'green' },
-      { name: 'Unknown', emoji: '\u{1F464}', threshold: 50, tier: 'green' },
-      { name: 'Recognized', emoji: '\u{1F44B}', threshold: 150, tier: 'green' },
-      { name: 'Notable', emoji: '\u{1F465}', threshold: 500, tier: 'blue' },
-      { name: 'Popular', emoji: '\u{1F4E2}', threshold: 1_500, tier: 'purple' },
-      { name: 'Famous', emoji: '\u{2B50}', threshold: 3_000, tier: 'crimson' },
-      { name: 'Legendary', emoji: '\u{1F3C5}', threshold: 6_000, tier: 'gold' },
-      { name: 'Icon', emoji: '\u{1F3AC}', threshold: 12_000, tier: 'gold' },
-      { name: 'Celebrity', emoji: '\u{1F451}', threshold: 25_000, tier: 'gold' },
-      { name: 'Superstar', emoji: '\u{1F4AB}', threshold: 50_000, tier: 'prismatic' },
-      { name: 'Phenomenon', emoji: '\u{1F320}', threshold: 75_000, tier: 'prismatic' },
-      { name: 'Transcendent', emoji: '\u{1F30C}', threshold: 100_000, tier: 'prismatic' },
+      m('invisible', 'Invisible', '\u{1F47B}', 10, 'green'),
+      m('unknown', 'Unknown', '\u{1F464}', 50, 'green'),
+      m('recognized', 'Recognized', '\u{1F44B}', 150, 'green'),
+      m('notable', 'Notable', '\u{1F465}', 500, 'blue'),
+      m('popular', 'Popular', '\u{1F4E2}', 1_500, 'purple'),
+      m('famous', 'Famous', '\u{2B50}', 3_000, 'crimson'),
+      m('legendary', 'Legendary', '\u{1F3C5}', 6_000, 'gold'),
+      m('icon', 'Icon', '\u{1F3AC}', 12_000, 'gold'),
+      m('celebrity', 'Celebrity', '\u{1F451}', 25_000, 'gold'),
+      m('superstar', 'Superstar', '\u{1F4AB}', 50_000, 'prismatic'),
+      m('phenomenon', 'Phenomenon', '\u{1F320}', 75_000, 'prismatic'),
+      m('transcendent', 'Transcendent', '\u{1F30C}', 100_000, 'prismatic'),
     ],
   },
 
@@ -232,19 +217,25 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'comments',
     label: 'Comments',
-    description: 'Comments you\'ve written that received likes',
+    description: "Comments you've posted",
     category: 'social',
     statKey: 'numberOfComments',
     unit: 'comments',
     milestones: [
-      { name: 'Chatterbox', emoji: '\u{1F4AC}', threshold: 50, tier: 'green' },
-      { name: 'Conversationalist', emoji: '\u{1F4AD}', threshold: 150, tier: 'green' },
-      { name: 'Debater', emoji: '\u{1F5E3}', threshold: 400, tier: 'blue' },
-      { name: 'Commentator', emoji: '\u{1F4DD}', threshold: 1_000, tier: 'purple' },
-      { name: 'Pundit', emoji: '\u{1F4E3}', threshold: 2_500, tier: 'crimson' },
-      { name: 'Influencer', emoji: '\u{1F4F0}', threshold: 5_000, tier: 'gold' },
-      { name: 'Thought Leader', emoji: '\u{1F4A1}', threshold: 10_000, tier: 'gold' },
-      { name: 'Voice of the People', emoji: '\u{1F3A4}', threshold: 20_000, tier: 'prismatic' },
+      m('chatterbox', 'Chatterbox', '\u{1F4AC}', 50, 'green'),
+      m('conversationalist', 'Conversationalist', '\u{1F4AD}', 150, 'green'),
+      m('debater', 'Debater', '\u{1F5E3}', 400, 'blue'),
+      m('commentator', 'Commentator', '\u{1F4DD}', 1_000, 'purple'),
+      m('pundit', 'Pundit', '\u{1F4E3}', 2_500, 'crimson'),
+      m('influencer', 'Influencer', '\u{1F4F0}', 5_000, 'gold'),
+      m('thought-leader', 'Thought Leader', '\u{1F4A1}', 10_000, 'gold'),
+      m(
+        'voice-of-the-people',
+        'Voice of the People',
+        '\u{1F3A4}',
+        20_000,
+        'prismatic'
+      ),
     ],
   },
   {
@@ -255,31 +246,32 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'totalReferrals',
     unit: 'referrals',
     milestones: [
-      { name: 'Networker', emoji: '\u{1F91D}', threshold: 5, tier: 'green' },
-      { name: 'Connector', emoji: '\u{1F517}', threshold: 15, tier: 'blue' },
-      { name: 'Recruiter', emoji: '\u{1F4E8}', threshold: 40, tier: 'purple' },
-      { name: 'Ambassador', emoji: '\u{1F3C7}', threshold: 100, tier: 'crimson' },
-      { name: 'Evangelist', emoji: '\u{1F4E1}', threshold: 250, tier: 'gold' },
-      { name: 'Pied Piper', emoji: '\u{1F3B5}', threshold: 500, tier: 'gold' },
-      { name: 'Kingmaker', emoji: '\u{1FA84}', threshold: 1_000, tier: 'prismatic' },
-      { name: 'Movement Leader', emoji: '\u{1F3C1}', threshold: 2_500, tier: 'prismatic' },
-      { name: 'Founding Force', emoji: '\u{26A1}', threshold: 5_000, tier: 'prismatic' },
+      m('networker', 'Networker', '\u{1F91D}', 5, 'green'),
+      m('connector', 'Connector', '\u{1F517}', 15, 'blue'),
+      m('recruiter', 'Recruiter', '\u{1F4E8}', 40, 'purple'),
+      m('ambassador', 'Ambassador', '\u{1F3C7}', 100, 'crimson'),
+      m('evangelist', 'Evangelist', '\u{1F4E1}', 250, 'gold'),
+      m('pied-piper', 'Pied Piper', '\u{1F3B5}', 500, 'gold'),
+      m('kingmaker', 'Kingmaker', '\u{1FA84}', 1_000, 'prismatic'),
+      m('movement-leader', 'Movement Leader', '\u{1F3C1}', 2_500, 'prismatic'),
+      m('founding-force', 'Founding Force', '\u{26A1}', 5_000, 'prismatic'),
     ],
   },
   {
     id: 'charity-donated',
     label: 'Legacy Charity',
-    description: 'Dollars donated through the original Manifold for Charity program',
+    description:
+      'Dollars donated through the original Manifold for Charity program',
     category: 'social',
     statKey: 'charityDonatedMana',
     unit: 'donated',
     formatPrefix: '$',
     milestones: [
-      { name: 'Donor', emoji: '\u{1F49A}', threshold: 10, tier: 'green' },
-      { name: 'Patron', emoji: '\u{1F49C}', threshold: 50, tier: 'blue' },
-      { name: 'Philanthropist', emoji: '\u{2764}', threshold: 100, tier: 'purple' },
-      { name: 'Benefactor', emoji: '\u{1F496}', threshold: 1_000, tier: 'gold' },
-      { name: 'Saint', emoji: '\u{1F607}', threshold: 2_500, tier: 'prismatic' },
+      m('donor', 'Donor', '\u{1F49A}', 10, 'green'),
+      m('patron', 'Patron', '\u{1F49C}', 50, 'blue'),
+      m('philanthropist', 'Philanthropist', '\u{2764}', 100, 'purple'),
+      m('benefactor', 'Benefactor', '\u{1F496}', 1_000, 'gold'),
+      m('saint', 'Saint', '\u{1F607}', 2_500, 'prismatic'),
     ],
   },
 
@@ -292,145 +284,259 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'seasonsMasters',
     unit: 'seasons',
     milestones: [
-      { name: 'Contender', emoji: '\u{1F94A}', threshold: 1, tier: 'blue' },
-      { name: 'Champion', emoji: '\u{1F3C6}', threshold: 3, tier: 'purple' },
-      { name: 'Dynasty', emoji: '\u{1F3F0}', threshold: 5, tier: 'gold' },
-      { name: 'GOAT', emoji: '\u{1F410}', threshold: 8, tier: 'prismatic' },
+      m('contender', 'Contender', '\u{1F94A}', 1, 'blue'),
+      m('champion', 'Champion', '\u{1F3C6}', 3, 'purple'),
+      m('dynasty', 'Dynasty', '\u{1F3F0}', 5, 'gold'),
+      m('goat', 'GOAT', '\u{1F410}', 8, 'prismatic'),
     ],
   },
   {
     id: 'account-age',
     label: 'Account Age',
-    description: 'How long you\'ve been a member of Manifold',
+    description: "How long you've been a member of Manifold",
     category: 'prestige',
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      { name: 'Newcomer', emoji: '\u{1F331}', threshold: 0, tier: 'green' },
-      { name: 'Established', emoji: '\u{1F333}', threshold: 1, tier: 'blue' },
-      { name: 'Veteran', emoji: '\u{1F396}', threshold: 2, tier: 'purple' },
-      { name: 'Elder', emoji: '\u{1F474}', threshold: 3, tier: 'gold' },
-      { name: 'Founding Member', emoji: '\u{1F3DB}\u{FE0F}', threshold: 4, tier: 'prismatic' },
+      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green'),
+      m('established', 'Established', '\u{1F333}', 1, 'blue'),
+      m('veteran', 'Veteran', '\u{1F396}', 2, 'purple'),
+      m('elder', 'Elder', '\u{1F474}', 3, 'gold'),
+      m(
+        'founding-member',
+        'Founding Member',
+        '\u{1F3DB}\u{FE0F}',
+        4,
+        'prismatic'
+      ),
     ],
   },
 ]
 
-// ---------------------------------------------------------------------------
-// Computed progress (client-side from get-user-achievements data)
-// ---------------------------------------------------------------------------
+const DEFINITIONS_BY_ID = new Map(TROPHY_DEFINITIONS.map((d) => [d.id, d]))
 
-export type ComputedTrophyProgress = {
+export function getTrophyDefinition(
   trophyId: string
-  currentValue: number
-  highestMilestone: TrophyMilestone | null // null = no milestones reached
-  nextMilestone: TrophyMilestone | null // null = max reached or no milestones
+): TrophyDefinition | undefined {
+  return DEFINITIONS_BY_ID.get(trophyId)
 }
 
-/** Returns the highest milestone reached for a given value */
+export function getMilestone(
+  def: TrophyDefinition,
+  milestoneId: string
+): TrophyMilestone | undefined {
+  return def.milestones.find((m) => m.id === milestoneId)
+}
+
+// The stat a trophy measures, from achievement stats. Missing or non-finite
+// values count as zero.
+export function getTrophyStatValue(
+  def: TrophyDefinition,
+  stats: TrophyStats
+): number {
+  const value = Number(stats[def.statKey])
+  return Number.isFinite(value) ? value : 0
+}
+
+export function isMilestoneReached(milestone: TrophyMilestone, value: number) {
+  return value >= milestone.threshold
+}
+
+/** The highest milestone reached at this stat value, or null. */
 export function getHighestMilestone(
   def: TrophyDefinition,
   value: number
 ): TrophyMilestone | null {
   let highest: TrophyMilestone | null = null
   for (const m of def.milestones) {
-    if (value >= m.threshold) highest = m
-    else break // milestones are ordered low→high
+    if (isMilestoneReached(m, value)) highest = m
+    else break
   }
   return highest
 }
 
-/** Returns the next milestone after the current highest */
+/** The first milestone not yet reached at this stat value, or null at the top. */
 export function getNextMilestone(
   def: TrophyDefinition,
-  highestMilestone: TrophyMilestone | null
+  value: number
 ): TrophyMilestone | null {
-  if (!highestMilestone) return def.milestones[0] ?? null
-  const idx = def.milestones.findIndex((m) => m.name === highestMilestone.name)
-  return def.milestones[idx + 1] ?? null
+  return def.milestones.find((m) => !isMilestoneReached(m, value)) ?? null
 }
 
-/** Progress fraction toward the next milestone (0–1) */
-export function getProgressFraction(
-  def: TrophyDefinition,
-  value: number,
+export type ComputedTrophyProgress = {
+  trophyId: string
+  currentValue: number
   highestMilestone: TrophyMilestone | null
-): number {
-  const next = getNextMilestone(def, highestMilestone)
-  if (!next) return 1 // max reached
-  const prevThreshold = highestMilestone?.threshold ?? 0
-  const range = next.threshold - prevThreshold
-  if (range <= 0) return 1
-  return Math.min((value - prevThreshold) / range, 1)
+  nextMilestone: TrophyMilestone | null
 }
 
-/** Compute trophy progress for all definitions from achievement stats */
+export function computeTrophyProgress(
+  def: TrophyDefinition,
+  stats: TrophyStats
+): ComputedTrophyProgress {
+  const currentValue = getTrophyStatValue(def, stats)
+  return {
+    trophyId: def.id,
+    currentValue,
+    highestMilestone: getHighestMilestone(def, currentValue),
+    nextMilestone: getNextMilestone(def, currentValue),
+  }
+}
+
 export function computeAllTrophyProgress(
-  stats: Record<string, unknown>
+  stats: TrophyStats
 ): ComputedTrophyProgress[] {
-  return TROPHY_DEFINITIONS.map((def) => {
-    const value = Number(stats[def.statKey]) || 0
-    const highestMilestone = getHighestMilestone(def, value)
-    const nextMilestone = getNextMilestone(def, highestMilestone)
-    return {
-      trophyId: def.id,
-      currentValue: value,
-      highestMilestone,
-      nextMilestone,
-    }
-  })
+  return TROPHY_DEFINITIONS.map((def) => computeTrophyProgress(def, stats))
 }
 
-/** Count total milestones reached across all trophies */
-export function countReachedMilestones(
-  progressList: ComputedTrophyProgress[]
-): number {
+/** Milestones reached across all trophies. */
+export function countReachedMilestones(stats: TrophyStats): number {
   let count = 0
-  for (const p of progressList) {
-    if (!p.highestMilestone) continue
-    const def = TROPHY_DEFINITIONS.find((d) => d.id === p.trophyId)
-    if (!def) continue
-    const idx = def.milestones.findIndex(
-      (m) => m.name === p.highestMilestone!.name
-    )
-    count += idx + 1
+  for (const def of TROPHY_DEFINITIONS) {
+    const value = getTrophyStatValue(def, stats)
+    count += def.milestones.filter((m) => isMilestoneReached(m, value)).length
   }
   return count
 }
 
-/** Count total milestones claimed across all trophies.
- *  Each claimed trophy row stores only the highest milestone name,
- *  but claiming milestone N implies all milestones 0..N are claimed. */
-export function countClaimedMilestones(
-  claimedTrophies: { trophyId: string; milestone: string }[]
-): number {
-  let count = 0
-  for (const c of claimedTrophies) {
-    const def = TROPHY_DEFINITIONS.find((d) => d.id === c.trophyId)
-    if (!def) continue
-    const idx = def.milestones.findIndex((m) => m.name === c.milestone)
-    if (idx >= 0) count += idx + 1
-  }
-  return count
-}
-
-/** Total possible milestones across all trophies */
 export function getTotalPossibleMilestones(): number {
   return TROPHY_DEFINITIONS.reduce((sum, d) => sum + d.milestones.length, 0)
 }
 
-/** Get the URL for a trophy badge image, or null if none exists */
-export function getTrophyBadgeUrl(
-  trophyId: string,
-  milestoneName: string
-): string {
-  const slug = milestoneName.toLowerCase().replace(/ /g, '-')
-  return `/trophy-badges/${trophyId}/${slug}.png`
+// ---------------------------------------------------------------------------
+// Claims
+// ---------------------------------------------------------------------------
+
+export type TrophyClaim = {
+  trophyId: string
+  milestoneId: string
+  claimedTime: number
 }
 
-/** Format a value for display based on trophy unit */
-export function formatTrophyValue(def: TrophyDefinition, value: number): string {
+const isKnownClaim = (claim: TrophyClaim) => {
+  const def = getTrophyDefinition(claim.trophyId)
+  return !!def && !!getMilestone(def, claim.milestoneId)
+}
+
+export function getClaimedMilestoneIds(
+  claims: TrophyClaim[],
+  trophyId: string
+): Set<string> {
+  return new Set(
+    claims.filter((c) => c.trophyId === trophyId).map((c) => c.milestoneId)
+  )
+}
+
+/** Highest claimed milestone of a trophy, ignoring ids no longer defined. */
+export function getHighestClaimedMilestone(
+  def: TrophyDefinition,
+  claims: TrophyClaim[]
+): TrophyMilestone | null {
+  const claimed = getClaimedMilestoneIds(claims, def.id)
+  let highest: TrophyMilestone | null = null
+  for (const m of def.milestones) {
+    if (claimed.has(m.id)) highest = m
+  }
+  return highest
+}
+
+/** Claimed milestones across all trophies, ignoring ids no longer defined. */
+export function countClaimedMilestones(claims: TrophyClaim[]): number {
+  const seen = new Set<string>()
+  for (const c of claims) {
+    if (isKnownClaim(c)) seen.add(`${c.trophyId}/${c.milestoneId}`)
+  }
+  return seen.size
+}
+
+/**
+ * What claiming `milestoneId` records: that milestone and every lower one, as
+ * long as the stat has reached it. Returns null if it has not been reached.
+ * Already-claimed milestones are included; the insert skips them.
+ */
+export function getMilestonesToClaim(
+  def: TrophyDefinition,
+  milestoneId: string,
+  value: number
+): TrophyMilestone[] | null {
+  const target = getMilestone(def, milestoneId)
+  if (!target || !isMilestoneReached(target, value)) return null
+  return def.milestones.filter((m) => m.threshold <= target.threshold)
+}
+
+/** Reached milestones not yet claimed, across all trophies. */
+export function countUnclaimedReachedMilestones(
+  stats: TrophyStats,
+  claims: TrophyClaim[]
+): number {
+  let count = 0
+  for (const def of TROPHY_DEFINITIONS) {
+    const value = getTrophyStatValue(def, stats)
+    const claimed = getClaimedMilestoneIds(claims, def.id)
+    count += def.milestones.filter(
+      (m) => isMilestoneReached(m, value) && !claimed.has(m.id)
+    ).length
+  }
+  return count
+}
+
+// ---------------------------------------------------------------------------
+// Profile showcase
+// ---------------------------------------------------------------------------
+
+// Claimed milestones needed to unlock each showcase pin slot.
+export const SHOWCASE_SLOT_UNLOCKS = [0, 25, 50] as const
+export const MAX_SHOWCASE_PINS = SHOWCASE_SLOT_UNLOCKS.length
+
+export function getMaxShowcasePins(claimedCount: number): number {
+  return SHOWCASE_SLOT_UNLOCKS.filter((needed) => claimedCount >= needed).length
+}
+
+// The league badge is derived from the user's current league, not a claim.
+export const LEAGUE_SHOWCASE_PIN = 'league'
+const TROPHY_PIN_PREFIX = 'trophy-'
+
+export const getTrophyPinId = (trophyId: string) =>
+  `${TROPHY_PIN_PREFIX}${trophyId}`
+
+export function getTrophyIdFromPin(pin: string): string | null {
+  return pin.startsWith(TROPHY_PIN_PREFIX)
+    ? pin.slice(TROPHY_PIN_PREFIX.length)
+    : null
+}
+
+/** Why these pins can't be saved, or null if they can. */
+export function getShowcasePinsError(
+  pins: string[],
+  claims: TrophyClaim[]
+): string | null {
+  if (new Set(pins).size !== pins.length)
+    return 'Each trophy can be pinned once'
+  const maxPins = getMaxShowcasePins(countClaimedMilestones(claims))
+  if (pins.length > maxPins) {
+    return `You can pin ${maxPins} ${maxPins === 1 ? 'trophy' : 'trophies'}`
+  }
+  for (const pin of pins) {
+    if (pin === LEAGUE_SHOWCASE_PIN) continue
+    const trophyId = getTrophyIdFromPin(pin)
+    const def = trophyId ? getTrophyDefinition(trophyId) : undefined
+    if (!def || !getHighestClaimedMilestone(def, claims)) {
+      return 'You can only pin trophies you have claimed'
+    }
+  }
+  return null
+}
+
+// ---------------------------------------------------------------------------
+// Display
+// ---------------------------------------------------------------------------
+
+export function formatTrophyValue(
+  def: TrophyDefinition,
+  value: number
+): string {
   if (def.unit === 'years') return `${value.toFixed(1)}yr`
-  const prefix = def.formatPrefix ?? (def.unit === 'mana' ? '' : '')
+  const prefix = def.formatPrefix ?? ''
   if (prefix || def.unit === 'mana') {
     if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`
     if (value >= 1_000) return `${prefix}${(value / 1_000).toFixed(0)}K`

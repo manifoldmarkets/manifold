@@ -13,12 +13,17 @@ import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
+import {
+  OPEN_SHOWCASE_PICKER_EVENT,
+  OpenShowcasePickerDetail,
+  openShowcasePicker,
+} from 'web/components/trophies/open-showcase-picker'
 import { ProfileShowcase } from 'web/components/trophies/profile-showcase'
 import { TrophiesTab } from 'web/components/trophies/trophies-tab'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -207,26 +212,21 @@ function UserProfile(props: {
     }
   }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
 
-  // When TrophiesTab dispatches 'open-showcase-picker', ensure profile is expanded
-  // so ProfileShowcase is mounted and can handle the event.
+  // "Pin to profile" in the Trophies tab opens the picker in ProfileShowcase,
+  // which is only mounted while the profile header is expanded.
+  const expandedRef = useRef(expandProfileInfo)
+  expandedRef.current = expandProfileInfo
   useEffect(() => {
     if (!isCurrentUser) return
     const handler = (e: Event) => {
-      setExpandProfileInfo((prev) => {
-        if (prev) return prev // already expanded, ProfileShowcase will handle it
-        // Expand first, then re-dispatch so ProfileShowcase picks it up after mount
-        setTimeout(() => {
-          window.dispatchEvent(
-            new CustomEvent('open-showcase-picker', {
-              detail: (e as CustomEvent).detail,
-            })
-          )
-        }, 50)
-        return true
-      })
+      if (expandedRef.current) return // ProfileShowcase handles it
+      setExpandProfileInfo(true)
+      const { detail } = e as CustomEvent<OpenShowcasePickerDetail>
+      // Send it again once ProfileShowcase has mounted.
+      setTimeout(() => openShowcasePicker(detail), 50)
     }
-    window.addEventListener('open-showcase-picker', handler)
-    return () => window.removeEventListener('open-showcase-picker', handler)
+    window.addEventListener(OPEN_SHOWCASE_PICKER_EVENT, handler)
+    return () => window.removeEventListener(OPEN_SHOWCASE_PICKER_EVENT, handler)
   }, [isCurrentUser])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
@@ -511,6 +511,8 @@ function UserProfile(props: {
               },
               {
                 title: 'Trophies',
+                // Links from before the rename say ?tab=achievements.
+                queryAliases: ['achievements'],
                 prerender: true,
                 stackedTabIcon: <TrophyIcon className="h-5" />,
                 content: (
