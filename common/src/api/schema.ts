@@ -56,6 +56,7 @@ import {
   MAX_SHOWCASE_PINS,
   type StarterStats,
   type TrophyClaim,
+  type TrophyMilestoneRef,
 } from 'common/trophies'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -3306,6 +3307,9 @@ export const API = (_apiTypeCheck = {
       // Counts for the "Getting started" trophies, or null for accounts that
       // don't get them (see isStarterTrophyAccount).
       starter: StarterStats | null
+      // Milestones whose reward has been paid, for accounts that get the
+      // starter trophies.
+      rewarded: TrophyMilestoneRef[]
     },
     props: z
       .object({
@@ -3334,6 +3338,7 @@ export const API = (_apiTypeCheck = {
       claims: TrophyClaim[]
       // Mana paid for the newly claimed milestones, after the tier multiplier.
       rewardAmount: number
+      rewarded: TrophyMilestoneRef[]
     },
     props: z
       .object({

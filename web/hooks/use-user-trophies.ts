@@ -61,6 +61,16 @@ const setEntry = (userId: string, patch: Partial<Entry>) => {
 
 const claimKey = (c: TrophyClaim) => `${c.trophyId}/${c.milestoneId}`
 
+type MilestoneRef = { trophyId: string; milestoneId: string }
+const mergeRefs = (a: MilestoneRef[], b: MilestoneRef[]) => {
+  const byKey = new Map(a.map((r) => [claimKey({ ...r, claimedTime: 0 }), r]))
+  for (const r of b) {
+    const key = claimKey({ ...r, claimedTime: 0 })
+    if (!byKey.has(key)) byKey.set(key, r)
+  }
+  return [...byKey.values()]
+}
+
 const mergeClaims = (a: TrophyClaim[], b: TrophyClaim[]) => {
   const byKey = new Map(a.map((c) => [claimKey(c), c]))
   for (const c of b) if (!byKey.has(claimKey(c))) byKey.set(claimKey(c), c)
@@ -111,6 +121,8 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
                 newerLocalClaims.map((l) => l.claim)
               ),
           pins: pinsBusy && current.data ? current.data.pins : fresh.pins,
+          // Paid rewards are never removed; keep any this page added.
+          rewarded: mergeRefs(fresh.rewarded, current.data?.rewarded ?? []),
         },
         localClaims: newerLocalClaims,
         confirmedPins: pinsBusy ? current.confirmedPins : fresh.pins,
@@ -143,6 +155,22 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
       ...entry.localClaims,
       ...claims.map((claim) => ({ claim, version })),
     ],
+  })
+}
+
+/** Adds paid starter rewards returned by claim-trophy. Rewards are never
+ * removed, so they merge. */
+export function addTrophyRewards(
+  userId: string,
+  rewarded: UserTrophies['rewarded']
+) {
+  const entry = getEntry(userId)
+  if (!entry.data) return
+  setEntry(userId, {
+    data: {
+      ...entry.data,
+      rewarded: mergeRefs(entry.data.rewarded, rewarded),
+    },
   })
 }
 

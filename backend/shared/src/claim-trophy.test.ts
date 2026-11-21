@@ -294,6 +294,13 @@ describe('starter stats', () => {
     })
   })
 
+  it('count split legs whose float amounts sum to just under M10', async () => {
+    await addUser('u')
+    await bet('u', 'm1', 4.999999999999993, 0)
+    await bet('u', 'm1', 4.999999999999993, 0)
+    expect((await trophiesOf('u')).starter?.starterTrades).toBe(1)
+  })
+
   it('are null for accounts created before the start', async () => {
     await addUser('old', { createdTime: START - 1 })
     await bet('old', 'm1', 100, 0)
@@ -337,6 +344,14 @@ describe('claiming a starter milestone', () => {
       { milestone_id: 'hat-trick', txn_id: txn.id },
     ])
     expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
+    const paidRefs = [
+      { trophyId: 'starter-trades', milestoneId: 'first-trade' },
+      { trophyId: 'starter-trades', milestoneId: 'hat-trick' },
+    ]
+    expect(first.rewarded).toEqual(expect.arrayContaining(paidRefs))
+    expect((await trophiesOf('u')).rewarded).toEqual(
+      expect.arrayContaining(paidRefs)
+    )
 
     // Claiming again records and pays nothing.
     const again = await claim('u', 'starter-trades', 'hat-trick')

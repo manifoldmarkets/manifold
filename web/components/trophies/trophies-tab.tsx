@@ -40,6 +40,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
 import {
   addTrophyClaims,
+  addTrophyRewards,
   replaceTrophyClaims,
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
@@ -61,15 +62,18 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
   // The multiplier claim-trophy pays starter rewards at (as for quests).
-  const rewardMultiplier = currentUser
-    ? getEffectiveBonusMultiplier(
+  // Bot accounts are never paid.
+  const rewardMultiplier = !currentUser
+    ? undefined
+    : currentUser.isBot
+    ? 0
+    : getEffectiveBonusMultiplier(
         resolveEffectiveTier({
           entitlements: currentUser.entitlements,
           bonusEligibility: currentUser.bonusEligibility,
         }),
         'quest'
       )
-    : undefined
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
@@ -77,14 +81,15 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
   const handleClaim = async (trophyId: string, milestoneId: string) => {
     setClaimingId(trophyId)
     try {
-      const { claims, rewardAmount } = await api('claim-trophy', {
+      const { claims, rewardAmount, rewarded } = await api('claim-trophy', {
         trophyId,
         milestoneId,
       })
       addTrophyClaims(userId, claims)
+      addTrophyRewards(userId, rewarded)
       setJustClaimed(trophyId)
       if (rewardAmount > 0) {
-        toast.success(`Trophy claimed: +${formatMoney(rewardAmount)}`)
+        toast.success(`+${formatMoney(rewardAmount)} trophy reward`)
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -138,6 +143,16 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
 
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
+  )
+  const rewardedIdsByTrophy = new Map(
+    TROPHY_DEFINITIONS.map((d) => [
+      d.id,
+      new Set(
+        trophies.rewarded
+          .filter((r) => r.trophyId === d.id)
+          .map((r) => r.milestoneId)
+      ),
+    ])
   )
   // Other people's profiles show only trophies they have claimed.
   const visibleDefs = isOwnProfile
@@ -203,6 +218,7 @@ export function TrophiesTab(props: { userId: string; isOwnProfile: boolean }) {
               progressList={progressList}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
+              rewardedIdsByTrophy={rewardedIdsByTrophy}
               isOwnProfile={isOwnProfile}
               rewardMultiplier={
                 isOwnProfile && starter ? rewardMultiplier : undefined

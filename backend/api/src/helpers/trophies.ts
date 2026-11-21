@@ -2,6 +2,7 @@ import {
   STARTER_MIN_TRADE_AMOUNT,
   StarterStats,
   TrophyClaim,
+  TrophyMilestoneRef,
   isStarterTrophyAccount,
 } from 'common/trophies'
 import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
@@ -47,6 +48,21 @@ export async function getShowcasePins(
 
 // Whether the account gets the "Getting started" trophies, or null if there is
 // no such user.
+// Milestones whose reward has been paid (see user_trophy_rewards).
+export async function getRewardedMilestones(
+  pg: Pg,
+  userId: string
+): Promise<TrophyMilestoneRef[]> {
+  const rows = await pg.manyOrNone<{ trophy_id: string; milestone_id: string }>(
+    `select trophy_id, milestone_id from user_trophy_rewards where user_id = $1`,
+    [userId]
+  )
+  return rows.map((r) => ({
+    trophyId: r.trophy_id,
+    milestoneId: r.milestone_id,
+  }))
+}
+
 export async function getIsStarterTrophyAccount(
   pg: Pg,
   userId: string
@@ -93,7 +109,9 @@ export async function getStarterStats(
          and not coalesce(fb.is_api, false)
          and c.token = 'MANA'
        group by 1, 2
-       having sum(fb.amount) >= $3
+       -- Amounts are floats: legs of a split M10 purchase can sum to
+       -- 9.99999999999999.
+       having sum(fb.amount) >= $3 - 1e-6
      )
      select
        count(*)::int as trades,

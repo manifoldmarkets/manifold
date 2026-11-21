@@ -543,6 +543,8 @@ export type TrophyClaim = {
   claimedTime: number
 }
 
+export type TrophyMilestoneRef = { trophyId: string; milestoneId: string }
+
 const isKnownClaim = (claim: TrophyClaim) => {
   const def = getTrophyDefinition(claim.trophyId)
   return !!def && !!getMilestone(def, claim.milestoneId)

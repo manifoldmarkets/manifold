@@ -24,6 +24,8 @@ export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
   definitions: TrophyDefinition[]
   claimedIdsByTrophy: Map<string, Set<string>>
+  // Milestones whose reward has been paid, by trophy.
+  rewardedIdsByTrophy?: Map<string, Set<string>>
   isOwnProfile?: boolean
   // The viewer's reward multiplier, to show what a milestone pays them. Set
   // only for the owner of a new account.
@@ -37,6 +39,7 @@ export function TrophyGrid(props: {
     progressList,
     definitions,
     claimedIdsByTrophy,
+    rewardedIdsByTrophy,
     isOwnProfile,
     rewardMultiplier,
     onClaim,
@@ -57,6 +60,7 @@ export function TrophyGrid(props: {
             definition={def}
             progress={progress}
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
+            rewardedIds={rewardedIdsByTrophy?.get(def.id) ?? EMPTY_SET}
             isOwnProfile={isOwnProfile}
             rewardMultiplier={rewardMultiplier}
             onClaim={onClaim}
@@ -76,6 +80,7 @@ export function TrophyCard(props: {
   definition: TrophyDefinition
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
+  rewardedIds: Set<string>
   isOwnProfile?: boolean
   rewardMultiplier?: number
   onClaim?: (trophyId: string, milestoneId: string) => void
@@ -87,6 +92,7 @@ export function TrophyCard(props: {
     definition,
     progress,
     claimedIds,
+    rewardedIds,
     isOwnProfile,
     rewardMultiplier,
     onClaim,
@@ -114,6 +120,9 @@ export function TrophyCard(props: {
     rewardMultiplier !== undefined && viewing.rewardMana
       ? roundTierBonus(viewing.rewardMana * rewardMultiplier)
       : 0
+  // Not paid yet: before claiming, or claimed while the account's
+  // multiplier was zero (claiming again pays it).
+  const unpaidReward = rewardAmount > 0 && !rewardedIds.has(viewing.id)
   const style = TROPHY_TIER_STYLES[viewing.tier]
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < milestones.length - 1
@@ -181,7 +190,7 @@ export function TrophyCard(props: {
           {formatStat(definition, currentValue)}
         </span>
 
-        {rewardAmount > 0 && !isClaimed && (
+        {unpaidReward && !isClaimed && (
           <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
             Pays {formatMoney(rewardAmount)}
           </span>
@@ -231,6 +240,21 @@ export function TrophyCard(props: {
               onClick={() => onPinToProfile(definition.id)}
             >
               Pin to profile
+            </button>
+          ) : isOwnProfile && unpaidReward && onClaim ? (
+            <button
+              className={clsx(
+                'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
+                claiming ? 'cursor-wait opacity-75' : 'hover:brightness-110',
+                style.gradient,
+                style.buttonText
+              )}
+              onClick={() => onClaim(definition.id, viewing.id)}
+              disabled={claiming}
+            >
+              {claiming
+                ? 'Collecting...'
+                : `Collect ${formatMoney(rewardAmount)}`}
             </button>
           ) : (
             <Row className="mt-0.5 items-center gap-1 text-[11px]">

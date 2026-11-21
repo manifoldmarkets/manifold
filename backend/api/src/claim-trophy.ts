@@ -2,6 +2,7 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { onlyUsersWhoCanPerformAction } from 'api/helpers/rate-limit'
 import {
   convertTrophyClaim,
+  getRewardedMilestones,
   getStarterStats,
   getTrophyClaims,
 } from 'api/helpers/trophies'
@@ -187,6 +188,9 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         newlyClaimed: inserted.map(convertTrophyClaim),
         claims: await getTrophyClaims(pg, auth.uid),
         rewardAmount,
+        rewarded: isStarterAccount
+          ? await getRewardedMilestones(pg, auth.uid)
+          : [],
       }
     }
   )
