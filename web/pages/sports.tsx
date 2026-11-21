@@ -12,6 +12,7 @@ import {
 } from 'common/sports-schedule'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { GameFeed } from 'web/components/sports/schedule-list'
+import { EsportsBridge } from 'web/components/sports/esports/esports-strips'
 import {
   NoGames,
   SportMarkets,
@@ -158,6 +159,8 @@ export default function SportsPage({
                   hasMore={hasMore}
                   loadMore={loadMore}
                   showLeague
+                  // Esports' tournament on now, one strip under the lead game.
+                  belowFeatured={<EsportsBridge />}
                   empty={
                     <div className="flex flex-col gap-6">
                       <NoGames
