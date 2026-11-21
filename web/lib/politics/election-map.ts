@@ -470,7 +470,8 @@ function primaryTracker(view: MapView, primaries: PrimaryRow[]): Tracker {
 export type TipChance = { key: string; p: number }
 
 // The tipping-point market's odds by state (postal code), likeliest first:
-// its live prices, or once it resolves, what it paid each state. Other, an
+// its live prices, or once it resolves, what it paid each state as every
+// result on the page reads it (settlement.ts). Other, an
 // answer that isn't the whole name of one state, and a cancelled market give
 // nothing; so does a market whose answers don't sum to one, since its
 // prices aren't shares of one outcome. The market resolves a Maine or
@@ -500,11 +501,30 @@ export function marketTippingPoints(
   )
 }
 
-// The state a resolved tipping-point market went to in full, or undefined
-// while it trades, and for a split or partial payout. Answers for one state
-// (Nebraska and its districts) add up, so allow for rounding in the sum.
-export const tippingWinner = (tips: TipChance[]) =>
-  tips.length === 1 && tips[0].p >= 1 - 1e-9 ? tips[0].key : undefined
+// The state a resolved tipping-point market went to in full: every answer
+// it paid anything names that one state (Nebraska and its districts count
+// as Nebraska). Undefined while it trades, when cancelled, and when any
+// payout went to Other, to an answer that names no state, or to a second
+// state, however small. Decided by which answers were paid, not by adding
+// their shares, so rounding can't make or unmake a winner.
+export function tippingWinnerOf(
+  contract: Contract | null | undefined
+): string | undefined {
+  if (!contract || !isMultiCpmm(contract) || !contract.isResolved)
+    return undefined
+  const { resolution, resolutions } = contract
+  if (!resolution || resolution === 'CANCEL') return undefined
+  const split = resolution === 'CHOOSE_MULTIPLE' || resolution === 'MKT'
+  const paid = contract.answers.filter((a) => {
+    if (!split) return a.id === resolution
+    const w = resolutions?.[a.id]
+    return w !== undefined && Number.isFinite(w) && w > 0
+  })
+  if (paid.length === 0 || paid.some((a) => a.isOther)) return undefined
+  const states = new Set(paid.map((a) => tippingStateOf(a.text)))
+  if (states.size !== 1) return undefined
+  return [...states][0]
+}
 
 // Lowercase, without the periods, commas and apostrophes names are written
 // with ("Washington, D.C.", "Maine's 2nd District").

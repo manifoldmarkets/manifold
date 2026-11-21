@@ -72,7 +72,7 @@ import {
   TIP_HIGHLIGHT_PERCENT,
   TipChance,
   tippingPlaces,
-  tippingWinner,
+  tippingWinnerOf,
 } from 'web/lib/politics/election-map'
 import type { ElectoralModel } from 'web/lib/politics/elections-2028'
 import {
@@ -274,18 +274,23 @@ export function ElectionMap(props: {
   const tipChances = useMemo(() => marketTippingPoints(tipMarket), [tipMarket])
   const tips = useMemo(() => tippingPlaces(tipChances), [tipChances])
   const tipKeys = useMemo(() => new Set(tips.map((t) => t.key)), [tips])
+  const tipSettled =
+    !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
+  // Resolved to one state in full; a split payout keeps its shares on show.
+  const tipWinner = useMemo(() => tippingWinnerOf(tipMarket), [tipMarket])
+  // The winner reads as won on every card (its shares can add to a hair
+  // under 1 across Nebraska's answers).
   const tipChance = useMemo(
-    () => Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
-    [tipChances]
+    () => ({
+      ...Object.fromEntries(tipChances.map((t) => [t.key, t.p])),
+      ...(tipWinner ? { [tipWinner]: 1 } : {}),
+    }),
+    [tipChances, tipWinner]
   )
   // A Maine or Nebraska district's card shows its state's chance, since
   // the market resolves a district to its state.
   const tipFor = (id: string | undefined) =>
     id === undefined ? undefined : tipChance[id] ?? tipChance[id.split('-')[0]]
-  const tipSettled =
-    !!tipMarket?.isResolved && tipMarket.resolution !== 'CANCEL'
-  // Resolved to one state in full; a split payout keeps its shares on show.
-  const tipWinner = tipSettled ? tippingWinner(tipChances) : undefined
   // A tipping chip under the pointer or focus. A live update can remove the
   // chip before its leave or blur fires, so a preview is dropped (not just
   // hidden) once its chip is gone, and on leaving the President view.

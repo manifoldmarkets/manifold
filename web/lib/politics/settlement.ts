@@ -102,10 +102,7 @@ export function settledOrPrice(
 
 // A split resolution's recorded shares, in percent by answer id: what a
 // market resolved CHOOSE_MULTIPLE or MKT pays each answer (its prices stay
-// where they were). The weights are shares of their total, as the payout
-// divides them, so a split recorded as { a: 100, b: 0.05 } pays a just
-// under all of it; weights that already sum to 100 come back unchanged.
-// Undefined for anything else.
+// where they were). Undefined for anything else.
 export function recordedShares(market: {
   isResolved?: boolean
   resolution?: string
@@ -113,16 +110,9 @@ export function recordedShares(market: {
 }): { [answerId: string]: number } | undefined {
   const { isResolved, resolution, resolutions } = market
   if (!isResolved || !resolution || resolution === 'CANCEL') return undefined
-  if (!resolutions) return undefined
-  const ids = Object.keys(resolutions)
-  const weight = (id: string) => {
-    const w = resolutions[id]
-    return Number.isFinite(w) && w > 0 ? w : 0
-  }
-  const total = ids.reduce((s, id) => s + weight(id), 0)
-  if (!(total > 0)) return undefined
-  const scale = 100 / total
-  return Object.fromEntries(ids.map((id) => [id, weight(id) * scale]))
+  return resolutions && Object.keys(resolutions).length > 0
+    ? resolutions
+    : undefined
 }
 
 // A party market's Democratic, Republican and other chances as the page

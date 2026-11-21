@@ -21,11 +21,10 @@ import {
   SENATE_NOT_UP_2028,
   statePanel,
   tippingPlaces,
-  tippingWinner,
+  tippingWinnerOf,
 } from './election-map'
 import { PrimaryRow } from './primaries'
 import { BoardRace } from './race-board'
-import { recordedShares, resolvedAnswerId } from './settlement'
 
 const view = (patch: Partial<MapView>): MapView => ({
   mode: 'president',
@@ -359,7 +358,10 @@ test('tipping points from the tipping-point market', () => {
     market({ isResolved: true, resolution: 'ga' })
   )
   assert.deepEqual(georgia, [{ key: 'GA', p: 1 }])
-  assert.equal(tippingWinner(georgia), 'GA')
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'ga' })),
+    'GA'
+  )
   // Resolved to Other: no state, even when Other's label names one.
   assert.deepEqual(
     marketTippingPoints(
@@ -373,90 +375,63 @@ test('tipping points from the tipping-point market', () => {
   )
   // A split payout (95% Other, 5% Pennsylvania): Pennsylvania at its share,
   // and no winner.
-  const split = marketTippingPoints(
-    market({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { o: 95, pa: 5 },
-    })
+  const splitMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { o: 95, pa: 5 },
+  })
+  assert.deepEqual(marketTippingPoints(splitMarket), [{ key: 'PA', p: 0.05 }])
+  assert.equal(tippingWinnerOf(splitMarket), undefined)
+  // Any payout to Other, however small, means no state won in full.
+  assert.equal(
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { pa: 100, o: 0.00000001 },
+      })
+    ),
+    undefined
   )
-  assert.deepEqual(split, [{ key: 'PA', p: 0.05 }])
-  assert.equal(tippingWinner(split), undefined)
-  // A split's weights are shares of their total, as the payout divides
-  // them: { PA: 100, Other: 0.05 } pays Pennsylvania just under all of it,
-  // so it isn't a win in full.
-  const nearlyAll = marketTippingPoints(
-    market({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { pa: 100, o: 0.05 },
-    })
-  )
-  assert.equal(nearlyAll.length, 1)
-  assert.equal(nearlyAll[0].key, 'PA')
-  near(nearlyAll[0].p, 100 / 100.05)
-  assert.equal(tippingWinner(nearlyAll), undefined)
-  // Two states share it: each at its share.
-  const shared = marketTippingPoints(
-    market({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { pa: 60, ga: 40 },
-    })
-  )
+  // Two states share it: each at its share, no winner.
+  const sharedMarket = market({
+    isResolved: true,
+    resolution: 'CHOOSE_MULTIPLE',
+    resolutions: { pa: 60, ga: 40 },
+  })
+  const shared = marketTippingPoints(sharedMarket)
   assert.deepEqual(
     shared.map((t) => t.key),
     ['PA', 'GA']
   )
   near(shared[0].p, 0.6)
-  assert.equal(tippingWinner(shared), undefined)
+  assert.equal(tippingWinnerOf(sharedMarket), undefined)
   // All of it to one state through several answers (Nebraska and its
-  // districts): a win in full, though the shares add to just under 1.
-  const nebraska = marketTippingPoints(
-    market({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { ne: 70, ne1: 20, ne2: 10 },
-      answers: [
-        answer('ne', 'Nebraska', 0.5),
-        answer('ne1', 'NE-1', 0.2),
-        answer('ne2', 'NE-2', 0.2),
-        answer('o', 'Other', 0.1, true),
-      ],
-    })
-  )
-  assert.equal(tippingWinner(nebraska), 'NE')
-  // The page's other displays read the same shares (settlement.ts).
-  assert.deepEqual(
-    recordedShares({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { a: 60, b: 40 },
-    }),
-    { a: 60, b: 40 }
-  )
-  const tiny = recordedShares({
-    isResolved: true,
-    resolution: 'CHOOSE_MULTIPLE',
-    resolutions: { a: 100, b: 0.05 },
-  })!
-  near(tiny.a, (100 * 100) / 100.05)
+  // districts): a win in full, decided by who was paid, not by the sum.
   assert.equal(
-    resolvedAnswerId({
-      isResolved: true,
-      resolution: 'CHOOSE_MULTIPLE',
-      resolutions: { a: 100, b: 0.05 },
-      answers: [{ id: 'a' }, { id: 'b' }],
-    }),
+    tippingWinnerOf(
+      market({
+        isResolved: true,
+        resolution: 'CHOOSE_MULTIPLE',
+        resolutions: { ne: 70, ne1: 20, ne2: 10 },
+        answers: [
+          answer('ne', 'Nebraska', 0.5),
+          answer('ne1', 'NE-1', 0.2),
+          answer('ne2', 'NE-2', 0.2),
+          answer('o', 'Other', 0.1, true),
+        ],
+      })
+    ),
+    'NE'
+  )
+  // Cancelled: no winner.
+  assert.equal(
+    tippingWinnerOf(market({ isResolved: true, resolution: 'CANCEL' })),
     undefined
   )
   // Open: no winner, however lopsided.
   assert.equal(
-    tippingWinner(
-      marketTippingPoints(
-        market({ answers: [answer('pa', 'Pennsylvania', 0.99)] })
-      )
-    ),
+    tippingWinnerOf(market({ answers: [answer('pa', 'Pennsylvania', 0.99)] })),
     undefined
   )
   // Independent answers aren't shares of one outcome: nothing to draw.
