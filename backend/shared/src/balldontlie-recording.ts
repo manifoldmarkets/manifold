@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto'
-import { Dirent, lstatSync, readdirSync, readFileSync } from 'node:fs'
+import {
+  BigIntStats,
+  Dirent,
+  lstatSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { BdlParams, bdlUrl } from './balldontlie-request'
 
@@ -18,7 +24,7 @@ export type Fixture = {
   recordedAt?: string
   status: number
   body: unknown
-  rateLimit?: { limit?: number | null; remaining?: number | null }
+  rateLimit?: { limit?: number | null; remaining?: number | null } | null
 }
 
 export function parseFixture(
@@ -54,6 +60,16 @@ export function parseFixture(
     !('body' in value)
   )
     throw new Error('[sports-bdl-client] Invalid BDL fixture envelope')
+  const quota = value.rateLimit
+  if (
+    quota != null &&
+    (typeof quota !== 'object' ||
+      Array.isArray(quota) ||
+      [quota.limit, quota.remaining].some(
+        (n) => n != null && (!Number.isFinite(n) || n < 0)
+      ))
+  )
+    throw new Error('[sports-bdl-client] Invalid BDL fixture quota')
   return value
 }
 
@@ -64,6 +80,9 @@ type JournalState = {
 }
 
 type ValidatedRevision = { stamp: string; digest: string }
+
+export const bdlFileVersion = (stat: BigIntStats) =>
+  [stat.dev, stat.ino, stat.size, stat.mtimeNs, stat.ctimeNs].join(':')
 
 /** Verify the contiguous prefix for this request, including every envelope.
  * Keep only metadata of recent selectors so rereading large unchanged bodies
@@ -92,16 +111,16 @@ export function createBdlJournalReader() {
       const file = bdlRevisionFile(journal, revision)
       const stat = lstatSync(file, { bigint: true, throwIfNoEntry: false })
       if (!stat?.isFile() || stat.nlink !== BigInt(1)) break
-      const stamp = [
-        stat.dev,
-        stat.ino,
-        stat.size,
-        stat.mtimeNs,
-        stat.ctimeNs,
-      ].join(':')
+      const stamp = bdlFileVersion(stat)
       let verified = cached.get(revision)
       if (verified?.stamp !== stamp) {
-        const bytes = readFileSync(file)
+        let bytes: Buffer
+        try {
+          bytes = readFileSync(file)
+        } catch (err) {
+          if ((err as NodeJS.ErrnoException).code === 'ENOENT') break
+          throw err
+        }
         try {
           const result = parseFixture(bytes.toString('utf8'), false)
           if (

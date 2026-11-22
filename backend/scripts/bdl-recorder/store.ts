@@ -24,6 +24,7 @@ import {
   bdlRecordingPathParts,
 } from 'shared/balldontlie-client'
 import {
+  bdlFileVersion,
   bdlJournalDirectory,
   createBdlJournalReader,
   bdlLatestCache,
@@ -102,19 +103,28 @@ export function createRecordingStore(root: string) {
     return safeFile(canonical, [path.relative(canonical, filename)])
   }
 
+  const validatedLegacy = new Map<string, string>()
   const inspect = createBdlJournalReader()
   const revisionAt = (journal: string, selector: string, forAppend = false) =>
     latestBdlRevision(inspect(journal, selector), forAppend)
 
   // Rename into a specific revision. A collision means a different publisher
   // committed first. No shared lease or abandoned lock needs to be recovered.
-  function publishAt(journal: string, revision: number, bytes: Buffer) {
+  function publishAt(
+    journal: string,
+    selector: string,
+    revision: number,
+    bytes: Buffer
+  ) {
     const target = checked(bdlRevisionFile(journal, revision))
     const pending = checked(path.join(journal, '.pending-' + randomUUID()))
     mkdirSync(pending, { mode: 0o700 })
     const file = path.join(pending, 'response.json')
     try {
       writeFileSync(file, bytes, { mode: 0o600, flag: 'wx' })
+      // The staging write can overlap another publisher or a newly detected
+      // gap. Only rename if this is still the verified prefix's successor.
+      if (revisionAt(journal, selector, true) + 1 !== revision) return false
       try {
         renameSync(pending, path.dirname(target))
         return true
@@ -155,16 +165,24 @@ export function createRecordingStore(root: string) {
       const digest = createHash('sha256').update(bytes).digest('hex')
       if (state.digests.has(digest)) return
       parseAttempt(bytes, selector)
-      if (publishAt(journal, latest + 1, bytes)) return
+      if (publishAt(journal, selector, latest + 1, bytes)) return
     }
   }
 
   function refresh(filename: string, journal: string, selector: string) {
-    for (;;) {
+    for (let attempt = 0; attempt < 4; attempt++) {
       const revision = revisionAt(journal, selector)
-      if (!revision)
+      if (!revision) {
+        if (attempt > 0) break
         return existsSync(filename) ? readFileSync(filename) : undefined
-      const data = readFileSync(checked(bdlRevisionFile(journal, revision)))
+      }
+      let data: Buffer
+      try {
+        data = readFileSync(checked(bdlRevisionFile(journal, revision)))
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') continue
+        throw err
+      }
       try {
         const mirror = checked(bdlLatestCache(filename))
         const cached = existsSync(mirror) ? readFileSync(mirror) : undefined
@@ -184,14 +202,24 @@ export function createRecordingStore(root: string) {
       }
       if (revisionAt(journal, selector) === revision) return data
     }
+    throw new RecordingCacheRefreshError(
+      'The recording changed while refreshing its cache.'
+    )
   }
 
   function assertAppendable(endpoint: string, params: BdlParams) {
-    revisionAt(
-      checked(bdlJournalDirectory(location(endpoint, params))),
-      bdlUrl(endpoint, params).href,
-      true
-    )
+    const filename = location(endpoint, params)
+    const selector = bdlUrl(endpoint, params).href
+    revisionAt(checked(bdlJournalDirectory(filename)), selector, true)
+    const stat = lstatSync(filename, { bigint: true, throwIfNoEntry: false })
+    if (!stat) return
+    const key = filename + '\n' + selector
+    const version = bdlFileVersion(stat)
+    if (validatedLegacy.get(key) === version) return
+    parseAttempt(readFileSync(filename), selector)
+    validatedLegacy.set(key, version)
+    if (validatedLegacy.size > 32)
+      validatedLegacy.delete(validatedLegacy.keys().next().value!)
   }
 
   function read(endpoint: string, params: BdlParams) {
@@ -211,18 +239,20 @@ export function createRecordingStore(root: string) {
     const filename = location(attempt.request.path, attempt.request.params)
     const journal = checked(bdlJournalDirectory(filename))
     const selector = bdlUrl(attempt.request.path, attempt.request.params).href
+    const bytes = Buffer.from(JSON.stringify(attempt) + '\n')
+    parseAttempt(bytes, selector)
     mkdirSync(journal, { recursive: true, mode: 0o700 })
     importLegacy(filename, journal, selector)
-    const bytes = Buffer.from(JSON.stringify(attempt) + '\n')
     for (;;) {
       const next = revisionAt(journal, selector, true) + 1
-      if (publishAt(journal, next, bytes)) break
+      if (publishAt(journal, selector, next, bytes)) break
     }
     try {
       refresh(filename, journal, selector)
       return { cacheRefreshed: true }
-    } catch (err) {
-      if (!(err instanceof RecordingCacheRefreshError)) throw err
+    } catch {
+      // The immutable rename already committed. Failures while reading that
+      // revision or updating the derived latest file are reported separately.
       return { cacheRefreshed: false }
     }
   }

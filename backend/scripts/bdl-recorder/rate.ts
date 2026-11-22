@@ -63,7 +63,7 @@ export function createRecorderSlotGate(
 ) {
   const counter = join(dir, 'sequence')
   const snapshot = (n: number) => join(dir, 'slot-' + n + '.json')
-  return async (rate: number): Promise<void> => {
+  return async (rate: number, beforeGrant?: () => void): Promise<void> => {
     const interval = Math.ceil(60_000 / rate)
     if (
       !Number.isFinite(rate) ||
@@ -111,10 +111,13 @@ export function createRecorderSlotGate(
         })
         let won = false
         try {
-          await fs.link(temp, target)
-          won = true
-        } catch (e) {
-          if (!codeIs(e, 'EEXIST')) throw e
+          beforeGrant?.()
+          try {
+            await fs.link(temp, target)
+            won = true
+          } catch (e) {
+            if (!codeIs(e, 'EEXIST')) throw e
+          }
         } finally {
           await unlinkIfPresent(temp)
         }
@@ -136,5 +139,7 @@ export function createRecorderSlotGate(
   }
 }
 
-export const acquireRecorderSlot = (rate: number): Promise<void> =>
-  createRecorderSlotGate(stateDirectory())(rate)
+export const acquireRecorderSlot = (
+  rate: number,
+  beforeGrant?: () => void
+): Promise<void> => createRecorderSlotGate(stateDirectory())(rate, beforeGrant)

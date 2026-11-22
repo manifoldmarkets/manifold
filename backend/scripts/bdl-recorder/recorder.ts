@@ -24,7 +24,7 @@ export type RecorderOptions = {
   resume?: boolean
   clock?: BdlClock
   transport?: (url: string, init: RequestInit) => Promise<Response>
-  acquireSharedSlot?: (rate: number) => Promise<void>
+  acquireSharedSlot?: (rate: number, beforeGrant?: () => void) => Promise<void>
 }
 
 export const emptySummary = () => ({
@@ -111,8 +111,12 @@ export function createRecorder(options: RecorderOptions) {
       async acquireSharedSlot(rate) {
         // Recheck on retries after any rate-limit/backoff wait, before using
         // the machine-wide slot. The immutable publish checks again on commit.
-        store.assertAppendable(endpoint, params)
-        await options.acquireSharedSlot?.(rate)
+        const beforeGrant = () => store.assertAppendable(endpoint, params)
+        beforeGrant()
+        if (options.acquireSharedSlot) {
+          await options.acquireSharedSlot(rate, beforeGrant)
+          beforeGrant()
+        }
       },
       maxAttempts: 6,
       onAttempt(attempt) {

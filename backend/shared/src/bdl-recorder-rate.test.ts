@@ -120,3 +120,28 @@ it('rejects invalid rates or corrupted state without resetting the budget', asyn
   await expect(worker()(3)).rejects.toThrow('Invalid BDL recorder rate state')
   expect((await fs.readdir(state)).sort()).toEqual(['sequence', 'slot-1.json'])
 })
+
+it('validates the archive after waiting and directly before a real grant without consuming the slot on failure', async () => {
+  let now = initial,
+    ready = true,
+    attempts = 0
+  const acquire = createRecorderSlotGate(state, {
+    now: () => now,
+    sleep: async (ms) => {
+      now += ms
+      ready = false
+    },
+  })
+  await acquire(3)
+  await expect(
+    acquire(3, () => {
+      attempts++
+      if (!ready) throw Error('Archive no longer accepts observations')
+    })
+  ).rejects.toThrow('Archive no longer')
+  expect(attempts).toBe(1)
+  expect((await fs.stat(join(state, 'sequence'))).size).toBe(1)
+  expect((await fs.readdir(state)).sort()).toEqual(['sequence', 'slot-1.json'])
+  await acquire(3)
+  expect((await fs.stat(join(state, 'sequence'))).size).toBe(2)
+})

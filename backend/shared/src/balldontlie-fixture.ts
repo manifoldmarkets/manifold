@@ -40,6 +40,42 @@ async function read(root: string, path: string, namedSample = false) {
   return parseFixture(await fs.readFile(target, 'utf8'), namedSample)
 }
 
+async function readJournal(
+  root: string,
+  folder: string,
+  selector: string,
+  inspect: ReturnType<typeof createBdlJournalReader>
+): Promise<Fixture | undefined> {
+  let journal: string
+  try {
+    journal = await confined(root, folder)
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return
+    throw err
+  }
+  // A missing numbered file can shorten the verified prefix between the
+  // scan and the actual body read. Never substitute a flat or named copy.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const revision = latestBdlRevision(inspect(journal, selector))
+    if (!revision) {
+      if (attempt === 0) return // no numbered history has been published
+      break
+    }
+    try {
+      const entry = await read(root, bdlRevisionFile(journal, revision))
+      if (
+        !entry ||
+        bdlUrl(entry.request.path, entry.request.params).href !== selector
+      )
+        throw new Error('[sports-bdl-client] Fixture request mismatch')
+      return entry
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+    }
+  }
+  throw new Error('[sports-bdl-client] Published recording is unavailable')
+}
+
 /** Read the recorder layout or the trimmed <league>/<endpoint>__<label>.json fixtures. */
 export function createBdlFixtureTransport(now: () => number) {
   requireBdlLocalOnly()
@@ -60,19 +96,13 @@ export function createBdlFixtureTransport(now: () => number) {
     let fixture: Fixture
     try {
       const cache = join(local, endpointSlug, parameterHash + '.json')
-      const journal = bdlJournalDirectory(cache)
-      let revision = 0
-      try {
-        revision = latestBdlRevision(
-          inspectJournal(await confined(root, journal), key)
-        )
-      } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
-      }
-      const entry = await read(
-        root,
-        revision ? bdlRevisionFile(journal, revision) : cache
-      )
+      const entry =
+        (await readJournal(
+          root,
+          bdlJournalDirectory(cache),
+          key,
+          inspectJournal
+        )) ?? (await read(root, cache))
       if (!entry || !matches(entry))
         throw new Error('[sports-bdl-client] Fixture request mismatch')
       fixture = entry
