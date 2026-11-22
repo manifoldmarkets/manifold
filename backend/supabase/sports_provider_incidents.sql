@@ -15,7 +15,8 @@ create table if not exists
     first_seen_at timestamptz,
     opened_at timestamptz,
     calendar_end date,
-    primary key (kind, league_key, subject),
+    -- Calendar rows have no provider. PostgreSQL treats those nulls as equal.
+    unique nulls not distinct (kind, league_key, subject, provider),
     check (first_seen_at <= last_observed_at),
     check (
       opened_at is null
@@ -33,7 +34,10 @@ create table if not exists
       )
       or (
         kind = 'classification_empty'
-        and subject collate "C" ~ '^[1-9][0-9]{0,15}$'
+        -- External IDs are opaque, including namespaced and nonnumeric IDs.
+        and length(subject) between 1 and 256
+        and subject collate "C" ~ U&'[^ \00A0\1680\2000-\200A\2028\2029\202F\205F\3000\FEFF]'
+        and subject collate "C" !~ U&'[\0001-\001F\007F-\009F]'
         and provider is not null
         and provider in ('bdl', 'odds', 'football-data')
         and calendar_end is null

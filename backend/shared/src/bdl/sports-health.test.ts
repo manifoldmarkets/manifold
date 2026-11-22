@@ -130,9 +130,20 @@ it('opens on a second confirmed empty after two hours, deduplicates, recovers an
     const state = async () =>
       (
         await db.query<{ open: boolean; pending: boolean }>(
-          "select opened_at is not null as open,first_seen_at is not null as pending from sports_provider_incidents where subject='850'"
+          "select opened_at is not null as open,first_seen_at is not null as pending from sports_provider_incidents where subject='850' and provider='bdl' and league_key='f1'"
         )
       ).rows
+    await db.exec(`insert into sports_provider_incidents(kind,league_key,subject,provider,scope_key,last_observed_at,first_seen_at,opened_at)
+      values ('classification_empty','f1','850','odds','old-season','2020-01-01','2020-01-01','2020-01-01'),
+      ('classification_empty','f1','source:night/qual-8','football-data','another-season','2020-01-01','2020-01-01','2020-01-01'),
+      ('classification_empty','nba','850','bdl','other-league','2020-01-01','2020-01-01','2020-01-01')`)
+    const others = async () =>
+      (
+        await db.query(
+          "select provider,league_key,subject,first_seen_at,opened_at,last_observed_at from sports_provider_incidents where kind='classification_empty' and (provider <> 'bdl' or league_key <> 'f1') order by provider,league_key,subject"
+        )
+      ).rows
+    const before = await others()
     await poll(t, t, true, 'f1-2027')
     expect(await state()).toEqual([])
     await poll(t, t, true)
@@ -159,6 +170,8 @@ it('opens on a second confirmed empty after two hours, deduplicates, recovers an
     await db.exec('update sports_competition_switches set enabled=false')
     await recordSportsHealth(pg, [], true)
     expect(await state()).toEqual([])
+    expect(before).toHaveLength(3)
+    expect(await others()).toEqual(before)
   } finally {
     clock.mockRestore()
     if (previous === undefined)

@@ -69,10 +69,11 @@ async function apply(
   pg: SupabaseDirectClient,
   input: Incident
 ): Promise<Notice | undefined> {
-  const key = [input.kind, input.league, input.subject]
+  const provider = input.kind === 'classification_empty' ? 'bdl' : null
+  const key = [input.kind, input.league, input.subject, provider]
   const previous = await pg.oneOrNone<State>(
     `select first_seen_at, opened_at, last_observed_at from sports_provider_incidents
-      where kind = $1 and league_key = $2 and subject = $3`,
+      where kind = $1 and league_key = $2 and subject = $3 and provider is not distinct from $4`,
     key
   )
   // A read that started before the last accepted observation cannot confirm
@@ -93,18 +94,10 @@ async function apply(
     `insert into sports_provider_incidents
     (kind,league_key,subject,provider,scope_key,calendar_end,first_seen_at,opened_at,last_observed_at)
     values ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-    on conflict (kind,league_key,subject) do update set scope_key=excluded.scope_key,
+    on conflict (kind,league_key,subject,provider) do update set scope_key=excluded.scope_key,
       calendar_end=excluded.calendar_end, first_seen_at=excluded.first_seen_at,
       opened_at=excluded.opened_at, last_observed_at=excluded.last_observed_at`,
-    [
-      ...key,
-      input.kind === 'classification_empty' ? 'bdl' : null,
-      input.scope,
-      input.end,
-      first,
-      open,
-      new Date(input.at),
-    ]
+    [...key, input.scope, input.end, first, open, new Date(input.at)]
   )
   if (!!open === !!previous?.opened_at) return
   const message =
@@ -146,7 +139,7 @@ export async function recordSportsHealth(
       await tx.none(
         `delete from sports_provider_incidents where
         (kind='calendar_expiry' and not (league_key = any($1::text[]))) or
-        (kind='classification_empty' and
+        (kind='classification_empty' and provider='bdl' and league_key='f1' and
            (not (scope_key = any($2::text[])) or last_observed_at < $3))`,
         [samples.map((s) => s.league), enabledF1, new Date(now - RETENTION)]
       )
