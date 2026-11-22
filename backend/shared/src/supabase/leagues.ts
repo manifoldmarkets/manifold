@@ -79,8 +79,9 @@ export const updateSeasonStatus = async (
   )
 }
 
-export const getEffectiveCurrentSeason = async (): Promise<number> => {
-  const pg = createSupabaseDirectClient()
+export const getEffectiveCurrentSeason = async (
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+): Promise<number> => {
   // Find the season marked as active
   const activeSeason = await pg.oneOrNone<{ season: number }>(
     `SELECT season FROM leagues_season_end_times WHERE status = 'active' LIMIT 1`

@@ -144,6 +144,12 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
   return loading
 }
 
+export async function refreshUserTrophies(userId: string) {
+  // A read already in flight may have taken its snapshot before rollover.
+  await getEntry(userId).loading
+  return loadUserTrophies(userId)
+}
+
 /** Adds claims returned by claim-trophy. */
 export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
   const entry = getEntry(userId)
