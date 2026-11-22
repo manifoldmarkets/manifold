@@ -7,6 +7,7 @@ import {
 } from 'common/bdl/golf-market'
 import { formatSportsPrice } from 'common/sports-price'
 import { LIVE_STALE_MS } from 'common/sports-schedule'
+import { SportHeroBackground } from './sport-hero-background'
 
 const statusName = {
   scheduled: 'Upcoming',
@@ -82,7 +83,10 @@ export function FieldEvent({
       aria-label={t.name}
       className="bg-canvas-0 border-ink-200 text-ink-900 min-w-0 overflow-hidden rounded-xl border"
     >
-      <header className="border-ink-200 space-y-1 border-b px-4 py-4 sm:px-6">
+      <header className="border-primary-200 bg-primary-50 relative isolate space-y-1 overflow-hidden border-b py-4 pl-4 pr-20 sm:pl-6 sm:pr-36">
+        <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 w-28 select-none sm:w-48 [&>svg]:opacity-40">
+          <SportHeroBackground sport="golf" />
+        </div>
         <p className="text-ink-600 text-sm font-semibold">
           {t.tour.toUpperCase()} · {state}
           {t.round !== null && (!stale || t.state !== 'live')
