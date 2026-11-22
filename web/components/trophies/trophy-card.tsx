@@ -24,6 +24,7 @@ import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
@@ -129,22 +130,30 @@ export function TrophyCard(props: {
       : -1,
     findLastIndex(shown, (m) => claimedIds.has(m.id))
   )
-  // Fetch the other milestones' art up front, so stepping through them
-  // doesn't show an empty circle while each one loads.
-  const shownKey = shown.map((m) => m.id).join(',')
-  useEffect(() => {
-    for (const m of shown) {
-      new Image().src = getTrophyBadgeImagePath(definition.id, m.id)
-    }
-    // shownKey stands for shown.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [definition.id, shownKey])
   // Start on the highest milestone earned, or the first one.
   const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
   // Claims can be removed (admin unclaim) while the card is showing.
   const viewingIdx = Math.min(selectedIdx, shown.length - 1)
 
   const viewing = shown[viewingIdx]
+  const [hasBeenVisible, setHasBeenVisible] = useState(false)
+  const { ref } = useIsVisible(
+    () => setHasBeenVisible(true),
+    true,
+    !!viewing && typeof IntersectionObserver !== 'undefined'
+  )
+  const previousId = shown[viewingIdx - 1]?.id
+  const nextId = shown[viewingIdx + 1]?.id
+  // Warm the neighboring badges so stepping through milestones doesn't show
+  // an empty circle while the next badge loads.
+  useEffect(() => {
+    if (!hasBeenVisible) return
+    for (const id of [previousId, nextId]) {
+      if (id !== undefined)
+        new Image().src = getTrophyBadgeImagePath(definition.id, id)
+    }
+  }, [hasBeenVisible, definition.id, previousId, nextId])
+
   if (!viewing) return null
 
   const isReached = isMilestoneReached(viewing, currentValue)
@@ -173,7 +182,7 @@ export function TrophyCard(props: {
     viewing.threshold > 0 ? Math.min(currentValue / viewing.threshold, 1) : 1
 
   return (
-    <Col className="bg-canvas-0 relative overflow-hidden rounded-2xl">
+    <Col ref={ref} className="bg-canvas-0 relative overflow-hidden rounded-2xl">
       <div className="relative">
         <div className="flex items-center justify-center px-6 pb-2 pt-5">
           <div
