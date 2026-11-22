@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
 import {
@@ -30,7 +30,11 @@ import {
 } from 'web/components/trophies/open-showcase-picker'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useCurrentSeason, useLeagueInfo } from 'web/hooks/use-leagues'
+import {
+  useCurrentSeason,
+  useLeagueInfo,
+  useSeasonCheckedAt,
+} from 'web/hooks/use-leagues'
 import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   refreshUserTrophies,
@@ -49,14 +53,17 @@ export function ProfileShowcase(props: {
   const { trophies } = useUserTrophies(userId)
   const leagueInfo = useLeagueInfo(userId)
   const season = useCurrentSeason()
-  const lastSeason = useRef<number>()
+  const seasonCheckedAt = useSeasonCheckedAt()
+  const trophySeason = trophies?.season
   useEffect(() => {
-    if (season === undefined) return
-    if (lastSeason.current !== undefined && lastSeason.current !== season) {
+    if (
+      trophySeason !== undefined &&
+      season !== undefined &&
+      trophySeason < season
+    ) {
       refreshUserTrophies(userId)
     }
-    lastSeason.current = season
-  }, [season, userId])
+  }, [season, seasonCheckedAt, trophySeason, userId])
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMessage, setPickerMessage] = useState<string | null>(null)
