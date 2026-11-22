@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 
-import { DIVISION_NAMES } from 'common/leagues'
+import {
+  DIVISION_NAMES,
+  type League,
+  type league_user_info,
+} from 'common/leagues'
 import {
   LEAGUE_SHOWCASE_PIN,
   TROPHY_DEFINITIONS,
@@ -37,7 +41,7 @@ export function ProfileShowcase(props: {
 
   const { achievements } = useUserAchievements(userId)
   const { trophies } = useUserTrophies(userId)
-  const league = useLeagueInfo(userId) // undefined while loading
+  const leagueInfo = useLeagueInfo(userId)
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMessage, setPickerMessage] = useState<string | null>(null)
@@ -47,10 +51,10 @@ export function ProfileShowcase(props: {
   const maxPins = getMaxShowcasePins(countClaimedMilestones(claims))
 
   const savedPins = trophies?.pins
-  // A saved league pin shows as a placeholder until the league loads, so a
-  // save meanwhile doesn't drop it and the owner can still remove it.
+  const league = trophies?.league
+  // Older API responses omit the league. Keep its saved pin editable.
   const leagueBadges = league
-    ? getLeagueBadges(league)
+    ? getLeagueBadges(league, leagueInfo)
     : league === undefined && savedPins?.includes(LEAGUE_SHOWCASE_PIN)
     ? [LEAGUE_PLACEHOLDER_BADGE]
     : []
@@ -299,18 +303,21 @@ const LEAGUE_PLACEHOLDER_BADGE: ShowcaseBadgeData = {
 }
 
 // The current league, from Silver up.
-function getLeagueBadges(league: {
-  division: number
-  rank: number
-  season: number
-}): ShowcaseBadgeData[] {
+function getLeagueBadges(
+  league: Pick<League, 'season' | 'division'>,
+  info: league_user_info | null | undefined
+): ShowcaseBadgeData[] {
   if (league.division < 2) return []
   const divName = DIVISION_NAMES[league.division] ?? 'Unknown'
+  const rank =
+    info?.season === league.season && info.division === league.division
+      ? `, rank #${info.rank}`
+      : ''
   return [
     {
       id: LEAGUE_SHOWCASE_PIN,
       label: `${divName} S${league.season}`,
-      detail: `${divName} division, rank #${league.rank}, season ${league.season}`,
+      detail: `${divName} division${rank}, season ${league.season}`,
       emoji: LEAGUE_EMOJI[league.division] ?? '\u{1F3C6}',
       tier: leagueTier(league.division),
     },
