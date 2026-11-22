@@ -279,6 +279,68 @@ describe('counting trades as they happen', () => {
 })
 
 describe('guarding market references', () => {
+  it('refuses a missing market in a backdated insert under read committed', async () => {
+    await install()
+    await expect(
+      client.tx(async () => {
+        await run('set transaction isolation level read committed')
+        await run(`insert into contract_bets (bet_id, contract_id, created_time, data)
+          select id, id, user_stats_bet_bound(),
+            jsonb_build_object('userId', 'alice', 'contractId', id, 'amount', 10)
+          from (values ('m1'), ('missing')) markets(id)`)
+      })
+    ).rejects.toMatchObject({
+      code: 'P0001',
+      message: expect.stringContaining(
+        'bet names market "missing", which does not exist. bets must be written after their market'
+      ),
+    })
+    expect(await run('select bet_id from contract_bets')).toEqual([])
+    expect(await counters()).toEqual({})
+    expect(await run('select bet_id from user_stats_bet_journal')).toEqual([])
+  })
+
+  it('raises a serialization failure for an invisible market', async () => {
+    await install()
+    // In two sessions, a market committed after the bettor's serializable
+    // snapshot is invisible until retry. PGlite has one session, so use a
+    // missing market to exercise the same lookup and check the retry code.
+    await expect(
+      client.tx(async () => {
+        await run('set transaction isolation level serializable')
+        await bet('b', 'alice', { contractId: 'missing' })
+      })
+    ).rejects.toMatchObject({
+      code: '40001',
+      message: expect.stringContaining('transaction snapshot predates market'),
+    })
+  })
+
+  it('refuses to move a bet to a missing market', async () => {
+    await install()
+    await bet('b', 'alice')
+    await expect(
+      run(`update contract_bets set contract_id = 'missing' where bet_id = 'b'`)
+    ).rejects.toMatchObject({ code: 'P0001' })
+    expect(
+      await run(`select contract_id from contract_bets where bet_id = 'b'`)
+    ).toEqual([{ contract_id: 'm1' }])
+    expect(await counters()).toEqual({ alice: 1 })
+  })
+
+  it('allows fills and cancellations on a historical bet with a missing market', async () => {
+    await order('old', 'alice', { contractId: 'missing' })
+    await install()
+    await fill('old', 5)
+    await cancel('old')
+    expect(
+      await run(
+        `select amount::int, is_cancelled from contract_bets where bet_id = 'old'`
+      )
+    ).toEqual([{ amount: 5, is_cancelled: true }])
+    expect(await counters()).toEqual({})
+  })
+
   it('fixes market ids and tokens before the stats install', async () => {
     await bet('b', 'alice')
     await installGuards()
@@ -483,10 +545,8 @@ describe('first bet images before the backfill', () => {
     await run(`delete from contract_bets where bet_id = 'reused'`)
     expect(await run('select bet_id from user_stats_bet_journal')).toEqual([])
 
-    // PGlite runs these writes sequentially. With two sessions, before insert
-    // can still see the row being deleted and skip the marker. Once the delete
-    // commits, the primary key admits the replacement. After insert receives
-    // that actual row and writes its marker unless a nested change got there first.
+    // The delete has committed before this replacement, so before insert
+    // sees the id is free and writes the early marker.
     await bet('reused', 'bob', { ago: '2 days' })
     expect(
       await run('select bet_id, existed from user_stats_bet_journal')

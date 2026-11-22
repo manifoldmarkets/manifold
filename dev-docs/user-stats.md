@@ -39,12 +39,12 @@ A user's count is the sum of the two. They are kept apart so the backfill never 
 | One maker fill of an order from before the install | 3.30–3.87 ms | 3.09–3.31 ms |
 | 5,000 new orders cancelled in one statement        | 186–191 ms   | 169–222 ms   |
 
-The differences are within noise. A new bet never calls the journal triggers: each carries the bound as a literal in its `WHEN` clause. (PostgreSQL doesn't plan a trigger's `WHEN`; calling `user_stats_bet_bound()` there made the 5,000-order cancel take 262 ms.) The first change to an order from before the install pays one journal write.
+The differences are within noise. Because machine load drifted between runs, the bulk cancel was also measured paired, toggling the user_stats triggers in one database, eight times each: a median of 171 ms without them and 186 ms with them. A new bet never calls the journal triggers: each carries the bound as a literal in its `WHEN` clause. (PostgreSQL doesn't plan a trigger's `WHEN`; calling `user_stats_bet_bound()` there made the 5,000-order cancel take 262 ms.) The first change to an order from before the install pays one journal write.
 
 **What the counts rely on:**
 
 - The guards in `2026112219_contracts_guards.sql` fix each market's id and token and refuse every hard delete and truncate. The delete-market endpoint soft-deletes. Both live counts and the backfill can therefore look up the same token by market id, even after a historical bet is deleted. A CASH market's id cannot be reused for a MANA market.
-- A bet is always written after its market exists, which every code path does.
+- A bet must be written after its market. The insert and update triggers check market visibility for each new bet or reassignment. Under read committed, a missing market raises a plain exception telling the caller to write the market first. At higher isolation, the trigger raises a serialization failure (`40001`) so `runTransactionWithRetries` starts a fresh transaction that can see a market committed after the original snapshot. Fills and cancellations that keep the same bet id and market can still update historical bets whose market is missing.
 
 **Ranks:** live, in the same statement as the count. The user's two rows are read by primary key; only a positive total runs the pass over both tables that counts users with more trades (rank = that count + 1, so ties share a rank). The rank is null for 0. Percentiles still divide by the number of accounts, counted once an hour.
 

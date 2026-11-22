@@ -198,8 +198,33 @@ begin
 end
 $$;
 
-create or replace function user_stats_bets_inserted () returns trigger language plpgsql as $$
+-- Under read committed the lookup gets a fresh snapshot. At higher isolation
+-- a market committed after the snapshot is invisible until the caller retries.
+create or replace function user_stats_missing_market (market_id text) returns void language plpgsql as $$
 begin
+  if current_setting('transaction_isolation') = 'read committed' then
+    raise exception 'bet names market "%", which does not exist. bets must be written after their market', market_id;
+  end if;
+  raise exception 'transaction snapshot predates market "%". retry the transaction with a fresh snapshot', market_id
+    using errcode = 'serialization_failure';
+end
+$$;
+
+create or replace function user_stats_bets_inserted () returns trigger language plpgsql as $$
+declare
+  missing_market text;
+begin
+  -- The counting join would silently skip bets whose markets are invisible.
+  -- Check the statement as a set. The contract guards keep every visible
+  -- market's id and token fixed and prevent deletion, so no row lock is needed.
+  select m.contract_id into missing_market
+  from (select distinct contract_id from new_bets) m
+  where not exists (select 1 from contracts c where c.id = m.contract_id)
+  limit 1;
+  if found then
+    perform user_stats_missing_market(missing_market);
+  end if;
+
   -- A backstop for the before insert marker, for rows actually inserted (an
   -- upsert that took the update path isn't in new_bets). It adds nothing in
   -- any case we know of, and new bets are never at or before the bound.
@@ -230,7 +255,27 @@ $$;
 -- right. Most updates (later fills, cancellations, expiries) change nothing
 -- and write nothing.
 create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
+declare
+  missing_market text;
 begin
+  -- Only markets the statement brings in need checking: an old row is
+  -- visible here, and was written after its market, so its market is too.
+  -- So a fill or cancellation never checks, and can still update a
+  -- historical bet whose market row is missing. Compared as sets (except
+  -- hashes): matching rows across the two transition tables, which have no
+  -- statistics, made a 5,000-order cancel take 600 ms instead of 180.
+  select m.contract_id into missing_market
+  from (
+    select contract_id from new_bets
+    except
+    select contract_id from old_bets
+  ) m
+  where not exists (select 1 from contracts c where c.id = m.contract_id)
+  limit 1;
+  if found then
+    perform user_stats_missing_market(missing_market);
+  end if;
+
   insert into user_stats as s (user_id, trades, updated_time)
   select d.user_id, sum(d.trades), now()
   from (
