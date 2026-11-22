@@ -7,10 +7,15 @@ set local lock_timeout = '5s';
 -- A historical bet can name a missing market. Giving that id a market later
 -- would change how the backfill classifies the bet, even after its deletion.
 -- The bet triggers in 2026112220 require a visible market for new references.
+-- An insert of an id that already has a market (e.g. the local seed's
+-- `on conflict (id) do nothing`) is left to the primary key.
 create or replace function contracts_check_insert () returns trigger language plpgsql as $$
 declare
   id_in_use boolean;
 begin
+  if exists (select 1 from public.contracts where id = new.id) then
+    return new;
+  end if;
   select exists (select 1 from public.contract_bets where contract_id = new.id) into id_in_use;
   -- The journal is installed by 2026112220. Look it up only while it exists.
   if not id_in_use and to_regclass('public.user_stats_bet_journal') is not null then

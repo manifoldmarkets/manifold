@@ -309,6 +309,20 @@ describe('guarding market references', () => {
     })
   })
 
+  it('leaves an insert of an existing market id to the primary key', async () => {
+    await install()
+    await bet('b', 'alice') // on m1, which exists
+    // As the local seed does when rerun.
+    expect(
+      await run(
+        `insert into contracts (id, token) values ('m1', 'MANA')
+         on conflict (id) do nothing returning id`
+      )
+    ).toEqual([])
+    await expect(createManaMarket('m1')).rejects.toThrow(/duplicate key/)
+    expect(await counters()).toEqual(await directCounts())
+  })
+
   it('reserves a missing market id named only by a journal image', async () => {
     await bet('old', 'alice', { contractId: 'orphan' })
     await install()
