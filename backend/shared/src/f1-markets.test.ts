@@ -186,6 +186,63 @@ beforeEach(() => {
 afterEach(() => jest.restoreAllMocks())
 
 describe('resolveF1Markets', () => {
+  it('enrolls only the committed winner and terminal podium classification when watching', async () => {
+    const previous = process.env
+    process.env = {
+      ...previous,
+      NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true',
+      SPORTS_BDL_F1_SHARED_CLIENT: 'true',
+      SPORTS_BDL_F1_CORRECTION_WATCH: 'true',
+    }
+    try {
+      const db = database([winner, podium], {
+        winner: winnerAnswers,
+        podium: answerRows(podiumIds),
+      })
+      jest
+        .mocked(getCompetitionSwitches)
+        .mockResolvedValue({ 'f1-2026:2026 Remaining': true })
+      jest.mocked(getF1SessionResults).mockResolvedValue(
+        classified(22, 11, 33, 44).map((r) => ({
+          ...r,
+          retired: false,
+          laps_completed: 60,
+        }))
+      )
+      jest
+        .mocked(resolveMarketHelper)
+        .mockImplementation(async (contract, _resolver, _creator, params) => ({
+          contract: {
+            ...contract,
+            isResolved: !params.answerId || params.answerId === 'p44',
+            resolutionTime: NOW,
+            resolution: params.answerId ? 'MKT' : params.outcome,
+          } as MarketContract,
+          userUpdates: [],
+        }))
+      await resolveF1Markets(db.pg)
+      expect(resolveMarketHelper).toHaveBeenCalledTimes(5)
+      expect(db.none).toHaveBeenCalledTimes(2)
+      expect(db.none.mock.calls.map((c) => c[1][1])).toEqual([
+        'winner',
+        'podium',
+      ])
+      for (const call of db.none.mock.calls)
+        expect(call[1][0]).toMatchObject({
+          eventId: 'bdl-f1:374:1870',
+          phase: 'f1-2026:2026 Remaining',
+          fieldSize: 4,
+          resolutionTime: NOW,
+          baseline: expect.stringMatching(/^[0-9a-f]{64}$/),
+        })
+      expect(db.none.mock.calls[0][1][0].baseline).toBe(
+        db.none.mock.calls[1][1][0].baseline
+      )
+    } finally {
+      process.env = previous
+    }
+  })
+
   it('reads every closed market, however old', async () => {
     const db = database([], {})
     const r = await resolveF1Markets(db.pg)

@@ -8,6 +8,7 @@
 // No-op without BALLDONTLIE_API_KEY.
 
 import { log } from 'shared/utils'
+import { f1WatchEnabled } from 'shared/bdl/f1-classification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
 import {
@@ -65,10 +66,23 @@ export async function resolveF1SportsMarkets() {
     )
   }
   // A title waits all season, so only a run that did something says so.
-  const t = await resolveF1TitleMarkets(pg, alerted)
-  if (t.resolved + t.moved + t.attention + t.errors > 0) {
-    log(
-      `[sports-f1-resolve] titles: checked=${t.checked} resolved=${t.resolved} moved=${t.moved} waiting=${t.waiting} attention=${t.attention} errors=${t.errors}`
-    )
+  try {
+    const t = await resolveF1TitleMarkets(pg, alerted)
+    if (t.resolved + t.moved + t.attention + t.errors > 0) {
+      log(
+        `[sports-f1-resolve] titles: checked=${t.checked} resolved=${t.resolved} moved=${t.moved} waiting=${t.waiting} attention=${t.attention} errors=${t.errors}`
+      )
+    }
+  } finally {
+    if (f1WatchEnabled()) {
+      try {
+        const { runF1CorrectionWatch } = await import(
+          'shared/bdl/f1-correction-watch'
+        )
+        await runF1CorrectionWatch(pg)
+      } catch {
+        log.error('[sports-bdl-watch] F1 correction check failed')
+      }
+    }
   }
 }

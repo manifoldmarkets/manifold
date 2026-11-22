@@ -83,9 +83,11 @@ export class BalldontlieError extends Error {
 async function getAll<T>(
   path: string,
   params: Record<string, string | string[]>,
-  matches: (row: T) => boolean
+  matches: (row: T) => boolean,
+  admitWatch?: () => Promise<boolean>
 ): Promise<T[]> {
-  if (useSharedF1Client()) {
+  // A correction read must never fall back to the legacy client if switched off.
+  if (useSharedF1Client() || admitWatch) {
     if (
       Object.values(params)
         .flat()
@@ -106,7 +108,9 @@ async function getAll<T>(
       role: fixture ? 'codex' : prod ? f1ServiceRole() : 'dev',
       enabledLeagues: new Set(['f1']),
       isLeagueEnabled: async () =>
-        useSharedF1Client() && (prod || (await devF1Enabled())),
+        useSharedF1Client() &&
+        (!admitWatch || (await admitWatch())) &&
+        (prod || (await devF1Enabled())),
     })
     try {
       return await client.getAll<T>('/f1/v1/' + path, params, {
@@ -181,23 +185,31 @@ export const getF1Events = (season: number) =>
   )
 
 /** The sessions of the given weekends, every type (ALL-STAR). */
-export const getF1Sessions = (eventIds: number[]) =>
+export const getF1Sessions = (
+  eventIds: number[],
+  admitWatch?: () => Promise<boolean>
+) =>
   eventIds.length === 0
     ? Promise.resolve([] as F1Session[])
     : getAll<F1Session>(
         'sessions',
         { event_ids: eventIds.map(String) },
-        (row) => eventIds.includes(row?.event?.id)
+        (row) => eventIds.includes(row?.event?.id),
+        admitWatch
       )
 
-/** One session's classification, about ten minutes after it ends (ALL-STAR). */
-export const getF1SessionResults = (sessionId: number) =>
+/** One session's published classification (ALL-STAR). */
+export const getF1SessionResults = (
+  sessionId: number,
+  admitWatch?: () => Promise<boolean>
+) =>
   getAll<F1SessionResult>(
     'session_results',
     {
       session_ids: [String(sessionId)],
     },
-    (row) => row?.session?.id === sessionId
+    (row) => row?.session?.id === sessionId,
+    admitWatch
   )
 
 /**

@@ -17,6 +17,7 @@
  */
 
 import { sortBy, sum, uniq } from 'lodash'
+import { f1WatchSeed, recordF1WatchBaseline } from './bdl/f1-classification'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
@@ -1167,12 +1168,15 @@ export async function resolveF1Markets(
         )
         continue
       }
+      const watchSeed = f1WatchSeed(contract.sportsEventId, session, results)
       creator ??= await sportsCreator()
       if (resolution.kind === 'sum-to-one') {
-        await resolveMarketHelper(multi, creator, creator, {
+        const params = {
           outcome: resolution.outcome,
           resolutions: resolution.resolutions,
-        })
+        }
+        const paid = await resolveMarketHelper(multi, creator, creator, params)
+        if (watchSeed) await recordF1WatchBaseline(pg, paid.contract, watchSeed)
         const winner = answers.find((a) => a.id === resolution.outcome)
         add(contract, 'resolved', `${winner?.text ?? resolution.outcome}`)
         continue
@@ -1192,7 +1196,7 @@ export async function resolveF1Markets(
       const intended = (answerId: string) => resolution.resolutions[answerId]
       for (const a of sortBy(answers, (x) => x.index)) {
         if (a.resolution) continue
-        await resolveMarketHelper(
+        const paid = await resolveMarketHelper(
           multi,
           creator,
           creator,
@@ -1200,6 +1204,8 @@ export async function resolveF1Markets(
           undefined,
           agreesWith(intended)
         )
+        if (watchSeed && paid.contract.isResolved)
+          await recordF1WatchBaseline(pg, paid.contract, watchSeed)
       }
       add(
         contract,

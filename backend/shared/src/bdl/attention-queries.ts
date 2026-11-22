@@ -85,7 +85,16 @@ export async function getSportsAttention(
         c.data->>'sportsStartTimestamp' as start_text
       from contracts c
       where c.creator_id = any($1) and c.token='MANA' and c.visibility='public'
-        and c.resolution is null and c.deleted is not true
+        and (c.resolution is null or (c.resolution <> 'CANCEL'
+          and c.data->>'sportsEventId' ~ '^bdl-f1:[1-9][0-9]*:[1-9][0-9]*$'
+          and c.data#>>'{sportsF1Watch,eventId}' = c.data->>'sportsEventId'
+          and c.data#>'{sportsF1Watch,resolutionTime}' = to_jsonb((extract(epoch from c.resolution_time)*1000)::bigint)
+          and coalesce(c.data->>'sportsProvider','bdl')='bdl'
+          and coalesce(c.data->>'sportsLeagueKey','f1')='f1'
+          and c.data->>'sportsMarketType' in ('winner','podium')
+          and jsonb_typeof(c.data#>'{sportsF1Watch,correctedTime}')='number'
+          and nullif(trim(c.data->>'sportsAttentionReason'),'') is not null))
+        and c.deleted is not true
         and c.id ~ '^[a-zA-Z0-9_-]{1,128}$'
         and c.data->>'sportsFixture' is distinct from 'true'
         and not starts_with(coalesce(c.data->>'sportsEventId',''),'fixture:')

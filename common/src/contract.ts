@@ -450,6 +450,17 @@ export type Sports = {
   sportsResumptionTime?: number
   sportsFinalQualifier?: import('./sports-scoreboard').SportsFinalQualifier
   sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
+  /** F1 classification used at settlement and the last post-settlement observation. */
+  sportsF1Watch?: {
+    eventId: string
+    phase: string
+    baseline: string
+    fieldSize: number
+    resolutionTime: number
+    checkedTime: number
+    observedHash: string
+    correctedTime?: number
+  }
   sportsResultHash?: string
   sportsVerification?: {
     source: string

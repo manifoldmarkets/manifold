@@ -74,6 +74,17 @@ const page = (data: unknown[], next?: number | string, status = 200) =>
   new Response(JSON.stringify({ data, meta: { next_cursor: next } }), {
     status,
   })
+it('rechecks the watch phase on every attempt and cannot use legacy traffic after disablement', async () => {
+  const admit = jest.fn().mockResolvedValueOnce(true).mockResolvedValue(false)
+  localFetch.mockResolvedValue(page([{ session: { id: 4 } }], 1))
+  await expect(getF1SessionResults(4, admit)).rejects.toThrow()
+  expect(localFetch.mock.calls.length).toBeLessThanOrEqual(1)
+  process.env.SPORTS_BDL_F1_SHARED_CLIENT = 'false'
+  localFetch.mockClear()
+  await expect(getF1Sessions([1], async () => true)).rejects.toThrow()
+  expect(localFetch).not.toHaveBeenCalled()
+})
+
 const events = () => getF1Events(2026)
 const endpoints = [
   {

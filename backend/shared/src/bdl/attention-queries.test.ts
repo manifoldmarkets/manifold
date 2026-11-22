@@ -76,7 +76,7 @@ async function seed(...samples: Sample[]) {
 beforeAll(async () => {
   db = new PGlite()
   await db.exec(`create table contracts(id text primary key,close_time timestamptz,creator_id text,token text,visibility text,
-    resolution text,deleted boolean,question text,slug text,data jsonb);
+    resolution text,deleted boolean,question text,slug text,data jsonb,resolution_time timestamptz);
     create index contracts_creator_id on contracts(creator_id);
     create index contracts_close_time on contracts(close_time);`)
 })
