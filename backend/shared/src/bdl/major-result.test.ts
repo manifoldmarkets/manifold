@@ -522,3 +522,107 @@ it('retains validated standings by original team IDs on fast ticks; a missing sy
       ?.sportsLiveDetail?.standings
   ).toBeUndefined()
 })
+
+it('retains the first unpaid final through an unidentifiable or missing game and holds the changed winner', () => {
+  const first = observed('nba', game())
+  for (const row of [
+    undefined,
+    game({ away: { id: 200, name: 'Home' }, home: { id: 100, name: 'Away' } }),
+  ]) {
+    const bad = majorChange(first.m, 'nba', row, at + 1)
+    expect(bad.record).toBeUndefined()
+    expect(bad.patch.sportsRecordedResult).toBeNull()
+    const fixed = observed(
+      'nba',
+      game({ awayScore: 101 }),
+      { ...first.m, ...bad.patch } as MajorMarket,
+      at + 2
+    )
+    expect(fixed.change.alert).toBe('result corrected')
+    expect(fixed.change.record).toBeUndefined()
+    expect(
+      majorPayout(
+        fixed.m,
+        reviewedResult('nba', game({ awayScore: 101 })).record!,
+        at + 3
+      )
+    ).toBeUndefined()
+  }
+})
+it('binds each native share to the confirmed entrant even on markets with stamped provider IDs', () => {
+  const { m, change } = observed('nba', game())
+  for (const native of [undefined, ['away', 'home'] as [string, string]]) {
+    const c = { ...m, sportsNativeAnswerIds: native }
+    expect(majorPayout(c, change.record!, at)?.outcome).toEqual('home')
+    for (const altered of [
+      c.answers.map((a) => ({ ...a, index: 1 - a.index })),
+      c.answers.map((a) => ({ ...a, text: 'Away' })),
+      c.answers.map((a) => ({ ...a, text: a.index ? 'Away' : 'Home' })),
+    ])
+      expect(
+        majorPayout({ ...c, answers: altered }, change.record!, at)
+      ).toBeUndefined()
+  }
+  expect(
+    majorPayout(
+      { ...m, sportsNativeAnswerIds: ['other', 'home'] },
+      change.record!,
+      at
+    )
+  ).toBeUndefined()
+})
+it('rejects an administrative cancellation without sending a funding signal', () => {
+  const change = majorChange(
+    market(),
+    'nba',
+    game({ status: 'canceled', away: { id: 200, name: 'Wrong' } }),
+    at
+  )
+  expect(change.record).toBeUndefined()
+  expect(change.signal).toBeUndefined()
+  expect(
+    majorChange(market(), 'nba', game({ status: 'canceled' }), at).signal
+  ).toBe('canceled')
+})
+it('keeps the newest NFL revision even when the observation cannot authorize settlement', () => {
+  const changed = majorChange(
+    market('nfl'),
+    'nfl',
+    game({
+      season: 2027,
+      status: 'final',
+      away: { id: 200, name: 'Alien' },
+      scoreUpdatedTime: at,
+    }),
+    at
+  )
+  expect(changed.patch.sportsRevisionWatermark).toBe(at)
+  const restored = majorChange(
+    { ...market('nfl'), ...changed.patch } as MajorMarket,
+    'nfl',
+    game({ season: 2027 }),
+    at + 1
+  )
+  expect(restored.record).toBeUndefined()
+  expect(restored.alert).toBe('unconfirmed observation order')
+})
+it('retracts known kickoff on a real civil-date reschedule without reopening a past close', () => {
+  const c = market('nba', { sportsStartKnown: true, closeTime: at - 1 })
+  const result = majorChange(
+    c,
+    'nba',
+    game({
+      status: 'scheduled',
+      slateDate: '2026-11-09',
+      startTime: null,
+      dateOnly: { date: '2026-11-09' },
+    }),
+    at
+  )
+  expect(result.patch.sportsStartKnown).toBe(false)
+  expect(result.patch.sportsStartTimestamp).toBe('2026-11-08T10:00:00.000Z')
+  expect(result.patch.sportsLatestPossibleStartTimestamp).toBe(
+    '2026-11-10T11:59:59.999Z'
+  )
+  expect(result.patch.closeTime).toBeUndefined()
+})

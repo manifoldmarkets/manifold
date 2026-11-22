@@ -163,3 +163,15 @@ it.each([
     await majorCreationHold(db, { ...input, seenEventIds: ['bdl:mlb:101'] })
   ).toBeNull()
 })
+
+it('uses the durable observed start of an unresolved match after a future resumption replaces its kickoff', async () => {
+  await insert({
+    ...bdl,
+    sportsStartTimestamp: new Date(start).toISOString(),
+    sportsObservedStartTime: now - 3600000,
+  })
+  expect(await majorCreationHold(db, input)).toBe('possible-reid: prior')
+  expect(
+    await majorCreationHold(db, { ...input, seenEventIds: [bdl.sportsEventId] })
+  ).toBeNull()
+})

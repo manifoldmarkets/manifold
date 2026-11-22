@@ -1,4 +1,4 @@
-import { storedGameDayEnd } from 'common/bdl/game-day'
+import { bdlGameDayBounds, storedGameDayEnd } from 'common/bdl/game-day'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import type { MajorLeague } from 'common/bdl/major-leagues'
 import {
@@ -37,13 +37,18 @@ export type MajorPatch = Partial<SportsLiveScore> & {
   sportsPostponedSince?: number | null
   sportsStartTimestamp?: string
   sportsStartKnown?: boolean
+  sportsLatestPossibleStartTimestamp?: string
+  sportsFirstFinalHash?: string
+  sportsRevisionWatermark?: number
+  sportsObservationStartedAt?: number
+  sportsLastObservationKey?: string
+  sportsIncidentKey?: string | null
   sportsObservedStartTime?: number
   sportsLastCheckedTime: number
   sportsLastSyncTime?: number
   sportsStandingsTeamIds?: string[] | null
   sportsAttentionReason?: MajorIncident | null
   sportsAttentionSince?: number | null
-  sportsAttentionNotified?: true
   sportsLastWatchWarning?: number
   sportsHomeTeamCode?: string
   sportsAwayTeamCode?: string
@@ -66,16 +71,25 @@ function moveSchedule(
   at: number,
   patch: MajorPatch
 ) {
-  if (!game.startTime) return
-  const newStart = parseSportsKickoffMs(game.startTime)
+  const day =
+    !game.startTime && game.dateOnly?.date === game.slateDate
+      ? bdlGameDayBounds(game.slateDate, game.dateOnly.venueTimeZone)
+      : null
+  if (!game.startTime && !day) return
+  const newStart =
+    day?.start ?? parseSportsKickoffMs(game.startTime ?? undefined)
   const prior = parseSportsKickoffMs(m.sportsStartTimestamp)
   if (
     !Number.isFinite(newStart) ||
-    (newStart === prior && m.sportsStartKnown !== false)
+    (!day && newStart === prior && m.sportsStartKnown !== false)
   )
     return
-  patch.sportsStartTimestamp = game.startTime
-  patch.sportsStartKnown = true
+  patch.sportsStartTimestamp = new Date(newStart).toISOString()
+  patch.sportsStartKnown = !day
+  if (day)
+    patch.sportsLatestPossibleStartTimestamp = new Date(
+      day.latestStart
+    ).toISOString()
   const config = BDL_LEAGUES[league]
   const buffer = config.closeAtStart ? 0 : config.closeBufferHours! * HOUR_MS
   // A custom close stays put, and an expired close is never reopened. A game already
@@ -87,7 +101,7 @@ function moveSchedule(
     m.sportsLatestPossibleStartTimestamp ?? null
   )
   if (m.closeTime && m.closeTime > at && m.closeTime === latest + buffer) {
-    const target = newStart + buffer
+    const target = (day?.latestStart ?? newStart) + buffer
     if (
       (!m.sportsObservedStartTime &&
         game.status !== 'in_progress' &&
@@ -105,7 +119,11 @@ function moveSchedule(
     const previous = prefix + titleDay.format(originalTitleTime)
     if (m.question === previous || m.question === previous + ' (Game 2)')
       patch.question =
-        prefix + titleDay.format(newStart) + m.question.slice(previous.length)
+        prefix +
+        titleDay.format(
+          day ? Date.parse(game.slateDate + 'T12:00:00Z') : newStart
+        ) +
+        m.question.slice(previous.length)
   }
 }
 
@@ -142,6 +160,8 @@ export function majorChange(
     replacement?: boolean
     conflictingSibling?: boolean
     sync?: boolean
+    orderingIssue?: boolean
+    malformed?: boolean
   } = {}
 ): MajorChange {
   const game =
@@ -151,8 +171,33 @@ export function majorChange(
   const change: MajorChange = { patch }
   const settled = !!(m.resolution || m.isResolved)
   const decision = game ? reviewedResult(league, game) : {}
+  const baseline =
+    m.sportsFirstFinalHash ??
+    (m.sportsRecordedResult?.status === 'final'
+      ? m.sportsResultHash
+      : undefined)
+  if (baseline && !m.sportsFirstFinalHash && !settled)
+    patch.sportsFirstFinalHash = baseline
+  const priorRevision = m.sportsRevisionWatermark ?? m.sportsScoreUpdatedTime
+  const revision = observation?.scoreUpdatedTime
+  const trustedRevision =
+    revision != null &&
+    Number.isSafeInteger(revision) &&
+    revision > 0 &&
+    revision <= at
+  if (trustedRevision)
+    patch.sportsRevisionWatermark = Math.max(priorRevision ?? 0, revision)
+  else if (priorRevision != null && !m.sportsRevisionWatermark)
+    patch.sportsRevisionWatermark = priorRevision
   let incident: MajorIncident | undefined
-  if (observation && !hasConfirmedEntrants(observation))
+  if (
+    flags.orderingIssue ||
+    (revision != null && !trustedRevision) ||
+    (priorRevision != null && decision.record && !trustedRevision)
+  )
+    incident = 'unconfirmed observation order'
+  else if (flags.malformed) incident = 'malformed game'
+  else if (observation && !hasConfirmedEntrants(observation))
     incident = observation.entrantIssue
   else if (flags.conflictingSibling) incident = 'conflicting sibling results'
   else if (
@@ -320,7 +365,10 @@ export function majorChange(
         crossCheck: null,
         verifiedTime: at,
       }
-      if (m.sportsResultHash && !same) incident = 'result corrected'
+      if (!baseline && decision.record?.status === 'final')
+        patch.sportsFirstFinalHash = hash!
+      if ((baseline && baseline !== hash) || (m.sportsResultHash && !same))
+        incident = 'result corrected'
     }
     if (
       m.sportsAttentionReason === 'result corrected' ||
@@ -330,9 +378,18 @@ export function majorChange(
   }
   if (!settled) {
     if (patch.sportsObservedStartTime) change.signal = 'started'
-    else if (!observation && !m.sportsAttentionReason && incident)
+    else if (
+      !observation &&
+      !flags.malformed &&
+      !m.sportsAttentionReason &&
+      incident
+    )
       change.signal = 'missing'
-    else if (game?.status === 'canceled' && !m.sportsCanceledSince)
+    else if (
+      !incident &&
+      change.record?.status === 'canceled' &&
+      !m.sportsCanceledSince
+    )
       change.signal = 'canceled'
     else if (patch.sportsPostponedSince === at && !m.sportsPostponedSince)
       change.signal = 'postponed'
@@ -344,17 +401,35 @@ export function majorChange(
       change.signal = 'moved-earlier'
   }
   if (incident) {
-    patch.sportsAttentionReason = incident
-    patch.sportsAttentionSince =
-      m.sportsAttentionReason === incident ? m.sportsAttentionSince ?? at : at
-    if (!m.sportsAttentionNotified) {
-      patch.sportsAttentionNotified = true
-      change.alert = incident
-    }
+    markMajorIncident(m, change, incident, at, decision.record)
     delete change.record
-  } else if (!settled && m.sportsAttentionReason) {
-    patch.sportsAttentionReason = null
-    patch.sportsAttentionSince = null
+  } else if (m.sportsAttentionReason) {
+    // Manual attention reasons are owned by the operator; only clear our own episodes.
+    if (m.sportsIncidentKey || m.sportsAttentionNotified) {
+      patch.sportsAttentionReason = null
+      patch.sportsAttentionSince = null
+      patch.sportsIncidentKey = null
+    }
   }
   return change
+}
+
+export function markMajorIncident(
+  m: MajorMarket,
+  change: MajorChange,
+  reason: MajorIncident,
+  at: number,
+  record?: MajorResult
+) {
+  const since =
+    m.sportsAttentionReason === reason ? m.sportsAttentionSince ?? at : at
+  const key = JSON.stringify([
+    reason,
+    since,
+    reason === 'result corrected' && record ? majorResultHash(record) : null,
+  ])
+  change.patch.sportsAttentionReason = reason
+  change.patch.sportsAttentionSince = since
+  change.patch.sportsIncidentKey = key
+  if (m.sportsIncidentKey !== key) change.alert = reason
 }

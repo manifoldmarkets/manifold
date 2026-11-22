@@ -89,7 +89,7 @@ export async function fetchMajorSnapshots(
   client: Client,
   league: MajorLeague,
   targets: readonly Target[],
-  options: { standings?: boolean } = {}
+  options: { standings?: boolean; onMalformed?: (id: number) => void } = {}
 ): Promise<Map<number, MajorObservation>> {
   const base = BDL_LEAGUES[league].apiBase + '/games'
   const result = new Map<number, MajorObservation>()
@@ -98,11 +98,23 @@ export async function fetchMajorSnapshots(
     if (!Number.isSafeInteger(id) || id <= 0)
       throw new Error('Invalid BDL game ID')
   }
-  function accept(row: unknown) {
-    const game = mapMajorGame(league, row)
-    if (!ids.has(game.id) || result.has(game.id))
-      throw new Error('Unexpected or duplicate BDL game ID')
-    result.set(game.id, game)
+  const invalid = new Set<number>()
+  function reject(id: number, error: unknown) {
+    if (!options.onMalformed) throw error
+    result.delete(id)
+    invalid.add(id)
+    options.onMalformed(id)
+  }
+  function accept(row: unknown, id: number) {
+    if (invalid.has(id)) return
+    try {
+      const game = mapMajorGame(league, row)
+      if (game.id !== id || !ids.has(id) || result.has(id))
+        throw new Error('Unexpected or duplicate BDL game ID')
+      result.set(id, game)
+    } catch (error) {
+      reject(id, error)
+    }
   }
   if (league === 'nhl') {
     // NHL has game_ids[] on the collection and no single-game route.
@@ -116,7 +128,7 @@ export async function fetchMajorSnapshots(
           matches: (row) => expected.has(Number(object(row)?.id)),
         }
       )
-      for (const row of rows) accept(row)
+      for (const row of rows) accept(row, Number(object(row)?.id))
     }
   } else {
     // Query a shared slate once when multiple targets have known kickoff dates.
@@ -138,27 +150,38 @@ export async function fetchMajorSnapshots(
           {
             maxPages: 20,
             matches: (row) => {
-              const date = object(row)?.date
-              return (
-                typeof date === 'string' && days.includes(date.slice(0, 10))
-              )
+              const raw = object(row),
+                date = raw?.date
+              if (typeof date === 'string' && days.includes(date.slice(0, 10)))
+                return true
+              // A requested, malformed target can be quarantined by ID without
+              // treating the entire dated page as evidence for an absent game.
+              if (
+                options.onMalformed &&
+                typeof raw?.id === 'number' &&
+                ids.has(raw.id)
+              ) {
+                reject(raw.id, new Error('Unconfirmed game date'))
+                return true
+              }
+              return false
             },
           }
         )
         for (const row of rows) {
           const id = object(row)?.id
-          if (typeof id === 'number' && ids.has(id)) accept(row)
+          if (typeof id === 'number' && ids.has(id)) accept(row, id)
         }
       }
     }
     for (const id of ids) {
-      if (result.has(id)) continue
+      if (result.has(id) || invalid.has(id)) continue
       try {
         const response = await client.get(base + '/' + id)
         const record = object(response.body)?.data
         if (object(record)?.id !== id)
-          throw new Error('BDL detail returned a different game ID')
-        accept(record)
+          reject(id, new Error('BDL detail returned a different game ID'))
+        else accept(record, id)
       } catch (error) {
         if (!(error instanceof BdlHttpError && error.status === 404))
           throw error

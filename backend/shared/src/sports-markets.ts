@@ -1,4 +1,6 @@
 import { camelCase } from 'lodash'
+import { isMajorLeague } from 'common/bdl/major-leagues'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
@@ -1329,6 +1331,30 @@ export async function createSportsContract(
     )
       throw new Error('Ineligible kickoff funding')
     const multi = contract as CPMMMultiContract
+    if (
+      isSportsBdlEnabled() &&
+      params.sportsProvider === 'bdl' &&
+      params.sportsLeagueKey !== undefined &&
+      isMajorLeague(params.sportsLeagueKey) &&
+      params.sportsMarketType === 'moneyline' &&
+      params.sportsEntrantIds?.length === 2 &&
+      multi.answers?.length === 2 &&
+      params.sportsHomeTeamId &&
+      params.sportsAwayTeamId
+    ) {
+      const away = multi.answers.find((a) => a.index === 0)
+      const home = multi.answers.find((a) => a.index === 1)
+      if (
+        !away?.id ||
+        !home?.id ||
+        away.id === home.id ||
+        away.text !== params.sportsAwayTeam ||
+        home.text !== params.sportsHomeTeam ||
+        away.text === home.text
+      )
+        throw new Error('Unconfirmed native sports moneyline answers')
+      Object.assign(contract, { sportsNativeAnswerIds: [away.id, home.id] })
+    }
 
     // Insert with all native columns set (creator_id, slug, outcome_type,
     // mechanism, importance_score, freshness_score, etc.) so feed ranking,

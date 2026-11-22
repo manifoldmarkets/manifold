@@ -33,9 +33,8 @@ import {
   majorPhaseEnabled,
   recordMajorObservation,
   settleRecordedMajor,
-  type MajorWrite,
 } from './major-lifecycle-store'
-import { matchesEntrants, type MajorMarket } from './major-result'
+import { matchesMajorEntrantIds, type MajorMarket } from './major-result'
 
 export type MajorJob = 'sync' | 'resolve' | 'watch'
 const SYNC_INTERVAL = 15 * MINUTE_MS
@@ -74,34 +73,60 @@ export function majorPollDue(
   return intervals.length > 0 && now - last >= Math.min(...intervals) * 1000
 }
 
-async function notifyMajor(
-  { market, change }: MajorWrite,
-  league: MajorLeague
+const ALERT_RETRY_MS = 5 * MINUTE_MS
+
+/** A crash after successful mail delivery and before deletion can repeat a notice. */
+export async function deliverMajorAlerts(
+  pg: SupabaseDirectClient,
+  league: MajorLeague,
+  now: number,
+  live: () => boolean,
+  send: typeof sendTextEmail | null = isProd() ? sendTextEmail : null
 ) {
-  if (change.suspendedWarning)
-    log.warn(
-      '[sports-bdl-' + league + '] suspended game has a future resumption',
-      { contractId: market.id }
-    )
-  if (!change.alert) return
-  const message =
-    '[sports-bdl-' +
-    league +
-    '] ' +
-    market.id +
-    ' needs attention: ' +
-    change.alert
-  log.error(message)
-  if (isProd()) {
-    const sent = await sendTextEmail(
-      'info@manifold.markets',
-      'Sports market needs attention: ' + market.question,
-      message + '\n\nhttps://' + DOMAIN + contractPath(market)
-    )
-    if (!sent)
-      log.error('[sports-bdl-' + league + '] attention email failed', {
-        contractId: market.id,
-      })
+  if (!isSportsBdlEnabled()) return
+  for (let i = 0; i < 20 && live(); i++) {
+    const claimed = await pg.tx(async (tx) => {
+      const pending = await tx.oneOrNone<{
+        contract_id: string
+        incident_key: string
+        reason: string
+        data: MajorMarket
+      }>(
+        `select a.contract_id,a.incident_key,a.reason,c.data from sports_market_attention_deliveries a
+          join contracts c on c.id=a.contract_id where a.provider='bdl' and a.league_key=$1 and a.retry_at<=$2
+          order by a.retry_at,a.contract_id,a.incident_key limit 1 for update of a skip locked`,
+        [league, new Date(now)]
+      )
+      if (!pending || !live()) return
+      const key = [pending.contract_id, pending.incident_key]
+      const message =
+        '[sports-bdl-' +
+        league +
+        '] ' +
+        pending.contract_id +
+        ' needs attention: ' +
+        pending.reason
+      log.error(message)
+      const delivered =
+        !send ||
+        (await send(
+          'info@manifold.markets',
+          'Sports market needs attention: ' + pending.data.question,
+          message + '\n\nhttps://' + DOMAIN + contractPath(pending.data)
+        ).catch(() => false))
+      if (delivered)
+        await tx.none(
+          "delete from sports_market_attention_deliveries where contract_id=$1 and provider='bdl' and incident_key=$2",
+          key
+        )
+      else
+        await tx.none(
+          "update sports_market_attention_deliveries set retry_at=$3 where contract_id=$1 and provider='bdl' and incident_key=$2",
+          [...key, new Date(now + ALERT_RETRY_MS)]
+        )
+      return true
+    })
+    if (!claimed) break
   }
 }
 
@@ -197,15 +222,30 @@ export async function runMajorLifecycle(
             isLeagueEnabled: async (asked) => asked === league && authorized(),
           })
         const requestedAt = clock.now()
-        const games = await fetchMajorSnapshots(
-          client,
-          league,
-          targets.map(({ m, id }) => ({
-            id,
-            startTime: m.sportsStartTimestamp,
-          })),
-          { standings: job === 'sync' }
-        )
+        const malformed = new Set<number>()
+        let games: Awaited<ReturnType<typeof fetchMajorSnapshots>>
+        try {
+          games = await fetchMajorSnapshots(
+            client,
+            league,
+            targets.map(({ m, id }) => ({
+              id,
+              startTime: m.sportsStartTimestamp,
+            })),
+            {
+              standings: job === 'sync',
+              onMalformed: (id) => malformed.add(id),
+            }
+          )
+        } catch (error) {
+          // An unverified page is not evidence of a missing game. Continue to
+          // independently scoped batches without writing observations for this one.
+          result.errors++
+          log.error('[sports-bdl-' + league + '] unverified observations', {
+            error: error instanceof Error ? error.message : String(error),
+          })
+          continue
+        }
         const completed = clock.now()
         const replacements = new Map<
           string,
@@ -213,80 +253,109 @@ export async function runMajorLifecycle(
         >()
         for (const { m, id } of targets) {
           if (!current()) break
-          const game = games.get(id)
-          if (game && game.id !== id) continue
-          const seen = game?.observedAt
-          if (
-            seen !== undefined &&
-            (!Number.isSafeInteger(seen) ||
-              seen < requestedAt ||
-              seen > completed)
-          )
-            continue
-          const at = seen ?? completed
-          const start = parseSportsKickoffMs(m.sportsStartTimestamp)
-          let replacement = false
-          if (!game && job === 'sync' && Number.isFinite(start) && start < at) {
-            const date = etDate.format(start)
-            let candidates = replacements.get(date)
-            if (!candidates) {
-              candidates = await fetchMajorGames(
-                client,
-                league,
-                day(start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS),
-                day(start + BDL_REISSUED_EVENT_MATCH_WINDOW_MS)
-              )
-              replacements.set(date, candidates)
-            }
-            replacement = candidates.some(
-              (candidate) =>
-                candidate.id !== id &&
-                matchesEntrants(m, candidate) &&
-                candidate.startTime !== null &&
-                Math.abs(Date.parse(candidate.startTime) - start) <=
-                  BDL_REISSUED_EVENT_MATCH_WINDOW_MS
+          try {
+            const game = games.get(id)
+            if (game && game.id !== id) continue
+            const seen = game?.observedAt
+            if (
+              seen !== undefined &&
+              (!Number.isSafeInteger(seen) ||
+                seen < requestedAt ||
+                seen > completed)
             )
-          }
-          const changes = await recordMajorObservation(
-            pg,
-            creatorId,
-            league,
-            m.sportsEventId,
-            game,
-            requestedAt,
-            at,
-            replacement,
-            current,
-            job === 'watch',
-            job === 'sync'
-          )
-          for (const row of changes) {
-            result.observed++
-            if (row.change.alert) result.attention++
-            await notifyMajor(row, league)
-            if (row.change.score && current())
-              await publishSportsLiveScore(row.market.id, row.change.score)
-            if (row.payout && current()) {
-              payer ??= await sportsCreator()
-              if (
-                await settleRecordedMajor(
-                  pg,
-                  row.market,
+              continue
+            const at = seen ?? completed
+            const start = parseSportsKickoffMs(m.sportsStartTimestamp)
+            let replacement = false
+            if (
+              !game &&
+              !malformed.has(id) &&
+              job === 'sync' &&
+              Number.isFinite(start) &&
+              start < at
+            ) {
+              const date = etDate.format(start)
+              let candidates = replacements.get(date)
+              if (!candidates) {
+                candidates = await fetchMajorGames(
+                  client,
                   league,
-                  row.payout,
-                  payer,
-                  clock.now,
-                  current
+                  day(start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS),
+                  day(start + BDL_REISSUED_EVENT_MATCH_WINDOW_MS)
                 )
+                replacements.set(date, candidates)
+              }
+              replacement = candidates.some(
+                (candidate) =>
+                  candidate.id !== id &&
+                  matchesMajorEntrantIds(m, candidate) &&
+                  candidate.startTime !== null &&
+                  Math.abs(Date.parse(candidate.startTime) - start) <=
+                    BDL_REISSUED_EVENT_MATCH_WINDOW_MS
               )
-                result.settled++
             }
+            const changes = await recordMajorObservation(
+              pg,
+              creatorId,
+              league,
+              m.sportsEventId,
+              game,
+              requestedAt,
+              at,
+              replacement,
+              current,
+              job === 'watch',
+              job === 'sync',
+              malformed.has(id)
+            )
+            for (const row of changes) {
+              result.observed++
+              if (row.change.alert) result.attention++
+              if (row.change.suspendedWarning)
+                log.warn(
+                  '[sports-bdl-' +
+                    league +
+                    '] suspended game has a future resumption',
+                  { contractId: row.market.id }
+                )
+              if (row.change.score && current())
+                await publishSportsLiveScore(row.market.id, row.change.score)
+              if (row.payout && current()) {
+                payer ??= await sportsCreator()
+                if (
+                  await settleRecordedMajor(
+                    pg,
+                    row.market,
+                    league,
+                    row.payout,
+                    payer,
+                    clock.now,
+                    current
+                  )
+                )
+                  result.settled++
+              }
+            }
+          } catch (error) {
+            result.errors++
+            log.error('[sports-bdl-' + league + '] game observation failed', {
+              id,
+              error: error instanceof Error ? error.message : String(error),
+            })
           }
         }
       }
     } catch (e) {
       result.errors++
       log.error('[sports-bdl-' + league + '] ' + job + ' failed', {
+        error: e instanceof Error ? e.message : String(e),
+      })
+    }
+    try {
+      if (current()) await deliverMajorAlerts(pg, league, clock.now(), current)
+    } catch (e) {
+      result.errors++
+      log.error('[sports-bdl-' + league + '] alert delivery failed', {
         error: e instanceof Error ? e.message : String(e),
       })
     }

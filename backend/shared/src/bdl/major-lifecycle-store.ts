@@ -15,7 +15,7 @@ import {
 import { bdlEventId } from 'common/sports-ids'
 import type { Contract } from 'common/contract'
 import { convertAnswer } from 'common/supabase/contracts'
-import type { Row } from 'common/supabase/utils'
+import { tsToMillis, type Row } from 'common/supabase/utils'
 import type { User } from 'common/user'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import { resolveMarketHelper } from '../resolve-market-helpers'
@@ -24,7 +24,11 @@ import { sportsProviderSql } from '../supabase/sports-provider'
 import type { SupabaseDirectClient } from '../supabase/init'
 import { SPORTS_CREATION_BUDGET_LOCK_SQL } from './major-settings'
 import { reportSportsKickoffSignal } from '../sports-kickoff-signal'
-import { majorChange, type MajorChange } from './major-change'
+import {
+  majorChange,
+  markMajorIncident,
+  type MajorChange,
+} from './major-change'
 import type { MajorObservation } from './major-games'
 import {
   isMajorMarket,
@@ -67,8 +71,25 @@ const official = `c.creator_id=$1 and c.visibility='public' and c.token='MANA'
   and ${sportsProviderSql()}='bdl' and c.data->>'sportsLeagueKey'=$2
   and c.data->>'sportsMarketType'='moneyline' and c.outcome_type='MULTIPLE_CHOICE'`
 
-type Stored = { data: Contract; token: 'MANA' }
-const contract = (row: Stored): Contract => ({ ...row.data, token: row.token })
+type Stored = {
+  data: Contract
+  token: 'MANA'
+  resolution?: string | null
+  resolution_time?: Date | string | null
+}
+const contract = (row: Stored): Contract =>
+  Object.assign(
+    {},
+    row.data,
+    { token: row.token },
+    row.resolution && {
+      isResolved: true,
+      resolution: row.resolution,
+      ...(row.resolution_time && {
+        resolutionTime: tsToMillis(row.resolution_time),
+      }),
+    }
+  )
 
 export async function listMajorMarkets(
   pg: SupabaseDirectClient,
@@ -101,6 +122,67 @@ export type MajorWrite = {
   payout?: MajorResult
 }
 
+async function siblingAgrees(
+  tx: SupabaseDirectClient,
+  prior: MajorMarket,
+  market: MajorMarket,
+  valid: MajorResult | undefined,
+  lock = false
+) {
+  if (!prior.isResolved && !prior.resolution) return true
+  if (
+    prior.resolution === 'CANCEL' &&
+    prior.resolutionTime &&
+    prior.resolutionTime < market.createdTime
+  )
+    return true
+  if (!valid || prior.sportsResultHash !== majorResultHash(valid)) return false
+  if (valid.status === 'canceled') return prior.resolution === 'CANCEL'
+  const answers = (
+    await tx.manyOrNone<Row<'answers'>>(
+      'select * from answers where contract_id=$1 order by index' +
+        (lock ? ' for share nowait' : ''),
+      [prior.id]
+    )
+  ).map(convertAnswer)
+  // Reconstruct the expected weights on the actual sibling share IDs.
+  const expected = majorPayout(
+    {
+      ...prior,
+      isResolved: false,
+      resolution: undefined,
+      sportsAttentionReason: undefined,
+      sportsFinalSince: 1,
+      answers: answers.map((a) => ({
+        ...a,
+        resolution: undefined,
+        resolutionTime: undefined,
+      })),
+    },
+    valid,
+    Number.MAX_SAFE_INTEGER
+  )
+  if (
+    !expected ||
+    expected.outcome !== prior.resolution ||
+    !expected.resolutions
+  )
+    return false
+  const weights = prior.resolutions
+  if (!weights)
+    return (
+      expected.outcome !== 'CHOOSE_MULTIPLE' &&
+      answers.some((a) => a.id === prior.resolution)
+    )
+  return (
+    Object.keys(weights).every((id) => answers.some((a) => a.id === id)) &&
+    answers.every((a) => {
+      const weight = expected.resolutions![a.id] ?? 0
+      return (weights[a.id] ?? 0) === weight && a.prob === weight / 100
+    })
+  )
+}
+
 /** Record all existing sibling observations in one transaction. A paid sibling freezes the result
  * for the others. A correction is flagged instead of allowing contradictory house payouts. */
 export async function recordMajorObservation(
@@ -114,7 +196,8 @@ export async function recordMajorObservation(
   replacement: boolean,
   live: () => boolean,
   watch: boolean,
-  sync = false
+  sync = false,
+  malformed = false
 ): Promise<MajorWrite[]> {
   if (
     !live() ||
@@ -127,9 +210,12 @@ export async function recordMajorObservation(
     return []
   return pg.tx(async (tx) => {
     await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+    await tx.one('select pg_advisory_xact_lock(hashtextextended($1,0))', [
+      'major-observation:' + eventId,
+    ])
     const switches = await getCompetitionSwitches(tx)
     const rows = await tx.manyOrNone<Stored>(
-      `select c.data,c.token from contracts c where ${official} and c.data->>'sportsEventId'=$3
+      `select c.data,c.token,c.resolution,c.resolution_time from contracts c where ${official} and c.data->>'sportsEventId'=$3
         order by c.id for update`,
       [creatorId, league, eventId]
     )
@@ -141,14 +227,44 @@ export async function recordMajorObservation(
     const changed: MajorWrite[] = []
     for (const m of siblings) {
       const settled = !!(m.isResolved || m.resolution)
+      const watermark = m.sportsRevisionWatermark ?? m.sportsScoreUpdatedTime
+      const newer =
+        game?.scoreUpdatedTime != null &&
+        watermark != null &&
+        game.scoreUpdatedTime > watermark
+      const last = Math.max(
+        m.sportsLastCheckedTime ?? 0,
+        m.sportsLiveUpdatedTime ?? 0
+      )
+      const key = JSON.stringify([
+        malformed,
+        replacement,
+        game?.status,
+        game?.home,
+        game?.away,
+        game?.startTime,
+        game?.eligible,
+        game?.homeScore,
+        game?.awayScore,
+        game?.irregular,
+        hash,
+      ])
+      const overlap = last >= requestedAt && !newer
+      // The order of two intersecting acquisitions is unknown even when the
+      // earlier completion obtains its database lock second.
+      const definitelyOlder =
+        m.sportsObservationStartedAt != null
+          ? observedAt < m.sportsObservationStartedAt
+          : !m.sportsRecordedResult &&
+            !m.sportsLastObservationKey &&
+            observedAt <= last
       if (
         !live() ||
         !majorPhaseEnabled(m, league, switches) ||
-        (m.sportsLastCheckedTime ?? 0) >= requestedAt ||
-        (m.sportsLiveUpdatedTime ?? 0) >= requestedAt ||
+        (overlap && (definitelyOlder || key === m.sportsLastObservationKey)) ||
         (game?.scoreUpdatedTime !== undefined &&
-          m.sportsScoreUpdatedTime != null &&
-          game.scoreUpdatedTime < m.sportsScoreUpdatedTime) ||
+          watermark != null &&
+          game.scoreUpdatedTime < watermark) ||
         (watch &&
           (!settled ||
             !m.resolutionTime ||
@@ -156,28 +272,25 @@ export async function recordMajorObservation(
         (!watch && settled)
       )
         continue
-      const change = majorChange(m, league, game, observedAt, {
+      const change = majorChange(m, league, game, Math.max(observedAt, last), {
         sync,
+        malformed,
+        orderingIssue: overlap,
         replacement,
         conflictingSibling:
           !settled &&
-          siblings.some((prior) => {
-            if (!prior.isResolved && !prior.resolution) return false
-            // The creator's explicit force option can re-create a game after a mistaken
-            // N/A. A refund completed before this market existed is not its sibling payout.
-            if (
-              prior.resolution === 'CANCEL' &&
-              prior.resolutionTime &&
-              prior.resolutionTime < m.createdTime
+          !(
+            await Promise.all(
+              siblings
+                .filter((prior) => prior.id !== m.id)
+                .map((prior) => siblingAgrees(tx, prior, m, valid))
             )
-              return false
-            return (
-              !hash ||
-              prior.sportsResultHash !== hash ||
-              (prior.resolution === 'CANCEL') !== (valid?.status === 'canceled')
-            )
-          }),
+          ).every(Boolean),
       })
+      change.patch.sportsObservationStartedAt = overlap
+        ? Math.min(requestedAt, m.sportsObservationStartedAt ?? requestedAt)
+        : requestedAt
+      change.patch.sportsLastObservationKey = key
       const next = { ...m, ...change.patch } as MajorMarket
       let payout: MajorResult | undefined
       if (change.record) {
@@ -193,16 +306,7 @@ export async function recordMajorObservation(
             : Number(next.sportsFinalSince) + BDL_FINAL_SETTLEMENT_DELAY_MS
         if (majorPayout(next, change.record, observedAt)) payout = change.record
         else if (observedAt >= due) {
-          const reason = 'unexpected market answers'
-          change.patch.sportsAttentionReason = reason
-          change.patch.sportsAttentionSince =
-            m.sportsAttentionReason === reason
-              ? m.sportsAttentionSince ?? observedAt
-              : observedAt
-          if (!m.sportsAttentionNotified) {
-            change.alert = reason
-            change.patch.sportsAttentionNotified = true
-          }
+          markMajorIncident(m, change, 'unexpected market answers', observedAt)
         }
       }
       if (!live()) throw new Error('Sports observation expired')
@@ -212,6 +316,18 @@ export async function recordMajorObservation(
         JSON.stringify(change.patch),
         m.id,
       ])
+      if (change.alert && change.patch.sportsIncidentKey)
+        await tx.none(
+          `insert into sports_market_attention_deliveries(contract_id,provider,league_key,incident_key,reason,occurred_at,retry_at)
+           values($1,'bdl',$2,$3,$4,$5,$5) on conflict do nothing`,
+          [
+            m.id,
+            league,
+            change.patch.sportsIncidentKey,
+            change.alert,
+            new Date(observedAt),
+          ]
+        )
       if (change.signal)
         await reportSportsKickoffSignal(tx, {
           kind: change.signal,
@@ -219,7 +335,11 @@ export async function recordMajorObservation(
           observedTime: observedAt,
           providerStartTime: game?.startTime ?? undefined,
         })
-      changed.push({ market: next, change, payout })
+      changed.push({
+        market: Object.assign(next, change.patch),
+        change,
+        payout,
+      })
     }
     return changed
   })
@@ -245,7 +365,7 @@ export async function settleRecordedMajor(
   let resolution: ReturnType<typeof resolveMarketHelper> | undefined
   try {
     await pg.tx(async (tx) => {
-      // No contract is locked on this connection. An admin disabling the phase
+      // Only sibling contracts are locked on this connection. Disabling the phase
       // updates this same switch row and waits until the payout commits or fails.
       const enabled = await tx.oneOrNone<{ enabled: boolean }>(
         'select enabled from sports_competition_switches where competition_id=$1 and phase=$2 for share',
@@ -253,6 +373,23 @@ export async function settleRecordedMajor(
       )
       if (!enabled?.enabled || !live())
         throw new Error('Sports settlement disabled')
+      // Observations take this lock before touching any contract rows.
+      // The platform resolver alone locks the target contract on its own connection.
+      await tx.one('select pg_advisory_xact_lock(hashtextextended($1,0))', [
+        'major-observation:' + market.sportsEventId,
+      ])
+      const siblings = await tx.manyOrNone<Stored>(
+        `select c.data,c.token,c.resolution,c.resolution_time from contracts c where ${official} and c.data->>'sportsEventId'=$3 and c.id<>$4 order by c.id for share nowait`,
+        [creator.id, league, market.sportsEventId, market.id]
+      )
+      for (const row of siblings) {
+        const prior = contract(row)
+        if (
+          isMajorMarket(prior, creator.id, league) &&
+          !(await siblingAgrees(tx, prior, market, record, true))
+        )
+          return
+      }
       let release!: () => void
       const committed = new Promise<void>((resolve) => {
         release = resolve
@@ -282,6 +419,7 @@ export async function settleRecordedMajor(
     })
     // Email, notifications and revalidation may continue after commit. The
     // operator's switch is already unlocked while the platform finishes these.
+    if (!resolution) return false
     await resolution
     return true
   } finally {

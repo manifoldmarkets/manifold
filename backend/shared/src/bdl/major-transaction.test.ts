@@ -103,6 +103,8 @@ it('runs all pre-payout checks against the actual transaction state', async () =
     const live = () => ++calls !== options.stopAt
     const stale = { ...market, ...options.before }
     const tx = {
+      one: async () => ({}),
+      manyOrNone: async () => [],
       oneOrNone: async () =>
         options.row === false ? null : { enabled: options.switch ?? true },
     } as unknown as SupabaseTransaction
@@ -194,8 +196,8 @@ it('honors request, observation, phase, settled-mode and watch-window guards bef
               index: a.index,
               contract_id: m.id,
             })),
-      none: async () => {
-        writes++
+      none: async (sql: string) => {
+        if (sql.startsWith('update contracts')) writes++
       },
     } as unknown as SupabaseDirectClient
     try {
@@ -296,7 +298,11 @@ it('reserves at most one two-connection payout and releases the phase at commit 
     releasePhase = r
   })
   let locked = false
-  const tx = { oneOrNone: async () => ({ enabled: true }) }
+  const tx = {
+    one: async () => ({}),
+    manyOrNone: async () => [],
+    oneOrNone: async () => ({ enabled: true }),
+  }
   const pg = {
     tx: async (fn: (tx: unknown) => Promise<void>) => {
       locked = true

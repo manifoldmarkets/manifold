@@ -3582,6 +3582,44 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_market_attention_deliveries: {
+        Row: {
+          contract_id: string
+          incident_key: string
+          league_key: string
+          occurred_at: string
+          provider: string
+          reason: string
+          retry_at: string
+        }
+        Insert: {
+          contract_id: string
+          incident_key: string
+          league_key: string
+          occurred_at: string
+          provider: string
+          reason: string
+          retry_at: string
+        }
+        Update: {
+          contract_id?: string
+          incident_key?: string
+          league_key?: string
+          occurred_at?: string
+          provider?: string
+          reason?: string
+          retry_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'sports_market_attention_deliveries_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       sports_provider_request_stats: {
         Row: {
           endpoint_template: string

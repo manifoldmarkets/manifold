@@ -13,6 +13,7 @@ import { isLinkedCpmmMulti2 } from 'common/sports-kickoff-interface'
 import type { SportsFinalQualifier } from 'common/sports-scoreboard'
 import { bdlEventId } from 'common/sports-ids'
 import { providerOf } from 'common/sports-provider'
+import { normalizeTeam } from 'common/sports-team-colors'
 import { hasConfirmedEntrants, type MajorObservation } from './major-games'
 import type { ResolutionParams } from '../resolve-market-helpers'
 
@@ -38,10 +39,17 @@ export type MajorMarket = CPMMMultiContract &
     sportsScoreUpdatedTime?: number | null
     sportsLastWatchWarning?: number
     sportsPostponedSince?: number
+    sportsFirstFinalHash?: string
+    sportsRevisionWatermark?: number
+    sportsObservationStartedAt?: number
+    sportsLastObservationKey?: string
+    sportsIncidentKey?: string | null
     sportsAttentionNotified?: boolean
   }
 
 export type MajorIncident =
+  | 'unconfirmed observation order'
+  | 'malformed game'
   | 'unexpected entrants'
   | 'unidentifiable entrants'
   | 'invalid final scores'
@@ -77,17 +85,42 @@ export function isMajorMarket(
   )
 }
 
-export function matchesEntrants(
+export function matchesMajorEntrantIds(
   market: Pick<Sports, 'sportsHomeTeamId' | 'sportsAwayTeamId'>,
   game: MajorObservation
 ) {
+  if (!hasConfirmedEntrants(game) || game.home.id === game.away.id) return false
+  const h = String(game.home.id),
+    a = String(game.away.id)
   return (
-    hasConfirmedEntrants(game) &&
-    game.home.id !== game.away.id &&
-    ((market.sportsHomeTeamId === String(game.home.id) &&
-      market.sportsAwayTeamId === String(game.away.id)) ||
-      (market.sportsHomeTeamId === String(game.away.id) &&
-        market.sportsAwayTeamId === String(game.home.id)))
+    (market.sportsHomeTeamId === h && market.sportsAwayTeamId === a) ||
+    (market.sportsHomeTeamId === a && market.sportsAwayTeamId === h)
+  )
+}
+
+export function matchesEntrants(
+  market: Pick<
+    Sports,
+    | 'sportsHomeTeamId'
+    | 'sportsAwayTeamId'
+    | 'sportsHomeTeam'
+    | 'sportsAwayTeam'
+  >,
+  game: MajorObservation
+) {
+  if (!hasConfirmedEntrants(game) || !matchesMajorEntrantIds(market, game))
+    return false
+  const homeFirst = market.sportsHomeTeamId === String(game.home.id)
+  const home = homeFirst ? game.home : game.away
+  const away = homeFirst ? game.away : game.home
+  return (
+    market.sportsHomeTeamId === String(home.id) &&
+    market.sportsAwayTeamId === String(away.id) &&
+    !!market.sportsHomeTeam &&
+    !!market.sportsAwayTeam &&
+    normalizeTeam(market.sportsHomeTeam) === normalizeTeam(home.name) &&
+    normalizeTeam(market.sportsAwayTeam) === normalizeTeam(away.name) &&
+    normalizeTeam(home.name) !== normalizeTeam(away.name)
   )
 }
 
@@ -196,8 +229,6 @@ export function majorPayout(
     )
   )
     return
-  // P3a created its fixed answers away first. For markets pre-dating stored entrant arrays,
-  // insist that the original answer texts still agree before binding their IDs to the teams.
   const awayId = c.sportsAwayTeamId,
     homeId = c.sportsHomeTeamId
   if (
@@ -206,17 +237,20 @@ export function majorPayout(
     !homeId ||
     awayId === homeId ||
     ![awayId, homeId].includes(String(record.firstId)) ||
-    ![awayId, homeId].includes(String(record.secondId))
-  )
-    return
-  if (
-    c.sportsEntrantIds
-      ? c.sportsEntrantIds.length !== 2 ||
+    ![awayId, homeId].includes(String(record.secondId)) ||
+    !away.text ||
+    !home.text ||
+    away.text === home.text ||
+    away.text !== c.sportsAwayTeam ||
+    home.text !== c.sportsHomeTeam ||
+    (c.sportsEntrantIds &&
+      (c.sportsEntrantIds.length !== 2 ||
         String(c.sportsEntrantIds[0]) !== awayId ||
-        String(c.sportsEntrantIds[1]) !== homeId
-      : away.text !== c.sportsAwayTeam ||
-        home.text !== c.sportsHomeTeam ||
-        away.text === home.text
+        String(c.sportsEntrantIds[1]) !== homeId)) ||
+    (c.sportsNativeAnswerIds &&
+      (c.sportsNativeAnswerIds.length !== 2 ||
+        c.sportsNativeAnswerIds[0] !== away.id ||
+        c.sportsNativeAnswerIds[1] !== home.id))
   )
     return
   if (record.status === 'canceled') return { outcome: 'CANCEL' }

@@ -356,37 +356,26 @@ it('uses completed schedule IDs to rule out a reissue without attempting to crea
   expect(report.log.map((x) => x.eventId)).toEqual(['bdl:nba:1'])
   expect(hold.mock.calls[0][1].seenEventIds).toEqual(['bdl:nba:2', 'bdl:nba:1'])
 })
-it('opens a genuinely date-only NBA game with the base ante, its original slate date and a bounded safety close', async () => {
-  const g = game(1, {
-    startTime: null,
-    slateDate: '2026-10-24',
-    dateOnly: { date: '2026-10-24' },
-  })
-  schedule.mockResolvedValue([g])
-  readSettings.mockResolvedValue({
-    ...settings('nba'),
-    startsOn: '2026-10-24',
-  })
-  const fund = jest.spyOn(fundingSeam, 'resolveSportsGameAnte')
-  const report = await run()
-  expect(report).toMatchObject({
-    created: 1,
-    log: [{ ante: 175, question: 'Away at Home, Oct 24' }],
-  })
-  expect(schedule.mock.calls[0][2]).toBe('2026-10-13')
-  const params = save.mock.calls[0][2]
-  expect(params).toMatchObject({
-    sportsStartKnown: false,
-    sportsStartTimestamp: '2026-10-23T10:00:00.000Z',
-    sportsLatestPossibleStartTimestamp: '2026-10-25T11:59:59.999Z',
-    closeTime: Date.parse('2026-10-25T14:59:59.999Z'),
-    sportsEventId: 'bdl:nba:1',
-  })
-  expect(fund.mock.calls[0][1].startKnown).toBe(false)
-  expect(await fund.mock.results[0].value).toMatchObject({ ante: 175 })
-  expect(await fund.mock.results[0].value).not.toHaveProperty('kickoffBudget')
-  const preview = await run({ dryRun: true })
-  expect(preview.log[0]).toMatchObject({ status: 'dry-run', ante: 175 })
+it('holds genuine date-only games without quoting, charging or creating in preview and scheduled runs', async () => {
+  schedule.mockResolvedValue([
+    game(1, {
+      startTime: null,
+      slateDate: '2026-10-24',
+      dateOnly: { date: '2026-10-24' },
+    }),
+  ])
+  const funding = jest.spyOn(fundingSeam, 'resolveSportsGameAnte')
+  for (const options of [{}, { dryRun: true }]) {
+    const report = await run(options)
+    expect(report.log[0]).toMatchObject({
+      status: 'skipped',
+      reason: 'unfunded until kickoff confirmed',
+    })
+    expect(report.log[0].ante).toBeUndefined()
+  }
+  expect(odds.mock.calls.every(([, , games]) => !games.length)).toBe(true)
+  expect(funding).not.toHaveBeenCalled()
+  expect(save).not.toHaveBeenCalled()
 })
 it('requires the entire possible day within the five-minute, 14-day and phase windows', async () => {
   schedule.mockResolvedValue([
@@ -440,22 +429,20 @@ it('only a published kickoff can be reported as known and use a normal start-tim
     game(1, { startTime: null, slateDate: dateOnly.date, dateOnly }),
   ])
   await run()
-  expect(save.mock.calls[0][2].sportsStartTimestamp).toBe(
-    '2026-10-24T12:00:00.000Z'
-  )
+  expect(save).not.toHaveBeenCalled()
   const timed = game(1, {
     startTime: '2026-10-24T18:00:00Z',
     slateDate: '2026-10-24',
   })
   schedule.mockResolvedValue([timed])
   await run()
-  expect(save.mock.calls[1][2]).toMatchObject({
+  expect(save.mock.calls[0][2]).toMatchObject({
     sportsStartKnown: true,
     sportsStartTimestamp: '2026-10-24T18:00:00.000Z',
     closeTime: Date.parse('2026-10-24T21:00:00Z'),
   })
   expect(
-    save.mock.calls[1][2].sportsLatestPossibleStartTimestamp
+    save.mock.calls[0][2].sportsLatestPossibleStartTimestamp
   ).toBeUndefined()
 })
 

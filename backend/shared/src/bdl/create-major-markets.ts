@@ -347,6 +347,7 @@ export async function runMajorCreation(
         const candidates = slate.filter(
           ({ game, start, latestStart }) =>
             game.eligible &&
+            game.startTime !== null &&
             game.status === 'scheduled' &&
             start > began + BDL_MIN_CREATION_LEAD_MS &&
             latestStart <= began + maxLead
@@ -407,6 +408,8 @@ export async function runMajorCreation(
             )
             if (new Set(phases.map((p) => p.competitionId)).size !== 1)
               hold('no unique enabled phase')
+            if (game.startTime === null)
+              hold('unfunded until kickoff confirmed')
             const phase = phases[0]
             const startDate = game.dateOnly
               ? game.slateDate

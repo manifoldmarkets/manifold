@@ -478,6 +478,8 @@ export type Sports = {
    * resolver matches results by id, never by name.
    */
   sportsEntrantIds?: (number | null)[]
+  /** Original away/home share classes for a fixed two-answer team moneyline. */
+  sportsNativeAnswerIds?: [string, string]
   /**
    * A field event's session: when the pipeline first saw the provider mark
    * it cancelled, cleared once it's seen otherwise. N/A waits for this to be

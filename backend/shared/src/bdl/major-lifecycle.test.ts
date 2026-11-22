@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { PGlite, type Transaction } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { SPORTS_CALENDAR } from 'common/sports-calendar'
@@ -15,7 +17,11 @@ import { resolveMarketHelper } from '../resolve-market-helpers'
 import { sendTextEmail } from '../send-email'
 import { publishSportsLiveScore } from '../publish-sports-live-score'
 import { runMajorCreation } from './create-major-markets'
-import { runMajorLifecycle, majorPollDue } from './major-lifecycle'
+import {
+  deliverMajorAlerts,
+  runMajorLifecycle,
+  majorPollDue,
+} from './major-lifecycle'
 import {
   listMajorMarkets,
   recordMajorObservation,
@@ -184,7 +190,8 @@ async function create() {
 }
 beforeAll(async () => {
   await db.exec(`create table contracts (id text primary key, creator_id text, visibility text,token text,outcome_type text,deleted boolean,data jsonb,resolution text,resolution_time timestamptz,close_time timestamptz);
-    create table answers(id text primary key,contract_id text,index int,text text,resolution text,resolution_time timestamptz,is_other boolean);
+    create role anon;create role authenticated;create role service_role;
+    create table answers(id text primary key,contract_id text,index int,text text,prob double precision,resolution text,resolution_time timestamptz,is_other boolean);
     create table sports_competition_switches (competition_id text,phase text,enabled boolean,updated_time timestamptz default now(),updated_by text);
     create table sports_score_polling(target text,interval_seconds int,updated_time timestamptz default now(),updated_by text);
     create table groups(id text,slug text,privacy_status text);
@@ -192,10 +199,21 @@ beforeAll(async () => {
     insert into groups values('topic','sports','public');
     insert into sports_score_polling(target,interval_seconds) values('league:nba',30);
     insert into sports_creation_settings values('nba',1000,100,'2026-11-01','{sports}'),('wave:1',9999,null,null,null),('global',9999,null,null,null);`)
+  await db.exec(
+    readFileSync(
+      join(
+        __dirname,
+        '../../../supabase/sports_market_attention_deliveries.sql'
+      ),
+      'utf8'
+    )
+  )
 })
 beforeEach(async () => {
   process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
-  await db.exec('truncate contracts, answers, sports_competition_switches')
+  await db.exec(
+    'truncate contracts, answers, sports_competition_switches,sports_market_attention_deliveries'
+  )
   for (const p of SPORTS_CALENDAR.filter(
     (p) => p.sport === 'nba' && (p.oddsKey || p === phase)
   ))
@@ -746,3 +764,278 @@ it('rejects an unrelated doubleheader ID and older provider revisions even after
   ).toEqual([])
   expect((await loadMarket('one')).sportsRecordedResult).toBeNull()
 })
+
+it('retains failed mail across recovery and sends each later correction independently', async () => {
+  const m = await create()
+  const save = (
+    observation: Parameters<typeof recordMajorObservation>[4],
+    when: number
+  ) =>
+    recordMajorObservation(
+      pg,
+      house,
+      'nba',
+      m.sportsEventId,
+      observation,
+      when,
+      when,
+      false,
+      () => true,
+      false
+    )
+  const final = {
+    ...raw,
+    status_state: 'final',
+    home_team_score: 12,
+    visitor_team_score: 10,
+  }
+  const game = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(
+    101
+  )!
+  const first = kickoff + HOUR_MS
+  await save(undefined, first)
+  await save({ ...game, status: 'in_progress' }, first + 1)
+  raw = final
+  const result = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(
+    101
+  )!
+  await save(result, first + 2)
+  await save({ ...result, homeScore: 9 }, first + 3)
+  await save({ ...result, homeScore: 8 }, first + 4)
+  await save({ ...result, homeScore: 8 }, first + 5)
+  const pending = () =>
+    read<{ reason: string }>(
+      'select reason from sports_market_attention_deliveries order by occurred_at'
+    )
+  expect((await pending()).map((a) => a.reason)).toEqual([
+    'missing game',
+    'result corrected',
+    'result corrected',
+  ])
+  const send = jest.fn().mockResolvedValueOnce(false).mockResolvedValue(true)
+  await deliverMajorAlerts(pg, 'nba', first + 6, () => true, send)
+  expect(send).toHaveBeenCalledTimes(3)
+  expect(await pending()).toEqual([{ reason: 'missing game' }])
+  await deliverMajorAlerts(pg, 'nba', first + 7, () => true, send)
+  expect(send).toHaveBeenCalledTimes(3)
+  await deliverMajorAlerts(
+    pg,
+    'nba',
+    first + 6 + 5 * MINUTE_MS,
+    () => true,
+    send
+  )
+  expect(send).toHaveBeenCalledTimes(4)
+  expect(await pending()).toEqual([])
+})
+
+it('retries an acknowledged mail when the local transaction rolls back, and keeps its identity', async () => {
+  const m = await create()
+  await recordMajorObservation(
+    pg,
+    house,
+    'nba',
+    m.sportsEventId,
+    undefined,
+    kickoff + 1,
+    kickoff + 1,
+    false,
+    () => true,
+    false
+  )
+  const rollback = {
+    tx: (fn: (tx: SupabaseTransaction) => Promise<unknown>) =>
+      pg.tx(async (tx) => {
+        await fn(tx)
+        throw new Error('simulated transaction rollback')
+      }),
+  } as unknown as SupabaseDirectClient
+  const send = jest.fn().mockResolvedValue(true)
+  await expect(
+    deliverMajorAlerts(rollback, 'nba', kickoff + 2, () => true, send)
+  ).rejects.toThrow('simulated transaction rollback')
+  expect(
+    await read('select incident_key from sports_market_attention_deliveries')
+  ).toHaveLength(1)
+  await deliverMajorAlerts(pg, 'nba', kickoff + 3, () => true, send)
+  expect(send).toHaveBeenCalledTimes(2)
+  expect(send.mock.calls[1]).toEqual(send.mock.calls[0])
+  expect(
+    await read('select incident_key from sports_market_attention_deliveries')
+  ).toHaveLength(0)
+})
+
+it('holds a different paid sibling outcome or contradictory native weights through the payout boundary', async () => {
+  const m = await create()
+  now = kickoff + 2 * HOUR_MS
+  raw = {
+    ...raw,
+    status_state: 'final',
+    home_team_score: 85,
+    visitor_team_score: 73,
+  }
+  const g = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(101)!
+  const [offer] = await recordMajorObservation(
+    pg,
+    house,
+    'nba',
+    m.sportsEventId,
+    g,
+    now,
+    now,
+    false,
+    () => true,
+    false
+  )
+  expect(offer.payout).toBeDefined()
+  await addMarket({ ...offer.market }, 'second', [
+    'Northport Foxes',
+    'Lake City Owls',
+  ])
+  const modify = async (
+    resolution: string,
+    weights: Record<string, number>
+  ) => {
+    await read(
+      "update contracts set resolution=$1,data=data||$2::jsonb where id='second'",
+      [resolution, { isResolved: true, resolution, resolutions: weights }]
+    )
+    await read(
+      "update answers set prob=coalesce(($1::jsonb->>id)::float/100,0) where contract_id='second'",
+      [weights]
+    )
+  }
+  await modify('second-0', { 'second-0': 100 })
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  await modify('second-1', { 'second-0': 100 })
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+  await modify('second-1', { 'second-1': 100 })
+  await read("update answers set prob=0.5 where contract_id='second'")
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  await modify('second-1', { 'second-1': 100 })
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(true)
+})
+it('orders overlapping source revisions and requires a fresh serial read after an unversioned disagreement', async () => {
+  const m = await create(),
+    start = kickoff + HOUR_MS
+  raw = {
+    ...raw,
+    status_state: 'final',
+    home_team_score: 85,
+    visitor_team_score: 73,
+  }
+  const g = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(101)!
+  const write = (row: typeof g, request: number, received: number) =>
+    recordMajorObservation(
+      pg,
+      house,
+      'nba',
+      m.sportsEventId,
+      row,
+      request,
+      received,
+      false,
+      () => true,
+      false
+    )
+  expect(
+    (await write({ ...g, scoreUpdatedTime: start }, start, start + 10))[0]
+      .payout
+  ).toBeDefined()
+  const newer = (
+    await write(
+      { ...g, status: 'in_progress', scoreUpdatedTime: start + 20 },
+      start + 5,
+      start + 25
+    )
+  )[0]
+  expect(newer.change.patch.sportsRevisionWatermark).toBe(start + 20)
+  expect(newer.payout).toBeUndefined()
+  expect(
+    await write({ ...g, scoreUpdatedTime: start }, start + 30, start + 31)
+  ).toEqual([])
+  const delayed = (
+    await write({ ...g, scoreUpdatedTime: undefined }, start + 5, start + 35)
+  )[0]
+  expect(delayed.change.patch.sportsAttentionReason).toBe('result corrected')
+  expect(delayed.payout).toBeUndefined()
+})
+
+it.each([15, 20, 30])(
+  'revokes a pending unversioned cancellation for intersecting acquisitions completed at offset %i until a fresh serial read',
+  async (completion) => {
+    const m = await create(),
+      t = kickoff + HOUR_MS
+    raw = { ...raw, status_state: 'canceled', status: 'Canceled' }
+    const g = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(
+      101
+    )!
+    const write = (state: typeof g, begin: number, end: number) =>
+      recordMajorObservation(
+        pg,
+        house,
+        'nba',
+        m.sportsEventId,
+        state,
+        begin,
+        end,
+        false,
+        () => true,
+        false
+      )
+    expect((await write(g, t, t + 20))[0].change.record?.status).toBe(
+      'canceled'
+    )
+    const conflict = (
+      await write({ ...g, status: 'in_progress' }, t + 10, t + completion)
+    )[0]
+    expect(conflict.change.patch.sportsAttentionReason).toBe(
+      'unconfirmed observation order'
+    )
+    expect(conflict.change.patch.sportsCanceledSince).toBeNull()
+    const recovered = (await write(g, t + 31, t + 40))[0]
+    expect(recovered.change.record?.status).toBe('canceled')
+    expect(recovered.change.patch.sportsCanceledSince).toBe(t + 40)
+  }
+)

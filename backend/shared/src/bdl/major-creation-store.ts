@@ -30,6 +30,7 @@ type StoredGame = {
   start: string | null
   date_only: boolean | null
   latest_start: string | null
+  observed_start: string | null
 }
 
 /** A prior BDL ID only blocks a replacement once it has started and a complete
@@ -50,7 +51,8 @@ export async function majorCreationHold(
   const rows = await pg.manyOrNone<StoredGame>(
     `select c.id, ${sportsProviderSql()} as source, c.data->>'sportsStartTimestamp' as start,
               c.data->>'sportsStartKnown' = 'false' as date_only,
-              c.data->>'sportsLatestPossibleStartTimestamp' as latest_start
+              c.data->>'sportsLatestPossibleStartTimestamp' as latest_start,
+              c.data->>'sportsObservedStartTime' as observed_start
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA' and c.resolution is null
         and c.deleted is not true and c.data->>'sportsMarketType' = 'moneyline'
@@ -76,13 +78,20 @@ export async function majorCreationHold(
   let beforeOpenOdds = false
   for (const row of rows) {
     const other = parseSportsKickoffMs(row.start ?? undefined)
+    const observed =
+      row.observed_start && /^\d{1,15}$/.test(row.observed_start)
+        ? Number(row.observed_start)
+        : NaN
+    const started = observed > 0 && observed <= now
     if (
       row.source === 'bdl' &&
-      other <= now &&
+      (started || other <= now) &&
       start -
         Math.min(
           now,
-          storedGameDayEnd(other, row.date_only, row.latest_start)
+          started && !Number.isFinite(other)
+            ? observed
+            : storedGameDayEnd(other, row.date_only, row.latest_start)
         ) <=
         BDL_REISSUED_EVENT_MATCH_WINDOW_MS
     )

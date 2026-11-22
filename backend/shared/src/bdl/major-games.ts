@@ -113,7 +113,7 @@ function scheduleTime(league: MajorLeague, row: Row) {
   // Only NBA and NHL document a civil date separately from a nullable start.
   // A bad timestamp is a data error, and NBA can echo an announced tip in status.
   const unannounced =
-    row.status_state === 'scheduled' &&
+    (row.status_state === 'scheduled' || row.status_state === 'postponed') &&
     ((league === 'nba' &&
       row.datetime == null &&
       !(
@@ -168,6 +168,7 @@ const identified = (value: ObservedTeam): value is Team =>
   value.id !== null && value.name !== null
 
 const gameResultLabels = [
+  /\b(?:forfeits?|forfeited) (?:due to|because of|owing to)\b/,
   /\b(?:no contests?|walk ?overs?|forfeitures?|abandonment)\b/,
   /^(?:(?:status|final|result)\W+)*(?:forfeit(?:s|ed)?|abandoned|awarded|retire(?:d|ment)|w\/o)(?:\W*$|\s*(?:[:(]|\b(?:due to|because of|by|win|loss|victory)\b))/,
   /\b(?:by|via|due to|ends? in|ended in|declared|ruled) (?:a |an )?(?:forfeit|retirement)\b/,
@@ -215,7 +216,7 @@ export function mapMajorGame(
     league,
     league === 'nhl' || league === 'mlb' ? row.away_team : row.visitor_team
   )
-  if (!identified(home) || !identified(away)) {
+  if (!identified(home) || !identified(away) || home.id === away.id) {
     // The event is present, but its scores cannot be assigned to known entrants.
     return {
       id: row.id,
@@ -232,10 +233,6 @@ export function mapMajorGame(
       entrantIssue: 'unidentifiable entrants',
     }
   }
-  if (home.id === away.id)
-    throw new Error(
-      '[sports-bdl-' + league + '] Both sides have the same provider team ID'
-    )
   const visitorScores = league === 'nba' || league === 'nfl'
   const homeScore = score(
     league === 'mlb'
@@ -262,7 +259,11 @@ export function mapMajorGame(
     (league !== 'mlb' ||
       row.season_type === 'regular' ||
       row.season_type === 'postseason') &&
-    ![home, away].some((team) => unknownOpponent.test(team.name)) &&
+    ![home, away].some((team) =>
+      unknownOpponent.test(
+        team.name.replace(/\.\s*/gu, '').replace(/\s+/gu, ' ').trim()
+      )
+    ) &&
     ![home.name, away.name, row.status, row.summary].some(
       (value) => typeof value === 'string' && exhibition.test(value)
     )
@@ -275,12 +276,35 @@ export function mapMajorGame(
       (league === 'nfl' &&
         (score(row.home_team_ot) !== null ||
           score(row.visitor_team_ot) !== null)))
-  const irregular = [
+  const descriptions = [
     row.status,
-    row.summary,
-    row.period_detail,
     league === 'nhl' ? row.game_state : undefined,
-  ].some((value) => irregularGameLabel(value, home.name, away.name))
+  ]
+  const contradicted = descriptions.some((value) => {
+    if (typeof value !== 'string') return false
+    const label = normalizeResultLabel(value)
+    if (
+      /^(?:live|pre|fut|crit)$/.test(label) ||
+      /^(?:game )?(?:cancelled|canceled|postponed|suspended|delayed|scheduled|in progress)\b/.test(
+        label
+      )
+    )
+      return (
+        status === 'final' || (status === 'canceled' && !/cancel/.test(label))
+      )
+    return (
+      status === 'canceled' &&
+      /^(?:final|finished|official final|off|game over)\b/.test(label)
+    )
+  })
+  const irregular =
+    contradicted ||
+    [
+      row.status,
+      row.summary,
+      row.period_detail,
+      league === 'nhl' ? row.game_state : undefined,
+    ].some((value) => irregularGameLabel(value, home.name, away.name))
   return {
     id: row.id,
     home,

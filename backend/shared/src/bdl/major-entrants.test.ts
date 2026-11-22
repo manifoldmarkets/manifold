@@ -132,3 +132,22 @@ it('rejects an unrelated detail ID or conflicting duplicates even if one row lac
     ])
   ).rejects.toThrow('duplicate BDL game ID')
 })
+
+it('quarantines only an identified bad target and still obtains the next healthy exact match', async () => {
+  const held = new Set<number>()
+  const base = { ...source, id: source.id + 1 }
+  const { client } = feed((url) =>
+    url.pathname.endsWith('/' + source.id)
+      ? { ...source, date: null, datetime: null }
+      : base
+  )
+  const results = await fetchMajorSnapshots(
+    client,
+    'nba',
+    [{ id: source.id }, { id: base.id }],
+    { onMalformed: (id) => held.add(id) }
+  )
+  expect([...held]).toEqual([source.id])
+  expect(results.has(source.id)).toBe(false)
+  expect(results.get(base.id)).toMatchObject({ id: base.id, eligible: true })
+})

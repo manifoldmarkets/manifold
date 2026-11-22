@@ -107,6 +107,9 @@ it.each(leagues)(
     }
     const labels = [
       'Home team forfeits',
+      'Home team forfeited due to illness',
+      mapMajorGame(league, raw).home.name +
+        ' forfeited due to insufficient players',
       'Home team forfeits, visitors advance',
       'Contest ended in a forfeit',
       'Forfeit loss',
@@ -482,7 +485,9 @@ it('rejects unrelated dates, ignored WNBA phase, conflicting schedule IDs and un
   )
   await expect(
     fetch([{ ...row, visitor_team: row.home_team }])
-  ).rejects.toThrow('Both sides')
+  ).resolves.toMatchObject([
+    { id: row.id, eligible: false, entrantIssue: 'unidentifiable entrants' },
+  ])
   await expect(
     fetch([{ ...row, home_team: { id: 11 } }])
   ).resolves.toMatchObject([
@@ -954,3 +959,40 @@ it('keeps archived opening odds separate from current game quotes', async () => 
     'vendor or timestamp'
   )
 })
+
+it.each([
+  ['final', 'Canceled'],
+  ['canceled', 'Final/OT'],
+  ['final', 'Game postponed'],
+  ['final', 'LIVE'],
+] as const)(
+  'holds a %s row contradicted by its game status %s',
+  (status_state, status) => {
+    const game = mapMajorGame('nba', {
+      ...mayNbaGame(),
+      status,
+      status_state,
+      home_team_score: 8,
+      visitor_team_score: 5,
+    })
+    expect(reviewedResult('nba', game)).toEqual({
+      incident: 'irregular result',
+    })
+  }
+)
+it.each(['T.B.D.', 'T. B. D .', 'To  Be Determined'])(
+  'holds placeholder %s in creation and a reported final',
+  (name) => {
+    const raw = mayNbaGame()
+    const game = mapMajorGame('nba', {
+      ...raw,
+      visitor_team: { id: 17, full_name: name },
+      status_state: 'final',
+      status: 'Final',
+      home_team_score: 8,
+      visitor_team_score: 5,
+    })
+    expect(game.eligible).toBe(false)
+    expect(reviewedResult('nba', game).record).toBeUndefined()
+  }
+)
