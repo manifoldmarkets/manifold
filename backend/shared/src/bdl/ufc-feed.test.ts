@@ -47,6 +47,13 @@ const fightRaw = {
   result_round: 3,
 }
 const bout = parseUfcBout(fightRaw, 52)!
+const noResult = {
+  winnerId: null,
+  method: null,
+  methodDetail: null,
+  resultRound: null,
+  resultTime: null,
+}
 const market = {
   fightId: 80,
   fighterIds: [11, 22] as const,
@@ -125,7 +132,8 @@ test('locks identity to the same unordered fighter IDs and UFC event, preserves 
 test.each(['scheduled', 'in_progress', 'suspended', 'unknown'] as const)(
   'retains open trading before a confirmed result on %s',
   (status) => {
-    expect(decide({ status })).toMatchObject({
+    expect(decide({ status })).toMatchObject({ kind: 'attention', close: true })
+    expect(decide({ ...noResult, status })).toMatchObject({
       kind: 'hold',
       close: false,
       observation: null,
@@ -203,7 +211,7 @@ test('a changed normalized result restarts the delay; stale pages and absence ca
     ufcWinnerDecision({ ...market, observedAt: at + 1 }, bout, at)
   ).toMatchObject({ kind: 'hold', reason: 'No newer observation' })
   expect(
-    decide({ status: 'scheduled' }, at + 101, initial.observation)
+    decide({ ...noResult, status: 'scheduled' }, at + 101, initial.observation)
   ).toMatchObject({ kind: 'hold', observation: null })
 })
 test('swapping corners preserves the winner; each confirmed replacement/cancellation has its own persistence window', () => {
@@ -229,17 +237,17 @@ test('swapping corners preserves the winner; each confirmed replacement/cancella
       pending.observation
     ).kind
   ).toBe('hold')
-  const cancelled = decide({ status: 'canceled' })
+  const cancelled = decide({ ...noResult, status: 'canceled' })
   expect(
     decide(
-      { status: 'canceled' },
+      { ...noResult, status: 'canceled' },
       at + BDL_CANCELLATION_HOLD_MS - 1,
       cancelled.observation
     ).kind
   ).toBe('hold')
   expect(
     decide(
-      { status: 'canceled' },
+      { ...noResult, status: 'canceled' },
       at + BDL_CANCELLATION_HOLD_MS,
       cancelled.observation
     )

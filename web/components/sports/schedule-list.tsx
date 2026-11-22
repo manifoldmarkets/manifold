@@ -16,7 +16,13 @@ import {
   raceSessionSearchText,
   RaceWeekend,
 } from 'common/race-weekends'
-import { filterUfcCards, type UfcMarketCard } from 'common/bdl/ufc-card'
+import { sportsViewNow } from 'common/sports-view-clock'
+import {
+  filterUfcCards,
+  freshUfcObservation,
+  type UfcMarketBout,
+  type UfcMarketCard,
+} from 'common/bdl/ufc-card'
 import { UfcFightCards } from './ufc-fight-cards'
 import { ScheduleGame } from 'common/sports-schedule'
 import { formatMoney } from 'common/util/format'
@@ -121,6 +127,9 @@ export function GameFeed(props: {
   )
   const ufcCards = props.ufcCards ?? []
   const fights = ufcCards.flatMap((c) => c.bouts)
+  const now = sportsViewNow()
+  const liveFight = (b: UfcMarketBout) =>
+    b.status === 'in_progress' && freshUfcObservation(b, now)
   const fightIds = fights.map((b) => b.id)
   const likes = useGameLikes([
     ...fightIds,
@@ -161,7 +170,7 @@ export function GameFeed(props: {
     ufcCards,
     (b, c) =>
       (date === 'all' || c.date === date) &&
-      (filter !== 'live' || b.status === 'in_progress') &&
+      (filter !== 'live' || liveFight(b)) &&
       (filter !== 'liked' || likes.liked.has(b.id)) &&
       (filter !== 'mine' || !!stakes[b.id]) &&
       (!normalized ||
@@ -327,57 +336,65 @@ export function GameFeed(props: {
                 </button>
               )}
             </div>
-            <label className="text-ink-500 flex items-center gap-2 text-xs">
-              <span className="sr-only sm:not-sr-only">Sort</span>
-              <select
-                aria-label="Sort games"
-                className="border-ink-200 bg-canvas-0 text-ink-700 min-h-[40px] w-28 rounded-lg border py-1.5 pl-2 pr-7 text-xs disabled:opacity-50 sm:w-auto"
-                value={filter === 'live' ? 'time' : sort}
-                disabled={filter === 'live'}
-                title={
-                  filter === 'live'
-                    ? 'Live games are ordered by start time'
-                    : undefined
-                }
-                onChange={(event) => setSort(event.target.value)}
-              >
-                <option value="time">Start time</option>
-                <option value="volume">Most traded per day</option>
-              </select>
-            </label>
-            <div
-              className="border-ink-200 flex shrink-0 rounded-lg border p-0.5"
-              role="group"
-              aria-label="Game board layout"
-            >
-              {(
-                [
-                  { value: 'cards', label: 'Card view', Icon: ViewGridIcon },
-                  {
-                    value: 'compact',
-                    label: 'Compact view',
-                    Icon: ViewListIcon,
-                  },
-                ] as const
-              ).map(({ value, label, Icon }) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-label={label}
-                  title={label}
-                  aria-pressed={view === value}
-                  onClick={() => setView(value)}
-                  className={clsx(
-                    'flex h-9 w-9 items-center justify-center rounded-md',
-                    view === value
-                      ? 'bg-primary-50 text-primary-700'
-                      : 'text-ink-400 hover:bg-canvas-100'
-                  )}
+            {!!everything.length && (
+              <>
+                <label className="text-ink-500 flex items-center gap-2 text-xs">
+                  <span className="sr-only sm:not-sr-only">Sort</span>
+                  <select
+                    aria-label="Sort games"
+                    className="border-ink-200 bg-canvas-0 text-ink-700 min-h-[40px] w-28 rounded-lg border py-1.5 pl-2 pr-7 text-xs disabled:opacity-50 sm:w-auto"
+                    value={filter === 'live' ? 'time' : sort}
+                    disabled={filter === 'live'}
+                    title={
+                      filter === 'live'
+                        ? 'Live games are ordered by start time'
+                        : undefined
+                    }
+                    onChange={(event) => setSort(event.target.value)}
+                  >
+                    <option value="time">Start time</option>
+                    <option value="volume">Most traded per day</option>
+                  </select>
+                </label>
+                <div
+                  className="border-ink-200 flex shrink-0 rounded-lg border p-0.5"
+                  role="group"
+                  aria-label="Game board layout"
                 >
-                  <Icon className="h-4 w-4" />
-                </button>
-              ))}
-            </div>
+                  {(
+                    [
+                      {
+                        value: 'cards',
+                        label: 'Card view',
+                        Icon: ViewGridIcon,
+                      },
+                      {
+                        value: 'compact',
+                        label: 'Compact view',
+                        Icon: ViewListIcon,
+                      },
+                    ] as const
+                  ).map(({ value, label, Icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      aria-label={label}
+                      title={label}
+                      aria-pressed={view === value}
+                      onClick={() => setView(value)}
+                      className={clsx(
+                        'flex h-9 w-9 items-center justify-center rounded-md',
+                        view === value
+                          ? 'bg-primary-50 text-primary-700'
+                          : 'text-ink-400 hover:bg-canvas-100'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <div
@@ -396,8 +413,7 @@ export function GameFeed(props: {
                     label: 'Live',
                     count:
                       everything.filter((item) => item.status === 'live')
-                        .length +
-                      fights.filter((b) => b.status === 'in_progress').length,
+                        .length + fights.filter(liveFight).length,
                   },
                   {
                     value: 'liked',
@@ -570,7 +586,6 @@ export function GameFeed(props: {
             />
           ))}
         {!hasFilters && belowFeatured}
-        {!!shownCards.length && <UfcFightCards cards={shownCards} />}
         {filtered.length === 0 && !shownCards.length && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
@@ -624,6 +639,13 @@ export function GameFeed(props: {
             />
             {renderItems(live)}
           </Col>
+        )}
+        {!!shownCards.length && (
+          <UfcFightCards
+            cards={shownCards}
+            allMatches={hasFilters}
+            onBetPlaced={(id) => void positions.refreshGame(id)}
+          />
         )}
         {days.map((day) => (
           <Col key={day.key} className="gap-2">

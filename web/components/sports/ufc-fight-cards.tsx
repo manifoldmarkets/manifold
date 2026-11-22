@@ -3,12 +3,16 @@ import { CheckIcon } from '@heroicons/react/solid'
 import { useEffect, useState } from 'react'
 import { formatSportsPrice } from 'common/sports-price'
 import {
+  freshUfcObservation,
+  ufcObservationEnd,
+  ufcTicketBinding,
   ufcCanBet,
   ufcCardDisplay,
   type UfcMarketCard,
   type UfcMarketBout,
 } from 'common/bdl/ufc-card'
 import { UFC_SEGMENTS } from 'common/bdl/ufc'
+import { sportsViewNow, sportsTimerDelay } from 'common/sports-view-clock'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { UfcWinnerBetDialog } from './sports-bet-panel'
@@ -141,14 +145,24 @@ function BoutRow({
   onPick: (b: UfcMarketBout, id: string) => void
 }) {
   const tradable = ufcCanBet(b, now)
+  const stale =
+    (b.status === 'scheduled' || b.status === 'in_progress') &&
+    !freshUfcObservation(b, now)
+  const matchup = b.answers
+    .slice(0, 2)
+    .map((a) => a.name)
+    .join(' vs ')
   return (
     <article className="border-ink-200 border-b px-3 py-3 last:border-0">
       <div className="text-ink-600 mb-2 flex flex-wrap items-center gap-x-2 text-xs">
         <Link
           href={href(b)}
-          className="text-ink-900 font-semibold hover:underline"
+          aria-label={`Open ${matchup} market, ${
+            stale ? states.unknown : states[b.status]
+          }`}
+          className="text-ink-900 inline-flex min-h-[44px] items-center font-semibold hover:underline"
         >
-          {b.status === 'in_progress' ? (
+          {!stale && b.status === 'in_progress' ? (
             <span className="inline-flex items-center gap-1.5 text-sm font-bold text-red-600 dark:text-red-400">
               <span
                 aria-hidden
@@ -156,17 +170,28 @@ function BoutRow({
               />
               Live
             </span>
+          ) : stale ? (
+            states.unknown
           ) : (
             featured ?? states[b.status]
           )}
         </Link>
+        {!tradable &&
+          (b.status === 'scheduled' || b.status === 'in_progress') && (
+            <span>
+              {b.isResolved || b.closeTime == null || b.closeTime <= now
+                ? 'Betting closed'
+                : 'Prices unavailable'}
+            </span>
+          )}
         {b.headline && <span>Listed main event</span>}
         {b.titleFight && <span>Title fight</span>}
         {b.weightClass && <span>{b.weightClass}</span>}
         {b.scheduledRounds && <span>{b.scheduledRounds} rounds</span>}
         <Link
           href={href(b)}
-          className="ml-auto inline-flex min-h-[32px] items-center font-semibold hover:underline"
+          aria-label={`Open ${matchup} market`}
+          className="ml-auto inline-flex min-h-[44px] items-center font-semibold hover:underline"
         >
           Market <span aria-hidden> ›</span>
         </Link>
@@ -193,7 +218,9 @@ function BoutRow({
                 cls +
                 ' bg-primary-50 hover:border-primary-500 focus-visible:ring-primary-500 focus-visible:ring-2'
               }
-              aria-label={`Bet on ${a.name}, ${formatSportsPrice(a.prob)}`}
+              aria-label={`Bet on ${a.name} in ${matchup}, ${formatSportsPrice(
+                a.prob
+              )}`}
               onClick={() => onPick(b, a.answerId)}
             >
               {content}
@@ -208,50 +235,56 @@ function BoutRow({
     </article>
   )
 }
-export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
+export function UfcFightCards({
+  cards,
+  allMatches,
+  onBetPlaced,
+}: {
+  cards: UfcMarketCard[]
+  allMatches?: boolean
+  onBetPlaced?: (id: string) => void
+}) {
   const user = useUser()
   const [now, setNow] = useState(0)
   const [choice, setChoice] = useState<{
-    contract: string
-    event: string
+    binding: string
     answer: string
-    fighterId: number | null
+    closeTime: number
   }>()
-  const nearest = cards
-    .flatMap((c) => c.bouts)
-    .reduce(
-      (n, b) =>
-        b.closeTime != null && b.closeTime > now ? Math.min(n, b.closeTime) : n,
-      Infinity
-    )
+  const bouts = cards.flatMap((c) => c.bouts)
+  const deadlines = bouts.flatMap((b) => [
+    ufcObservationEnd(b),
+    b.closeTime ?? 0,
+  ])
+  if (choice) deadlines.push(choice.closeTime)
+  const next = deadlines.reduce(
+    (at, t) => (t > now ? Math.min(at, t) : at),
+    Infinity
+  )
   useEffect(() => {
-    let timer: number | undefined
-    const update = () => {
-      const time = Date.now()
-      setNow(time)
-      if (Number.isFinite(nearest) && time < nearest)
-        timer = window.setTimeout(update, Math.min(nearest - time, 2 ** 31 - 1))
+    const update = () => setNow(sportsViewNow())
+    const delay = sportsTimerDelay([next], now, sportsViewNow())
+    const timer = delay == null ? undefined : setTimeout(update, delay)
+    if (!now) update()
+    window.addEventListener('focus', update)
+    document.addEventListener('visibilitychange', update)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('focus', update)
+      document.removeEventListener('visibilitychange', update)
     }
-    update()
-    return () => window.clearTimeout(timer)
-  }, [nearest])
+  }, [now, next])
   const active =
+    choice && bouts.find((b) => ufcTicketBinding(b) === choice.binding)
+  if (
     choice &&
-    cards
-      .flatMap((c) => c.bouts)
-      .find(
-        (b) =>
-          b.id === choice.contract &&
-          b.eventId === choice.event &&
-          b.answers.some(
-            (a) =>
-              a.answerId === choice.answer && a.fighterId === choice.fighterId
-          )
-      )
-  if (choice && (!active || !ufcCanBet(active, Date.now())))
+    (!active ||
+      !ufcCanBet(active, sportsViewNow()) ||
+      sportsViewNow() >= choice.closeTime)
+  )
     setChoice(undefined)
   const pick = (b: UfcMarketBout, answer: string) => {
-    if (!ufcCanBet(b, Date.now())) return
+    if (b.closeTime == null || !ufcCanBet(b, sportsViewNow())) return
     if (!user) {
       firebaseLogin()
       return
@@ -259,23 +292,27 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
     const selected = b.answers.find((a) => a.answerId === answer)
     if (selected)
       setChoice({
-        contract: b.id,
-        event: b.eventId,
+        binding: ufcTicketBinding(b),
         answer,
-        fighterId: selected.fighterId,
+        closeTime: b.closeTime,
       })
   }
   return (
     <>
       {cards.map((c) => {
         const { recent, confirmedLast, live, next, remaining } = ufcCardDisplay(
-          c.bouts
+          c.bouts,
+          now
         )
         const archive = !remaining.length
         const featured = live ?? next
         const listed = archive
           ? c.bouts
-          : c.bouts.filter((b) => b.status !== 'final' && b !== featured)
+          : c.bouts.filter(
+              (b) =>
+                b !== featured &&
+                (b.status !== 'final' || (allMatches && b !== recent))
+            )
         const headliners = c.bouts.filter((b) => b.headline)
         const headline = headliners.length === 1 ? headliners[0] : undefined
         return (
@@ -308,20 +345,19 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
             {!archive && recent && (
               <ResultLine bout={recent} last={confirmedLast && !c.partial} />
             )}
-            {featured?.segment &&
-              !listed.some((b) => b.segment === featured.segment) && (
-                <h3 className="bg-canvas-50 text-ink-600 px-3 py-1.5 text-xs font-semibold">
-                  <SegmentLabel
-                    segment={featured.segment}
-                    bouts={c.bouts}
-                    local={now !== 0}
-                  />
-                </h3>
-              )}
+            {featured?.segment && (
+              <h3 className="bg-canvas-50 text-ink-600 px-3 py-1.5 text-xs font-semibold">
+                <SegmentLabel
+                  segment={featured.segment}
+                  bouts={c.bouts}
+                  local={now !== 0}
+                />
+              </h3>
+            )}
             {featured && (
               <BoutRow
                 b={featured}
-                now={now || Infinity}
+                now={now}
                 featured={featured === live ? 'Live' : 'Up next'}
                 onPick={pick}
               />
@@ -342,12 +378,7 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
                     b.status === 'final' ? (
                       <ResultLine key={b.id} bout={b} last={false} />
                     ) : (
-                      <BoutRow
-                        key={b.id}
-                        b={b}
-                        now={now || Number.POSITIVE_INFINITY}
-                        onPick={pick}
-                      />
+                      <BoutRow key={b.id} b={b} now={now} onPick={pick} />
                     )
                   )}
                 </div>
@@ -359,12 +390,7 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
                 b.status === 'final' ? (
                   <ResultLine key={b.id} bout={b} last={false} />
                 ) : (
-                  <BoutRow
-                    key={b.id}
-                    b={b}
-                    now={now || Number.POSITIVE_INFINITY}
-                    onPick={pick}
-                  />
+                  <BoutRow key={b.id} b={b} now={now} onPick={pick} />
                 )
               )}
           </section>
@@ -375,6 +401,8 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
           key={active.eventId}
           bout={active}
           selected={choice.answer}
+          initialClose={choice.closeTime}
+          onBetPlaced={() => onBetPlaced?.(active.id)}
           onClose={() => setChoice(undefined)}
         />
       )}

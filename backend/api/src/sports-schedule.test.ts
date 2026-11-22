@@ -72,7 +72,10 @@ const tree = [
   name,
   total_members: 10,
 }))
-type MarketRow = (typeof props)[number] & { sports_league?: string | null }
+type MarketRow = (typeof props)[number] & {
+  sports_league?: string | null
+  fixture?: boolean
+}
 let marketRows: MarketRow[] = props
 let resumedRows: { data: Record<string, unknown> }[] = []
 let liveRows: { data: Record<string, unknown> }[] = []
@@ -189,7 +192,12 @@ beforeEach(() => {
           : [...officialRows, ...resumedRows, ...liveRows].flatMap(({ data }) =>
               gameAnswers(data)
             )
-      if (sql.includes('select c.id, c.question')) return marketRows
+      if (sql.includes('select c.id, c.question'))
+        return sql.includes(
+          "c.data->'sportsFixture' is distinct from 'true'::jsonb"
+        )
+          ? marketRows.filter((row) => !row.fixture)
+          : marketRows
       if (sql.includes('from group_groups')) return tree
       if (sql.includes('from group_contracts')) return gameGroups
       return []
@@ -215,6 +223,7 @@ it('serves the market-backed UFC card once, with native picks, on All and MMA', 
     visibility: 'public',
     addAnswersMode: 'DISABLED',
     sportsUfc: {
+      observedEventId: bdlHeadToHeadEventId('mma', 77, 10, 20),
       cardId: 5,
       cardName: 'Fight Night',
       cardDate: new Date(at).toISOString().slice(0, 10),
@@ -254,12 +263,13 @@ it('serves the market-backed UFC card once, with native picks, on All and MMA', 
       sports_market_type: 'moneyline',
       group_ids: [groupId('mma')],
     },
+    { ...props[0], id: 'fixture', fixture: true, group_ids: [groupId('mma')] },
   ]
   const get = sportsSchedule as (
     input: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
   const read = async (sport: 'mma' | 'all' | 'soccer') => {
-    const r = await get({ sport })
+    const r = await get({ sport, observedGames: true })
     return 'result' in r ? r.result : r
   }
   for (const sport of ['all', 'mma'] as const) {

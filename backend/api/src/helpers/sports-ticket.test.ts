@@ -1,3 +1,4 @@
+import { toUfcMarketBout, ufcTicketBinding } from 'common/bdl/ufc-card'
 import type { Answer } from 'common/answer'
 import type { Contract } from 'common/contract'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
@@ -168,4 +169,100 @@ it('fails a bound order closed on a disabled worker and preserves ordinary nativ
       expect.not.stringContaining('for share')
     )
   }
+})
+
+it('rechecks the three-way UFC event, every answer binding, receipt and promised cutoff against the locked rows', async () => {
+  const event = 'bdl:mma:77:10-20'
+  const snapshot = {
+    observedEventId: event,
+    cardId: 7,
+    cardName: 'Fight night',
+    cardDate: '2026-11-22',
+    segment: 'main_card',
+    segmentStart: now - 3000,
+    order: 1,
+    headline: true,
+    titleFight: false,
+    status: 'in_progress',
+    observedAt: now - 100,
+    lastNonfinalAt: now - 100,
+    firstFinalAt: null,
+    winner: null,
+    method: null,
+    round: null,
+    roundTime: null,
+    scheduledRounds: 3,
+    onlyRemaining: false,
+  }
+  const fight = {
+    ...market,
+    sportsLeagueKey: 'mma',
+    sportsEventId: event,
+    sportsEntrantIds: [20, 10, null],
+    sportsUfc: snapshot,
+  }
+  const offered = [
+    { ...rows[1], index: 0 },
+    { ...rows[0], index: 1 },
+    { ...rows[0], id: 'd', index: 2, text: 'Draw or no contest' },
+  ]
+  const current = toUfcMarketBout(
+    fight as unknown as Contract,
+    offered.map((a) => ({ ...a, contractId: 'local' })) as unknown as Answer[]
+  )!
+  const selection = {
+    ...body,
+    sportsTicket: { binding: ufcTicketBinding(current), closeTime: now + 1000 },
+    answerId: 'd',
+  }
+  for (const answerId of ['a', 'h', 'd']) {
+    await expect(
+      lockContractAndGetBetData(
+        transaction(fight, offered).pg,
+        { ...selection, answerId },
+        'buyer'
+      )
+    ).resolves.toHaveProperty('contract.id', 'local')
+  }
+  for (const [patch, native] of [
+    [{ sportsUfc: { ...snapshot, observedAt: now + 1 } }, offered],
+    [
+      {
+        sportsUfc: {
+          ...snapshot,
+          observedAt: now - 3600000,
+          lastNonfinalAt: now - 3600000,
+        },
+      },
+      offered,
+    ],
+    [
+      { sportsUfc: { ...snapshot, observedEventId: 'bdl:mma:77:20-30' } },
+      offered,
+    ],
+    [{ sportsUfc: { ...snapshot, status: 'final' } }, offered],
+    [{ closeTime: now }, offered],
+    [{ visibility: 'private' }, offered],
+    [{}, offered.slice(0, 2)],
+    [{}, [{ ...offered[0], id: 'replacement' }, ...offered.slice(1)]],
+    [{}, [{ ...offered[0], text: 'Another' }, ...offered.slice(1)]],
+  ] as const) {
+    await expect(
+      lockContractAndGetBetData(
+        transaction({ ...fight, ...patch }, [...native]).pg,
+        selection,
+        'buyer'
+      )
+    ).rejects.toMatchObject({ code: 409 })
+  }
+  await expect(
+    lockContractAndGetBetData(
+      transaction(fight, offered).pg,
+      {
+        ...selection,
+        sportsTicket: { ...selection.sportsTicket, closeTime: now },
+      },
+      'buyer'
+    )
+  ).rejects.toMatchObject({ code: 409 })
 })

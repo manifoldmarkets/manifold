@@ -10,7 +10,7 @@ import { ScheduleGame } from 'common/sports-schedule'
 import { gameScoreLabel } from 'common/sports-scoreboard'
 import { sportsViewNow } from 'common/sports-view-clock'
 import { escapeRegExp } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import {
@@ -28,6 +28,9 @@ import {
 import {
   toUfcMarketBout,
   ufcCanBet,
+  ufcObservationEnd,
+  ufcTicketBinding,
+  verifiedUfcTicket,
   type UfcMarketBout,
 } from 'common/bdl/ufc-card'
 import { SportsMatch, MatchOutcome } from './sports-match-card'
@@ -36,7 +39,7 @@ import { SportsMatch, MatchOutcome } from './sports-match-card'
  * the order endpoint repeats the check under the platform's contract lock. */
 export async function readSportsContract(
   contractId: string,
-  expected?: ScheduleGame
+  expected?: ScheduleGame | UfcMarketBout
 ) {
   const first = await getContract(db, contractId)
   if (!first || !isMultiCpmm(first)) return null
@@ -51,8 +54,19 @@ export async function readSportsContract(
     !latest ||
     !isMultiCpmm(latest) ||
     latest.outcomeType !== 'MULTIPLE_CHOICE' ||
-    !matchesSportsTicket(expected, first, rows, sportsViewNow()) ||
-    !matchesSportsTicket(expected, latest, rows, sportsViewNow())
+    ![first, latest].every((c) =>
+      'observedEventId' in expected
+        ? !!verifiedUfcTicket(
+            {
+              binding: ufcTicketBinding(expected),
+              closeTime: expected.closeTime ?? 0,
+            },
+            c,
+            rows,
+            sportsViewNow()
+          )
+        : matchesSportsTicket(expected, c, rows, sportsViewNow())
+    )
   )
     return null
   return { ...latest, answers: rows }
@@ -63,26 +77,34 @@ export async function readSportsContract(
 // with a Draw are three-way. Both load the contract by id.
 function useSportsContract(
   contractId: string | undefined,
-  expected?: ScheduleGame
+  expected?: ScheduleGame | UfcMarketBout
 ) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
   const [failed, setFailed] = useState(!contractId)
 
   // A changed quote invalidates the native curves as well as the picker's label.
-  const quote =
-    expected &&
-    JSON.stringify([
-      sportsTicketBinding(expected),
-      expected.home.prob,
-      expected.away.prob,
-      expected.draw?.prob,
-    ])
+  const [readQuote, setReadQuote] = useState<string>()
+  const ufc = expected && 'observedEventId' in expected
+  const quote = ufc
+    ? JSON.stringify([
+        ufcTicketBinding(expected),
+        expected.observedAt,
+        ...expected.answers.map((a) => a.prob),
+      ])
+    : expected &&
+      JSON.stringify([
+        sportsTicketBinding(expected),
+        expected.home.prob,
+        expected.away.prob,
+        expected.draw?.prob,
+      ])
   useEffect(() => {
     if (!contractId) return
     let cancelled = false
     readSportsContract(contractId, expected)
       .then((value) => {
         if (cancelled) return
+        setReadQuote(quote)
         setContract(value)
         setFailed(!value)
       })
@@ -94,7 +116,7 @@ function useSportsContract(
     }
   }, [contractId, quote])
 
-  return { contract, failed }
+  return { contract: ufc && readQuote !== quote ? null : contract, failed }
 }
 
 function bindTicket(
@@ -170,40 +192,70 @@ function SportsLoadError(props: { onClose: () => void }) {
 export function UfcWinnerBetDialog({
   bout,
   selected,
+  initialClose,
   onClose,
+  onBetPlaced,
 }: {
   bout: UfcMarketBout
   selected: string
+  initialClose: number
   onClose: () => void
+  onBetPlaced?: () => void
 }) {
-  const { contract, failed } = useSportsContract(bout.id)
-  if (failed) return <SportsLoadError onClose={onClose} />
-  if (!contract) return null
-  const current = toUfcMarketBout(contract, contract.answers)
-  if (
-    !current ||
-    current.eventId !== bout.eventId ||
-    !ufcCanBet(current, Date.now()) ||
-    !current.answers.some(
-      (a) =>
-        a.answerId === selected &&
-        a.fighterId ===
-          bout.answers.find((pick) => pick.answerId === selected)?.fighterId
-    )
+  const { contract, failed } = useSportsContract(bout.id, bout)
+  const [activeAnswer, setActiveAnswer] = useState(selected)
+  const [, updateClock] = useState(0)
+  const earliestNativeClose = useRef(initialClose)
+  const now = sportsViewNow()
+  const current = contract && toUfcMarketBout(contract, contract.answers)
+  earliestNativeClose.current = Math.min(
+    earliestNativeClose.current,
+    bout.closeTime ?? 0,
+    current ? current.closeTime ?? 0 : Infinity
   )
-    return <SportsLoadError onClose={onClose} />
+  const deadline = Math.min(
+    earliestNativeClose.current,
+    ufcObservationEnd(bout),
+    current ? ufcObservationEnd(current) : Infinity
+  )
+  const ticket = { binding: ufcTicketBinding(bout), closeTime: deadline }
+  const invalid =
+    deadline <= now ||
+    !ufcCanBet(bout, now) ||
+    (!!contract &&
+      (!current || !verifiedUfcTicket(ticket, contract, contract.answers, now)))
+  useEffect(() => {
+    if (invalid) {
+      onClose()
+      return
+    }
+    const timer = setTimeout(
+      () => updateClock((n) => n + 1),
+      Math.min(2147483647, Math.max(0, deadline - sportsViewNow()))
+    )
+    return () => clearTimeout(timer)
+  }, [invalid, deadline, onClose, now])
+  if (invalid) return null
+  if (failed) return <SportsLoadError onClose={onClose} />
+  if (!contract || !current) return null
   return (
-    <ThreeWayTradeDialog
-      contract={contract}
-      open
-      setOpen={(open) => {
-        if (!open) onClose()
-      }}
-      initialAnswerId={selected}
-      answerOrder={current.answers.map((a) => a.answerId)}
-      trackingLocation="sports UFC card"
-      description={current.cardName}
-    />
+    <SportsTicketContext.Provider
+      value={{ ticket, onInvalid: onClose, onRestingOrder: onBetPlaced }}
+    >
+      <ThreeWayTradeDialog
+        contract={contract}
+        open
+        setOpen={(open) => {
+          if (!open) onClose()
+        }}
+        initialAnswerId={activeAnswer}
+        onAnswerChange={setActiveAnswer}
+        onBetPlaced={onBetPlaced}
+        answerOrder={current.answers.map((a) => a.answerId)}
+        trackingLocation="sports UFC card"
+        description={current.cardName}
+      />
+    </SportsTicketContext.Provider>
   )
 }
 

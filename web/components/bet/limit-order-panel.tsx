@@ -323,6 +323,7 @@ export default function LimitOrderPanel(props: {
         id: bet.betId,
         userId: user.id,
       }
+      if (fullBet.amount === 0) sportsTicket?.onRestingOrder?.()
       onBetPlaced?.(fullBet)
       track('bet', {
         location,

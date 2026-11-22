@@ -145,6 +145,7 @@ export function ThreeWayTradeDialog(props: {
   trackingLocation: string
   onBetPlaced?: (bet: Bet) => void
   initialAnswerId?: string
+  onAnswerChange?: (id: string) => void
   /** Picker order, e.g. home / draw / away. Defaults to the market's order. */
   answerOrder?: (string | undefined)[]
   description?: ReactNode
@@ -190,7 +191,10 @@ export function ThreeWayTradeDialog(props: {
           contract={contract}
           answers={choices}
           selectedId={answer.id}
-          onSelect={setAnswerId}
+          onSelect={(id) => {
+            setAnswerId(id)
+            props.onAnswerChange?.(id)
+          }}
         />
       }
     />

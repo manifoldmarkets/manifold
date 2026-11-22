@@ -67,6 +67,8 @@ const MARKET_OUTCOME_TYPES: OutcomeType[] = [
 
 import {
   filterUfcCards,
+  freshUfcObservation,
+  ufcObservationEnd,
   groupUfcCards,
   toUfcMarketBout,
   type UfcMarketBout,
@@ -367,7 +369,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     if (b.isResolved || b.status === 'final' || b.status === 'canceled')
       continue
     counts.mma = (counts.mma ?? 0) + 1
-    if (b.status === 'in_progress') liveCount++
+    if (b.status === 'in_progress' && freshUfcObservation(b, now)) {
+      liveCount++
+      const end = ufcObservationEnd(b)
+      expiries.set(end, (expiries.get(end) ?? 0) + 1)
+    }
   }
   // An F1 session counts like a game: the rail shows how many are on.
   for (const w of weekends) {
@@ -619,11 +625,15 @@ async function getOfficialGames(
           const topics = groups[contract.id] ?? []
           if ('sportsUfc' in contract) {
             const bout = toUfcMarketBout(contract, answers[contract.id] ?? [])
-            if (bout) {
+            if (
+              bout &&
+              (bout.segmentStart ?? Date.parse(bout.cardDate + 'T00:00:00Z')) <
+                horizon
+            ) {
               bouts.push(bout)
               groupIds[bout.id] = topics
-              continue
             }
+            continue
           }
           const game = toOfficialGame(
             contract,
@@ -859,6 +869,7 @@ async function querySportsMarkets(
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
        and c.resolution is null
+       and c.data->'sportsFixture' is distinct from 'true'::jsonb
        and c.outcome_type = any($4::text[])
        and c.close_time > now() + $2::interval
        and c.close_time < now() + $3::interval

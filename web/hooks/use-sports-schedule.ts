@@ -1,3 +1,4 @@
+import { ufcObservationEnd } from 'common/bdl/ufc-card'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
@@ -248,8 +249,22 @@ export function useSportsSchedule(
     [view, enabled]
   )
 
+  const fights = useMemo(
+    () =>
+      new Map(
+        feed?.response.ufcCards?.flatMap((card) =>
+          card.bouts
+            .filter(
+              (b) =>
+                !b.isResolved && b.status !== 'final' && b.status !== 'canceled'
+            )
+            .map((b) => [b.id, b] as const)
+        )
+      ),
+    [feed?.response.ufcCards]
+  )
   const topics = useMemo(() => {
-    const out: string[] = []
+    const out = [...fights.keys()].map((id) => `contract/${id}/updated-answers`)
     for (const g of games) {
       if (g.status === 'finished') continue
       out.push(`contract/${g.id}/updated-answers`)
@@ -261,6 +276,7 @@ export function useSportsSchedule(
     }
     return out
   }, [
+    fights,
     games
       .map(
         (g) =>
@@ -275,6 +291,20 @@ export function useSportsSchedule(
     onBroadcast: ({ topic, data }) => {
       const id = topic.split('/')[1]
       if (!id) return
+      const fight = fights.get(id)
+      if (fight && topic.endsWith('/updated-answers')) {
+        // Native packets do not carry a fight binding or pricing pools. Re-read the
+        // contract, its three stable answer IDs and their current quotes together.
+        if (
+          Array.isArray(data.answers) &&
+          data.answers.some(
+            (a: { id?: string } | null) =>
+              a && fight.answers.some((pick) => pick.answerId === a.id)
+          )
+        )
+          invalidate()
+        return
+      }
       const verified = isSportsBdlEnabled()
       const game = shown.get(id)
       if (
@@ -329,7 +359,7 @@ export function useSportsSchedule(
   // idle page, so the timer is what moves games from upcoming to live to
   // finished and discovers new ones.
   const hasActive =
-    response?.ufcCards?.some((c) =>
+    feed?.response.ufcCards?.some((c) =>
       c.bouts.some(
         (b) =>
           b.status === 'in_progress' ||
@@ -435,6 +465,11 @@ export function useSportsSchedule(
       ...(rail?.liveExpiries ?? []).map(([at]) => at),
       ...(rail?.membershipExpiries ?? []).map(([at]) => at),
     ]
+    for (const card of merged?.ufcCards ?? [])
+      for (const bout of card.bouts) {
+        deadlines.push(ufcObservationEnd(bout))
+        if (bout.closeTime != null) deadlines.push(bout.closeTime)
+      }
     for (const g of merged?.games ?? []) {
       const at = nextSportsObservationChange(g, projectedAt)
       if (at != null) deadlines.push(at)

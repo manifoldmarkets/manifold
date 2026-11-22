@@ -2,11 +2,14 @@ import { z } from 'zod'
 import type { Answer } from '../answer'
 import { type Contract, isMultiCpmm, isSportsContract } from '../contract'
 import { officialBdlLeagueKey } from '../sports-league-label'
-import { parseBdlEventId } from '../sports-ids'
+import { DAY_MS } from '../util/time'
+import { LIVE_STALE_MS } from '../sports-schedule'
+import { bdlHeadToHeadEventId, parseBdlEventId } from '../sports-ids'
 import {
   UFC_DRAW_ANSWER,
   UFC_SEGMENTS,
   ufcWinnerDecision,
+  ufcMethod,
   type UfcBout,
   type UfcCard,
 } from './ufc'
@@ -26,6 +29,7 @@ const status = z.enum([
   'unknown',
 ])
 const snapshot = z.object({
+  observedEventId: z.string(),
   cardId: id,
   cardName: label,
   cardDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -82,11 +86,20 @@ export function filterUfcCards(
   keep: (bout: UfcMarketBout, card: UfcMarketCard) => boolean
 ): UfcMarketCard[] {
   return cards.flatMap((card) => {
-    const bouts = card.bouts.filter((b) => keep(b, card))
+    const pending = card.bouts.filter(
+      (b) => b.status !== 'final' && b.status !== 'canceled'
+    )
+    const bouts = card.bouts
+      .filter((b) => b.observedEventId === b.eventId && keep(b, card))
+      .map((b) =>
+        pending.length > 1 && b.onlyRemaining
+          ? { ...b, onlyRemaining: false }
+          : b
+      )
     return !bouts.length
       ? []
       : bouts.length === card.bouts.length
-      ? [card]
+      ? [{ ...card, bouts }]
       : [{ ...card, bouts, partial: true as const }]
   })
 }
@@ -102,6 +115,18 @@ export function ufcMarketObservation(
 ): UfcMarketSnapshot {
   if (card.id !== bout.cardId || !Number.isSafeInteger(at) || at < 0)
     throw Error('Invalid UFC observation')
+  const observedEventId = bdlHeadToHeadEventId(
+    'mma',
+    bout.id,
+    bout.fighters[0].id,
+    bout.fighters[1].id
+  )
+  if (bout.eventId !== observedEventId) throw Error('Invalid UFC matchup')
+  if (
+    previous?.observedEventId !== observedEventId ||
+    previous.cardId !== card.id
+  )
+    previous = null
   if (previous && at <= previous.observedAt) return previous
   const decision = ufcWinnerDecision(
     {
@@ -114,7 +139,13 @@ export function ufcMarketObservation(
     at,
     0
   )
+  const state =
+    decision.kind === 'attention' && bout.status !== 'final'
+      ? 'unknown'
+      : bout.status
+  const verifiedResult = decision.kind === 'resolve' && state === 'final'
   return {
+    observedEventId,
     cardId: card.id,
     cardName: card.name,
     cardDate: card.date,
@@ -124,7 +155,7 @@ export function ufcMarketObservation(
     order: bout.order,
     headline: bout.headline,
     titleFight: bout.titleFight,
-    status: bout.status,
+    status: state,
     observedAt: at,
     lastNonfinalAt:
       bout.status === 'final' ? previous?.lastNonfinalAt ?? null : at,
@@ -138,9 +169,13 @@ export function ufcMarketObservation(
       decision.kind === 'resolve' && decision.outcome !== 'CANCEL'
         ? decision.outcome
         : null,
-    method: bout.status === 'final' ? bout.method : null,
-    round: bout.status === 'final' ? bout.resultRound : null,
-    roundTime: bout.status === 'final' ? bout.resultTime : null,
+    method: verifiedResult
+      ? ufcMethod(bout.methodDetail)
+        ? bout.methodDetail
+        : bout.method
+      : null,
+    round: verifiedResult ? bout.resultRound : null,
+    roundTime: verifiedResult ? bout.resultTime : null,
     scheduledRounds: bout.scheduledRounds,
     weightClass: bout.weightClass,
     onlyRemaining,
@@ -172,6 +207,7 @@ export function toUfcMarketBout(
     !event ||
     !('entrantIds' in event) ||
     !observation.success ||
+    observation.data.observedEventId !== c.sportsEventId ||
     !ids ||
     ids.length !== 3 ||
     ids[2] !== null ||
@@ -204,6 +240,25 @@ export function toUfcMarketBout(
   )
     return null
   const o = observation.data
+  const method = ufcMethod(o.method)
+  const neutral =
+    method === 'draw' || method === 'technical-draw' || method === 'no-contest'
+  if (
+    (o.status !== 'final' &&
+      [o.firstFinalAt, o.winner, o.method, o.round, o.roundTime].some(
+        (v) => v != null
+      )) ||
+    (o.winner != null &&
+      (!method ||
+        (neutral
+          ? o.winner !== 'draw-or-no-contest'
+          : !event.entrantIds.some((id) => id === o.winner)))) ||
+    (o.firstFinalAt != null &&
+      (o.firstFinalAt > o.observedAt ||
+        (o.lastNonfinalAt != null && o.lastNonfinalAt >= o.firstFinalAt))) ||
+    (o.lastNonfinalAt != null && o.lastNonfinalAt > o.observedAt)
+  )
+    return null
   const picks = sorted.map((a, i) => ({
     answerId: a.id,
     fighterId: ids[i],
@@ -218,15 +273,33 @@ export function toUfcMarketBout(
             : p.fighterId === o.winner
         )?.answerId
       : null
-  const settledWinners = sorted.filter((a) => a.resolution === 'YES')
-  const agreesWithPayout =
-    !c.resolution ||
-    ((c.resolution === marked ||
-      (c.resolution === 'MKT' && settledWinners.length === 1)) &&
-      settledWinners.every((a) => a.id === marked) &&
-      !sorted.some(
-        (a) => a.id === marked && a.resolution && a.resolution !== 'YES'
+  const weights = c.resolutions
+  const validWeights =
+    !weights ||
+    (!!marked &&
+      weights[marked] === 100 &&
+      Object.entries(weights).every(
+        ([id, weight]) =>
+          picks.some((p) => p.answerId === id) &&
+          weight === (id === marked ? 100 : 0)
       ))
+  const answerFlagsAgree = sorted.every((a) => {
+    const expected = a.id === marked ? 1 : 0
+    return (
+      (!a.resolution ||
+        a.resolution === (expected ? 'YES' : 'NO') ||
+        (a.resolution === 'MKT' && a.resolutionProbability === expected)) &&
+      (a.resolutionProbability == null || a.resolutionProbability === expected)
+    )
+  })
+  const agreesWithPayout =
+    validWeights &&
+    answerFlagsAgree &&
+    ((!c.isResolved && !c.resolution) ||
+      c.resolution === marked ||
+      (c.resolution === 'MKT' &&
+        (!!weights ||
+          sorted.some((a) => a.id === marked && a.resolution === 'YES'))))
   return {
     ...o,
     id: c.id,
@@ -239,7 +312,11 @@ export function toUfcMarketBout(
       typeof c.closeTime === 'number' && Number.isFinite(c.closeTime)
         ? c.closeTime
         : null,
-    isResolved: !!c.resolution,
+    isResolved:
+      !!c.resolution ||
+      !!c.isResolved ||
+      !!c.resolutions ||
+      sorted.some((a) => !!a.resolution),
     winnerAnswerId: marked && agreesWithPayout ? marked : null,
     answers: picks,
   }
@@ -276,7 +353,10 @@ export function groupUfcCards(
     }))
     .sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id)
 }
-export function ufcCardDisplay(bouts: readonly UfcMarketBout[]) {
+export function ufcCardDisplay(
+  bouts: readonly UfcMarketBout[],
+  now = Date.now()
+) {
   const completed = bouts.filter((b) => b.status === 'final'),
     remaining = bouts.filter(
       (b) => b.status !== 'final' && b.status !== 'canceled'
@@ -297,11 +377,14 @@ export function ufcCardDisplay(bouts: readonly UfcMarketBout[]) {
       (b) =>
         b === recent || (valid(b) && b.firstFinalAt! <= recent.lastNonfinalAt!)
     )
-  const live = remaining.filter((b) => b.status === 'in_progress')
+  const live = remaining.filter(
+    (b) => b.status === 'in_progress' && freshUfcObservation(b, now)
+  )
   const next =
     remaining.length === 1 &&
     remaining[0].status === 'scheduled' &&
-    remaining[0].onlyRemaining
+    remaining[0].onlyRemaining &&
+    freshUfcObservation(remaining[0], now)
       ? remaining[0]
       : undefined
   return {
@@ -313,9 +396,53 @@ export function ufcCardDisplay(bouts: readonly UfcMarketBout[]) {
     completed,
   }
 }
+// Scheduled markets can use an advance listing until the segment starts. Live and
+// sole-remaining claims use the same ten-minute receipt window as the sports feed.
+export function ufcObservationEnd(b: UfcMarketBout) {
+  const liveEnd = b.observedAt + LIVE_STALE_MS
+  return b.status === 'scheduled' && !b.onlyRemaining && b.segmentStart != null
+    ? Math.min(b.observedAt + DAY_MS, Math.max(b.segmentStart, liveEnd))
+    : liveEnd
+}
+
+export function freshUfcObservation(b: UfcMarketBout, now: number) {
+  return (
+    b.observedEventId === b.eventId &&
+    Number.isFinite(now) &&
+    now >= b.observedAt &&
+    now < ufcObservationEnd(b)
+  )
+}
+
+export const ufcTicketBinding = (b: UfcMarketBout) =>
+  JSON.stringify([
+    'ufc',
+    b.id,
+    b.cardId,
+    b.observedEventId,
+    b.answers.map((a) => [a.answerId, a.fighterId, a.name]),
+  ])
+
+export function verifiedUfcTicket(
+  ticket: { binding: string; closeTime: number },
+  contract: Contract,
+  answers: readonly Answer[],
+  now: number
+) {
+  const bout = toUfcMarketBout(contract, answers)
+  return bout &&
+    Number.isFinite(ticket.closeTime) &&
+    now < ticket.closeTime &&
+    ufcCanBet(bout, now) &&
+    ufcTicketBinding(bout) === ticket.binding
+    ? bout
+    : undefined
+}
+
 export function ufcCanBet(b: UfcMarketBout, now: number) {
   return (
     !b.isResolved &&
+    freshUfcObservation(b, now) &&
     (b.status === 'scheduled' || b.status === 'in_progress') &&
     b.closeTime != null &&
     b.closeTime > now

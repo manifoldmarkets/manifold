@@ -201,6 +201,17 @@ export function ufcWinnerDecision(
       ? { kind: 'resolve', close: true, outcome: 'CANCEL', observation: obs }
       : hold('Opponent changed', true, obs)
   }
+  if (
+    bout.status !== 'final' &&
+    [
+      bout.winnerId,
+      bout.method,
+      bout.methodDetail,
+      bout.resultRound,
+      bout.resultTime,
+    ].some((value) => value != null)
+  )
+    return attention('Unsettled fight carries a result', true)
   if (bout.status === 'canceled') {
     const obs = observe('canceled')
     return at - obs.since >= BDL_CANCELLATION_HOLD_MS

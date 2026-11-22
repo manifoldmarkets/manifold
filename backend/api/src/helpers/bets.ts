@@ -1,3 +1,4 @@
+import { verifiedUfcTicket } from 'common/bdl/ufc-card'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import {
   verifiedSportsTicket,
@@ -127,7 +128,12 @@ function checkSportsTicket(
   if (
     !isSportsBdlEnabled() ||
     !answers.some((a) => a.id === body.answerId) ||
-    !verifiedSportsTicket(body.sportsTicket, contract, answers, Date.now())
+    !('sportsUfc' in contract ? verifiedUfcTicket : verifiedSportsTicket)(
+      body.sportsTicket,
+      contract,
+      answers,
+      Date.now()
+    )
   )
     throw new APIError(
       409,

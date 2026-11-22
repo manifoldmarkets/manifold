@@ -1,3 +1,4 @@
+import { LIVE_STALE_MS } from '../sports-schedule'
 import type { Answer } from '../answer'
 import type { Contract } from '../contract'
 import { MANIFOLD_SPORTS_USER_IDS } from '../sports'
@@ -70,6 +71,10 @@ const answers = [
 function market(patch = {}, picks = answers) {
   return toUfcMarketBout({ ...raw, ...patch } as unknown as Contract, picks)
 }
+beforeEach(() => {
+  jest.spyOn(Date, 'now').mockReturnValue(400)
+})
+afterEach(() => jest.restoreAllMocks())
 const row = market()!
 const stamp = (id: number, patch: Partial<UfcMarketBout>): UfcMarketBout => ({
   ...row,
@@ -249,4 +254,151 @@ test('filtering preserves partial-card provenance and in-play tickets use a real
   ])
     expect(ufcCanBet(b, 0)).toBe(false)
   expect(ufcCanBet(row, 800)).toBe(false)
+})
+
+test('only the observed canonical fight and unordered pair can control results and chronology', () => {
+  const replacement = {
+    ...bout,
+    eventId: bdlHeadToHeadEventId('mma', 77, 20, 30),
+    fighters: [
+      bout.fighters[0],
+      { id: 30, name: 'Pine' },
+    ] as UfcBout['fighters'],
+  }
+  const replaced = ufcMarketObservation(
+    card,
+    { ...replacement, status: 'final', method: 'Decision', winnerId: 20 },
+    300,
+    observation
+  )
+  expect(replaced.lastNonfinalAt).toBeNull()
+  expect(market({ sportsUfc: replaced })).toBeNull()
+  expect(
+    market({ sportsUfc: { ...observation, observedEventId: undefined } })
+  ).toBeNull()
+  expect(
+    ufcMarketObservation(
+      card,
+      {
+        ...bout,
+        fighters: [bout.fighters[1], bout.fighters[0]],
+        status: 'final',
+        method: 'Decision',
+        winnerId: 10,
+      },
+      220,
+      observation
+    ).lastNonfinalAt
+  ).toBe(120)
+  expect(() =>
+    ufcMarketObservation(
+      card,
+      { ...replacement, eventId: bout.eventId },
+      300,
+      null
+    )
+  ).toThrow()
+})
+
+test('contradictory results and stale or future observations cannot keep a pick live', () => {
+  for (const patch of [
+    { winnerId: 10 },
+    { method: 'Submission' },
+    { methodDetail: 'Draw' },
+    { resultRound: 2 },
+    { resultTime: '1:24' },
+  ]) {
+    const o = ufcMarketObservation(
+      card,
+      { ...bout, status: 'in_progress', ...patch },
+      120,
+      null
+    )
+    expect(o.status).toBe('unknown')
+    expect(ufcCanBet(market({ sportsUfc: o })!, 121)).toBe(false)
+  }
+  const match = { ...row, status: 'in_progress' as const, closeTime: 10000000 }
+  for (const t of [119, 120 + LIVE_STALE_MS, 120 + LIVE_STALE_MS + 1]) {
+    expect(ufcCanBet(match, t)).toBe(false)
+    expect(ufcCardDisplay([match], t).live).toBeUndefined()
+    expect(
+      ufcCardDisplay(
+        [{ ...match, status: 'scheduled', onlyRemaining: true }],
+        t
+      ).next
+    ).toBeUndefined()
+  }
+  expect(ufcCanBet(match, 120 + LIVE_STALE_MS - 1)).toBe(true)
+  const later = {
+    ...match,
+    status: 'scheduled' as const,
+    segmentStart: 120 + 2 * LIVE_STALE_MS,
+  }
+  expect(ufcCanBet(later, later.segmentStart - 1)).toBe(true)
+  expect(ufcCanBet(later, later.segmentStart)).toBe(false)
+  const final = ufcMarketObservation(
+    card,
+    {
+      ...bout,
+      status: 'final',
+      method: 'Decision',
+      methodDetail: 'Technical draw',
+    },
+    400,
+    observation
+  )
+  expect(final).toMatchObject({
+    winner: 'draw-or-no-contest',
+    method: 'Technical draw',
+  })
+  expect(market({ sportsUfc: { ...final, winner: 20 } })).toBeNull()
+  expect(
+    market({ sportsUfc: { ...observation, roundTime: '1:24' } })
+  ).toBeNull()
+})
+
+test('a single agreed native payout supports the winner; ambiguous or split payments do not', () => {
+  const end = ufcMarketObservation(
+    card,
+    { ...bout, status: 'final', method: 'Decision', winnerId: 20 },
+    300,
+    observation
+  )
+  for (const resolutions of [{ r: 100 }, { r: 100, v: 0, d: 0 }])
+    expect(
+      market({ sportsUfc: end, resolution: 'MKT', resolutions })?.winnerAnswerId
+    ).toBe('r')
+  for (const resolutions of [
+    { v: 100 },
+    { r: 50, d: 50 },
+    { r: 100, foreign: 0 },
+    {},
+  ])
+    expect(
+      market({ sportsUfc: end, resolution: 'MKT', resolutions })?.winnerAnswerId
+    ).toBeNull()
+  expect(
+    market({ sportsUfc: end, resolution: 'MKT', resolutions: { r: 100 } }, [
+      { ...answers[0], resolution: 'NO' },
+      ...answers.slice(1),
+    ])?.winnerAnswerId
+  ).toBeNull()
+  expect(
+    market({ sportsUfc: end, isResolved: true })?.winnerAnswerId
+  ).toBeNull()
+})
+test('round-roster contradictions survive every personal or topic filter', () => {
+  const only = { ...row, onlyRemaining: true }
+  const contradictory = stamp(88, { observedAt: 121 })
+  const selected = filterUfcCards(
+    groupUfcCards([only, contradictory]),
+    (b) => b.id === only.id
+  )
+  expect(ufcCardDisplay(selected[0].bouts, 150).next).toBeUndefined()
+  expect(
+    ufcCardDisplay(
+      filterUfcCards(groupUfcCards([only]), () => true)[0].bouts,
+      150
+    ).next?.id
+  ).toBe(only.id)
 })
