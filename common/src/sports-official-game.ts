@@ -29,7 +29,8 @@ export function toOfficialGame(
   groupIds: string[],
   index: SportsIndex | undefined,
   now: number,
-  bdlEnabled = true
+  bdlEnabled = true,
+  observed = false
 ): ScheduleGame | null {
   if (!isSportsContract(c) || !c.sportsEventId || !isMultiCpmm(c)) return null
   const d = c as typeof c & Partial<SportsLiveScore>
@@ -49,10 +50,14 @@ export function toOfficialGame(
   const isResolved = !!c.resolution
   const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
   const label = league?.shortLabel || d.sportsLeague || ''
+  const observedFields =
+    league || (observed && !isResolved)
+      ? scheduleScoreFields(d, isResolved)
+      : undefined
   const details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
-    : league
-    ? scheduleScoreFields(d, isResolved)
+    : league || observedFields?.gameState
+    ? observedFields
     : undefined
 
   const ordered = sortBy(answers, 'index')

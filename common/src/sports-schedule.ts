@@ -1302,7 +1302,7 @@ export interface UpcomingMarketRef {
 }
 
 export interface SportsScheduleResponse {
-  /** Server time before snapshot reads; survives HTTP and client caching. */
+  /** For observed games, server time immediately after the read snapshot is pinned. */
   snapshotTime?: number
   /**
    * One page of the feed: on the first page every live game, then upcoming
@@ -1401,25 +1401,30 @@ function scheduledConfirmationEnd(game: ScheduleGame) {
 }
 
 /** The current live census contribution ends at a confirmed receipt or at the
- * existing legacy time-based cutoff. A fresh legacy score can outlast close. */
+ * existing legacy time-based cutoff, bounded by the last eligible scan. */
 export function sportsLiveEnd(game: ScheduleGame) {
   const receiptEnd =
     game.liveUpdatedTime == null
       ? undefined
       : game.liveUpdatedTime + LIVE_STALE_MS
-  if (game.gameState) return game.gameState === 'live' ? receiptEnd : undefined
+  if (game.gameState && game.gameState !== 'live') return undefined
+  const maxEnd = game.sportsLeagueKey
+    ? Infinity
+    : game.closeTime + SCHEDULE_CLOSE_GRACE_HOURS * HOUR_MS
+  if (game.gameState === 'live')
+    return receiptEnd == null ? undefined : Math.min(receiptEnd, maxEnd)
   const scored = LIVE_STATUSES.has(game.liveScore?.status ?? '')
     ? receiptEnd
     : undefined
   if (scored != null && (!game.kickoffKnown || game.startTime > scored))
-    return scored
-  return Math.max(game.closeTime, scored ?? 0)
+    return Math.min(scored, maxEnd)
+  return Math.min(Math.max(game.closeTime, scored ?? 0), maxEnd)
 }
 
 /** End of eligibility for the schedule's ordinary close, resumption or receipt
  * window. This is separate from the contract's cutoff for placing a bet. */
 export function sportsMembershipEnd(game: ScheduleGame) {
-  const grace = SCHEDULE_CLOSE_GRACE_HOURS * 60 * 60 * 1000
+  const grace = SCHEDULE_CLOSE_GRACE_HOURS * HOUR_MS
   // Only canonical BDL games enter either recovery scan after the ordinary
   // close window. A legacy suspension cannot survive on its remote ETA alone.
   if (!game.sportsLeagueKey) {

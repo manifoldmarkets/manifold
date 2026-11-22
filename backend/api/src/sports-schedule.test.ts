@@ -74,6 +74,7 @@ type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
 let liveRows: typeof officialRows
 let resumedRows: { data: Record<string, unknown> }[] = []
+let onPinSnapshot: (() => void) | undefined
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
@@ -106,6 +107,7 @@ beforeEach(() => {
   marketRows = props
   officialRows = official
   officialPages = []
+  onPinSnapshot = undefined
   liveRows = []
   resumedRows = []
   answerRows = []
@@ -123,6 +125,10 @@ beforeEach(() => {
       ) => Promise<unknown>
     ) => work(createSupabaseDirectClient()),
     one: async (sql: string, params: [string[], ...unknown[]]) => {
+      if (sql === 'select pg_current_snapshot() is not null as pinned') {
+        onPinSnapshot?.()
+        return { pinned: true }
+      }
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
       if (linksMissing || failedLinkRead)
@@ -733,6 +739,33 @@ describe('F1 race weekends', () => {
     ]
   })
 
+  it('publishes each counted session deadline once even on a non-F1 page', async () => {
+    const clock = jest.spyOn(Date, 'now')
+    const deadlines = [qualifying + 3 * 3600000, race + 3 * 3600000]
+    try {
+      for (const now of [
+        deadlines[0] - 1,
+        deadlines[0],
+        deadlines[1],
+        deadlines[1] + 1,
+      ]) {
+        clock.mockReturnValue(now)
+        for (const sport of ['nfl', 'f1'] as const) {
+          const raw = await getSchedule({ sport, observedGames: true })
+          const result = 'result' in raw ? raw.result : raw
+          const remaining = deadlines.filter((at) => at > now)
+          expect(result.counts.f1 ?? 0).toBe(remaining.length)
+          expect(
+            result.membershipExpiries?.filter(([, key]) => key === 'f1')
+          ).toEqual(remaining.map((at) => [at, 'f1', 1]))
+          if (sport === 'nfl') expect(result.raceWeekends).toEqual([])
+        }
+      }
+    } finally {
+      clock.mockRestore()
+    }
+  })
+
   it('shows a weekend on the page of a topic one of its markets is in', async () => {
     gameGroups = [
       ...defaultGameGroups,
@@ -1258,6 +1291,97 @@ it('discards an impossible future receipt without inferring live activity before
   expect(observed.liveExpiries).toEqual([])
 })
 
+it('uses the clock after pinning the snapshot for concurrent newer receipts and their deadlines', async () => {
+  const startedAt = Date.now()
+  const received = startedAt + 250
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(startedAt)
+  officialRows = []
+  liveRows = [
+    {
+      data: {
+        ...official[0].data,
+        id: 'concurrent',
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsProvider: 'bdl',
+        sportsLeagueKey: 'nfl',
+        sportsMarketType: 'moneyline',
+        sportsEventId: 'bdl:nfl:777',
+        sportsLiveStatus: 'IN_PROGRESS',
+        sportsLiveUpdatedTime: received,
+        closeTime: startedAt - 3 * 86400000,
+      },
+    },
+  ]
+  onPinSnapshot = () => {
+    clock.mockReturnValue(received)
+  }
+  const get = sportsSchedule as (
+    p: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  try {
+    const raw = await get({ sport: 'nfl', observedGames: true })
+    const page = 'result' in raw ? raw.result : raw
+    expect(page.snapshotTime).toBe(received)
+    expect(page.games).toMatchObject([
+      { id: 'concurrent', liveUpdatedTime: received, status: 'live' },
+    ])
+    expect(page.liveExpiries).toEqual([[received + 600000, 1]])
+  } finally {
+    clock.mockRestore()
+  }
+})
+
+it.each([
+  ['IN_PLAY', true],
+  ['IN_PLAY', false],
+  ['IN_PROGRESS', true],
+] as const)(
+  'caps traditional %s (start known: %s) on matching and off-sport pages',
+  async (status, startKnown) => {
+    const close = Date.now() - 18 * 3600000 + 60000
+    const deadline = close + 18 * 3600000
+    const received = deadline - 60000
+    const source = {
+      ...official[0].data,
+      closeTime: close,
+      sportsStartTimestamp: new Date(close - 3600000).toISOString(),
+      sportsLiveStatus: status,
+      sportsStartKnown: startKnown,
+      sportsLiveUpdatedTime: received,
+      sportsHomeScore: 7,
+      sportsAwayScore: 3,
+    }
+    const clock = jest.spyOn(Date, 'now')
+    const get = sportsSchedule as (
+      p: Parameters<typeof sportsSchedule>[0]
+    ) => ReturnType<typeof sportsSchedule>
+    try {
+      for (const now of [received, deadline - 1, deadline, deadline + 1]) {
+        clock.mockReturnValue(now)
+        const eligible = now < deadline
+        // The SQL stub divides the close scan from recovery scans at its indexed boundary.
+        officialRows = eligible ? [{ data: source }] : []
+        liveRows = eligible ? [] : [{ data: source }]
+        for (const sport of ['nfl', 'soccer'] as const) {
+          const raw = await get({ sport, observedGames: true })
+          const page = 'result' in raw ? raw.result : raw
+          expect(page.games.map((g) => g.id)).toEqual(
+            eligible && sport === 'nfl' ? ['nfl'] : []
+          )
+          expect(page.counts.nfl ?? 0).toBe(Number(eligible))
+          expect(page.liveCount).toBe(Number(eligible))
+          expect(page.liveExpiries).toEqual(eligible ? [[deadline, 1]] : [])
+          expect(page.membershipExpiries).toEqual(
+            eligible ? [[deadline, 'nfl', 1]] : []
+          )
+        }
+      }
+    } finally {
+      clock.mockRestore()
+    }
+  }
+)
+
 it('ends traditional suspended membership at the indexed close window even with a later confirmed restart', async () => {
   const now = Date.now(),
     hour = 3600000
@@ -1268,6 +1392,8 @@ it('ends traditional suspended membership at the indexed close window even with 
         closeTime: now - hour,
         sportsStartTimestamp: new Date(now - 2 * hour).toISOString(),
         sportsLiveStatus: 'SUSPENDED',
+        sportsHomeScore: 7,
+        sportsAwayScore: 3,
         sportsResumptionTime: now + 48 * hour,
       },
     },
@@ -1281,6 +1407,7 @@ it('ends traditional suspended membership at the indexed close window even with 
     gameState: 'suspended',
     resumptionTime: now + 48 * hour,
     closeTime: now - hour,
+    liveScore: { home: 7, away: 3, status: 'SUSPENDED' },
   })
   expect(response.membershipExpiries).toEqual([[now + 17 * hour, 'nfl', 1]])
   officialRows[0].data.sportsResumptionTime = now - 4 * hour

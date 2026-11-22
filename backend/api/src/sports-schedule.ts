@@ -4,6 +4,7 @@ import { type APIHandler } from './helpers/endpoint'
 import {
   createSupabaseDirectClient,
   READ_ONLY_REPEATABLE_MODE,
+  type SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { getMarketLinksForFeed } from 'shared/supabase/market-links'
@@ -22,7 +23,6 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
-import { scheduleScoreFields } from 'common/sports-scoreboard'
 import { scheduleFeedTime } from 'common/sports-game-feed'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
@@ -37,7 +37,6 @@ import {
   SportsIndex,
   SportsScheduleResponse,
   atSportsObservationTime,
-  gameStatus,
   LIVE_STALE_MS,
   sportsMembershipEnd,
   sportsLiveEnd,
@@ -69,7 +68,7 @@ const MARKET_OUTCOME_TYPES: OutcomeType[] = [
   'PSEUDO_NUMERIC',
 ]
 
-type Pg = ReturnType<typeof createSupabaseDirectClient>
+type Pg = SupabaseDirectClient
 
 export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   props,
@@ -83,14 +82,38 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   const limit = props.limit ?? 120
   const cursor = parseScheduleCursor(props.cursor)
   const pg = createSupabaseDirectClient()
-  const now = Date.now()
-  const horizon = now + daysAhead * DAY_MS
-  // F1 looks further ahead than the games: two weeks of sessions would leave
-  // its page bare.
   const raceDays = Math.max(daysAhead, F1_DAYS_AHEAD)
+  const requestTime = Date.now()
+  const index = await getSportsIndex(pg, requestTime)
+  const readMarkets = async (db: Pg, now: number) => {
+    const [teams, weekAll, racing, championships] = await Promise.all([
+      isSportsBdlEnabled()
+        ? getOfficialGames(db, index, daysAhead, now, observed)
+        : getLegacyOfficialGames(db, index, daysAhead, now),
+      getUpcomingMarkets(db, index),
+      getRaceWeekends(db, raceDays, now),
+      sport === 'f1' && !cursor && !props.topic
+        ? getRaceChampionships(db, index, now)
+        : Promise.resolve([]),
+    ])
+    return { now, teams, weekAll, racing, championships }
+  }
+  const {
+    now,
+    teams: { games: official, groupIds: gameGroupIds },
+    weekAll,
+    racing: { weekends: allWeekends, groupIds: raceGroupIds },
+    championships,
+  } = observed
+    ? await pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
+        // BEGIN alone does not establish a repeatable-read snapshot. Pin it
+        // before sampling the clock used for scan bounds and public deadlines.
+        await tx.one('select pg_current_snapshot() is not null as pinned')
+        return readMarkets(tx, Date.now())
+      })
+    : await readMarkets(pg, requestTime)
+  const horizon = now + daysAhead * DAY_MS
   const raceHorizon = now + raceDays * DAY_MS
-
-  const index = await getSportsIndex(pg, now)
   // A topic's page has only the games and markets in it or a topic under it
   // (none for a topic the index doesn't have).
   const topicIds = props.topic
@@ -100,21 +123,6 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
   const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
     topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
-  const [
-    { games: official, groupIds: gameGroupIds },
-    weekAll,
-    { weekends: allWeekends, groupIds: raceGroupIds },
-    championships,
-  ] = await Promise.all([
-    isSportsBdlEnabled()
-      ? getOfficialGames(pg, index, daysAhead, now, observed)
-      : getLegacyOfficialGames(pg, index, daysAhead, now),
-    getUpcomingMarkets(pg, index),
-    getRaceWeekends(pg, raceDays, now),
-    sport === 'f1' && !cursor && !topicIds
-      ? getRaceChampionships(pg, index, now)
-      : Promise.resolve([]),
-  ])
   const games = official.filter((g) => {
     if (
       (g.gameState === 'suspended' || g.gameState === 'postponed') &&
@@ -338,15 +346,15 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   let liveCount = 0
   const expiries = new Map<number, number>()
   const memberships = new Map<AnySportKey, Map<number, number>>()
+  function addMembership(sport: AnySportKey, end: number) {
+    const map = memberships.get(sport) ?? new Map<number, number>()
+    map.set(end, (map.get(end) ?? 0) + 1)
+    memberships.set(sport, map)
+  }
   for (const g of ordered) {
     if (g.status === 'finished') continue
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
-    if (observed) {
-      const end = sportsMembershipEnd(g)
-      const map = memberships.get(g.sport) ?? new Map<number, number>()
-      map.set(end, (map.get(end) ?? 0) + 1)
-      memberships.set(g.sport, map)
-    }
+    if (observed) addMembership(g.sport, sportsMembershipEnd(g))
     if (g.status === 'live') {
       liveCount++
       const at = observed ? sportsLiveEnd(g) : undefined
@@ -357,8 +365,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   }
   // An F1 session counts like a game: the rail shows how many are on.
   for (const w of weekends) {
-    const on = w.sessions.filter((s) => s.status !== 'finished').length
-    if (on > 0) counts[w.sport] = (counts[w.sport] ?? 0) + on
+    for (const session of w.sessions) {
+      if (session.status === 'finished') continue
+      counts.f1 = (counts.f1 ?? 0) + 1
+      if (observed) addMembership('f1', session.closeTime)
+    }
   }
 
   // The feed: every live game on the first page, then upcoming games by
@@ -513,7 +524,7 @@ async function getOfficialGames(
 ) {
   // Rescheduling, deleting or privatizing a contract during this request must
   // not move it between pages or mix its answers with a different snapshot.
-  return pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
+  const read = async (tx: Pick<Pg, 'manyOrNone'>) => {
     const games: ScheduleGame[] = []
     const groupIds: Record<string, string[]> = {}
     const earliestClose = new Date(now - FINISHED_GRACE_HOURS * HOUR_MS)
@@ -596,24 +607,14 @@ async function getOfficialGames(
             answers[contract.id] ?? [],
             topics,
             index,
-            now
+            now,
+            true,
+            observed
           )
           if (!projected) continue
-          let game = projected
-          if (observed) {
-            // Original non-BDL rows did not surface suspended and postponed
-            // states. The optional view uses the same validated public fields.
-            if (!game.sportsLeagueKey && !game.isResolved) {
-              const details = scheduleScoreFields(contract, false)
-              if (details.gameState)
-                game = {
-                  ...game,
-                  ...details,
-                  status: gameStatus({ ...game, ...details, now }),
-                }
-            }
-            game = atSportsObservationTime(game, now)
-          }
+          const game = observed
+            ? atSportsObservationTime(projected, now)
+            : projected
           if (
             scan !== 'close' &&
             (!game.sportsLeagueKey ||
@@ -633,7 +634,8 @@ async function getOfficialGames(
       }
     }
     return { games, groupIds }
-  })
+  }
+  return observed ? read(pg) : pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, read)
 }
 
 // F1 weekends: @ManifoldSports markets on a `bdl-f1:` session, which a game
