@@ -429,6 +429,7 @@ export type SportsMarketType =
   | 'title'
 
 export type Sports = {
+  sportsUfc?: import('./bdl/ufc-card').UfcMarketSnapshot
   sportsProvider?: import('./sports-provider').SportsProvider
   sportsLeagueKey?: import('./bdl/leagues').BdlLeagueKey
   sportsCompetitionId?: string

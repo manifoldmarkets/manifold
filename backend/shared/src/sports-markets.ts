@@ -1120,6 +1120,7 @@ export interface SportsContractParams
     | 'sportsProvider'
     | 'sportsLeagueKey'
     | 'sportsCompetitionId'
+    | 'sportsUfc'
     | 'sportsHomeTeamId'
     | 'sportsAwayTeamId'
     | 'openingLineSource'
@@ -1308,6 +1309,7 @@ export async function createSportsContract(
         openingLineVendors: params.openingLineVendors,
         openingSampledTime: params.openingSampledTime,
         sportsStartKnown: params.sportsStartKnown,
+        sportsUfc: params.sportsUfc,
         sportsFixture: params.sportsFixture,
         sportsSeededStartTimestamp:
           params.sportsProvider || opts.chooseAnte

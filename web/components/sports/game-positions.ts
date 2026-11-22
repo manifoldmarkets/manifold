@@ -55,7 +55,12 @@ export type GameStake = {
   unfilled: number
 }
 
-type GameAnswers = Pick<ScheduleGame, 'home' | 'away' | 'draw'>
+type GameAnswer = Pick<ScheduleGame['home'], 'answerId' | 'prob'>
+type GameAnswers = {
+  home: GameAnswer
+  away: GameAnswer
+  draw?: GameAnswer | null
+}
 
 export const gameAnswerIds = (game: GameAnswers) => [
   game.home.answerId,

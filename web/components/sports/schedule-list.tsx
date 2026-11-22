@@ -16,6 +16,8 @@ import {
   raceSessionSearchText,
   RaceWeekend,
 } from 'common/race-weekends'
+import { filterUfcCards, type UfcMarketCard } from 'common/bdl/ufc-card'
+import { UfcFightCards } from './ufc-fight-cards'
 import { ScheduleGame } from 'common/sports-schedule'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
@@ -42,6 +44,7 @@ import {
   compareGameStartTime,
   scheduleDayKey,
   groupScheduleDays,
+  groupByDay,
   compareGameVolume,
   selectFeaturedGame,
 } from './game-feed-utils'
@@ -82,6 +85,7 @@ export function GameFeed(props: {
   fullRaceHero?: boolean
   /** Under the featured card while no filter is on: F1's title fight. */
   belowFeatured?: ReactNode
+  ufcCards?: UfcMarketCard[]
   /** Shown when there is nothing live or upcoming. */
   empty: ReactNode
 }) {
@@ -114,7 +118,11 @@ export function GameFeed(props: {
   const raceMarketIds = (props.raceWeekends ?? []).flatMap((w) =>
     w.sessions.flatMap((s) => s.markets.map((m) => m.id))
   )
+  const ufcCards = props.ufcCards ?? []
+  const fights = ufcCards.flatMap((c) => c.bouts)
+  const fightIds = fights.map((b) => b.id)
   const likes = useGameLikes([
+    ...fightIds,
     ...active.map((game) => game.id),
     ...raceMarketIds,
   ])
@@ -130,7 +138,10 @@ export function GameFeed(props: {
   }
   const sessionLiked = (s: RaceSessionEvent) =>
     s.session.markets.some((m) => likes.liked.has(m.id))
-  const positions = useGamePositions(active.map((game) => game.id))
+  const positions = useGamePositions([
+    ...active.map((game) => game.id),
+    ...fightIds,
+  ])
   // One stake per game, marked to the live prices, shared by the cards, the
   // My bets filter and its totals so they can't disagree.
   const stakes: Record<string, GameStake> = {}
@@ -138,8 +149,26 @@ export function GameFeed(props: {
     const stake = getGameStake(game, positions.byGame[game.id])
     if (stake) stakes[game.id] = stake
   }
+  for (const b of fights) {
+    const [home, away, draw] = b.answers
+    const stake = getGameStake({ home, away, draw }, positions.byGame[b.id])
+    if (stake) stakes[b.id] = stake
+  }
   const stakedCount = Object.keys(stakes).length
   const normalized = query.trim().toLowerCase()
+  const shownCards = filterUfcCards(
+    ufcCards,
+    (b, c) =>
+      (date === 'all' || c.date === date) &&
+      (filter !== 'live' || b.status === 'in_progress') &&
+      (filter !== 'liked' || likes.liked.has(b.id)) &&
+      (filter !== 'mine' || !!stakes[b.id]) &&
+      (!normalized ||
+        [c.name, b.weightClass, ...b.answers.map((a) => a.name)]
+          .join(' ')
+          .toLowerCase()
+          .includes(normalized))
+  )
   const hasFilters = filter !== 'all' || date !== 'all' || !!normalized
   const everything: FeedItem[] = [...active, ...sessions]
   const selectedFeatured = selectFeaturedGame(
@@ -193,17 +222,28 @@ export function GameFeed(props: {
     .sort(compareGameStartTime)
   const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
   const days = groupScheduleDays(upcoming)
-  const allDays = groupScheduleDays(everything)
+  const sportsDays = groupScheduleDays(everything)
+  const fightDays = groupByDay(ufcCards, (c) => dayjs(c.date).valueOf())
+  const allDays = [
+    ...new Map(
+      [...sportsDays, ...fightDays].map((d) => [
+        d.key,
+        { key: d.key, label: d.label },
+      ])
+    ).values(),
+  ].sort((a, b) => a.key.localeCompare(b.key))
   // A section with a session in it counts events, not games.
   const unitFor = (items: FeedItem[]) =>
     items.some(isSession) ? 'event' : 'game'
   // What the My bets filter adds up: the stake on each game it shows.
   const myStakes: GameStake[] =
     filter === 'mine'
-      ? filteredGames.flatMap((game) => {
-          const stake = stakes[game.id]
-          return stake ? [stake] : []
-        })
+      ? [...filteredGames, ...shownCards.flatMap((c) => c.bouts)].flatMap(
+          (game) => {
+            const stake = stakes[game.id]
+            return stake ? [stake] : []
+          }
+        )
       : []
   const needsSignIn =
     (filter === 'liked' || filter === 'mine') && likes.user === null
@@ -245,7 +285,12 @@ export function GameFeed(props: {
     </div>
   )
 
-  if (loading && games.length === 0 && sessions.length === 0) {
+  if (
+    loading &&
+    games.length === 0 &&
+    sessions.length === 0 &&
+    !ufcCards.length
+  ) {
     return (
       <Col className="gap-2">
         <SectionHeader label="Up next" />
@@ -253,7 +298,7 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (everything.length === 0) return <>{empty}</>
+  if (everything.length === 0 && !ufcCards.length) return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -342,13 +387,15 @@ export function GameFeed(props: {
                   {
                     value: 'all',
                     label: 'All games',
-                    count: everything.length,
+                    count: everything.length + fights.length,
                   },
                   {
                     value: 'live',
                     label: 'Live',
-                    count: everything.filter((item) => item.status === 'live')
-                      .length,
+                    count:
+                      everything.filter((item) => item.status === 'live')
+                        .length +
+                      fights.filter((b) => b.status === 'in_progress').length,
                   },
                   {
                     value: 'liked',
@@ -356,7 +403,9 @@ export function GameFeed(props: {
                     count: likes.loading
                       ? undefined
                       : active.filter((game) => likes.liked.has(game.id))
-                          .length + sessions.filter(sessionLiked).length,
+                          .length +
+                        sessions.filter(sessionLiked).length +
+                        fightIds.filter((id) => likes.liked.has(id)).length,
                   },
                   {
                     value: 'mine',
@@ -456,7 +505,9 @@ export function GameFeed(props: {
                 <MyBetsSummary stakes={myStakes} />
               ) : (
                 <span>
-                  {filtered.length} of {everything.length} loaded{' '}
+                  {filtered.length +
+                    shownCards.reduce((n, c) => n + c.bouts.length, 0)}{' '}
+                  of {everything.length + fightIds.length} loaded{' '}
                   {sessions.length > 0 ? 'events' : 'games'}
                 </span>
               )}
@@ -516,7 +567,8 @@ export function GameFeed(props: {
             />
           ))}
         {!hasFilters && belowFeatured}
-        {filtered.length === 0 && (
+        {!!shownCards.length && <UfcFightCards cards={shownCards} />}
+        {filtered.length === 0 && !shownCards.length && (
           <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
             <h3 className="text-ink-900 font-semibold">
               {filter === 'liked'

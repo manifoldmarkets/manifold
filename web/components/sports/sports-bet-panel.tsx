@@ -15,6 +15,11 @@ import {
   MultiBetDialog,
   ThreeWayTradeDialog,
 } from 'web/components/bet/bet-dialog'
+import {
+  toUfcMarketBout,
+  ufcCanBet,
+  type UfcMarketBout,
+} from 'common/bdl/ufc-card'
 import { SportsMatch, MatchOutcome } from './sports-match-card'
 
 // Game markets are bet on with Manifold's standard dialogs: knockout markets
@@ -65,6 +70,47 @@ function SportsLoadError(props: { onClose: () => void }) {
         Couldn&apos;t load this market. Please try again.
       </p>
     </Modal>
+  )
+}
+
+/** Refetch the native contract and validate the participant/answer mapping before opening the ordinary three-way ticket. */
+export function UfcWinnerBetDialog({
+  bout,
+  selected,
+  onClose,
+}: {
+  bout: UfcMarketBout
+  selected: string
+  onClose: () => void
+}) {
+  const { contract, failed } = useSportsContract(bout.id)
+  if (failed) return <SportsLoadError onClose={onClose} />
+  if (!contract) return null
+  const current = toUfcMarketBout(contract, contract.answers)
+  if (
+    !current ||
+    current.eventId !== bout.eventId ||
+    !ufcCanBet(current, Date.now()) ||
+    !current.answers.some(
+      (a) =>
+        a.answerId === selected &&
+        a.fighterId ===
+          bout.answers.find((pick) => pick.answerId === selected)?.fighterId
+    )
+  )
+    return <SportsLoadError onClose={onClose} />
+  return (
+    <ThreeWayTradeDialog
+      contract={contract}
+      open
+      setOpen={(open) => {
+        if (!open) onClose()
+      }}
+      initialAnswerId={selected}
+      answerOrder={current.answers.map((a) => a.answerId)}
+      trackingLocation="sports UFC card"
+      description={current.cardName}
+    />
   )
 }
 

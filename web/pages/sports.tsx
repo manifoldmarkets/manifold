@@ -11,6 +11,7 @@ import {
   sportPath,
 } from 'common/sports-schedule'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { filterUfcCards } from 'common/bdl/ufc-card'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import {
   NoGames,
@@ -154,6 +155,10 @@ export default function SportsPage({
                 <GameFeed
                   games={games}
                   raceWeekends={weekends}
+                  ufcCards={filterUfcCards(
+                    schedule?.ufcCards ?? [],
+                    (b) => !hides(b.groupSlugs)
+                  )}
                   loading={loading || !schedule || lookingPastBlocked}
                   hasMore={hasMore}
                   loadMore={loadMore}

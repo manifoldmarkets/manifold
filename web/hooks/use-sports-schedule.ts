@@ -244,11 +244,21 @@ export function useSportsSchedule(
   // Periodic refetch while the page is visible. Nothing else re-renders an
   // idle page, so the timer is what moves games from upcoming to live to
   // finished and discovers new ones.
-  const hasActive = games.some(
-    (g) =>
-      g.status === 'live' ||
-      (g.status === 'upcoming' && g.startTime - now < 4 * HOUR_MS)
-  )
+  const hasActive =
+    response?.ufcCards?.some((c) =>
+      c.bouts.some(
+        (b) =>
+          b.status === 'in_progress' ||
+          (b.status === 'scheduled' &&
+            b.segmentStart != null &&
+            b.segmentStart - now < 4 * HOUR_MS)
+      )
+    ) ||
+    games.some(
+      (g) =>
+        g.status === 'live' ||
+        (g.status === 'upcoming' && g.startTime - now < 4 * HOUR_MS)
+    )
   useEffect(() => {
     if (!isPageVisible) return
     const ms = hasActive ? ACTIVE_REFRESH_MS : IDLE_REFRESH_MS

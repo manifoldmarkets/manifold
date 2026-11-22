@@ -7,6 +7,7 @@ import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RaceChampionships } from 'web/components/sports/race-championships'
+import { filterUfcCards } from 'common/bdl/ufc-card'
 import { GameFeed } from 'web/components/sports/schedule-list'
 import {
   NoGames,
@@ -165,6 +166,14 @@ export default function SportPage() {
                   key={key}
                   games={games}
                   raceWeekends={weekends}
+                  ufcCards={
+                    key === 'mma'
+                      ? filterUfcCards(
+                          schedule?.ufcCards ?? [],
+                          (b) => !hides(b.groupSlugs)
+                        )
+                      : undefined
+                  }
                   featureNext={isF1}
                   fullRaceHero={isF1}
                   belowFeatured={titleFight}

@@ -63,6 +63,13 @@ const MARKET_OUTCOME_TYPES: OutcomeType[] = [
   'PSEUDO_NUMERIC',
 ]
 
+import {
+  filterUfcCards,
+  groupUfcCards,
+  toUfcMarketBout,
+  type UfcMarketBout,
+} from 'common/bdl/ufc-card'
+
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
 export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
@@ -89,7 +96,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
     topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
   const [
-    { games: official, groupIds: gameGroupIds },
+    { games: official, groupIds: gameGroupIds, bouts },
     weekAll,
     { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
@@ -310,7 +317,10 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // three weeks out, so its markets stay listed there (F4213-11). The
   // official F1 markets stay in, and the page drops the ones on the sessions
   // it shows (withoutRaceMarkets).
-  const gameIds = new Set(official.map((g) => g.id))
+  const gameIds = new Set([
+    ...official.map((g) => g.id),
+    ...bouts.map((b) => b.id),
+  ])
   const upcoming = weekAll.filter(
     (m) =>
       !gameIds.has(m.id) &&
@@ -325,6 +335,16 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     if (g.status === 'finished') continue
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
     if (g.status === 'live') liveCount++
+  }
+  const cards = filterUfcCards(
+    groupUfcCards(bouts),
+    (b) => !topicIds || inTopic(gameGroupIds[b.id])
+  )
+  for (const b of bouts) {
+    if (b.isResolved || b.status === 'final' || b.status === 'canceled')
+      continue
+    counts.mma = (counts.mma ?? 0) + 1
+    if (b.status === 'in_progress') liveCount++
   }
   // An F1 session counts like a game: the rail shows how many are on.
   for (const w of weekends) {
@@ -358,6 +378,23 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
           .slice(0, MAX_UPCOMING_RETURNED)
           .map(({ id, closeTime, sport }) => ({ id, closeTime, sport })),
     raceWeekends: shownWeekends,
+    ...(!cursor &&
+    cards.length &&
+    (sport === 'mma' || sport === 'all' || topicIds)
+      ? {
+          ufcCards:
+            sport === 'all' && !topicIds
+              ? cards.filter((c) =>
+                  c.bouts.some(
+                    (b) =>
+                      !b.isResolved &&
+                      b.status !== 'final' &&
+                      b.status !== 'canceled'
+                  )
+                )
+              : cards,
+        }
+      : {}),
     raceChampionships: championships,
     counts,
     liveCount,
@@ -419,6 +456,7 @@ async function getLegacyOfficialGames(
   now: number
 ): Promise<{
   games: ScheduleGame[]
+  bouts: UfcMarketBout[]
   /** Each game's topic ids. */
   groupIds: Record<string, string[]>
 }> {
@@ -461,7 +499,7 @@ async function getLegacyOfficialGames(
       )
     )
     .filter((g): g is ScheduleGame => g !== null)
-  return { games, groupIds: groupIdsByContract }
+  return { games, groupIds: groupIdsByContract, bouts: [] }
 }
 
 async function getOfficialGames(
@@ -474,6 +512,7 @@ async function getOfficialGames(
   // not move it between pages or mix its answers with a different snapshot.
   return pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
     const games: ScheduleGame[] = []
+    const bouts: UfcMarketBout[] = []
     const groupIds: Record<string, string[]> = {}
     const earliestClose = new Date(now - FINISHED_GRACE_HOURS * HOUR_MS)
     const horizon = now + daysAhead * DAY_MS
@@ -526,6 +565,14 @@ async function getOfficialGames(
         for (const row of rows) {
           const contract = convertContract(row)
           const topics = groups[contract.id] ?? []
+          if ('sportsUfc' in contract) {
+            const bout = toUfcMarketBout(contract, answers[contract.id] ?? [])
+            if (bout) {
+              bouts.push(bout)
+              groupIds[bout.id] = topics
+              continue
+            }
+          }
           const game = toOfficialGame(
             contract,
             answers[contract.id] ?? [],
@@ -549,7 +596,7 @@ async function getOfficialGames(
         after = rows[rows.length - 1]
       }
     }
-    return { games, groupIds }
+    return { games, groupIds, bouts }
   })
 }
 

@@ -18,6 +18,7 @@ import {
 } from 'common/sports-schedule'
 import { sportsSchedule } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import { bdlHeadToHeadEventId } from 'common/sports-ids'
 import { f1Season } from 'common/race-weekends'
 
 const kickoff = Date.now() + 60 * 60 * 1000
@@ -148,6 +149,7 @@ beforeEach(() => {
           .map(({ data }) => ({
             data,
             id: String(data.id),
+            token: 'MANA',
             page_time: resuming
               ? String(data.sportsResumptionTime)
               : new Date(Number(data.closeTime)).toISOString(),
@@ -182,6 +184,89 @@ beforeEach(() => {
       return []
     },
   } as unknown as ReturnType<typeof createSupabaseDirectClient>)
+})
+
+it('serves the market-backed UFC card once, with native picks, on All and MMA', async () => {
+  const at = Date.now()
+  const fight = {
+    ...official[0].data,
+    id: 'ufc-test',
+    slug: 'river-vale',
+    creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+    sportsHomeTeam: 'River',
+    sportsAwayTeam: 'Vale',
+    sportsLeague: 'MMA',
+    sportsLeagueKey: 'mma',
+    sportsMarketType: 'moneyline',
+    sportsProvider: 'bdl',
+    sportsEventId: bdlHeadToHeadEventId('mma', 77, 10, 20),
+    sportsEntrantIds: [20, 10, null],
+    visibility: 'public',
+    addAnswersMode: 'DISABLED',
+    sportsUfc: {
+      cardId: 5,
+      cardName: 'Fight Night',
+      cardDate: new Date(at).toISOString().slice(0, 10),
+      segment: 'main_card',
+      segmentStart: at,
+      order: 1,
+      headline: true,
+      titleFight: false,
+      status: 'in_progress',
+      observedAt: at,
+      lastNonfinalAt: at,
+      firstFinalAt: null,
+      winner: null,
+      method: null,
+      round: null,
+      roundTime: null,
+      scheduledRounds: 5,
+      onlyRemaining: false,
+    },
+  }
+  officialRows = [
+    { data: fight },
+    { data: { ...fight, id: 'fixture', sportsFixture: true } },
+  ]
+  answerRows = [0, 1, 2].map((index) => ({
+    contract_id: fight.id,
+    id: 'choice' + index,
+    index,
+    text: ['River', 'Vale', 'Draw or no contest'][index],
+    prob: [0.55, 0.43, 0.02][index],
+  }))
+  marketRows = [
+    {
+      ...props[0],
+      id: fight.id,
+      sports_event_id: fight.sportsEventId,
+      sports_market_type: 'moneyline',
+      group_ids: [groupId('mma')],
+    },
+  ]
+  const get = sportsSchedule as (
+    input: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const read = async (sport: 'mma' | 'all' | 'soccer') => {
+    const r = await get({ sport })
+    return 'result' in r ? r.result : r
+  }
+  for (const sport of ['all', 'mma'] as const) {
+    const r = await read(sport)
+    expect(
+      r.ufcCards?.[0].bouts.map((b) => [b.id, b.answers.map((a) => a.answerId)])
+    ).toEqual([[fight.id, ['choice0', 'choice1', 'choice2']]])
+    expect(r.games).toEqual([])
+    expect(r.upcoming).toEqual([])
+    expect(r.counts.mma).toBe(1)
+    expect(r.liveCount).toBe(1)
+  }
+  expect((await read('soccer')).ufcCards).toBeUndefined()
+  fight.sportsUfc.status = 'final'
+  expect((await read('mma')).ufcCards?.[0].bouts).toHaveLength(1)
+  expect((await read('all')).ufcCards ?? []).toHaveLength(0)
+  jest.mocked(isSportsBdlEnabled).mockReturnValueOnce(false)
+  expect((await read('mma')).ufcCards).toBeUndefined()
 })
 
 it('rail counts and the week feed stay stable across sports, limits and includeRelated', async () => {

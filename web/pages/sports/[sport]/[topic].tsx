@@ -2,6 +2,7 @@ import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
+import { filterUfcCards } from 'common/bdl/ufc-card'
 import { withoutRaceMarkets } from 'common/race-weekends'
 import {
   SportInfo,
@@ -107,6 +108,10 @@ export default function SportTopicPage() {
     hides,
     sportsByKey
   )
+  const ufcCards = filterUfcCards(
+    schedule?.ufcCards ?? [],
+    (b) => !hides(b.groupSlugs)
+  )
   const lookingPastBlocked = useLoadPastBlocked({
     feed: `${topic?.sport ?? ''}/${topic?.id ?? ''}`,
     shown: shownCount(games, weekends),
@@ -142,7 +147,9 @@ export default function SportTopicPage() {
   }
 
   const hasGames = schedule
-    ? shownCount(games, weekends) > 0 || lookingPastBlocked
+    ? shownCount(games, weekends) > 0 ||
+      ufcCards.length > 0 ||
+      lookingPastBlocked
     : undefined
   const showLeague = uniq(games.map((g) => g.league)).length > 1
   const info = topic && topicInfo(topic, sport)
@@ -203,6 +210,7 @@ export default function SportTopicPage() {
                           key={topic.id}
                           games={games}
                           raceWeekends={weekends}
+                          ufcCards={ufcCards}
                           loading={loading || !schedule || lookingPastBlocked}
                           hasMore={hasMore}
                           loadMore={loadMore}

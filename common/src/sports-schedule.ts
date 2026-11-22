@@ -1320,6 +1320,8 @@ export interface SportsScheduleResponse {
    * API that predates them.
    */
   raceWeekends?: RaceWeekend[]
+  /** Public UFC bouts with an official winner market, grouped into card segments. */
+  ufcCards?: import('./bdl/ufc-card').UfcMarketCard[]
   /**
    * The season's drivers' and constructors' title markets, for 'f1'. First
    * page only. The page loads the contracts by id.
