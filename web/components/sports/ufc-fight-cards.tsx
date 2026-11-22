@@ -103,7 +103,7 @@ function ResultLine({ bout, last }: { bout: UfcMarketBout; last: boolean }) {
       className="border-ink-200 text-ink-700 hover:bg-canvas-50 flex min-h-[44px] flex-wrap items-center gap-x-2 border-b px-3 py-2 text-sm"
     >
       <span className="text-ink-500 text-xs font-semibold">
-        {last ? 'Last result' : 'Final'}
+        {last ? 'Latest published result' : 'Final'}
       </span>
       {bout.answers.slice(0, 2).map((a, i) => (
         <span key={a.answerId} className="inline-flex items-center gap-1">
@@ -160,7 +160,7 @@ function BoutRow({
             featured ?? states[b.status]
           )}
         </Link>
-        {b.headline && <span>Main event</span>}
+        {b.headline && <span>Listed main event</span>}
         {b.titleFight && <span>Title fight</span>}
         {b.weightClass && <span>{b.weightClass}</span>}
         {b.scheduledRounds && <span>{b.scheduledRounds} rounds</span>}
@@ -297,7 +297,7 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
                   href={href(headline)}
                   className="text-primary-700 inline-flex min-h-[44px] items-center text-sm font-semibold hover:underline"
                 >
-                  Main event ·{' '}
+                  Provider-listed main event ·{' '}
                   {headline.answers
                     .slice(0, 2)
                     .map((a) => a.name)

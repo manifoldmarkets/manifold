@@ -198,6 +198,44 @@ test('last-result chronology uses disjoint observation intervals rather than mut
     ufcCardDisplay([live, { ...live, id: 'another' }]).live
   ).toBeUndefined()
 })
+test('private markets cannot contribute a result, a sole remaining bout, or a headline to the visible card', () => {
+  const latest = ufcMarketObservation(
+    card,
+    { ...bout, status: 'final', winnerId: 10, method: 'Decision' },
+    500,
+    observation
+  )
+  expect(market({ visibility: 'private', sportsUfc: latest })).toBeNull()
+  const first = stamp(1, {
+    status: 'final',
+    lastNonfinalAt: 150,
+    firstFinalAt: 200,
+    observedAt: 400,
+    headline: false,
+  })
+  const competing = stamp(2, {
+    status: 'final',
+    lastNonfinalAt: 180,
+    firstFinalAt: 200,
+    observedAt: 400,
+    headline: false,
+  })
+  const future = stamp(3, {
+    status: 'scheduled',
+    onlyRemaining: false,
+    headline: false,
+  })
+  const [shown] = groupUfcCards([first, competing, future])
+  const view = ufcCardDisplay(shown.bouts)
+  expect(view.confirmedLast).toBe(false)
+  expect(view.recent).toBeDefined()
+  expect(view.next).toBeUndefined()
+  expect(shown.bouts.some((b) => b.headline)).toBe(false)
+  const published = ufcCardDisplay([first, future])
+  expect(published.recent?.id).toBe(first.id)
+  expect(published.confirmedLast).toBe(true)
+})
+
 test('filtering preserves partial-card provenance and in-play tickets use a real close time', () => {
   const next = stamp(2, { order: 2 })
   const cards = groupUfcCards([row, next])
