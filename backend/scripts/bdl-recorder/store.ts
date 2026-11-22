@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import {
-  constants,
   closeSync,
   openSync,
   fstatSync,
   ftruncateSync,
   readSync,
-  copyFileSync,
+  rmdirSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -24,6 +23,11 @@ import {
   BdlParams,
   bdlRecordingPathParts,
 } from 'shared/balldontlie-client'
+import {
+  bdlJournalDirectory,
+  bdlRevisionFile,
+  latestBdlRevision,
+} from 'shared/balldontlie-recording'
 
 function assertOutsideGit(directory: string) {
   let current = directory
@@ -88,10 +92,68 @@ export function createRecordingStore(root: string) {
     )
     return safeFile(canonical, [league, endpointSlug, parameterHash + '.json'])
   }
+  function checked(filename: string) {
+    return safeFile(canonical, [path.relative(canonical, filename)])
+  }
+
+  // A rename to an existing *nonempty* directory cannot replace its contents.
+  // The first writer to claim a revision publishes a complete envelope. A
+  // loser can finish immediately at the next slot, even if the winner exits.
+  function publish(journal: string, bytes: Buffer, seed = false) {
+    const pending = checked(path.join(journal, '.pending-' + randomUUID()))
+    mkdirSync(pending, { mode: 0o700 })
+    const file = path.join(pending, 'response.json')
+    try {
+      writeFileSync(file, bytes, { mode: 0o600, flag: 'wx' })
+      for (;;) {
+        const revision = seed ? 1 : latestBdlRevision(journal) + 1
+        const target = checked(bdlRevisionFile(journal, revision))
+        try {
+          renameSync(pending, path.dirname(target))
+          return
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code
+          if (
+            !['EEXIST', 'ENOTEMPTY', 'EPERM', 'EACCES'].includes(code ?? '') ||
+            !existsSync(target)
+          )
+            throw error
+          if (seed) return
+        }
+      }
+    } finally {
+      if (existsSync(file)) unlinkSync(file)
+      if (existsSync(pending)) rmdirSync(pending)
+    }
+  }
+
+  function refresh(filename: string, journal: string) {
+    for (;;) {
+      const revision = latestBdlRevision(journal)
+      if (!revision)
+        return existsSync(filename) ? readFileSync(filename) : undefined
+      const data = readFileSync(checked(bdlRevisionFile(journal, revision)))
+      const cached = existsSync(filename) ? readFileSync(filename) : undefined
+      if (!cached?.equals(data)) {
+        const tmp = checked(filename + '.' + randomUUID() + '.tmp')
+        try {
+          writeFileSync(tmp, data, { mode: 0o600, flag: 'wx' })
+          renameSync(tmp, filename)
+        } finally {
+          if (existsSync(tmp)) unlinkSync(tmp)
+        }
+      }
+      // A delayed cache writer must not leave an older revision as latest.
+      if (!existsSync(checked(bdlRevisionFile(journal, revision + 1))))
+        return data
+    }
+  }
+
   function read(endpoint: string, params: BdlParams): BdlAttempt | undefined {
     const filename = location(endpoint, params)
-    if (!existsSync(filename)) return
-    const attempt: BdlAttempt = JSON.parse(readFileSync(filename, 'utf8'))
+    const data = refresh(filename, checked(bdlJournalDirectory(filename)))
+    if (!data) return
+    const attempt: BdlAttempt = JSON.parse(data.toString('utf8'))
     if (
       !Number.isInteger(attempt?.status) ||
       !attempt.request ||
@@ -104,30 +166,15 @@ export function createRecordingStore(root: string) {
   }
   function save(attempt: BdlAttempt) {
     const filename = location(attempt.request.path, attempt.request.params)
-    const directory = path.dirname(filename)
-    mkdirSync(directory, { recursive: true, mode: 0o700 })
-    const tmp = safeFile(canonical, [
-      path.relative(canonical, filename) + '.' + randomUUID() + '.tmp',
-    ])
-    try {
-      writeFileSync(tmp, JSON.stringify(attempt) + '\n', {
-        flag: 'wx',
-        mode: 0o600,
-      })
-      if (existsSync(filename)) {
-        // Keep earlier observations (including retries) when a request repeats.
-        const archive = safeFile(canonical, [
-          path.relative(canonical, directory),
-          'history',
-          path.basename(filename, '.json') + '-' + randomUUID() + '.json',
-        ])
-        mkdirSync(path.dirname(archive), { recursive: true, mode: 0o700 })
-        copyFileSync(filename, archive, constants.COPYFILE_EXCL)
-      }
-      renameSync(tmp, filename)
-    } finally {
-      if (existsSync(tmp)) unlinkSync(tmp)
+    const journal = checked(bdlJournalDirectory(filename))
+    mkdirSync(journal, { recursive: true, mode: 0o700 })
+    if (!latestBdlRevision(journal) && existsSync(filename)) {
+      // Import an older recorder's only cache copy exactly once, including
+      // when multiple processes open the existing archive for the first time.
+      publish(journal, readFileSync(filename), true)
     }
+    publish(journal, Buffer.from(JSON.stringify(attempt) + '\n'))
+    refresh(filename, journal)
   }
   function watchPath(league: string, id: string) {
     if (

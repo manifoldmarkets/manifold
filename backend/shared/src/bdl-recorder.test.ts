@@ -11,6 +11,9 @@ import {
 import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 
+import { bdlRecordingPathParts } from './balldontlie-request'
+import { createBdlFixtureTransport } from './balldontlie-fixture'
+import { bdlJournalDirectory, bdlRevisionFile } from './balldontlie-recording'
 import { main } from '../../scripts/bdl-recorder'
 import type { PlanStep } from '../../scripts/bdl-recorder/plan'
 import { createRecorder } from '../../scripts/bdl-recorder/recorder'
@@ -99,7 +102,9 @@ it('follows cursors, globally spaces retries, and resumes without network', asyn
   await resumed.run([pages])
   expect(secondRun).toHaveLength(0)
   expect(resumed.summary.resumed).toBe(2)
-  expect(files(out).filter((name) => name.endsWith('.json'))).toHaveLength(3)
+  expect(
+    files(out).filter((name) => path.basename(name) === 'response.json')
+  ).toHaveLength(3)
 })
 
 it('skips the rest of an unentitled endpoint and continues other leagues', async () => {
@@ -127,7 +132,9 @@ it('stops after exactly three consecutive server failures and preserves each res
   ).rejects.toThrow()
   expect(calls).toHaveLength(3)
   expect(recorder.summary.serverErrors).toBe(3)
-  expect(files(out)).toHaveLength(3)
+  expect(
+    files(out).filter((name) => path.basename(name) === 'response.json')
+  ).toHaveLength(3)
 })
 
 it('refuses both new and existing paths inside a linked worktree', () => {
@@ -266,4 +273,141 @@ it('records when each change was observed within a multi-request poll', async ()
     Date.parse(observedAt[second.label][0]) -
       Date.parse(observedAt[first.label][0])
   ).toBe(20000)
+})
+
+it('separates dispatch, received HTTP and usable saved snapshots across retries', async () => {
+  const { clock } = setup([])
+  let mode: 'transport' | 'invalid' | 'valid' | 'empty' | 'error-body' =
+    'transport'
+  const transport = jest.fn(async () => {
+    if (mode === 'transport') throw new Error('disconnected')
+    if (mode === 'empty') return new Response(null, { status: 204 })
+    if (mode === 'error-body') return new Response('{"error":"bad page"}')
+    return new Response(mode === 'invalid' ? '{' : '{"data":[]}', {
+      status: 200,
+    })
+  })
+  const recorder = createRecorder({ out, key: fakeKey, clock, transport })
+  const counts = () => {
+    const { dispatched, httpResponses, usableSnapshots } = recorder.summary
+    return [dispatched, httpResponses, usableSnapshots]
+  }
+  await expect(recorder.run([step()])).rejects.toThrow('connection failed')
+  expect(counts()).toEqual([6, 0, 0])
+  mode = 'invalid'
+  await expect(recorder.run([step()])).rejects.toThrow('Invalid JSON')
+  expect(counts()).toEqual([12, 6, 0])
+  mode = 'valid'
+  await recorder.run([step()])
+  expect(counts()).toEqual([13, 7, 1])
+  mode = 'empty'
+  await expect(recorder.run([step()])).rejects.toThrow('no usable data')
+  expect(counts()).toEqual([14, 8, 1])
+  mode = 'error-body'
+  await expect(recorder.run([step()])).rejects.toThrow('no usable data')
+  expect(counts()).toEqual([15, 9, 1])
+  expect(recorder.summary).toMatchObject({ calls: 15, successful: 1 })
+  const second = setup([[200, { data: [] }]], true)
+  await second.recorder.run([step()])
+  expect(second.recorder.summary).toMatchObject({
+    dispatched: 1,
+    resumed: 0,
+    usableSnapshots: 1,
+  })
+})
+
+const endpoint = '/nba/v1/games'
+function nbaArchive() {
+  const { parameterHash, endpointSlug } = bdlRecordingPathParts(endpoint)
+  const directory = path.join(out, 'nba', endpointSlug)
+  const cache = path.join(directory, parameterHash + '.json')
+  return { directory, cache, journal: bdlJournalDirectory(cache) }
+}
+const attempt = (id: number) => ({
+  request: { path: endpoint, params: {}, at: '2026-01-01T00:00:00.000Z' },
+  status: 200,
+  rateLimit: { limit: null, remaining: null },
+  body: { data: [id] },
+})
+
+it('publishes equal-time observations individually and recovers an interrupted cache update', async () => {
+  const { directory, cache, journal } = nbaArchive()
+  mkdirSync(directory, { recursive: true })
+  writeFileSync(cache, JSON.stringify(attempt(0))) // Prior recorder format.
+  const store = createRecordingStore(out)
+  store.save(attempt(1))
+  store.save(attempt(2))
+  expect(
+    [1, 2, 3].map(
+      (n) =>
+        JSON.parse(readFileSync(bdlRevisionFile(journal, n), 'utf8')).body.data
+    )
+  ).toEqual([[0], [1], [2]])
+  // Process stopped after immutable publication and before replacing the cache.
+  writeFileSync(cache, JSON.stringify(attempt(1)))
+  const env = process.env
+  try {
+    process.env = { ...env, LOCAL_ONLY: 'true', BDL_FIXTURE_DIR: out }
+    delete process.env.GOOGLE_CLOUD_PROJECT
+    const response = await createBdlFixtureTransport(Date.now)(endpoint, {})
+    expect(await response.json()).toEqual(attempt(2).body)
+  } finally {
+    process.env = env
+  }
+  const resumed = setup([], true)
+  await resumed.recorder.run([step()])
+  expect(resumed.recorder.summary).toMatchObject({ dispatched: 0, resumed: 1 })
+  expect(JSON.parse(readFileSync(cache, 'utf8'))).toEqual(attempt(2))
+  expect(readdirSync(journal).sort()).toEqual(['1', '2', '3'])
+})
+
+it.each([false, true])(
+  'keeps both concurrent publishers when a legacy cache exists: %s',
+  (legacy) => {
+    const { directory, cache, journal } = nbaArchive()
+    mkdirSync(directory, { recursive: true })
+    if (legacy) writeFileSync(cache, JSON.stringify(attempt(0)))
+    const first = createRecordingStore(out),
+      second = createRecordingStore(out)
+    const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+    const rename = fs.renameSync
+    let contended = false
+    jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+      if (!contended && String(to) === path.join(journal, '1')) {
+        contended = true
+        second.save(attempt(2))
+      }
+      rename(from, to)
+    })
+    first.save(attempt(1))
+    expect(contended).toBe(true)
+    const archived = readdirSync(journal).map(
+      (n) =>
+        JSON.parse(readFileSync(bdlRevisionFile(journal, Number(n)), 'utf8'))
+          .body.data[0]
+    )
+    expect(archived.sort()).toEqual(legacy ? [0, 1, 2] : [1, 2])
+    expect(first.read(endpoint, {})?.body).toEqual({ data: [1] })
+  }
+)
+
+it('counts no dispatch if acquiring the shared rate slot fails', async () => {
+  const { clock } = setup([])
+  const transport = jest.fn()
+  const recorder = createRecorder({
+    out,
+    clock,
+    key: fakeKey,
+    transport,
+    acquireSharedSlot: async () => {
+      throw new Error('admission denied')
+    },
+  })
+  await expect(recorder.run([step()])).rejects.toThrow('admission denied')
+  expect(transport).not.toHaveBeenCalled()
+  expect(recorder.summary).toMatchObject({
+    dispatched: 0,
+    httpResponses: 0,
+    usableSnapshots: 0,
+  })
 })

@@ -1,6 +1,11 @@
 import { promises as fs } from 'fs'
 import { isAbsolute, join, relative, sep } from 'path'
 
+import {
+  bdlJournalDirectory,
+  bdlRevisionFile,
+  latestBdlRevision,
+} from './balldontlie-recording'
 import { BdlParams, bdlRecordingPathParts, bdlUrl } from './balldontlie-request'
 
 export function requireBdlLocalOnly() {
@@ -22,13 +27,24 @@ type Fixture = {
   rateLimit?: { limit?: number | null; remaining?: number | null }
 }
 
-function parseFixture(text: string): Fixture {
+function parseFixture(text: string, namedSample: boolean): Fixture | undefined {
   let value: Fixture
   try {
     value = JSON.parse(text)
   } catch {
     throw new Error('[sports-bdl-client] Invalid JSON in BDL fixture')
   }
+  // Named adapter examples contain an unwrapped provider page, with no
+  // request identity. Never invent a request for them. Incomplete envelopes
+  // (or a malformed canonical recording) must still fail closed.
+  if (
+    namedSample &&
+    value &&
+    typeof value === 'object' &&
+    'data' in value &&
+    Object.keys(value).every((key) => key === 'data' || key === 'meta')
+  )
+    return
   if (
     !value?.request ||
     typeof value.request.path !== 'string' ||
@@ -54,12 +70,12 @@ async function confined(root: string, candidate: string) {
   return target
 }
 
-async function read(root: string, path: string) {
+async function read(root: string, path: string, namedSample = false) {
   const target = await confined(root, path)
   const stat = await fs.stat(target)
   if (!stat.isFile() || stat.nlink !== 1)
     throw new Error('[sports-bdl-client] Invalid fixture file')
-  return parseFixture(await fs.readFile(target, 'utf8'))
+  return parseFixture(await fs.readFile(target, 'utf8'), namedSample)
 }
 
 /** Read the recorder layout or the trimmed <league>/<endpoint>__<label>.json fixtures. */
@@ -80,12 +96,21 @@ export function createBdlFixtureTransport(now: () => number) {
       bdlUrl(fixture.request.path, fixture.request.params).href === key
     let fixture: Fixture
     try {
-      fixture = await read(
+      const cache = join(local, endpointSlug, parameterHash + '.json')
+      const journal = bdlJournalDirectory(cache)
+      let revision = 0
+      try {
+        revision = latestBdlRevision(await confined(root, journal))
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
+      }
+      const entry = await read(
         root,
-        join(local, endpointSlug, parameterHash + '.json')
+        revision ? bdlRevisionFile(journal, revision) : cache
       )
-      if (!matches(fixture))
+      if (!entry || !matches(entry))
         throw new Error('[sports-bdl-client] Fixture request mismatch')
+      fixture = entry
     } catch (err) {
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
       const files = await fs.readdir(local)
@@ -100,8 +125,11 @@ export function createBdlFixtureTransport(now: () => number) {
           names.some((name) => file.startsWith(name + '__'))
       )
       const scenarios = (
-        await Promise.all(named.map((name) => read(root, join(local, name))))
+        await Promise.all(
+          named.map((name) => read(root, join(local, name), true))
+        )
       )
+        .filter((entry): entry is Fixture => entry !== undefined)
         .filter(matches)
         .map((entry) => {
           const at = entry.request.at ?? entry.recordedAt

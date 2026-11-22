@@ -3,7 +3,7 @@ import { createBdlClient } from 'shared/balldontlie-client'
 // From backend/scripts, set LOCAL_ONLY=true, BDL_FIXTURE_DIR to the recording
 // or fixture root, and optionally SPORTS_FAKE_NOW to a scenario's ISO time.
 // npx ts-node bdl-recorder/replay.ts /nba/v1/games 'game_ids[]=42&per_page=1'
-async function main(args: string[]) {
+export async function replay(args: string[]) {
   if (process.env.LOCAL_ONLY !== 'true' || !process.env.BDL_FIXTURE_DIR)
     throw new Error('Replay requires LOCAL_ONLY=true and BDL_FIXTURE_DIR.')
   const [path, query] = args
@@ -24,7 +24,7 @@ async function main(args: string[]) {
 }
 
 if (require.main === module) {
-  main(process.argv.slice(2)).catch((error: unknown) => {
+  replay(process.argv.slice(2)).catch((error: unknown) => {
     console.error(
       error instanceof Error ? error.message : 'Fixture replay failed'
     )

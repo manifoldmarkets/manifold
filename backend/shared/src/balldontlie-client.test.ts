@@ -453,11 +453,22 @@ it('replays exact requests from both layouts and picks the latest applicable sce
         })
       )
     }
+    await fs.writeFile(
+      join(local, 'games__adapter.json'),
+      JSON.stringify({ data: [{ id: 123 }] })
+    )
     await expect(client.get(endpoint, params)).resolves.toMatchObject({
       body: 'final',
     })
     await expect(client.get(endpoint, { game_ids: [999] })).rejects.toThrow(
       'No matching BDL fixture'
+    )
+    await fs.writeFile(
+      join(local, 'games__broken.json'),
+      JSON.stringify({ request: { path: endpoint }, data: [] })
+    )
+    await expect(client.get(endpoint, params)).rejects.toThrow(
+      'Invalid BDL fixture envelope'
     )
     expect(transport).not.toHaveBeenCalled()
   } finally {
@@ -547,4 +558,29 @@ it('rechecks live authorization for each page, even when a run started enabled',
     client.getAll(endpoint, {}, { maxPages: 3, matches: () => true })
   ).rejects.toThrow('League disabled')
   expect(transport).toHaveBeenCalledTimes(1)
+})
+
+it('runs the documented local NBA replay alongside checked-in body-only adapter inputs', async () => {
+  const { replay } = await import('../../scripts/bdl-recorder/replay')
+  const root = join(__dirname, '../test/fixtures/bdl')
+  process.env.BDL_FIXTURE_DIR = root
+  process.env.LOCAL_ONLY = 'true'
+  const network = jest
+    .spyOn(global, 'fetch')
+    .mockRejectedValue(new Error('network disabled'))
+  const printed = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+  try {
+    await replay(['/nba/v1/games', 'per_page=1&seasons[]=2026'])
+    expect(JSON.parse(printed.mock.calls[0][0])).toMatchObject({
+      status: 200,
+      body: { data: [{ id: 42, season: 2026 }] },
+    })
+    await expect(replay(['/nba/v1/games', 'seasons[]=1991'])).rejects.toThrow(
+      'No matching BDL fixture'
+    )
+    expect(network).not.toHaveBeenCalled()
+  } finally {
+    network.mockRestore()
+    printed.mockRestore()
+  }
 })

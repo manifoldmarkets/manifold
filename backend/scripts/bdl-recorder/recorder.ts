@@ -10,6 +10,7 @@ import {
 } from 'shared/balldontlie-client'
 import type { History, PlanStep } from './plan'
 import { maxPaidRecorderRate } from './rate'
+import { isRow } from './spec'
 import { createRecordingStore } from './store'
 
 export const defaultRecorderRate = 3
@@ -27,8 +28,15 @@ export type RecorderOptions = {
 }
 
 export const emptySummary = () => ({
-  calls: 0,
-  successful: 0,
+  dispatched: 0,
+  httpResponses: 0,
+  usableSnapshots: 0,
+  get calls() {
+    return this.dispatched
+  },
+  get successful() {
+    return this.usableSnapshots
+  },
   resumed: 0,
   unauthorized: 0,
   rateLimited: 0,
@@ -36,6 +44,14 @@ export const emptySummary = () => ({
   skippedUnentitled: 0,
   rejectedProbes: [] as { label: string; status: number }[],
 })
+
+// The plan consumes provider pages with either a data list or a detail object.
+// Preserve other safely decoded replies as evidence, without claiming coverage.
+const usable = (attempt: BdlAttempt) =>
+  attempt.status >= 200 &&
+  attempt.status < 300 &&
+  isRow(attempt.body) &&
+  (Array.isArray(attempt.body.data) || isRow(attempt.body.data))
 
 function cursorOf(body: unknown): string | undefined {
   if (!body || typeof body !== 'object' || !('meta' in body)) return
@@ -74,28 +90,31 @@ export function createRecorder(options: RecorderOptions) {
   let consecutiveServerErrors = 0
   const client = createBdlClient({
     key,
-    transport: options.transport,
+    async transport(url, init) {
+      summary.dispatched++
+      const response = await (options.transport ?? fetch)(url, init)
+      summary.httpResponses++
+      if (response.status === 401) summary.unauthorized++
+      if (response.status === 429) summary.rateLimited++
+      if (response.status >= 500 && response.status <= 599) {
+        summary.serverErrors++
+        consecutiveServerErrors++
+      } else consecutiveServerErrors = 0
+      return response
+    },
     clock: options.clock,
     role: 'recorder',
     recorderRate: rate,
     acquireSharedSlot: options.acquireSharedSlot,
     maxAttempts: 6,
     onAttempt(attempt) {
-      summary.calls++
       safeToPersist(attempt, key)
       store.save(attempt)
-      if (attempt.status === 401) summary.unauthorized++
-      if (attempt.status === 429) summary.rateLimited++
-      if (attempt.status >= 500 && attempt.status <= 599) {
-        summary.serverErrors++
-        if (++consecutiveServerErrors >= 3)
-          throw new Error(
-            'Three consecutive server errors. Use --resume after the provider recovers.'
-          )
-      } else {
-        consecutiveServerErrors = 0
-      }
-      if (attempt.status >= 200 && attempt.status < 300) summary.successful++
+      if (consecutiveServerErrors >= 3)
+        throw new Error(
+          'Three consecutive server errors. Use --resume after the provider recovers.'
+        )
+      if (usable(attempt)) summary.usableSnapshots++
     },
   })
 
@@ -113,13 +132,18 @@ export function createRecorder(options: RecorderOptions) {
     }
     if (resume) {
       const saved = store.read(endpoint, params)
-      if (saved && saved.status >= 200 && saved.status < 300) {
+      if (saved && usable(saved)) {
         summary.resumed++
         return saved
       }
     }
     try {
-      return await client.get(endpoint, params)
+      const received = await client.get(endpoint, params)
+      if (!usable(received))
+        throw new Error(
+          'Recorded HTTP response has no usable data page at ' + endpoint
+        )
+      return received
     } catch (error) {
       if (!(error instanceof BdlHttpError)) throw error
       if (step.rejectedStatuses?.includes(error.status)) {
