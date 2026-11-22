@@ -23,6 +23,7 @@ let loadingSeason = false
 let seasonInterval: number
 
 const getSeasonSnapshot = () => currentSeason
+const getSeasonCheckedAt = () => seasonLoadedAt
 
 async function loadSeason() {
   if (loadingSeason) return
@@ -71,6 +72,9 @@ function subscribeToSeason(notify: () => void) {
 
 export const useCurrentSeason = () =>
   useSyncExternalStore(subscribeToSeason, getSeasonSnapshot, () => undefined)
+
+export const useSeasonCheckedAt = () =>
+  useSyncExternalStore(subscribeToSeason, getSeasonCheckedAt, () => undefined)
 
 // The user's league this season: undefined until known, null for none. The
 // stored result names its season, so a row from an earlier season is never

@@ -21,6 +21,6 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
       `select season, division from leagues where user_id = $1 and season = $2`,
       [userId, season]
     )
-    return { claims, pins, league }
+    return { claims, pins, league, season }
   })
 }

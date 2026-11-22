@@ -3300,6 +3300,8 @@ export const API = (_apiTypeCheck = {
       // []: the user removed every pin.
       pins: string[] | null
       league: Pick<League, 'season' | 'division'> | null
+      // Effective season used for the league lookup, even when league is null.
+      season: number
     },
     props: z
       .object({
