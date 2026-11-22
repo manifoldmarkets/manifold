@@ -30,6 +30,8 @@ import {
   SportsMarketAlreadyExistsError,
 } from 'shared/sports-markets'
 import { sportsCreator } from 'shared/odds-markets'
+import { F1ReadEvidenceError } from './bdl/f1-read-evidence'
+import { useSharedF1Client } from './bdl/f1-read-role'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import {
   BalldontlieError,
@@ -65,6 +67,7 @@ import {
   f1SeasonPointsAwarded,
   f1SessionKind,
   f1SessionResolution,
+  F1Session,
   F1SessionResult,
   f1SessionSettleAt,
   F1StatusState,
@@ -934,6 +937,68 @@ async function observeF1Session(
   }
 }
 
+/** Discard terminal confirmation for every official market on a disputed session,
+ * including a winner/podium sibling outside this worker's current page. */
+async function readMarketSessions(
+  pg: SupabaseDirectClient,
+  contracts: SportsContract[]
+) {
+  const ids = new Map(
+    contracts.map((c) => [c.id, parseF1EventId(c.sportsEventId)])
+  )
+  const eventIds = uniq(
+    [...ids.values()].flatMap((id) => (id ? [id.eventId] : []))
+  )
+  const problems = new Map<string, string>()
+  const shared = useSharedF1Client()
+  let sessions: F1Session[]
+  try {
+    sessions = eventIds.length
+      ? await providerCall('/sessions', KEY_OR_PLAN_REFUSED, () =>
+          getF1Sessions(eventIds)
+        )
+      : []
+  } catch (error) {
+    if (
+      !(error instanceof F1ReadEvidenceError) ||
+      error.resource !== 'sessions'
+    )
+      throw error
+    for (const contract of contracts) {
+      const id = ids.get(contract.id)
+      if (
+        id &&
+        (!error.disputed || error.disputed.sessionIds.has(id.sessionId))
+      )
+        problems.set(contract.sportsEventId!, error.message)
+    }
+    sessions = error.disputed?.verifiedSiblings ?? []
+  }
+  const sessionById = new Map(sessions.map((session) => [session.id, session]))
+  if (shared) {
+    // Both events may be legitimately requested together. A session is only
+    // evidence for markets under its own event, even in an in-scope response.
+    for (const contract of contracts) {
+      const id = ids.get(contract.id)
+      const session = id && sessionById.get(id.sessionId)
+      if (id && session && session.event.id !== id.eventId)
+        problems.set(
+          contract.sportsEventId!,
+          `The F1 provider files session ${id.sessionId} under event ${session.event.id}, not ${id.eventId}`
+        )
+    }
+  }
+  if (problems.size)
+    await pg.none(
+      `update contracts set data = data - 'sportsCanceledSince' - 'sportsFinalSince'
+       where creator_id = any($1) and token = 'MANA' and resolution is null
+         and data->>'sportsEventId' = any($2::text[])
+         and (data ? 'sportsCanceledSince' or data ? 'sportsFinalSince')`,
+      [MANIFOLD_SPORTS_USER_IDS, [...problems.keys()]]
+    )
+  return { ids, sessionById, problems }
+}
+
 const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
   (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [
@@ -989,20 +1054,12 @@ export async function resolveF1Markets(
   if (contracts.length === 0) return result
   const { add, attention } = resolveLog(result, alerted)
 
-  const ids = new Map(
-    contracts.map((c) => [c.id, parseF1EventId(c.sportsEventId)])
-  )
-  const eventIds = uniq(
-    [...ids.values()].flatMap((id) => (id ? [id.eventId] : []))
-  )
-  const sessions =
-    eventIds.length > 0
-      ? await providerCall('/sessions', KEY_OR_PLAN_REFUSED, () =>
-          getF1Sessions(eventIds)
-        )
-      : []
-  const sessionById = new Map(sessions.map((s) => [s.id, s]))
-  const resultsBySession = new Map<number, F1SessionResult[]>()
+  const sharedRead = useSharedF1Client()
+  const { ids, sessionById, problems } = await readMarketSessions(pg, contracts)
+  const resultsBySession = new Map<
+    number,
+    F1SessionResult[] | F1ReadEvidenceError
+  >()
   let creator: User | undefined
 
   for (const contract of contracts) {
@@ -1027,6 +1084,11 @@ export async function resolveF1Markets(
     try {
       if (!id) {
         attention(contract, `can't read ${contract.sportsEventId}`)
+        continue
+      }
+      const problem = problems.get(contract.sportsEventId!)
+      if (problem) {
+        attention(contract, problem)
         continue
       }
       const session = sessionById.get(id.sessionId)
@@ -1088,6 +1150,38 @@ export async function resolveF1Markets(
       }
       const answers = await getAnswers(pg, contract.id)
       const multi = { ...contract, answers }
+      const settle = (
+        owner: User,
+        params: Parameters<typeof resolveMarketHelper>[3],
+        checkAnswers?: (fresh: MarketContract) => void
+      ) => {
+        if (!sharedRead && !checkAnswers)
+          return resolveMarketHelper(multi, owner, owner, params)
+        // A later schedule observation can break terminal confirmation while a
+        // classification is in flight. Recheck inside the native transaction.
+        const verify = sharedRead
+          ? (fresh: MarketContract) => {
+              const stored = fresh as SportsContract
+              if (
+                stored.sportsEventId !== contract.sportsEventId ||
+                stored.sportsFinalSince !== observed.finalSince ||
+                stored.sportsCanceledSince !== observed.canceledSince
+              )
+                throw new Error(
+                  'F1 session confirmation changed before resolution'
+                )
+              checkAnswers?.(fresh)
+            }
+          : checkAnswers
+        return resolveMarketHelper(
+          multi,
+          owner,
+          owner,
+          params,
+          undefined,
+          verify
+        )
+      }
 
       if (session.status_state === 'canceled') {
         // The description promises N/A. An answer that's already resolved
@@ -1104,18 +1198,15 @@ export async function resolveF1Markets(
         }
         creator ??= await sportsCreator()
         if (contract.shouldAnswersSumToOne) {
-          await resolveMarketHelper(multi, creator, creator, {
+          await settle(creator, {
             outcome: 'CANCEL',
           })
         } else {
           for (const a of sortBy(answers, (x) => x.index)) {
             if (a.resolution) continue
-            await resolveMarketHelper(
-              multi,
-              creator,
+            await settle(
               creator,
               { outcome: 'CANCEL', answerId: a.id },
-              undefined,
               agreesWith(() => 'CANCEL')
             )
           }
@@ -1125,12 +1216,25 @@ export async function resolveF1Markets(
       }
       let results = resultsBySession.get(session.id)
       if (!results) {
-        results = await providerCall(
-          '/session_results',
-          KEY_OR_PLAN_REFUSED,
-          () => getF1SessionResults(session.id)
-        )
+        try {
+          results = await providerCall(
+            '/session_results',
+            KEY_OR_PLAN_REFUSED,
+            () => getF1SessionResults(session.id)
+          )
+        } catch (error) {
+          if (
+            !(error instanceof F1ReadEvidenceError) ||
+            error.resource !== 'session_results'
+          )
+            throw error
+          results = error
+        }
         resultsBySession.set(session.id, results)
+      }
+      if (results instanceof F1ReadEvidenceError) {
+        attention(contract, results.message)
+        continue
       }
       // Seen in October 2026: final sessions whose classification never
       // arrived. Wait, then hand it to a person.
@@ -1169,7 +1273,7 @@ export async function resolveF1Markets(
       }
       creator ??= await sportsCreator()
       if (resolution.kind === 'sum-to-one') {
-        await resolveMarketHelper(multi, creator, creator, {
+        await settle(creator, {
           outcome: resolution.outcome,
           resolutions: resolution.resolutions,
         })
@@ -1192,12 +1296,9 @@ export async function resolveF1Markets(
       const intended = (answerId: string) => resolution.resolutions[answerId]
       for (const a of sortBy(answers, (x) => x.index)) {
         if (a.resolution) continue
-        await resolveMarketHelper(
-          multi,
-          creator,
+        await settle(
           creator,
           { outcome: intended(a.id), answerId: a.id },
-          undefined,
           agreesWith(intended)
         )
       }
@@ -1264,17 +1365,7 @@ export async function syncF1SessionMarkets(
   )
   const contracts = rows.map((r) => convertContract(r) as SportsContract)
   result.checked = contracts.length
-  const ids = new Map(
-    contracts.map((c) => [c.id, parseF1EventId(c.sportsEventId)])
-  )
-  const eventIds = uniq(
-    [...ids.values()].flatMap((id) => (id ? [id.eventId] : []))
-  )
-  if (eventIds.length === 0) return result
-  const sessions = await providerCall('/sessions', KEY_OR_PLAN_REFUSED, () =>
-    getF1Sessions(eventIds)
-  )
-  const sessionById = new Map(sessions.map((s) => [s.id, s]))
+  const { ids, sessionById } = await readMarketSessions(pg, contracts)
 
   for (const contract of contracts) {
     const id = ids.get(contract.id)

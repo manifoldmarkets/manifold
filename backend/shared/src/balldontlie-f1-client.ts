@@ -25,6 +25,7 @@ import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
 import { isProd, log } from 'shared/utils'
 import { sendDevBdlRequest } from './bdl/dev-admission'
 import { f1ServiceRole, useSharedF1Client } from './bdl/f1-read-role'
+import { F1ReadEvidenceError, verifiedF1Sessions } from './bdl/f1-read-evidence'
 
 const BASE_URL = 'https://api.balldontlie.io/f1/v1'
 
@@ -111,7 +112,15 @@ async function getAll<T>(
     try {
       return await client.getAll<T>('/f1/v1/' + path, params, {
         maxPages: MAX_PAGES,
-        matches,
+        matches: (row) => {
+          const valid = matches(row)
+          if (!valid && (path === 'sessions' || path === 'session_results'))
+            throw new F1ReadEvidenceError(
+              path,
+              'The F1 provider ignored the requested filter for ' + path
+            )
+          return valid
+        },
       })
     } catch (err) {
       // The F1 jobs distinguish a refused entitlement from an empty field.
@@ -181,14 +190,16 @@ export const getF1Events = (season: number) =>
   )
 
 /** The sessions of the given weekends, every type (ALL-STAR). */
-export const getF1Sessions = (eventIds: number[]) =>
-  eventIds.length === 0
-    ? Promise.resolve([] as F1Session[])
-    : getAll<F1Session>(
-        'sessions',
-        { event_ids: eventIds.map(String) },
-        (row) => eventIds.includes(row?.event?.id)
-      )
+export const getF1Sessions = async (eventIds: number[]) => {
+  if (eventIds.length === 0) return []
+  const shared = useSharedF1Client()
+  const rows = await getAll<F1Session>(
+    'sessions',
+    { event_ids: eventIds.map(String) },
+    (row) => eventIds.includes(row?.event?.id)
+  )
+  return shared ? verifiedF1Sessions(rows) : rows
+}
 
 /** One session's classification, about ten minutes after it ends (ALL-STAR). */
 export const getF1SessionResults = (sessionId: number) =>
@@ -197,7 +208,16 @@ export const getF1SessionResults = (sessionId: number) =>
     {
       session_ids: [String(sessionId)],
     },
-    (row) => row?.session?.id === sessionId
+    (row) => {
+      if (row?.session?.id !== sessionId) return false
+      const driverId = row.driver?.id
+      if (!Number.isSafeInteger(driverId) || driverId <= 0)
+        throw new F1ReadEvidenceError(
+          'session_results',
+          'The F1 classification contains an unidentified driver'
+        )
+      return true
+    }
   )
 
 /**

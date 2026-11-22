@@ -75,6 +75,67 @@ const page = (data: unknown[], next?: number | string, status = 200) =>
     status,
   })
 const events = () => getF1Events(2026)
+const sameSession = {
+  id: 22,
+  event: { id: 11, season: 2026 },
+  type: 'Race',
+  name: 'Race',
+  date: '2026-11-01T20:00:00Z',
+}
+it.each([false, true])(
+  'isolates conflicting F1 sessions across pages in either order (reverse=%s)',
+  async (reverse) => {
+    const a = { ...sameSession, status_state: 'final' },
+      b = { ...sameSession, status_state: 'in_progress' }
+    const sibling = { ...a, id: 23 }
+    localFetch
+      .mockResolvedValueOnce(page([reverse ? b : a, sibling], 1))
+      .mockResolvedValueOnce(page([sibling, reverse ? a : b]))
+    await expect(getF1Sessions([11])).rejects.toMatchObject({
+      resource: 'sessions',
+      disputed: { sessionIds: new Set([22]), verifiedSiblings: [sibling] },
+    })
+    expect(localFetch).toHaveBeenCalledTimes(2)
+  }
+)
+it('coalesces repeated identical sessions before consuming the schedule', async () => {
+  const s = { ...sameSession, status_state: 'scheduled' }
+  localFetch
+    .mockResolvedValueOnce(page([s], 1))
+    .mockResolvedValueOnce(page([s]))
+  await expect(getF1Sessions([11])).resolves.toEqual([s])
+})
+it.each(['44', 0, -1, 1.5, null, undefined])(
+  'holds the shared classification with an unresolved driver identity (%s)',
+  async (id) => {
+    localFetch.mockResolvedValueOnce(
+      page([
+        { session: { id: 22 }, driver: { id }, position: 1, is_winner: true },
+      ])
+    )
+    await expect(getF1SessionResults(22)).rejects.toMatchObject({
+      resource: 'session_results',
+      message: expect.stringContaining('driver'),
+    })
+  }
+)
+it('differentiates a mismatched classification from HTTP errors and accepts numeric listed or field entrants', async () => {
+  const clean = [44, 77].map((id, i) => ({
+    session: { id: 22 },
+    driver: { id },
+    position: i + 1,
+    is_winner: i === 0,
+  }))
+  localFetch
+    .mockResolvedValueOnce(page([{ ...clean[0], session: { id: 23 } }]))
+    .mockResolvedValueOnce(page(clean))
+  await expect(getF1SessionResults(22)).rejects.toMatchObject({
+    resource: 'session_results',
+    message: expect.stringContaining('filter'),
+  })
+  await expect(getF1SessionResults(22)).resolves.toEqual(clean)
+})
+
 const endpoints = [
   {
     path: 'events',
@@ -97,7 +158,7 @@ const endpoints = [
     query: 'session_ids[]',
     value: '22',
     run: () => getF1SessionResults(22),
-    row: { id: 33, session: { id: 22 } },
+    row: { id: 33, session: { id: 22 }, driver: { id: 7 } },
     bad: { session: { id: 12 } },
   },
   {
