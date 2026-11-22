@@ -22,6 +22,7 @@ export type CollegeGame = {
   status: ProviderGameStatus
   home: CollegeTeam | null
   away: CollegeTeam | null
+  unnamedTeamIds?: number[]
   homeScore: number | null
   awayScore: number | null
   postseason: boolean | null
@@ -91,6 +92,10 @@ export function collegeGame(league: CollegeLeague, raw: unknown): CollegeGame {
     home = collegeTeam(v.home_team),
     away = collegeTeam(v.visitor_team)
   if (home && home.id === away?.id) throw new Error('Duplicate college team ID')
+  const unnamedTeamIds = [
+    home ? null : collegeId(collegeObject(v.home_team).id),
+    away ? null : collegeId(collegeObject(v.visitor_team).id),
+  ].filter((id): id is number => id !== null)
   const status = normalizeBdlStatus(v.status_state)
   // Providers can send two numeric zeroes before play. They are not observed scores.
   const hasScore =
@@ -108,6 +113,7 @@ export function collegeGame(league: CollegeLeague, raw: unknown): CollegeGame {
     status,
     home,
     away,
+    ...(unnamedTeamIds.length ? { unnamedTeamIds } : {}),
     homeScore: hasScore ? collegeScore(v.home_score) : null,
     awayScore: hasScore ? collegeScore(v.away_score) : null,
     postseason: typeof v.postseason === 'boolean' ? v.postseason : null,
@@ -128,37 +134,44 @@ export function matchCollegeTeams(
     matches.add(name)
     names.set(key, matches)
   }
+  const reserved = new Map<string, Set<number>>()
+  const observations = new Map<number, Set<string>>()
+  const claims = new Map<string, Set<number>>()
+  function claim(owners: Map<string, Set<number>>, label: string, id: number) {
+    const key = normalizeTeam(label)
+    const ids = owners.get(key) ?? new Set<number>()
+    ids.add(id)
+    owners.set(key, ids)
+  }
+  for (const [id, name] of knownNames) claim(reserved, name, id)
+  for (const { id, name } of teams) {
+    const observed = observations.get(id) ?? new Set<string>()
+    observed.add(name)
+    observations.set(id, observed)
+    if (!knownNames.has(id)) claim(claims, name, id)
+  }
   const mapped = new Map<number, string>(),
     unmatched = new Map<number, string>()
-  for (const team of teams) {
-    const explicit = knownNames.get(team.id)
-    const candidates = names.get(normalizeTeam(team.name))
-    const candidate =
+  for (const id of [...observations.keys()].sort((a, b) => a - b)) {
+    const observed = [...observations.get(id)!].sort()
+    const explicit = knownNames.get(id)
+    const keys = new Set(observed.map(normalizeTeam))
+    const key = normalizeTeam(explicit ?? observed[0])
+    const candidates = names.get(key)
+    const canonical =
       explicit !== undefined
-        ? existingNames.includes(explicit)
+        ? existingNames.includes(explicit) && reserved.get(key)?.size === 1
           ? explicit
           : null
-        : candidates?.size === 1
+        : keys.size === 1 &&
+          candidates?.size === 1 &&
+          !reserved.has(key) &&
+          claims.get(key)?.size === 1
         ? [...candidates][0]
         : null
-    if (!candidate) {
-      unmatched.set(team.id, team.name)
-      continue
-    }
-    if (mapped.has(team.id) && mapped.get(team.id) !== candidate)
-      unmatched.set(team.id, team.name)
-    mapped.set(team.id, candidate)
+    if (canonical) mapped.set(id, canonical)
+    else unmatched.set(id, observed.join(' / '))
   }
-  // Multiple provider IDs can normalize to the same existing name. Never conflate the entrants.
-  const idsByName = new Map<string, number[]>()
-  for (const [id, name] of mapped)
-    idsByName.set(name, [...(idsByName.get(name) ?? []), id])
-  for (const team of teams) {
-    const name = mapped.get(team.id)
-    if (name && (idsByName.get(name)?.length ?? 0) > 1)
-      unmatched.set(team.id, team.name)
-  }
-  for (const id of unmatched.keys()) mapped.delete(id)
   return { mapped, unmatched }
 }
 
@@ -199,7 +212,6 @@ export function collegeApRanks(
       v.week !== week ||
       !team ||
       !rank ||
-      rank > 25 ||
       !(poll?.toLowerCase() === 'ap' || (league === 'ncaaf' && poll === null))
     )
       continue
@@ -207,6 +219,7 @@ export function collegeApRanks(
       throw new Error('Conflicting AP ranking for college team')
     ranks.set(team, rank)
   }
+  for (const [team, rank] of ranks) if (rank > 25) ranks.delete(team)
   return { league, season, week, ranks } satisfies CollegeApPoll
 }
 

@@ -36,17 +36,30 @@ const names = [
   'Quartz',
 ]
 const campuses = ['Point', 'Ridge', 'Bay', 'Glen']
-function entrant(id: number): Team {
+const regionalSeeds = [1, 16, 8, 9, 5, 12, 4, 13, 6, 11, 3, 14, 7, 10, 2, 15]
+const playInBerths = [1, 17, 41, 57]
+function entrant(id: number, seed: number): Team {
   return {
     id,
     full_name: names[(id - 1) % 17] + ' ' + campuses[Math.floor((id - 1) / 17)],
     abbreviation: 'C' + id,
-    seed: String(((id - 1) % 16) + 1),
+    seed: String(seed),
   }
 }
 const season = 2026,
-  tip = Date.UTC(2027, 2, 16, 19),
-  now = tip + 2 * 60 * 60 * 1000
+  tip = Date.UTC(2027, 2, 16, 17)
+const hour = 3600000
+const roundDays = [0, 2, 6, 10, 12, 18, 20]
+function gameTime(round: number, position: number) {
+  // Two courts per session, four sessions per day.
+  const session = Math.floor((position - 1) / 2)
+  return (
+    tip +
+    (roundDays[round] + Math.floor(session / 4)) * 24 * hour +
+    (session % 4) * 3 * hour +
+    (((position - 1) % 2) * hour) / 2
+  )
+}
 const displayTeam = (team: Team, prob: number): ScheduleTeam => ({
   name: team.full_name,
   shortName: team.abbreviation,
@@ -60,6 +73,12 @@ const displayTeam = (team: Team, prob: number): ScheduleTeam => ({
 
 // These 68 fictional campuses and Manifold pool prices are exclusive to the admin gallery.
 function sample(league: CollegeBasketballLeague, state: State) {
+  const now =
+    state === 'Live'
+      ? gameTime(1, 3) + 25 * 60000
+      : state === 'Complete'
+      ? gameTime(6, 1) + 3 * hour
+      : tip - 2 * hour
   const rows: unknown[] = [],
     ordinary: CollegeGame[] = [],
     markets: CollegeMarket[] = []
@@ -70,7 +89,7 @@ function sample(league: CollegeBasketballLeague, state: State) {
     away: Team | null
   ): Team | null => {
     const id = 1000 + 100 * round + position,
-      date = new Date(tip + round * 86400000 + position * 60000).toISOString()
+      date = new Date(gameTime(round, position)).toISOString()
     const final =
       state === 'Complete' ||
       (state === 'Live' && (round === 0 || (round === 1 && position < 3)))
@@ -125,7 +144,7 @@ function sample(league: CollegeBasketballLeague, state: State) {
           question: away.full_name + ' at ' + home.full_name,
           startTime: Date.parse(date),
           kickoffKnown: true,
-          closeTime: now + 86400000,
+          closeTime: Date.parse(date) + 4 * hour,
           status: live ? 'live' : 'upcoming',
           gameState: live ? 'live' : 'scheduled',
           home: displayTeam(home, extreme ? 0.006 : 0.58),
@@ -146,13 +165,19 @@ function sample(league: CollegeBasketballLeague, state: State) {
     return final ? home : null
   }
   if (state !== 'Unavailable') {
-    const playIn = Array.from({ length: 4 }, (_, i) =>
-      game(0, i + 1, entrant(61 + 2 * i), entrant(62 + 2 * i))
-    )
+    const playIn = playInBerths.map((berth, i) => {
+      const seed = regionalSeeds[berth % 16]
+      return game(
+        0,
+        i + 1,
+        entrant(61 + 2 * i, seed),
+        entrant(62 + 2 * i, seed)
+      )
+    })
     let direct = 1
     let round: (Team | null)[] = Array.from({ length: 64 }, (_, i) => {
-      const slot = [1, 17, 39, 60].indexOf(i)
-      return slot >= 0 ? playIn[slot] : entrant(direct++)
+      const slot = playInBerths.indexOf(i)
+      return slot >= 0 ? playIn[slot] : entrant(direct++, regionalSeeds[i % 16])
     })
     for (let n = 1; n <= 6; n++) {
       const next: (Team | null)[] = []
@@ -162,6 +187,7 @@ function sample(league: CollegeBasketballLeague, state: State) {
     }
   }
   return {
+    now,
     bracket: projectCollegeBracket(league, season, rows, ordinary),
     markets,
   }
@@ -181,7 +207,7 @@ export default function CollegeScenarios() {
             onChange={(e) =>
               setLeague(e.target.value === 'ncaaw' ? 'ncaaw' : 'ncaab')
             }
-            className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] rounded border px-2"
+            className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] rounded border pl-2 pr-9"
           >
             <option value="ncaab">Men's</option>
             <option value="ncaaw">Women's</option>
@@ -195,7 +221,7 @@ export default function CollegeScenarios() {
               const next = states.find((s) => s === e.target.value)
               if (next) setState(next)
             }}
-            className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] rounded border px-2"
+            className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] rounded border pl-2 pr-9"
           >
             {states.map((s) => (
               <option key={s}>{s}</option>
@@ -204,7 +230,7 @@ export default function CollegeScenarios() {
         </label>
         <p className="text-ink-600">Fictional teams and market prices.</p>
       </div>
-      <BracketView {...model} now={now} preview />
+      <BracketView {...model} preview />
     </>
   )
 }

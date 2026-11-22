@@ -47,6 +47,8 @@ export type CollegeBracket = {
   rounds: { label: string; slots: CollegeBracketSlot[] }[]
   issues: string[]
 }
+const winnerEvidence = (flag: unknown) =>
+  flag === true || flag === false || flag === null ? flag : 'unknown'
 const side = (raw: unknown, scored: boolean): Side => {
   const v = collegeObject(raw),
     seed = collegeId(v.seed)
@@ -156,7 +158,9 @@ export function projectCollegeBracket(
     return result
   }
 
-  const seenSlots = new Set<string>(),
+  const entrantSlots = roundLabels.map(() => new Map<number, Set<string>>())
+  const slotGameIds = new Map<string, number>()
+  const seenSlots = new Map<string, string>(),
     ambiguousSlots = new Set<string>(),
     seenGames = new Map<number, string>(),
     ambiguousGames = new Set<number>()
@@ -179,35 +183,61 @@ export function projectCollegeBracket(
   for (const v of records) {
     const round = (v.round as number) - base,
       position = collegeId(v.bracket_location)
+    const id = collegeId(v.game_id)
+    const homeId = collegeId(collegeObject(v.home_team).id)
+    const awayId = collegeId(collegeObject(v.away_team).id)
+    const location = JSON.stringify([round, position, homeId, awayId])
+    if (id !== null) {
+      if (seenGames.has(id) && seenGames.get(id) !== location)
+        ambiguousGames.add(id)
+      seenGames.set(id, location)
+    }
+    const sourceKey = position === null ? location : String(position)
+    for (const entrant of [homeId, awayId]) {
+      if (entrant === null) continue
+      const slots = entrantSlots[round].get(entrant) ?? new Set<string>()
+      slots.add(sourceKey)
+      entrantSlots[round].set(entrant, slots)
+    }
     if (position === null) {
       result.issues.push('Unplaced bracket row in ' + roundLabels[round])
       continue
     }
     const slot = result.rounds[round].slots[position - 1]
-    const id = collegeId(v.game_id)
-    if (id !== null) {
-      if (seenGames.has(id) && seenGames.get(id) !== slot.slotKey)
-        ambiguousGames.add(id)
-      seenGames.set(id, slot.slotKey)
-    }
-    if (seenSlots.has(slot.slotKey)) {
-      ambiguousSlots.add(slot.slotKey)
-      continue
-    }
-    seenSlots.add(slot.slotKey)
     const status = normalizeBdlStatus(v.status_state)
     const scored =
       status === 'final' || status === 'in_progress' || status === 'suspended'
     const home = side(v.home_team, scored),
-      away = side(v.away_team, scored),
-      time = collegeTime(v.date)
+      away = side(v.away_team, scored)
+    const time = collegeTime(v.date),
+      region = collegeText(v.region_label)
+    const homeFlag = collegeObject(v.home_team).winner,
+      awayFlag = collegeObject(v.away_team).winner
+    const observed = JSON.stringify([
+      id,
+      location,
+      time,
+      region,
+      status,
+      home,
+      away,
+      winnerEvidence(homeFlag),
+      winnerEvidence(awayFlag),
+    ])
+    const previous = seenSlots.get(slot.slotKey)
+    if (previous !== undefined) {
+      if (previous !== observed) ambiguousSlots.add(slot.slotKey)
+      continue
+    }
+    seenSlots.set(slot.slotKey, observed)
+    if (id !== null) slotGameIds.set(slot.slotKey, id)
     Object.assign(slot, {
       sourcePresent: true,
       status,
       home,
       away,
       startTime: time,
-      region: collegeText(v.region_label),
+      region,
     })
     if (home.team && away.team && home.team.id === away.team.id) {
       slot.home = side(null, false)
@@ -215,8 +245,6 @@ export function projectCollegeBracket(
       result.issues.push('Repeated participant in ' + slot.slotKey)
     }
     if (!home.team || !away.team || home.team.id === away.team.id) continue
-    const homeFlag = collegeObject(v.home_team).winner,
-      awayFlag = collegeObject(v.away_team).winner
     const homeWon = homeFlag === true,
       awayWon = awayFlag === true
     const loserFlag = homeWon ? awayFlag : homeFlag
@@ -234,8 +262,23 @@ export function projectCollegeBracket(
     if (!id) continue
     const game = ordinary.get(id)
     // Do not promote a similarly numbered bracket ID or expose an unverified market link.
-    if (game && matchesCollegeBracketSlot(game, slot))
+    if (game && matchesCollegeBracketSlot(game, slot)) {
       slot.eventId = bdlEventId(league, id)
+    } else if (
+      game &&
+      slot.winnerId !== null &&
+      slot.startTime !== null &&
+      game.startTime === slot.startTime &&
+      game.home?.id === home.team.id &&
+      game.away?.id === away.team.id &&
+      ((game.status !== 'unknown' && game.status !== 'final') ||
+        (game.status === 'final' &&
+          ((game.homeScore !== null && game.homeScore !== home.score) ||
+            (game.awayScore !== null && game.awayScore !== away.score))))
+    ) {
+      slot.winnerId = null
+      result.issues.push('Disputed bracket final for ' + slot.slotKey)
+    }
   }
   for (const { slots } of result.rounds)
     for (const slot of slots) {
@@ -250,13 +293,23 @@ export function projectCollegeBracket(
   for (const id of ambiguousGames) {
     for (const { slots } of result.rounds)
       for (const slot of slots)
-        if (slot.eventId === bdlEventId(league, id)) slot.eventId = null
+        if (slotGameIds.get(slot.slotKey) === id) {
+          slot.eventId = null
+          slot.winnerId = null
+        }
     result.issues.push('Conflicting ordinary game ID ' + id)
   }
   for (let round = 0; round < result.rounds.length - 1; round++) {
     const next = result.rounds[round + 1].slots
     for (const slot of result.rounds[round].slots) {
       if (!slot.winnerId) continue
+      if (
+        entrantSlots[round].get(slot.winnerId)?.size !== 1 ||
+        (entrantSlots[round + 1].get(slot.winnerId)?.size ?? 0) > 1
+      ) {
+        result.issues.push('Ambiguous advancement for ' + slot.slotKey)
+        continue
+      }
       // First Four slots have no reliable geometric destination. Even in later rounds,
       // require the advancing entrant in the independently supplied destination.
       const matches = next.filter(

@@ -208,3 +208,61 @@ it('returns every ambiguous or unmapped team once, and honors a verified ID mapp
     ).unmatched.has(5)
   ).toBe(true)
 })
+
+it('reserves verified names off slate and rejects every order of ambiguous fallback claims', () => {
+  const names = ['A School', 'B School']
+  const a = collegeTeam(team(1, names[0]))!,
+    b = { ...a, name: names[1] },
+    other = { ...a, id: 2 }
+  const known = new Map([[1, names[0]]])
+  for (const slate of [[other], [a, other], [other, a]]) {
+    const { mapped, unmatched } = matchCollegeTeams(slate, names, known)
+    expect(mapped.has(2)).toBe(false)
+    expect(unmatched.get(2)).toBe(names[0])
+    if (slate.length > 1) expect(mapped.get(1)).toBe(names[0])
+  }
+  for (const slate of [
+    [a, b, other],
+    [b, a, other],
+    [other, b, a],
+    [other, a, b],
+  ]) {
+    const { mapped, unmatched } = matchCollegeTeams(slate, names)
+    expect([...mapped]).toEqual([])
+    expect([...unmatched]).toEqual([
+      [1, 'A School / B School'],
+      [2, 'A School'],
+    ])
+  }
+  expect(
+    matchCollegeTeams(
+      [a],
+      names,
+      new Map([
+        [1, names[0]],
+        [3, names[0]],
+      ])
+    ).mapped.size
+  ).toBe(0)
+})
+it('reconciles both sides of the top-25 cutoff before filtering the AP issue', () => {
+  const base = { season: 2027, week: 3, team: { id: 1 }, poll: 'ap' }
+  for (const ranks of [
+    [25, 26],
+    [26, 25],
+  ])
+    expect(() =>
+      collegeApRanks(
+        'ncaab',
+        2027,
+        3,
+        ranks.map((rank) => ({ ...base, rank }))
+      )
+    ).toThrow('Conflicting')
+  expect([
+    ...collegeApRanks('ncaab', 2027, 3, [
+      { ...base, rank: 25 },
+      { ...base, rank: 26, poll: 'coach' },
+    ]).ranks,
+  ]).toEqual([[1, 25]])
+})

@@ -7,7 +7,7 @@ import { canBetOnScheduledGame } from 'common/sports-game-feed'
 import { formatSportsPrice } from 'common/sports-price'
 import type { ScheduleGame } from 'common/sports-schedule'
 import Link from 'next/link'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 /** AP rankings are supplied per matchup and poll issue, independently of NCAA tournament seeds. */
 export type CollegeMarket = ScheduleGame & {
@@ -60,6 +60,28 @@ export function BracketView({
   preview?: boolean
 }) {
   const roundList = useRef<HTMLDivElement>(null)
+  const scrollTimer = useRef<ReturnType<typeof setTimeout>>()
+  useEffect(() => () => clearTimeout(scrollTimer.current), [])
+  function checkSwipedRound() {
+    clearTimeout(scrollTimer.current)
+    if (!window.matchMedia('(max-width: 639px)').matches) return
+    scrollTimer.current = setTimeout(() => {
+      const list = roundList.current
+      if (!list) return
+      const bounds = list.getBoundingClientRect()
+      if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return
+      // Only move vertically when horizontal navigation lands below every game in the visible round.
+      const center = bounds.left + list.clientWidth / 2
+      const active = Array.from(list.children).find((section) => {
+        const rect = section.getBoundingClientRect()
+        return rect.left <= center && center < rect.right
+      })
+      if (active && active.getBoundingClientRect().bottom <= 0)
+        active
+          .querySelector('h3')
+          ?.scrollIntoView({ block: 'start', inline: 'nearest' })
+    }, 120)
+  }
   const byId = new Map<string, CollegeMarket | null>()
   for (const market of markets) {
     if (market.sportsLeagueKey !== bracket.league) continue
@@ -80,12 +102,16 @@ export function BracketView({
             onChange={(e) => {
               const list = roundList.current,
                 target = list?.children.item(Number(e.currentTarget.value))
-              if (list && target)
+              if (list && target) {
                 list.scrollBy({
                   left:
                     target.getBoundingClientRect().left -
                     list.getBoundingClientRect().left,
                 })
+                const heading = target.querySelector('h3')
+                heading?.focus({ preventScroll: true })
+                heading?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+              }
               e.currentTarget.value = ''
             }}
             className="bg-canvas-0 border-ink-300 min-h-[44px] rounded border py-2 pl-2 pr-9"
@@ -108,7 +134,8 @@ export function BracketView({
           role="region"
           aria-label="Tournament rounds"
           ref={roundList}
-          className="relative flex max-w-full snap-x gap-3 overflow-x-auto pb-3"
+          onScroll={checkSwipedRound}
+          className="relative flex max-w-full snap-x items-start gap-3 overflow-x-auto pb-3"
         >
           {bracket.rounds.map((round) => (
             <section
@@ -116,7 +143,12 @@ export function BracketView({
               aria-label={round.label}
               className="w-60 flex-none snap-start"
             >
-              <h3 className="text-ink-900 mb-2 font-semibold">{round.label}</h3>
+              <h3
+                tabIndex={-1}
+                className="text-ink-900 mb-2 scroll-mt-16 font-semibold"
+              >
+                {round.label}
+              </h3>
               <ol className="flex flex-col gap-2">
                 {round.slots.map((slot) => (
                   <li key={slot.slotKey}>

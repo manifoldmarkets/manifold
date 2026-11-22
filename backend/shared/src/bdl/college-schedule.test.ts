@@ -311,3 +311,56 @@ it('sends zero provider calls through the ordinary service client with all colle
     ).rejects.toThrow()
   expect(transport).not.toHaveBeenCalled()
 })
+
+it('rejects a reschedule crossing the Eastern slate boundary in either page order', async () => {
+  const moved = { ...base, date: '2027-11-21T22:00:00Z' }
+  for (const pages of [
+    [base, moved],
+    [moved, base],
+  ]) {
+    const { client } = fixture((url) =>
+      url.searchParams.has('cursor')
+        ? { data: [pages[1]] }
+        : { data: [pages[0]], meta: { next_cursor: 1 } }
+    )
+    await expect(
+      readCollegeGames(client, 'ncaab', season, day, day)
+    ).rejects.toThrow('Conflicting observations')
+  }
+})
+it('uses the recorded UTC selector for a late Pacific game on the Eastern slate', async () => {
+  const night = { ...base, date: '2027-11-19T22:00:00-08:00' }
+  const { client, urls } = fixture((url) => ({
+    data: url.searchParams.getAll('dates[]').includes('2027-11-20')
+      ? [night]
+      : [],
+  }))
+  expect(
+    (await readCollegeGames(client, 'ncaab', season, day, day))[0].slateDate
+  ).toBe(day)
+  expect(urls[0].searchParams.getAll('dates[]')).toEqual([day, '2027-11-21'])
+  expect(
+    await readCollegeGames(client, 'ncaab', season, '2027-11-19', '2027-11-19')
+  ).toEqual([])
+})
+it('reports numeric IDs for missing names while keeping the incomplete entrant ineligible', async () => {
+  for (const rawName of ['  ', 'TBD', null]) {
+    const g = collegeGame('ncaab', {
+      ...base,
+      home_team: { id: 5, full_name: rawName },
+    })
+    expect(g.home).toBeNull()
+    const report = jest.fn(async () => undefined)
+    const mapped = await identifyCollegeTeams(
+      'ncaab',
+      [g, g],
+      ['Harbor South', 'West Bluff'],
+      new Map([[5, 'Harbor South']]),
+      report
+    )
+    expect(report.mock.calls).toEqual([
+      [{ league: 'ncaab', id: 5, name: 'Team name unavailable' }],
+    ])
+    expect([...mapped]).toEqual([[7, 'West Bluff']])
+  }
+})

@@ -183,3 +183,86 @@ it('requires a unique, corroborated winner and a unique destination containing t
       .rounds[1].slots[3].advancesTo
   ).toBeNull()
 })
+
+it('withholds disputed final results and advancement while preserving bracket-only winners', () => {
+  const rows = [row(0, 1, 4), row(1, 5, 6, 10, 33)]
+  const project = (games: ReturnType<typeof ordinary>[]) =>
+    projectCollegeBracket('ncaab', season, rows, games)
+  expect(project([]).rounds[0].slots[0]).toMatchObject({
+    winnerId: 10,
+    advancesTo: expect.any(String),
+  })
+  const g = ordinary(4)
+  for (const missing of [
+    { ...g, homeScore: null, awayScore: null },
+    { ...g, status: 'unknown' as const },
+  ])
+    expect(project([missing]).rounds[0].slots[0]).toMatchObject({
+      eventId: null,
+      winnerId: 10,
+      advancesTo: expect.any(String),
+    })
+  for (const disagree of [
+    { ...g, homeScore: 55, awayScore: 60 },
+    { ...g, status: 'scheduled' as const },
+  ]) {
+    for (const independent of [[disagree], [disagree, g], [g, disagree]]) {
+      const b = project(independent)
+      expect(b.rounds[0].slots[0]).toMatchObject({
+        winnerId: null,
+        advancesTo: null,
+        eventId: null,
+      })
+      expect(b.issues.length).toBeGreaterThan(0)
+    }
+  }
+})
+it('collapses equivalent rows and holds conflicting identities, even when unplaced', () => {
+  const r = row(0, 1, 4),
+    next = row(1, 4, 6, 10, 33)
+  const project = (rows: unknown[]) =>
+    projectCollegeBracket('ncaab', season, rows, [ordinary(4)])
+  const equivalent = {
+    ...r,
+    game_id: 4,
+    home_team: { ...r.home_team, seed: 16 },
+    provider_note: 'updated',
+  }
+  expect(project([r, equivalent, next])).toEqual(project([r, next]))
+  for (const rows of [
+    [
+      r,
+      { ...r, bracket_location: null, away_team: entrant(52, '1', 55, false) },
+    ],
+    [{ ...r, bracket_location: null, home_team: null }, r],
+  ]) {
+    expect(project(rows).rounds[0].slots[0]).toMatchObject({
+      eventId: null,
+      winnerId: null,
+      advancesTo: null,
+    })
+  }
+  const changed = { ...r, home_team: { ...r.home_team, score: 80 } }
+  for (const rows of [
+    [r, changed],
+    [changed, r],
+  ])
+    expect(project(rows).rounds[0].slots[0].sourcePresent).toBe(false)
+})
+it('never advances a repeated source entrant, including an unplaced occurrence', () => {
+  const first = row(0, 1, 4),
+    second = row(0, 2, 6, 10, 16),
+    dest = row(1, 1, 8, 10, 18)
+  for (const other of [
+    second,
+    { ...second, bracket_location: null },
+    { ...second, home_team: second.away_team, away_team: first.home_team },
+  ]) {
+    const b = projectCollegeBracket('ncaab', season, [first, other, dest])
+    expect(b.rounds[0].slots[0].advancesTo).toBeNull()
+    expect(b.rounds[0].slots[1].advancesTo).toBeNull()
+    expect(b.issues).toContain(
+      'Ambiguous advancement for ' + b.rounds[0].slots[0].slotKey
+    )
+  }
+})

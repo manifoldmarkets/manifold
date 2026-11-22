@@ -18,8 +18,7 @@ import type { createBdlClient } from '../balldontlie-client'
 
 type Client = Pick<ReturnType<typeof createBdlClient>, 'get' | 'getAll'>
 
-/** Provider filters can use UTC or venue dates. Request the adjacent UTC date,
- * then return only the requested Eastern schedule interval. */
+/** Recorded selectors use UTC days. Eastern evenings can fall on the following UTC day. */
 export async function readCollegeGames(
   client: Client,
   league: CollegeLeague,
@@ -58,19 +57,13 @@ export async function readCollegeGames(
         maxPages: 20,
         matches: (raw) => {
           const row = collegeObject(raw),
-            utc = collegeTime(row.date)
-          return (
-            row.season === season &&
-            (dates.includes(utc?.slice(0, 10) ?? '') ||
-              dates.includes(collegeGame(league, row).slateDate ?? ''))
-          )
+            day = collegeTime(row.date)?.slice(0, 10) ?? collegeDay(row.date)
+          return row.season === season && day !== null && dates.includes(day)
         },
       }
     )
     for (const raw of rows) {
       const game = collegeGame(league, raw)
-      if (!game.slateDate || game.slateDate < from || game.slateDate > to)
-        continue
       const prior = games.get(game.gameId)
       if (prior && JSON.stringify(prior) !== JSON.stringify(game))
         throw new Error(
@@ -79,7 +72,10 @@ export async function readCollegeGames(
       games.set(game.gameId, game)
     }
   }
-  return [...games.values()]
+  return [...games.values()].filter(
+    (game) =>
+      game.slateDate !== null && game.slateDate >= from && game.slateDate <= to
+  )
 }
 
 export async function readCollegeApPoll(
@@ -155,6 +151,10 @@ export async function identifyCollegeTeams(
     .flatMap((g) => [g.home, g.away])
     .filter((t): t is CollegeTeam => t !== null)
   const { mapped, unmatched } = matchCollegeTeams(teams, names, knownNames)
+  for (const game of games)
+    for (const id of game.unnamedTeamIds ?? []) {
+      if (!unmatched.has(id)) unmatched.set(id, 'Team name unavailable')
+    }
   for (const [id, name] of unmatched)
     await reportUnmatched({ league, id, name })
   return mapped
