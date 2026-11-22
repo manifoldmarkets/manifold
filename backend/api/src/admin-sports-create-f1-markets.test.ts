@@ -13,6 +13,7 @@ jest.mock('common/envs/constants', () => ({
 }))
 
 import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
+import { f1ServiceRole } from 'shared/bdl/f1-read-role'
 import { createF1Markets } from 'shared/f1-markets'
 import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
 
@@ -83,4 +84,28 @@ it('tells the operator when dev F1 creation is disabled despite a configured API
     message: 'F1 market creation is disabled on this dev deployment.',
   })
   expect(createF1Markets).not.toHaveBeenCalled()
+})
+
+it('uses the API role only within the authenticated opt-in run', async () => {
+  const env = {
+    rollout: process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED,
+    port: process.env.SPORTS_BDL_F1_SHARED_CLIENT,
+  }
+  try {
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+    process.env.SPORTS_BDL_F1_SHARED_CLIENT = 'true'
+    jest.mocked(createF1Markets).mockImplementationOnce(async () => {
+      expect(f1ServiceRole()).toBe('api')
+      return { created: 0, skipped: 1, errors: 0, log }
+    })
+    await handler({ competitionId: 'f1-2026', dryRun: true }, { uid: 'admin' })
+    expect(createF1Markets).toHaveBeenCalledTimes(1)
+    expect(f1ServiceRole()).toBe('scheduler')
+  } finally {
+    if (env.rollout === undefined)
+      delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = env.rollout
+    if (env.port === undefined) delete process.env.SPORTS_BDL_F1_SHARED_CLIENT
+    else process.env.SPORTS_BDL_F1_SHARED_CLIENT = env.port
+  }
 })

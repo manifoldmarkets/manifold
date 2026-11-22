@@ -32,6 +32,13 @@ const serviceResources = new Set([
   'teams/{id}/roster',
   'rosters',
 ])
+const f1Resources = new Set([
+  'events',
+  'sessions',
+  'session_results',
+  'driver_standings',
+  'team_standings',
+])
 const priceResources = new Set(['odds', 'odds/opening'])
 
 export function bdlStatsEndpoint(path: string) {
@@ -52,7 +59,8 @@ function isBdlStatsRoute(league: string, version: string, resource: string) {
   const config = BDL_LEAGUES[league]
   const base = priceResources.has(resource)
     ? config.oddsApiBase
-    : serviceResources.has(resource)
+    : serviceResources.has(resource) ||
+      (league === 'f1' && f1Resources.has(resource))
     ? config.apiBase
     : null
   return base === '/' + league + '/' + version

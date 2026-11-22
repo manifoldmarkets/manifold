@@ -24,6 +24,7 @@ import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
 import { isProd, log } from 'shared/utils'
 import { sendDevBdlRequest } from './bdl/dev-admission'
+import { f1ServiceRole, useSharedF1Client } from './bdl/f1-read-role'
 
 const BASE_URL = 'https://api.balldontlie.io/f1/v1'
 
@@ -81,8 +82,44 @@ export class BalldontlieError extends Error {
  */
 async function getAll<T>(
   path: string,
-  params: Record<string, string | string[]>
+  params: Record<string, string | string[]>,
+  matches: (row: T) => boolean
 ): Promise<T[]> {
+  if (useSharedF1Client()) {
+    if (
+      Object.values(params)
+        .flat()
+        .some(
+          (id) => !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(Number(id))
+        )
+    )
+      throw new Error('Invalid F1 season or identifier')
+    // Keep service accounting and the existing dev phase/admission checks.
+    // Fixture mode is keyless. The shared transport enforces LOCAL_ONLY.
+    const { createBdlClient, BdlHttpError } = await import(
+      './balldontlie-client'
+    )
+    const fixture = !!process.env.BDL_FIXTURE_DIR
+    const prod = isProd()
+    const client = createBdlClient({
+      key: fixture ? undefined : apiKey(),
+      role: fixture ? 'codex' : prod ? f1ServiceRole() : 'dev',
+      enabledLeagues: new Set(['f1']),
+      isLeagueEnabled: async () =>
+        useSharedF1Client() && (prod || (await devF1Enabled())),
+    })
+    try {
+      return await client.getAll<T>('/f1/v1/' + path, params, {
+        maxPages: MAX_PAGES,
+        matches,
+      })
+    } catch (err) {
+      // The F1 jobs distinguish a refused entitlement from an empty field.
+      if (err instanceof BdlHttpError)
+        throw new BalldontlieError(err.message, err.status)
+      throw err
+    }
+  }
   const out: T[] = []
   let cursor: string | undefined
   for (let page = 0; page < MAX_PAGES; page++) {
@@ -137,19 +174,31 @@ async function getAll<T>(
 
 /** A season's race weekends (free tier). */
 export const getF1Events = (season: number) =>
-  getAll<F1Event>('events', { season: String(season) })
+  getAll<F1Event>(
+    'events',
+    { season: String(season) },
+    (row) => row?.season === season
+  )
 
 /** The sessions of the given weekends, every type (ALL-STAR). */
 export const getF1Sessions = (eventIds: number[]) =>
   eventIds.length === 0
     ? Promise.resolve([] as F1Session[])
-    : getAll<F1Session>('sessions', { event_ids: eventIds.map(String) })
+    : getAll<F1Session>(
+        'sessions',
+        { event_ids: eventIds.map(String) },
+        (row) => eventIds.includes(row?.event?.id)
+      )
 
 /** One session's classification, about ten minutes after it ends (ALL-STAR). */
 export const getF1SessionResults = (sessionId: number) =>
-  getAll<F1SessionResult>('session_results', {
-    session_ids: [String(sessionId)],
-  })
+  getAll<F1SessionResult>(
+    'session_results',
+    {
+      session_ids: [String(sessionId)],
+    },
+    (row) => row?.session?.id === sessionId
+  )
 
 /**
  * The season's drivers with their points (ALL-STAR): the entry list and the
@@ -157,8 +206,16 @@ export const getF1SessionResults = (sessionId: number) =>
  * with no season filter, so it can't say who is racing this year.
  */
 export const getF1DriverStandings = (season: number) =>
-  getAll<F1DriverStanding>('driver_standings', { season: String(season) })
+  getAll<F1DriverStanding>(
+    'driver_standings',
+    { season: String(season) },
+    (row) => row?.season === season
+  )
 
 /** The season's teams with their points (ALL-STAR). */
 export const getF1TeamStandings = (season: number) =>
-  getAll<F1TeamStanding>('team_standings', { season: String(season) })
+  getAll<F1TeamStanding>(
+    'team_standings',
+    { season: String(season) },
+    (row) => row?.season === season
+  )

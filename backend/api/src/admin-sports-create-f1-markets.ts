@@ -6,6 +6,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
+import { withF1ApiRead } from 'shared/bdl/f1-read-role'
 import { createF1Markets } from 'shared/f1-markets'
 import { calendarEntriesFor } from 'common/sports-calendar'
 
@@ -29,7 +30,9 @@ export const adminSportsCreateF1Markets: APIHandler<
 
   const pg = createSupabaseDirectClient()
   try {
-    const r = await createF1Markets(pg, competitionId, { dryRun, keys })
+    const r = await withF1ApiRead(() =>
+      createF1Markets(pg, competitionId, { dryRun, keys })
+    )
     return {
       created: r.created,
       skipped: r.skipped,
