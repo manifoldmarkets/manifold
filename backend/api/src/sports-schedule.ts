@@ -1,6 +1,7 @@
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { groupBy, sortBy, uniq, uniqBy } from 'lodash'
 import { type APIHandler } from './helpers/endpoint'
+import { APIError } from 'common/api/utils'
 import {
   createSupabaseDirectClient,
   READ_ONLY_REPEATABLE_MODE,
@@ -77,45 +78,80 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
 ) => {
   const observed = isSportsBdlEnabled() && props.observedGames === true
   if (observed) req?.res?.append('Access-Control-Expose-Headers', 'Date, Age')
+  const pg = createSupabaseDirectClient()
+  const requestTime = Date.now()
+  const index = await getSportsIndex(pg, requestTime)
+  if (!observed) return projectSchedule(pg, props, index, requestTime, false)
+
+  let previous: SchedulePin | undefined
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const page = await pg.tx(
+      { mode: READ_ONLY_REPEATABLE_MODE },
+      async (tx) => {
+        const pin = await tx.one<SchedulePin>(
+          `select floor(extract(epoch from statement_timestamp()) * 1000)::float8 as statement_at,
+                floor(extract(epoch from clock_timestamp()) * 1000)::float8 as observed_at,
+                visibility::text as visibility
+           from pg_current_snapshot() as pin(visibility)`
+        )
+        // The DB acquired this snapshot between these two readings. If they
+        // straddle a millisecond, a later pin with identical MVCC visibility
+        // proves that its statement start was inside the same visibility state.
+        const singleMillisecond = pin.statement_at === pin.observed_at
+        const unchanged =
+          previous &&
+        previous.visibility === pin.visibility &&
+          previous.observed_at >= previous.statement_at &&
+          previous.observed_at <= pin.statement_at &&
+          pin.statement_at <= pin.observed_at
+        if (singleMillisecond || unchanged)
+          return projectSchedule(tx, props, index, pin.statement_at, true)
+        previous = pin
+        return undefined
+      }
+    )
+    if (page) return page
+  }
+  throw new APIError(
+    503,
+    'Sports schedule changed during the read. Please retry.'
+  )
+}
+
+type SchedulePin = {
+  statement_at: number
+  observed_at: number
+  visibility: string
+}
+
+async function projectSchedule(
+  pg: Pg,
+  props: Parameters<APIHandler<'sports-schedule'>>[0],
+  index: SportsIndex,
+  now: number,
+  observed: boolean
+): Promise<SportsScheduleResponse> {
   const sport: AnySportKey | 'all' = props.sport ?? 'all'
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
   const cursor = parseScheduleCursor(props.cursor)
-  const pg = createSupabaseDirectClient()
   const raceDays = Math.max(daysAhead, F1_DAYS_AHEAD)
-  const requestTime = Date.now()
-  const index = await getSportsIndex(pg, requestTime)
-  const readMarkets = async (db: Pg, now: number) => {
-    const observedAt = observed ? new Date(now) : undefined
-    const [teams, weekAll, racing, championships] = await Promise.all([
-      isSportsBdlEnabled()
-        ? getOfficialGames(db, index, daysAhead, now, observed)
-        : getLegacyOfficialGames(db, index, daysAhead, now),
-      getUpcomingMarkets(db, index, observedAt),
-      getRaceWeekends(db, raceDays, now, observedAt),
-      sport === 'f1' && !cursor && !props.topic
-        ? getRaceChampionships(db, index, now, observedAt)
-        : Promise.resolve([]),
-    ])
-    return { now, teams, weekAll, racing, championships }
-  }
-  const {
-    now,
-    teams: { games: official, groupIds: gameGroupIds },
+  const observedAt = observed ? new Date(now) : undefined
+  const [
+    { games: official, groupIds: gameGroupIds },
     weekAll,
-    racing: { weekends: allWeekends, groupIds: raceGroupIds },
+    { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
-  } = observed
-    ? await pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
-        // Returning the pinned snapshot to Node can take longer than a live
-        // receipt has left. Read its projection clock in the same statement.
-        const { observed_at } = await tx.one<{ observed_at: number }>(
-          `select floor(extract(epoch from clock_timestamp()) * 1000)::float8 as observed_at
-           from pg_current_snapshot()`
-        )
-        return readMarkets(tx, observed_at)
-      })
-    : await readMarkets(pg, requestTime)
+  ] = await Promise.all([
+    isSportsBdlEnabled()
+      ? getOfficialGames(pg, index, daysAhead, now, observed)
+      : getLegacyOfficialGames(pg, index, daysAhead, now),
+    getUpcomingMarkets(pg, index, observedAt),
+    getRaceWeekends(pg, raceDays, now, observedAt),
+    sport === 'f1' && !cursor && !props.topic
+      ? getRaceChampionships(pg, index, now, observedAt)
+      : Promise.resolve([]),
+  ])
   const horizon = now + daysAhead * DAY_MS
   const raceHorizon = now + raceDays * DAY_MS
   // A topic's page has only the games and markets in it or a topic under it

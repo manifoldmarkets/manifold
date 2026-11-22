@@ -74,7 +74,11 @@ type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
 let liveRows: typeof officialRows
 let resumedRows: { data: Record<string, unknown> }[] = []
-let onPinSnapshot: (() => number) | undefined
+type Pin = { statement_at: number; observed_at: number; visibility: string }
+let onPinSnapshot: (() => number | Pin) | undefined
+let clients = new WeakMap<object, number>()
+let transactionCount = 0
+let joinedReads: { kind: string; client: number }[] = []
 let scheduleBounds: { sql: string; params: unknown[] }[] = []
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
@@ -109,6 +113,9 @@ beforeEach(() => {
   officialRows = official
   officialPages = []
   onPinSnapshot = undefined
+  clients = new WeakMap()
+  transactionCount = 0
+  joinedReads = []
   scheduleBounds = []
   liveRows = []
   resumedRows = []
@@ -125,12 +132,21 @@ beforeEach(() => {
       work: (
         tx: ReturnType<typeof createSupabaseDirectClient>
       ) => Promise<unknown>
-    ) => work(createSupabaseDirectClient()),
-    one: async (sql: string, params: [string[], ...unknown[]]) => {
+    ) => {
+      const tx = { ...createSupabaseDirectClient() }
+      clients.set(tx, ++transactionCount)
+      return work(tx)
+    },
+    one: async function (sql: string, params: [string[], ...unknown[]]) {
       if (sql.includes('from pg_current_snapshot()')) {
         expect(sql).toContain('clock_timestamp()')
-        return { observed_at: onPinSnapshot?.() ?? Date.now() }
+        expect(sql).toContain('statement_timestamp()')
+        const pin = onPinSnapshot?.() ?? Date.now()
+        return typeof pin === 'number'
+          ? { statement_at: pin, observed_at: pin, visibility: '42:42:' }
+          : pin
       }
+      joinedReads.push({ kind: 'links', client: clients.get(this) ?? 0 })
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
       if (linksMissing || failedLinkRead)
@@ -141,7 +157,9 @@ beforeEach(() => {
         with_parents: linkedElsewhere.map((l) => l.id),
       }
     },
-    manyOrNone: async (sql: string, params: unknown[]) => {
+    manyOrNone: async function (sql: string, params: unknown[]) {
+      if (sql.includes('c.importance_score desc'))
+        joinedReads.push({ kind: 'candidates', client: clients.get(this) ?? 0 })
       if (
         sql.includes("like 'bdl-f1:%'") ||
         sql.includes('as bettors') ||
@@ -1455,3 +1473,96 @@ it.each([true, false])(
     }
   }
 )
+
+const readSchedule = sportsSchedule as (
+  props: Parameters<typeof sportsSchedule>[0]
+) => ReturnType<typeof sportsSchedule>
+
+it.each([
+  { name: 'one millisecond', pins: [[0, 0, 'a']], time: 0 },
+  {
+    name: 'new visibility within a fresh millisecond',
+    pins: [
+      [0, 9, 'a'],
+      [10, 10, 'b'],
+    ],
+    time: 10,
+  },
+  {
+    name: 'stable visibility spanning the next statement start',
+    pins: [
+      [0, 9, 'a'],
+      [10, 20, 'a'],
+    ],
+    time: 10,
+  },
+  {
+    name: 'third pin brackets stable visibility after a concurrent commit',
+    pins: [
+      [0, 9, 'a'],
+      [10, 21, 'b'],
+      [25, 40, 'b'],
+    ],
+    time: 25,
+  },
+])(
+  'uses one proven visibility state for games, both related reads, weekly and F1 clocks: $name',
+  async ({ pins, time }) => {
+    const base = Date.now()
+    let i = 0
+    onPinSnapshot = () => {
+      const [start, sampled, visibility] = pins[i++]
+      return {
+        statement_at: base + Number(start),
+        observed_at: base + Number(sampled),
+        visibility: String(visibility),
+      }
+    }
+    const raw = await readSchedule({ sport: 'f1', observedGames: true })
+    const page = 'result' in raw ? raw.result : raw
+    expect(i).toBe(pins.length)
+    expect(page.snapshotTime).toBe(base + time)
+    expect(JSON.stringify(page)).not.toContain('"visibility"')
+    expect(scheduleBounds).toHaveLength(4)
+    for (const { params } of scheduleBounds)
+      expect(params[params.length - 1]).toEqual(new Date(base + time))
+    expect(officialPages).toEqual([2])
+    expect(joinedReads).toEqual([
+      { kind: 'candidates', client: i },
+      { kind: 'links', client: i },
+    ])
+  }
+)
+
+it.each(['changing visibility', 'backward clock'])(
+  'returns a retryable response without loading any market after three ambiguous pins: %s',
+  async (reason) => {
+    let i = 0
+    onPinSnapshot = () => {
+      const at = Date.now() + ++i * 10
+      return {
+        statement_at: at,
+        observed_at: reason === 'backward clock' ? at - 1 : at + 1,
+        visibility: reason === 'backward clock' ? 'unchanged' : String(i),
+      }
+    }
+    await expect(
+      readSchedule({ sport: 'nba', observedGames: true })
+    ).rejects.toMatchObject({ code: 503 })
+    expect(i).toBe(3)
+    expect(scheduleBounds).toEqual([])
+    expect(officialPages).toEqual([])
+    expect(joinedReads).toEqual([])
+  }
+)
+
+it('leaves ordinary related candidates and explicit links on their original connection', async () => {
+  onPinSnapshot = () => {
+    throw Error('Unexpected observed pin')
+  }
+  await readSchedule({ sport: 'f1' })
+  expect(joinedReads).toEqual([
+    { kind: 'candidates', client: 0 },
+    { kind: 'links', client: 0 },
+  ])
+})
