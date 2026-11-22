@@ -2,7 +2,10 @@ import { sortBy } from 'lodash'
 import type { Answer } from './answer'
 import { BDL_LEAGUES, BdlLeagueKey } from './bdl/leagues'
 import { Contract, isMultiCpmm, isSportsContract } from './contract'
-import { marketLeagueKey } from './bdl/league-navigation'
+import {
+  LEAGUE_NAVIGATION_VERSION,
+  marketLeagueKey,
+} from './bdl/league-navigation'
 import { officialBdlLeagueKey } from './sports-league-label'
 import { recordedTeamCode } from './bdl/team-codes'
 import { parseBdlEventId } from './sports-ids'
@@ -40,11 +43,17 @@ export function toOfficialGame(
   if (bdlEnabled && (d.sportsFixture || provider === 'fixture')) return null
   if (
     bdlEnabled &&
-    d.sportsMarketType != null &&
-    d.sportsMarketType !== 'moneyline'
+    ((d.sportsMarketType != null && d.sportsMarketType !== 'moneyline') ||
+      c.shouldAnswersSumToOne === false)
   )
     return null
-  const navigationKey = bdlEnabled ? marketLeagueKey(c) : undefined
+  // Historical untyped rows must prove their answers form one fixed winner market.
+  const winnerStructure =
+    d.sportsMarketType === 'moneyline' ||
+    (c.shouldAnswersSumToOne === true &&
+      (c.addAnswersMode == null || c.addAnswersMode === 'DISABLED'))
+  const navigationKey =
+    bdlEnabled && winnerStructure ? marketLeagueKey(c) : undefined
   const league = leagueKey ? BDL_LEAGUES[leagueKey] : undefined
   if (
     bdlEnabled &&
@@ -152,7 +161,10 @@ export function toOfficialGame(
       sportForMarket({ sportsLeague: label, groupIds }, index),
     groupSlugs: c.groupSlugs ?? [],
     league: label,
-    ...(bdlEnabled && { navigationLeagueKey: navigationKey ?? null }),
+    ...(bdlEnabled && {
+      leagueNavigationVersion: LEAGUE_NAVIGATION_VERSION,
+      navigationLeagueKey: navigationKey ?? null,
+    }),
     ...(leagueKey && { sportsLeagueKey: leagueKey }),
     ...details,
     sportsEventId,

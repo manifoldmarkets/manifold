@@ -114,7 +114,7 @@ export function GameFeed(props: {
   const active = games.filter(
     (game) =>
       (game.status === 'upcoming' || game.status === 'live') &&
-      (!league || publishedGameLeagueKey(game) === league)
+      (!league || (league !== 'f1' && publishedGameLeagueKey(game) === league))
   )
   const weekends = !league
     ? props.raceWeekends ?? []
@@ -244,6 +244,13 @@ export function GameFeed(props: {
       ))
   const clearDate = !!league && date !== 'all' && canReveal(false, true)
   const clearSearch = !!league && !!normalized && canReveal(true, false)
+  const clearDateAndSearch =
+    !!league &&
+    date !== 'all' &&
+    !!normalized &&
+    !clearDate &&
+    !clearSearch &&
+    canReveal(false, false)
   const verifyLeague =
     !!league &&
     !!navigation?.unverified &&
@@ -362,7 +369,12 @@ export function GameFeed(props: {
     !league &&
     (!navigation || !hasSearchFilters)
   )
-    return <>{empty}</>
+    return (
+      <>
+        {leagueSelector}
+        {empty}
+      </>
+    )
 
   return (
     <div className="min-w-0">
@@ -672,6 +684,8 @@ export function GameFeed(props: {
                   ? 'Games hidden by your topic settings'
                   : leagueNotLoaded
                   ? 'No games in this league loaded yet'
+                  : clearDateAndSearch
+                  ? 'No games match this date and search'
                   : clearDate
                   ? 'No matching games on this date'
                   : sessions.length > 0
@@ -689,6 +703,8 @@ export function GameFeed(props: {
                   ? 'Games in this league have topics you chose to hide.'
                   : leagueNotLoaded
                   ? 'Load more games to see this league.'
+                  : clearDateAndSearch
+                  ? 'Clear both filters to see games in this league.'
                   : clearDate
                   ? 'Choose another date or clear the date filter.'
                   : clearSearch
@@ -708,6 +724,11 @@ export function GameFeed(props: {
                     ? retryVerification
                     : leagueNotLoaded
                     ? () => void loadMore()
+                    : clearDateAndSearch
+                    ? () => {
+                        setDate('all')
+                        setQuery('')
+                      }
                     : clearDate
                     ? () => setDate('all')
                     : clearSearch
@@ -724,6 +745,8 @@ export function GameFeed(props: {
                     : 'Retry league verification'
                   : leagueNotLoaded
                   ? 'Load more games'
+                  : clearDateAndSearch
+                  ? 'Clear date and search'
                   : clearDate
                   ? 'Clear date'
                   : clearSearch
@@ -754,7 +777,9 @@ export function GameFeed(props: {
             {renderItems(day.items)}
           </Col>
         ))}
-        {waiting ? null : hasMore && filter !== 'live' && !leagueNotLoaded ? (
+        {waiting ? null : hasMore &&
+          filter !== 'live' &&
+          (!leagueNotLoaded || verifyLeague) ? (
           <>
             {hasFilters ? (
               <button

@@ -766,6 +766,7 @@ describe('F1 race weekends', () => {
     ['official', { sportsProvider: 'football-data' }, false],
     ['official', { sportsLeagueKey: 'nba' }, false],
     ['official', { sportsProvider: 'bdl' }, true],
+    ['official', { sportsMarketType: 'podium' }, false],
   ] as const)(
     'keeps sidebar championship selection distinct from verified league availability',
     async (id, navigation, eligible) => {
@@ -885,7 +886,12 @@ describe('F1 race weekends', () => {
       { id: 'mx-pole', kind: 'event', group: 'game-lines' },
     ])
     expect(raceSession.related).toEqual([
-      { id: 'linked-prop', kind: 'linked', group: 'props' },
+      {
+        id: 'linked-prop',
+        kind: 'linked',
+        group: 'props',
+        parentMarketIds: ['podium'],
+      },
       { id: 'mx-winner', kind: 'event', group: 'game-lines' },
     ])
     expect(raceSession.relatedCount).toBe(2)
@@ -1007,7 +1013,12 @@ describe('F1 race weekends', () => {
     expect(f1Page.upcoming.map((m) => m.id)).not.toContain('vegas-prop')
     const lasVegas = f1Page.raceWeekends?.find((w) => w.id === 'bdl-f1:380')
     expect(lasVegas?.sessions[0].related).toEqual([
-      { id: 'vegas-prop', kind: 'linked', group: 'props' },
+      {
+        id: 'vegas-prop',
+        kind: 'linked',
+        group: 'props',
+        parentMarketIds: ['vegas'],
+      },
     ])
   })
 

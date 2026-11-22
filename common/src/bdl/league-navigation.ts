@@ -4,7 +4,10 @@ import {
   BdlLeagueKey,
   isBdlLeagueKey,
 } from './leagues'
-import { legacyOddsLeagueLabel } from '../sports-league-label'
+import {
+  legacyOddsLeagueLabel,
+  oddsLeagueLabelForKey,
+} from '../sports-league-label'
 import { parseBdlEventId } from '../sports-ids'
 import {
   f1EventId,
@@ -12,16 +15,23 @@ import {
   parseF1EventId,
   parseF1TitleEventId,
 } from '../f1-markets'
+import type { Contract } from '../contract'
+import { isMultiCpmm, isSportsContract } from '../contract'
+import { f1Season, type RaceChampionship } from '../race-weekends'
 import type { RaceWeekend } from '../race-weekends'
 import { providerOf, SportsProvider } from '../sports-provider'
 import {
   ScheduleGame,
   SportInfo,
   SportsSubtopic,
+  SportsScheduleResponse,
   SPORTS_DEFAULT_GROUP_ID,
+  SPORT_LOOKUP_ORDER,
   sportForMarket,
 } from '../sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from '../sports'
+
+export const LEAGUE_NAVIGATION_VERSION = 1
 
 const aliases = new Map<string, BdlLeagueKey>()
 for (const key of BDL_LEAGUE_KEYS) {
@@ -79,7 +89,8 @@ export function marketLeagueKey(
   )
     return
   const rawLabel = market.sportsLeague?.trim().toLowerCase()
-  const label = aliases.get(rawLabel ?? '')
+  const storedOdds = oddsLeagueLabelForKey(rawLabel ?? '')
+  const label = aliases.get(storedOdds?.toLowerCase() ?? rawLabel ?? '')
   const key =
     provider === 'bdl'
       ? parseBdlEventId(id)?.league ?? canonicalF1League(id)
@@ -99,6 +110,8 @@ export function marketLeagueKey(
       BDL_LEAGUES[key].archetype.startsWith('team-') &&
       market.sportsMarketType != null &&
       market.sportsMarketType !== 'moneyline') ||
+    (provider === 'legacy' && key === 'f1') ||
+    (storedOdds && !label) ||
     (label && label !== key) ||
     (key && rawLabel && !label && !compatibleFamily(rawLabel, key))
   )
@@ -141,9 +154,38 @@ function canonicalF1League(id: string) {
     : undefined
 }
 
+/** Revalidate the hydrated public contract before exposing a title ticket. */
+export function verifiedRaceTitle(
+  c: Contract,
+  kind: RaceChampionship['kind'],
+  now: number
+) {
+  return (
+    MANIFOLD_SPORTS_USER_IDS.includes(c.creatorId) &&
+    isMultiCpmm(c) &&
+    isSportsContract(c) &&
+    c.visibility === 'public' &&
+    c.token === 'MANA' &&
+    !c.deleted &&
+    !c.isResolved &&
+    !c.resolution &&
+    typeof c.closeTime === 'number' &&
+    c.closeTime > now &&
+    (c.sportsMarketType == null || c.sportsMarketType === 'title') &&
+    c.outcomeType === 'MULTIPLE_CHOICE' &&
+    c.shouldAnswersSumToOne !== false &&
+    marketLeagueKey(c) === 'f1' &&
+    c.sportsEventId === f1TitleEventId(f1Season(now), kind)
+  )
+}
+
 type GameLeague = Pick<
   ScheduleGame,
-  'navigationLeagueKey' | 'sportsLeagueKey' | 'league' | 'sportsEventId'
+  | 'leagueNavigationVersion'
+  | 'navigationLeagueKey'
+  | 'sportsLeagueKey'
+  | 'league'
+  | 'sportsEventId'
 >
 export function gameLeagueKey(game: GameLeague) {
   const key = marketLeagueKey({ ...game, sportsLeague: game.league })
@@ -156,9 +198,14 @@ export function gameLeagueKey(game: GameLeague) {
 // Older schedule DTOs discarded the original provider and league stamps.
 // Identical event text can therefore represent either a valid row or a conflict.
 export function publishedGameLeagueKey(game: GameLeague) {
-  return game.navigationLeagueKey !== undefined
-    ? gameLeagueKey(game)
-    : undefined
+  if (
+    game.leagueNavigationVersion !== LEAGUE_NAVIGATION_VERSION ||
+    game.navigationLeagueKey == null
+  )
+    return undefined
+  const league = gameLeagueKey(game)
+  // F1 uses the verified session/title projections, never the team board.
+  return league === 'f1' ? undefined : league
 }
 
 /** Source for public choices before pagination; older servers can prove only the games they sent. */
@@ -166,11 +213,43 @@ export function availableGameLeagues(
   games: readonly GameLeague[],
   hasRacing: boolean
 ) {
-  const keys = new Set(games.map(publishedGameLeagueKey))
+  const keys = new Set<BdlLeagueKey | undefined>(
+    games.map(publishedGameLeagueKey)
+  )
   // Two-answer legacy rows alone cannot identify an eligible F1 session or title.
   if (hasRacing) keys.add('f1')
   else keys.delete('f1')
   return BDL_LEAGUE_KEYS.filter((key) => keys.has(key))
+}
+
+/** Previous workers may attach a league stamp without checking the payout or conflicting provider key. */
+export function scheduleLeagueCatalogue(schedule?: SportsScheduleResponse) {
+  const current =
+    schedule?.leagueNavigationVersion === LEAGUE_NAVIGATION_VERSION
+  const confirmed = current ? schedule.availableLeagues : undefined
+  const verifiedRaceIds = new Set(current ? schedule.verifiedRaceMarketIds : [])
+  const incomplete =
+    !current ||
+    !confirmed ||
+    !schedule.verifiedRaceMarketIds ||
+    !!schedule.unverifiedLeaguePage ||
+    schedule.games.some(
+      (g) =>
+        g.leagueNavigationVersion !== LEAGUE_NAVIGATION_VERSION ||
+        g.navigationLeagueKey === undefined
+    )
+  const loaded = availableGameLeagues(
+    (schedule?.games ?? []).filter((g) => g.status !== 'finished'),
+    verifiedRaceIds.size > 0
+  )
+  const remaining = schedule?.nextCursor || incomplete ? confirmed ?? [] : []
+  const available = [
+    ...new Set([
+      ...loaded,
+      ...remaining.filter((key) => key !== 'f1' || verifiedRaceIds.size > 0),
+    ]),
+  ]
+  return { available, verifiedRaceIds, incomplete }
 }
 
 export function verifiedRaceWeekends(
@@ -181,11 +260,13 @@ export function verifiedRaceWeekends(
     const sessions = weekend.sessions.flatMap((session) => {
       const markets = session.markets.filter((m) => ids.has(m.id))
       if (!markets.length) return []
-      return [
-        markets.length === session.markets.length
-          ? session
-          : { ...session, markets, related: [], relatedCount: 0 },
-      ]
+      if (markets.length === session.markets.length) return [session]
+      const retained = new Set(markets.map((m) => m.id))
+      const related = (session.related ?? []).flatMap((r) => {
+        const parents = r.parentMarketIds?.filter((id) => retained.has(id))
+        return parents?.length ? [{ ...r, parentMarketIds: parents }] : []
+      })
+      return [{ ...session, markets, related, relatedCount: related.length }]
     })
     return sessions.length
       ? [
@@ -224,17 +305,28 @@ export function sportsEngagement(
   const topics = new Map<string, string>()
   const slugs = new Map<string, string>()
   // The common Sports topic is a cross-sport fallback in dev. Only a specific topic establishes a sport.
-  for (const sport of index?.sports ?? [])
+  const ranks = new Map<string, number>(
+    SPORT_LOOKUP_ORDER.map((key, i) => [key, i])
+  )
+  for (const [i, sport] of (index?.sports ?? []).entries())
+    if (!ranks.has(sport.key))
+      ranks.set(sport.key, SPORT_LOOKUP_ORDER.length + i)
+  const rankedSports = [...(index?.sports ?? [])].sort(
+    (a, b) => ranks.get(a.key)! - ranks.get(b.key)!
+  )
+  for (const sport of rankedSports)
     for (const id of sport.groupIds)
       if (id !== SPORTS_DEFAULT_GROUP_ID && !topics.has(id))
         topics.set(id, sport.key)
   for (const sport of index?.sports ?? [])
     if (sport.slug) slugs.set(sport.slug, sport.key)
-  for (const topic of index?.topics ?? [])
-    if (topic.sport !== 'all') {
-      topics.set(topic.id, topic.sport)
-      slugs.set(topic.slug, topic.sport)
+  for (const topic of index?.topics ?? []) {
+    const filing = topic.filingSport ?? topics.get(topic.id) ?? topic.sport
+    if (filing !== 'all') {
+      topics.set(topic.id, filing)
+      slugs.set(topic.slug, filing)
     }
+  }
 
   const sports = new Map<string, number>()
   const leagues = new Map<string, number>()
@@ -245,15 +337,20 @@ export function sportsEngagement(
     const key = MANIFOLD_SPORTS_USER_IDS.includes(market.creatorId)
       ? marketLeagueKey(market)
       : undefined
-    let sport = key
-      ? BDL_LEAGUES[key].sportKey
-      : sportForMarket({ groupIds: market.groupIds })
-    if (sport === 'other' && index) {
+    let sport: string = key ? BDL_LEAGUES[key].sportKey : 'other'
+    if (!key) {
       const candidates = new Set([
         ...(market.groupIds?.map((id) => topics.get(id)) ?? []),
         ...(market.groupSlugs?.map((slug) => slugs.get(slug)) ?? []),
       ])
-      sport = index.sports.find((s) => candidates.has(s.key))?.key ?? sport
+      const fromIds = sportForMarket({ groupIds: market.groupIds })
+      if (fromIds !== 'other') candidates.add(fromIds)
+      sport =
+        [...candidates]
+          .filter((s): s is string => s !== undefined)
+          .sort(
+            (a, b) => (ranks.get(a) ?? Infinity) - (ranks.get(b) ?? Infinity)
+          )[0] ?? 'other'
     }
     if (sport !== 'other') sports.set(sport, (sports.get(sport) ?? 0) + 1)
     if (key) leagues.set(key, (leagues.get(key) ?? 0) + 1)
@@ -303,7 +400,10 @@ export function sportsNavigationPath(
   tab: unknown
 ) {
   const query = new URLSearchParams()
-  const key = leagueForSport(league, sport)
+  const key = leagueForSport(
+    league,
+    path.split('/').length === 4 ? 'all' : sport
+  )
   if (key) query.set('league', key)
   if (
     typeof tab === 'string' &&

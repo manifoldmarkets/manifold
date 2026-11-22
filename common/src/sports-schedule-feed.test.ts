@@ -199,3 +199,45 @@ it('refreshes the first capped page exactly once with extended paging off', asyn
   expect(result?.feed.games).toHaveLength(400)
   expect(result?.feed.cursor).toBeTruthy()
 })
+
+it('preserves ordinary duplicate prices while adopting a newer verified change of competition', () => {
+  const a = {
+    ...game('rescheduled', 1),
+    sportsEventId: 'odds:soccer_epl:1',
+    leagueNavigationVersion: 1,
+    navigationLeagueKey: 'epl' as const,
+  }
+  const b = {
+    ...a,
+    sportsEventId: 'odds:soccer_spain_la_liga:1',
+    navigationLeagueKey: 'laliga' as const,
+  }
+  const first = {
+    ...serve([a], { limit: 1 }),
+    nextCursor: 'one',
+    leagueNavigationVersion: 1,
+    verifiedRaceMarketIds: [],
+    availableLeagues: ['epl' as const],
+  }
+  const feed = feedFromResponse(first)
+  const last = { ...first, games: [b], nextCursor: null, snapshotTime: 2 }
+  expect(adoptedGames(feed, last).games).toEqual([b])
+  expect(appendPage(feed, 'one', last)?.games).toEqual([b])
+  expect(appendPage(feed, 'one', { ...last, snapshotTime: 0 })?.games).toEqual([
+    a,
+  ])
+  expect(
+    appendPage(feed, 'one', { ...last, leagueNavigationVersion: undefined })
+      ?.games
+  ).toEqual([a])
+  expect(
+    appendPage(feed, 'one', { ...last, games: [{ ...a, startTime: 2 }] })?.games
+  ).toEqual([a])
+  expect(
+    appendPage(feed, 'one', {
+      ...last,
+      games: [],
+      leagueNavigationVersion: undefined,
+    })?.unverifiedLeaguePage
+  ).toBe(true)
+})

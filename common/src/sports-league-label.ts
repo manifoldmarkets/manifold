@@ -46,12 +46,13 @@ const LABEL_BY_LEAGUE: Record<string, string> = {
 
 export function legacyOddsLeagueLabel(eventId: string) {
   const odds = parseOddsEventId(eventId)
-  if (
-    !odds ||
-    !Object.prototype.hasOwnProperty.call(LABEL_BY_ODDS_KEY, odds.sportKey)
-  )
-    return undefined
-  return LABEL_BY_ODDS_KEY[odds.sportKey]
+  return odds ? oddsLeagueLabelForKey(odds.sportKey) : undefined
+}
+
+export function oddsLeagueLabelForKey(key: string) {
+  return Object.prototype.hasOwnProperty.call(LABEL_BY_ODDS_KEY, key)
+    ? LABEL_BY_ODDS_KEY[key]
+    : undefined
 }
 
 /** Exported for the test that keeps it in step with the calendar. */

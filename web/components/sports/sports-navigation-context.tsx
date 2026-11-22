@@ -13,8 +13,9 @@ import { api } from 'web/lib/api/api'
 import {
   sportsEngagement,
   leagueChoices,
-  availableGameLeagues,
+  scheduleLeagueCatalogue,
   leagueForSport,
+  publishedGameLeagueKey,
 } from 'common/bdl/league-navigation'
 import { BdlLeagueKey } from 'common/bdl/leagues'
 import type { SportsScheduleResponse } from 'common/sports-schedule'
@@ -41,6 +42,7 @@ type NavigationProps = {
   refresh?: () => Promise<void>
   schedule?: SportsScheduleResponse
   sport: string
+  hides?: (slugs: readonly string[] | undefined) => boolean
   children: ReactElement
 }
 
@@ -54,6 +56,7 @@ export function SportsNavigation(props: NavigationProps) {
 
 function PersonalSportsNavigation({
   sport,
+  hides,
   children,
   schedule,
   fresh,
@@ -126,44 +129,41 @@ function PersonalSportsNavigation({
     [account, history, taxonomy]
   )
   const value = useMemo(() => {
-    const confirmed = schedule?.availableLeagues
-    const verifiedRaceIds = new Set(schedule?.verifiedRaceMarketIds ?? [])
-    const available = [
-      ...new Set([
-        ...(confirmed ?? []).filter(
-          (k) => k !== 'f1' || verifiedRaceIds.size > 0
-        ),
-        ...availableGameLeagues(
-          schedule?.games ?? [],
-          verifiedRaceIds.size > 0
-        ),
-      ]),
-    ]
+    const { verifiedRaceIds, available, incomplete } =
+      scheduleLeagueCatalogue(schedule)
     const choices = leagueChoices(sport, engagement.leagues, available)
     const requested = leagueForSport(router.query.league, sport)
     // Prior visits are useful to paint immediately, but cannot invalidate a bookmark.
     const league =
-      requested && (!fresh || choices.includes(requested))
+      requested && (!fresh || choices.includes(requested) || incomplete)
         ? requested
         : undefined
-    const unverified =
-      !!schedule &&
-      (confirmed === undefined ||
-        (league === 'f1' && schedule.verifiedRaceMarketIds === undefined) ||
-        schedule.games.some((g) => g.navigationLeagueKey === undefined))
+    const unverified = !!schedule && incomplete
     const hiddenGames = (target: BdlLeagueKey, visible: Set<string>) =>
-      schedule?.games.some(
-        (g) =>
-          g.navigationLeagueKey === target &&
-          g.status !== 'finished' &&
-          !visible.has(g.id)
-      ) ?? false
+      target === 'f1'
+        ? !!schedule?.raceWeekends?.some(
+            (w) =>
+              hides?.(w.groupSlugs) &&
+              w.sessions.some((s) =>
+                s.markets.some((m) => verifiedRaceIds.has(m.id))
+              )
+          ) ||
+          !!schedule?.raceChampionships?.some(
+            (c) => verifiedRaceIds.has(c.id) && hides?.(c.groupSlugs)
+          )
+        : !!schedule?.games.some(
+            (g) =>
+              publishedGameLeagueKey(g) === target &&
+              g.status !== 'finished' &&
+              !visible.has(g.id)
+          )
     const unverifiedTitles =
       schedule?.raceChampionships?.some((c) => !verifiedRaceIds.has(c.id)) ??
       false
     const verifiedTitle =
-      schedule?.raceChampionships?.some((c) => verifiedRaceIds.has(c.id)) ??
-      false
+      schedule?.raceChampionships?.some(
+        (c) => verifiedRaceIds.has(c.id) && !hides?.(c.groupSlugs)
+      ) ?? false
     const chooseLeague = (value: string) => {
       const query = { ...router.query }
       if (value) query.league = value
@@ -185,7 +185,7 @@ function PersonalSportsNavigation({
       hiddenGames,
       refresh,
     }
-  }, [sport, engagement, router, router.query, schedule, fresh, refresh])
+  }, [sport, hides, engagement, router, router.query, schedule, fresh, refresh])
   useEffect(() => {
     if (
       !router.isReady ||

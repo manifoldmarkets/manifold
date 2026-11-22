@@ -266,6 +266,7 @@ export function useSportsSchedule(
     if (!feed) return undefined
     return {
       ...feed.response,
+      ...(feed.unverifiedLeaguePage && { unverifiedLeaguePage: true }),
       games: feed.games.map((g) =>
         applySportsLive(
           g,

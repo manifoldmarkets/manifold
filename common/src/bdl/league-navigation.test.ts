@@ -2,6 +2,10 @@ import { BDL_LEAGUE_KEYS, BdlLeagueKey } from './leagues'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from '../sports'
 import {
   availableGameLeagues,
+  LEAGUE_NAVIGATION_VERSION,
+  scheduleLeagueCatalogue,
+  publishedGameLeagueKey,
+  verifiedRaceTitle,
   verifiedRaceWeekends,
   gameLeagueLabel,
   marketLeagueKey,
@@ -18,6 +22,7 @@ jest.mock('./rollout', () => ({ isSportsBdlEnabled: () => true }))
 
 const house = MANIFOLD_SPORTS_USER_IDS[0]
 const game = (sportsEventId: string, league: string) => ({
+  leagueNavigationVersion: LEAGUE_NAVIGATION_VERSION,
   sportsEventId,
   league,
 })
@@ -221,6 +226,8 @@ it('keeps old projections without their original provider stamps out of public l
 
 it.each([
   ['odds:soccer_epl:g', 'Basketball', undefined],
+  ['odds:soccer_epl:g', 'soccer_spain_la_liga', undefined],
+  ['odds:soccer_epl:g', 'soccer_epl', 'epl'],
   ['odds:icehockey_nhl:g', 'Soccer', undefined],
   ['odds:soccer_spain_la_liga:g', 'English Premier League', undefined],
   ['bdl:epl:1', 'Esports', undefined],
@@ -301,8 +308,13 @@ it('filters individual race markets and pills on a selected board without changi
         startTime: 2,
         status: 'live',
         markets: [a, c],
-        related: [{ id: 'x' }],
-        relatedCount: 1,
+        related: [
+          { id: 'x' },
+          { id: 'good-prop', parentMarketIds: ['good'] },
+          { id: 'other-prop', parentMarketIds: ['unverified'] },
+          { id: 'both', parentMarketIds: ['unverified', 'good'] },
+        ],
+        relatedCount: 4,
       },
     ],
   }
@@ -311,8 +323,11 @@ it('filters individual race markets and pills on a selected board without changi
   expect(filtered.sessions).toHaveLength(1)
   expect(filtered.sessions[0]).toMatchObject({
     markets: [a],
-    related: [],
-    relatedCount: 0,
+    related: [
+      { id: 'good-prop', parentMarketIds: ['good'] },
+      { id: 'both', parentMarketIds: ['good'] },
+    ],
+    relatedCount: 2,
   })
   expect(filtered).toMatchObject({ startTime: 2, status: 'live' })
   expect(verifiedRaceWeekends(all, new Set())).toEqual([])
@@ -354,4 +369,152 @@ it('uses Games for an All topic redirect and Upcoming only on the root Sports ro
   expect(
     sportsNavigationPath('/sports/all/football', 'all', undefined, 'upcoming')
   ).toBe('/sports/all/football')
+})
+
+it('separates current page evidence from prior workers and exhausted catalogues', () => {
+  const modern = {
+    ...game('odds:soccer_spain_la_liga:g', 'Soccer'),
+    id: 'match',
+    status: 'upcoming',
+    navigationLeagueKey: 'laliga',
+  }
+  const total = {
+    ...game('odds:soccer_epl:total', 'Soccer'),
+    leagueNavigationVersion: undefined,
+    id: 'total',
+    status: 'upcoming',
+    navigationLeagueKey: 'epl',
+  }
+  const schedule = (games: unknown[], extra: Record<string, unknown> = {}) =>
+    ({
+      games,
+      availableLeagues: ['epl', 'laliga'],
+      verifiedRaceMarketIds: [],
+      leagueNavigationVersion: LEAGUE_NAVIGATION_VERSION,
+      nextCursor: null,
+      ...extra,
+    } as unknown as Parameters<typeof scheduleLeagueCatalogue>[0])
+  expect(
+    publishedGameLeagueKey({ ...total, navigationLeagueKey: 'epl' })
+  ).toBeUndefined()
+  const mixed = scheduleLeagueCatalogue(
+    schedule([total, modern], { nextCursor: 'next' })
+  )
+  expect(mixed.incomplete).toBe(true)
+  expect(mixed.available.sort()).toEqual(['epl', 'laliga'])
+  expect(scheduleLeagueCatalogue(schedule([modern]))).toMatchObject({
+    available: ['laliga'],
+    incomplete: false,
+  })
+  // An older full page may name a league but cannot establish a single race or team bet.
+  expect(
+    scheduleLeagueCatalogue(
+      schedule([total], {
+        leagueNavigationVersion: undefined,
+        availableLeagues: ['f1'],
+        verifiedRaceMarketIds: ['unsafe'],
+      })
+    )
+  ).toMatchObject({
+    available: [],
+    verifiedRaceIds: new Set(),
+    incomplete: true,
+  })
+  expect(
+    scheduleLeagueCatalogue(schedule([], { unverifiedLeaguePage: true }))
+      .incomplete
+  ).toBe(true)
+  expect(
+    publishedGameLeagueKey({
+      ...game('123', 'Formula 1'),
+      navigationLeagueKey: 'f1',
+    })
+  ).toBeUndefined()
+})
+
+it('revalidates the hydrated F1 contract against this title kind, season, ownership and visibility', () => {
+  const now = Date.UTC(2026, 10, 20)
+  const c = {
+    id: 'wdc',
+    creatorId: house,
+    visibility: 'public',
+    token: 'MANA',
+    mechanism: 'cpmm-multi-2',
+    outcomeType: 'MULTIPLE_CHOICE',
+    sportsMarketType: 'title',
+    sportsEventId: 'bdl-f1-title:2026:drivers',
+    sportsLeague: 'Formula 1',
+    closeTime: now + 1000,
+  }
+  const matches = (patch: Record<string, unknown> = {}) =>
+    verifiedRaceTitle(
+      { ...c, ...patch } as unknown as Parameters<typeof verifiedRaceTitle>[0],
+      'drivers',
+      now
+    )
+  expect(matches()).toBe(true)
+  for (const patch of [
+    { creatorId: 'community' },
+    { sportsFixture: true },
+    { sportsEventId: 'bdl-f1-title:2026:constructors' },
+    { sportsEventId: 'bdl-f1-title:2027:drivers' },
+    { sportsMarketType: 'winner' },
+    { visibility: 'unlisted' },
+    { token: 'CASH' },
+    { deleted: true },
+    { isResolved: true },
+    { closeTime: now },
+  ])
+    expect(matches(patch)).toBe(false)
+})
+
+it('uses the same filing precedence for topic slugs and ids, independent of carousel order', () => {
+  const sport = (key: string, slug: string) => ({
+    key,
+    label: key,
+    longLabel: key,
+    emoji: '',
+    slug,
+    groupIds: [slug + '-id'],
+  })
+  const sports = [
+    sport('nba', 'nba'),
+    sport('nfl', 'nfl'),
+    sport('wnba', 'wnba'),
+    sport('ncaaf', 'college-football'),
+  ]
+  const basketball = {
+    id: 'basketball-id',
+    slug: 'basketball',
+    sport: 'all',
+    filingSport: 'nba',
+    label: 'Basketball',
+    groupIds: ['basketball-id', 'nba-id'],
+    totalMembers: 20,
+  }
+  const counts = (groups: string[], byId = false) => [
+    ...sportsEngagement(
+      [
+        {
+          id: 'c',
+          creatorId: 'community',
+          ...(byId ? { groupIds: groups } : { groupSlugs: groups }),
+        },
+      ],
+      { sports, topics: [basketball] }
+    ).sports.keys(),
+  ]
+  expect(counts(['nba', 'wnba'])).toEqual(['wnba'])
+  expect(counts(['nfl', 'college-football'])).toEqual(['ncaaf'])
+  expect(counts(['nba-id', 'wnba-id'], true)).toEqual(['wnba'])
+  expect(counts(['basketball'])).toEqual(['nba'])
+})
+
+it('keeps topic membership independent of its parent sport on a canonical redirect', () => {
+  expect(sportsNavigationPath('/sports/nfl/mixed', 'nfl', 'epl', 'games')).toBe(
+    '/sports/nfl/mixed?league=epl&tab=games'
+  )
+  expect(sportsNavigationPath('/sports/nfl', 'nfl', 'epl', 'games')).toBe(
+    '/sports/nfl?tab=games'
+  )
 })

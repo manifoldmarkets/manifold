@@ -61,14 +61,26 @@ export function SportRail(props: {
       'a[aria-current="page"]'
     )
     const scroller = el?.parentElement
-    if (!el || !scroller || scroller.scrollWidth <= scroller.clientWidth) return
-    const box = el.getBoundingClientRect(),
-      viewport = scroller.getBoundingClientRect()
-    const margin = 20
-    if (box.left < viewport.left + margin)
-      scroller.scrollLeft += box.left - viewport.left - margin
-    else if (box.right > viewport.right - margin)
-      scroller.scrollLeft += box.right - viewport.right + margin
+    if (!el || !scroller) return
+    const reveal = () => {
+      if (scroller.scrollWidth <= scroller.clientWidth) return
+      const box = el.getBoundingClientRect(),
+        viewport = scroller.getBoundingClientRect()
+      const margin = Math.max(0, Math.min(40, (viewport.width - box.width) / 2))
+      if (box.left < viewport.left + margin)
+        scroller.scrollLeft += box.left - viewport.left - margin
+      else if (box.right > viewport.right - margin)
+        scroller.scrollLeft += box.right - viewport.right + margin
+    }
+    reveal()
+    let width = scroller.clientWidth
+    const observer = new ResizeObserver(() => {
+      if (scroller.clientWidth === width) return
+      width = scroller.clientWidth
+      reveal()
+    })
+    observer.observe(scroller)
+    return () => observer.disconnect()
   }, [enabled, selected, order])
   const totalGames = Object.values(counts).reduce<number>(
     (a, b) => a + (b ?? 0),

@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getSportsIndex } from 'shared/supabase/sports-index'
@@ -9,5 +10,13 @@ export const sportsIndex: APIHandler<'sports-index'> = async () => {
   const index = await getSportsIndex(createSupabaseDirectClient(), Date.now(), {
     curatedFallback: false,
   })
-  return { sports: index.sports, topics: index.topics }
+  const topics = isSportsBdlEnabled()
+    ? index.topics.map((topic) => {
+        const filingSport = index.sportByTopicId[topic.id]
+        return topic.sport === 'all' && filingSport
+          ? { ...topic, filingSport }
+          : topic
+      })
+    : index.topics
+  return { sports: index.sports, topics }
 }

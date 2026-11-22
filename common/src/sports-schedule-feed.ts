@@ -1,4 +1,5 @@
 import { ScheduleGame, SportsScheduleResponse } from './sports-schedule'
+import { LEAGUE_NAVIGATION_VERSION } from './bdl/league-navigation'
 import { LiveGameState, pruneSportsLive } from './sports-schedule-live'
 
 /**
@@ -9,6 +10,7 @@ import { LiveGameState, pruneSportsLive } from './sports-schedule-live'
  */
 export type ScheduleFeed = {
   response: SportsScheduleResponse
+  unverifiedLeaguePage?: boolean
   games: ScheduleGame[]
   /** Server read time per game, for the live overlay. */
   snapshotTimes: Record<string, number>
@@ -71,8 +73,8 @@ export async function refreshLoadedFeed(
     if (!isCurrent()) return undefined
     const adopted = adoptedGames(feed, page)
     pages.push(adopted)
-    upcoming += adopted.games.filter((g) => g.status === 'upcoming').length
     feed = appendPage(feed, cursor, page)!
+    upcoming = feed.games.filter((g) => g.status === 'upcoming').length
   }
   return { feed, pages }
 }
@@ -87,12 +89,17 @@ export function appendPage(
   page: SportsScheduleResponse
 ): ScheduleFeed | undefined {
   if (feed.cursor !== cursor) return undefined
-  const have = new Set(feed.games.map((g) => g.id))
-  const fresh = page.games.filter((g) => !have.has(g.id))
+  const fresh = adoptedGames(feed, page).games
+  const rows = new Map(feed.games.map((g) => [g.id, g]))
+  for (const game of fresh) rows.set(game.id, game)
   const at = page.snapshotTime ?? 0
   return {
     ...feed,
-    games: [...feed.games, ...fresh],
+    ...(feed.response.leagueNavigationVersion === LEAGUE_NAVIGATION_VERSION &&
+      page.leagueNavigationVersion !== LEAGUE_NAVIGATION_VERSION && {
+        unverifiedLeaguePage: true,
+      }),
+    games: [...rows.values()],
     snapshotTimes: {
       ...feed.snapshotTimes,
       ...Object.fromEntries(fresh.map((g) => [g.id, at])),
@@ -102,16 +109,27 @@ export function appendPage(
 }
 
 /**
- * The part of `page` that appendPage takes: the games the feed didn't have.
- * A game it already has (a rescheduled game can turn up on a later page) is
- * dropped, so its row keeps the earlier read.
+ * Keep earlier prices for ordinary duplicates. A newer, verified change of
+ * competition or market identity replaces the entire row and its snapshot.
  */
 export function adoptedGames(
   feed: ScheduleFeed,
   page: SportsScheduleResponse
 ): SportsScheduleResponse {
-  const have = new Set(feed.games.map((g) => g.id))
-  return { ...page, games: page.games.filter((g) => !have.has(g.id)) }
+  const have = new Map(feed.games.map((g) => [g.id, g]))
+  const games = page.games.filter((g) => {
+    const old = have.get(g.id)
+    if (!old) return true
+    return (
+      page.leagueNavigationVersion === LEAGUE_NAVIGATION_VERSION &&
+      g.leagueNavigationVersion === LEAGUE_NAVIGATION_VERSION &&
+      (page.snapshotTime ?? 0) >= (feed.snapshotTimes[g.id] ?? 0) &&
+      (old.leagueNavigationVersion !== g.leagueNavigationVersion ||
+        old.navigationLeagueKey !== g.navigationLeagueKey ||
+        old.sportsEventId !== g.sportsEventId)
+    )
+  })
+  return { ...page, games }
 }
 
 /**

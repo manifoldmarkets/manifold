@@ -337,7 +337,7 @@ const LEAGUE_TO_SPORT: Record<string, SportKey> = Object.fromEntries(
 // "football" topics that the NBA and NFL claim, so a market tagged with both
 // has to resolve to the narrower sport whatever order its topic ids come back in.
 const NARROW_SPORTS: SportKey[] = ['ncaaf', 'ncaab', 'wnba']
-const SPORT_LOOKUP_ORDER: SportKey[] = [
+export const SPORT_LOOKUP_ORDER: SportKey[] = [
   ...NARROW_SPORTS,
   ...SPORT_CATEGORIES.map((s) => s.key).filter(
     (k) => !NARROW_SPORTS.includes(k)
@@ -492,6 +492,8 @@ export interface SportsSubtopic {
    * the Football / Sports Betting kind).
    */
   sport: SportSelection
+  /** The sport used to file markets when this topic routes under All. */
+  filingSport?: AnySportKey
   /** It and every topic under it: what its page and leaderboard cover. */
   groupIds: string[]
   totalMembers: number
@@ -1116,6 +1118,8 @@ export interface RelatedRef {
   id: string
   group: RelatedGroup
   kind: RelatedMatchKind
+  /** Explicit public parents for this linked session market. */
+  parentMarketIds?: string[]
 }
 
 const BOTH_TEAMS_BEFORE_MS = 21 * DAY_MS
@@ -1242,6 +1246,7 @@ export interface ScheduleTeam {
 }
 
 export interface ScheduleGame extends ScheduleScoreFields {
+  leagueNavigationVersion?: number
   /** Verified across provider, canonical event and historical label. Null means unclassified. */
   navigationLeagueKey?: BdlLeagueKey | null
   sportsLeagueKey?: BdlLeagueKey
@@ -1304,6 +1309,10 @@ export interface UpcomingMarketRef {
 export interface SportsScheduleResponse {
   /** Native race and title market ids verified in this page's scope. */
   verifiedRaceMarketIds?: string[]
+  /** Identity checks applied by the API worker that served this page. */
+  leagueNavigationVersion?: number
+  /** The browser encountered a prior worker when assembling these pages. */
+  unverifiedLeaguePage?: boolean
   /** Market-backed leagues in this sport/topic before pagination; first page only. */
   availableLeagues?: BdlLeagueKey[]
   /** Server time before snapshot reads; survives HTTP and client caching. */

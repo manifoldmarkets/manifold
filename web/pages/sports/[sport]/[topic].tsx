@@ -160,7 +160,10 @@ export default function SportTopicPage() {
   }
 
   const hasGames = schedule
-    ? shownCount(games, weekends) > 0 || lookingPastBlocked
+    ? shownCount(games, weekends) > 0 ||
+      lookingPastBlocked ||
+      (isSportsBdlEnabled() &&
+        shownCount(schedule.games, schedule.raceWeekends ?? []) > 0)
     : undefined
   const showLeague =
     uniq(

@@ -7,7 +7,7 @@ import {
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { getMarketLinksForFeed } from 'shared/supabase/market-links'
-import { getSportsIndex } from 'shared/supabase/sports-index'
+import { getSportsIndex, loadSportsIndex } from 'shared/supabase/sports-index'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
@@ -25,6 +25,7 @@ import {
 import { isSportsContract } from 'common/contract'
 import {
   availableGameLeagues,
+  LEAGUE_NAVIGATION_VERSION,
   marketLeagueKey,
 } from 'common/bdl/league-navigation'
 import { scheduleFeedTime } from 'common/sports-game-feed'
@@ -93,19 +94,31 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
   const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
     topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
-  const readRacing = (db: Pick<Pg, 'manyOrNone'>) =>
-    Promise.all([
+  const readRacing = async (db: Pick<Pg, 'manyOrNone'>) => {
+    const [races, titles] = await Promise.all([
       getRaceWeekends(db, raceDays, now),
       sport === 'f1' && !cursor && !topicIds
         ? getRaceChampionships(db, index, now)
         : Promise.resolve({ championships: [], verifiedTitles: [] }),
     ] as const)
+    // Reuse the same public hierarchy rule as the index, inside the repeatable
+    // read that supplied the race markets and their direct group memberships.
+    const currentTopicIds =
+      isSportsBdlEnabled() && races.weekends.length && props.topic && !cursor
+        ? new Set(
+            (await loadSportsIndex(db)).topics.find((t) => t.id === props.topic)
+              ?.groupIds ?? []
+          )
+        : topicIds
+    return [races, titles, currentTopicIds] as const
+  }
   const [
     { games: official, groupIds: gameGroupIds },
     weekAll,
     [
       { weekends: allWeekends, groupIds: raceGroupIds, verifiedSessions },
       { championships, verifiedTitles },
+      racingTopicIds,
     ],
   ] = await Promise.all([
     isSportsBdlEnabled()
@@ -258,8 +271,18 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
         // A finished session isn't in the feed, so its markets (an open
         // prop closing later, say) stay in the week list (F4213-05).
         if (s.status === 'finished') continue
+        const parentIds = new Map<string, string[]>()
         const links = uniqBy(
-          s.markets.flatMap((m) => linkedByGame[m.id] ?? []),
+          s.markets.flatMap((m) => {
+            const children = linkedByGame[m.id] ?? []
+            if (isSportsBdlEnabled())
+              for (const child of children) {
+                const ids = parentIds.get(child.id) ?? []
+                ids.push(m.id)
+                parentIds.set(child.id, ids)
+              }
+            return children
+          }),
           (l) => l.id
         ).map((l) => ({
           id: l.id,
@@ -278,6 +301,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
             id,
             kind,
             group,
+            ...(parentIds.has(id) && { parentMarketIds: parentIds.get(id) }),
           }))
         }
         s.relatedCount = matches.length
@@ -295,10 +319,12 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // The weekends this page shows: all of F1's on /sports/f1; on /sports,
   // those within the games' horizon; on a topic's page, those with a market
   // in the topic.
+  const inRaceTopic = (ids: readonly string[] | undefined) =>
+    (ids ?? []).some((id) => racingTopicIds?.has(id))
   const shownWeekends = cursor
     ? []
     : topicIds
-    ? weekends.filter((w) => inTopic(weekendGroupIds(w)))
+    ? weekends.filter((w) => inRaceTopic(weekendGroupIds(w)))
     : sport !== 'all' && sport !== 'f1'
     ? []
     : sport === 'f1'
@@ -370,7 +396,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
               .filter(
                 (m) =>
                   verifiedSessions.has(m.id) &&
-                  (!topicIds || inTopic(raceGroupIds[m.id]))
+                  (!topicIds || inRaceTopic(raceGroupIds[m.id]))
               )
               .map((m) => m.id)
       )
@@ -378,6 +404,9 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   ]
   const response: SportsScheduleResponse = {
     snapshotTime: now,
+    ...(isSportsBdlEnabled() && {
+      leagueNavigationVersion: LEAGUE_NAVIGATION_VERSION,
+    }),
     ...(isSportsBdlEnabled() &&
       !cursor && {
         verifiedRaceMarketIds,
@@ -664,6 +693,7 @@ async function getRaceChampionships(
     bettors: number | null
     volume: number | null
     official_event_id: string | null
+    group_slugs?: string[]
     navigation?: Parameters<typeof marketLeagueKey>[0]
   }>(
     `select c.question, c.id,
@@ -674,8 +704,10 @@ async function getRaceChampionships(
                  then c.data->>'sportsEventId' end as official_event_id${
                    isSportsBdlEnabled()
                      ? `,
+              c.data->'groupSlugs' as group_slugs,
               jsonb_build_object('sportsProvider',c.data->'sportsProvider',
                                  'sportsFixture',c.data->'sportsFixture',
+                                 'sportsMarketType',c.data->'sportsMarketType',
                                  'sportsLeagueKey',c.data->'sportsLeagueKey',
                                  'sportsLeague',c.data->'sportsLeague') as navigation`
                      : ''
@@ -721,6 +753,8 @@ async function getRaceChampionships(
         .filter(
           (r) =>
             championships.some((c) => c.id === r.id) &&
+            (r.navigation?.sportsMarketType == null ||
+              r.navigation.sportsMarketType === 'title') &&
             marketLeagueKey({
               ...r.navigation,
               sportsEventId: r.official_event_id,
@@ -728,7 +762,15 @@ async function getRaceChampionships(
         )
         .map((r) => r.id)
     : []
-  return { championships, verifiedTitles }
+  const publicTitles = isSportsBdlEnabled()
+    ? championships.map((c) => {
+        const slugs = rows.find((r) => r.id === c.id)?.group_slugs
+        return Array.isArray(slugs) && slugs.length
+          ? { ...c, groupSlugs: slugs }
+          : c
+      })
+    : championships
+  return { championships: publicTitles, verifiedTitles }
 }
 
 async function getAnswers(

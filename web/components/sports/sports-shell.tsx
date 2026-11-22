@@ -126,7 +126,8 @@ export function SportsShell(props: {
   )
   return (
     <SportsNavigation
-      sport={selected}
+      sport={selectedTopic ? 'all' : selected}
+      hides={hides}
       schedule={props.schedule}
       fresh={props.freshSchedule}
       refresh={props.refreshSchedule}

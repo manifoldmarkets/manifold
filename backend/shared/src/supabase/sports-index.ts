@@ -44,7 +44,7 @@ export async function getSportsIndex(
 
 /** The sports index from the topic tree as it is now. Throws if it can't be read. */
 export async function loadSportsIndex(
-  pg: SupabaseDirectClient
+  pg: Pick<SupabaseDirectClient, 'manyOrNone'>
 ): Promise<SportsIndex> {
   const rows = await pg.manyOrNone<{
     parent_id: string

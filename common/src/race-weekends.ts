@@ -651,6 +651,7 @@ export function findRaceRelatedMarkets(
 
 /** A season-long title market for the F1 page: the drivers' or constructors'. */
 export interface RaceChampionship {
+  groupSlugs?: string[]
   kind: 'drivers' | 'constructors'
   id: string
 }

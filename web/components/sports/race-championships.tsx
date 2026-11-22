@@ -1,7 +1,8 @@
+import { verifiedRaceTitle } from 'common/bdl/league-navigation'
 import { useSportsNavigation } from './sports-navigation-context'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { contractPath, CPMMMultiContract, isMultiCpmm } from 'common/contract'
 import { f1Season, RaceChampionship } from 'common/race-weekends'
 import { shortFormatNumber } from 'common/util/format'
@@ -49,11 +50,32 @@ export function RaceChampionships(props: {
   const byId = new Map((data ?? []).map((c) => [c.id, c]))
   const titles = championships.flatMap((c) => {
     const contract = byId.get(c.id)
-    return contract && isMultiCpmm(contract) && !hides(contract.groupSlugs)
+    return contract &&
+      isMultiCpmm(contract) &&
+      !hides(contract.groupSlugs) &&
+      (navigation?.league !== 'f1' ||
+        verifiedRaceTitle(contract, c.kind, Date.now()))
       ? [{ kind: c.kind, contract: contract as CPMMMultiContract }]
       : []
   })
-  if (data && titles.length === 0) return null
+  if (data && titles.length === 0) {
+    if (navigation?.league !== 'f1') return null
+    const hidden = championships.some((c) => {
+      const market = byId.get(c.id)
+      return (
+        market &&
+        verifiedRaceTitle(market, c.kind, Date.now()) &&
+        hides(market.groupSlugs)
+      )
+    })
+    return (
+      <p role="status" className="text-ink-600 text-sm">
+        {hidden
+          ? 'Games hidden by your topic settings'
+          : 'No verified championship markets available.'}
+      </p>
+    )
+  }
   return (
     <section
       aria-labelledby="f1-championship-heading"
@@ -91,6 +113,7 @@ export function RaceChampionships(props: {
             <TitleRace
               key={t.contract.id}
               kind={t.kind}
+              verify={navigation?.league === 'f1'}
               contract={t.contract}
             />
           ))}
@@ -102,6 +125,7 @@ export function RaceChampionships(props: {
 
 /** One title market: its leaders as bars; a leader opens a bet on them. */
 function TitleRace(props: {
+  verify: boolean
   kind: RaceChampionship['kind']
   contract: CPMMMultiContract
 }) {
@@ -109,6 +133,20 @@ function TitleRace(props: {
   const contract = useLiveContract(props.contract)
   const user = useUser()
   const [betAnswerId, setBetAnswerId] = useState<string>()
+  const hides = useHidesBlocked()
+  const hidden = props.verify && hides(contract.groupSlugs)
+  const invalid = props.verify && !verifiedRaceTitle(contract, kind, Date.now())
+  useEffect(() => {
+    if (hidden || invalid) setBetAnswerId(undefined)
+  }, [hidden, invalid])
+  if (hidden || invalid)
+    return (
+      <p role="status" className="text-ink-600 text-sm">
+        {hidden
+          ? 'Games hidden by your topic settings'
+          : 'This championship market is no longer available.'}
+      </p>
+    )
   const closed =
     !!contract.resolution ||
     (!!contract.closeTime && contract.closeTime < Date.now())

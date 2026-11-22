@@ -35,6 +35,29 @@ const project = (data: Record<string, unknown>, rows = answers) =>
     now
   )
 
+it('rejects a legacy independent payout at the public winner-market projection', () => {
+  const legacy = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:soccer_epl:g',
+    sportsLeague: 'EPL',
+    sportsLeagueKey: undefined,
+    sportsMarketType: undefined,
+  }
+  expect(project({ ...legacy, shouldAnswersSumToOne: false })).toBeNull()
+  expect(project(legacy)).toMatchObject({ navigationLeagueKey: null })
+  expect(
+    project({
+      ...legacy,
+      shouldAnswersSumToOne: true,
+      addAnswersMode: 'ANYONE',
+    })
+  ).toMatchObject({ navigationLeagueKey: null })
+  expect(project({ ...legacy, shouldAnswersSumToOne: true })).toMatchObject({
+    leagueNavigationVersion: 1,
+    navigationLeagueKey: 'epl',
+  })
+})
+
 it('keeps provider entrants, answer IDs and ID-keyed codes through team renames', () => {
   const renamed = answers.map((a) => ({ ...a, text: 'renamed-' + a.id }))
   expect(project({}, renamed)).toMatchObject({
