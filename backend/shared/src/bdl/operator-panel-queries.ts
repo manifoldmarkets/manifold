@@ -1,5 +1,5 @@
 import { calendarLeague, uniqueLeagueForSport } from './calendar-league'
-import { BDL_LEAGUES, BDL_LEAGUE_KEYS, BdlLeagueKey } from 'common/bdl/leagues'
+import { BDL_LEAGUES, BDL_LEAGUE_KEYS } from 'common/bdl/leagues'
 import type {
   BdlOperatorLeague,
   BdlOperatorPanel,
