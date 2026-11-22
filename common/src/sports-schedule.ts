@@ -1243,6 +1243,8 @@ export interface ScheduleTeam {
 
 export interface ScheduleGame extends ScheduleScoreFields {
   sportsLeagueKey?: BdlLeagueKey
+  /** The published in-play receipt aged out before the next observation. */
+  observationStale?: true
   id: string
   slug: string
   creatorUsername: string
@@ -1328,6 +1330,10 @@ export interface SportsScheduleResponse {
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number
+  /** Global observed live games expiring at each instant, with no event identifiers. */
+  liveExpiries?: [at: number, count: number][]
+  /** End of each sport badge contribution, grouped by UTC millisecond and sport. */
+  membershipExpiries?: [at: number, sport: AnySportKey, count: number][]
   /** Every sport on the page, curated first; see buildSportsIndex. */
   sports: SportInfo[]
 }
@@ -1337,6 +1343,108 @@ export interface SportsScheduleResponse {
 export const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 export const TERMINAL_STATUSES = new Set(['FINISHED', 'AWARDED'])
 export const LIVE_STALE_MS = 10 * 60 * 1000
+
+export const SCHEDULE_CLOSE_GRACE_HOURS = 18
+
+/** Age a BDL view by successful provider receipt. An expired observation changes
+ * only the public display. A later identical in-progress observation can restore it. */
+export function atSportsObservationTime(
+  game: ScheduleGame,
+  now: number
+): ScheduleGame {
+  if (game.isResolved || game.status === 'finished') return game
+  const receipt = game.liveUpdatedTime
+  if (
+    receipt != null &&
+    (!Number.isFinite(receipt) || receipt < 0 || receipt > now)
+  ) {
+    game = { ...game, liveUpdatedTime: null }
+    if (!game.gameState) {
+      const status = gameStatus({
+        ...game,
+        liveStatus: game.liveScore?.status,
+        now,
+      })
+      return { ...game, status, liveScore: null }
+    }
+  }
+  if (!game.gameState) return game
+  if (
+    game.gameState === 'scheduled' &&
+    game.kickoffKnown &&
+    now >= scheduledConfirmationEnd(game)
+  )
+    return { ...game, gameState: 'unavailable', status: 'upcoming' }
+  if (game.gameState !== 'live') return game
+  const at = game.liveUpdatedTime
+  if (freshSportsLiveReceipt(at, now)) return game
+  return {
+    ...game,
+    gameState: 'unavailable',
+    status: 'upcoming',
+    observationStale:
+      at != null && Number.isFinite(at) && at <= now ? true : undefined,
+    clock: undefined,
+    period: undefined,
+    scoreboard: undefined,
+    liveScore: null,
+  }
+}
+
+function scheduledConfirmationEnd(game: ScheduleGame) {
+  const receipt = game.liveUpdatedTime
+  return receipt != null && receipt >= game.startTime
+    ? receipt + LIVE_STALE_MS
+    : game.startTime
+}
+
+/** The current live census contribution ends at a confirmed receipt or at the
+ * existing legacy time-based cutoff. A fresh legacy score can outlast close. */
+export function sportsLiveEnd(game: ScheduleGame) {
+  const receiptEnd =
+    game.liveUpdatedTime == null
+      ? undefined
+      : game.liveUpdatedTime + LIVE_STALE_MS
+  if (game.gameState) return game.gameState === 'live' ? receiptEnd : undefined
+  const scored = LIVE_STATUSES.has(game.liveScore?.status ?? '')
+    ? receiptEnd
+    : undefined
+  if (scored != null && (!game.kickoffKnown || game.startTime > scored))
+    return scored
+  return Math.max(game.closeTime, scored ?? 0)
+}
+
+/** End of eligibility for the schedule's ordinary close, resumption or receipt
+ * window. This is separate from the contract's cutoff for placing a bet. */
+export function sportsMembershipEnd(game: ScheduleGame) {
+  if (!game.sportsLeagueKey && !game.gameState)
+    return Math.max(
+      game.closeTime,
+      LIVE_STATUSES.has(game.liveScore?.status ?? '')
+        ? (game.liveUpdatedTime ?? 0) + LIVE_STALE_MS
+        : 0
+    )
+  const grace = SCHEDULE_CLOSE_GRACE_HOURS * 60 * 60 * 1000
+  if (
+    (game.gameState === 'suspended' || game.gameState === 'postponed') &&
+    game.resumptionTime != null
+  )
+    return Math.max(game.closeTime, game.resumptionTime + grace)
+  return Math.max(
+    game.closeTime + grace,
+    game.gameState === 'live' ? sportsLiveEnd(game) ?? 0 : 0
+  )
+}
+
+function freshSportsLiveReceipt(at: number | null | undefined, now: number) {
+  return (
+    at != null &&
+    Number.isFinite(at) &&
+    at >= 0 &&
+    now >= at &&
+    now - at < LIVE_STALE_MS
+  )
+}
 
 export function gameStatus(props: {
   startTime: number

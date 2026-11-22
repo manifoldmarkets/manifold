@@ -72,6 +72,7 @@ const tree = [
 }))
 type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
+let liveRows: typeof officialRows
 let resumedRows: { data: Record<string, unknown> }[] = []
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
@@ -105,6 +106,7 @@ beforeEach(() => {
   marketRows = props
   officialRows = official
   officialPages = []
+  liveRows = []
   resumedRows = []
   answerRows = []
   gameGroups = defaultGameGroups
@@ -143,12 +145,17 @@ beforeEach(() => {
         return linkedElsewhere
       }
       if (sql.includes("where data->>'sportsEventId' is not null")) {
-        const resuming = sql.includes('jsonb_typeof')
-        const rows = (resuming ? resumedRows : officialRows)
+        const live = sql.includes("jsonb_typeof(data->'sportsLiveUpdatedTime')")
+        const resuming = sql.includes(
+          "jsonb_typeof(data->'sportsResumptionTime')"
+        )
+        const rows = (live ? liveRows : resuming ? resumedRows : officialRows)
           .map(({ data }) => ({
             data,
             id: String(data.id),
-            page_time: resuming
+            page_time: live
+              ? String(data.sportsLiveUpdatedTime)
+              : resuming
               ? String(data.sportsResumptionTime)
               : new Date(Number(data.closeTime)).toISOString(),
           }))
@@ -165,7 +172,7 @@ beforeEach(() => {
           : 0
         if (params[2]) expect(start).toBeGreaterThan(0)
         const batch = rows.slice(start, start + size)
-        if (!resuming) officialPages.push(batch.length)
+        if (!resuming && !live) officialPages.push(batch.length)
         return batch
       }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
@@ -173,7 +180,7 @@ beforeEach(() => {
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
-          : [...officialRows, ...resumedRows].flatMap(({ data }) =>
+          : [...officialRows, ...resumedRows, ...liveRows].flatMap(({ data }) =>
               gameAnswers(data)
             )
       if (sql.includes('select c.id, c.question')) return marketRows
@@ -1111,4 +1118,140 @@ it('uses the legacy single capped close-time scan and original scores when rollo
   } finally {
     jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   }
+})
+
+it('counts fresh resumed games outside a scoped page with only grouped receipt deadlines', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = ['fresh1', 'fresh2', 'expired'].map((id) => ({
+    data: {
+      ...official[0].data,
+      id,
+      creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+      sportsProvider: 'bdl',
+      sportsLeagueKey: 'nfl',
+      sportsMarketType: 'moneyline',
+      sportsEventId: 'bdl:nfl:' + { fresh1: 11, fresh2: 12, expired: 13 }[id],
+      closeTime: at - 3 * 86400000,
+      sportsStartTimestamp: new Date(at - 3 * 86400000).toISOString(),
+      sportsResumptionTime: null,
+      sportsLiveStatus: 'IN_PROGRESS',
+      sportsLiveUpdatedTime: id === 'expired' ? at - 600000 : at,
+    },
+  }))
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const page = await get({ observedGames: true, sport: 'soccer' })
+  const result = 'result' in page ? page.result : page
+  expect(result.games).toEqual([])
+  expect(result.counts.nfl).toBe(2)
+  expect(result.liveCount).toBe(2)
+  expect(result.liveExpiries).toEqual([[at + 600000, 2]])
+})
+
+it('requires an opted-in client for recently resumed team markets, including three-way club soccer', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = [
+    {
+      data: {
+        ...official[1].data,
+        id: 'epl-game',
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsProvider: 'bdl',
+        sportsEventId: 'bdl:epl:112',
+        sportsLeagueKey: 'epl',
+        sportsMarketType: 'moneyline',
+        sportsHomeTeamId: '2',
+        sportsAwayTeamId: '3',
+        closeTime: at - 3 * 86400000,
+        sportsLiveStatus: 'IN_PROGRESS',
+        sportsLiveUpdatedTime: at,
+      },
+    },
+  ]
+  answerRows = [
+    ...gameAnswers(liveRows[0].data),
+    {
+      id: 'draw',
+      index: 2,
+      text: 'Draw',
+      contract_id: 'epl-game',
+      prob: 0.2,
+      pool_yes: 100,
+      pool_no: 100,
+    },
+  ]
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  for (const observedGames of [undefined, false, true]) {
+    const response = await get({ sport: 'soccer', observedGames })
+    const page = 'result' in response ? response.result : response
+    if (observedGames) {
+      expect(page.games).toHaveLength(1)
+      expect(page.games[0]).toMatchObject({
+        sportsLeagueKey: 'epl',
+        status: 'live',
+        closeTime: at - 3 * 86400000,
+        draw: { answerId: 'draw' },
+      })
+      expect(page.membershipExpiries).toEqual([[at + 600000, 'soccer', 1]])
+    } else {
+      expect(page.games).toEqual([])
+      expect(page).not.toHaveProperty('membershipExpiries')
+    }
+  }
+})
+
+it('returns the baseline enabled schedule unless the public reader opts in, and never signals order support', async () => {
+  const get = sportsSchedule as (
+    p: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const now = Date.now()
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  try {
+    const read = async (observedGames?: boolean) => {
+      const raw = await get({ sport: 'nfl', observedGames })
+      return 'result' in raw ? raw.result : raw
+    }
+    const current = await read()
+    expect(await read(false)).toEqual(current)
+    expect(current).not.toHaveProperty('liveExpiries')
+    const observed = await read(true)
+    expect(observed.games).toEqual(current.games)
+    expect(observed).toHaveProperty('liveExpiries')
+    expect(observed).not.toHaveProperty('sportsTicketVersion')
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+    expect(await read(true)).toEqual(await read())
+  } finally {
+    jest.restoreAllMocks()
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
+})
+it('discards an impossible future receipt without inferring live activity before kickoff', async () => {
+  const now = Date.now()
+  const data = {
+    ...official[0].data,
+    sportsStartTimestamp: new Date(now + 3600000).toISOString(),
+    closeTime: now + 7200000,
+    sportsLiveStatus: 'IN_PLAY',
+    sportsLiveUpdatedTime: now + 100000000,
+    sportsHomeScore: 1,
+    sportsAwayScore: 0,
+  }
+  officialRows = [{ data }]
+  const get = sportsSchedule as (
+    p: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const raw = await get({ sport: 'nfl', observedGames: true })
+  const observed = 'result' in raw ? raw.result : raw
+  expect(observed.games[0]).toMatchObject({
+    status: 'upcoming',
+    liveScore: null,
+    liveUpdatedTime: null,
+  })
+  expect(observed.liveCount).toBe(0)
+  expect(observed.liveExpiries).toEqual([])
 })

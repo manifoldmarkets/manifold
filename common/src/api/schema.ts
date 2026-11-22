@@ -5262,6 +5262,7 @@ export const API = (_apiTypeCheck = {
           .regex(/^\d+_[A-Za-z0-9]+$/)
           .max(64)
           .optional(),
+        observedGames: coerceBoolean.optional(),
         includeRelated: coerceBoolean.optional(),
         // A topic under Sports (SportsSubtopic.id): only its games and markets.
         topic: z.string().min(1).max(MAX_ID_LENGTH).optional(),
