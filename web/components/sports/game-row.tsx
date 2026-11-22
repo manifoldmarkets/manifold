@@ -128,12 +128,15 @@ export function GameRow(props: {
     stake,
     onPositionsChange,
   } = props
-  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
+  const [selection, setSelection] = useState<{
+    outcome: MatchOutcome
+    identity: string
+  } | null>(null)
   const user = useUser()
   const stakeOn = (answerId: string | undefined) =>
     answerId ? stake?.byAnswer[answerId] : undefined
   const closeDialog = () => {
-    setBetOutcome(null)
+    setSelection(null)
     onPositionsChange?.()
   }
   const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
@@ -143,6 +146,20 @@ export function GameRow(props: {
   const canBet = isSportsBdlEnabled()
     ? canBetOnScheduledGame(game, Date.now())
     : !finished
+
+  const identity = JSON.stringify([
+    game.id,
+    game.sportsEventId,
+    game.home.entrantId,
+    game.home.answerId,
+    game.away.entrantId,
+    game.away.answerId,
+    game.draw?.answerId,
+  ])
+  const betOutcome = selection?.outcome
+  // Clear the actual intent before committing a corrected market to the screen.
+  if (selection && (selection.identity !== identity || !canBet))
+    setSelection(null)
 
   const score =
     game.finalScore ??
@@ -217,12 +234,17 @@ export function GameRow(props: {
   )
 
   const onBet = (outcome: MatchOutcome) => {
+    if (
+      !canBet ||
+      (isSportsBdlEnabled() && !canBetOnScheduledGame(game, Date.now()))
+    )
+      return
     if (!user) {
       firebaseLogin()
       return
     }
     track('bet intent', { location: `sports ${variant}`, outcome })
-    setBetOutcome(outcome)
+    setSelection({ outcome, identity })
   }
 
   const [firstTeam, secondTeam] = displayTeams.map(
@@ -300,7 +322,8 @@ export function GameRow(props: {
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
-    !game.bettingSidesUnverified &&
+    canBet &&
+    selection?.identity === identity &&
     (game.draw ? (
       <SportsThreeWayBetDialog
         match={toSportsMatch(game)}
