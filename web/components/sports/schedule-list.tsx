@@ -191,6 +191,18 @@ export function GameFeed(props: {
   }, [selectedFeatured?.id])
   const featured =
     view === 'cards' && !hasFilters ? selectedFeatured : undefined
+  const ufcFirst =
+    featured?.status === 'upcoming' &&
+    shownCards.some((c) => c.bouts.some(liveFight))
+  const fightCards = shownCards.length ? (
+    <UfcFightCards
+      cards={shownCards}
+      stakes={stakes}
+      allMatches={hasFilters}
+      onBetPlaced={(id) => void positions.refreshGame(id)}
+      onScheduleRefresh={props.onScheduleRefresh}
+    />
+  ) : null
   const onSelectedDay = (item: FeedItem) =>
     date === 'all' || scheduleDayKey(item) === date
   const filteredGames = active.filter(
@@ -563,6 +575,7 @@ export function GameFeed(props: {
             </p>
           )}
         </div>
+        {ufcFirst && fightCards}
         {featured &&
           (isSession(featured) ? (
             <RaceWeekendHero
@@ -640,13 +653,7 @@ export function GameFeed(props: {
             {renderItems(live)}
           </Col>
         )}
-        {!!shownCards.length && (
-          <UfcFightCards
-            cards={shownCards}
-            allMatches={hasFilters}
-            onBetPlaced={(id) => void positions.refreshGame(id)}
-          />
-        )}
+        {!ufcFirst && fightCards}
         {days.map((day) => (
           <Col key={day.key} className="gap-2">
             <SectionHeader

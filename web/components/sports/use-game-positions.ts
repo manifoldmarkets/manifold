@@ -91,6 +91,7 @@ export function useGamePositions(gameIds: string[]) {
   // keyed `${account}/${id}`: a full re-read that started earlier must not
   // put older data back.
   const touchedAt = useRef(new Map<string, number>())
+  const revision = useRef(0)
   const touchedFor = (account: string, ids: string[]) => {
     const map = new Map<string, number>()
     for (const id of ids) {
@@ -109,7 +110,7 @@ export function useGamePositions(gameIds: string[]) {
     const account = userId
     const session = epoch.current
     const ids: string[] = JSON.parse(idsKey)
-    const startedAt = Date.now()
+    const startedAt = ++revision.current
     try {
       const [metrics, orders] = await Promise.all([
         fetchMetrics(account, ids),
@@ -160,7 +161,7 @@ export function useGamePositions(gameIds: string[]) {
     if (!userId) return
     const account = userId
     const session = epoch.current
-    const startedAt = Date.now()
+    const startedAt = ++revision.current
     try {
       const [metrics, orders] = await Promise.all([
         fetchMetrics(account, [id]),
@@ -173,15 +174,15 @@ export function useGamePositions(gameIds: string[]) {
       const key = `${account}/${id}`
       if ((touchedAt.current.get(key) ?? 0) > startedAt) return
       touchedAt.current.set(key, startedAt)
-      setState((old) =>
-        old.userId !== account
-          ? old
-          : {
-              ...old,
-              metrics: { ...old.metrics, [id]: metrics[id] ?? [] },
-              orders: { ...old.orders, [id]: orders[id] ?? [] },
-            }
-      )
+      setState((old) => {
+        if (session !== epoch.current) return old
+        const held = old.userId === account ? old : empty(account)
+        return {
+          ...held,
+          metrics: { ...held.metrics, [id]: metrics[id] ?? [] },
+          orders: { ...held.orders, [id]: orders[id] ?? [] },
+        }
+      })
     } catch (e) {
       console.error('Failed to refresh sports positions', e)
     }
@@ -198,6 +199,7 @@ export function useGamePositions(gameIds: string[]) {
   useEffect(() => {
     epoch.current++
     requests.current++
+    touchedAt.current.clear()
   }, [userId])
 
   useEffect(() => {
@@ -274,7 +276,7 @@ export function useGamePositions(gameIds: string[]) {
     onBroadcast: ({ topic, data }) => {
       const [, id, kind] = topic.split('/')
       if (!id || !userId) return
-      touchedAt.current.set(`${userId}/${id}`, Date.now())
+      touchedAt.current.set(`${userId}/${id}`, ++revision.current)
       if (kind === 'user-metrics') {
         const updated = (data.metrics ?? []) as ContractMetric[]
         setState((old) => {

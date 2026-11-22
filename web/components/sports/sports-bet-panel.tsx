@@ -69,7 +69,14 @@ export async function readSportsContract(
     )
   )
     return null
-  return { ...latest, answers: rows }
+  return {
+    ...latest,
+    closeTime: Math.min(
+      first.closeTime ?? Infinity,
+      latest.closeTime ?? Infinity
+    ),
+    answers: rows,
+  }
 }
 
 // Game markets are bet on with Manifold's standard dialogs: knockout markets
@@ -109,14 +116,21 @@ function useSportsContract(
         setFailed(!value)
       })
       .catch(() => {
-        if (!cancelled) setFailed(true)
+        if (!cancelled) {
+          setReadQuote(quote)
+          setFailed(true)
+        }
       })
     return () => {
       cancelled = true
     }
   }, [contractId, quote])
 
-  return { contract: ufc && readQuote !== quote ? null : contract, failed }
+  return {
+    contract,
+    refreshing: !!ufc && readQuote !== quote,
+    failed: failed && (!ufc || readQuote === quote),
+  }
 }
 
 function bindTicket(
@@ -194,15 +208,17 @@ export function UfcWinnerBetDialog({
   selected,
   initialClose,
   onClose,
+  onInvalid,
   onBetPlaced,
 }: {
   bout: UfcMarketBout
   selected: string
   initialClose: number
+  onInvalid?: () => void
   onClose: () => void
   onBetPlaced?: () => void
 }) {
-  const { contract, failed } = useSportsContract(bout.id, bout)
+  const { contract, refreshing, failed } = useSportsContract(bout.id, bout)
   const [activeAnswer, setActiveAnswer] = useState(selected)
   const [, updateClock] = useState(0)
   const earliestNativeClose = useRef(initialClose)
@@ -237,10 +253,29 @@ export function UfcWinnerBetDialog({
   }, [invalid, deadline, onClose, now])
   if (invalid) return null
   if (failed) return <SportsLoadError onClose={onClose} />
-  if (!contract || !current) return null
+  const selectedName = bout.answers.find(
+    (a) => a.answerId === activeAnswer
+  )?.name
+  if (!contract || !current)
+    return (
+      <Modal
+        open
+        setOpen={(open) => {
+          if (!open) onClose()
+        }}
+        className={MODAL_CLASS}
+      >
+        <p role="status">Loading market for {selectedName}…</p>
+      </Modal>
+    )
   return (
     <SportsTicketContext.Provider
-      value={{ ticket, onInvalid: onClose, onRestingOrder: onBetPlaced }}
+      value={{
+        ticket,
+        refreshing,
+        onInvalid: onInvalid ?? onClose,
+        onRestingOrder: onBetPlaced,
+      }}
     >
       <ThreeWayTradeDialog
         contract={contract}
@@ -253,7 +288,12 @@ export function UfcWinnerBetDialog({
         onBetPlaced={onBetPlaced}
         answerOrder={current.answers.map((a) => a.answerId)}
         trackingLocation="sports UFC card"
-        description={current.cardName}
+        description={
+          <span aria-live="polite">
+            {current.cardName} · Selected: {selectedName}
+            {refreshing ? ' · Updating prices…' : ''}
+          </span>
+        }
       />
     </SportsTicketContext.Provider>
   )

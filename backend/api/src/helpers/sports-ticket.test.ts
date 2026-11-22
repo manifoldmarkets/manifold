@@ -92,7 +92,12 @@ function transaction(
     offered,
     [],
   ])
-  return { pg: { multi } as unknown as SupabaseTransaction, multi }
+  const manyOrNone = jest.fn(async () => offered)
+  return {
+    pg: { multi, manyOrNone } as unknown as SupabaseTransaction,
+    multi,
+    manyOrNone,
+  }
 }
 
 it('checks both the locked contract and payable answer rows before a Sports buy', async () => {
@@ -215,6 +220,49 @@ it('rechecks the three-way UFC event, every answer binding, receipt and promised
     sportsTicket: { binding: ufcTicketBinding(current), closeTime: now + 1000 },
     answerId: 'd',
   }
+  const ghost = { ...offered[0], id: 'old', index: 3 }
+  const withGhost = { ...fight, answers: [ghost] }
+  const direct = {
+    contractId: body.contractId,
+    outcome: 'YES' as const,
+    answerId: 'h',
+    amount: 10,
+  }
+  for (const order of [selection, direct]) {
+    const t = transaction(withGhost, offered)
+    const result = await lockContractAndGetBetData(t.pg, order, 'buyer')
+    expect(result.contract).toMatchObject({
+      answers: offered.map(({ id }) => expect.objectContaining({ id })),
+    })
+    if (order === direct)
+      expect(t.manyOrNone).toHaveBeenCalledWith(
+        expect.stringContaining('for share'),
+        ['local']
+      )
+  }
+  for (const patch of [
+    { ...snapshot, observedAt: now - 3600000, lastNonfinalAt: now - 3600000 },
+    { ...snapshot, status: 'final' },
+    undefined,
+  ]) {
+    await expect(
+      lockContractAndGetBetData(
+        transaction({ ...fight, sportsUfc: patch }, offered).pg,
+        direct,
+        'buyer'
+      )
+    ).rejects.toMatchObject({ code: 409 })
+  }
+  await expect(
+    lockContractAndGetBetData(
+      transaction(
+        { ...fight, creatorId: 'community', sportsUfc: undefined },
+        offered
+      ).pg,
+      direct,
+      'buyer'
+    )
+  ).resolves.toHaveProperty('contract.id', 'local')
   for (const answerId of ['a', 'h', 'd']) {
     await expect(
       lockContractAndGetBetData(

@@ -1,4 +1,4 @@
-import { useSportsTicket } from './sports-ticket-context'
+import { useSportsOrder } from './sports-ticket-context'
 import {
   ChevronDownIcon,
   LockClosedIcon,
@@ -292,7 +292,10 @@ export const BuyPanelBody = (
   // Bumped when the user opens the book, so only that scrolls it into view.
   const [revealOrders, setRevealOrders] = useState(0)
   const ordersId = useId()
-  const sportsTicket = useSportsTicket()
+  const { sportsTicket, canSubmit, unavailable } = useSportsOrder(
+    contract,
+    multiProps?.answerToBuy.id
+  )
   const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
@@ -597,7 +600,7 @@ export const BuyPanelBody = (
   }, [calculationError, error])
 
   async function submitBet() {
-    if (!user || !betAmount) return
+    if (!user || !betAmount || isSubmitting || !canSubmit()) return
     console.log('betDeps', betDeps)
     setError(undefined)
     setIsSubmitting(true)
@@ -746,6 +749,7 @@ export const BuyPanelBody = (
     getVerificationStatus(user, privateUser)
 
   const betDisabled =
+    !canSubmit() ||
     isSubmitting ||
     !betAmount ||
     outcome === undefined ||
@@ -950,6 +954,11 @@ export const BuyPanelBody = (
         orders={orders}
         tradeFormRef={tradeFormRef}
       >
+        {unavailable && (
+          <p className="text-ink-600 text-sm" role="status">
+            Betting unavailable for this fight.
+          </p>
+        )}
         <Row
           className={clsx(
             'mb-2 items-center justify-between gap-x-2 gap-y-1',

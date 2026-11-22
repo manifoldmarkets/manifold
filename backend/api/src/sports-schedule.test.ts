@@ -283,6 +283,14 @@ it('serves the market-backed UFC card once, with native picks, on All and MMA', 
     expect(r.liveCount).toBe(1)
   }
   expect((await read('soccer')).ufcCards).toBeUndefined()
+  marketRows = [
+    ...marketRows,
+    { ...marketRows[0], id: 'unobserved' },
+    { ...marketRows[0], id: 'community-mma', creator_id: 'community' },
+  ]
+  expect((await read('all')).upcoming.map((m) => m.id)).toEqual([
+    'community-mma',
+  ])
   fight.sportsUfc.status = 'final'
   expect((await read('mma')).ufcCards?.[0].bouts).toHaveLength(1)
   expect((await read('all')).ufcCards ?? []).toHaveLength(0)

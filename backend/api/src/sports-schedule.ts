@@ -22,6 +22,7 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
+import { parseBdlEventId } from 'common/sports-ids'
 import { scheduleFeedTime } from 'common/sports-game-feed'
 import { toOfficialGame } from 'common/sports-official-game'
 export { homeAndAway } from 'common/sports-official-game'
@@ -114,7 +115,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     observed
       ? getOfficialGames(pg, index, daysAhead, now)
       : getLegacyOfficialGames(pg, index, daysAhead, now),
-    getUpcomingMarkets(pg, index),
+    getUpcomingMarkets(pg, index, observed),
     getRaceWeekends(pg, raceDays, now),
     sport === 'f1' && !cursor && !topicIds
       ? getRaceChampionships(pg, index, now)
@@ -809,7 +810,8 @@ async function getRelatedCandidates(
 // sport is open; the response is filtered down afterwards.
 async function getUpcomingMarkets(
   pg: Pg,
-  index: SportsIndex
+  index: SportsIndex,
+  observed: boolean
 ): Promise<(UpcomingMarketRef & { groupIds: string[] })[]> {
   const rows = await querySportsMarkets(pg, index, {
     groupIds: index.allGroupIds,
@@ -819,6 +821,12 @@ async function getUpcomingMarkets(
     limit: MAX_UPCOMING,
   })
   return rows
+    .filter(
+      (r) =>
+        !observed ||
+        r.marketType !== 'moneyline' ||
+        parseBdlEventId(r.sportsEventId ?? undefined)?.league !== 'mma'
+    )
     .filter((r): r is typeof r & { closeTime: number } => r.closeTime != null)
     .map((r) => ({
       id: r.id,

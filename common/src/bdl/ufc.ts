@@ -220,15 +220,33 @@ export function ufcWinnerDecision(
   }
   if (bout.status !== 'final')
     return hold('Awaiting provider final', false, null)
+  if (
+    bout.resultRound != null &&
+    (!Number.isSafeInteger(bout.resultRound) ||
+      bout.resultRound < 1 ||
+      (bout.scheduledRounds != null && bout.resultRound > bout.scheduledRounds))
+  )
+    return attention('Fight result exceeds scheduled rounds', true)
   const mainMethod = ufcMethod(bout.method)
   if (!mainMethod) return attention('Unknown fight result method', true)
   const detailMethod = ufcMethod(bout.methodDetail)
   const decisionDetail =
-    mainMethod === 'decision' &&
-    (detailMethod === 'technical-decision' ||
-      detailMethod === 'technical-draw' ||
-      detailMethod === 'draw')
-  if (detailMethod && detailMethod !== mainMethod && !decisionDetail)
+    (bout.method?.trim().toLowerCase() === 'decision' &&
+      (detailMethod === 'technical-decision' ||
+        detailMethod === 'technical-draw' ||
+        detailMethod === 'draw')) ||
+    (bout.method?.trim().toLowerCase() === 'draw' &&
+      detailMethod === 'technical-draw')
+  const vote = (value: string | null) =>
+    /^(unanimous|split|majority) (decision|draw)$/i
+      .exec(value?.trim() ?? '')?.[1]
+      .toLowerCase()
+  const mainVote = vote(bout.method),
+    detailVote = vote(bout.methodDetail)
+  if (
+    (mainVote && detailVote && mainVote !== detailVote) ||
+    (detailMethod && detailMethod !== mainMethod && !decisionDetail)
+  )
     return attention('Conflicting fight result methods', true)
   const method = decisionDetail ? detailMethod : mainMethod
   const neutral =

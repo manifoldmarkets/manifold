@@ -13,6 +13,8 @@ import {
 } from 'common/bdl/ufc-card'
 import { UFC_SEGMENTS } from 'common/bdl/ufc'
 import { sportsViewNow, sportsTimerDelay } from 'common/sports-view-clock'
+import { StakeLine } from './sports-outcome-stake'
+import type { GameStake } from './game-positions'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { UfcWinnerBetDialog } from './sports-bet-panel'
@@ -137,14 +139,18 @@ function BoutRow({
   b,
   now,
   featured,
+  stake,
+  rejected,
   onPick,
 }: {
   b: UfcMarketBout
   now: number
   featured?: string
+  stake?: GameStake
+  rejected?: boolean
   onPick: (b: UfcMarketBout, id: string) => void
 }) {
-  const tradable = ufcCanBet(b, now)
+  const tradable = !rejected && ufcCanBet(b, now)
   const stale =
     (b.status === 'scheduled' || b.status === 'in_progress') &&
     !freshUfcObservation(b, now)
@@ -158,7 +164,7 @@ function BoutRow({
         <Link
           href={href(b)}
           aria-label={`Open ${matchup} market, ${
-            stale ? states.unknown : states[b.status]
+            stale ? states.unknown : featured ?? states[b.status]
           }`}
           className="text-ink-900 inline-flex min-h-[44px] items-center font-semibold hover:underline"
         >
@@ -176,6 +182,9 @@ function BoutRow({
             featured ?? states[b.status]
           )}
         </Link>
+        {rejected && (
+          <span role="alert">Order not placed. Market changed.</span>
+        )}
         {!tradable &&
           (b.status === 'scheduled' || b.status === 'in_progress') && (
             <span>
@@ -205,29 +214,39 @@ function BoutRow({
               <span className="min-w-0 break-words text-sm font-medium">
                 {a.name}
               </span>
-              <span className="text-ink-900 shrink-0 font-bold tabular-nums">
-                {formatSportsPrice(a.prob)}
-              </span>
+              {tradable && (
+                <span className="text-ink-900 shrink-0 font-bold tabular-nums">
+                  {formatSportsPrice(a.prob)}
+                </span>
+              )}
             </>
           )
-          return tradable ? (
-            <button
+          return (
+            <div
               key={a.answerId}
-              type="button"
-              className={
-                cls +
-                ' bg-primary-50 hover:border-primary-500 focus-visible:ring-primary-500 focus-visible:ring-2'
-              }
-              aria-label={`Bet on ${a.name} in ${matchup}, ${formatSportsPrice(
-                a.prob
-              )}`}
-              onClick={() => onPick(b, a.answerId)}
+              className="flex min-w-0 flex-col last:col-span-2 sm:last:col-span-1"
             >
-              {content}
-            </button>
-          ) : (
-            <div key={a.answerId} className={cls}>
-              {content}
+              {tradable ? (
+                <button
+                  key={a.answerId}
+                  type="button"
+                  className={
+                    cls +
+                    ' bg-primary-50 hover:border-primary-500 focus-visible:ring-primary-500 focus-visible:ring-2'
+                  }
+                  aria-label={`Bet on ${
+                    a.name
+                  } in ${matchup}, ${formatSportsPrice(a.prob)}`}
+                  onClick={() => onPick(b, a.answerId)}
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={a.answerId} className={cls}>
+                  {content}
+                </div>
+              )}
+              <StakeLine stake={stake?.byAnswer[a.answerId]} />
             </div>
           )
         })}
@@ -238,16 +257,25 @@ function BoutRow({
 export function UfcFightCards({
   cards,
   allMatches,
+  stakes,
   onBetPlaced,
+  onScheduleRefresh,
 }: {
   cards: UfcMarketCard[]
+  stakes?: Record<string, GameStake>
+  onScheduleRefresh?: () => void
   allMatches?: boolean
   onBetPlaced?: (id: string) => void
 }) {
   const user = useUser()
-  const [now, setNow] = useState(0)
+  const [tick, setNow] = useState(0)
+  const now = tick ? sportsViewNow() : 0
+  const [rejectedAt, setRejectedAt] = useState<Record<string, number>>({})
+  const isRejected = (b: UfcMarketBout) =>
+    b.observedAt <= (rejectedAt[b.id] ?? -1)
   const [choice, setChoice] = useState<{
     binding: string
+    userId: string
     answer: string
     closeTime: number
   }>()
@@ -273,18 +301,20 @@ export function UfcFightCards({
       window.removeEventListener('focus', update)
       document.removeEventListener('visibilitychange', update)
     }
-  }, [now, next])
+  }, [tick, next])
   const active =
     choice && bouts.find((b) => ufcTicketBinding(b) === choice.binding)
   if (
     choice &&
-    (!active ||
+    (choice.userId !== user?.id ||
+      !active ||
       !ufcCanBet(active, sportsViewNow()) ||
       sportsViewNow() >= choice.closeTime)
   )
     setChoice(undefined)
   const pick = (b: UfcMarketBout, answer: string) => {
-    if (b.closeTime == null || !ufcCanBet(b, sportsViewNow())) return
+    if (isRejected(b) || b.closeTime == null || !ufcCanBet(b, sportsViewNow()))
+      return
     if (!user) {
       firebaseLogin()
       return
@@ -294,6 +324,7 @@ export function UfcFightCards({
       setChoice({
         binding: ufcTicketBinding(b),
         answer,
+        userId: user.id,
         closeTime: b.closeTime,
       })
   }
@@ -305,6 +336,10 @@ export function UfcFightCards({
           now
         )
         const archive = !remaining.length
+        const earlier =
+          !archive && !allMatches
+            ? c.bouts.filter((b) => b.status === 'final' && b !== recent)
+            : []
         const featured = live ?? next
         const listed = archive
           ? c.bouts
@@ -357,6 +392,8 @@ export function UfcFightCards({
             {featured && (
               <BoutRow
                 b={featured}
+                stake={stakes?.[featured.id]}
+                rejected={isRejected(featured)}
                 now={now}
                 featured={featured === live ? 'Live' : 'Up next'}
                 onPick={pick}
@@ -378,7 +415,14 @@ export function UfcFightCards({
                     b.status === 'final' ? (
                       <ResultLine key={b.id} bout={b} last={false} />
                     ) : (
-                      <BoutRow key={b.id} b={b} now={now} onPick={pick} />
+                      <BoutRow
+                        key={b.id}
+                        b={b}
+                        stake={stakes?.[b.id]}
+                        rejected={isRejected(b)}
+                        now={now}
+                        onPick={pick}
+                      />
                     )
                   )}
                 </div>
@@ -390,18 +434,43 @@ export function UfcFightCards({
                 b.status === 'final' ? (
                   <ResultLine key={b.id} bout={b} last={false} />
                 ) : (
-                  <BoutRow key={b.id} b={b} now={now} onPick={pick} />
+                  <BoutRow
+                    key={b.id}
+                    b={b}
+                    stake={stakes?.[b.id]}
+                    rejected={isRejected(b)}
+                    now={now}
+                    onPick={pick}
+                  />
                 )
               )}
+            {earlier.length > 0 && (
+              <details className="border-ink-200 border-t">
+                <summary className="text-ink-700 min-h-[44px] cursor-pointer px-3 py-3 text-sm font-semibold">
+                  Earlier published results ({earlier.length})
+                </summary>
+                {earlier.map((b) => (
+                  <ResultLine key={b.id} bout={b} last={false} />
+                ))}
+              </details>
+            )}
           </section>
         )
       })}
       {choice && active && (
         <UfcWinnerBetDialog
-          key={active.eventId}
+          key={JSON.stringify([choice.binding, choice.answer, choice.userId])}
           bout={active}
           selected={choice.answer}
           initialClose={choice.closeTime}
+          onInvalid={() => {
+            setRejectedAt((old) => ({
+              ...old,
+              [active.id]: Math.max(old[active.id] ?? -1, active.observedAt),
+            }))
+            setChoice(undefined)
+            onScheduleRefresh?.()
+          }}
           onBetPlaced={() => onBetPlaced?.(active.id)}
           onClose={() => setChoice(undefined)}
         />

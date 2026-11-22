@@ -1,4 +1,9 @@
-import { verifiedUfcTicket } from 'common/bdl/ufc-card'
+import {
+  isOfficialUfcWinnerMarket,
+  toUfcMarketBout,
+  ufcCanBet,
+  verifiedUfcTicket,
+} from 'common/bdl/ufc-card'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import {
   verifiedSportsTicket,
@@ -124,11 +129,27 @@ function checkSportsTicket(
   contract: Contract,
   answers: Answer[]
 ) {
-  if (!body.sportsTicket) return
+  const watched = isSportsBdlEnabled() && isOfficialUfcWinnerMarket(contract)
+  if (!body.sportsTicket) {
+    if (!watched) return false
+    const bout = toUfcMarketBout(contract, answers)
+    const selected = body.answerIds ?? (body.answerId ? [body.answerId] : [])
+    if (
+      bout &&
+      ufcCanBet(bout, Date.now()) &&
+      selected.length > 0 &&
+      selected.every((id) => bout.answers.some((a) => a.answerId === id))
+    )
+      return true
+    throw new APIError(
+      409,
+      'The sports market changed. Refresh it before placing this order.'
+    )
+  }
   if (
     !isSportsBdlEnabled() ||
     !answers.some((a) => a.id === body.answerId) ||
-    !('sportsUfc' in contract ? verifiedUfcTicket : verifiedSportsTicket)(
+    !(watched ? verifiedUfcTicket : verifiedSportsTicket)(
       body.sportsTicket,
       contract,
       answers,
@@ -139,6 +160,7 @@ function checkSportsTicket(
       409,
       'The sports market changed. Refresh it before placing this order.'
     )
+  return watched
 }
 
 export const fetchContractBetDataAndValidate = async (
@@ -225,7 +247,7 @@ export const fetchContractBetDataAndValidate = async (
     creator.entitlements = (results[9] ?? []).map(convertEntitlement)
   }
   const answers = results[2].map(convertAnswer)
-  checkSportsTicket(body, contract, answers)
+  const verifiedUfc = checkSportsTicket(body, contract, answers)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
   })[]
@@ -280,7 +302,7 @@ export const fetchContractBetDataAndValidate = async (
 
   if (isMultiCpmm(contract))
     contract.answers = sortBy(
-      uniqBy([...answers, ...contract.answers], 'id'),
+      verifiedUfc ? answers : uniqBy([...answers, ...contract.answers], 'id'),
       'index'
     )
 
@@ -379,14 +401,25 @@ export const lockContractAndGetBetData = async (
   // reruns on every retry, so a resolution that committed in between is
   // caught here instead of being traded against.
   assertContractTradeable(contract)
-  const answers = results[1].map(convertAnswer)
-  checkSportsTicket(body, contract, answers)
+  const lockUfcAnswers =
+    !body.sportsTicket &&
+    isSportsBdlEnabled() &&
+    isOfficialUfcWinnerMarket(contract)
+  const answers = (
+    lockUfcAnswers
+      ? await pgTrans.manyOrNone(
+          'select * from answers where contract_id = $1 order by index for share',
+          [contractId]
+        )
+      : results[1]
+  ).map(convertAnswer)
+  const verifiedUfc = checkSportsTicket(body, contract, answers)
   // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
   // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
   // cpmm-multi-2 bet executes against the stale denormalized blob answers.
   if (isMultiCpmm(contract))
     contract.answers = sortBy(
-      uniqBy([...answers, ...contract.answers], 'id'),
+      verifiedUfc ? answers : uniqBy([...answers, ...contract.answers], 'id'),
       'index'
     )
   const unfilledBets = results[2].map(convertBet) as (LimitBet & {

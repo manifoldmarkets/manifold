@@ -387,6 +387,102 @@ test('a single agreed native payout supports the winner; ambiguous or split paym
     market({ sportsUfc: end, isResolved: true })?.winnerAnswerId
   ).toBeNull()
 })
+test('late and simultaneous receipts cannot restore a replaced card or matchup', () => {
+  const previous = {
+    ...observation,
+    observedAt: 200,
+    cardId: 8,
+    observedEventId: bdlHeadToHeadEventId('mma', 77, 10, 30),
+  }
+  for (const at of [199, 200])
+    expect(ufcMarketObservation(card, bout, at, previous)).toBe(previous)
+  expect(ufcMarketObservation(card, bout, 201, previous)).toMatchObject({
+    observedEventId: bout.eventId,
+    lastNonfinalAt: 201,
+  })
+})
+
+test('an advance listing expires at its advertised start and a new scheduled receipt starts a new window', () => {
+  const before = {
+    ...row,
+    observedAt: 1000,
+    segmentStart: 1010,
+    closeTime: 10000000,
+  }
+  for (const onlyRemaining of [true, false]) {
+    expect(ufcCanBet({ ...before, onlyRemaining }, 1009)).toBe(true)
+    expect(ufcCanBet({ ...before, onlyRemaining }, 1010)).toBe(false)
+    expect(
+      ufcCanBet({ ...before, observedAt: 1010, onlyRemaining }, 1011)
+    ).toBe(true)
+  }
+  const sole = {
+    ...before,
+    onlyRemaining: true,
+    segmentStart: 1000 + LIVE_STALE_MS * 2,
+  }
+  const [filtered] = filterUfcCards(
+    groupUfcCards([sole, stamp(88, {})]),
+    (b) => b.id === sole.id
+  )
+  expect(filtered.bouts[0].onlyRemaining).toBe(true)
+  expect(ufcCanBet(filtered.bouts[0], 1000 + LIVE_STALE_MS)).toBe(false)
+})
+
+test('fighters and the neutral choice must have distinct displayed labels', () => {
+  for (const [home, away] of [
+    ['First Name', 'First  Name'],
+    ['café', 'CAFE\u0301'],
+    ['Draw or\u00a0no contest', 'River'],
+  ]) {
+    expect(
+      market(
+        { sportsHomeTeam: home, sportsAwayTeam: away },
+        answers.map((a, i) => ({
+          ...a,
+          text: [home, away, UFC_DRAW_ANSWER][i],
+        }))
+      )
+    ).toBeNull()
+  }
+})
+
+test('specific decisions and impossible rounds cannot establish a paid winner', () => {
+  const final = {
+    ...bout,
+    status: 'final' as const,
+    method: 'Draw',
+    methodDetail: 'Technical draw',
+  }
+  expect(ufcMarketObservation(card, final, 200, null).winner).toBe(
+    'draw-or-no-contest'
+  )
+  expect(
+    ufcMarketObservation(
+      card,
+      { ...final, method: 'Unanimous decision', methodDetail: 'Split draw' },
+      200,
+      null
+    ).winner
+  ).toBeNull()
+  expect(
+    ufcMarketObservation(
+      card,
+      { ...final, scheduledRounds: 3, resultRound: 4 },
+      200,
+      null
+    ).winner
+  ).toBeNull()
+  const valid = ufcMarketObservation(
+    card,
+    { ...final, scheduledRounds: 3, resultRound: 3 },
+    200,
+    null
+  )
+  expect(market({ sportsUfc: { ...valid, round: 4 } })).toBeNull()
+  expect(market({ sportsUfc: valid })?.winnerAnswerId).toBe('d')
+})
+
 test('round-roster contradictions survive every personal or topic filter', () => {
   const only = { ...row, onlyRemaining: true }
   const contradictory = stamp(88, { observedAt: 121 })

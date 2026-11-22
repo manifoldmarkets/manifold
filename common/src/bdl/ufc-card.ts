@@ -71,6 +71,8 @@ export type UfcMarketBout = UfcMarketSnapshot & {
   closeTime: number | null
   isResolved: boolean
   winnerAnswerId: string | null
+  /** A public filter may hide conflicting pending bouts; it cannot extend their receipt. */
+  suppressUpNext?: true
   answers: UfcSelection[]
 }
 export type UfcMarketCard = {
@@ -93,7 +95,7 @@ export function filterUfcCards(
       .filter((b) => b.observedEventId === b.eventId && keep(b, card))
       .map((b) =>
         pending.length > 1 && b.onlyRemaining
-          ? { ...b, onlyRemaining: false }
+          ? { ...b, suppressUpNext: true as const }
           : b
       )
     return !bouts.length
@@ -122,12 +124,12 @@ export function ufcMarketObservation(
     bout.fighters[1].id
   )
   if (bout.eventId !== observedEventId) throw Error('Invalid UFC matchup')
+  if (previous && at <= previous.observedAt) return previous
   if (
     previous?.observedEventId !== observedEventId ||
     previous.cardId !== card.id
   )
     previous = null
-  if (previous && at <= previous.observedAt) return previous
   const decision = ufcWinnerDecision(
     {
       fightId: bout.id,
@@ -182,6 +184,14 @@ export function ufcMarketObservation(
   }
 }
 
+export function isOfficialUfcWinnerMarket(contract: Contract) {
+  return (
+    isSportsContract(contract) &&
+    contract.sportsMarketType === 'moneyline' &&
+    officialBdlLeagueKey(contract) === 'mma'
+  )
+}
+
 export function toUfcMarketBout(
   c: Contract,
   answers: readonly Answer[]
@@ -230,6 +240,11 @@ export function toUfcMarketBout(
         a.prob < 0 ||
         a.prob > 1
     ) ||
+    new Set(
+      sorted.map((a) =>
+        a.text.normalize().trim().replace(/\s+/gu, ' ').toLowerCase()
+      )
+    ).size !== 3 ||
     sorted[2].text !== UFC_DRAW_ANSWER
   )
     return null
@@ -244,6 +259,9 @@ export function toUfcMarketBout(
   const neutral =
     method === 'draw' || method === 'technical-draw' || method === 'no-contest'
   if (
+    (o.round != null &&
+      o.scheduledRounds != null &&
+      o.round > o.scheduledRounds) ||
     (o.status !== 'final' &&
       [o.firstFinalAt, o.winner, o.method, o.round, o.roundTime].some(
         (v) => v != null
@@ -384,6 +402,7 @@ export function ufcCardDisplay(
     remaining.length === 1 &&
     remaining[0].status === 'scheduled' &&
     remaining[0].onlyRemaining &&
+    !remaining[0].suppressUpNext &&
     freshUfcObservation(remaining[0], now)
       ? remaining[0]
       : undefined
@@ -400,8 +419,13 @@ export function ufcCardDisplay(
 // sole-remaining claims use the same ten-minute receipt window as the sports feed.
 export function ufcObservationEnd(b: UfcMarketBout) {
   const liveEnd = b.observedAt + LIVE_STALE_MS
-  return b.status === 'scheduled' && !b.onlyRemaining && b.segmentStart != null
-    ? Math.min(b.observedAt + DAY_MS, Math.max(b.segmentStart, liveEnd))
+  return b.status === 'scheduled' &&
+    b.segmentStart != null &&
+    b.observedAt < b.segmentStart
+    ? Math.min(
+        b.segmentStart,
+        b.onlyRemaining ? liveEnd : b.observedAt + DAY_MS
+      )
     : liveEnd
 }
 

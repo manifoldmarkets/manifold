@@ -1,4 +1,4 @@
-import { useSportsTicket } from './sports-ticket-context'
+import { useSportsOrder } from './sports-ticket-context'
 import { SelectorIcon } from '@heroicons/react/solid'
 import { useEvent } from 'client-common/hooks/use-event'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
@@ -75,7 +75,10 @@ export default function LimitOrderPanel(props: {
   prefillTimestamp?: number
   compact?: boolean
 }) {
-  const sportsTicket = useSportsTicket()
+  const { sportsTicket, canSubmit, unavailable } = useSportsOrder(
+    props.contract,
+    props.multiProps?.answerToBuy.id
+  )
   const {
     contract,
     multiProps,
@@ -210,6 +213,7 @@ export default function LimitOrderPanel(props: {
   const hasLimitBet = !!limitProbInt && !!betAmount
 
   const betDisabled =
+    !canSubmit() ||
     isSubmitting ||
     !outcome ||
     !betAmount ||
@@ -291,7 +295,7 @@ export default function LimitOrderPanel(props: {
   })
 
   async function submitBet() {
-    if (!user || betDisabled) return
+    if (!user || betDisabled || !canSubmit()) return
 
     setError(undefined)
     setIsSubmitting(true)
@@ -406,6 +410,11 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
+      {unavailable && (
+        <p className="text-ink-600 text-sm" role="status">
+          Betting unavailable for this fight.
+        </p>
+      )}
       <Col className=" gap-1">
         <Row className={'text-ink-600 items-center space-x-3'}>
           {capitalize(TRADE_TERM)} amount
