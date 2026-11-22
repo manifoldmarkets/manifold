@@ -33,6 +33,7 @@ const serviceResources = new Set([
   'rosters',
 ])
 const priceResources = new Set(['odds', 'odds/opening'])
+const ufcResources = new Set(['events', 'fights', 'rankings'])
 
 export function bdlStatsEndpoint(path: string) {
   const parsed = matchBdlEndpoint(path)
@@ -52,7 +53,8 @@ function isBdlStatsRoute(league: string, version: string, resource: string) {
   const config = BDL_LEAGUES[league]
   const base = priceResources.has(resource)
     ? config.oddsApiBase
-    : serviceResources.has(resource)
+    : serviceResources.has(resource) ||
+      (league === 'mma' && ufcResources.has(resource))
     ? config.apiBase
     : null
   return base === '/' + league + '/' + version

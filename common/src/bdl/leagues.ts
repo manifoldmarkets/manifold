@@ -64,6 +64,7 @@ type LeagueDefinition = {
   closeAtStart?: boolean
   startSignal?: 'event-start' | 'card-segment-start'
   safetyCloseBasis?: 'event-start' | 'per-fight-maximum' | 'final-round-end'
+  fightCloseRule?: 'in-play' | 'segment-start'
   closeHoursByBestOf?: Readonly<Partial<Record<1 | 3 | 5, number>>>
   finalsMinutesByBestOf?: Readonly<Partial<Record<1 | 3 | 5, number>>>
   version?: 1 | 2
@@ -346,6 +347,7 @@ const definitions = {
     adapter: 'mma',
     startSignal: 'card-segment-start',
     safetyCloseBasis: 'per-fight-maximum',
+    fightCloseRule: 'in-play',
     archetype: 'h2h',
     oddsQuery: 'fight_id',
     expectedVendors: [...tourBooks, 'caesars', 'kalshi'],
