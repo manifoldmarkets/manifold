@@ -4,7 +4,15 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { SPORTS_SCHEDULE_PAGE_SIZE as SCHEDULE_PAGE_SIZE } from 'common/sports-game-feed'
-import { AnySportKey, SportsScheduleResponse } from 'common/sports-schedule'
+import {
+  AnySportKey,
+  nextSportsObservationChange,
+  atSportsFeedTime,
+  sportsMembershipEnd,
+  scoreMatchesFixture,
+  sportsGameBinding,
+  SportsScheduleResponse,
+} from 'common/sports-schedule'
 import {
   adoptedGames,
   appendPage,
@@ -16,24 +24,75 @@ import {
   applySportsLive,
   decodeSportsScoreTick,
   newerSportsScoreTick,
+  reconcileSportsCensus,
+  displaySportsCensus,
+  SportsCensus,
   LiveGameState,
 } from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { api } from 'web/lib/api/api'
+import {
+  observeSportsClock,
+  observeSportsReceipt,
+  sportsTimerDelay,
+  sportsViewNow,
+} from 'common/sports-view-clock'
+import { api, APIError } from 'web/lib/api/api'
+
+async function readSchedule(params: {
+  sport: string
+  topic?: string
+  limit: number
+  cursor?: string
+}) {
+  if (!isSportsBdlEnabled()) return api('sports-schedule', params)
+  let date: string | null = null,
+    age: string | null = null
+  const read = (observedGames?: true) =>
+    api(
+      'sports-schedule',
+      { ...params, ...(observedGames && { observedGames }) },
+      {
+        cache: 'no-store',
+        onResponseHeaders: (headers) => {
+          date = headers.get('Date')
+          age = headers.get('Age')
+        },
+      }
+    )
+  let page: SportsScheduleResponse
+  try {
+    page = await read(true)
+  } catch (error) {
+    // The previous API used a strict parameter schema.
+    if (
+      !(error instanceof APIError) ||
+      error.code !== 400 ||
+      error.message !== 'Error validating request.' ||
+      !Array.isArray(error.details) ||
+      !error.details.some(
+        (issue: { field?: unknown; error?: unknown } | null) =>
+          typeof issue?.error === 'string' &&
+          /unknown|unrecognized/i.test(issue.error) &&
+          /\bobservedGames\b/.test(issue.error + ' ' + issue.field)
+      )
+    )
+      throw error
+    page = await read()
+  }
+  observeSportsClock(page.snapshotTime, date, age)
+  return page
+}
 
 /** The endpoint's largest `limit`: a refresh re-reads at most this many. */
 const MAX_SCHEDULE_LIMIT = 400
-/** Refetch cadence while something is live or about to start… */
+/** Refetch cadence while something is live or about to startâ€¦ */
 const ACTIVE_REFRESH_MS = 2 * 60_000
-/** …and while nothing is: still needed to pick up kickoffs, closes and new markets. */
+/** â€¦and while nothing is: still needed to pick up kickoffs, closes and new markets. */
 const IDLE_REFRESH_MS = 5 * 60_000
 
 /** What the sport rail shows: the same in every response, whatever the sport. */
-export type SportsRailData = Pick<
-  SportsScheduleResponse,
-  'sports' | 'counts' | 'liveCount'
->
+export type SportsRailData = SportsCensus['source']
 
 /**
  * The sports schedule for a sport (or every sport), kept live:
@@ -63,6 +122,7 @@ export function useSportsSchedule(
   const feedRef = useRef(feed)
   feedRef.current = feed
   const [loading, setLoading] = useState(false)
+  const [viewClock, setViewClock] = useState(0)
   // Plain state (not the persistent store): ticks arrive every few seconds
   // during live games and the overlay is cheap to rebuild from a refetch.
   const [live, setLive] = useState<Record<string, LiveGameState>>({})
@@ -83,8 +143,7 @@ export function useSportsSchedule(
         feedRef.current,
         SCHEDULE_PAGE_SIZE,
         MAX_SCHEDULE_LIMIT,
-        (limit, cursor) =>
-          api('sports-schedule', { sport, topic, limit, cursor }),
+        (limit, cursor) => readSchedule({ sport, topic, limit, cursor }),
         () => gen === generation.current,
         isSportsBdlEnabled()
       )
@@ -123,7 +182,7 @@ export function useSportsSchedule(
     loadingMore.current = true
     const gen = generation.current
     try {
-      const page = await api('sports-schedule', {
+      const page = await readSchedule({
         sport,
         topic,
         limit: SCHEDULE_PAGE_SIZE,
@@ -157,26 +216,37 @@ export function useSportsSchedule(
   const [lastRail, setLastRail] = usePersistentInMemoryState<
     SportsRailData | undefined
   >(undefined, 'sports-schedule-rail')
-  const response = feed?.response
-  useEffect(() => {
-    if (!response) return
-    setLastRail({
-      sports: response.sports,
-      counts: response.counts,
-      liveCount: response.liveCount,
-    })
-  }, [response])
-  const rail: SportsRailData | undefined = response
-    ? {
-        sports: response.sports,
-        counts: response.counts,
-        liveCount: response.liveCount,
-      }
-    : lastRail
-
   const games = feed?.games ?? []
   const isPageVisible = useIsPageVisible()
-  const now = Date.now()
+  const now = isSportsBdlEnabled() ? sportsViewNow() : Date.now()
+  useEffect(() => {
+    if (enabled && isPageVisible && isSportsBdlEnabled())
+      setViewClock(sportsViewNow())
+  }, [enabled, isPageVisible])
+
+  const shown = useMemo(() => new Map(games.map((g) => [g.id, g])), [games])
+  // A generic price packet or an older score publisher identifies only a
+  // contract. Coalesce invalidations and re-read authoritative market rows.
+  const pendingRead = useRef<ReturnType<typeof setTimeout>>()
+  const invalidate = useEvent(() => {
+    if (pendingRead.current != null) return
+    const check = () => {
+      if (refreshing.current) {
+        pendingRead.current = setTimeout(check, 1000)
+        return
+      }
+      pendingRead.current = undefined
+      void refresh()
+    }
+    pendingRead.current = setTimeout(check, 1000)
+  })
+  useEffect(
+    () => () => {
+      clearTimeout(pendingRead.current)
+      pendingRead.current = undefined
+    },
+    [view, enabled]
+  )
 
   const topics = useMemo(() => {
     const out: string[] = []
@@ -205,6 +275,16 @@ export function useSportsSchedule(
     onBroadcast: ({ topic, data }) => {
       const id = topic.split('/')[1]
       if (!id) return
+      const verified = isSportsBdlEnabled()
+      const game = shown.get(id)
+      if (
+        verified &&
+        (!game || !scoreMatchesFixture(data.scoreFixture, game))
+      ) {
+        if (game) invalidate()
+        return
+      }
+      const binding = verified && game ? sportsGameBinding(game) : undefined
       const at = data.broadcastTime as number | undefined
       if (topic.endsWith('/updated-answers')) {
         const updates = (data.answers ?? []) as { id: string; prob?: number }[]
@@ -219,11 +299,15 @@ export function useSportsSchedule(
             )
               probs[a.id] = { value: a.prob, at }
           }
-          return { ...prev, [id]: { ...prev[id], probs } }
+          return { ...prev, [id]: { ...prev[id], binding, probs } }
         })
       } else if (topic.endsWith('/sports-live')) {
         const tick = decodeSportsScoreTick(data, isSportsBdlEnabled())
         if (!tick) return
+        if (verified && !observeSportsReceipt(tick.at)) {
+          invalidate()
+          return
+        }
         setLive((prev) => {
           const liveScore = newerSportsScoreTick(
             prev[id]?.liveScore,
@@ -234,7 +318,7 @@ export function useSportsSchedule(
             ? prev
             : {
                 ...prev,
-                [id]: { ...prev[id], liveScore },
+                [id]: { ...prev[id], binding, liveScore },
               }
         })
       }
@@ -266,21 +350,101 @@ export function useSportsSchedule(
     return () => clearInterval(id)
   }, [hasActive, isPageVisible, view])
 
-  const merged: SportsScheduleResponse | undefined = useMemo(() => {
-    if (!feed) return undefined
-    return {
-      ...feed.response,
-      games: feed.games.map((g) =>
-        applySportsLive(
+  const projectedAt = useMemo(
+    () => (isSportsBdlEnabled() ? sportsViewNow() : Date.now()),
+    [feed, live, viewClock]
+  )
+  const displayed = useMemo(
+    () =>
+      feed?.games.map((g) => {
+        const observed = isSportsBdlEnabled()
+        const game = applySportsLive(
           g,
           live[g.id],
           feed.snapshotTimes[g.id],
-          isSportsBdlEnabled()
+          observed,
+          projectedAt
         )
-      ),
+        return observed ? atSportsFeedTime(game, projectedAt) : game
+      }),
+    [feed, live, projectedAt]
+  )
+  const [savedCensus, setCensus] = usePersistentInMemoryState<
+    SportsCensus | undefined
+  >(undefined, 'sports-observed-census')
+  const census = useMemo(
+    () =>
+      isSportsBdlEnabled() && feed && displayed
+        ? reconcileSportsCensus(
+            savedCensus,
+            feed.response,
+            feed.games,
+            displayed
+          )
+        : savedCensus,
+    [savedCensus, feed, displayed]
+  )
+  useEffect(() => {
+    if (census && census !== savedCensus) setCensus(census)
+  }, [census, savedCensus])
+  const rail: SportsRailData | undefined = useMemo(() => {
+    if (isSportsBdlEnabled() && census)
+      return displaySportsCensus(census, projectedAt)
+    const response = feed?.response
+    return response
+      ? {
+          sports: response.sports,
+          counts: response.counts,
+          liveCount: response.liveCount,
+        }
+      : lastRail
+  }, [census, projectedAt, feed, lastRail])
+  useEffect(() => {
+    const source = feed?.response
+    if (source && !isSportsBdlEnabled())
+      setLastRail({
+        sports: source.sports,
+        counts: source.counts,
+        liveCount: source.liveCount,
+      })
+  }, [feed])
+  const merged: SportsScheduleResponse | undefined = useMemo(() => {
+    if (!feed || !displayed) return
+    return {
+      ...feed.response,
+      ...(isSportsBdlEnabled() &&
+        rail && {
+          sports: rail.sports,
+          counts: rail.counts,
+          liveCount: rail.liveCount,
+          liveExpiries: rail.liveExpiries,
+          membershipExpiries: rail.membershipExpiries,
+        }),
+      games: isSportsBdlEnabled()
+        ? displayed.filter((g) => sportsMembershipEnd(g) > projectedAt)
+        : displayed,
       nextCursor: feed.cursor,
     }
-  }, [feed, live])
+  }, [feed, displayed, rail, projectedAt])
+
+  // Measure deadlines against the render that displayed the state. If a deadline
+  // passed before the effect ran, immediately recompute instead of missing it.
+  useEffect(() => {
+    if (!enabled || !isPageVisible || !isSportsBdlEnabled()) return
+    const deadlines = [
+      ...(rail?.liveExpiries ?? []).map(([at]) => at),
+      ...(rail?.membershipExpiries ?? []).map(([at]) => at),
+    ]
+    for (const g of merged?.games ?? []) {
+      const at = nextSportsObservationChange(g, projectedAt)
+      if (at != null) deadlines.push(at)
+      if (g.liveUpdatedTime != null) deadlines.push(g.liveUpdatedTime)
+    }
+    const delay = sportsTimerDelay(deadlines, projectedAt, sportsViewNow())
+    if (delay == null) return
+    const timer = setTimeout(() => setViewClock(sportsViewNow()), delay)
+    return () => clearTimeout(timer)
+  }, [merged, rail, projectedAt, enabled, isPageVisible])
 
   return {
     schedule: merged,

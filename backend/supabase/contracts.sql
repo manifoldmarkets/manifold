@@ -238,6 +238,12 @@ where
   and jsonb_typeof(data -> 'sportsResumptionTime') = 'number'
   and upper(data ->> 'sportsLiveStatus') in ('SUSPENDED', 'POSTPONED');
 
+create index if not exists contracts_sports_live_receipt_idx on public.contracts ((data -> 'sportsLiveUpdatedTime'), id)
+where
+  resolution is null
+  and jsonb_typeof(data -> 'sportsLiveUpdatedTime') = 'number'
+  and upper(data ->> 'sportsLiveStatus') in ('IN_PROGRESS', 'IN_PLAY', 'PAUSED');
+
 drop index if exists contracts_visibility_public;
 
 create index contracts_visibility_public on public.contracts using btree (id)

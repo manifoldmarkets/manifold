@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
@@ -1038,6 +1039,18 @@ export async function pollAndStoreLiveScores(
       sportsLiveUpdatedTime: updatedTime,
     }
 
+    const publishedScore =
+      isSportsBdlEnabled() && m.homeTeam.name && m.awayTeam.name
+        ? {
+            ...patch,
+            scoreFixture: {
+              eventId: sportsEventId(m),
+              home: m.homeTeam.name,
+              away: m.awayTeam.name,
+            },
+          }
+        : patch
+
     if (isLive) {
       // Capture each contract's prior score in the SAME statement that overwrites
       // it, so we can diff for goals. Writing the new score here is also what
@@ -1065,7 +1078,7 @@ export async function pollAndStoreLiveScores(
       updated += rows.length
       // The API writer fans out to every open dashboard.
       await Promise.all(
-        rows.map((row) => publishSportsLiveScore(row.id, patch))
+        rows.map((row) => publishSportsLiveScore(row.id, publishedScore))
       )
       // Detect goals (score deltas) and back-date a marker onto the price spike.
       // Off the hot path unless a score actually changed.
@@ -1093,7 +1106,7 @@ export async function pollAndStoreLiveScores(
         [sportsEventId(m), config.sportsLeague]
       )
       await Promise.all(
-        rows.map((row) => publishSportsLiveScore(row.id, patch))
+        rows.map((row) => publishSportsLiveScore(row.id, publishedScore))
       )
     }
   }

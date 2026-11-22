@@ -504,6 +504,13 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contractId: z.string(),
+        sportsTicket: z
+          .object({
+            binding: z.string().min(1).max(4096),
+            closeTime: z.number().int().positive().safe(),
+          })
+          .strict()
+          .optional(),
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
@@ -5254,6 +5261,7 @@ export const API = (_apiTypeCheck = {
       .object({
         // 'all', a curated sport key, or a sport from a Sports subtopic.
         sport: z.string().regex(SPORT_KEY_RE).optional(),
+        observedGames: coerceBoolean.optional(),
         daysAhead: z.coerce.number().int().min(1).max(60).optional(),
         limit: z.coerce.number().int().min(1).max(400).optional(),
         // nextCursor from the previous page.

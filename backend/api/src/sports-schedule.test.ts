@@ -38,6 +38,7 @@ const official = ['nfl', 'soccer'].map((sport) => ({
     sportsLeague: sport === 'nfl' ? 'NFL' : 'Soccer',
     mechanism: 'cpmm-multi-2',
     outcomeType: 'MULTIPLE_CHOICE',
+    addAnswersMode: 'DISABLED',
     shouldAnswersSumToOne: true,
     closeTime: kickoff + 10000,
     sportsStartTimestamp: new Date(kickoff).toISOString(),
@@ -74,6 +75,7 @@ const tree = [
 type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
 let resumedRows: { data: Record<string, unknown> }[] = []
+let liveRows: { data: Record<string, unknown> }[] = []
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
@@ -89,10 +91,13 @@ let linksMissing = false
 let failedLinkRead: 'children' | 'parents' | undefined
 let championshipRows: Record<string, unknown>[] = []
 
-// Each game's two answers, home first, unless a test sets answerRows.
+// BDL majors are created away/home; the older soccer fixtures below are home/away.
 const gameAnswers = (data: Record<string, unknown>) =>
-  (['sportsHomeTeam', 'sportsAwayTeam'] as const).map((team, index) => ({
-    id: `${data.id}-${index === 0 ? 'home' : 'away'}`,
+  (data.sportsLeagueKey === 'nfl'
+    ? ['sportsAwayTeam', 'sportsHomeTeam']
+    : ['sportsHomeTeam', 'sportsAwayTeam']
+  ).map((team, index) => ({
+    id: `${data.id}-${team === 'sportsHomeTeam' ? 'home' : 'away'}`,
     index,
     contract_id: data.id,
     text: data[team],
@@ -105,6 +110,7 @@ const gameAnswers = (data: Record<string, unknown>) =>
 beforeEach(() => {
   marketRows = props
   officialRows = official
+  liveRows = []
   officialPages = []
   resumedRows = []
   answerRows = []
@@ -144,13 +150,18 @@ beforeEach(() => {
         return linkedElsewhere
       }
       if (sql.includes("where data->>'sportsEventId' is not null")) {
-        const resuming = sql.includes('jsonb_typeof')
-        const rows = (resuming ? resumedRows : officialRows)
+        const live = sql.includes("jsonb_typeof(data->'sportsLiveUpdatedTime')")
+        const resuming = sql.includes(
+          "jsonb_typeof(data->'sportsResumptionTime')"
+        )
+        const rows = (live ? liveRows : resuming ? resumedRows : officialRows)
           .map(({ data }) => ({
             data,
             id: String(data.id),
             token: 'MANA',
-            page_time: resuming
+            page_time: live
+              ? String(data.sportsLiveUpdatedTime)
+              : resuming
               ? String(data.sportsResumptionTime)
               : new Date(Number(data.closeTime)).toISOString(),
           }))
@@ -167,7 +178,7 @@ beforeEach(() => {
           : 0
         if (params[2]) expect(start).toBeGreaterThan(0)
         const batch = rows.slice(start, start + size)
-        if (!resuming) officialPages.push(batch.length)
+        if (!resuming && !live) officialPages.push(batch.length)
         return batch
       }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
@@ -175,7 +186,7 @@ beforeEach(() => {
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
-          : [...officialRows, ...resumedRows].flatMap(({ data }) =>
+          : [...officialRows, ...resumedRows, ...liveRows].flatMap(({ data }) =>
               gameAnswers(data)
             )
       if (sql.includes('select c.id, c.question')) return marketRows
@@ -1067,6 +1078,7 @@ it('paginates the full market-backed slate across identical close times', async 
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
   const response = await get({
+    observedGames: true,
     sport: 'nfl',
     limit: 400,
     includeRelated: false,
@@ -1082,7 +1094,12 @@ it('paginates the full market-backed slate across identical close times', async 
   })
   expect(officialPages).toEqual([200, 200, 25])
   expect(page.games).toHaveLength(400)
-  const next = await get({ sport: 'nfl', limit: 400, cursor: page.nextCursor! })
+  const next = await get({
+    observedGames: true,
+    sport: 'nfl',
+    limit: 400,
+    cursor: page.nextCursor!,
+  })
   const tail = 'result' in next ? next.result : next
   expect(tail.counts.nfl).toBe(425)
   expect(tail.nextCursor).toBeNull()
@@ -1127,14 +1144,19 @@ it('uses the resumption time to order and page an old suspended market', async (
       id: 'expired',
       sportsEventId: 'bdl:nfl:44',
       closeTime: Date.now() - 60000,
-      sportsResumptionTime: Date.now() - 1000,
+      sportsResumptionTime: Date.now() - 19 * 60 * 60_000,
     },
   })
   const get = sportsSchedule as (
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
   const query = async (cursor?: string) => {
-    const response = await get({ sport: 'nfl', limit: 1, cursor })
+    const response = await get({
+      observedGames: true,
+      sport: 'nfl',
+      limit: 1,
+      cursor,
+    })
     return 'result' in response ? response.result : response
   }
   const first = await query(),
@@ -1191,9 +1213,95 @@ it('uses the legacy single capped close-time scan and original scores when rollo
       status: 'live',
       liveScore: { home: 7, away: 3, minute: '45', status: 'IN_PLAY' },
     })
+    expect(result).not.toHaveProperty('liveExpiries')
     expect(result.games[0]).not.toHaveProperty('gameState')
     expect(result.games[0].liveScore).not.toHaveProperty('period')
   } finally {
     jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
+})
+
+it('counts fresh resumed games outside a scoped page with only grouped receipt deadlines', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = ['fresh1', 'fresh2', 'expired'].map((id) => ({
+    data: {
+      ...official[0].data,
+      id,
+      creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+      sportsProvider: 'bdl',
+      sportsLeagueKey: 'nfl',
+      sportsMarketType: 'moneyline',
+      sportsEventId: 'bdl:nfl:' + { fresh1: 11, fresh2: 12, expired: 13 }[id],
+      closeTime: at - 3 * 86400000,
+      sportsStartTimestamp: new Date(at - 3 * 86400000).toISOString(),
+      sportsResumptionTime: null,
+      sportsLiveStatus: 'IN_PROGRESS',
+      sportsLiveUpdatedTime: id === 'expired' ? at - 600000 : at,
+    },
+  }))
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const page = await get({ observedGames: true, sport: 'soccer' })
+  const result = 'result' in page ? page.result : page
+  expect(result.games).toEqual([])
+  expect(result.counts.nfl).toBe(2)
+  expect(result.liveCount).toBe(2)
+  expect(result.liveExpiries).toEqual([[at + 600000, 2]])
+})
+
+it('requires an opted-in client for recently resumed team markets, including three-way club soccer', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = [
+    {
+      data: {
+        ...official[1].data,
+        id: 'epl-game',
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsProvider: 'bdl',
+        sportsEventId: 'bdl:epl:112',
+        sportsLeagueKey: 'epl',
+        sportsMarketType: 'moneyline',
+        sportsHomeTeamId: '2',
+        sportsAwayTeamId: '3',
+        closeTime: at - 3 * 86400000,
+        sportsLiveStatus: 'IN_PROGRESS',
+        sportsLiveUpdatedTime: at,
+      },
+    },
+  ]
+  answerRows = [
+    ...gameAnswers(liveRows[0].data),
+    {
+      id: 'draw',
+      index: 2,
+      text: 'Draw',
+      contract_id: 'epl-game',
+      prob: 0.2,
+      pool_yes: 100,
+      pool_no: 100,
+    },
+  ]
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  for (const observedGames of [undefined, false, true]) {
+    const response = await get({ sport: 'soccer', observedGames })
+    const page = 'result' in response ? response.result : response
+    if (observedGames) {
+      expect(page.games).toHaveLength(1)
+      expect(page.games[0]).toMatchObject({
+        sportsLeagueKey: 'epl',
+        status: 'live',
+        closeTime: at - 3 * 86400000,
+        draw: { answerId: 'draw' },
+      })
+      expect(page.membershipExpiries).toEqual([[at + 600000, 'soccer', 1]])
+    } else {
+      expect(page.games).toEqual([])
+      expect(page).not.toHaveProperty('membershipExpiries')
+    }
   }
 })

@@ -49,10 +49,8 @@ export default function SportPage() {
   }, [raw, key])
 
   const ready = router.isReady && !!key && key !== 'all'
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    key ?? 'all',
-    ready
-  )
+  const { schedule, rail, loading, loadMore, hasMore, refresh } =
+    useSportsSchedule(key ?? 'all', ready)
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const sport = key ? sportsByKey[key] : undefined
@@ -163,6 +161,7 @@ export default function SportPage() {
             content: (
               <div className="pt-3">
                 <GameFeed
+                  onScheduleRefresh={refresh}
                   key={key}
                   games={games}
                   raceWeekends={weekends}

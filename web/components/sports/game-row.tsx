@@ -1,10 +1,19 @@
+import { sportsTicketBinding } from 'common/sports-official-game'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   ScheduleGame,
@@ -36,12 +45,16 @@ import {
   SportsMatch,
 } from 'web/components/sports/sports-match-card'
 import {
+  readSportsContract,
   SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
+import { sportsViewNow } from 'common/sports-view-clock'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+
+const HoldDescription = createContext<string | undefined>(undefined)
 
 function gamePath(game: ScheduleGame) {
   return `/${game.creatorUsername}/${game.slug}`
@@ -106,6 +119,7 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
  */
 export function GameRow(props: {
   game: ScheduleGame
+  onScheduleRefresh?: () => void
   variant?: 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
@@ -128,21 +142,90 @@ export function GameRow(props: {
     stake,
     onPositionsChange,
   } = props
-  const [betOutcome, setBetOutcome] = useState<MatchOutcome | null>(null)
+  const [selection, setSelection] = useState<{
+    outcome: MatchOutcome
+    identity: string
+    closeTime: number
+  } | null>(null)
   const user = useUser()
   const stakeOn = (answerId: string | undefined) =>
     answerId ? stake?.byAnswer[answerId] : undefined
   const closeDialog = () => {
-    setBetOutcome(null)
+    setSelection(null)
     onPositionsChange?.()
   }
   const LikeIcon = liked ? HeartIcon : OutlineHeartIcon
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
+  const verified = isSportsBdlEnabled()
+  const identity = verified ? sportsTicketBinding(game) : ''
+  const revision = JSON.stringify([
+    identity,
+    game.closeTime,
+    game.gameState,
+    game.bettingSidesUnverified,
+  ])
+  const [rejected, setRejected] = useState<string>()
+  const invalid = () => {
+    setRejected(revision)
+    setSelection(null)
+    props.onScheduleRefresh?.()
+  }
   const canBet = isSportsBdlEnabled()
-    ? canBetOnScheduledGame(game, Date.now())
+    ? rejected !== revision && canBetOnScheduledGame(game, sportsViewNow())
     : !finished
+
+  const betOutcome = selection?.outcome
+  // Clear the actual intent before committing a corrected market to the screen.
+  if (
+    verified &&
+    selection &&
+    (selection.identity !== identity ||
+      !canBet ||
+      sportsViewNow() >= selection.closeTime)
+  )
+    setSelection(null)
+
+  const holdId = useId()
+  const holdReason =
+    !verified || canBet
+      ? undefined
+      : rejected === revision
+      ? 'Market changed'
+      : game.bettingSidesUnverified
+      ? 'Team labels under review'
+      : 'Betting closed'
+  const hold = holdReason && (
+    <p className="text-ink-600 px-4 pb-2 text-xs" id={holdId}>
+      {holdReason}
+      {rejected === revision && (
+        <button
+          type="button"
+          className="text-primary-700 ml-2 underline"
+          onClick={async (event) => {
+            event.stopPropagation()
+            const valid = await readSportsContract(game.id, game).catch(
+              () => null
+            )
+            if (valid)
+              setRejected((current) =>
+                current === revision ? undefined : current
+              )
+            props.onScheduleRefresh?.()
+          }}
+        >
+          Check market again
+        </button>
+      )}
+    </p>
+  )
+  const descriptionId = holdReason ? holdId : undefined
+  const withHoldDescription = (row: ReactNode) => (
+    <HoldDescription.Provider value={descriptionId}>
+      {row}
+    </HoldDescription.Provider>
+  )
 
   const score =
     game.finalScore ??
@@ -217,12 +300,17 @@ export function GameRow(props: {
   )
 
   const onBet = (outcome: MatchOutcome) => {
+    if (
+      !canBet ||
+      (isSportsBdlEnabled() && !canBetOnScheduledGame(game, sportsViewNow()))
+    )
+      return
     if (!user) {
       firebaseLogin()
       return
     }
     track('bet intent', { location: `sports ${variant}`, outcome })
-    setBetOutcome(outcome)
+    setSelection({ outcome, identity, closeTime: game.closeTime })
   }
 
   const [firstTeam, secondTeam] = displayTeams.map(
@@ -300,14 +388,21 @@ export function GameRow(props: {
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
+    (!verified || (canBet && selection?.identity === identity)) &&
     (game.draw ? (
       <SportsThreeWayBetDialog
+        intentClose={verified ? selection?.closeTime : undefined}
+        expectedGame={verified ? game : undefined}
+        onInvalid={verified ? invalid : undefined}
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={closeDialog}
       />
     ) : (
       <SportsVersusBetDialog
+        intentClose={verified ? selection?.closeTime : undefined}
+        expectedGame={verified ? game : undefined}
+        onInvalid={verified ? invalid : undefined}
         contractId={game.id}
         initialAnswerId={
           betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
@@ -317,7 +412,7 @@ export function GameRow(props: {
     ))
 
   if (variant === 'compact') {
-    return (
+    return withHoldDescription(
       <section
         id={gameAnchor(game)}
         className={clsx(
@@ -358,6 +453,7 @@ export function GameRow(props: {
           )}
         </div>
         <GameLinkedMarkets game={game} />
+        {hold}
         {dialog}
       </section>
     )
@@ -365,7 +461,7 @@ export function GameRow(props: {
 
   if (variant === 'featured') {
     const details = isSportsBdlEnabled() ? scoreboardDetailLines(game) : []
-    return (
+    return withHoldDescription(
       <section
         id={gameAnchor(game)}
         className={clsx(
@@ -479,6 +575,7 @@ export function GameRow(props: {
                     <button
                       type="button"
                       disabled={!canBet}
+                      aria-describedby={descriptionId}
                       onClick={() => onBet('draw')}
                       aria-label={`Bet on a draw (${formatFeedPrice(
                         game.draw.prob
@@ -526,12 +623,13 @@ export function GameRow(props: {
             </div>
           }
         />
+        {hold}
         {dialog}
       </section>
     )
   }
 
-  return (
+  return withHoldDescription(
     <div
       id={gameAnchor(game)}
       className={clsx(
@@ -560,6 +658,7 @@ export function GameRow(props: {
         />
       )}
       <GameLinkedMarkets game={game} />
+      {hold}
       {dialog}
     </div>
   )
@@ -946,12 +1045,14 @@ export function PriceChip(props: {
   className?: string
 }) {
   const { prob, onClick, label, disabled, muted, held, className } = props
+  const descriptionId = useContext(HoldDescription)
   const price = formatFeedPrice(prob)
   const flash = useProbFlash(Math.round(prob * 100))
   return (
     <button
       type="button"
       aria-label={`${label} (${price})${held ? ', your pick' : ''}`}
+      aria-describedby={disabled ? descriptionId : undefined}
       disabled={disabled}
       onClick={onClick}
       className={clsx(

@@ -5,14 +5,19 @@ import type { ScheduleGame } from './sports-schedule'
 export const SPORTS_SCHEDULE_PAGE_SIZE = 20
 
 export function canBetOnScheduledGame(game: ScheduleGame, now: number) {
-  if (game.isResolved || game.status === 'finished') return false
+  if (
+    game.bettingSidesUnverified ||
+    game.isResolved ||
+    game.status === 'finished'
+  )
+    return false
   if (
     game.gameState === 'settling' ||
     game.gameState === 'final' ||
     game.gameState === 'canceled'
   )
     return false
-  return !game.sportsLeagueKey || game.closeTime > now
+  return game.closeTime > now
 }
 
 type FeedTime = Pick<ScheduleGame, 'startTime' | 'gameState' | 'resumptionTime'>

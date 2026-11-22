@@ -23,7 +23,6 @@ import {
   RaceWeekend,
 } from 'common/race-weekends'
 import { scheduleFeedTime } from 'common/sports-game-feed'
-import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
 export { homeAndAway } from 'common/sports-official-game'
 import {
@@ -35,6 +34,10 @@ import {
   sportForMarket,
   SportsIndex,
   SportsScheduleResponse,
+  LIVE_STALE_MS,
+  sportsMembershipEnd,
+  sportsLiveEnd,
+  SCHEDULE_CLOSE_GRACE_HOURS as FINISHED_GRACE_HOURS,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
@@ -45,7 +48,6 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 // shows up in the "this week" list by close time. Finished games are loaded
 // for a while after kickoff (their markets can still be matched) but never
 // returned: the page is a feed of what's on and what's next.
-const FINISHED_GRACE_HOURS = 18
 const OFFICIAL_PAGE_SIZE = 200
 const MAX_CANDIDATES = 1000
 const MAX_RELATED_PER_GAME = 25
@@ -72,7 +74,13 @@ import {
 
 type Pg = ReturnType<typeof createSupabaseDirectClient>
 
-export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
+export const sportsSchedule: APIHandler<'sports-schedule'> = async (
+  props,
+  _auth,
+  req
+) => {
+  const observed = isSportsBdlEnabled() && props.observedGames === true
+  if (observed) req?.res?.append('Access-Control-Expose-Headers', 'Date, Age')
   const sport: AnySportKey | 'all' = props.sport ?? 'all'
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
@@ -101,7 +109,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
   ] = await Promise.all([
-    isSportsBdlEnabled()
+    observed
       ? getOfficialGames(pg, index, daysAhead, now)
       : getLegacyOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
@@ -114,7 +122,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     if (
       (g.gameState === 'suspended' || g.gameState === 'postponed') &&
       g.resumptionTime != null &&
-      g.resumptionTime <= now
+      g.closeTime <= now &&
+      g.resumptionTime <= now - FINISHED_GRACE_HOURS * HOUR_MS
     )
       return false
     return scheduleFeedTime(g) < horizon
@@ -331,10 +340,24 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // Rail badges: live and upcoming games per sport, the rows its feed shows.
   const counts: Partial<Record<AnySportKey, number>> = {}
   let liveCount = 0
+  const expiries = new Map<number, number>()
+  const memberships = new Map<AnySportKey, Map<number, number>>()
   for (const g of ordered) {
     if (g.status === 'finished') continue
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
-    if (g.status === 'live') liveCount++
+    if (observed) {
+      const end = sportsMembershipEnd(g)
+      const map = memberships.get(g.sport) ?? new Map<number, number>()
+      map.set(end, (map.get(end) ?? 0) + 1)
+      memberships.set(g.sport, map)
+    }
+    if (g.status === 'live') {
+      liveCount++
+      const at = observed ? sportsLiveEnd(g) : undefined
+      if (at != null) {
+        expiries.set(at, (expiries.get(at) ?? 0) + 1)
+      }
+    }
   }
   const cards = filterUfcCards(
     groupUfcCards(bouts),
@@ -398,6 +421,16 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     raceChampionships: championships,
     counts,
     liveCount,
+    ...(observed && {
+      membershipExpiries: [...memberships].flatMap(([sport, byTime]) =>
+        [...byTime].map(([at, count]): [number, AnySportKey, number] => [
+          at,
+          sport,
+          count,
+        ])
+      ),
+      liveExpiries: [...expiries].sort(([a], [b]) => a - b),
+    }),
     sports: index.sports,
   }
   return response
@@ -516,13 +549,26 @@ async function getOfficialGames(
     const groupIds: Record<string, string[]> = {}
     const earliestClose = new Date(now - FINISHED_GRACE_HOURS * HOUR_MS)
     const horizon = now + daysAhead * DAY_MS
-    // The two scans are disjoint. The second handles games that were postponed
-    // beyond their original close and now have a confirmed resumption in view.
-    for (const resuming of [false, true]) {
-      const key = resuming ? "(data->'sportsResumptionTime')" : 'close_time'
-      const cast = resuming ? 'jsonb' : 'timestamptz'
-      const lower = resuming ? String(now) : earliestClose
-      const upper = resuming ? String(horizon) : new Date(horizon + DAY_MS)
+    // Each disjoint scan uses its own indexed range and cursor. A fresh live
+    // receipt survives a resumption even when the provider clears its ETA.
+    for (const scan of ['close', 'resume', 'live'] as const) {
+      const key =
+        scan === 'close'
+          ? 'close_time'
+          : scan === 'resume'
+          ? "(data->'sportsResumptionTime')"
+          : "(data->'sportsLiveUpdatedTime')"
+      const cast = scan === 'close' ? 'timestamptz' : 'jsonb'
+      const lower =
+        scan === 'close'
+          ? earliestClose
+          : String(
+              scan === 'resume' ? earliestClose.getTime() : now - LIVE_STALE_MS
+            )
+      const upper =
+        scan === 'close'
+          ? new Date(horizon + DAY_MS)
+          : String(scan === 'resume' ? horizon : now)
       type Row = Parameters<typeof convertContract>[0] & {
         id: string
         page_time: string
@@ -541,12 +587,18 @@ async function getOfficialGames(
              and visibility = 'public'
              and coalesce(deleted, false) = false
              and resolution is distinct from 'CANCEL'
-             and ${boundary} and ${key} < $2::${cast}
+             and ${boundary} and ${key} ${
+            scan === 'live' ? '<=' : '<'
+          } $2::${cast}
              ${
-               resuming
+               scan === 'resume'
                  ? `and close_time <= $5 and resolution is null
                 and jsonb_typeof(data->'sportsResumptionTime') = 'number'
                 and upper(data->>'sportsLiveStatus') in ('SUSPENDED','POSTPONED')`
+                 : scan === 'live'
+                 ? `and close_time <= $5 and resolution is null
+                and jsonb_typeof(data->'sportsLiveUpdatedTime') = 'number'
+                and upper(data->>'sportsLiveStatus') in ('IN_PROGRESS','IN_PLAY','PAUSED')`
                  : ''
              }
            order by ${key}, id
@@ -582,10 +634,11 @@ async function getOfficialGames(
           )
           if (
             !game ||
-            (resuming &&
+            (scan !== 'close' &&
               (!game.sportsLeagueKey ||
-                BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors' ||
-                !game.resumptionTime))
+                (scan === 'resume'
+                  ? !game.resumptionTime
+                  : game.status !== 'live')))
           )
             continue
           games.push(game)

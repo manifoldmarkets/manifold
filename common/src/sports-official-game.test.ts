@@ -1,16 +1,40 @@
+import {
+  LIVE_STALE_MS,
+  nextSportsObservationChange,
+  sportsGameBinding,
+} from './sports-schedule'
+import { applySportsLive } from './sports-schedule-live'
+import { canBetOnScheduledGame } from './sports-game-feed'
+import { gameScoreLabel } from './sports-scoreboard'
 import { Answer } from './answer'
 import { Contract } from './contract'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
-import { toOfficialGame } from './sports-official-game'
+import { matchesSportsTicket, toOfficialGame } from './sports-official-game'
 
 const now = Date.UTC(2026, 10, 21, 15)
 const answers = [
-  { id: 'away', text: 'Port City', index: 0, prob: 0.4, shortText: 'OLD' },
-  { id: 'home', text: 'Lake City', index: 1, prob: 0.6, shortText: 'OLD' },
+  {
+    contractId: 'local-market',
+    id: 'away',
+    text: 'Port City',
+    index: 0,
+    prob: 0.4,
+    shortText: 'OLD',
+  },
+  {
+    contractId: 'local-market',
+    id: 'home',
+    text: 'Lake City',
+    index: 1,
+    prob: 0.6,
+    shortText: 'OLD',
+  },
 ] as Answer[]
 const market = {
   id: 'local-market',
   slug: 'local-game',
+  shouldAnswersSumToOne: true,
+  addAnswersMode: 'DISABLED',
   creatorId: MANIFOLD_SPORTS_USER_IDS[0],
   sportsProvider: 'bdl',
   sportsEventId: 'bdl:nba:123',
@@ -58,6 +82,7 @@ it('keeps unknown kickoffs out of live polling until an observation arrives', ()
     project({
       sportsStartKnown: false,
       sportsLiveStatus: 'in_progress',
+      sportsLiveUpdatedTime: now,
       sportsHomeScore: 0,
       sportsAwayScore: 7,
       sportsLivePeriod: 2,
@@ -163,3 +188,334 @@ it('does not publish an old in-progress score as a final score after a BDL resol
     })
   ).toMatchObject({ winnerAnswerId: 'home', finalScore: { home: 2, away: 1 } })
 })
+
+const projectAt = (
+  data: Record<string, unknown>,
+  time: number,
+  rows = answers
+) =>
+  toOfficialGame(
+    { ...market, ...data } as unknown as Contract,
+    rows,
+    [],
+    undefined,
+    time
+  )!
+
+it('keeps both fixed answer IDs and side prices after opposite renames, and disables an inconsistent native ticket', () => {
+  const renamed = answers.map((a, i) => ({ ...a, text: answers[1 - i].text }))
+  for (const identity of [{}, { sportsEntrantIds: [9, 17] }]) {
+    const game = projectAt(identity, now, renamed)
+    expect(game.home).toMatchObject({
+      name: 'Lake City',
+      entrantId: '17',
+      answerId: 'home',
+      prob: 0.6,
+    })
+    expect(game.away).toMatchObject({
+      name: 'Port City',
+      entrantId: '9',
+      answerId: 'away',
+      prob: 0.4,
+    })
+    expect(game.bettingSidesUnverified).toBe(true)
+    expect(canBetOnScheduledGame(game, now)).toBe(false)
+  }
+  expect(canBetOnScheduledGame(projectAt({}, now), now)).toBe(true)
+  for (const bad of [[17, 17], [9, 88], [9], [9, 17, null]])
+    expect(project({ sportsEntrantIds: bad })).toBeNull()
+})
+it('uses home/away/draw creation order in three-way soccer and immutable entrant slots when present', () => {
+  const soccer = { sportsEventId: 'bdl:epl:77', sportsLeagueKey: 'epl' }
+  const sorted = [
+    { ...answers[1], index: 0 },
+    { ...answers[0], index: 1 },
+    { ...answers[0], index: 2, id: 'draw', text: 'Draw' },
+  ]
+  expect(projectAt(soccer, now, sorted)).toMatchObject({
+    home: { answerId: 'home' },
+    away: { answerId: 'away' },
+    draw: { answerId: 'draw' },
+  })
+  const inverted = [
+    { ...sorted[1], index: 0 },
+    { ...sorted[0], index: 1 },
+    sorted[2],
+  ]
+  expect(
+    projectAt({ ...soccer, sportsEntrantIds: [9, 17, null] }, now, inverted)
+  ).toMatchObject({
+    home: { answerId: 'home' },
+    away: { answerId: 'away' },
+    draw: { answerId: 'draw' },
+  })
+  expect(
+    project({ ...soccer, sportsEntrantIds: [17, 9, 9] }, sorted)
+  ).toBeNull()
+})
+it('requires an observation to report live or final even after kickoff and the contract deadline', () => {
+  const start = Date.parse(market.sportsStartTimestamp)
+  for (const time of [
+    start - 1,
+    start,
+    start + 100,
+    market.closeTime,
+    market.closeTime + 1,
+  ]) {
+    const row = projectAt({}, time)
+    expect(row).toMatchObject({
+      isResolved: false,
+      status: 'upcoming',
+      gameState: time < start ? 'scheduled' : 'unavailable',
+      liveScore: null,
+      finalScore: null,
+    })
+  }
+})
+it('ages a silent clock at the receipt boundary and recovers from freshly repeated in-progress reads across four hours', () => {
+  const data = {
+    sportsLiveStatus: 'in_progress',
+    sportsLiveUpdatedTime: now,
+    sportsLiveClock: '4:12',
+    sportsLivePeriod: 'Q3',
+    sportsHomeScore: 10,
+    sportsAwayScore: 5,
+  }
+  const fresh = projectAt(data, now + LIVE_STALE_MS - 1)
+  expect(fresh).toMatchObject({
+    status: 'live',
+    gameState: 'live',
+    clock: '4:12',
+  })
+  for (const at of [now + LIVE_STALE_MS, now + 4 * 60 * 60 * 1000]) {
+    const silent = projectAt(data, at)
+    expect(silent).toMatchObject({
+      isResolved: false,
+      status: 'upcoming',
+      gameState: 'unavailable',
+      observationStale: true,
+      liveScore: null,
+    })
+    expect(silent.clock).toBeUndefined()
+    expect(gameScoreLabel(silent)).toMatch(/last seen/)
+    expect(applySportsLive(fresh, undefined, 0, true, at)).toMatchObject({
+      gameState: 'unavailable',
+      observationStale: true,
+    })
+    const recovered = projectAt({ ...data, sportsLiveUpdatedTime: at }, at)
+    expect(recovered).toMatchObject({
+      status: 'live',
+      gameState: 'live',
+      clock: '4:12',
+      isResolved: false,
+    })
+    expect(recovered.observationStale).toBeUndefined()
+  }
+  expect(
+    projectAt({ ...data, sportsLiveUpdatedTime: undefined }, now).gameState
+  ).toBe('unavailable')
+  expect(
+    projectAt({ ...data, resolution: 'home' }, now).observedFinal
+  ).toBeUndefined()
+  expect(
+    projectAt({ ...data, sportsLiveStatus: 'final' }, now).observedFinal
+  ).toBe(true)
+})
+
+const native = {
+  ...market,
+  visibility: 'public',
+  token: 'MANA',
+  shouldAnswersSumToOne: true,
+  addAnswersMode: 'DISABLED',
+  isResolved: false,
+} as unknown as Contract
+const offered = answers.map((answer) => ({ ...answer, contractId: native.id }))
+
+it('requires unique labels and payable answer IDs for both legacy orders and BDL sides', () => {
+  const legacy = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:basketball_nba:abcd',
+    sportsLeagueKey: undefined,
+  }
+  for (const order of [
+    answers,
+    [answers[1], answers[0]].map((a, index) => ({ ...a, index })),
+  ]) {
+    const game = project(legacy, order)!
+    expect([game.home.answerId, game.away.answerId]).toEqual(['home', 'away'])
+    expect(canBetOnScheduledGame(game, now)).toBe(true)
+  }
+  for (const attrs of [legacy, {}]) {
+    const same = answers.map((a) => ({ ...a, text: 'Port City' }))
+    expect(
+      project({ ...attrs, sportsHomeTeam: 'Port City' }, same)
+        ?.bettingSidesUnverified
+    ).toBe(true)
+    expect(project(attrs, same)?.bettingSidesUnverified).toBe(true)
+    expect(
+      project({ ...attrs, sportsAwayTeam: undefined })?.bettingSidesUnverified
+    ).toBe(true)
+  }
+  expect(
+    project(legacy, [answers[0], { ...answers[1], id: answers[0].id }])
+      ?.bettingSidesUnverified
+  ).toBe(true)
+  const off = toOfficialGame(
+    { ...native, ...legacy } as Contract,
+    answers.map((a) => ({ ...a, text: 'renamed' })),
+    [],
+    undefined,
+    now,
+    false
+  )
+  expect(off?.bettingSidesUnverified).toBeUndefined()
+})
+
+it('checks the fetched market before the native dialog can choose a fallback answer', () => {
+  const row = project({})!
+  expect(matchesSportsTicket(row, native, offered, now)).toBe(true)
+  for (const patch of [
+    { sportsEventId: 'bdl:nba:999' },
+    { sportsAwayTeamId: '999' },
+    { deleted: true },
+    { isResolved: true },
+    { sportsLiveStatus: 'FINAL' },
+    { closeTime: now },
+    { visibility: 'private' },
+    { token: 'CASH' },
+    { creatorId: 'someone-else' },
+    { outcomeType: 'MULTI_NUMERIC' },
+    { addAnswersMode: 'ANYONE' },
+    { shouldAnswersSumToOne: false },
+  ])
+    expect(
+      matchesSportsTicket(
+        row,
+        { ...native, ...patch } as Contract,
+        offered,
+        now
+      )
+    ).toBe(false)
+  for (const patch of [
+    { text: 'renamed' },
+    { id: 'replacement' },
+    { contractId: 'another' },
+    { resolution: 'YES' },
+  ])
+    expect(
+      matchesSportsTicket(
+        row,
+        native,
+        [offered[0], { ...offered[1], ...patch } as Answer],
+        now
+      )
+    ).toBe(false)
+  expect(matchesSportsTicket(row, native, offered.slice(1), now)).toBe(false)
+  const replaced = {
+    ...row,
+    home: { ...row.home, entrantId: undefined, name: 'A' },
+  }
+  expect(sportsGameBinding(replaced)).not.toEqual(
+    sportsGameBinding({ ...replaced, home: { ...replaced.home, name: 'C' } })
+  )
+})
+
+it('expires an earlier scheduled receipt exactly at kickoff and the independent close before its live TTL', () => {
+  const kickoff = now + 1000
+  const data = {
+    sportsStartTimestamp: new Date(kickoff).toISOString(),
+    sportsLiveStatus: 'SCHEDULED',
+    sportsLiveUpdatedTime: now,
+  }
+  const before = projectAt(data, kickoff - 1)
+  expect(before.gameState).toBe('scheduled')
+  expect(nextSportsObservationChange(before, kickoff - 1)).toBe(kickoff)
+  expect(projectAt(data, kickoff).gameState).toBe('unavailable')
+  expect(
+    projectAt({ ...data, sportsLiveUpdatedTime: kickoff + 1 }, kickoff + 2)
+      .gameState
+  ).toBe('scheduled')
+  const live = projectAt(
+    { sportsLiveStatus: 'IN_PROGRESS', sportsLiveUpdatedTime: now },
+    now
+  )
+  expect(nextSportsObservationChange(live, now)).toBe(market.closeTime)
+  expect(canBetOnScheduledGame(live, market.closeTime)).toBe(false)
+})
+
+it('rejects unavailable native shapes and an independently resolved answer in the feed as soon as they are observed', () => {
+  for (const data of [
+    { shouldAnswersSumToOne: false },
+    { addAnswersMode: 'ANYONE' },
+    { outcomeType: 'MULTI_NUMERIC' },
+  ])
+    expect(project(data)?.bettingSidesUnverified).toBe(true)
+  expect(
+    project(
+      {},
+      offered.map((a, i) => (i === 0 ? { ...a, resolution: 'NO' } : a))
+    )?.bettingSidesUnverified
+  ).toBe(true)
+  const attrs = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:basketball_nba:game',
+    sportsLeagueKey: undefined,
+  }
+  const row = project(attrs)!
+  expect(row.home.entrantId).toBe('17')
+  expect(
+    matchesSportsTicket(
+      row,
+      { ...native, ...attrs, sportsAwayTeamId: '58' } as unknown as Contract,
+      offered,
+      now
+    )
+  ).toBe(false)
+  expect(
+    project({ ...attrs, sportsMarketType: 'spread' })?.bettingSidesUnverified
+  ).toBe(true)
+  for (const sportsLiveStatus of ['CANCELED', 'FINAL', 'FINISHED', 'AWARDED']) {
+    const updated = {
+      ...native,
+      ...attrs,
+      sportsLiveStatus,
+    } as unknown as Contract
+    expect(matchesSportsTicket(row, updated, offered, now)).toBe(false)
+    expect(
+      canBetOnScheduledGame(project({ ...attrs, sportsLiveStatus })!, now)
+    ).toBe(false)
+  }
+  expect(
+    matchesSportsTicket(
+      row,
+      {
+        ...native,
+        ...attrs,
+        sportsLiveStatus: 'SUSPENDED',
+      } as unknown as Contract,
+      offered,
+      now
+    )
+  ).toBe(true)
+})
+it.each([0, 1])(
+  'expires a scheduled confirmation received %i ms after kickoff, without closing the market',
+  (offset) => {
+    const receipt = now + offset
+    const c = {
+      sportsLiveStatus: 'SCHEDULED',
+      sportsStartTimestamp: new Date(now).toISOString(),
+      sportsLiveUpdatedTime: receipt,
+      closeTime: now + 2 * LIVE_STALE_MS,
+    }
+    const last = projectAt(c, receipt + LIVE_STALE_MS - 1)
+    expect(last.gameState).toBe('scheduled')
+    expect(nextSportsObservationChange(last, receipt + LIVE_STALE_MS - 1)).toBe(
+      receipt + LIVE_STALE_MS
+    )
+    const expired = projectAt(c, receipt + LIVE_STALE_MS)
+    expect(expired.gameState).toBe('unavailable')
+    expect(canBetOnScheduledGame(expired, receipt + LIVE_STALE_MS)).toBe(true)
+  }
+)

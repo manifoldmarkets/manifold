@@ -1,3 +1,8 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import {
+  verifiedSportsTicket,
+  type SportsTicket,
+} from 'common/sports-official-game'
 import { NewBetResult } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
 import { Answer } from 'common/answer'
@@ -48,6 +53,7 @@ import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
 
 type BetDataBody = {
+  sportsTicket?: SportsTicket
   contractId: string
   amount?: number | undefined
   answerId?: string
@@ -112,9 +118,27 @@ export const assertContractTradeable = (contract: {
   if (contract.isResolved) throw new APIError(403, 'Market is resolved.')
 }
 
+function checkSportsTicket(
+  body: BetDataBody,
+  contract: Contract,
+  answers: Answer[]
+) {
+  if (!body.sportsTicket) return
+  if (
+    !isSportsBdlEnabled() ||
+    !answers.some((a) => a.id === body.answerId) ||
+    !verifiedSportsTicket(body.sportsTicket, contract, answers, Date.now())
+  )
+    throw new APIError(
+      409,
+      'The sports market changed. Refresh it before placing this order.'
+    )
+}
+
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
   body: {
+    sportsTicket?: SportsTicket
     contractId: string
     amount: number | undefined
     answerId?: string
@@ -195,6 +219,7 @@ export const fetchContractBetDataAndValidate = async (
     creator.entitlements = (results[9] ?? []).map(convertEntitlement)
   }
   const answers = results[2].map(convertAnswer)
+  checkSportsTicket(body, contract, answers)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
   })[]
@@ -335,7 +360,7 @@ export const lockContractAndGetBetData = async (
     select * from answers
       where contract_id = $2 and (
         $3 is null or id in ($3:list) or ${isSumsToOne}
-      ) order by index;
+      ) order by index${body.sportsTicket ? ' for share' : ''};
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
   `,
@@ -349,6 +374,7 @@ export const lockContractAndGetBetData = async (
   // caught here instead of being traded against.
   assertContractTradeable(contract)
   const answers = results[1].map(convertAnswer)
+  checkSportsTicket(body, contract, answers)
   // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
   // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
   // cpmm-multi-2 bet executes against the stale denormalized blob answers.
