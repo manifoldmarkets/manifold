@@ -3582,6 +3582,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sports_provider_incidents: {
+        Row: {
+          calendar_end: string | null
+          first_seen_at: string | null
+          kind: string
+          last_observed_at: string
+          league_key: string
+          opened_at: string | null
+          provider: string | null
+          scope_key: string
+          subject: string
+        }
+        Insert: {
+          calendar_end?: string | null
+          first_seen_at?: string | null
+          kind: string
+          last_observed_at: string
+          league_key: string
+          opened_at?: string | null
+          provider?: string | null
+          scope_key: string
+          subject: string
+        }
+        Update: {
+          calendar_end?: string | null
+          first_seen_at?: string | null
+          kind?: string
+          last_observed_at?: string
+          league_key?: string
+          opened_at?: string | null
+          provider?: string | null
+          scope_key?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       sports_provider_request_stats: {
         Row: {
           endpoint_template: string

@@ -16,6 +16,10 @@
  * standings by resolveF1TitleMarkets, in the same job.
  */
 
+import {
+  observeClassification,
+  type ClassificationSample,
+} from './bdl/classification-health'
 import { sortBy, sum, uniq } from 'lodash'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
@@ -961,7 +965,8 @@ const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
  */
 export async function resolveF1Markets(
   pg: SupabaseDirectClient,
-  alerted: Set<string> = new Set()
+  alerted: Set<string> = new Set(),
+  classifications?: ClassificationSample[]
 ): Promise<F1ResolveResult> {
   const result = emptyResolveResult()
   const now = Date.now()
@@ -995,6 +1000,7 @@ export async function resolveF1Markets(
   const eventIds = uniq(
     [...ids.values()].flatMap((id) => (id ? [id.eventId] : []))
   )
+  const startedAt = classifications ? Date.now() : undefined
   const sessions =
     eventIds.length > 0
       ? await providerCall('/sessions', KEY_OR_PLAN_REFUSED, () =>
@@ -1131,6 +1137,16 @@ export async function resolveF1Markets(
           () => getF1SessionResults(session.id)
         )
         resultsBySession.set(session.id, results)
+        if (classifications && startedAt !== undefined) {
+          const sample = observeClassification(
+            sessions,
+            session,
+            results,
+            startedAt,
+            Date.now()
+          )
+          if (sample) classifications.push(sample)
+        }
       }
       // Seen in October 2026: final sessions whose classification never
       // arrived. Wait, then hand it to a person.

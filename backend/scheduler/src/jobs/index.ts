@@ -1,3 +1,4 @@
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { compact } from 'lodash'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 
@@ -77,6 +78,7 @@ import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
+import { recordSportsHealth } from 'shared/bdl/sports-health'
 import { createMajorSportsMarkets } from './sports-bdl-create'
 import { createOddsSportsMarkets } from './sports-odds-create'
 import { resolveOddsSportsMarkets } from './sports-odds-resolve'
@@ -506,6 +508,10 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 0 7 * * *', // daily at 7:00 AM LA
       createUpcomingSportsMarkets
     ),
+    isSportsBdlEnabled() &&
+      createJob('sports-calendar-health', '0 1 * * * *', () =>
+        recordSportsHealth(createSupabaseDirectClient(), [], true)
+      ),
     isSportsBdlEnabled() &&
       createJob('sports-bdl-create', '0 11 * * * *', createMajorSportsMarkets),
     // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):

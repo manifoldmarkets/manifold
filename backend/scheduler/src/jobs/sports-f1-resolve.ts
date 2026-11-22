@@ -7,6 +7,9 @@
 // market is unresolved, and none while none is and no title market is open.
 // No-op without BALLDONTLIE_API_KEY.
 
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import type { ClassificationSample } from 'shared/bdl/classification-health'
+import { recordSportsHealth } from 'shared/bdl/sports-health'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
@@ -50,8 +53,11 @@ export async function resolveF1SportsMarkets() {
   }
   // Each phase on its own, so a provider outage in one doesn't stop the
   // next.
+  const samples: ClassificationSample[] | undefined = isSportsBdlEnabled()
+    ? []
+    : undefined
   try {
-    const r = await resolveF1Markets(pg, alerted)
+    const r = await resolveF1Markets(pg, alerted, samples)
     if (r.checked > 0) {
       log(
         `[sports-f1-resolve] checked=${r.checked} resolved=${r.resolved} waiting=${r.waiting} attention=${r.attention} errors=${r.errors}`
@@ -65,10 +71,24 @@ export async function resolveF1SportsMarkets() {
     )
   }
   // A title waits all season, so only a run that did something says so.
-  const t = await resolveF1TitleMarkets(pg, alerted)
-  if (t.resolved + t.moved + t.attention + t.errors > 0) {
-    log(
-      `[sports-f1-resolve] titles: checked=${t.checked} resolved=${t.resolved} moved=${t.moved} waiting=${t.waiting} attention=${t.attention} errors=${t.errors}`
-    )
+  try {
+    const t = await resolveF1TitleMarkets(pg, alerted)
+    if (t.resolved + t.moved + t.attention + t.errors > 0) {
+      log(
+        `[sports-f1-resolve] titles: checked=${t.checked} resolved=${t.resolved} moved=${t.moved} waiting=${t.waiting} attention=${t.attention} errors=${t.errors}`
+      )
+    }
+  } finally {
+    if (samples?.length) {
+      try {
+        await recordSportsHealth(pg, samples)
+      } catch (e) {
+        log.error(
+          `[sports-provider-health] Could not save classification observations: ${String(
+            e
+          )}`
+        )
+      }
+    }
   }
 }

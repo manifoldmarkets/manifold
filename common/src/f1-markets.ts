@@ -541,7 +541,7 @@ type ClassifiedResult = Pick<F1SessionResult, 'driver' | 'is_winner'> & {
  * a winner flag on anyone but the driver classified first (a stale flag
  * after a disqualification or exclusion). Null means don't resolve.
  */
-function checkedClassification(
+export function checkedClassification(
   results: Pick<F1SessionResult, 'driver' | 'position' | 'is_winner'>[]
 ): { classified: ClassifiedResult[]; first: ClassifiedResult | null } | null {
   const ids = results.map((r) => r.driver.id)

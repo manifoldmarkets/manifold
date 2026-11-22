@@ -459,6 +459,56 @@ describe('resolveF1Markets', () => {
     )
   })
 
+  it('observes one complete named classification per session for both sibling markets', async () => {
+    const db = database([winner, podium], {
+      winner: winnerAnswers,
+      podium: answerRows(podiumIds),
+    })
+    type Samples = NonNullable<Parameters<typeof resolveF1Markets>[2]>
+    const samples: Samples = []
+    jest.mocked(getF1SessionResults).mockResolvedValueOnce([])
+    const pending = await resolveF1Markets(db.pg, new Set(), samples)
+    expect(pending.resolved).toBe(0)
+    expect(samples).toEqual([
+      {
+        sessionId: 1870,
+        competitionId: 'f1-2026',
+        startedAt: NOW,
+        observedAt: NOW,
+        empty: true,
+      },
+    ])
+    expect(getF1SessionResults).toHaveBeenCalledTimes(1)
+    const ready = await resolveF1Markets(db.pg, new Set(), samples)
+    expect(ready.resolved).toBe(2)
+    expect(samples.map((s) => s.empty)).toEqual([true, false])
+    expect(getF1SessionResults).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not convert a failed fetch, foreign classification or contradictory session into health evidence', async () => {
+    const db = database([winner], { winner: winnerAnswers })
+    const samples: NonNullable<Parameters<typeof resolveF1Markets>[2]> = []
+    jest
+      .mocked(getF1SessionResults)
+      .mockRejectedValueOnce(new Error('fixture timeout'))
+    await resolveF1Markets(db.pg, new Set(), samples)
+    jest
+      .mocked(getF1SessionResults)
+      .mockResolvedValueOnce(
+        classified(11, 22).map((r) => ({ ...r, session: { id: 100 } }))
+      )
+    await resolveF1Markets(db.pg, new Set(), samples)
+    jest
+      .mocked(getF1Sessions)
+      .mockResolvedValueOnce([session('scheduled'), session('final')])
+    jest.mocked(getF1SessionResults).mockResolvedValueOnce([])
+    await resolveF1Markets(db.pg, new Set(), samples)
+    jest.mocked(getF1SessionResults).mockResolvedValueOnce(classified(11, 11))
+    await resolveF1Markets(db.pg, new Set(), samples)
+    expect(samples).toEqual([])
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+
   it('waits for a final classification, then asks a person', async () => {
     // Final but empty, as the US Grand Prix was for over a week. First seen
     // final at CLOSE + 1h, so due at CLOSE + 3h: just under two hours on it

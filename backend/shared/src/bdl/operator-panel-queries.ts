@@ -1,4 +1,4 @@
-import { groupBy } from 'lodash'
+import { calendarLeague, uniqueLeagueForSport } from './calendar-league'
 import { BDL_LEAGUES, BDL_LEAGUE_KEYS, BdlLeagueKey } from 'common/bdl/leagues'
 import type {
   BdlOperatorLeague,
@@ -11,44 +11,10 @@ import {
   autoCreates,
   SPORTS_CALENDAR,
   SPORT_LEAGUE_LABEL,
-  SportsCalendarEntry,
-  SportId,
 } from 'common/sports-calendar'
 import type { SupabaseDirectClient } from '../supabase/init'
 import { getCompetitionSwitches } from '../supabase/sports-competition-switches'
 import { sportsProviderSql } from '../supabase/sports-provider'
-
-// Several Odds competitions share a generic sport label such as Soccer.
-const leagueByOddsKey: Partial<Record<string, BdlLeagueKey>> = {
-  soccer_epl: 'epl',
-  soccer_usa_mls: 'mls',
-  soccer_spain_la_liga: 'laliga',
-  soccer_italy_serie_a: 'seriea',
-  soccer_germany_bundesliga: 'bundesliga',
-  soccer_france_ligue_one: 'ligue1',
-  soccer_uefa_champs_league: 'ucl',
-  soccer_uefa_champs_league_qualification: 'ucl',
-  soccer_fifa_world_cup: 'fifa/worldcup',
-  basketball_euroleague: 'euroleague',
-}
-
-const leaguesBySport = groupBy(
-  BDL_LEAGUE_KEYS,
-  (key) => BDL_LEAGUES[key].sportId
-)
-function uniqueLeagueForSport(sport: SportId) {
-  const matches = leaguesBySport[sport]
-  return matches?.length === 1 ? matches[0] : undefined
-}
-
-function calendarLeague(entry: SportsCalendarEntry) {
-  const unique = uniqueLeagueForSport(entry.sport)
-  if (unique) return unique
-  if (!entry.oddsKey) return undefined
-  if (entry.oddsKey.startsWith('tennis_atp_')) return 'atp'
-  if (entry.oddsKey.startsWith('tennis_wta_')) return 'wta'
-  return leagueByOddsKey[entry.oddsKey]
-}
 
 type RequestRow = Omit<BdlOperatorRequests, 'lastSuccess' | 'lastRequest'> & {
   league: string
