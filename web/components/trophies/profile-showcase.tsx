@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import clsx from 'clsx'
 
 import {
@@ -28,9 +28,13 @@ import {
   takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { useLeagueInfo } from 'web/hooks/use-leagues'
+import { useCurrentSeason, useLeagueInfo } from 'web/hooks/use-leagues'
 import { useUserAchievements } from 'web/hooks/use-user-achievements'
-import { setShowcasePins, useUserTrophies } from 'web/hooks/use-user-trophies'
+import {
+  refreshUserTrophies,
+  setShowcasePins,
+  useUserTrophies,
+} from 'web/hooks/use-user-trophies'
 
 // Pinned trophies under a user's name on their profile.
 export function ProfileShowcase(props: {
@@ -42,6 +46,15 @@ export function ProfileShowcase(props: {
   const { achievements } = useUserAchievements(userId)
   const { trophies } = useUserTrophies(userId)
   const leagueInfo = useLeagueInfo(userId)
+  const season = useCurrentSeason()
+  const lastSeason = useRef<number>()
+  useEffect(() => {
+    if (season === undefined) return
+    if (lastSeason.current !== undefined && lastSeason.current !== season) {
+      refreshUserTrophies(userId)
+    }
+    lastSeason.current = season
+  }, [season, userId])
 
   const [showPicker, setShowPicker] = useState(false)
   const [pickerMessage, setPickerMessage] = useState<string | null>(null)
