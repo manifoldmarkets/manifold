@@ -217,6 +217,49 @@ test('all sixteen current scores require distinct future tipoffs and strictly ea
   }
 })
 
+test('a disputed final from the season reader withdraws the estimate and closes a previously selected gallery pick', () => {
+  const { bracket, series, rawGames, odds } = setup(1, 0)
+  const linked = market(series.eventId)
+  const [selected] = playoffMarketPicks(
+    bracket,
+    series.eventId,
+    linked,
+    now,
+    now
+  )
+  expect(selected.buyable).toBe(true)
+  expect(
+    nbaSeriesOpeningEstimate(bracket, series.eventId, odds, now)
+  ).not.toBeNull()
+
+  const final = rawGames[0]
+  const correction = { ...final, home_team_score: 96, visitor_team_score: 101 }
+  for (const games of [
+    [...rawGames, correction],
+    [correction, ...rawGames],
+  ]) {
+    const revised = projectNbaPlayoffSeries(2025, games, true)
+    const held = revised.series.find((s) => s.eventId === series.eventId)
+    expect(held?.wins).toEqual([0, 0])
+    expect(held?.winnerId).toBeNull()
+    expect(held?.clinchingGameId).toBeNull()
+    expect(
+      nbaSeriesOpeningEstimate(revised, series.eventId, odds, now)
+    ).toBeNull()
+    const displayed = playoffMarketPicks(
+      revised,
+      series.eventId,
+      linked,
+      now,
+      now
+    )
+    expect(displayed.map((pick) => pick.buyable)).toEqual([false, false])
+    expect(
+      currentPlayoffPick(revised, linked, now, selected, now)
+    ).toBeUndefined()
+  }
+})
+
 test('native outcome, team, visible label and current quote are bound independently of row order', () => {
   const { bracket, series } = setup()
   const m = market(series.eventId)
