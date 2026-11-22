@@ -118,7 +118,7 @@ test('only a complete sixteen-team elimination tree establishes the derived cham
   ).toBe(true)
   expect(view(games.filter((g) => g.id !== 1)).champion).toBeNull()
   expect(
-    view(games.concat({ ...games[0], postseason: false, id: 701 }))
+    view(games.concat({ ...game(701, 1, 2, -1), postseason: false }))
   ).toEqual(v)
 })
 test('deduplicates identical provider game IDs and holds conflicting identities or scores without counting twice', () => {
@@ -362,7 +362,7 @@ test('earlier unresolved fixtures hold the clincher, while future conditionals a
 })
 test('checks whole-season identity for playoff entrants, including clubs that never faced each other', () => {
   const base = completeBracket(),
-    regular = { ...game(99, 1, 2, 0), postseason: false }
+    regular = { ...game(99, 1, 2, -1), postseason: false }
   for (const conflict of [
     { full_name: 'Another team' },
     { conference: 'West' },
@@ -407,6 +407,163 @@ test('checks whole-season identity for playoff entrants, including clubs that ne
       .every((s) => s.review.includes('Conflicting entrant identity'))
   ).toBe(true)
   expect(view([...base, regular]).champion?.teamId).toBe(1)
+})
+test('a returning loser holds both the winning opponent and its descendants, preserving independent results', () => {
+  const base = completeBracket()
+  const wrong = base.map((g) =>
+    g.id < 5 || g.id > 8
+      ? g
+      : {
+          ...g,
+          home_team_score: g.visitor_team_score,
+          visitor_team_score: g.home_team_score,
+        }
+  )
+  for (const rows of [wrong, [...wrong].reverse()]) {
+    const v = view(rows)
+    for (const opponent of [3, 5, 9]) {
+      const s = v.series.find(
+        (s) => s.eventId === nbaSeriesEventId(season, 1, opponent)
+      )
+      expect(s).toMatchObject({
+        wins: [4, 0],
+        winnerId: null,
+        clinchingGameId: null,
+        nextSeriesId: null,
+        review: ['Entrant advancement conflicts with the observed games'],
+      })
+    }
+    expect(
+      v.series.find((s) => s.eventId === nbaSeriesEventId(season, 9, 13))
+    ).toMatchObject({ winnerId: 9, clinchingGameId: 56, review: [] })
+    expect(v.champion).toBeNull()
+  }
+})
+test.each([
+  'Home team forfeits',
+  'Abandonment',
+  'Walk-over',
+  'Away team forfeited',
+])('explicit extraordinary final %s cannot award a fourth win', (status) => {
+  const v = view(
+    completeBracket().map((g) => (g.id === 60 ? { ...g, status } : g))
+  )
+  const final = v.series.find(
+    (s) => s.eventId === nbaSeriesEventId(season, 1, 9)
+  )!
+  expect(final).toMatchObject({
+    wins: [3, 0],
+    winnerId: null,
+    clinchingGameId: null,
+    review: expect.arrayContaining(['Exceptional NBA result requires review']),
+  })
+  expect(final.games.map((g) => g.id)).not.toContain(60)
+  expect(v.champion).toBeNull()
+})
+test('two prior winners in play reveal a missing opening pair; a scheduled second round does not', () => {
+  const rows = completeBracket().filter(
+    (g) => (g.id > 4 && g.id <= 32) || (g.id >= 37 && g.id <= 40)
+  )
+  expect(view(rows).review).toContain(
+    'Opening entrants were not established before the second round'
+  )
+  expect(
+    view(
+      rows.map((g) => (g.id >= 37 ? { ...g, status_state: 'scheduled' } : g))
+    ).review
+  ).toEqual([])
+})
+test('known entrant metadata survives a partial first row independently of order and of the row supplying the name', () => {
+  const base = completeBracket()
+  const partial = base.map((g) =>
+    g.id === 1
+      ? {
+          ...g,
+          home_team: { ...g.home_team, conference: null, abbreviation: null },
+        }
+      : g
+  )
+  const expected = view(base)
+  expect(view(partial)).toEqual(expected)
+  expect(view([...partial].reverse())).toEqual(expected)
+  const noConference = base.map((g) => ({
+    ...g,
+    home_team:
+      g.home_team.id === 1 ? { ...g.home_team, conference: null } : g.home_team,
+    visitor_team:
+      g.visitor_team.id === 1
+        ? { ...g.visitor_team, conference: null }
+        : g.visitor_team,
+  }))
+  const regular = {
+    ...game(700, 1, 18, -2),
+    postseason: false,
+    home_team: { ...team(1), full_name: '' },
+  }
+  expect(view([...noConference, regular])).toEqual(expected)
+  const conflict = {
+    ...regular,
+    home_team: { ...regular.home_team, conference: 'West' },
+  }
+  const wrong = view([conflict, ...base])
+  expect(view([...base, conflict])).toEqual(wrong)
+  expect(wrong.champion).toBeNull()
+  expect(
+    wrong.series
+      .filter((s) => s.teams.some((t) => t.id === 1))
+      .every((s) => s.review.includes('Conflicting entrant identity'))
+  ).toBe(true)
+})
+test('identifiable same-season copies with unknown membership remove only that game from both possible totals', () => {
+  const base = completeBracket()
+  const bad = { ...base[3], postseason: null, home_team_score: 199 }
+  for (const rows of [
+    [bad, ...base],
+    [...base, bad],
+  ]) {
+    const v = view(rows)
+    expect(v.series[0]).toMatchObject({
+      wins: [3, 0],
+      winnerId: null,
+      clinchingGameId: null,
+    })
+    expect(v.series[0].games.map((g) => g.id)).toEqual([1, 2, 3])
+    expect(
+      v.series.find((s) => s.eventId === nbaSeriesEventId(season, 3, 4))?.wins
+    ).toEqual([4, 0])
+    expect(v.champion).toBeNull()
+  }
+  expect(view([...base, { ...bad, season: 2024 }]).series[0].wins).toEqual([
+    4, 0,
+  ])
+})
+test('verified non-playoff appearances constrain entrant spacing but never add playoff scores', () => {
+  const base = completeBracket()
+  const regular = { ...game(999, 1, 19, 0), postseason: false }
+  const at = (minutes: number) => ({
+    ...regular,
+    datetime: new Date(start + minutes * 60_000).toISOString(),
+  })
+  for (const minutes of [-1, 0, 1]) {
+    const b = view([...base, at(minutes)])
+    expect(b.series[0]).toMatchObject({
+      wins: [4, 0],
+      winnerId: null,
+      review: expect.arrayContaining([
+        'Played NBA fixtures overlap for the same entrant',
+      ]),
+    })
+    expect(b.series[0].games.map((g) => g.id)).toEqual([1, 2, 3, 4])
+    expect(b.champion).toBeNull()
+  }
+  for (const other of [
+    at(-48),
+    at(48),
+    { ...at(-1), status_state: 'scheduled' },
+    { ...at(-1), status: 'Home team forfeits' },
+    { ...at(-1), home_team: team(18) },
+  ])
+    expect(view([...base, other]).champion?.teamId).toBe(1)
 })
 describe('gated whole-season reader', () => {
   const old = process.env
@@ -453,7 +610,10 @@ describe('gated whole-season reader', () => {
             ],
             meta: { next_cursor: 'abc', per_page: 100 },
           }
-        : { data: finals.slice(2), meta: { per_page: 100 } }
+        : {
+            data: finals.slice(2),
+            meta: { prev_cursor: cursor, per_page: 100 },
+          }
     })
     const v = await readNbaPlayoffSeason(2025, async () => true, options)
     expect(pages).toEqual(['first', 'abc'])
@@ -499,6 +659,8 @@ describe('gated whole-season reader', () => {
       false,
       {},
       { per_page: 99 },
+      { per_page: 100 },
+      { per_page: 100, prev_cursor: null },
       { per_page: 100, next_cursor: {} },
       { per_page: 100, next_cursor: ' ' },
       { per_page: 100, prev_cursor: 'wrong' },
@@ -516,9 +678,36 @@ describe('gated whole-season reader', () => {
       expect(calls).toEqual(['initial', 'tail'])
     }
   })
+  test.each([undefined, null, 'earlier'])(
+    'a complete-looking field still requires the terminal page to echo its cursor (%s)',
+    async (echo) => {
+      const pages: (string | null)[] = []
+      const options = opts((url) => {
+        const cursor = url.searchParams.get('cursor')
+        pages.push(cursor)
+        return cursor === null
+          ? {
+              data: completeBracket(),
+              meta: { per_page: 100, next_cursor: 'tail' },
+            }
+          : { data: [], meta: { per_page: 100, prev_cursor: echo } }
+      })
+      await expect(
+        readNbaPlayoffSeason(season, async () => true, options)
+      ).rejects.toThrow('does not match its requested cursor')
+      expect(pages).toEqual([null, 'tail'])
+    }
+  )
   test('repeated cursors, an ignored season filter and page-cap exhaustion cannot establish a season result', async () => {
     for (const page of [
-      opts(() => ({ data: [], meta: { next_cursor: 1, per_page: 100 } })),
+      opts((url) => ({
+        data: [],
+        meta: {
+          prev_cursor: url.searchParams.get('cursor'),
+          next_cursor: 1,
+          per_page: 100,
+        },
+      })),
       opts(() => ({
         data: [{ ...game(1, 1, 2, 0), season: 2024 }],
         meta: { per_page: 100 },
@@ -526,6 +715,7 @@ describe('gated whole-season reader', () => {
       opts((url) => ({
         data: [],
         meta: {
+          prev_cursor: url.searchParams.get('cursor'),
           next_cursor: Number(url.searchParams.get('cursor') ?? 0) + 1,
           per_page: 100,
         },
