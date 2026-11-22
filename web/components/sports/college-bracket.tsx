@@ -88,7 +88,7 @@ export function BracketView({
                 })
               e.currentTarget.value = ''
             }}
-            className="bg-canvas-0 border-ink-300 min-h-[44px] rounded border px-2"
+            className="bg-canvas-0 border-ink-300 min-h-[44px] rounded border py-2 pl-2 pr-9"
           >
             <option value="" disabled>
               Choose round
