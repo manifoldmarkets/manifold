@@ -167,23 +167,21 @@ export async function isUserStatsTradesReady(pg: SupabaseDirectClient) {
 // A user's trade count, their live row plus their backfilled history, and
 // their competition rank among everyone with a counted trade (none for 0).
 // One statement, so a trade landing in between can't rank someone below
-// themselves. One pass over the two narrow tables: there is no index on
-// trades, which keeps the per-bet updates HOT.
+// themselves. Look up their two rows once. Only a positive total needs the
+// population scan to compute a rank.
 export async function getUserTrades(pg: SupabaseDirectClient, userId: string) {
   const row = await pg.one<{ count: number; rank: number | null }>(
-    `with totals as (
-       select user_id, coalesce(s.trades, 0) + coalesce(b.trades, 0) as trades
-       from user_stats s
-       full join user_stats_baseline b using (user_id)
-     ),
-     mine as (
-       select coalesce((select trades from totals where user_id = $1), 0) as trades
+    `with mine as materialized (
+       select coalesce((select trades from user_stats where user_id = $1), 0)
+         + coalesce((select trades from user_stats_baseline where user_id = $1), 0) as trades
      )
      select
        mine.trades as count,
-       case when mine.trades > 0
-         then (select count(*) + 1 from totals where totals.trades > mine.trades)
-       end as rank
+       case when mine.trades > 0 then (
+         select count(*) + 1
+         from user_stats s full join user_stats_baseline b using (user_id)
+         where coalesce(s.trades, 0) + coalesce(b.trades, 0) > mine.trades
+       ) end as rank
      from mine`,
     [userId]
   )

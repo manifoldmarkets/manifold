@@ -5,6 +5,9 @@
 --   Markets created: every mana market the user created, not only ones with
 --     at least two traders.
 --
+-- Run after the API deploy, the contract guards (2026112219), the user_stats
+-- install (2026112220) and its completed backfill. Deploy web after the swap.
+--
 -- Both views are built under other names first, so profiles keep reading the
 -- old ones during the build, then swapped in one short transaction. The swap
 -- drops them in the order the profile query reads them (creator contracts,

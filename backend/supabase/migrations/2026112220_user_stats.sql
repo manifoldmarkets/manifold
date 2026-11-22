@@ -2,11 +2,13 @@
 -- write that changes them. First stat: trades (see user_stats_bet_trades).
 -- Design and rollout: dev-docs/user-stats.md. Deploy the API first, so no
 -- running server writes full-set redemption legs without isAutoRedemption.
+-- Apply 2026112219_contracts_guards.sql before this install. After the
+-- backfill completes, apply 2026112221 and then deploy web.
 --
 -- One transaction. It briefly blocks writes to contract_bets while it
 -- installs the triggers; if a write holds the table for more than 5 seconds
 -- it gives up, and the file can be run again (stop the backfill first if it
--- has started). The guard on contracts.token is in 2026112222.
+-- has started).
 begin;
 
 set local lock_timeout = '5s';
@@ -153,6 +155,34 @@ begin
 end
 $$;
 
+-- A BEFORE row trigger saves OLD immediately before the change. All changes
+-- in a writable WITH share a snapshot, so one sub-statement cannot change a
+-- row inserted by another. Each OLD image is from before the statement and
+-- precedes every AFTER statement marker, even when a bet_id is reused.
+-- ON CONFLICT DO UPDATE takes the BEFORE UPDATE path for the conflicting row.
+-- We have no BEFORE INSERT journal trigger. Across statements, an earlier
+-- insert's marker already exists and wins the conflict with a later image.
+-- The only other BEFORE row trigger, contract_bet_populate, always returns
+-- NEW, so no subsequent trigger can skip a row after we save its image.
+create or replace function user_stats_save_old_bet () returns trigger language plpgsql as $$
+begin
+  insert into user_stats_bet_journal (
+    bet_id, user_id, contract_id, created_time, existed,
+    amount, is_redemption, is_api, is_auto_redemption
+  ) values (
+    old.bet_id, old.user_id, old.contract_id, old.created_time, true,
+    old.amount, old.is_redemption, old.is_api,
+    coalesce(old.data ->> 'isAutoRedemption' = 'true', false)
+  )
+  on conflict (bet_id) do nothing;
+
+  if tg_op = 'UPDATE' then
+    return new;
+  end if;
+  return old;
+end
+$$;
+
 create or replace function user_stats_bets_inserted () returns trigger language plpgsql as $$
 begin
   insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
@@ -183,19 +213,7 @@ $$;
 -- and write nothing.
 create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
 begin
-  -- First the state at the install of any bet that existed then...
-  insert into user_stats_bet_journal (
-    bet_id, user_id, contract_id, created_time, existed,
-    amount, is_redemption, is_api, is_auto_redemption
-  )
-  select o.bet_id, o.user_id, o.contract_id, o.created_time, true,
-    o.amount, o.is_redemption, o.is_api,
-    coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
-  from old_bets o
-  where o.created_time <= user_stats_bet_bound()
-  on conflict (bet_id) do nothing;
-  -- ...then any row now dated at or before the bound that has no journal row
-  -- yet (a new bet id, or a later bet moved back) did not exist at the install.
+  -- A new id or a later bet moved back before the bound needs a marker.
   insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
   select n.bet_id, n.user_id, n.contract_id, n.created_time, false
   from new_bets n
@@ -232,17 +250,6 @@ $$;
 
 create or replace function user_stats_bets_deleted () returns trigger language plpgsql as $$
 begin
-  insert into user_stats_bet_journal (
-    bet_id, user_id, contract_id, created_time, existed,
-    amount, is_redemption, is_api, is_auto_redemption
-  )
-  select o.bet_id, o.user_id, o.contract_id, o.created_time, true,
-    o.amount, o.is_redemption, o.is_api,
-    coalesce(o.data ->> 'isAutoRedemption' = 'true', false)
-  from old_bets o
-  where o.created_time <= user_stats_bet_bound()
-  on conflict (bet_id) do nothing;
-
   insert into user_stats as s (user_id, trades, updated_time)
   select o.user_id, -count(*), now()
   from old_bets o
@@ -268,6 +275,31 @@ $$;
 
 -- create or replace (not drop and create): running this file again needs
 -- only the share row exclusive lock taken above.
+-- The bound goes into the two WHEN clauses as a literal. PostgreSQL doesn't
+-- plan a trigger's WHEN, so calling user_stats_bet_bound() there would run
+-- the SQL function for every updated or deleted bet, not only old ones
+-- (measured: cancelling 5,000 new orders went from 160 ms to 262 ms).
+do $$
+declare
+  b timestamptz := user_stats_bet_bound();
+begin
+  execute format(
+    'create or replace trigger user_stats_before_bet_update '
+    'before update on contract_bets '
+    'for each row when (old.created_time <= %L::timestamptz) '
+    'execute function user_stats_save_old_bet ()',
+    b
+  );
+  execute format(
+    'create or replace trigger user_stats_before_bet_delete '
+    'before delete on contract_bets '
+    'for each row when (old.created_time <= %L::timestamptz) '
+    'execute function user_stats_save_old_bet ()',
+    b
+  );
+end
+$$;
+
 create or replace trigger user_stats_bets_inserted
 after insert on contract_bets
 referencing new table as new_bets

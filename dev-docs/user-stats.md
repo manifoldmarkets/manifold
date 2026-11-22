@@ -23,7 +23,7 @@ Per-user counters kept by the database, in the same transaction as the write tha
 
 A user's count is the sum of the two. They are kept apart so the backfill never writes a row a bet also writes. Otherwise a bet could wait on the backfill, or fail to serialize against it and run out of retries.
 
-**Triggers:** three statement-level `AFTER` triggers on `contract_bets` (insert, update, delete), with transition tables.
+**Triggers:** three statement-level `AFTER` triggers on `contract_bets` (insert, update, delete), with transition tables, do the counting. Two row-level `BEFORE` triggers (update, delete) save the state of a bet from before the install for the backfill (see Backfill below).
 
 - Each statement upserts one row per affected user, in `user_id` order.
 - An update counts as the old row removed and the new row added. Later fills, cancellations and expiries change nothing and write nothing.
@@ -31,22 +31,24 @@ A user's count is the sum of the two. They are kept apart so the backfill never 
 - Every user whose count a bet changes (the bettor, or a maker whose order fills) already has their balance updated in the same transaction, before the bet rows are written. Redemptions never write to `user_stats`: answer creation writes redemption bets before balances, so counting them could deadlock with a bet.
 - `user_stats` has only its primary key indexed, so the increments are HOT updates (fill factor 80).
 
-**Measured cost** (Postgres 15, JIT off, 300k-bet table, 2,000 runs each, before and after the triggers):
+**Measured cost** (Postgres 15, JIT off, 300k-bet table, 2,000 runs each; three runs before and after the migrations, ranges of the medians):
 
-|                                         | Before                   | After                    |
-| --------------------------------------- | ------------------------ | ------------------------ |
-| One bet inserted, own transaction       | p50 2.73 ms, p95 3.34 ms | p50 2.65 ms, p95 3.07 ms |
-| One maker fill                          | p50 2.94 ms, p95 3.51 ms | p50 2.89 ms, p95 3.37 ms |
-| 5,000 orders cancelled in one statement | 181 ms                   | 197 ms                   |
+|                                                    | Before       | After        |
+| -------------------------------------------------- | ------------ | ------------ |
+| One bet inserted, own transaction (p50)            | 3.35–3.42 ms | 3.30–3.52 ms |
+| One maker fill of an order from before the install | 3.17–3.52 ms | 3.35–3.56 ms |
+| 5,000 new orders cancelled in one statement        | 165–173 ms   | 172–187 ms   |
 
-The per-bet difference is within noise.
+The per-bet differences are within noise. The maker fill pays one journal write (about 0.1 ms), and only the first time an order from before the install changes. The two BEFORE triggers carry the bound as a literal in their WHEN clause: PostgreSQL doesn't plan a trigger's WHEN, and calling `user_stats_bet_bound()` there made the 5,000-order cancel take 262 ms.
 
 **What the counts rely on:**
 
-- A market's token never changes after creation. A guard trigger on `contracts` (migration `2026112222`) refuses it; it fires only for an `UPDATE` that names `token`, which no code does.
+- The guards in `2026112219_contracts_guards.sql` run before counters are enabled. One refuses changes to a market's token. Another refuses to hard-delete a market referenced by a current bet or any journal row. The backfill still needs the market's token after a historical bet is deleted.
+- The delete guard takes a `share` lock on `contract_bets` before looking for references. Bet and journal writers hold a conflicting lock through commit. Under read committed the guard sees their commits in a fresh snapshot after the wait. With both transactions serializable, PostgreSQL detects conflicting reads of the bets and the market. Repeatable read keeps its old snapshot, so the guard refuses deletes at that isolation level. Only a hard delete pauses bet writes this way. The delete-market endpoint soft-deletes.
 - A bet is always written after its market exists, which every code path does.
+- Accepted gap: a serializable transaction that writes the first bet on a market without locking the market row, with a snapshot from before a read-committed hard delete of that market, can count a bet whose market is gone. The bet endpoints lock the market row first (`helpers/bets.ts`, `place-multi-bet.ts`), which turns this into a serialization failure and a retry that finds no market. So it needs both a hard delete, which no code does, and a direct database writer.
 
-**Ranks:** live, in the same statement as the count: `1 + count(*)` of users with more trades, over live plus baseline. The rank is null for 0. Percentiles still divide by the number of accounts, counted once an hour.
+**Ranks:** live, in the same statement as the count. The user's two rows are read by primary key; only a positive total runs the pass over both tables that counts users with more trades (rank = that count + 1, so ties share a rank). The rank is null for 0. Percentiles still divide by the number of accounts, counted once an hour.
 
 **Access:** the API roles get `SELECT` on the two count tables and nothing else, because `TRUNCATE` ignores row-level security.
 
@@ -57,9 +59,8 @@ The per-bet difference is within noise.
 How it stays exact while bets keep changing:
 
 - The migration first takes a write lock on `contract_bets`, then records the **bound**: the newest `created_time` there. Every bet that existed then is dated at or before it. The bound is written into the function `user_stats_bet_bound()`, so a transaction that started before the migration still sees it.
-- While the backfill is unfinished, the triggers write to `user_stats_bet_journal`:
-  - the first time a bet dated at or before the bound is updated or deleted, its state before the change;
-  - for any row that comes to be dated at or before the bound after the install (inserted, or moved there), a row saying it did not exist then.
+- A row-level `BEFORE UPDATE` or `BEFORE DELETE` trigger saves the old image of each bet dated at or before the bound, immediately before the row changes. The statement-level `AFTER INSERT` and `AFTER UPDATE` triggers mark new rows at or before the bound as absent at install. The journal keeps the first entry for each bet ID.
+- In a writable `WITH`, the sub-statements share a snapshot, so one cannot change a row another inserted. Every old image comes from before the statement and is written before any statement-level marker, even if the statement reuses an ID. An `ON CONFLICT DO UPDATE` saves the conflicting row through `BEFORE UPDATE`. There is no journal trigger on `BEFORE INSERT`. Across separate statements an earlier insert's marker wins over a later update or delete image.
 - Each window is a single statement. It adds the bets with no journal row as they are now, plus the journal rows of bets that existed. Within that statement's snapshot, a bet that existed at the install either hasn't changed yet (its current state is its state at the install) or has a journal row holding that state, never both. The triggers have added every change since.
 - Each window locks its progress row before choosing its range, refuses a window that isn't positive, and moves the progress only forward, in the same transaction as the counts.
 
@@ -72,18 +73,20 @@ Tests (`backend/shared/src/user-stats.test.ts`, against PGlite with the real `co
 - that the counters equal a direct recount after a backfill interleaved with fills of old orders, deletes, backdated inserts, reassignments, and a later bet moved back before the bound;
 - that the backfill never writes `user_stats`;
 - that a window that isn't positive is refused;
-- the token guard, reruns, and a failing window.
+- historical ID reuse within one statement, backdated inserts deleted in a later statement, and upserts;
+- the contract guards, reruns, and a failing window.
 
 Removing the journal check, either journal write, or the "moved back" marker fails a test.
 
 ## Rollout
 
 1. **API first.** It writes `isAutoRedemption` and reads `user_stats` only once a backfill is complete, so it is safe before the migration. Deploying it first means no running server writes unflagged redemption legs after the triggers exist.
-2. Migrations `2026112220_user_stats.sql`, then `2026112222_contracts_token_fixed.sql` (the token guard), on dev, then prod. Each is one short transaction. The first blocks `contract_bets` writes for well under a second; if a write holds the table more than 5 s it gives up and can be run again (stop the backfill first if it has started).
-3. `backfill-user-stats.ts --apply` on dev, then prod. It is resumable; `--verify <userId>` compares one user's count with a direct count, read at the same moment, and exits 1 on a mismatch once complete.
-4. Migration `2026112221_achievement_rank_definitions.sql`. It builds the two new rank views under other names, then swaps them in one short transaction.
-5. Web (one description).
-6. Later, a cleanup PR:
+2. Apply `2026112219_contracts_guards.sql` on dev, then prod. It installs the token and hard-delete guards in one short transaction.
+3. Apply `2026112220_user_stats.sql` on dev, then prod. It briefly blocks writes to `contract_bets` to record the bound and install the triggers together. Both migrations use a 5 s lock timeout and can be retried. Stop the backfill before retrying the install if it has started.
+4. Run `backfill-user-stats.ts --apply` on dev, then prod. It is resumable. Once complete, `--verify <userId>` compares one user's count with a direct count in the same snapshot and exits 1 on a mismatch.
+5. Apply `2026112221_achievement_rank_definitions.sql` after the backfill completes. It builds the two new rank views under other names, then swaps them in one short transaction.
+6. Deploy web (one description).
+7. Later, a cleanup PR:
    - replace the triggers with versions that don't journal, then drop `user_stats_bet_journal`;
    - optionally fold `user_stats_baseline` into `user_stats` in small batches;
    - drop `ach_trades` and the disabled `update-ach-trades` job;

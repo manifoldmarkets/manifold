@@ -62,9 +62,11 @@ const tradeRows = async (sql: string) =>
 
 const migration = (name: string) =>
   readFileSync(resolve(__dirname, '../../supabase/migrations', name), 'utf8')
+const installGuards = () =>
+  db.exec(migration('2026112219_contracts_guards.sql'))
 const install = async () => {
+  await installGuards()
   await db.exec(migration('2026112220_user_stats.sql'))
-  await db.exec(migration('2026112222_contracts_token_fixed.sql'))
 }
 
 beforeEach(async () => {
@@ -276,6 +278,161 @@ describe('counting trades as they happen', () => {
   })
 })
 
+// PGlite has one connection. On PostgreSQL, a first bet already writing
+// holds ROW EXCLUSIVE until commit. A hard delete waits for it with SHARE,
+// then the volatile guard's next read-committed query can see that bet.
+// With both transactions serializable, a stale read of bets by the delete
+// and a stale read of the market by the writer would form a cycle.
+// A direct serializable writer with an older snapshot still needs the market
+// row lock used by place-bet if a read-committed delete gets there first.
+describe('guarding market references', () => {
+  it('guards tokens and permits an empty market delete before the stats install', async () => {
+    await installGuards()
+    await expect(
+      run(`update contracts set token = 'CASH' where id = 'm1'`)
+    ).rejects.toThrow(/token cannot change/)
+    expect(
+      await run(`delete from contracts where id = 'm2' returning id`)
+    ).toEqual([{ id: 'm2' }])
+  })
+
+  it('refuses to delete the market of a backfilled bet', async () => {
+    await bet('old', 'alice')
+    await install()
+    await backfillAll()
+    await expect(run(`delete from contracts where id = 'm1'`)).rejects.toThrow(
+      /soft-delete the market instead/
+    )
+    expect(await counters()).toEqual({ alice: 1 })
+    expect(await counters()).toEqual(await directCounts())
+  })
+
+  it('retains a market whose only reference is an unprocessed journal image', async () => {
+    await bet('old', 'alice')
+    await install()
+    await run(`delete from contract_bets where bet_id = 'old'`)
+    await expect(run(`delete from contracts where id = 'm1'`)).rejects.toThrow(
+      /soft-delete the market instead/
+    )
+    await backfillAll()
+    expect(
+      await tradeRows('select user_id, trades from user_stats_baseline')
+    ).toEqual([{ user_id: 'alice', trades: 1 }])
+    expect(await counters()).toEqual(await directCounts())
+  })
+
+  it('refuses repeatable read even for an empty market and permits serializable', async () => {
+    await install()
+    await db.exec('begin isolation level repeatable read')
+    try {
+      await expect(
+        run(`delete from contracts where id = 'm1'`)
+      ).rejects.toThrow(/delete markets in read committed or serializable/)
+    } finally {
+      await db.exec('rollback')
+    }
+    await client.tx(async () => {
+      await run('set transaction isolation level serializable')
+      expect(
+        await run(`delete from contracts where id = 'm1' returning id`)
+      ).toEqual([{ id: 'm1' }])
+    })
+  })
+})
+
+describe('first bet images before the backfill', () => {
+  const expectBackfilledCounts = async (expected: Record<string, number>) => {
+    await backfillAll()
+    const direct = await directCounts()
+    expect(direct).toEqual(expected)
+    expect(await counters()).toEqual(direct)
+  }
+
+  it('deletes and reinserts the same historical bet in one statement', async () => {
+    await bet('original', 'alice')
+    await install()
+    // EXISTS can stop at the first RETURNING row. The INSERT's statement
+    // trigger can run before the DELETE's, even though it reuses the freed id.
+    await run(
+      `with gone as (
+         delete from contract_bets where bet_id = $1 returning bet_id
+       )
+       insert into contract_bets (bet_id, contract_id, created_time, data)
+       select $1, 'm1', user_stats_bet_bound(), $2::jsonb
+       where exists (select 1 from gone)`,
+      ['original', JSON.stringify(betData('original', 'alice', {}))]
+    )
+    await expectBackfilledCounts({ alice: 1 })
+  })
+
+  it('keeps the marker when a later statement deletes a backdated insert', async () => {
+    await install()
+    await bet('late', 'alice', { ago: '1 day' })
+    await run(`delete from contract_bets where bet_id = 'late'`)
+    expect(
+      await run(
+        `select existed from user_stats_bet_journal where bet_id = 'late'`
+      )
+    ).toEqual([{ existed: false }])
+    await expectBackfilledCounts({})
+  })
+
+  it('captures the historical row updated by an upsert', async () => {
+    await bet('original', 'alice')
+    await install()
+    await run(
+      `insert into contract_bets (bet_id, contract_id, data)
+       values ($1, 'm1', $2::jsonb)
+       on conflict (bet_id) do update set data = excluded.data`,
+      ['original', JSON.stringify(betData('original', 'bob', {}))]
+    )
+    await expectBackfilledCounts({ bob: 1 })
+  })
+
+  it('deletes a historical bet and moves another bet to its id', async () => {
+    await bet('removed', 'alice')
+    await bet('moved', 'bob')
+    await install()
+    await run(
+      `with gone as (
+         delete from contract_bets where bet_id = 'removed' returning bet_id
+       )
+       update contract_bets set bet_id = gone.bet_id
+       from gone where contract_bets.bet_id = 'moved'`
+    )
+    await expectBackfilledCounts({ bob: 1 })
+  })
+
+  it('updates one historical bet and deletes another in one statement', async () => {
+    await bet('updated', 'alice', { amount: 0 })
+    await bet('removed', 'bob')
+    await install()
+    await run(
+      `with filled as (
+         update contract_bets set data = data || '{"amount": 5}'
+         where bet_id = 'updated' returning bet_id
+       )
+       delete from contract_bets where bet_id = 'removed' and exists (select 1 from filled)`
+    )
+    await expectBackfilledCounts({ alice: 1 })
+  })
+
+  it('changes a historical bet id and inserts a new bet with its old id', async () => {
+    await bet('original', 'alice')
+    await install()
+    await run(
+      `with moved as (
+         update contract_bets set bet_id = 'moved' where bet_id = $1 returning bet_id
+       )
+       insert into contract_bets (bet_id, contract_id, created_time, data)
+       select $1, 'm1', user_stats_bet_bound(), $2::jsonb
+       where exists (select 1 from moved)`,
+      ['original', JSON.stringify(betData('original', 'bob', {}))]
+    )
+    await expectBackfilledCounts({ alice: 1, bob: 1 })
+  })
+})
+
 describe('backfill', () => {
   // History made before the migration: what prod has at the install.
   const seedHistory = async () => {
@@ -446,17 +603,23 @@ describe('reading a count and rank', () => {
 
   it('adds live and history, ranks ties together, and gives no rank for 0', async () => {
     await run(
-      `insert into user_stats (user_id, trades) values ('a', 2), ('b', -1), ('c', 5)`
+      `insert into user_stats (user_id, trades) values ('a', 2), ('b', -1), ('c', 5),
+         ('offset', -2), ('negative', -1)`
     )
     await run(
-      `insert into user_stats_baseline (user_id, trades) values ('b', 4), ('d', 5), ('e', 0)`
+      `insert into user_stats_baseline (user_id, trades) values ('b', 4), ('d', 5),
+         ('e', 0), ('offset', 2)`
     )
-    // Totals: a 2, b 3, c 5, d 5, e 0.
     expect(await getUserTrades(pg, 'c')).toEqual({ count: 5, rank: 1 })
     expect(await getUserTrades(pg, 'd')).toEqual({ count: 5, rank: 1 })
     expect(await getUserTrades(pg, 'b')).toEqual({ count: 3, rank: 3 })
     expect(await getUserTrades(pg, 'a')).toEqual({ count: 2, rank: 4 })
     expect(await getUserTrades(pg, 'e')).toEqual({ count: 0, rank: null })
+    expect(await getUserTrades(pg, 'offset')).toEqual({ count: 0, rank: null })
+    expect(await getUserTrades(pg, 'negative')).toEqual({
+      count: 0,
+      rank: null,
+    })
     expect(await getUserTrades(pg, 'nobody')).toEqual({ count: 0, rank: null })
   })
 })
