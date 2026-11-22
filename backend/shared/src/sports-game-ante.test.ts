@@ -15,6 +15,7 @@ jest.mock('shared/supabase/contracts', () => ({
 jest.mock('shared/txn/run-txn', () => ({
   runTxnOutsideBetQueue: jest.fn().mockResolvedValue(undefined),
 }))
+jest.mock('shared/supabase/users', () => ({ broadcastUserUpdates: jest.fn() }))
 jest.mock('shared/supabase/liquidity', () => ({
   insertLiquidity: jest.fn().mockResolvedValue(undefined),
 }))
@@ -31,6 +32,8 @@ jest.mock('shared/helpers/embeddings', () => ({
 jest.mock('shared/publish-sports-live-score', () => ({}))
 
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
+import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
+import { generateContractEmbeddings } from 'shared/supabase/contracts'
 import {
   runSportsMarketPostCreate,
   flushSportsGroupEmbeddings,
@@ -381,6 +384,74 @@ it('keeps failed group embeddings for retry without repeating successful groups'
   ).toEqual(['first', 'second', 'first'])
   expect(batch.size).toBe(0)
 })
+
+it.each(['insert', 'debit', 'liquidity', 'commit'] as const)(
+  'enforces the injected funding clock through %s and broadcasts only a committed balance',
+  async (boundary) => {
+    const { tx, pg } = database()
+    const lead = 300_000
+    let now = start - lead - 1
+    const completed: string[] = []
+    const finish = async (step: string) => {
+      await Promise.resolve()
+      completed.push(step)
+      if (step === boundary && step !== 'commit') now = start - lead
+    }
+    tx.multi.mockImplementationOnce(async () => {
+      await finish('insert')
+      return [[], []]
+    })
+    const debit = jest.mocked(runTxnOutsideBetQueue)
+    const debitImpl = debit.getMockImplementation()!
+    const update: UserUpdate = {
+      id: creator.id,
+      balance: 900,
+      cash_balance: 0,
+      spice_balance: 0,
+      total_deposits: 1000,
+      total_cash_deposits: 0,
+    }
+    debit
+      .mockReset()
+      .mockImplementation(debitImpl)
+      .mockImplementationOnce(async (...args) => {
+        await finish('debit')
+        args[3]!([update])
+        expect(broadcastUserUpdates).not.toHaveBeenCalled()
+        return debitImpl(...args)
+      })
+    const liquidity = jest.mocked(insertLiquidity)
+    const liquidityImpl = liquidity.getMockImplementation()!
+    liquidity
+      .mockReset()
+      .mockImplementation(liquidityImpl)
+      .mockImplementationOnce(async (...args) => {
+        await finish('liquidity')
+        return liquidityImpl(...args)
+      })
+    const promise = createSportsContract(pg, creator, bdl, {
+      minLeadMs: lead,
+      now: () => now,
+    })
+    if (boundary === 'commit') {
+      await promise
+      expect(completed).toEqual(['insert', 'debit', 'liquidity'])
+      expect(broadcastUserUpdates).toHaveBeenCalledTimes(1)
+      expect(broadcastUserUpdates).toHaveBeenCalledWith([update])
+      expect(
+        jest.mocked(broadcastUserUpdates).mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        jest.mocked(generateContractEmbeddings).mock.invocationCallOrder[0]
+      )
+    } else {
+      await expect(promise).rejects.toThrow('kicked off')
+      const stages = ['insert', 'debit', 'liquidity']
+      expect(completed).toEqual(stages.slice(0, stages.indexOf(boundary) + 1))
+      expect(broadcastUserUpdates).not.toHaveBeenCalled()
+      expect(generateContractEmbeddings).not.toHaveBeenCalled()
+    }
+  }
+)
 
 it.each(['cutover', 'funding'])(
   'rejects an elapsed kickoff lead after the %s lock with no write or debit',

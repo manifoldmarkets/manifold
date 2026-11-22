@@ -43,6 +43,7 @@ import {
   flushSportsGroupEmbeddings,
   SportsContractParams,
   SportsMarketAlreadyExistsError,
+  SportsGameStartedError,
 } from '../sports-markets'
 import {
   createSupabaseDirectClient,
@@ -434,6 +435,8 @@ export async function runMajorCreation(
               creator ??= await sportsCreator()
               const contract = await createSportsContract(pg, creator, params, {
                 groupEmbeddingBatch: batch,
+                minLeadMs: BDL_MIN_CREATION_LEAD_MS,
+                now: () => clock.now(),
                 allowCanceledEventId,
                 chooseAnte: async (tx) => {
                   const ante = await resolveSportsGameAnte(tx, funding)
@@ -493,6 +496,8 @@ export async function runMajorCreation(
             if (e instanceof SportsMarketAlreadyExistsError) {
               decision.reason = 'market already exists'
               decision.contractId = e.contractId
+            } else if (e instanceof SportsGameStartedError) {
+              decision.reason = 'kicks off too soon'
             } else if (e instanceof BdlCreationBudgetError) {
               reportLow(e.status.lowBalance)
               decision.reason = e.status.reason

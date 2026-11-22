@@ -35,7 +35,8 @@ import {
   SportsAnteDecision,
 } from 'common/sports-kickoff-interface'
 import { generateAntes } from 'shared/create-contract-helpers'
-import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue, TxnData } from 'shared/txn/run-txn'
+import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import { broadcastNewComment } from 'shared/websockets/helpers'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
@@ -1222,10 +1223,11 @@ export async function createSportsContract(
      */
     deduplicateMarketType?: string
     /**
-     * Refuse, inside the transaction, a game kicking off sooner than this:
-     * the last check before the ante moves.
+     * Require this much lead to remain through the final funding write.
      */
     minLeadMs?: number
+    /** Use the same source clock for preflight and the transaction, including fixture replay. */
+    now?: () => number
   } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
@@ -1363,10 +1365,11 @@ export async function createSportsContract(
       : opts.deduplicateMarketType
   if (params.sportsProvider === 'bdl' && !dedupeType)
     throw new Error('BDL creation requires a market type for deduplication')
+  const balanceUpdates: UserUpdate[] = []
   const assertLeadTime = () => {
     if (opts.minLeadMs == null) return
     const start = Date.parse(params.sportsStartTimestamp ?? '')
-    if (!(start > Date.now() + opts.minLeadMs))
+    if (!(start > (opts.now ?? Date.now)() + opts.minLeadMs))
       throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
   }
   const result = await pg.tx(async (tx) => {
@@ -1398,7 +1401,9 @@ export async function createSportsContract(
     } else {
       await tx.none(contractQuery)
     }
-    await runTxnOutsideBetQueue(tx, {
+    // Inserts, the debit, and the LP row can each wait on a database lock.
+    assertLeadTime()
+    const debit: TxnData = {
       fromId: providerId,
       fromType: 'USER',
       toId: contract.id,
@@ -1406,10 +1411,26 @@ export async function createSportsContract(
       amount: ante,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
-    })
+    }
+    if (opts.minLeadMs == null) {
+      await runTxnOutsideBetQueue(tx, debit)
+    } else {
+      await runTxnOutsideBetQueue(tx, debit, false, (updates) =>
+        balanceUpdates.push(...updates)
+      )
+      assertLeadTime()
+    }
     await generateAntes(tx, providerId, contract, ante, ante)
+    assertLeadTime()
     return contract
   })
+  if (balanceUpdates.length) {
+    try {
+      broadcastUserUpdates(balanceUpdates)
+    } catch {
+      logger.error(`[sports-create] balance broadcast failed for ${result.id}`)
+    }
+  }
 
   await Promise.allSettled(
     params.groupIds.map((gId) =>
