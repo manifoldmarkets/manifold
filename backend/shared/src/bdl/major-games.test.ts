@@ -3,7 +3,13 @@ import { join } from 'path'
 import { selectOpeningLine } from 'common/bdl/opening-line'
 import { fetchMajorSnapshots } from './major-snapshots'
 import { createBdlClient } from '../balldontlie-client'
-import { fetchMajorGames, fetchMajorOdds, MajorLeague } from './major-games'
+import {
+  fetchMajorGames,
+  fetchMajorOdds,
+  mapMajorGame,
+  MajorLeague,
+} from './major-games'
+import { reviewedResult } from './major-result'
 
 type Raw = Record<string, unknown>
 type Page = { data: Raw[]; meta?: { next_cursor: number | null } }
@@ -20,6 +26,90 @@ function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
     )
   )
 }
+// Each sport has its own score and entrant fields. Only the administrative description
+// changes between controls; the NFL policy fixture is an eligible 2027 season.
+it.each(leagues)(
+  'reviews abnormal %s finals without interpreting individual plays',
+  (league) => {
+    const source = fixture(league, 'games').data[0]
+    const raw = {
+      ...source,
+      status_state: 'final',
+      season: 2027,
+      status: 'Final',
+      home_team_score: 4,
+      visitor_team_score: 2,
+      home_score: 4,
+      away_score: 2,
+      home_team_data: { runs: 4 },
+      away_team_data: { runs: 2 },
+    }
+    const labels = [
+      'Home team forfeits',
+      'Home team forfeits, visitors advance',
+      'Contest ended in a forfeit',
+      'Forfeit loss',
+      'Abandonment',
+      'Game abandoned due to rain',
+      'Game awarded to visitors',
+      'Winner by forfeit',
+      'STATUS_WALKOVER',
+      'Walk-over',
+      'Final (retirement)',
+      'Away team retired',
+      'Abandoned due to rain',
+      mapMajorGame(league, raw).away.name + ' forfeit',
+      'Result: No-contest',
+    ]
+    for (const field of ['status', 'summary', 'period_detail']) {
+      for (const label of labels) {
+        const decision = reviewedResult(
+          league,
+          mapMajorGame(league, { ...raw, [field]: label })
+        )
+        expect({ field, label, decision }).toEqual({
+          field,
+          label,
+          decision: { incident: 'irregular result' },
+        })
+      }
+    }
+    if (league === 'nhl') {
+      expect(
+        reviewedResult(
+          league,
+          mapMajorGame(league, { ...raw, game_state: 'FORFEITED' })
+        )
+      ).toEqual({ incident: 'irregular result' })
+    }
+    for (const label of [
+      'Final/OT',
+      'Batter retired',
+      'Runner retired at home',
+      'Home team forfeits a timeout',
+      'Away team awarded two free throws',
+      'Penalty shot awarded',
+      'Wins on a walk-off',
+      'Jersey retirement ceremony',
+    ]) {
+      expect(
+        reviewedResult(league, mapMajorGame(league, { ...raw, summary: label }))
+          .record?.status
+      ).toBe('final')
+    }
+    expect(
+      reviewedResult(
+        league,
+        mapMajorGame(league, {
+          ...raw,
+          status_state: 'scheduled',
+          status: 'Final',
+        })
+      ).record
+    ).toBeUndefined()
+  }
+)
+
 function localClient(
   response: (url: URL) => { data: unknown; meta?: Page['meta'] }
 ) {

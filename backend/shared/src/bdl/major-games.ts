@@ -167,6 +167,38 @@ const exhibition =
 const identified = (value: ObservedTeam): value is Team =>
   value.id !== null && value.name !== null
 
+const gameResultLabels = [
+  /\b(?:no contests?|walk ?overs?|forfeitures?|abandonment)\b/,
+  /^(?:(?:status|final|result)\W+)*(?:forfeit(?:s|ed)?|abandoned|awarded|retire(?:d|ment)|w\/o)(?:\W*$|\s*(?:[:(]|\b(?:due to|because of|by|win|loss|victory)\b))/,
+  /\b(?:by|via|due to|ends? in|ended in|declared|ruled) (?:a |an )?(?:forfeit|retirement)\b/,
+  /\b(?:game|match|contest|win|victory|result) (?:was |is |has been )?(?:forfeited|abandoned|awarded|retired)\b/,
+  /\b(?:forfeits?|forfeited|abandons?|abandoned|retired from|retires from) (?:the |this |their )?(?:game|match|contest)\b/,
+  /\b(?:team|side|home|away|hosts|visitors) (?:has )?(?:forfeits?|forfeited|retires?|retired)(?:$|[.,;:!)](?:\s|$))/,
+]
+const normalizeResultLabel = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[_‐‑–—-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+// Settlement uses status_state. A game-level description can veto a result.
+// A retiring team is different from a retiring batter or a runner retired at home.
+function irregularGameLabel(value: unknown, home: string, away: string) {
+  if (typeof value !== 'string') return false
+  const label = normalizeResultLabel(value)
+  if (gameResultLabels.some((pattern) => pattern.test(label))) return true
+  return [home, away].some((name) => {
+    const team = normalizeResultLabel(name) + ' '
+    return (
+      label.startsWith(team) &&
+      /^(?:has )?(?:forfeits?|forfeited|retires?|retired)(?:$|[.,;:!)](?:\s|$))/.test(
+        label.slice(team.length)
+      )
+    )
+  })
+}
+
 export function mapMajorGame(
   league: MajorLeague,
   raw: unknown
@@ -243,11 +275,12 @@ export function mapMajorGame(
       (league === 'nfl' &&
         (score(row.home_team_ot) !== null ||
           score(row.visitor_team_ot) !== null)))
-  const irregular = [row.status, row.summary, row.period_detail].some(
-    (value) =>
-      typeof value === 'string' &&
-      /\b(?:forfeit(?:ed|ure)?|awarded|no contest)\b/i.test(value)
-  )
+  const irregular = [
+    row.status,
+    row.summary,
+    row.period_detail,
+    league === 'nhl' ? row.game_state : undefined,
+  ].some((value) => irregularGameLabel(value, home.name, away.name))
   return {
     id: row.id,
     home,
