@@ -31,6 +31,7 @@ import {
   assertObservedResult,
   boundScore,
   ScoreSource,
+  ScoreEvidence,
   writeFixtureScore,
 } from './sports-score-observation'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
@@ -787,10 +788,11 @@ export async function pollOddsScoresAndResolve(
           (entry) => entry.score.id
         )
       : undefined
-    for (const game of games) {
+    for (const game of observations ? bySport[sportKey] ?? [] : games) {
       if (!isCurrent()) return stats
       const id = game.contract.id
-      if (reservedAtStart.has(id) || state.inFlight.has(id)) {
+      const reserved = reservedAtStart.has(id) || state.inFlight.has(id)
+      if (!observations && reserved) {
         stats.pending++
         continue
       }
@@ -805,43 +807,61 @@ export async function pollOddsScoresAndResolve(
         completed = !!score?.completed
         const interval = selected?.interval ?? read.interval
         if (!score) {
-          if (!(id in state.missing)) state.missing[id] = now
+          if (!reserved && !(id in state.missing)) state.missing[id] = now
           stats.pending++
           continue
         }
         if (!isCurrent()) return stats
-        if (selected?.conflict && interval) {
-          await withGameReservation(
-            state,
+        const liveEnabled =
+          liveInterval({ contractId: id, sport: sportOf(game) }, settings) > 0
+        if (
+          interval &&
+          selected &&
+          (reserved || selected.conflict || (!liveEnabled && !completed))
+        ) {
+          // A reservation prevents a second settlement. It cannot suppress a
+          // correction already returned by a sibling's requested sport batch.
+          const sides = teamScores(score, gameTeams(game))!
+          const source = oddsScoreSource(game)
+          const patch = {
+            sportsHomeScore: selected.conflict ? null : sides.home,
+            sportsAwayScore: selected.conflict ? null : sides.away,
+            sportsLiveStatus: selected.conflict
+              ? 'UNKNOWN'
+              : completed
+              ? 'FINISHED'
+              : 'IN_PLAY',
+            sportsLiveMinute: null,
+            sportsLiveUpdatedTime: interval.receivedAt,
+            sportsScoreUpdatedTime: selected.conflict
+              ? null
+              : selected.stamp || null,
+          }
+          const written = await writeFixtureScore(
+            pg,
+            source,
+            patch,
+            interval.startedAt,
             id,
-            runId,
             isCurrent,
-            async (run) => {
-              const source = oddsScoreSource(game)
-              const held = await run.mutate(() =>
-                writeFixtureScore(
-                  pg,
-                  source,
-                  {
-                    sportsHomeScore: null,
-                    sportsAwayScore: null,
-                    sportsLiveStatus: 'UNKNOWN',
-                    sportsLiveMinute: null,
-                    sportsLiveUpdatedTime: interval.receivedAt,
-                  },
-                  interval.startedAt,
-                  id,
-                  run.isCurrent,
-                  false,
-                  { conflict: true, providerWatermark: selected.watermark }
-                )
-              )
-              for (const market of held)
-                if (market.held && run.isCurrent())
-                  await publishSportsLiveScore(id, market.held)
+            false,
+            {
+              conflict: selected.conflict,
+              undatedConflict: selected.undatedConflict,
+              providerWatermark: selected.watermark,
+              dated: selected.dated,
+              terminalOnly: !selected.conflict && !completed && !liveEnabled,
             }
           )
-          if (!(id in state.missing)) state.missing[id] = now
+          for (const item of written) {
+            if (item.replayedAt == null && isCurrent())
+              await publishSportsLiveScore(
+                id,
+                item.held ?? boundScore(source, patch)
+              )
+          }
+          if (selected.conflict && isCurrent() && !(id in state.missing))
+            state.missing[id] = now
           stats.pending++
           continue
         }
@@ -852,15 +872,9 @@ export async function pollOddsScoresAndResolve(
             runId,
             isCurrent,
             (run) =>
-              finishGame(
-                pg,
-                game,
-                score,
-                creator!,
-                run,
-                interval,
-                selected?.watermark
-              )
+              finishGame(pg, game, score, creator!, run, interval, {
+                dated: selected?.dated,
+              })
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -869,26 +883,16 @@ export async function pollOddsScoresAndResolve(
           }
           resolved.add(id)
           stats.resolved++
-        } else if (
-          score.scores &&
-          score.scores.length > 0 &&
-          liveInterval({ contractId: id, sport: sportOf(game) }, settings) > 0
-        ) {
+        } else if (score.scores && score.scores.length > 0 && liveEnabled) {
           const processed = await withGameReservation(
             state,
             id,
             runId,
             isCurrent,
             (run) =>
-              writeLiveScore(
-                pg,
-                game,
-                score,
-                now,
-                run,
-                interval,
-                selected?.watermark
-              )
+              writeLiveScore(pg, game, score, now, run, interval, {
+                dated: selected?.dated,
+              })
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -926,60 +930,60 @@ type OddsObservation = { score: OddsApiScore; interval: ScoreInterval }
 // Reconcile a batch and its optional follow-up per event. A completed read
 // cannot erase another event that was present only in the first batch.
 function selectOddsObservation(rows: OddsObservation[], game: PendingGame) {
-  const candidates = rows.map((r) => ({
-    ...r,
-    stamp: scoreUpdatedTime(r.score.last_update, r.interval.receivedAt) ?? 0,
-  }))
-  const watermark = candidates.reduce(
-    (highest, c) => Math.max(highest, c.stamp),
-    0
-  )
-  const eligible = candidates.filter((c) => !c.stamp || c.stamp === watermark)
-  const latest = eligible.filter(
-    (c) =>
-      !eligible.some(
-        (other) =>
-          other !== c &&
-          (!other.stamp || !c.stamp) &&
-          other.interval.startedAt >= c.interval.receivedAt &&
-          other.interval.receivedAt > c.interval.receivedAt
+  const candidates = rows.flatMap(({ score, interval }) => {
+    if (score.sport_key !== game.sportKey) return []
+    const sides = teamScores(score, gameTeams(game))
+    if (!sides) return []
+    return [
+      {
+        score,
+        interval,
+        stamp: scoreUpdatedTime(score.last_update, interval.receivedAt) ?? 0,
+        sides,
+        result: JSON.stringify([score.completed, sides.home, sides.away]),
+      },
+    ]
+  })
+  const high = candidates.reduce((stamp, row) => Math.max(stamp, row.stamp), 0)
+  const dated = candidates.filter((row) => row.stamp > 0 && row.stamp === high)
+  const disagreement = (a: typeof candidates) =>
+    new Set(a.map((row) => row.result)).size > 1
+  // Equal vendor times with different outcomes remain disputed even if an
+  // undated copy of either result arrives with a later fetch.
+  const datedConflict = disagreement(dated)
+  const eligible = candidates.filter((row) => !row.stamp || row.stamp === high)
+  const survivors = datedConflict
+    ? dated
+    : eligible.filter(
+        (row) =>
+          !eligible.some(
+            (other) =>
+              (!other.stamp || !row.stamp) &&
+              other.interval.startedAt >= row.interval.receivedAt &&
+              other.interval.receivedAt > row.interval.receivedAt
+          )
       )
-  )
-  if (!latest.length) return
-  const picked = latest.reduce((a, b) =>
-    a.interval.receivedAt !== b.interval.receivedAt
-      ? a.interval.receivedAt > b.interval.receivedAt
-        ? a
-        : b
-      : a.stamp >= b.stamp
+  if (!survivors.length) return
+  const picked = survivors.reduce((a, b) =>
+    a.interval.receivedAt > b.interval.receivedAt ||
+    (a.interval.receivedAt === b.interval.receivedAt && a.stamp >= b.stamp)
       ? a
       : b
   )
-  const evidence = (row: OddsObservation) => {
-    const { score } = row,
-      scores = teamScores(score, gameTeams(game))
-    return [
-      score.sport_key,
-      score.completed,
-      scores?.home,
-      scores?.away,
-      // A different participant pair cannot silently confirm this score.
-      !!scores,
-    ] as const
+  const conflict = datedConflict || disagreement(survivors)
+  return {
+    ...picked,
+    conflict,
+    undatedConflict: conflict && survivors.some((row) => !row.stamp),
+    watermark: conflict
+      ? Math.max(...survivors.map((row) => row.stamp))
+      : picked.stamp,
+    dated: dated[0] && {
+      stamp: high,
+      completed: dated[0].score.completed,
+      ...dated[0].sides,
+    },
   }
-  const target = evidence(picked)
-  const relevant = latest.some(
-    (row) =>
-      row.score.sport_key === game.sportKey &&
-      teamScores(row.score, gameTeams(game)) != null
-  )
-  if (!relevant) return
-  const conflict = latest.some(
-    (row) =>
-      row.score.sport_key !== game.sportKey ||
-      evidence(row).some((v, i) => v !== target[i])
-  )
-  return { ...picked, watermark, conflict }
 }
 
 async function readScores(sportKey: string, finished: boolean) {
@@ -1139,7 +1143,7 @@ async function writeLiveScore(
   now: number,
   run: ScoreGameRun,
   interval?: ScoreInterval,
-  watermark?: number
+  evidence: ScoreEvidence = {}
 ) {
   const teams = gameTeams(game)
   const scores = teamScores(score, teams)
@@ -1172,7 +1176,7 @@ async function writeLiveScore(
           game.contract.id,
           run.isCurrent,
           false,
-          { providerWatermark: watermark }
+          evidence
         )
       )
     : undefined
@@ -1202,7 +1206,7 @@ async function finishGame(
   creator: User,
   run: ScoreGameRun,
   interval: ScoreInterval | undefined,
-  watermark?: number
+  evidence: ScoreEvidence = {}
 ) {
   const { contract } = game
   const d = contract as any
@@ -1251,7 +1255,7 @@ async function finishGame(
           contract.id,
           run.isCurrent,
           false,
-          { providerWatermark: watermark }
+          evidence
         )
       )
     : undefined

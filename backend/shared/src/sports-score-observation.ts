@@ -16,6 +16,8 @@ export type ScoreSource = ScoreFixture & {
 
 type ScoreMarket = MarketContract &
   Partial<Sports & Observation> & {
+    sportsScoreReadCompletedAt?: number
+    sportsScoreConflictStamp?: number | null
     sportsScoreReadStartedAt?: number
     sportsScoreProviderWatermark?: number | null
     sportsScoreAnswers?: [string, number, string][] | null
@@ -40,7 +42,7 @@ export function boundScore(
   return { ...patch, scoreFixture: { eventId, home, away, homeId, awayId } }
 }
 
-function sameNames(left: string, right: string) {
+export function sameNames(left: string, right: string) {
   return (
     splitFlag(left).name.trim().toLowerCase() ===
     splitFlag(right).name.trim().toLowerCase()
@@ -197,69 +199,113 @@ function sameResult(data: ScoreMarket, patch: Observation) {
 
 // An independent later fetch can order undated observations. Overlapping or
 // tied conflicting results invalidate a pending payout until their order is known.
+export type ScoreEvidence = {
+  conflict?: boolean
+  undatedConflict?: boolean
+  providerWatermark?: number
+  dated?: {
+    stamp: number
+    completed: boolean
+    home: number | null
+    away: number | null
+  }
+  terminalOnly?: boolean
+}
+
 function scoreDecision(
   data: ScoreMarket,
   source: ScoreSource,
   patch: Observation,
   startedAt: number,
   replacement: boolean,
-  conflict: boolean,
-  seenProviderTime: number
+  evidence: ScoreEvidence,
+  seenStamp: number
 ) {
   const previous = data.sportsLiveUpdatedTime
-  if (previous == null || replacement) return conflict ? 'hold' : 'write'
+  const conflicted = data.sportsScoreConflict === true
+  const pending = terminal(data.sportsLiveStatus)
+  if (evidence.terminalOnly && (replacement || (!pending && !conflicted)))
+    return 'skip'
+  if (previous == null || replacement)
+    return evidence.conflict ? 'hold' : 'write'
   if (!Number.isSafeInteger(previous)) return 'skip'
   const odds = source.provider === 'odds'
-  const priorTime = odds
+  const priorStamp = odds
     ? Math.max(
         comparableTime(data.sportsScoreProviderWatermark),
         comparableTime(data.sportsScoreUpdatedTime)
       )
     : 0
-  const providerTime = odds ? comparableTime(patch.sportsScoreUpdatedTime) : 0
-  if (priorTime && seenProviderTime && seenProviderTime < priorTime)
-    return 'skip'
-  const newer = providerTime > 0 && priorTime > 0 && providerTime > priorTime
-  const laterRead =
-    startedAt >= previous && patch.sportsLiveUpdatedTime > previous
-  if (!data.scoreFixture && !laterRead) return 'skip'
+  const stamp = odds ? comparableTime(patch.sportsScoreUpdatedTime) : 0
   if (
-    !newer &&
-    patch.sportsLiveUpdatedTime < (data.sportsScoreReadStartedAt ?? 0)
+    priorStamp &&
+    seenStamp &&
+    seenStamp < priorStamp &&
+    !evidence.undatedConflict
   )
     return 'skip'
-  if (conflict) return 'hold'
-  if (data.sportsScoreConflict)
-    return newer || (laterRead && !priorTime) ? 'write' : 'skip'
+  const newer = priorStamp > 0 && seenStamp > priorStamp
+  const equalStamp = priorStamp > 0 && seenStamp === priorStamp
   const same = sameResult(data, patch)
-  const sameStamp = providerTime > 0 && providerTime === priorTime
-  if (terminal(data.sportsLiveStatus) && !terminal(patch.sportsLiveStatus))
-    return odds && (newer || sameStamp) ? 'hold' : 'skip'
+  const start = data.sportsScoreReadStartedAt ?? 0
+  const end = data.sportsScoreReadCompletedAt ?? previous
+  const receipt = patch.sportsLiveUpdatedTime
+  const later = startedAt >= end && receipt > end
+  const earlier = receipt <= start && receipt < end
+  if (!data.scoreFixture && !later) return 'skip'
+  // The latest undated read can supersede a stale copy, but cannot erase a
+  // direct disagreement at the stored result's own vendor timestamp.
+  const dated = evidence.dated
+  if (
+    !conflicted &&
+    dated &&
+    dated.stamp === data.sportsScoreUpdatedTime &&
+    (dated.completed !== pending ||
+      dated.home !== data.sportsHomeScore ||
+      dated.away !== data.sportsAwayScore)
+  )
+    return 'hold'
+  // Verified vendor chronology outranks local commit and processing order.
+  if (equalStamp && !conflicted && (evidence.conflict || !same)) return 'hold'
+  if (!newer && earlier) return 'skip'
+  if (evidence.conflict) return 'hold'
+  if (conflicted) {
+    if (evidence.terminalOnly && !terminal(patch.sportsLiveStatus))
+      return later || newer ? 'hold' : 'skip'
+    const disputeStamp =
+      data.sportsScoreConflictStamp === undefined
+        ? priorStamp
+        : comparableTime(data.sportsScoreConflictStamp)
+    return (disputeStamp > 0 ? stamp > disputeStamp : newer || later)
+      ? 'write'
+      : 'skip'
+  }
+  if (pending && !terminal(patch.sportsLiveStatus)) {
+    const withdrawn = ['POSTPONED', 'SUSPENDED', 'CANCELLED'].includes(
+      patch.sportsLiveStatus
+    )
+    return odds
+      ? newer || equalStamp
+        ? 'hold'
+        : 'skip'
+      : withdrawn
+      ? 'hold'
+      : 'skip'
+  }
   if (newer) return 'write'
-  if (sameStamp && !same) return 'hold'
   if (
     same &&
     terminal(patch.sportsLiveStatus) &&
     sameFixture(data.scoreFixture, source) &&
-    (sameStamp ||
-      (patch.sportsLiveUpdatedTime === previous &&
-        startedAt === data.sportsScoreReadStartedAt))
+    (equalStamp || (receipt === previous && startedAt === start))
   ) {
-    // Earlier versions did not save the accepted answer set. A new independent
-    // provider read can establish it. Replaying the old receipt cannot.
-    if (!Array.isArray(data.sportsScoreAnswers))
-      return laterRead ? 'write' : 'skip'
+    if (!Array.isArray(data.sportsScoreAnswers)) return later ? 'write' : 'skip'
     return 'replay'
   }
-  if (!laterRead) {
-    if (
-      !same &&
-      terminal(data.sportsLiveStatus) &&
-      terminal(patch.sportsLiveStatus)
-    )
-      return 'hold'
-    return 'skip'
-  }
+  if (!later)
+    return !same && pending && terminal(patch.sportsLiveStatus)
+      ? 'hold'
+      : 'skip'
   return 'write'
 }
 
@@ -288,7 +334,7 @@ export async function writeFixtureScore(
   contractId?: string,
   isCurrent: () => boolean = () => true,
   preview = false,
-  evidence: { conflict?: boolean; providerWatermark?: number } = {}
+  evidence: ScoreEvidence = {}
 ): Promise<WrittenScore[]> {
   if (
     !(patch.sportsHomeScore === null || validScore(patch.sportsHomeScore)) ||
@@ -332,7 +378,7 @@ export async function writeFixtureScore(
         patch,
         startedAt,
         replacement,
-        evidence.conflict === true,
+        evidence,
         watermark
       )
       if (decision === 'skip') continue
@@ -358,6 +404,29 @@ export async function writeFixtureScore(
           ))
       )
         continue
+      const priorStarted = replacement ? 0 : data.sportsScoreReadStartedAt ?? 0
+      const priorCompleted = replacement
+        ? 0
+        : data.sportsScoreReadCompletedAt ?? data.sportsLiveUpdatedTime ?? 0
+      // A later independent confirmation advances acquisition ordering while the
+      // original payout receipt and its native answers remain bound.
+      if (
+        !preview &&
+        replay &&
+        startedAt >= priorCompleted &&
+        patch.sportsLiveUpdatedTime > priorCompleted
+      ) {
+        await tx.none(
+          'update contracts set data=data || $1::jsonb where id=$2',
+          [
+            JSON.stringify({
+              sportsScoreReadStartedAt: startedAt,
+              sportsScoreReadCompletedAt: patch.sportsLiveUpdatedTime,
+            }),
+            id,
+          ]
+        )
+      }
       const held: Observation | undefined =
         decision === 'hold'
           ? {
@@ -397,7 +466,24 @@ export async function writeFixtureScore(
             JSON.stringify({
               ...cleared,
               ...boundScore(source, held ?? patch),
-              sportsScoreReadStartedAt: startedAt,
+              sportsScoreReadStartedAt: held
+                ? Math.max(startedAt, priorStarted)
+                : startedAt,
+              sportsScoreReadCompletedAt: held
+                ? Math.max(patch.sportsLiveUpdatedTime, priorCompleted)
+                : patch.sportsLiveUpdatedTime,
+              sportsScoreConflictStamp:
+                held && source.provider === 'odds'
+                  ? Math.max(
+                      watermark,
+                      replacement
+                        ? 0
+                        : comparableTime(data.sportsScoreUpdatedTime),
+                      !replacement && data.sportsScoreConflict
+                        ? comparableTime(data.sportsScoreConflictStamp)
+                        : 0
+                    ) || null
+                  : null,
               sportsScoreConflict: !!held,
               sportsScoreAnswers:
                 !held && terminal(patch.sportsLiveStatus) ? bindings : null,
@@ -406,6 +492,7 @@ export async function writeFixtureScore(
                     sportsScoreProviderWatermark:
                       Math.max(
                         watermark,
+                        comparableTime(evidence.dated?.stamp),
                         replacement
                           ? 0
                           : comparableTime(data.sportsScoreProviderWatermark),

@@ -80,7 +80,11 @@ export function toOfficialGame(
       : d
   const details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
-    : league
+    : league ||
+      (fixture &&
+        (provider === 'odds' || provider === 'football-data') &&
+        scores.sportsLiveStatus === 'UNKNOWN' &&
+        !isResolved)
     ? scheduleScoreFields(scores, isResolved)
     : undefined
 

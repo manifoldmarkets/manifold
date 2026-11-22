@@ -204,3 +204,46 @@ it('hides a previous fixture’s score, clock and receipt immediately after reas
   props.scoreFixture.eventId = props.sportsEventId
   expect(read(true)?.liveScore).toMatchObject({ home: 37, away: 29 })
 })
+
+it.each(['odds', 'football-data'])(
+  'shows a verified unresolved traditional %s hold after close as awaiting update',
+  (provider) => {
+    const eventId = provider === 'odds' ? 'odds:basketball_nba:game' : 'fd-42'
+    const props = {
+      ...market,
+      sportsProvider: provider,
+      sportsEventId: eventId,
+      sportsLeagueKey: undefined,
+      sportsLeague: provider === 'odds' ? 'NBA' : 'Premier League',
+      closeTime: now - 1,
+      sportsLiveStatus: 'UNKNOWN',
+      sportsLiveUpdatedTime: now,
+      scoreFixture: {
+        eventId,
+        home: 'Lake City',
+        away: 'Port City',
+        homeId: '17',
+        awayId: '9',
+      },
+    }
+    const view = (enabled: boolean) =>
+      toOfficialGame(
+        props as unknown as Contract,
+        answers,
+        [],
+        undefined,
+        now,
+        enabled
+      )
+    expect(view(true)).toMatchObject({
+      gameState: 'unavailable',
+      status: 'upcoming',
+      isResolved: false,
+      finalScore: null,
+      winnerAnswerId: null,
+    })
+    expect(view(false)?.status).toBe('finished')
+    props.scoreFixture.eventId = 'unrelated'
+    expect(view(true)?.gameState).toBeUndefined()
+  }
+)

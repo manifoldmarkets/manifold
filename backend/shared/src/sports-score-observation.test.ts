@@ -652,3 +652,190 @@ it('requires a fresh independent read before binding a terminal saved by a previ
     250
   )
 })
+
+it.each([false, true])(
+  'holds equal-stamped opposing finals in either commit order (later first %s)',
+  async (reverse) => {
+    await seed()
+    const earlier = { start: 100, patch: oddsFinal(120, 90, 2, 1) }
+    const later = { start: 180, patch: oddsFinal(200, 90, 1, 2) }
+    const [a, b] = reverse ? [later, earlier] : [earlier, later]
+    const [prior] = await writeFixtureScore(pg, source, a.patch, a.start)
+    const [next] = await writeFixtureScore(pg, source, b.patch, b.start)
+    expect(next.held?.sportsLiveStatus).toBe('UNKNOWN')
+    const stored = await current()
+    expect(() =>
+      assertObservedResult(stored, source, a.patch, prior.answers)
+    ).toThrow()
+  }
+)
+
+it('accepts a verified newer conflict despite its earlier local receipt and ignores entirely stale known evidence', async () => {
+  await seed()
+  const [known] = await writeFixtureScore(
+    pg,
+    source,
+    oddsFinal(240, 100, 2, 1),
+    220
+  )
+  const hold = {
+    ...oddsFinal(205, null, 0, 0),
+    sportsLiveStatus: 'UNKNOWN',
+    sportsHomeScore: null,
+    sportsAwayScore: null,
+  }
+  expect(
+    await writeFixtureScore(
+      pg,
+      source,
+      hold,
+      190,
+      undefined,
+      undefined,
+      false,
+      { conflict: true, providerWatermark: 80 }
+    )
+  ).toEqual([])
+  const [later] = await writeFixtureScore(
+    pg,
+    source,
+    hold,
+    190,
+    undefined,
+    undefined,
+    false,
+    { conflict: true, providerWatermark: 180 }
+  )
+  expect(later.held?.sportsLiveStatus).toBe('UNKNOWN')
+  const stored = await current()
+  expect(() =>
+    assertObservedResult(
+      stored,
+      source,
+      oddsFinal(240, 100, 2, 1),
+      known.answers
+    )
+  ).toThrow()
+})
+
+it('holds an unordered unstamped contradiction alongside stale stamped evidence', async () => {
+  await seed()
+  await writeFixtureScore(pg, source, oddsFinal(200, 150, 2, 1), 180)
+  const dispute = {
+    ...oddsFinal(300, null, 0, 0),
+    sportsLiveStatus: 'UNKNOWN',
+    sportsHomeScore: null,
+    sportsAwayScore: null,
+  }
+  expect(
+    (
+      await writeFixtureScore(
+        pg,
+        source,
+        dispute,
+        270,
+        undefined,
+        undefined,
+        false,
+        {
+          conflict: true,
+          providerWatermark: 120,
+          undatedConflict: true,
+        }
+      )
+    )[0].held
+  ).toBeDefined()
+})
+
+it('keeps the payout receipt and bindings while a later equal confirmation orders intervening undated results', async () => {
+  await seed()
+  const first = oddsFinal(110, 90, 2, 1)
+  const [accepted] = await writeFixtureScore(pg, source, first, 100)
+  const later = oddsFinal(240, 90, 2, 1)
+  expect((await writeFixtureScore(pg, source, later, 200))[0].replayedAt).toBe(
+    110
+  )
+  const revision = async () =>
+    (await db.query<{ xmin: string }>('select xmin::text from contracts'))
+      .rows[0].xmin
+  const before = await revision()
+  expect((await writeFixtureScore(pg, source, later, 200))[0].replayedAt).toBe(
+    110
+  )
+  expect(await revision()).toBe(before)
+  expect(
+    await writeFixtureScore(pg, source, oddsFinal(180, null, 1, 2), 150)
+  ).toEqual([])
+  const stored = await current()
+  expect(stored).toMatchObject({
+    sportsScoreReadStartedAt: 200,
+    sportsScoreReadCompletedAt: 240,
+  })
+  expect(() =>
+    assertObservedResult(stored, source, first, accepted.answers)
+  ).not.toThrow()
+})
+
+it('clears an independently confirmed undated dispute while retaining the historical vendor regression guard', async () => {
+  await seed()
+  await writeFixtureScore(pg, source, oddsFinal(100, 90, 2, 1), 95)
+  await writeFixtureScore(pg, source, oddsFinal(150, null, 2, 1), 120)
+  const [held] = await writeFixtureScore(
+    pg,
+    source,
+    oddsFinal(170, null, 1, 2),
+    140
+  )
+  expect(held.held).toBeDefined()
+  expect(await current()).toMatchObject({
+    sportsScoreConflictStamp: null,
+    sportsScoreProviderWatermark: 90,
+  })
+  const verified = oddsFinal(220, null, 1, 2)
+  const [confirmed] = await writeFixtureScore(pg, source, verified, 190)
+  const stored = await current()
+  expect(() =>
+    assertObservedResult(stored, source, verified, confirmed.answers)
+  ).not.toThrow()
+  expect(
+    await writeFixtureScore(pg, source, oddsFinal(250, 89, 2, 1), 230)
+  ).toHaveLength(0)
+})
+
+it.each([false, true])(
+  'agrees on touching tournament acquisition intervals when the later final commits first: %s',
+  async (reverse) => {
+    await seed(tournament)
+    const held = {
+      ...final,
+      sportsLiveStatus: 'UNKNOWN',
+      sportsHomeScore: null,
+      sportsAwayScore: null,
+      sportsLiveUpdatedTime: 200,
+    }
+    const later = { ...final, sportsLiveUpdatedTime: 250 }
+    const writeHold = () =>
+      writeFixtureScore(
+        pg,
+        tournament,
+        held,
+        100,
+        undefined,
+        undefined,
+        false,
+        { conflict: true }
+      )
+    const writeFinal = () => writeFixtureScore(pg, tournament, later, 200)
+    if (reverse) {
+      await writeFinal()
+      expect(await writeHold()).toEqual([])
+    } else {
+      await writeHold()
+      expect((await writeFinal())[0].held).toBeUndefined()
+    }
+    expect(await current()).toMatchObject({
+      sportsLiveStatus: 'FINISHED',
+      sportsLiveUpdatedTime: 250,
+    })
+  }
+)

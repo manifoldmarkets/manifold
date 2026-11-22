@@ -3,6 +3,7 @@ import {
   assertObservedResult,
   boundScore,
   confirmedTournamentAnswer,
+  sameNames,
   ScoreSource,
   writeFixtureScore,
   WrittenScore,
@@ -584,6 +585,15 @@ type TournamentRecord = ReturnType<typeof tournamentScore> & {
   market: WrittenScore
 }
 
+const isWithdrawn = (match: FDMatch) =>
+  match.status === 'POSTPONED' ||
+  match.status === 'SUSPENDED' ||
+  match.status === 'CANCELLED'
+
+function sameTournamentSides(a: ScoreSource, b: ScoreSource) {
+  return sameNames(a.home, b.home) && sameNames(a.away, b.away)
+}
+
 async function readTournamentObservations(
   pg: SupabaseDirectClient,
   config: TournamentConfig,
@@ -608,12 +618,21 @@ async function readTournamentObservations(
       const match = rows.find(
         (row) => row.status === 'FINISHED' || row.status === 'AWARDED'
       )
-      if (!match) continue
-      const observation = tournamentScore(config, match, interval.receivedAt)
+      const representative = match ?? rows.find(isWithdrawn)
+      if (!representative) continue
+      const observation = tournamentScore(
+        config,
+        representative,
+        interval.receivedAt
+      )
       const copies = rows.map((row) =>
         tournamentScore(config, row, interval.receivedAt)
       )
-      const conflict = copies.some((copy) => !isEqual(copy, observation))
+      const conflict = copies.some(
+        (copy) =>
+          !sameTournamentSides(copy.source, observation.source) ||
+          !isEqual(copy.patch, observation.patch)
+      )
       if (conflict)
         log.push({
           question: id,
@@ -625,7 +644,9 @@ async function readTournamentObservations(
       const sources = conflict
         ? copies.filter(
             (copy, i) =>
-              copies.findIndex((c) => isEqual(c.source, copy.source)) === i
+              copies.findIndex((c) =>
+                sameTournamentSides(c.source, copy.source)
+              ) === i
           )
         : [observation]
       for (const { source, patch } of sources) {
@@ -638,7 +659,9 @@ async function readTournamentObservations(
               sportsPenAway: null,
               sportsLiveStatus: 'UNKNOWN',
             }
-          : patch
+          : match
+          ? patch
+          : { ...patch, sportsHomeScore: null, sportsAwayScore: null }
         const markets = await writeFixtureScore(
           pg,
           source,
@@ -647,10 +670,10 @@ async function readTournamentObservations(
           undefined,
           undefined,
           preview,
-          { conflict }
+          { conflict, terminalOnly: !match }
         )
         for (const market of markets) {
-          if (!market.held && !conflict) {
+          if (match && !market.held && !conflict) {
             const acceptedPatch =
               market.replayedAt == null
                 ? patch
@@ -1330,7 +1353,7 @@ export async function pollAndStoreLiveScores(
   // Resolve finished/awarded matches in the same pass (within ~10s of FT). The
   // 15-min sports-resolve cron remains a backstop for anything missed here.
   let resolved = 0
-  if (terminal.length > 0) {
+  if (terminal.length > 0 || (guarded && matches.some(isWithdrawn))) {
     const r = await resolveTournamentMarketsForMatches(
       config,
       guarded ? matches : terminal,
