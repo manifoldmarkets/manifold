@@ -4,7 +4,11 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { SPORTS_SCHEDULE_PAGE_SIZE as SCHEDULE_PAGE_SIZE } from 'common/sports-game-feed'
-import { AnySportKey, SportsScheduleResponse } from 'common/sports-schedule'
+import {
+  AnySportKey,
+  nextSportsObservationChange,
+  SportsScheduleResponse,
+} from 'common/sports-schedule'
 import {
   adoptedGames,
   appendPage,
@@ -24,9 +28,9 @@ import { api } from 'web/lib/api/api'
 
 /** The endpoint's largest `limit`: a refresh re-reads at most this many. */
 const MAX_SCHEDULE_LIMIT = 400
-/** Refetch cadence while something is live or about to start… */
+/** Refetch cadence while something is live or about to startâ€¦ */
 const ACTIVE_REFRESH_MS = 2 * 60_000
-/** …and while nothing is: still needed to pick up kickoffs, closes and new markets. */
+/** â€¦and while nothing is: still needed to pick up kickoffs, closes and new markets. */
 const IDLE_REFRESH_MS = 5 * 60_000
 
 /** What the sport rail shows: the same in every response, whatever the sport. */
@@ -63,6 +67,7 @@ export function useSportsSchedule(
   const feedRef = useRef(feed)
   feedRef.current = feed
   const [loading, setLoading] = useState(false)
+  const [viewClock, setViewClock] = useState(0)
   // Plain state (not the persistent store): ticks arrive every few seconds
   // during live games and the overlay is cheap to rebuild from a refetch.
   const [live, setLive] = useState<Record<string, LiveGameState>>({})
@@ -157,26 +162,13 @@ export function useSportsSchedule(
   const [lastRail, setLastRail] = usePersistentInMemoryState<
     SportsRailData | undefined
   >(undefined, 'sports-schedule-rail')
-  const response = feed?.response
-  useEffect(() => {
-    if (!response) return
-    setLastRail({
-      sports: response.sports,
-      counts: response.counts,
-      liveCount: response.liveCount,
-    })
-  }, [response])
-  const rail: SportsRailData | undefined = response
-    ? {
-        sports: response.sports,
-        counts: response.counts,
-        liveCount: response.liveCount,
-      }
-    : lastRail
-
   const games = feed?.games ?? []
   const isPageVisible = useIsPageVisible()
   const now = Date.now()
+  useEffect(() => {
+    if (enabled && isPageVisible && isSportsBdlEnabled())
+      setViewClock(Date.now())
+  }, [enabled, isPageVisible])
 
   const topics = useMemo(() => {
     const out: string[] = []
@@ -258,19 +250,54 @@ export function useSportsSchedule(
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
     if (!feed) return undefined
+    const at = Math.max(Date.now(), viewClock)
+    const observed = isSportsBdlEnabled()
+    let liveDelta = 0
+    const games = feed.games.map((g) => {
+      const displayed = applySportsLive(
+        g,
+        live[g.id],
+        feed.snapshotTimes[g.id],
+        observed,
+        at
+      )
+      if (observed && g.sportsLeagueKey)
+        liveDelta +=
+          Number(displayed.status === 'live') - Number(g.status === 'live')
+      return displayed
+    })
     return {
       ...feed.response,
-      games: feed.games.map((g) =>
-        applySportsLive(
-          g,
-          live[g.id],
-          feed.snapshotTimes[g.id],
-          isSportsBdlEnabled()
-        )
-      ),
+      games,
+      liveCount: Math.max(0, feed.response.liveCount + liveDelta),
       nextCursor: feed.cursor,
     }
-  }, [feed, live])
+  }, [feed, live, viewClock])
+  // Refetch can fail while the provider and socket are silent. Expire the local
+  // receipt at its own deadline; this timer never fetches or resolves a market.
+  useEffect(() => {
+    if (!enabled || !isPageVisible || !isSportsBdlEnabled() || !merged) return
+    const next = merged.games.reduce(
+      (first, g) => Math.min(first, nextSportsObservationChange(g) ?? Infinity),
+      Infinity
+    )
+    if (!Number.isFinite(next)) return
+    const delay = Math.min(2_147_483_647, Math.max(0, next - Date.now()))
+    const timer = setTimeout(() => setViewClock(Date.now()), delay)
+    return () => clearTimeout(timer)
+  }, [merged, enabled, isPageVisible])
+
+  const sports = merged?.sports,
+    counts = merged?.counts,
+    liveCount = merged?.liveCount
+  useEffect(() => {
+    if (sports && counts && liveCount != null)
+      setLastRail({ sports, counts, liveCount })
+  }, [sports, counts, liveCount])
+  const rail =
+    sports && counts && liveCount != null
+      ? { sports, counts, liveCount }
+      : lastRail
 
   return {
     schedule: merged,

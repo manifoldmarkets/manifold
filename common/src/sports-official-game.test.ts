@@ -1,3 +1,7 @@
+import { LIVE_STALE_MS } from './sports-schedule'
+import { applySportsLive } from './sports-schedule-live'
+import { canBetOnScheduledGame } from './sports-game-feed'
+import { gameScoreLabel } from './sports-scoreboard'
 import { Answer } from './answer'
 import { Contract } from './contract'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
@@ -58,6 +62,7 @@ it('keeps unknown kickoffs out of live polling until an observation arrives', ()
     project({
       sportsStartKnown: false,
       sportsLiveStatus: 'in_progress',
+      sportsLiveUpdatedTime: now,
       sportsHomeScore: 0,
       sportsAwayScore: 7,
       sportsLivePeriod: 2,
@@ -162,4 +167,137 @@ it('does not publish an old in-progress score as a final score after a BDL resol
       sportsAwayScore: 1,
     })
   ).toMatchObject({ winnerAnswerId: 'home', finalScore: { home: 2, away: 1 } })
+})
+
+const projectAt = (
+  data: Record<string, unknown>,
+  time: number,
+  rows = answers
+) =>
+  toOfficialGame(
+    { ...market, ...data } as unknown as Contract,
+    rows,
+    [],
+    undefined,
+    time
+  )!
+
+it('keeps both fixed answer IDs and side prices after opposite renames, and disables an inconsistent native ticket', () => {
+  const renamed = answers.map((a, i) => ({ ...a, text: answers[1 - i].text }))
+  for (const identity of [{}, { sportsEntrantIds: [9, 17] }]) {
+    const game = projectAt(identity, now, renamed)
+    expect(game.home).toMatchObject({
+      name: 'Lake City',
+      entrantId: '17',
+      answerId: 'home',
+      prob: 0.6,
+    })
+    expect(game.away).toMatchObject({
+      name: 'Port City',
+      entrantId: '9',
+      answerId: 'away',
+      prob: 0.4,
+    })
+    expect(game.bettingSidesUnverified).toBe(true)
+    expect(canBetOnScheduledGame(game, now)).toBe(false)
+  }
+  expect(canBetOnScheduledGame(projectAt({}, now), now)).toBe(true)
+  for (const bad of [[17, 17], [9, 88], [9], [9, 17, null]])
+    expect(project({ sportsEntrantIds: bad })).toBeNull()
+})
+it('uses home/away/draw creation order in three-way soccer and immutable entrant slots when present', () => {
+  const soccer = { sportsEventId: 'bdl:epl:77', sportsLeagueKey: 'epl' }
+  const sorted = [
+    { ...answers[1], index: 0 },
+    { ...answers[0], index: 1 },
+    { ...answers[0], index: 2, id: 'draw', text: 'Draw' },
+  ]
+  expect(projectAt(soccer, now, sorted)).toMatchObject({
+    home: { answerId: 'home' },
+    away: { answerId: 'away' },
+    draw: { answerId: 'draw' },
+  })
+  const inverted = [
+    { ...sorted[1], index: 0 },
+    { ...sorted[0], index: 1 },
+    sorted[2],
+  ]
+  expect(
+    projectAt({ ...soccer, sportsEntrantIds: [9, 17, null] }, now, inverted)
+  ).toMatchObject({
+    home: { answerId: 'home' },
+    away: { answerId: 'away' },
+    draw: { answerId: 'draw' },
+  })
+  expect(
+    project({ ...soccer, sportsEntrantIds: [17, 9, 9] }, sorted)
+  ).toBeNull()
+})
+it('requires an observation to report live or final even after kickoff and the contract deadline', () => {
+  const start = Date.parse(market.sportsStartTimestamp)
+  for (const time of [
+    start - 1,
+    start,
+    start + 100,
+    market.closeTime,
+    market.closeTime + 1,
+  ]) {
+    const row = projectAt({}, time)
+    expect(row).toMatchObject({
+      isResolved: false,
+      status: 'upcoming',
+      gameState: time < start ? 'scheduled' : 'unavailable',
+      liveScore: null,
+      finalScore: null,
+    })
+  }
+})
+it('ages a silent clock at the receipt boundary and recovers from freshly repeated in-progress reads across four hours', () => {
+  const data = {
+    sportsLiveStatus: 'in_progress',
+    sportsLiveUpdatedTime: now,
+    sportsLiveClock: '4:12',
+    sportsLivePeriod: 'Q3',
+    sportsHomeScore: 10,
+    sportsAwayScore: 5,
+  }
+  const fresh = projectAt(data, now + LIVE_STALE_MS - 1)
+  expect(fresh).toMatchObject({
+    status: 'live',
+    gameState: 'live',
+    clock: '4:12',
+  })
+  for (const at of [now + LIVE_STALE_MS, now + 4 * 60 * 60 * 1000]) {
+    const silent = projectAt(data, at)
+    expect(silent).toMatchObject({
+      isResolved: false,
+      status: 'upcoming',
+      gameState: 'unavailable',
+      observationStale: true,
+      liveScore: null,
+    })
+    expect(silent.clock).toBeUndefined()
+    expect(gameScoreLabel(silent)).toMatch(/last seen/)
+    expect(applySportsLive(fresh, undefined, 0, true, at)).toMatchObject({
+      gameState: 'unavailable',
+      observationStale: true,
+    })
+    const recovered = projectAt({ ...data, sportsLiveUpdatedTime: at }, at)
+    expect(recovered).toMatchObject({
+      status: 'live',
+      gameState: 'live',
+      clock: '4:12',
+      isResolved: false,
+    })
+    expect(recovered.observationStale).toBeUndefined()
+  }
+  expect(
+    projectAt({ ...data, sportsLiveUpdatedTime: undefined }, now).gameState
+  ).toBe('unavailable')
+  expect(
+    projectAt({ ...data, resolution: 'home' }, now).observedFinal
+  ).toBeUndefined()
+  expect(
+    projectAt({ ...data, sportsLiveStatus: 'final' }, now).observedFinal
+  ).toBe(true)
 })

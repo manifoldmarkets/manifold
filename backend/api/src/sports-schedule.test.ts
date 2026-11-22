@@ -88,10 +88,13 @@ let linksMissing = false
 let failedLinkRead: 'children' | 'parents' | undefined
 let championshipRows: Record<string, unknown>[] = []
 
-// Each game's two answers, home first, unless a test sets answerRows.
+// BDL majors are created away/home; the older soccer fixtures below are home/away.
 const gameAnswers = (data: Record<string, unknown>) =>
-  (['sportsHomeTeam', 'sportsAwayTeam'] as const).map((team, index) => ({
-    id: `${data.id}-${index === 0 ? 'home' : 'away'}`,
+  (data.sportsLeagueKey === 'nfl'
+    ? ['sportsAwayTeam', 'sportsHomeTeam']
+    : ['sportsHomeTeam', 'sportsAwayTeam']
+  ).map((team, index) => ({
+    id: `${data.id}-${team === 'sportsHomeTeam' ? 'home' : 'away'}`,
     index,
     contract_id: data.id,
     text: data[team],
@@ -1042,7 +1045,7 @@ it('uses the resumption time to order and page an old suspended market', async (
       id: 'expired',
       sportsEventId: 'bdl:nfl:44',
       closeTime: Date.now() - 60000,
-      sportsResumptionTime: Date.now() - 1000,
+      sportsResumptionTime: Date.now() - 19 * 60 * 60_000,
     },
   })
   const get = sportsSchedule as (

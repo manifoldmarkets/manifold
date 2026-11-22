@@ -1,7 +1,7 @@
 import { sortBy } from 'lodash'
 import type { Answer } from './answer'
 import { BDL_LEAGUES, BdlLeagueKey } from './bdl/leagues'
-import { Contract, isMultiCpmm, isSportsContract } from './contract'
+import { Contract, isMultiCpmm, isSportsContract, Sports } from './contract'
 import { officialBdlLeagueKey } from './sports-league-label'
 import { recordedTeamCode } from './bdl/team-codes'
 import { parseBdlEventId } from './sports-ids'
@@ -9,6 +9,7 @@ import { providerOf } from './sports-provider'
 import { scheduleScoreFields, ScheduleScoreFields } from './sports-scoreboard'
 import {
   gameStatus,
+  atSportsObservationTime,
   isDrawAnswer,
   parseSportsStart,
   ScheduleGame,
@@ -49,24 +50,62 @@ export function toOfficialGame(
   const isResolved = !!c.resolution
   const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
   const label = league?.shortLabel || d.sportsLeague || ''
-  const details: ScheduleScoreFields | undefined = isCanceled
+  const kickoff =
+    bdlEnabled && d.sportsStartKnown === false
+      ? null
+      : parseSportsStart(d.sportsStartTimestamp)
+  const observedStatus =
+    typeof d.sportsLiveStatus === 'string'
+      ? d.sportsLiveStatus.toUpperCase()
+      : undefined
+  const terminalObservation =
+    observedStatus === 'FINAL' ||
+    observedStatus === 'FINISHED' ||
+    observedStatus === 'AWARDED'
+  let details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
     : league
     ? scheduleScoreFields(d, isResolved)
     : undefined
 
+  if (league && !details?.gameState) {
+    const gameState = isResolved
+      ? 'final'
+      : terminalObservation
+      ? 'settling'
+      : observedStatus === 'IN_PLAY' || observedStatus === 'PAUSED'
+      ? 'live'
+      : !observedStatus && kickoff != null && kickoff > now
+      ? 'scheduled'
+      : 'unavailable'
+    details = { ...details, gameState }
+  }
+
   const ordered = sortBy(answers, 'index')
-  const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
-  const teams = ordered.filter((a) => a !== drawAnswer)
-  if (teams.length !== 2) return null
-  const [homeAnswer, awayAnswer] = homeAndAway(
-    teams,
-    d.sportsHomeTeam,
-    d.sportsAwayTeam,
-    !!league
+  const binding = league
+    ? bdlGameAnswers(ordered, league.archetype === 'team-3way', d)
+    : legacyGameAnswers(ordered, d.sportsHomeTeam, d.sportsAwayTeam)
+  if (!binding) return null
+  const { homeAnswer, awayAnswer, drawAnswer } = binding
+  const bettingSidesUnverified =
+    league &&
+    (!sameTeamName(homeAnswer.text, d.sportsHomeTeam) ||
+      !sameTeamName(awayAnswer.text, d.sportsAwayTeam) ||
+      (drawAnswer && !isDrawAnswer(drawAnswer.text)))
+  const home = toTeam(
+    homeAnswer,
+    label,
+    leagueKey,
+    d.sportsHomeTeamId,
+    league && d.sportsHomeTeam
   )
-  const home = toTeam(homeAnswer, label, leagueKey, d.sportsHomeTeamId)
-  const away = toTeam(awayAnswer, label, leagueKey, d.sportsAwayTeamId)
+  const away = toTeam(
+    awayAnswer,
+    label,
+    leagueKey,
+    d.sportsAwayTeamId,
+    league && d.sportsAwayTeam
+  )
   const draw = drawAnswer
     ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
     : null
@@ -77,10 +116,6 @@ export function toOfficialGame(
         null
       : null
 
-  const kickoff =
-    bdlEnabled && d.sportsStartKnown === false
-      ? null
-      : parseSportsStart(d.sportsStartTimestamp)
   // Without a parseable kickoff the close time is the only deadline we have
   // (the row then says "Closes").
   const closeTime = c.closeTime ?? (kickoff ?? now) + 3 * HOUR_MS
@@ -104,8 +139,7 @@ export function toOfficialGame(
   const awayScore = bdlEnabled
     ? validScore(d.sportsAwayScore)
     : d.sportsAwayScore ?? null
-  const terminalScore =
-    !league || /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '')
+  const terminalScore = !league || terminalObservation
   const liveScore =
     (status === 'live' ||
       details?.gameState === 'settling' ||
@@ -129,38 +163,113 @@ export function toOfficialGame(
       ? { home: homeScore, away: awayScore }
       : null
 
+  return atSportsObservationTime(
+    {
+      id: c.id,
+      ...(bettingSidesUnverified && { bettingSidesUnverified: true as const }),
+      ...(league &&
+        !isCanceled &&
+        terminalObservation && { observedFinal: true as const }),
+      slug: c.slug,
+      creatorUsername: c.creatorUsername,
+      question: c.question,
+      sport:
+        league?.sportKey ??
+        sportForMarket({ sportsLeague: label, groupIds }, index),
+      groupSlugs: c.groupSlugs ?? [],
+      league: label,
+      ...(leagueKey && { sportsLeagueKey: leagueKey }),
+      ...details,
+      sportsEventId,
+      startTime,
+      kickoffKnown: kickoff != null,
+      closeTime,
+      status,
+      isResolved,
+      ...(isCanceled && { isCanceled: true as const }),
+      winnerAnswerId,
+      resolutionTime: c.resolutionTime ?? null,
+      home,
+      away,
+      draw,
+      volume: c.volume ?? 0,
+      uniqueBettorCount: c.uniqueBettorCount ?? 0,
+      liveScore,
+      liveUpdatedTime: isCanceled ? null : liveUpdatedTime,
+      scoreUpdatedTime: isCanceled ? null : d.sportsScoreUpdatedTime ?? null,
+      finalScore,
+      related: [],
+      relatedCount: 0,
+    },
+    now
+  )
+}
+
+function sameTeamName(answer: string, stored?: string) {
+  return (
+    typeof stored === 'string' &&
+    !!stored.trim() &&
+    normalizedName(stored) === normalizedName(answer)
+  )
+}
+
+function legacyGameAnswers(ordered: Answer[], home?: string, away?: string) {
+  const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
+  const teams = ordered.filter((a) => a !== drawAnswer)
+  if (teams.length !== 2) return
+  const [homeAnswer, awayAnswer] = homeAndAway(teams, home, away)
+  return { homeAnswer, awayAnswer, drawAnswer }
+}
+
+function bdlGameAnswers(
+  ordered: Answer[],
+  threeWay: boolean,
+  market: Pick<
+    Sports,
+    'sportsHomeTeamId' | 'sportsAwayTeamId' | 'sportsEntrantIds'
+  >
+) {
+  if (
+    ordered.length !== (threeWay ? 3 : 2) ||
+    ordered.some(
+      (a, i) =>
+        a.index !== i || !a.id || typeof a.text !== 'string' || !a.text.trim()
+    ) ||
+    new Set(ordered.map((a) => a.id)).size !== ordered.length
+  )
+    return
+  // Two-way versus markets were created away/home. Three-way soccer markets
+  // were created home/away/draw. Mutable answer text never binds a BDL side.
+  let homeIndex = threeWay ? 0 : 1
+  const ids = market.sportsEntrantIds
+  if (ids != null) {
+    if (
+      !Array.isArray(ids) ||
+      ids.length !== ordered.length ||
+      (threeWay && ids[2] !== null)
+    )
+      return
+    const teamIds = ids.slice(0, 2)
+    if (
+      teamIds.some(
+        (id) => id == null || !Number.isSafeInteger(id) || id <= 0
+      ) ||
+      teamIds[0] === teamIds[1]
+    )
+      return
+    homeIndex = teamIds.findIndex(
+      (id) => String(id) === market.sportsHomeTeamId
+    )
+    if (
+      homeIndex < 0 ||
+      String(teamIds[1 - homeIndex]) !== market.sportsAwayTeamId
+    )
+      return
+  }
   return {
-    id: c.id,
-    slug: c.slug,
-    creatorUsername: c.creatorUsername,
-    question: c.question,
-    sport:
-      league?.sportKey ??
-      sportForMarket({ sportsLeague: label, groupIds }, index),
-    groupSlugs: c.groupSlugs ?? [],
-    league: label,
-    ...(leagueKey && { sportsLeagueKey: leagueKey }),
-    ...details,
-    sportsEventId,
-    startTime,
-    kickoffKnown: kickoff != null,
-    closeTime,
-    status,
-    isResolved,
-    ...(isCanceled && { isCanceled: true as const }),
-    winnerAnswerId,
-    resolutionTime: c.resolutionTime ?? null,
-    home,
-    away,
-    draw,
-    volume: c.volume ?? 0,
-    uniqueBettorCount: c.uniqueBettorCount ?? 0,
-    liveScore,
-    liveUpdatedTime: isCanceled ? null : liveUpdatedTime,
-    scoreUpdatedTime: isCanceled ? null : d.sportsScoreUpdatedTime ?? null,
-    finalScore,
-    related: [],
-    relatedCount: 0,
+    homeAnswer: ordered[homeIndex],
+    awayAnswer: ordered[1 - homeIndex],
+    drawAnswer: threeWay ? ordered[2] : undefined,
   }
 }
 
@@ -170,8 +279,12 @@ function validScore(value: unknown) {
     : null
 }
 
+function normalizedName(value: string) {
+  return splitFlag(value).name.trim().toLowerCase()
+}
+
 /**
- * A game market's two team answers as [home, away]. Versus markets list away
+ * A legacy game market's two team answers as [home, away]. Versus markets list away
  * first and soccer lists home first, so the stored team names decide; markets
  * without them (or whose answers were renamed) were created home first.
  */
@@ -181,9 +294,10 @@ export function homeAndAway(
   awayTeam: string | undefined,
   awayFirst = false
 ): [Answer, Answer] {
-  const norm = (s: string) => splitFlag(s).name.trim().toLowerCase()
   const byName = (name: string | undefined) =>
-    name ? teams.find((a) => norm(a.text) === norm(name)) : undefined
+    name
+      ? teams.find((a) => normalizedName(a.text) === normalizedName(name))
+      : undefined
   const home = byName(homeTeam)
   const away = byName(awayTeam)
   if (home && home !== teams[0] && away !== home) return [teams[1], teams[0]]
@@ -198,12 +312,18 @@ function toTeam(
   answer: Answer,
   league: string,
   leagueKey?: BdlLeagueKey,
-  entrantId?: string
+  entrantId?: string,
+  storedName?: string
 ): ScheduleTeam {
-  const { flag, name } = splitFlag(answer.text)
+  const { flag, name } = splitFlag(
+    storedName && !sameTeamName(answer.text, storedName)
+      ? storedName
+      : answer.text
+  )
   const short =
     (leagueKey && recordedTeamCode(leagueKey, entrantId)) ??
-    (answer.shortText
+    (answer.shortText &&
+    (!storedName || normalizedName(storedName) === normalizedName(answer.text))
       ? splitFlag(answer.shortText).name
       : teamCodeForLeague(league, name))
   return {

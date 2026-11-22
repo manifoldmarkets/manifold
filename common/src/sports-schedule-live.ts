@@ -4,6 +4,7 @@ import {
   LIVE_STATUSES,
   TERMINAL_STATUSES,
   gameStatus,
+  atSportsObservationTime,
 } from './sports-schedule'
 import {
   publicSportsScoreSchema,
@@ -125,10 +126,12 @@ export function applySportsLive(
   game: ScheduleGame,
   state?: LiveGameState,
   snapshotTime = 0,
-  bdlEnabled = true
+  bdlEnabled = true,
+  now = Date.now()
 ): ScheduleGame {
   // Applies during render too, before the pruning effect runs.
-  if (!state || game.isResolved) return game
+  if (!state || game.isResolved)
+    return bdlEnabled ? atSportsObservationTime(game, now) : game
   const withProb = <T extends { answerId: string; prob: number }>(t: T): T => {
     const p = state.probs?.[t.answerId]
     return p && p.at > snapshotTime ? { ...t, prob: p.value } : t
@@ -138,7 +141,16 @@ export function applySportsLive(
       ? state.liveScore
       : undefined
   const liveScore = score ? score.value : game.liveScore
-  return {
+  const gameState =
+    score?.fields?.gameState ??
+    (game.sportsLeagueKey && score
+      ? TERMINAL_STATUSES.has(score.status)
+        ? 'settling'
+        : LIVE_STATUSES.has(score.status)
+        ? 'live'
+        : 'unavailable'
+      : undefined)
+  const updated: ScheduleGame = {
     ...game,
     home: withProb(game.home),
     away: withProb(game.away),
@@ -160,7 +172,13 @@ export function applySportsLive(
       score && {
         // Each push is a full observation. Dropping absent detail clears a prior
         // suspension, final or period after the provider corrects the state.
-        gameState: score.fields?.gameState,
+        gameState,
+        observationStale: undefined,
+        observedFinal:
+          game.sportsLeagueKey &&
+          /^(FINAL|FINISHED|AWARDED)$/i.test(score.status)
+            ? true
+            : undefined,
         period: score.fields?.period,
         clock: score.fields?.clock,
         scoreboard: score.fields?.scoreboard,
@@ -169,11 +187,12 @@ export function applySportsLive(
         finalScore: score.finalScore ?? null,
         status: gameStatus({
           ...game,
-          gameState: score.fields?.gameState,
+          gameState,
           liveStatus: score.status,
           liveUpdatedTime: score.at,
           now: score.at,
         }),
       }),
   }
+  return bdlEnabled ? atSportsObservationTime(updated, now) : updated
 }

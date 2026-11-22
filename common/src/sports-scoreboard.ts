@@ -225,6 +225,12 @@ export function scheduleScoreFields(
   }
 }
 
+const lastSeen = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'UTC',
+  timeZoneName: 'short',
+})
 const shortDate = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -281,8 +287,13 @@ export function gameScoreLabel(
       ? label + ' · resumes ' + formatResumeDate(game.resumptionTime)
       : label
   }
-  if (state === 'unavailable')
+  if (state === 'unavailable') {
+    if (game.observationStale && game.liveUpdatedTime != null)
+      return (
+        'Awaiting update · last seen ' + lastSeen.format(game.liveUpdatedTime)
+      )
     return game.isResolved ? 'Result unavailable' : 'Awaiting update'
+  }
   if (state === 'canceled') return 'Canceled'
   if (state === 'settling') return 'Final · checking result'
   if (state === 'final' || game.isResolved)

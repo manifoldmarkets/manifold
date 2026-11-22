@@ -107,7 +107,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     if (
       (g.gameState === 'suspended' || g.gameState === 'postponed') &&
       g.resumptionTime != null &&
-      g.resumptionTime <= now
+      g.closeTime <= now &&
+      g.resumptionTime <= now - FINISHED_GRACE_HOURS * HOUR_MS
     )
       return false
     return scheduleFeedTime(g) < horizon
@@ -482,7 +483,7 @@ async function getOfficialGames(
     for (const resuming of [false, true]) {
       const key = resuming ? "(data->'sportsResumptionTime')" : 'close_time'
       const cast = resuming ? 'jsonb' : 'timestamptz'
-      const lower = resuming ? String(now) : earliestClose
+      const lower = resuming ? String(earliestClose.getTime()) : earliestClose
       const upper = resuming ? String(horizon) : new Date(horizon + DAY_MS)
       type Row = Parameters<typeof convertContract>[0] & {
         id: string

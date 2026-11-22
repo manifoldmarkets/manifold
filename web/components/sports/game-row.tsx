@@ -300,6 +300,7 @@ export function GameRow(props: {
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
+    !game.bettingSidesUnverified &&
     (game.draw ? (
       <SportsThreeWayBetDialog
         match={toSportsMatch(game)}

@@ -1243,6 +1243,12 @@ export interface ScheduleTeam {
 
 export interface ScheduleGame extends ScheduleScoreFields {
   sportsLeagueKey?: BdlLeagueKey
+  /** A renamed native answer does not identify the side shown on the game card. */
+  bettingSidesUnverified?: true
+  /** The last live receipt expired without a newer observation. */
+  observationStale?: true
+  /** The provider explicitly marked the event final. Settlement alone is insufficient. */
+  observedFinal?: true
   id: string
   slug: string
   creatorUsername: string
@@ -1338,6 +1344,65 @@ export const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 export const TERMINAL_STATUSES = new Set(['FINISHED', 'AWARDED'])
 export const LIVE_STALE_MS = 10 * 60 * 1000
 
+/** Age a BDL view by successful provider receipt. An expired observation changes
+ * only the public display. A later identical in-progress observation can restore it. */
+export function atSportsObservationTime(
+  game: ScheduleGame,
+  now: number
+): ScheduleGame {
+  if (!game.sportsLeagueKey || game.isResolved) return game
+  if (
+    game.gameState === 'scheduled' &&
+    game.liveUpdatedTime == null &&
+    game.kickoffKnown &&
+    now >= game.startTime
+  )
+    return { ...game, gameState: 'unavailable', status: 'upcoming' }
+  if (game.gameState !== 'live') return game
+  const at = game.liveUpdatedTime
+  if (freshSportsLiveReceipt(at, now)) return game
+  return {
+    ...game,
+    gameState: 'unavailable',
+    status: 'upcoming',
+    observationStale:
+      at != null && Number.isFinite(at) && at <= now ? true : undefined,
+    clock: undefined,
+    period: undefined,
+    scoreboard: undefined,
+    liveScore: null,
+  }
+}
+
+export function nextSportsObservationChange(
+  game: ScheduleGame
+): number | undefined {
+  if (!game.sportsLeagueKey || game.isResolved) return
+  if (
+    game.gameState === 'scheduled' &&
+    game.kickoffKnown &&
+    game.liveUpdatedTime == null
+  )
+    return game.startTime
+  if (
+    game.gameState === 'live' &&
+    game.liveUpdatedTime != null &&
+    Number.isFinite(game.liveUpdatedTime)
+  )
+    return game.liveUpdatedTime + LIVE_STALE_MS
+  return undefined
+}
+
+function freshSportsLiveReceipt(at: number | null | undefined, now: number) {
+  return (
+    at != null &&
+    Number.isFinite(at) &&
+    at >= 0 &&
+    now >= at &&
+    now - at < LIVE_STALE_MS
+  )
+}
+
 export function gameStatus(props: {
   startTime: number
   closeTime: number
@@ -1357,7 +1422,9 @@ export function gameStatus(props: {
     case 'canceled':
       return 'finished'
     case 'live':
-      return 'live'
+      return freshSportsLiveReceipt(props.liveUpdatedTime, now)
+        ? 'live'
+        : 'upcoming'
     case 'scheduled':
     case 'delayed':
     case 'postponed':
