@@ -1334,6 +1334,8 @@ export interface SportsScheduleResponse {
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number
+  /** Global observed live games expiring at each instant, with no event identifiers. */
+  liveExpiries?: [at: number, count: number][]
   /** Every sport on the page, curated first; see buildSportsIndex. */
   sports: SportInfo[]
 }
@@ -1353,7 +1355,7 @@ export function atSportsObservationTime(
   if (!game.sportsLeagueKey || game.isResolved) return game
   if (
     game.gameState === 'scheduled' &&
-    game.liveUpdatedTime == null &&
+    (game.liveUpdatedTime == null || game.liveUpdatedTime < game.startTime) &&
     game.kickoffKnown &&
     now >= game.startTime
   )
@@ -1375,22 +1377,38 @@ export function atSportsObservationTime(
 }
 
 export function nextSportsObservationChange(
-  game: ScheduleGame
+  game: ScheduleGame,
+  now: number = Date.now()
 ): number | undefined {
-  if (!game.sportsLeagueKey || game.isResolved) return
-  if (
-    game.gameState === 'scheduled' &&
-    game.kickoffKnown &&
-    game.liveUpdatedTime == null
+  if (game.isResolved) return
+  const deadlines = [game.closeTime]
+  if (game.sportsLeagueKey) {
+    if (
+      game.gameState === 'scheduled' &&
+      game.kickoffKnown &&
+      (game.liveUpdatedTime == null || game.liveUpdatedTime < game.startTime)
+    )
+      deadlines.push(game.startTime)
+    if (game.gameState === 'live' && game.liveUpdatedTime != null)
+      deadlines.push(game.liveUpdatedTime + LIVE_STALE_MS)
+  }
+  const next = Math.min(
+    ...deadlines.filter((at) => Number.isFinite(at) && at > now)
   )
-    return game.startTime
-  if (
-    game.gameState === 'live' &&
-    game.liveUpdatedTime != null &&
-    Number.isFinite(game.liveUpdatedTime)
-  )
-    return game.liveUpdatedTime + LIVE_STALE_MS
-  return undefined
+  return Number.isFinite(next) ? next : undefined
+}
+
+/** Stable side identity for a ticket or provider observation, independent of price. */
+export function sportsGameBinding(game: ScheduleGame) {
+  return JSON.stringify([
+    game.id,
+    game.sportsEventId,
+    game.home.entrantId ?? game.home.name.trim().toLowerCase(),
+    game.home.answerId,
+    game.away.entrantId ?? game.away.name.trim().toLowerCase(),
+    game.away.answerId,
+    game.draw?.answerId ?? null,
+  ])
 }
 
 function freshSportsLiveReceipt(at: number | null | undefined, now: number) {

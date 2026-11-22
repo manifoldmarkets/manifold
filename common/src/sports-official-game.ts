@@ -2,6 +2,8 @@ import { sortBy } from 'lodash'
 import type { Answer } from './answer'
 import { BDL_LEAGUES, BdlLeagueKey } from './bdl/leagues'
 import { Contract, isMultiCpmm, isSportsContract, Sports } from './contract'
+import { canBetOnScheduledGame } from './sports-game-feed'
+import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import { officialBdlLeagueKey } from './sports-league-label'
 import { recordedTeamCode } from './bdl/team-codes'
 import { parseBdlEventId } from './sports-ids'
@@ -14,6 +16,7 @@ import {
   parseSportsStart,
   ScheduleGame,
   ScheduleTeam,
+  sportsGameBinding,
   sportForMarket,
   SportsIndex,
   SportsLiveScore,
@@ -81,6 +84,7 @@ export function toOfficialGame(
     details = { ...details, gameState }
   }
 
+  if (bdlEnabled && answers.some((a) => typeof a.text !== 'string')) return null
   const ordered = sortBy(answers, 'index')
   const binding = league
     ? bdlGameAnswers(ordered, league.archetype === 'team-3way', d)
@@ -88,8 +92,14 @@ export function toOfficialGame(
   if (!binding) return null
   const { homeAnswer, awayAnswer, drawAnswer } = binding
   const bettingSidesUnverified =
-    league &&
-    (!sameTeamName(homeAnswer.text, d.sportsHomeTeam) ||
+    bdlEnabled &&
+    (c.outcomeType !== 'MULTIPLE_CHOICE' ||
+      ordered.some((a) => !a.id || !a.text.trim()) ||
+      new Set(ordered.map((a) => a.id)).size !== ordered.length ||
+      normalizedName(homeAnswer.text) === normalizedName(awayAnswer.text) ||
+      isDrawAnswer(homeAnswer.text) ||
+      isDrawAnswer(awayAnswer.text) ||
+      !sameTeamName(homeAnswer.text, d.sportsHomeTeam) ||
       !sameTeamName(awayAnswer.text, d.sportsAwayTeam) ||
       (drawAnswer && !isDrawAnswer(drawAnswer.text)))
   const home = toTeam(
@@ -97,14 +107,14 @@ export function toOfficialGame(
     label,
     leagueKey,
     d.sportsHomeTeamId,
-    league && d.sportsHomeTeam
+    bdlEnabled ? d.sportsHomeTeam : undefined
   )
   const away = toTeam(
     awayAnswer,
     label,
     leagueKey,
     d.sportsAwayTeamId,
-    league && d.sportsAwayTeam
+    bdlEnabled ? d.sportsAwayTeam : undefined
   )
   const draw = drawAnswer
     ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
@@ -336,4 +346,38 @@ function toTeam(
     color: answer.color ?? null,
     prob: answer.prob,
   }
+}
+
+/** Revalidate a feed selection against the separately fetched native market and answers. */
+export function matchesSportsTicket(
+  expected: ScheduleGame,
+  contract: Contract,
+  answers: Answer[],
+  now: number
+) {
+  if (
+    contract.id !== expected.id ||
+    !MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) ||
+    contract.deleted ||
+    contract.visibility !== 'public' ||
+    contract.token !== 'MANA' ||
+    contract.isResolved ||
+    contract.closeTime == null ||
+    contract.closeTime <= now ||
+    !isMultiCpmm(contract) ||
+    contract.outcomeType !== 'MULTIPLE_CHOICE' ||
+    contract.addAnswersMode !== 'DISABLED' ||
+    !contract.shouldAnswersSumToOne ||
+    answers.some((a) => a.contractId !== contract.id || a.resolution != null)
+  )
+    return false
+  const current = toOfficialGame(contract, answers, [], undefined, now, true)
+  return (
+    !!current &&
+    canBetOnScheduledGame(expected, now) &&
+    canBetOnScheduledGame(current, now) &&
+    sportsGameBinding(expected) === sportsGameBinding(current) &&
+    sameTeamName(current.home.name, expected.home.name) &&
+    sameTeamName(current.away.name, expected.away.name)
+  )
 }

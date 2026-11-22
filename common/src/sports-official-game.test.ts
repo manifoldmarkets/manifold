@@ -1,11 +1,15 @@
-import { LIVE_STALE_MS } from './sports-schedule'
+import {
+  LIVE_STALE_MS,
+  nextSportsObservationChange,
+  sportsGameBinding,
+} from './sports-schedule'
 import { applySportsLive } from './sports-schedule-live'
 import { canBetOnScheduledGame } from './sports-game-feed'
 import { gameScoreLabel } from './sports-scoreboard'
 import { Answer } from './answer'
 import { Contract } from './contract'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
-import { toOfficialGame } from './sports-official-game'
+import { matchesSportsTicket, toOfficialGame } from './sports-official-game'
 
 const now = Date.UTC(2026, 10, 21, 15)
 const answers = [
@@ -300,4 +304,126 @@ it('ages a silent clock at the receipt boundary and recovers from freshly repeat
   expect(
     projectAt({ ...data, sportsLiveStatus: 'final' }, now).observedFinal
   ).toBe(true)
+})
+
+const native = {
+  ...market,
+  visibility: 'public',
+  token: 'MANA',
+  shouldAnswersSumToOne: true,
+  addAnswersMode: 'DISABLED',
+  isResolved: false,
+} as unknown as Contract
+const offered = answers.map((answer) => ({ ...answer, contractId: native.id }))
+
+it('requires unique labels and payable answer IDs for both legacy orders and BDL sides', () => {
+  const legacy = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:basketball_nba:abcd',
+    sportsLeagueKey: undefined,
+  }
+  for (const order of [
+    answers,
+    [answers[1], answers[0]].map((a, index) => ({ ...a, index })),
+  ]) {
+    const game = project(legacy, order)!
+    expect([game.home.answerId, game.away.answerId]).toEqual(['home', 'away'])
+    expect(canBetOnScheduledGame(game, now)).toBe(true)
+  }
+  for (const attrs of [legacy, {}]) {
+    const same = answers.map((a) => ({ ...a, text: 'Port City' }))
+    expect(
+      project({ ...attrs, sportsHomeTeam: 'Port City' }, same)
+        ?.bettingSidesUnverified
+    ).toBe(true)
+    expect(project(attrs, same)?.bettingSidesUnverified).toBe(true)
+    expect(
+      project({ ...attrs, sportsAwayTeam: undefined })?.bettingSidesUnverified
+    ).toBe(true)
+  }
+  expect(
+    project(legacy, [answers[0], { ...answers[1], id: answers[0].id }])
+      ?.bettingSidesUnverified
+  ).toBe(true)
+  const off = toOfficialGame(
+    { ...native, ...legacy } as Contract,
+    answers.map((a) => ({ ...a, text: 'renamed' })),
+    [],
+    undefined,
+    now,
+    false
+  )
+  expect(off?.bettingSidesUnverified).toBeUndefined()
+})
+
+it('checks the fetched market before the native dialog can choose a fallback answer', () => {
+  const row = project({})!
+  expect(matchesSportsTicket(row, native, offered, now)).toBe(true)
+  for (const patch of [
+    { sportsEventId: 'bdl:nba:999' },
+    { sportsAwayTeamId: '999' },
+    { deleted: true },
+    { isResolved: true },
+    { sportsLiveStatus: 'FINAL' },
+    { closeTime: now },
+    { visibility: 'private' },
+    { token: 'CASH' },
+    { creatorId: 'someone-else' },
+    { outcomeType: 'MULTI_NUMERIC' },
+    { addAnswersMode: 'ANYONE' },
+    { shouldAnswersSumToOne: false },
+  ])
+    expect(
+      matchesSportsTicket(
+        row,
+        { ...native, ...patch } as Contract,
+        offered,
+        now
+      )
+    ).toBe(false)
+  for (const patch of [
+    { text: 'renamed' },
+    { id: 'replacement' },
+    { contractId: 'another' },
+    { resolution: 'YES' },
+  ])
+    expect(
+      matchesSportsTicket(
+        row,
+        native,
+        [offered[0], { ...offered[1], ...patch } as Answer],
+        now
+      )
+    ).toBe(false)
+  expect(matchesSportsTicket(row, native, offered.slice(1), now)).toBe(false)
+  const replaced = {
+    ...row,
+    home: { ...row.home, entrantId: undefined, name: 'A' },
+  }
+  expect(sportsGameBinding(replaced)).not.toEqual(
+    sportsGameBinding({ ...replaced, home: { ...replaced.home, name: 'C' } })
+  )
+})
+
+it('expires an earlier scheduled receipt exactly at kickoff and the independent close before its live TTL', () => {
+  const kickoff = now + 1000
+  const data = {
+    sportsStartTimestamp: new Date(kickoff).toISOString(),
+    sportsLiveStatus: 'SCHEDULED',
+    sportsLiveUpdatedTime: now,
+  }
+  const before = projectAt(data, kickoff - 1)
+  expect(before.gameState).toBe('scheduled')
+  expect(nextSportsObservationChange(before, kickoff - 1)).toBe(kickoff)
+  expect(projectAt(data, kickoff).gameState).toBe('unavailable')
+  expect(
+    projectAt({ ...data, sportsLiveUpdatedTime: kickoff + 1 }, kickoff + 2)
+      .gameState
+  ).toBe('scheduled')
+  const live = projectAt(
+    { sportsLiveStatus: 'IN_PROGRESS', sportsLiveUpdatedTime: now },
+    now
+  )
+  expect(nextSportsObservationChange(live, now)).toBe(market.closeTime)
+  expect(canBetOnScheduledGame(live, market.closeTime)).toBe(false)
 })

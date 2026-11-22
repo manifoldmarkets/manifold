@@ -4,12 +4,21 @@ import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import Link from 'next/link'
-import { ReactNode, useEffect, useRef, useState } from 'react'
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
   ScheduleGame,
   ScheduleTeam,
   teamDisplayName,
+  sportsGameBinding,
 } from 'common/sports-schedule'
 import { gameScoreLabel, scoreboardDetailLines } from 'common/sports-scoreboard'
 import { formatFeedPrice } from 'common/sports-price'
@@ -39,9 +48,12 @@ import {
   SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
+import { sportsViewNow } from 'common/sports-view-clock'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
+
+const HoldDescription = createContext<string | undefined>(undefined)
 
 function gamePath(game: ScheduleGame) {
   return `/${game.creatorUsername}/${game.slug}`
@@ -131,6 +143,7 @@ export function GameRow(props: {
   const [selection, setSelection] = useState<{
     outcome: MatchOutcome
     identity: string
+    closeTime: number
   } | null>(null)
   const user = useUser()
   const stakeOn = (answerId: string | undefined) =>
@@ -144,22 +157,40 @@ export function GameRow(props: {
   const live = game.status === 'live'
   const finished = game.status === 'finished'
   const canBet = isSportsBdlEnabled()
-    ? canBetOnScheduledGame(game, Date.now())
+    ? canBetOnScheduledGame(game, sportsViewNow())
     : !finished
 
-  const identity = JSON.stringify([
-    game.id,
-    game.sportsEventId,
-    game.home.entrantId,
-    game.home.answerId,
-    game.away.entrantId,
-    game.away.answerId,
-    game.draw?.answerId,
-  ])
+  const verified = isSportsBdlEnabled()
+  const identity = verified ? sportsGameBinding(game) : ''
   const betOutcome = selection?.outcome
   // Clear the actual intent before committing a corrected market to the screen.
-  if (selection && (selection.identity !== identity || !canBet))
+  if (
+    verified &&
+    selection &&
+    (selection.identity !== identity ||
+      !canBet ||
+      sportsViewNow() >= selection.closeTime)
+  )
     setSelection(null)
+
+  const holdId = useId()
+  const holdReason =
+    !verified || canBet
+      ? undefined
+      : game.bettingSidesUnverified
+      ? 'Team labels under review'
+      : 'Betting closed'
+  const hold = holdReason && (
+    <p className="text-ink-600 px-4 pb-2 text-xs" id={holdId}>
+      {holdReason}
+    </p>
+  )
+  const descriptionId = holdReason ? holdId : undefined
+  const withHoldDescription = (row: ReactNode) => (
+    <HoldDescription.Provider value={descriptionId}>
+      {row}
+    </HoldDescription.Provider>
+  )
 
   const score =
     game.finalScore ??
@@ -236,7 +267,7 @@ export function GameRow(props: {
   const onBet = (outcome: MatchOutcome) => {
     if (
       !canBet ||
-      (isSportsBdlEnabled() && !canBetOnScheduledGame(game, Date.now()))
+      (isSportsBdlEnabled() && !canBetOnScheduledGame(game, sportsViewNow()))
     )
       return
     if (!user) {
@@ -244,7 +275,7 @@ export function GameRow(props: {
       return
     }
     track('bet intent', { location: `sports ${variant}`, outcome })
-    setSelection({ outcome, identity })
+    setSelection({ outcome, identity, closeTime: game.closeTime })
   }
 
   const [firstTeam, secondTeam] = displayTeams.map(
@@ -322,16 +353,19 @@ export function GameRow(props: {
   // React tree, and would open the game.
   const dialog =
     betOutcome &&
-    canBet &&
-    selection?.identity === identity &&
+    (!verified || (canBet && selection?.identity === identity)) &&
     (game.draw ? (
       <SportsThreeWayBetDialog
+        intentClose={verified ? selection?.closeTime : undefined}
+        expectedGame={verified ? game : undefined}
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={closeDialog}
       />
     ) : (
       <SportsVersusBetDialog
+        intentClose={verified ? selection?.closeTime : undefined}
+        expectedGame={verified ? game : undefined}
         contractId={game.id}
         initialAnswerId={
           betOutcome === 'teamB' ? game.away.answerId : game.home.answerId
@@ -341,7 +375,7 @@ export function GameRow(props: {
     ))
 
   if (variant === 'compact') {
-    return (
+    return withHoldDescription(
       <section
         id={gameAnchor(game)}
         className={clsx(
@@ -382,6 +416,7 @@ export function GameRow(props: {
           )}
         </div>
         <GameLinkedMarkets game={game} />
+        {hold}
         {dialog}
       </section>
     )
@@ -389,7 +424,7 @@ export function GameRow(props: {
 
   if (variant === 'featured') {
     const details = isSportsBdlEnabled() ? scoreboardDetailLines(game) : []
-    return (
+    return withHoldDescription(
       <section
         id={gameAnchor(game)}
         className={clsx(
@@ -503,6 +538,7 @@ export function GameRow(props: {
                     <button
                       type="button"
                       disabled={!canBet}
+                      aria-describedby={descriptionId}
                       onClick={() => onBet('draw')}
                       aria-label={`Bet on a draw (${formatFeedPrice(
                         game.draw.prob
@@ -550,12 +586,13 @@ export function GameRow(props: {
             </div>
           }
         />
+        {hold}
         {dialog}
       </section>
     )
   }
 
-  return (
+  return withHoldDescription(
     <div
       id={gameAnchor(game)}
       className={clsx(
@@ -584,6 +621,7 @@ export function GameRow(props: {
         />
       )}
       <GameLinkedMarkets game={game} />
+      {hold}
       {dialog}
     </div>
   )
@@ -970,12 +1008,14 @@ export function PriceChip(props: {
   className?: string
 }) {
   const { prob, onClick, label, disabled, muted, held, className } = props
+  const descriptionId = useContext(HoldDescription)
   const price = formatFeedPrice(prob)
   const flash = useProbFlash(Math.round(prob * 100))
   return (
     <button
       type="button"
       aria-label={`${label} (${price})${held ? ', your pick' : ''}`}
+      aria-describedby={disabled ? descriptionId : undefined}
       disabled={disabled}
       onClick={onClick}
       className={clsx(

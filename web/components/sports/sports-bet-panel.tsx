@@ -1,4 +1,8 @@
 import clsx from 'clsx'
+import { matchesSportsTicket } from 'common/sports-official-game'
+import { ScheduleGame } from 'common/sports-schedule'
+import { gameScoreLabel } from 'common/sports-scoreboard'
+import { sportsViewNow } from 'common/sports-view-clock'
 import { escapeRegExp } from 'lodash'
 import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
@@ -20,7 +24,7 @@ import { SportsMatch, MatchOutcome } from './sports-match-card'
 // Game markets are bet on with Manifold's standard dialogs: knockout markets
 // have no Draw answer, so they're two-answer "versus" markets; soccer markets
 // with a Draw are three-way. Both load the contract by id.
-function useSportsContract(contractId: string | undefined) {
+function useSportsContract(contractId: string | undefined, verify = false) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
   const [failed, setFailed] = useState(!contractId)
 
@@ -37,7 +41,7 @@ function useSportsContract(contractId: string | undefined) {
         const multi = c as CPMMMultiContract
         setContract({
           ...multi,
-          answers: answerMap[c.id] ?? multi.answers ?? [],
+          answers: answerMap[c.id] ?? (verify ? [] : multi.answers ?? []),
         })
       })
       .catch(() => {
@@ -46,9 +50,38 @@ function useSportsContract(contractId: string | undefined) {
     return () => {
       cancelled = true
     }
-  }, [contractId])
+  }, [contractId, verify])
 
   return { contract, failed }
+}
+
+// While the dialog loads, the feed snapshot and the newly read market may diverge.
+function useValidTicket(
+  game: ScheduleGame | undefined,
+  contract: CPMMMultiContract | null,
+  onClose: () => void,
+  intentClose?: number
+) {
+  const [, rerender] = useState(0)
+  const now = sportsViewNow()
+  const valid =
+    !game ||
+    !contract ||
+    ((intentClose == null || now < intentClose) &&
+      matchesSportsTicket(game, contract, contract.answers, now))
+  useEffect(() => {
+    if (!valid) onClose()
+    if (!game || !valid || !contract || contract.closeTime == null) return
+    const delay =
+      Math.min(game.closeTime, contract.closeTime, intentClose ?? Infinity) -
+      sportsViewNow()
+    const timer = setTimeout(
+      () => rerender((n) => n + 1),
+      Math.min(2147483647, Math.max(delay, 0))
+    )
+    return () => clearTimeout(timer)
+  }, [valid, game, contract, now, onClose, intentClose])
+  return valid
 }
 
 // The row keeps its bet state while this is open, so give it a way to close.
@@ -72,13 +105,19 @@ export function SportsVersusBetDialog({
   contractId,
   onClose,
   initialAnswerId,
+  expectedGame,
+  intentClose,
 }: {
+  intentClose?: number
+  expectedGame?: ScheduleGame
   contractId: string | undefined
   onClose: () => void
   /** The answer (team) the dialog opens on; defaults to the first answer. */
   initialAnswerId?: string
 }) {
-  const { contract, failed } = useSportsContract(contractId)
+  const { contract, failed } = useSportsContract(contractId, !!expectedGame)
+  const valid = useValidTicket(expectedGame, contract, onClose, intentClose)
+  if (!valid) return null
 
   if (failed) return <SportsLoadError onClose={onClose} />
   if (!contract) return null
@@ -144,12 +183,21 @@ export function SportsThreeWayBetDialog({
   match,
   initialOutcome,
   onClose,
+  expectedGame,
+  intentClose,
 }: {
+  intentClose?: number
+  expectedGame?: ScheduleGame
   match: SportsMatch
   initialOutcome: MatchOutcome
   onClose: () => void
 }) {
-  const { contract, failed } = useSportsContract(match.contractId)
+  const { contract, failed } = useSportsContract(
+    match.contractId,
+    !!expectedGame
+  )
+  const valid = useValidTicket(expectedGame, contract, onClose, intentClose)
+  if (!valid) return null
 
   if (failed) return <SportsLoadError onClose={onClose} />
   if (!contract) return null
@@ -171,7 +219,21 @@ export function SportsThreeWayBetDialog({
     `\\b${escapeRegExp(match.closeDateLabel)}\\b`
   ).test(contract.question)
   const kickoff = `Kickoff ${match.closeTime}`
-  const description = live
+  const heldLabel =
+    expectedGame &&
+    ['suspended', 'postponed', 'delayed'].includes(expectedGame.gameState ?? '')
+      ? gameScoreLabel(expectedGame)
+      : undefined
+  const description = heldLabel
+    ? [
+        heldLabel,
+        live?.home != null && live.away != null
+          ? `${live.home} – ${live.away}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : live
     ? [
         live.minute === 'HT'
           ? 'Half time'

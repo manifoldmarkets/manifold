@@ -7,6 +7,7 @@ import { SPORTS_SCHEDULE_PAGE_SIZE as SCHEDULE_PAGE_SIZE } from 'common/sports-g
 import {
   AnySportKey,
   nextSportsObservationChange,
+  sportsGameBinding,
   SportsScheduleResponse,
 } from 'common/sports-schedule'
 import {
@@ -20,11 +21,32 @@ import {
   applySportsLive,
   decodeSportsScoreTick,
   newerSportsScoreTick,
+  projectSportsRail,
   LiveGameState,
 } from 'common/sports-schedule-live'
 import { HOUR_MS } from 'common/util/time'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { observeSportsClock, sportsViewNow } from 'common/sports-view-clock'
 import { api } from 'web/lib/api/api'
+
+async function readSchedule(params: {
+  sport: string
+  topic?: string
+  limit: number
+  cursor?: string
+}) {
+  if (!isSportsBdlEnabled()) return api('sports-schedule', params)
+  let date: string | null = null,
+    age: string | null = null
+  const page = await api('sports-schedule', params, {
+    onResponseHeaders: (headers) => {
+      date = headers.get('Date')
+      age = headers.get('Age')
+    },
+  })
+  observeSportsClock(page.snapshotTime, date, age)
+  return page
+}
 
 /** The endpoint's largest `limit`: a refresh re-reads at most this many. */
 const MAX_SCHEDULE_LIMIT = 400
@@ -36,7 +58,7 @@ const IDLE_REFRESH_MS = 5 * 60_000
 /** What the sport rail shows: the same in every response, whatever the sport. */
 export type SportsRailData = Pick<
   SportsScheduleResponse,
-  'sports' | 'counts' | 'liveCount'
+  'sports' | 'counts' | 'liveCount' | 'liveExpiries'
 >
 
 /**
@@ -88,8 +110,7 @@ export function useSportsSchedule(
         feedRef.current,
         SCHEDULE_PAGE_SIZE,
         MAX_SCHEDULE_LIMIT,
-        (limit, cursor) =>
-          api('sports-schedule', { sport, topic, limit, cursor }),
+        (limit, cursor) => readSchedule({ sport, topic, limit, cursor }),
         () => gen === generation.current,
         isSportsBdlEnabled()
       )
@@ -128,7 +149,7 @@ export function useSportsSchedule(
     loadingMore.current = true
     const gen = generation.current
     try {
-      const page = await api('sports-schedule', {
+      const page = await readSchedule({
         sport,
         topic,
         limit: SCHEDULE_PAGE_SIZE,
@@ -164,11 +185,29 @@ export function useSportsSchedule(
   >(undefined, 'sports-schedule-rail')
   const games = feed?.games ?? []
   const isPageVisible = useIsPageVisible()
-  const now = Date.now()
+  const now = isSportsBdlEnabled() ? sportsViewNow() : Date.now()
   useEffect(() => {
     if (enabled && isPageVisible && isSportsBdlEnabled())
-      setViewClock(Date.now())
+      setViewClock(sportsViewNow())
   }, [enabled, isPageVisible])
+
+  // The legacy socket topic names only the contract. After a reassignment it
+  // cannot prove which event a delayed packet describes; recover it via HTTP.
+  const currentBindings = useMemo(
+    () => new Map(games.map((g) => [g.id, sportsGameBinding(g)])),
+    [games]
+  )
+  const seenBindings = useRef(new Map<string, string | null>())
+  useEffect(() => {
+    if (!isSportsBdlEnabled()) return
+    for (const [id, binding] of currentBindings) {
+      const previous = seenBindings.current.get(id)
+      seenBindings.current.set(
+        id,
+        previous === undefined || previous === binding ? binding : null
+      )
+    }
+  }, [currentBindings])
 
   const topics = useMemo(() => {
     const out: string[] = []
@@ -197,6 +236,12 @@ export function useSportsSchedule(
     onBroadcast: ({ topic, data }) => {
       const id = topic.split('/')[1]
       if (!id) return
+      const binding = isSportsBdlEnabled() ? currentBindings.get(id) : undefined
+      if (
+        isSportsBdlEnabled() &&
+        (!binding || seenBindings.current.get(id) !== binding)
+      )
+        return
       const at = data.broadcastTime as number | undefined
       if (topic.endsWith('/updated-answers')) {
         const updates = (data.answers ?? []) as { id: string; prob?: number }[]
@@ -211,7 +256,7 @@ export function useSportsSchedule(
             )
               probs[a.id] = { value: a.prob, at }
           }
-          return { ...prev, [id]: { ...prev[id], probs } }
+          return { ...prev, [id]: { ...prev[id], binding, probs } }
         })
       } else if (topic.endsWith('/sports-live')) {
         const tick = decodeSportsScoreTick(data, isSportsBdlEnabled())
@@ -226,7 +271,7 @@ export function useSportsSchedule(
             ? prev
             : {
                 ...prev,
-                [id]: { ...prev[id], liveScore },
+                [id]: { ...prev[id], binding, liveScore },
               }
         })
       }
@@ -250,54 +295,70 @@ export function useSportsSchedule(
 
   const merged: SportsScheduleResponse | undefined = useMemo(() => {
     if (!feed) return undefined
-    const at = Math.max(Date.now(), viewClock)
+    const at = isSportsBdlEnabled() ? sportsViewNow() : Date.now()
     const observed = isSportsBdlEnabled()
-    let liveDelta = 0
-    const games = feed.games.map((g) => {
-      const displayed = applySportsLive(
-        g,
-        live[g.id],
-        feed.snapshotTimes[g.id],
-        observed,
-        at
-      )
-      if (observed && g.sportsLeagueKey)
-        liveDelta +=
-          Number(displayed.status === 'live') - Number(g.status === 'live')
-      return displayed
-    })
+    const games = feed.games.map((g) =>
+      applySportsLive(g, live[g.id], feed.snapshotTimes[g.id], observed, at)
+    )
     return {
       ...feed.response,
       games,
-      liveCount: Math.max(0, feed.response.liveCount + liveDelta),
+      ...(observed && projectSportsRail(feed.response, feed.games, games, at)),
       nextCursor: feed.cursor,
     }
   }, [feed, live, viewClock])
   // Refetch can fail while the provider and socket are silent. Expire the local
   // receipt at its own deadline; this timer never fetches or resolves a market.
   useEffect(() => {
-    if (!enabled || !isPageVisible || !isSportsBdlEnabled() || !merged) return
-    const next = merged.games.reduce(
-      (first, g) => Math.min(first, nextSportsObservationChange(g) ?? Infinity),
-      Infinity
+    if (!enabled || !isPageVisible || !isSportsBdlEnabled()) return
+    const now = sportsViewNow()
+    const deadlines =
+      (merged ?? lastRail)?.liveExpiries?.map(([at]) => at) ?? []
+    const next = (merged?.games ?? []).reduce(
+      (first, g) =>
+        Math.min(first, nextSportsObservationChange(g, now) ?? Infinity),
+      deadlines.reduce(
+        (first, at) => (at > now ? Math.min(at, first) : first),
+        Infinity
+      )
     )
     if (!Number.isFinite(next)) return
-    const delay = Math.min(2_147_483_647, Math.max(0, next - Date.now()))
-    const timer = setTimeout(() => setViewClock(Date.now()), delay)
+    const delay = Math.min(2_147_483_647, Math.max(0, next - now))
+    const timer = setTimeout(() => setViewClock(sportsViewNow()), delay)
     return () => clearTimeout(timer)
-  }, [merged, enabled, isPageVisible])
+  }, [merged, lastRail, enabled, isPageVisible, viewClock])
 
-  const sports = merged?.sports,
-    counts = merged?.counts,
-    liveCount = merged?.liveCount
+  const rail = useMemo(() => {
+    if (merged) {
+      const { sports, counts, liveCount, liveExpiries } = merged
+      return {
+        sports,
+        counts,
+        liveCount,
+        ...(liveExpiries && { liveExpiries }),
+      }
+    }
+    if (!lastRail || !isSportsBdlEnabled()) return lastRail
+    const now = sportsViewNow()
+    // Older in-memory rail entries contain no freshness data.
+    const expired =
+      lastRail.liveExpiries?.reduce(
+        (n, [at, count]) => n + (at <= now ? count : 0),
+        0
+      ) ?? lastRail.liveCount
+    return { ...lastRail, liveCount: Math.max(0, lastRail.liveCount - expired) }
+  }, [merged, lastRail, viewClock])
   useEffect(() => {
-    if (sports && counts && liveCount != null)
-      setLastRail({ sports, counts, liveCount })
-  }, [sports, counts, liveCount])
-  const rail =
-    sports && counts && liveCount != null
-      ? { sports, counts, liveCount }
-      : lastRail
+    if (merged) {
+      const { sports, counts, liveCount, liveExpiries } = merged
+      setLastRail({
+        sports,
+        counts,
+        liveCount,
+        ...(liveExpiries && { liveExpiries }),
+      })
+    }
+  }, [merged])
 
   return {
     schedule: merged,

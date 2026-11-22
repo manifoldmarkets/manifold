@@ -2,9 +2,11 @@ import {
   ScheduleGame,
   SportsScheduleResponse,
   LIVE_STATUSES,
+  LIVE_STALE_MS,
   TERMINAL_STATUSES,
   gameStatus,
   atSportsObservationTime,
+  sportsGameBinding,
 } from './sports-schedule'
 import {
   publicSportsScoreSchema,
@@ -16,10 +18,13 @@ import {
 /** Times come from the server, never the browser's arrival clock. */
 export type Stamped<T> = { value: T; at: number }
 export type LiveGameState = {
+  /** Schedule binding under which the websocket observation was acquired. */
+  binding?: string
   probs?: Record<string, Stamped<number>>
   liveScore?: Stamped<ScheduleGame['liveScore']> & {
     status: string
     scoreUpdatedTime?: number | null
+    terminalPair?: ScheduleGame['finalScore']
     fields?: ScheduleScoreFields
     finalScore?: ScheduleGame['finalScore']
   }
@@ -74,6 +79,11 @@ export function decodeSportsScoreTick(
           ...(fields.clock != null && { clock: fields.clock }),
         }
       : null,
+    ...(TERMINAL_STATUSES.has(status) &&
+      home != null &&
+      away != null && {
+        terminalPair: { home, away },
+      }),
     finalScore: hasFinal ? { home, away } : null,
   }
 }
@@ -100,7 +110,10 @@ export function pruneSportsLive(
   let dropped = false
   for (const [id, s] of Object.entries(state)) {
     const game = games.get(id)
-    if (game?.isResolved) {
+    if (
+      game?.isResolved ||
+      (s.binding && game && s.binding !== sportsGameBinding(game))
+    ) {
       dropped = true
       continue
     }
@@ -114,7 +127,7 @@ export function pruneSportsLive(
     const keepScore =
       s.liveScore && s.liveScore.at > (game?.liveUpdatedTime ?? 0)
     if (s.liveScore && !keepScore) dropped = true
-    const next: LiveGameState = {}
+    const next: LiveGameState = { ...(s.binding && { binding: s.binding }) }
     if (Object.keys(probs).length > 0) next.probs = probs
     if (keepScore) next.liveScore = s.liveScore
     if (next.probs || next.liveScore) out[id] = next
@@ -130,7 +143,11 @@ export function applySportsLive(
   now = Date.now()
 ): ScheduleGame {
   // Applies during render too, before the pruning effect runs.
-  if (!state || game.isResolved)
+  if (
+    !state ||
+    game.isResolved ||
+    (bdlEnabled && state.binding && state.binding !== sportsGameBinding(game))
+  )
     return bdlEnabled ? atSportsObservationTime(game, now) : game
   const withProb = <T extends { answerId: string; prob: number }>(t: T): T => {
     const p = state.probs?.[t.answerId]
@@ -140,7 +157,13 @@ export function applySportsLive(
     state.liveScore && state.liveScore.at > (game.liveUpdatedTime ?? 0)
       ? state.liveScore
       : undefined
-  const liveScore = score ? score.value : game.liveScore
+  const terminalPair = game.sportsLeagueKey && score?.terminalPair
+  const liveScore =
+    terminalPair && score
+      ? { ...terminalPair, status: score.status, minute: null }
+      : score
+      ? score.value
+      : game.liveScore
   const gameState =
     score?.fields?.gameState ??
     (game.sportsLeagueKey && score
@@ -184,7 +207,7 @@ export function applySportsLive(
         scoreboard: score.fields?.scoreboard,
         resumptionTime: score.fields?.resumptionTime,
         finalQualifier: score.fields?.finalQualifier,
-        finalScore: score.finalScore ?? null,
+        finalScore: terminalPair || score.finalScore || null,
         status: gameStatus({
           ...game,
           gameState,
@@ -195,4 +218,53 @@ export function applySportsLive(
       }),
   }
   return bdlEnabled ? atSportsObservationTime(updated, now) : updated
+}
+
+/** Reconcile the global HTTP census with newer observations for the loaded rows.
+ * Store only outstanding expiration counts so the rail also ages between views. */
+export function projectSportsRail(
+  source: SportsScheduleResponse,
+  before: ScheduleGame[],
+  after: ScheduleGame[],
+  now: number
+) {
+  const fallbackEnd = (source.snapshotTime ?? 0) + LIVE_STALE_MS
+  const deadlines = new Map<number, number>()
+  const addDeadline = (at: number | undefined, count: number) => {
+    if (at !== undefined && at > now)
+      deadlines.set(at, (deadlines.get(at) ?? 0) + count)
+  }
+  let liveCount = source.liveCount
+  for (const [at, count] of source.liveExpiries ?? [
+    [fallbackEnd, source.liveCount],
+  ]) {
+    if (at <= now) liveCount -= count
+    else addDeadline(at, count)
+  }
+  const counts = { ...source.counts }
+  const receiptEnd = (game: ScheduleGame) =>
+    game.sportsLeagueKey && game.liveUpdatedTime != null
+      ? game.liveUpdatedTime + LIVE_STALE_MS
+      : undefined
+  before.forEach((game, i) => {
+    const displayed = after[i]
+    const wasLive = source.liveExpiries
+      ? atSportsObservationTime(game, now).status === 'live'
+      : now < fallbackEnd && game.status === 'live'
+    if (wasLive) {
+      liveCount--
+      addDeadline(source.liveExpiries ? receiptEnd(game) : fallbackEnd, -1)
+    }
+    if (displayed.status === 'live') {
+      liveCount++
+      addDeadline(receiptEnd(displayed), 1)
+    }
+    if (game.status !== 'finished' && displayed.status === 'finished')
+      counts[game.sport] = Math.max(0, (counts[game.sport] ?? 0) - 1)
+  })
+  return {
+    counts,
+    liveCount: Math.max(0, liveCount),
+    liveExpiries: [...deadlines].filter(([, n]) => n > 0),
+  }
 }

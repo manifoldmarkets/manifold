@@ -17,7 +17,7 @@ export function canBetOnScheduledGame(game: ScheduleGame, now: number) {
     game.gameState === 'canceled'
   )
     return false
-  return !game.sportsLeagueKey || game.closeTime > now
+  return game.closeTime > now
 }
 
 type FeedTime = Pick<ScheduleGame, 'startTime' | 'gameState' | 'resumptionTime'>

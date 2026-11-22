@@ -55,6 +55,8 @@ function appendQuery(url: string, props: Record<string, any>) {
 }
 
 export type BaseApiCallOptions = {
+  /** Optional metadata for displays that use the origin clock. */
+  onResponseHeaders?: (headers: Headers) => void
   // Browser fetch cache mode. Pass 'no-store' on a refetch that follows a
   // mutation: cached GET endpoints (max-age + stale-while-revalidate) can
   // otherwise legally serve the pre-mutation state for several seconds.
@@ -93,6 +95,7 @@ export async function baseApiCall(
     if (!resp.ok) {
       throw new APIError(resp.status as ErrorCode, json?.message, json?.details)
     }
+    options?.onResponseHeaders?.(resp.headers)
     return json
   })
 }

@@ -73,6 +73,7 @@ const tree = [
 type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
 let resumedRows: { data: Record<string, unknown> }[] = []
+let liveRows: { data: Record<string, unknown> }[] = []
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
@@ -107,6 +108,7 @@ const gameAnswers = (data: Record<string, unknown>) =>
 beforeEach(() => {
   marketRows = props
   officialRows = official
+  liveRows = []
   officialPages = []
   resumedRows = []
   answerRows = []
@@ -146,12 +148,17 @@ beforeEach(() => {
         return linkedElsewhere
       }
       if (sql.includes("where data->>'sportsEventId' is not null")) {
-        const resuming = sql.includes('jsonb_typeof')
-        const rows = (resuming ? resumedRows : officialRows)
+        const live = sql.includes("jsonb_typeof(data->'sportsLiveUpdatedTime')")
+        const resuming = sql.includes(
+          "jsonb_typeof(data->'sportsResumptionTime')"
+        )
+        const rows = (live ? liveRows : resuming ? resumedRows : officialRows)
           .map(({ data }) => ({
             data,
             id: String(data.id),
-            page_time: resuming
+            page_time: live
+              ? String(data.sportsLiveUpdatedTime)
+              : resuming
               ? String(data.sportsResumptionTime)
               : new Date(Number(data.closeTime)).toISOString(),
           }))
@@ -168,7 +175,7 @@ beforeEach(() => {
           : 0
         if (params[2]) expect(start).toBeGreaterThan(0)
         const batch = rows.slice(start, start + size)
-        if (!resuming) officialPages.push(batch.length)
+        if (!resuming && !live) officialPages.push(batch.length)
         return batch
       }
       if (sql.includes("where data->>'sportsEventId'")) return officialRows
@@ -176,7 +183,7 @@ beforeEach(() => {
       if (sql.includes('from answers'))
         return answerRows.length > 0
           ? answerRows
-          : [...officialRows, ...resumedRows].flatMap(({ data }) =>
+          : [...officialRows, ...resumedRows, ...liveRows].flatMap(({ data }) =>
               gameAnswers(data)
             )
       if (sql.includes('select c.id, c.question')) return marketRows
@@ -1109,9 +1116,40 @@ it('uses the legacy single capped close-time scan and original scores when rollo
       status: 'live',
       liveScore: { home: 7, away: 3, minute: '45', status: 'IN_PLAY' },
     })
+    expect(result).not.toHaveProperty('liveExpiries')
     expect(result.games[0]).not.toHaveProperty('gameState')
     expect(result.games[0].liveScore).not.toHaveProperty('period')
   } finally {
     jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   }
+})
+
+it('counts fresh resumed games outside a scoped page with only grouped receipt deadlines', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = ['fresh1', 'fresh2', 'expired'].map((id) => ({
+    data: {
+      ...official[0].data,
+      id,
+      creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+      sportsProvider: 'bdl',
+      sportsLeagueKey: 'nfl',
+      sportsMarketType: 'moneyline',
+      sportsEventId: 'bdl:nfl:' + { fresh1: 11, fresh2: 12, expired: 13 }[id],
+      closeTime: at - 3 * 86400000,
+      sportsStartTimestamp: new Date(at - 3 * 86400000).toISOString(),
+      sportsResumptionTime: null,
+      sportsLiveStatus: 'IN_PROGRESS',
+      sportsLiveUpdatedTime: id === 'expired' ? at - 600000 : at,
+    },
+  }))
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const page = await get({ sport: 'soccer' })
+  const result = 'result' in page ? page.result : page
+  expect(result.games).toEqual([])
+  expect(result.counts.nfl).toBe(2)
+  expect(result.liveCount).toBe(2)
+  expect(result.liveExpiries).toEqual([[at + 600000, 2]])
 })

@@ -1,10 +1,15 @@
-import { ScheduleGame, SportsScheduleResponse } from './sports-schedule'
+import {
+  ScheduleGame,
+  SportsScheduleResponse,
+  sportsGameBinding,
+} from './sports-schedule'
 import {
   applySportsLive,
   decodeSportsScoreTick,
   newerSportsScoreTick,
   LiveGameState,
   pruneSportsLive,
+  projectSportsRail,
 } from './sports-schedule-live'
 
 const game: ScheduleGame = {
@@ -267,4 +272,95 @@ it('preserves legacy scores and terminal state when extended score handling is o
   expect(result.finalScore).toBeNull()
   expect(result.liveScore).toBeNull()
   expect(result).not.toHaveProperty('gameState')
+})
+
+it('discards probability and score observations when a contract names a different event or participant', () => {
+  const bound = { ...live, binding: sportsGameBinding(game) }
+  expect(applySportsLive(game, bound, 150, true, 200).home.prob).toBe(0.65)
+  for (const correction of [
+    { sportsEventId: 'other-event' },
+    { home: { ...game.home, name: 'New home' } },
+  ]) {
+    const next = { ...game, ...correction, liveUpdatedTime: null }
+    expect(applySportsLive(next, bound, 150, true, 200)).toBe(next)
+    expect(pruneSportsLive({ game: bound }, snapshot(150, next))).toEqual({})
+  }
+})
+
+it.each(['FINISHED', 'AWARDED'])(
+  'preserves both terminal scores in a BDL %s push',
+  (status) => {
+    const bdl = { ...game, sportsLeagueKey: 'nba' as const }
+    const raw = {
+      sportsHomeScore: 2,
+      sportsAwayScore: 1,
+      sportsLiveMinute: null,
+      sportsLiveUpdatedTime: 200,
+      sportsLiveStatus: status,
+    }
+    const tick = decodeSportsScoreTick(raw)
+    expect(
+      applySportsLive(bdl, { liveScore: tick }, 0, true, 200)
+    ).toMatchObject({
+      gameState: 'settling',
+      observedFinal: true,
+      finalScore: { home: 2, away: 1 },
+      liveScore: { home: 2, away: 1 },
+    })
+    const partial = decodeSportsScoreTick({ ...raw, sportsAwayScore: null })
+    expect(
+      applySportsLive(bdl, { liveScore: partial }, 0, true, 200).finalScore
+    ).toBeNull()
+    expect(
+      applySportsLive(game, { liveScore: tick }, 0, true, 200).finalScore
+    ).toBeNull()
+  }
+)
+
+it('expires off-page observations and replaces only the visible game’s aggregate deadline', () => {
+  const now = 700000
+  const row = {
+    ...game,
+    sportsLeagueKey: 'nba' as const,
+    gameState: 'live' as const,
+    liveUpdatedTime: now,
+  }
+  const global = {
+    ...snapshot(now, row),
+    counts: { nfl: 4 },
+    liveCount: 4,
+    liveExpiries: [
+      [now + 1000, 2],
+      [now + 600000, 2],
+    ] as [number, number][],
+  }
+  const updated = { ...row, liveUpdatedTime: now + 500 }
+  expect(projectSportsRail(global, [row], [updated], now + 500)).toMatchObject({
+    liveCount: 4,
+    liveExpiries: [
+      [now + 1000, 2],
+      [now + 600000, 1],
+      [now + 600500, 1],
+    ],
+  })
+  expect(projectSportsRail(global, [], [], now + 1000)).toMatchObject({
+    liveCount: 2,
+    counts: { nfl: 4 },
+  })
+  expect(
+    projectSportsRail(
+      global,
+      [row],
+      [{ ...updated, status: 'finished' }],
+      now + 1000
+    )
+  ).toMatchObject({ liveCount: 1, counts: { nfl: 3 } })
+  expect(
+    projectSportsRail(
+      { ...global, liveExpiries: undefined },
+      [],
+      [],
+      now + 600000
+    ).liveCount
+  ).toBe(0)
 })
