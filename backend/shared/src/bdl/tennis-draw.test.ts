@@ -177,7 +177,10 @@ function provider(responses: unknown[]) {
 }
 it('uses only the requested tournament and season, checks every page and admits no missing pair', async () => {
   const { client, urls } = provider([
-    { data: [{ ...record, player2: null }], meta: { next_cursor: 'next' } },
+    {
+      data: [{ ...record, id: 99, player2: null }],
+      meta: { next_cursor: 'next' },
+    },
     { data: [record] },
   ])
   const view = await readTennisDraw(
@@ -244,4 +247,80 @@ it('returns no rows or provider traffic when ATP is off and keeps WTA on the Q13
       }
     )
   ).toEqual({ readStartedAt: null, rounds: [] })
+})
+
+it('holds every scoped version when a later or earlier page rejects the same match identity', async () => {
+  for (const other of [
+    { ...record, round: 'Qualifying' },
+    { ...record, player2: null },
+    {
+      ...record,
+      round: 'unknown',
+      player2: { id: 88, full_name: 'New player' },
+    },
+  ]) {
+    for (const rows of [
+      [record, other],
+      [other, record],
+    ]) {
+      const { client, urls } = provider([
+        { data: [rows[0]], meta: { next_cursor: 1 } },
+        { data: [rows[1]] },
+      ])
+      expect(
+        (await readTennisDraw(client, 'atp', 325, 2025, () => true)).rounds
+      ).toEqual([])
+      expect(urls).toHaveLength(2)
+    }
+  }
+})
+it.each(['between pages', 'during limiter wait', 'before HTTP retry'] as const)(
+  'stops at dispatch %s and discards the partial draw',
+  async (mode) => {
+    let enabled = true,
+      requests = 0,
+      time = now
+    const client = createBdlClient({
+      role: 'recorder',
+      key: 'test-only',
+      clock: {
+        now: () => time,
+        sleep: async (ms) => {
+          time += ms
+          if (mode !== 'between pages') enabled = false
+        },
+      },
+      transport: async () => {
+        requests++
+        if (mode === 'between pages') enabled = false
+        return mode === 'before HTTP retry'
+          ? new Response('{}', { status: 503 })
+          : new Response(
+              JSON.stringify({ data: [record], meta: { next_cursor: 1 } })
+            )
+      },
+    })
+    expect(
+      await readTennisDraw(client, 'atp', 325, 2025, () => enabled)
+    ).toEqual({ readStartedAt: null, rounds: [] })
+    expect(requests).toBe(1)
+  }
+)
+it('keeps both prices off a scheduled row carrying a terminal result or any played set', () => {
+  for (const patch of [
+    { winner: record.winner, set_scores: [] },
+    { winner: null, set_scores: record.set_scores },
+    {
+      winner: null,
+      set_scores: [{ set_number: 1, player1_games: 2, player2_games: 1 }],
+    },
+  ]) {
+    const m = parseTennisMatch('atp', {
+      ...record,
+      ...patch,
+      match_status: 'scheduled',
+      status_state: 'scheduled',
+    })!
+    expect(tennisPicks(m, market, now, now)).toEqual([])
+  }
 })

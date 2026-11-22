@@ -61,15 +61,15 @@ export function tennisDraw(
     if (
       m.tour !== tour ||
       m.tournament.id !== tournamentId ||
-      m.tournament.season !== season ||
-      !m.eligibleRound ||
-      !m.round
+      m.tournament.season !== season
     )
       continue
     if (byId.has(m.id)) ambiguous.add(m.id)
     else byId.set(m.id, m)
   }
-  const all = [...byId.values()].filter((m) => !ambiguous.has(m.id))
+  const all = [...byId.values()].filter(
+    (m) => m.eligibleRound && !ambiguous.has(m.id)
+  )
   return (Object.keys(tennisRoundNames) as TennisRound[])
     .map((round) => ({
       round,

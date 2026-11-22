@@ -225,7 +225,7 @@ it('groups only observed matches in this tour, tournament and season and holds d
       m,
       other,
       { ...m, tour: 'wta' },
-      { ...m, eligibleRound: false },
+      { ...m, id: 99, eligibleRound: false },
       { ...sf, tournament: { ...m.tournament, season: 2024 } },
     ]).map((r) => [r.round, r.matches.map((x) => x.id)])
   ).toEqual([
@@ -261,4 +261,160 @@ it('interprets midnight as the venue calendar day, including both daylight trans
   expect(
     tennisTiming('2026-01-16', tennisVenueZone('unverified venue'), 3)
   ).toBeNull()
+})
+
+it('accepts only scores at which the tiebreak could actually end, including partial source fields', () => {
+  const tie = (x: number | null, y: number | null) =>
+    parsed({
+      ...good,
+      set_scores: [
+        good.set_scores[0],
+        { ...good.set_scores[1], player1_tiebreak: x, player2_tiebreak: y },
+      ],
+    })
+  for (const [x, y] of [
+    [8, 4],
+    [7, 6],
+    [6, null],
+    [2, null],
+    [0, null],
+    [7, 8],
+    [10, 6],
+  ]) {
+    expect(tie(x, y)).toMatchObject({
+      winnerId: null,
+      attention: 'scores',
+      sides: [{ sets: [] }, { sets: [] }],
+    })
+  }
+  for (const [x, y] of [
+    [7, 4],
+    [8, 6],
+    [10, 8],
+    [7, null],
+    [null, 4],
+    [null, 16],
+    [null, null],
+  ]) {
+    const g = tie(x, y)
+    expect(g.winnerId).toBe(2)
+    expect(g.sides.map((side) => side.sets[1].tiebreak)).toEqual([x, y])
+  }
+})
+it.each(['atp', 'wta'] as const)(
+  'uses a first-to-ten deciding tiebreak for modern %s Slams',
+  (tour) => {
+    const n = tour === 'atp' ? 5 : 3
+    const set = (i: number) => ({
+      ...good.set_scores[0],
+      set_number: i + 1,
+      player1_games: i % 2 ? 4 : 6,
+      player2_games: i % 2 ? 6 : 4,
+    })
+    const final = (x: number | null, y: number | null, season = 2025) =>
+      parseTennisMatch(tour, {
+        ...good,
+        season,
+        tournament: { ...good.tournament, season, category: 'Grand Slam' },
+        set_scores: [
+          ...Array.from({ length: n - 1 }, (_, i) => set(i)),
+          {
+            ...good.set_scores[1],
+            set_number: n,
+            player1_tiebreak: x,
+            player2_tiebreak: y,
+          },
+        ],
+      })
+    for (const [x, y] of [
+      [10, 4],
+      [10, 8],
+      [11, 9],
+      [null, 3],
+      [10, null],
+    ])
+      expect(final(x, y)?.winnerId).toBe(2)
+    for (const [x, y] of [
+      [7, 4],
+      [9, 7],
+      [10, 9],
+      [11, 7],
+      [9, null],
+    ])
+      expect(final(x, y)).toMatchObject({ winnerId: null, attention: 'scores' })
+    expect(final(10, 8, 2021)).toMatchObject({
+      winnerId: null,
+      attention: 'scores',
+    })
+    expect(final(null, null, 2021)).toMatchObject({
+      winnerId: null,
+      attention: 'scores',
+    })
+  }
+)
+it('withholds terminal or played evidence from an allegedly scheduled or live match', () => {
+  const scheduled = {
+    ...good,
+    match_status: 'scheduled',
+    status_state: 'scheduled',
+    winner: null,
+    set_scores: [],
+  }
+  const active = {
+    ...live,
+    match_status: 'in_progress',
+    status_state: 'in_progress',
+  }
+  expect(parsed(scheduled).attention).toBeNull()
+  for (const patch of [
+    { set_scores: good.set_scores },
+    {
+      set_scores: [
+        { ...good.set_scores[0], player1_games: 2, player2_games: 1 },
+      ],
+    },
+    { winner: good.player1 },
+    { is_live: true },
+    { server: 1 },
+    { player1_game_score: '15' },
+  ])
+    expect(parsed({ ...scheduled, ...patch })).toMatchObject({
+      status: 'unavailable',
+      attention: 'status',
+      winnerId: null,
+    })
+  for (const patch of [{ winner: live.player1 }, { is_live: false }])
+    expect(parseTennisMatch('wta', { ...active, ...patch })).toMatchObject({
+      status: 'unavailable',
+      attention: 'status',
+      winnerId: null,
+    })
+  expect(parsed({ ...good, is_live: true }).winnerId).toBeNull()
+})
+it('validates a live point pair together, including tiebreaks still being played', () => {
+  const game = (x: string, y: string, sets = live.set_scores) =>
+    parseTennisMatch('wta', {
+      ...live,
+      set_scores: sets,
+      player1_game_score: x,
+      player2_game_score: y,
+    })!
+  for (const [x, y] of [
+    ['AD', 'AD'],
+    ['AD', '15'],
+    ['0', 'AD'],
+  ])
+    expect(game(x, y).sides.map((s) => s.points)).toEqual([null, null])
+  for (const [x, y] of [
+    ['AD', '40'],
+    ['40', 'AD'],
+    ['40', '40'],
+    ['15', '0'],
+  ])
+    expect(game(x, y).sides.map((s) => s.points)).toEqual([x, y])
+  const sixes = live.set_scores.map((s, i) =>
+    i === 2 ? { ...s, player1_games: 6, player2_games: 6 } : s
+  )
+  expect(game('7', '2', sixes).sides.map((s) => s.points)).toEqual([null, null])
+  expect(game('7', '6', sixes).sides.map((s) => s.points)).toEqual(['7', '6'])
 })

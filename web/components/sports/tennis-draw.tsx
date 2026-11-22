@@ -36,7 +36,7 @@ export function TennisMatchCard({ match, readStartedAt, now, ticket }: Props) {
     readStartedAt >= 0 &&
     readStartedAt <= when &&
     when - readStartedAt < LIVE_STALE_MS
-  const live = match.status === 'live' && fresh
+  const live = match.status === 'live' && !match.attention && fresh
   const deadline = fresh
     ? Math.min(
         readStartedAt! + LIVE_STALE_MS,
@@ -86,12 +86,18 @@ export function TennisMatchCard({ match, readStartedAt, now, ticket }: Props) {
     >
       <header className="text-ink-600 flex flex-wrap items-center justify-between gap-2 px-3 pt-3 text-xs">
         <h3 id={heading} className="text-ink-800 font-medium">
+          <span className="sr-only">
+            {match.sides[0].name} vs {match.sides[1].name},{' '}
+          </span>
           {match.tournament.name}
           {match.round && ' · ' + tennisRoundNames[match.round]}
         </h3>
         <span className="inline-flex items-center gap-1.5">
           {live && (
-            <span aria-hidden className="bg-success-500 h-2 w-2 rounded-full" />
+            <span
+              aria-hidden
+              className="h-2 w-2 shrink-0 rounded-full bg-red-500 motion-safe:animate-pulse"
+            />
           )}
           {status}
         </span>
@@ -146,11 +152,15 @@ export function TennisMatchCard({ match, readStartedAt, now, ticket }: Props) {
                   {side.sets.map((s, i) => (
                     <li key={i}>
                       S{i + 1} <b className="text-ink-800">{s.games}</b>
-                      {s.tiebreak != null && (
-                        <sup aria-label={'tiebreak ' + s.tiebreak}>
-                          {s.tiebreak}
-                        </sup>
-                      )}
+                      {s.tiebreak != null &&
+                        (live ||
+                          !match.sides.every(
+                            (p) => p.sets[i]?.games === 6
+                          )) && (
+                          <sup aria-label={'tiebreak ' + s.tiebreak}>
+                            {s.tiebreak}
+                          </sup>
+                        )}
                     </li>
                   ))}
                 </ol>

@@ -4,6 +4,7 @@ import type { createBdlClient } from '../balldontlie-client'
 import { parseTennisMatch } from './tennis-matches'
 import { z } from 'zod'
 
+const matchId = z.object({ id: z.number().int().positive().safe() })
 const scope = z.object({
   season: z.number().int(),
   tournament: z.object({ id: z.number().int(), season: z.number().int() }),
@@ -30,29 +31,49 @@ export async function readTennisDraw(
     throw Error('Invalid tennis tournament scope')
   // The oldest possible receipt in a paged batch bounds the freshness of every displayed row.
   const readStartedAt = now()
-  const rows = await client.getAll<unknown>(
-    BDL_LEAGUES[tour].apiBase + '/matches',
-    { tournament_ids: [tournamentId], season },
-    {
-      maxPages: 6,
-      matches: (raw) => {
-        const parsed = scope.safeParse(raw)
-        return (
-          parsed.success &&
-          parsed.data.season === season &&
-          parsed.data.tournament.season === season &&
-          parsed.data.tournament.id === tournamentId
-        )
-      },
-    }
-  )
-  if (!(await enabled())) return { readStartedAt: null, rounds: [] }
+  const disabled = new Error('Tennis draw phase disabled')
+  const empty = { readStartedAt: null, rounds: [] }
+  const beforeRequest = async () => {
+    if (!(await enabled())) throw disabled
+  }
+  const rows = await client
+    .getAll<unknown>(
+      BDL_LEAGUES[tour].apiBase + '/matches',
+      { tournament_ids: [tournamentId], season },
+      {
+        maxPages: 6,
+        beforeRequest,
+        matches: (raw) => {
+          const parsed = scope.safeParse(raw)
+          return (
+            parsed.success &&
+            parsed.data.season === season &&
+            parsed.data.tournament.season === season &&
+            parsed.data.tournament.id === tournamentId
+          )
+        },
+      }
+    )
+    .catch((error) => {
+      if (error === disabled) return null
+      throw error
+    })
+  if (!rows || !(await enabled())) return empty
+  const unreadable = new Set<number>()
   const matches = rows.flatMap((raw) => {
     const m = parseTennisMatch(tour, raw)
-    return m ? [m] : []
+    if (m) return [m]
+    const identity = matchId.safeParse(raw)
+    if (identity.success) unreadable.add(identity.data.id)
+    return []
   })
   return {
     readStartedAt,
-    rounds: tennisDraw(matches, tour, tournamentId, season),
+    rounds: tennisDraw(
+      matches.filter((m) => !unreadable.has(m.id)),
+      tour,
+      tournamentId,
+      season
+    ),
   }
 }

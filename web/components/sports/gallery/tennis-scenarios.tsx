@@ -126,6 +126,7 @@ function PreviewTicket({
     valid = Number.isSafeInteger(stake) && stake > 0
   return (
     <Modal
+      adaptToKeyboard
       open
       setOpen={(open) => {
         if (!open) close()

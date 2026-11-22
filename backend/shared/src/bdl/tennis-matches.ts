@@ -34,6 +34,7 @@ const match = z.object({
   player1: player,
   player2: player,
   winner: z.unknown(),
+  is_live: z.unknown(),
   match_status: z.string().nullish(),
   status_state: z.string().nullish(),
   set_scores: z.unknown(),
@@ -108,8 +109,36 @@ function completed(a: number, b: number) {
     (Math.max(a, b) === 7 && Math.min(a, b) >= 5 && Math.min(a, b) <= 6)
   )
 }
+function validTiebreak(set: RawSet, target: number | null) {
+  const {
+    player1_games: a,
+    player2_games: b,
+    player1_tiebreak: x,
+    player2_tiebreak: y,
+  } = set
+  if (target === null && Math.min(a, b) === 6) return false
+  if (x == null && y == null) return true
+  // A historical deciding-set format must be known before interpreting its points.
+  if (target === null || Math.min(a, b) !== 6 || Math.max(a, b) > 7)
+    return false
+  if (a === b)
+    return (
+      x == null || y == null || Math.max(x, y) < target || Math.abs(x - y) < 2
+    )
+  const win = a > b ? x : y,
+    lose = a > b ? y : x
+  if (win == null) return true // A lone losing total does not determine the winning total.
+  if (win < target) return false
+  if (lose == null) return true
+  return win === target ? lose <= target - 2 : win - lose === 2
+}
 // Source slot order remains unchanged here. Ranking can reorder whole sides after binding scores.
-function scoreLine(raw: unknown, bestOf: 3 | 5, final: boolean) {
+function scoreLine(
+  raw: unknown,
+  bestOf: 3 | 5,
+  final: boolean,
+  decidingTarget: number | null
+) {
   const parsed = setsSchema.safeParse(raw)
   if (!parsed.success || parsed.data.length > bestOf) return null
   const wins = [0, 0],
@@ -121,18 +150,7 @@ function scoreLine(raw: unknown, bestOf: 3 | 5, final: boolean) {
     const done = completed(a, b)
     if (!done && (final || i !== parsed.data.length - 1 || Math.max(a, b) > 6))
       return null
-    const x = s.player1_tiebreak,
-      y = s.player2_tiebreak
-    if (x != null || y != null) {
-      if (!(Math.min(a, b) === 6 && Math.max(a, b) <= 7)) return null
-      if (
-        done &&
-        x != null &&
-        y != null &&
-        (a > b !== x > y || Math.max(x, y) < 7 || Math.abs(x - y) < 2)
-      )
-        return null
-    }
+    if (!validTiebreak(s, i + 1 === bestOf ? decidingTarget : 7)) return null
     if (done) wins[a > b ? 0 : 1]++
   }
   const winner = wins.findIndex((v) => v === needed)
@@ -187,15 +205,31 @@ export function parseTennisMatch(
       !!timing ||
       Object.prototype.hasOwnProperty.call(wtaRounds, rawRound) ||
       (slam && ['M3', 'M4'].includes(rawRound)))
-  const { status, attention: statusIssue } = state(
-    m.match_status,
-    m.status_state
-  )
-  let attention = statusIssue
+  const reportedState = state(m.match_status, m.status_state)
+  const liveConflict =
+    m.is_live != null && m.is_live !== (reportedState.status === 'live')
+  const prematureWinner =
+    (reportedState.status === 'scheduled' ||
+      reportedState.status === 'live' ||
+      reportedState.status === 'suspended') &&
+    m.winner != null
+  const scheduledPlay =
+    reportedState.status === 'scheduled' &&
+    ((m.set_scores != null &&
+      (!Array.isArray(m.set_scores) || m.set_scores.length > 0)) ||
+      m.player1_game_score != null ||
+      m.player2_game_score != null ||
+      m.server != null)
+  const contradiction = liveConflict || prematureWinner || scheduledPlay
+  const status = contradiction ? 'unavailable' : reportedState.status
+  let attention = reportedState.attention ?? (contradiction ? 'status' : null)
   const scoreBearing =
     status === 'live' || status === 'final' || status === 'suspended'
+  // The four majors unified their final-set format in 2022, starting at Roland-Garros.
+  // Hold historical deciding tiebreaks until their tournament-specific rule is known.
+  const decidingTarget = slam ? (t.season >= 2023 ? 10 : null) : 7
   const evidence = scoreBearing
-    ? scoreLine(m.set_scores, bestOf, status === 'final')
+    ? scoreLine(m.set_scores, bestOf, status === 'final', decidingTarget)
     : null
   const ids = [m.player1.id, m.player2.id]
   const reported = z.object({ id }).safeParse(m.winner)
@@ -215,6 +249,17 @@ export function parseTennisMatch(
     point(m.player1_game_score, inTiebreak),
     point(m.player2_game_score, inTiebreak),
   ]
+  const target = last?.set_number === bestOf ? decidingTarget : 7
+  const ongoingPoints =
+    !inTiebreak ||
+    (target !== null &&
+      (Math.max(Number(points[0]), Number(points[1])) < target ||
+        Math.abs(Number(points[0]) - Number(points[1])) < 2))
+  const validPoints =
+    ongoingPoints &&
+    points.every((v) => v !== null) &&
+    (points[0] !== 'AD' || points[1] === '40') &&
+    (points[1] !== 'AD' || points[0] === '40')
   const current = status === 'live' && !attention
   const bind = (p: z.infer<typeof player>, i: 0 | 1): TennisSide => ({
     id: p.id,
@@ -224,7 +269,7 @@ export function parseTennisMatch(
         ? { games: s.player1_games, tiebreak: s.player1_tiebreak ?? null }
         : { games: s.player2_games, tiebreak: s.player2_tiebreak ?? null }
     ),
-    points: current && points.every((v) => v !== null) ? points[i] : null,
+    points: current && validPoints ? points[i] : null,
     serving: current && m.server === i + 1,
   })
   const sides: [TennisSide, TennisSide] = [
