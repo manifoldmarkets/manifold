@@ -283,7 +283,7 @@ describe('resolveF1Markets', () => {
           resolutionTime: NOW,
           baseline: expect.stringMatching(/^[0-9a-f]{64}$/),
         })
-      expect(enrollments[0][1][0].baseline).toBe(enrollments[1][1][0].baseline)
+      expect(enrollments[0][1][0]).toEqual(enrollments[1][1][0])
     } finally {
       process.env = previous
     }

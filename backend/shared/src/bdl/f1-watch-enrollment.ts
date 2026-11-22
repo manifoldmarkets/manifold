@@ -2,18 +2,13 @@ import { BDL_CORRECTION_WATCH_MS } from 'common/bdl/constants'
 
 // Only the terminal edit updates these three fields. A podium market may have
 // other per-answer edits at the very same resolution millisecond.
-export function f1TerminalEditSql(requireScope: boolean) {
-  return `exists (select 1 from contract_edits e
+export const f1TerminalEditSql = `exists (select 1 from contract_edits e
     where e.contract_id=c.id and e.editor_id=c.creator_id
       and e.data->>'creatorId'=c.creator_id
       and e.data->>'sportsEventId'=c.data->>'sportsEventId'
       and e.data->>'sportsMarketType'=c.data->>'sportsMarketType'
       and e.updated_keys @> array['isResolved','resolution','resolutionTime']::text[]
-      ${
-        requireScope
-          ? "and e.data->'sportsF1WatchScope'=c.data->'sportsF1WatchScope'"
-          : ''
-      }
+      and e.data->'sportsF1WatchScope'=c.data->'sportsF1WatchScope'
       and (case c.data->>'sportsMarketType'
         when 'winner' then e.idempotency_key='resolution:market:' ||
           (extract(epoch from c.resolution_time)*1000)::bigint::text
@@ -22,7 +17,6 @@ export function f1TerminalEditSql(requireScope: boolean) {
           and a.resolution_time=c.resolution_time and e.idempotency_key='resolution:' || a.id || ':' ||
             (extract(epoch from c.resolution_time)*1000)::bigint::text)
       end))`
-}
 
 // No classification read is needed. Enrollment or the original 14-day deadline
 // removes the diagnostic on the next operator query.
@@ -45,4 +39,4 @@ export const missingF1WatchSql = `select c.id,
       and c.data#>>'{sportsF1Watch,phase}'=(s.competition_id || ':' || s.phase)
       and c.data#>'{sportsF1Watch,resolutionTime}'=to_jsonb((extract(epoch from c.resolution_time)*1000)::bigint)
       and c.data#>>'{sportsF1Watch,baseline}' ~ '^[a-f0-9]{64}$') is not true
-    and ${f1TerminalEditSql(true)}`
+    and ${f1TerminalEditSql}`

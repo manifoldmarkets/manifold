@@ -168,9 +168,12 @@ export async function recordF1WatchBaseline(
       and c.data->>'sportsFixture' is distinct from 'true' and coalesce(c.data->>'sportsProvider','bdl')='bdl'
       and coalesce(c.data->>'sportsLeagueKey','f1')='f1'
       and c.data#>'{sportsF1Watch,resolutionTime}' is distinct from to_jsonb($7::bigint)
-      and ${f1TerminalEditSql(false)}
+      and ${f1TerminalEditSql}
       and exists (select 1 from sports_competition_switches s where
-        s.competition_id || ':' || s.phase=$8 and s.enabled)`,
+        s.competition_id || ':' || s.phase=$8 and s.enabled
+        and c.data#>>'{sportsF1WatchScope,eventId}'=$3
+        and c.data#>>'{sportsF1WatchScope,phase}'=$8
+        and c.data#>>'{sportsF1WatchScope,activation}'=extract(epoch from s.updated_time)::text)`,
       [
         watch,
         id,

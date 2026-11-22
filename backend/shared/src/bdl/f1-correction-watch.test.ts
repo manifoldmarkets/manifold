@@ -1,5 +1,6 @@
 import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
+import type { MarketContract } from 'common/contract'
 import type { F1Session, F1SessionResult } from 'common/f1-markets'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
@@ -11,6 +12,7 @@ import {
   f1ClassificationHash,
   f1WatchSeed,
   noteF1WatchScope,
+  recordF1WatchBaseline,
 } from './f1-classification'
 import { f1WatchDue, runF1CorrectionWatch } from './f1-correction-watch'
 
@@ -450,5 +452,30 @@ test('missing coverage requires an opted-in native terminal edit and disappears 
     "update sports_competition_switches set enabled=true,updated_time=updated_time+interval '1 second'"
   )
   expect(await items()).toEqual([])
+  const paid = {
+    id: 'missing',
+    sportsEventId: event,
+    isResolved: true,
+    resolution: 'answer-1',
+    resolutionTime: resolved,
+  } as MarketContract & { sportsEventId: string }
+  const clockSpy = jest.spyOn(Date, 'now').mockReturnValue(now)
+  try {
+    const store = () =>
+      recordF1WatchBaseline(
+        { none: query } as unknown as SupabaseDirectClient,
+        paid,
+        f1WatchSeed(event, session, original)!
+      )
+    await store()
+    expect((await get('missing')).data.sportsF1Watch).toBeUndefined()
+    await db.exec(
+      "update sports_competition_switches set updated_time=updated_time-interval '1 second'"
+    )
+    await store()
+    expect((await get('missing')).data.sportsF1Watch).toEqual(stored())
+  } finally {
+    clockSpy.mockRestore()
+  }
   expect(getF1SessionResults).not.toHaveBeenCalled()
 })
