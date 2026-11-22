@@ -83,6 +83,8 @@ create table if not exists user_stats_bet_journal (
 );
 
 create index if not exists user_stats_bet_journal_created_time on user_stats_bet_journal (created_time);
+-- Market creation also checks ids that survive only in the journal.
+create index if not exists user_stats_bet_journal_contract_id on user_stats_bet_journal (contract_id);
 
 -- Progress of the backfill, one row per stat.
 create table if not exists user_stats_backfill (
@@ -157,7 +159,7 @@ $$;
 
 -- The first journal entry for an id wins. Save the old image before its id
 -- is freed, and mark a backdated insert or move before a nested statement can
--- update or delete it. contract_bet_populate, the other row trigger, returns new.
+-- update or delete it. contract_bet_populate returns new.
 create or replace function user_stats_journal_bet () returns trigger language plpgsql as $$
 begin
   if tg_op <> 'INSERT' and old.created_time <= user_stats_bet_bound() then
@@ -255,27 +257,7 @@ $$;
 -- right. Most updates (later fills, cancellations, expiries) change nothing
 -- and write nothing.
 create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
-declare
-  missing_market text;
 begin
-  -- Only markets the statement brings in need checking: an old row is
-  -- visible here, and was written after its market, so its market is too.
-  -- So a fill or cancellation never checks, and can still update a
-  -- historical bet whose market row is missing. Compared as sets (except
-  -- hashes): matching rows across the two transition tables, which have no
-  -- statistics, made a 5,000-order cancel take 600 ms instead of 180.
-  select m.contract_id into missing_market
-  from (
-    select contract_id from new_bets
-    except
-    select contract_id from old_bets
-  ) m
-  where not exists (select 1 from contracts c where c.id = m.contract_id)
-  limit 1;
-  if found then
-    perform user_stats_missing_market(missing_market);
-  end if;
-
   insert into user_stats as s (user_id, trades, updated_time)
   select d.user_id, sum(d.trades), now()
   from (
@@ -362,6 +344,23 @@ begin
   );
 end
 $$;
+
+-- Check each reassignment, even if another updated row already names the id.
+-- This trigger sorts after contract_bet_populate. Fills and cancels update
+-- data alone, so they skip the check even on historical orphan bets.
+create or replace function user_stats_check_bet_market () returns trigger language plpgsql as $$
+begin
+  if not exists (select 1 from contracts where id = new.contract_id) then
+    perform user_stats_missing_market(new.contract_id);
+  end if;
+  return new;
+end
+$$;
+
+create or replace trigger user_stats_check_bet_market
+before update of contract_id on contract_bets
+for each row when (old.contract_id is distinct from new.contract_id)
+execute function user_stats_check_bet_market ();
 
 create or replace trigger user_stats_bets_inserted
 after insert on contract_bets

@@ -279,6 +279,48 @@ describe('counting trades as they happen', () => {
 })
 
 describe('guarding market references', () => {
+  const createManaMarket = (id: string) =>
+    run(`insert into contracts (id, token) values ($1, 'MANA')`, [id])
+
+  it('reserves the market id of a historical orphan before the journal exists', async () => {
+    await bet('old', 'alice', { contractId: 'orphan' })
+    await installGuards()
+    await expect(createManaMarket('orphan')).rejects.toThrow(
+      'bets already name market id orphan; use another id'
+    )
+    await createManaMarket('unused')
+  })
+
+  it('keeps a backfilled orphan out of the count when market creation is attempted', async () => {
+    const marketId = 'orphan1234' // A ten-character create-market idempotency key.
+    await bet('old', 'alice', { contractId: marketId })
+    await install()
+    await backfillAll()
+
+    const [creation] = await Promise.allSettled([createManaMarket(marketId)])
+    const { count } = await getUserTrades(pg, 'alice')
+    expect(count).toBe((await directCounts()).alice ?? 0)
+    expect(count).toBe(0)
+    expect(creation).toMatchObject({
+      status: 'rejected',
+      reason: {
+        message: `bets already name market id ${marketId}; use another id`,
+      },
+    })
+  })
+
+  it('reserves a missing market id named only by a journal image', async () => {
+    await bet('old', 'alice', { contractId: 'orphan' })
+    await install()
+    await run(`delete from contract_bets where bet_id = 'old'`)
+    await expect(createManaMarket('orphan')).rejects.toThrow(
+      'bets already name market id orphan; use another id'
+    )
+    await createManaMarket('unused')
+    await backfillAll()
+    expect(await counters()).toEqual(await directCounts())
+  })
+
   it('refuses a missing market in a backdated insert under read committed', async () => {
     await install()
     await expect(
@@ -326,6 +368,41 @@ describe('guarding market references', () => {
       await run(`select contract_id from contract_bets where bet_id = 'b'`)
     ).toEqual([{ contract_id: 'm1' }])
     expect(await counters()).toEqual({ alice: 1 })
+  })
+
+  it('refuses a reassignment masked by another row naming the missing market', async () => {
+    await order('unfilled', 'alice', { contractId: 'missing' })
+    await bet('filled', 'bob', { contractId: 'cash' })
+    await install()
+    // Both rows are updated. The destination is already in the old rows, but
+    // is invisible to this snapshot, as in a concurrent market creation.
+    await expect(
+      client.tx(async () => {
+        await run('set transaction isolation level serializable')
+        await run(`update contract_bets set contract_id = 'missing'`)
+      })
+    ).rejects.toMatchObject({
+      code: '40001',
+      message: expect.stringContaining(
+        'transaction snapshot predates market "missing"'
+      ),
+    })
+    expect(
+      await run(`select contract_id from contract_bets where bet_id = 'filled'`)
+    ).toEqual([{ contract_id: 'cash' }])
+    await backfillAll()
+    expect(await counters()).toEqual(await directCounts())
+  })
+
+  it('counts a move to an existing market alongside an unchanged orphan reference', async () => {
+    await order('unfilled', 'alice', { contractId: 'missing' })
+    await bet('filled', 'bob', { contractId: 'cash' })
+    await install()
+    await run(`update contract_bets set contract_id =
+      case when bet_id = 'filled' then 'm1' else contract_id end`)
+    await backfillAll()
+    expect(await counters()).toEqual({ bob: 1 })
+    expect(await counters()).toEqual(await directCounts())
   })
 
   it('allows fills and cancellations on a historical bet with a missing market', async () => {
