@@ -38,11 +38,17 @@ export function groupByDay<T>(
 
 export function groupScheduleDays<T extends FeedTime>(
   items: readonly T[],
-  now = Date.now()
+  now = Date.now(),
+  selectedDate?: string
 ) {
-  return groupByDay(items, scheduleFeedTime, now).sort((a, b) =>
-    a.key.localeCompare(b.key)
-  )
+  const days = groupByDay(items, scheduleFeedTime, now)
+  if (selectedDate && !days.some((day) => day.key === selectedDate))
+    days.push({
+      key: selectedDate,
+      label: dayLabel(dayjs(selectedDate).valueOf(), now),
+      items: [],
+    })
+  return days.sort((a, b) => a.key.localeCompare(b.key))
 }
 
 // Shared by the interactive feed and its server-rendered social preview.

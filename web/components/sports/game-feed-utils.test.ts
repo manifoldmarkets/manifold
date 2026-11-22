@@ -69,7 +69,14 @@ test('soccer keeps the home team first and leaves the draw separate', () => {
   )
 })
 
-test('local day filters, headings and date chips use the resumption without moving an F1 session or the original kickoff', () => {
+test('local day filters, headings and date chips use the resumption without moving an F1 session or the original kickoff', (t) => {
+  const previous = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+  t.after(() => {
+    if (previous === undefined)
+      delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = previous
+  })
   const at = (day: number, hour: number) =>
     new Date(2026, 6, day, hour).getTime()
   const original = at(1, 19)
@@ -170,4 +177,18 @@ test('featured game stays put across pagination and volume changes, but yields t
     first.id
   )
   assert.equal(selectFeaturedGame([later], first.id)?.id, later.id)
+})
+
+test('a selected civil date stays visible with the same relative label when another league has no game that day', () => {
+  const today = new Date(2026, 10, 22, 15).getTime()
+  const tomorrow = new Date(2026, 10, 23, 19).getTime()
+  const match = { startTime: tomorrow }
+  const [withGame] = groupScheduleDays([match], today)
+  const [retained] = groupScheduleDays([], today, withGame.key)
+  assert.deepEqual(
+    [retained.key, retained.label, retained.items],
+    [withGame.key, 'Tomorrow', []]
+  )
+  assert.deepEqual(groupScheduleDays([match], today, withGame.key), [withGame])
+  assert.equal(groupScheduleDays([], today, '2026-11-22')[0].label, 'Today')
 })

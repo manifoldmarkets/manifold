@@ -208,11 +208,11 @@ export function GameFeed(props: {
     .sort(compareGameStartTime)
   const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
   const days = groupScheduleDays(upcoming)
-  const allDays = groupScheduleDays(everything)
-  if (date !== 'all' && !allDays.some((day) => day.key === date)) {
-    allDays.push({ key: date, label: dayjs(date).format('dddd'), items: [] })
-    allDays.sort((a, b) => a.key.localeCompare(b.key))
-  }
+  const allDays = groupScheduleDays(
+    everything,
+    Date.now(),
+    date === 'all' ? undefined : date
+  )
   const leagueNotLoaded =
     !!league && everything.length === 0 && hasMore && filter !== 'live'
   const clearDate = !!league && date !== 'all'
