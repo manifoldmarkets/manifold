@@ -3293,8 +3293,8 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Claimed trophy milestones and profile showcase pins. Not cached: the
-  // owner's own view refetches right after claiming or pinning.
+  // Claimed milestones, showcase pins, and current-season league membership.
+  // Keep this uncached so a profile can see a new claim or pin immediately.
   'get-user-trophies': {
     method: 'GET',
     visibility: 'undocumented',
@@ -3304,6 +3304,7 @@ export const API = (_apiTypeCheck = {
       // null: never set, so the profile shows the best trophies by default.
       // []: the user removed every pin.
       pins: string[] | null
+      league: Pick<League, 'season' | 'division'> | null
       // Counts for the "Getting started" trophies, or null for accounts that
       // don't get them (see isStarterTrophyAccount).
       starter: StarterStats | null
