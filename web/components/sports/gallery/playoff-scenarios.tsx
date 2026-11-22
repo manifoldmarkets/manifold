@@ -9,12 +9,14 @@ import {
 } from 'common/bdl/playoff-market'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import type { ProviderOdds } from 'common/sports-provider'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { PlayoffBracket } from '../playoff-bracket'
-import recordedFinals from '../../../../backend/shared/test/fixtures/bdl/nba/games__2025-playoff-finals.json'
+import { recordedNbaFinals } from './recorded-nba-finals'
 
 const scenarios = [
   'Active series',
+  'Game in progress',
+  'Game suspended',
   'Season complete',
   'Correction under review',
   'No linked market',
@@ -53,7 +55,7 @@ function sampleTeams() {
 function sample(season: number, scenario: Scenario, now: number) {
   if (scenario === 'Recorded 2026 Finals')
     return {
-      bracket: projectNbaPlayoffSeries(2025, recordedFinals.data, false),
+      bracket: projectNbaPlayoffSeries(2025, recordedNbaFinals, false),
       markets: [],
     }
   const teams = sampleTeams(),
@@ -74,6 +76,13 @@ function sample(season: number, scenario: Scenario, now: number) {
         const aWon = !active || g !== 1
         const high = 99 + g,
           low = 92 + g
+        const activeGame = active && g === 3
+        const gameState =
+          activeGame && scenario === 'Game in progress'
+            ? 'in_progress'
+            : activeGame && scenario === 'Game suspended'
+            ? 'suspended'
+            : undefined
         const at = active
           ? now + (g - 2.5) * DAY_MS
           : now - (50 - round * 9 - g) * DAY_MS
@@ -81,8 +90,8 @@ function sample(season: number, scenario: Scenario, now: number) {
           id: 10000 * round + 100 * pair + g + 1,
           season,
           postseason: true,
-          datetime: new Date(at).toISOString(),
-          status_state: pending ? 'scheduled' : 'final',
+          datetime: new Date(gameState ? now - HOUR_MS : at).toISOString(),
+          status_state: pending ? gameState ?? 'scheduled' : 'final',
           home_team: home,
           visitor_team: away,
           home_team_score: pending
@@ -183,8 +192,10 @@ function sample(season: number, scenario: Scenario, now: number) {
   return { bracket, markets }
 }
 export default function PlayoffScenarios() {
-  const [scenario, setScenario] = useState<Scenario>('Active series')
-  const [readAt] = useState(Date.now)
+  const [{ scenario, readAt }, setSample] = useState(() => ({
+    scenario: 'Active series' as Scenario,
+    readAt: Date.now(),
+  }))
   const { bracket, markets } = useMemo(
     () => sample(2025, scenario, readAt),
     [scenario, readAt]
@@ -200,7 +211,7 @@ export default function PlayoffScenarios() {
             value={scenario}
             onChange={(e) => {
               const mode = scenarios.find((s) => s === e.target.value)
-              if (mode) setScenario(mode)
+              if (mode) setSample({ scenario: mode, readAt: Date.now() })
             }}
           >
             {scenarios.map((s) => (

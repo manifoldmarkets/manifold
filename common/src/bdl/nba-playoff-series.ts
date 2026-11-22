@@ -81,7 +81,7 @@ function flag(reasons: string[], issue: string) {
   if (!reasons.includes(issue)) reasons.push(issue)
 }
 // NBA Rule No. 5, Section II(a): four regulation periods of twelve minutes.
-const nbaRegulationMs = 4 * 12 * MINUTE_MS
+export const nbaRegulationMs = 4 * 12 * MINUTE_MS
 function checkPlayedWindows(series: NbaPlayoffSeries[]) {
   type Start = {
     at: number

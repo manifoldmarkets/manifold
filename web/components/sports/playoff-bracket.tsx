@@ -95,7 +95,11 @@ export function PlayoffBracket({
   const heading = useRef<HTMLHeadingElement>(null)
   const [selected, setSelected] = useState<string>()
   const current = bracket.series.find((s) => s.eventId === selected) ?? latest
+  useEffect(() => {
+    if (selected) heading.current?.focus()
+  }, [selected])
   const [pick, setPick] = useState<PlayoffPick>()
+  const [invalidated, setInvalidated] = useState<PlayoffPick>()
   const [size, setSize] = useState('10')
   const [receipt, setReceipt] = useState<number>()
   const [viewTime, setViewTime] = useState(Date.now)
@@ -146,6 +150,10 @@ export function PlayoffBracket({
     pick && galleryPreview
       ? currentPlayoffPick(bracket, byId(pick.eventId), readAt, pick, now)
       : undefined
+  const unavailable = !!pick && !active
+  useEffect(() => {
+    if (unavailable) setInvalidated(pick)
+  }, [unavailable, pick])
   const amount = Number(size),
     valid = Number.isSafeInteger(amount) && amount > 0
   const seriesPicks = current
@@ -177,11 +185,23 @@ export function PlayoffBracket({
       key={p.answerId}
       className="grid min-h-[48px] grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
     >
-      <span className="break-words">{p.name}</span>
+      <span className="break-words">
+        {p.name}
+        {p.eliminated && (
+          <span className="text-ink-600 block text-xs">
+            Eliminated · Last pool price
+          </span>
+        )}
+      </span>
       <Price pick={p} choose={selectPick} />
     </li>
   )
   const review = !!(bracket.review.length || current?.review.length)
+  const seriesHold = !!(current && byId(current.eventId)?.sportsAttentionReason)
+  const championHold = !!byId(bracket.championEventId)?.sportsAttentionReason
+  const gameStatus = current?.games.find(
+    (g) => g.status === 'in_progress' || g.status === 'suspended'
+  )?.status
   return (
     <section
       className="text-ink-900 min-w-0 space-y-4"
@@ -201,13 +221,20 @@ export function PlayoffBracket({
               {roundLabel(current)}
             </p>
             <h2 ref={heading} tabIndex={-1} className="text-xl font-bold">
-              Series winner
+              Series winner ·{' '}
+              {current.teams.map((t) => t.abbreviation || t.name).join(' vs ')}
             </h2>
             <p className="text-ink-600 text-sm">
-              {review
+              {seriesHold
+                ? 'Trading held for correction'
+                : review
                 ? 'Under review'
                 : current.winnerId
                 ? 'Series complete'
+                : gameStatus === 'in_progress'
+                ? 'Game in progress'
+                : gameStatus === 'suspended'
+                ? 'Game suspended'
                 : 'First to four wins'}
             </p>
           </header>
@@ -225,7 +252,7 @@ export function PlayoffBracket({
                 >
                   <span className="break-words font-semibold">
                     {t.name}
-                    {current.winnerId === t.id && !review && (
+                    {current.winnerId === t.id && !review && !seriesHold && (
                       <span className="text-primary-700 block text-xs">
                         Series winner
                       </span>
@@ -244,11 +271,13 @@ export function PlayoffBracket({
             {!seriesPicks.length && (
               <p className="text-ink-600 text-xs">No linked series prices.</p>
             )}
-            {seriesPicks.length > 0 && !seriesPicks.some((p) => p.buyable) && (
-              <p className="text-ink-600 text-xs">
-                Trading closed or held · pool prices
-              </p>
-            )}
+            {!seriesHold &&
+              seriesPicks.length > 0 &&
+              !seriesPicks.some((p) => p.buyable) && (
+                <p className="text-ink-600 text-xs">
+                  Trading closed or held · pool prices
+                </p>
+              )}
             <LastGame series={current} />
           </div>
         </article>
@@ -258,7 +287,10 @@ export function PlayoffBracket({
         className="bg-canvas-0 border-ink-200 rounded-xl border p-4"
       >
         <h2 className="text-lg font-semibold">NBA champion</h2>
-        {champion && !bracket.review.length && (
+        {championHold && (
+          <p className="text-ink-600 text-sm">Trading held for correction</p>
+        )}
+        {champion && !championHold && !bracket.review.length && (
           <p className="text-primary-700 font-semibold">
             {champion.name} · Playoff winner
           </p>
@@ -303,10 +335,10 @@ export function PlayoffBracket({
                           aria-pressed={current?.eventId === s.eventId}
                           onClick={() => {
                             setPick(undefined)
-                            setSelected(s.eventId)
-                            heading.current?.focus()
+                            if (selected === s.eventId) heading.current?.focus()
+                            else setSelected(s.eventId)
                           }}
-                          className="hover:bg-canvas-50 grid min-h-[44px] w-full grid-cols-[1fr_auto] items-center gap-3 rounded px-1 text-left text-sm"
+                          className="hover:bg-canvas-50 aria-pressed:bg-primary-50 aria-pressed:ring-primary-400 grid min-h-[44px] w-full grid-cols-[1fr_auto] items-center gap-3 rounded px-1 text-left text-sm aria-pressed:font-semibold aria-pressed:ring-1"
                         >
                           <span className="break-words">
                             {short(s, s.teams[0].id)} vs{' '}
@@ -332,16 +364,19 @@ export function PlayoffBracket({
             if (!open) setPick(undefined)
           }}
           size="sm"
-          ariaLabel={'Preview pick for ' + pick.name}
+          ariaLabel={'Preview pick for ' + pick.name + ' · ' + pick.marketLabel}
           className={MODAL_CLASS}
         >
-          <h3 className="text-lg font-semibold">{pick.name}</h3>
+          <h3 className="text-lg font-semibold">
+            {pick.name} · {pick.marketLabel}
+          </h3>
           <p className="text-ink-600 text-sm">
             Gallery ticket · {formatSportsPrice(pick.probability)}
           </p>
           {receipt !== undefined ? (
             <p role="status" className="mt-3">
-              {formatMoney(receipt)} preview for {pick.name}
+              {formatMoney(receipt)} preview for {pick.name} ·{' '}
+              {pick.marketLabel}
             </p>
           ) : (
             <form
@@ -350,6 +385,7 @@ export function PlayoffBracket({
                 e.preventDefault()
                 if (
                   valid &&
+                  pick !== invalidated &&
                   currentPlayoffPick(
                     bracket,
                     byId(pick.eventId),
@@ -361,7 +397,7 @@ export function PlayoffBracket({
                   setReceipt(amount)
               }}
             >
-              {!active && (
+              {(!active || pick === invalidated) && (
                 <p role="status">This selection is no longer available.</p>
               )}
               <label className="text-sm">
@@ -377,7 +413,7 @@ export function PlayoffBracket({
               </label>
               <button
                 type="submit"
-                disabled={!active || !valid}
+                disabled={!active || pick === invalidated || !valid}
                 className="bg-primary-600 min-h-[44px] rounded px-3 font-semibold text-white disabled:opacity-50"
               >
                 Confirm preview

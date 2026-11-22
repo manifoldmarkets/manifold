@@ -6,6 +6,7 @@ import { bdlEventId } from '../sports-ids'
 import type { ProviderOdds } from '../sports-provider'
 import { LIVE_STALE_MS } from '../sports-schedule'
 import {
+  nbaRegulationMs,
   nbaSeriesEventId,
   type NbaPlayoffBracket,
   type NbaPlayoffSeries,
@@ -40,23 +41,35 @@ export function nbaSeriesOpeningEstimate(
     s.games.some(
       (g) =>
         !['final', 'scheduled', 'canceled', 'postponed'].includes(g.status) ||
-        (g.status === 'final' && (g.startTime === null || g.startTime >= now))
+        (g.status === 'final' &&
+          (g.startTime === null || now - g.startTime < nbaRegulationMs))
     )
   )
     return null
   const remaining = 7 - s.wins[0] - s.wins[1]
-  const games = s.games.filter((g) => g.status === 'scheduled')
+  const games = s.games
+    .filter((g) => g.status === 'scheduled')
+    .sort((a, b) => (a.startTime ?? Infinity) - (b.startTime ?? Infinity))
+  const lastStart = games[games.length - 1]?.startTime
   if (
     games.length !== remaining ||
     new Set(games.map((g) => g.id)).size !== remaining ||
-    new Set(games.map((g) => g.startTime)).size !== remaining
+    lastStart == null ||
+    s.games.some(
+      (g) =>
+        g.status === 'postponed' &&
+        (g.startTime === null || g.startTime <= lastStart)
+    )
   )
     return null
   const probabilities: number[] = []
+  let previousStart: number | undefined
   for (const game of games) {
     if (
       game.startTime === null ||
       game.startTime <= now ||
+      (previousStart !== undefined &&
+        game.startTime - previousStart < nbaRegulationMs) ||
       !(
         (game.homeId === first.id && game.awayId === second.id) ||
         (game.homeId === second.id && game.awayId === first.id)
@@ -78,6 +91,7 @@ export function nbaSeriesOpeningEstimate(
       !line.probs.every((p) => Number.isFinite(p) && p > 0 && p < 1)
     )
       return null
+    previousStart = game.startTime
     probabilities.push(line.probs[0])
   }
   function chance(a: number, b: number, i: number): number {
@@ -138,6 +152,9 @@ export type PlayoffPick = {
   name: string
   probability: number
   buyable: boolean
+  eliminated: boolean
+  marketLabel: string
+  scoreEvidence: string
 }
 const cleanName = (s: string) =>
   s.trim().replace(/\s+/gu, ' ').normalize('NFC').toLowerCase()
@@ -210,10 +227,38 @@ export function playoffMarketPicks(
     Number.isSafeInteger(now) &&
     now >= readAt &&
     now - readAt < LIVE_STALE_MS
+  const eliminated = new Set(
+    bracket.series.flatMap((s) =>
+      s.winnerId === null || s.review.length
+        ? []
+        : s.teams.filter((t) => t.id !== s.winnerId).map((t) => t.id)
+    )
+  )
+  // Store the sporting evidence on which the user selected this market.
+  // The reader can reconcile a score without changing either pool price.
+  const scoreEvidence = JSON.stringify(
+    [...(series ? [series] : bracket.series)]
+      .sort((a, b) => a.eventId.localeCompare(b.eventId))
+      .map((s) => [
+        s.eventId,
+        s.wins,
+        s.winnerId,
+        s.games
+          .filter(
+            (g) =>
+              g.status === 'final' ||
+              g.status === 'in_progress' ||
+              g.status === 'suspended'
+          )
+          .sort((a, b) => a.id - b.id)
+          .map((g) => [g.id, g.homeId, g.awayId, g.status, g.scores]),
+      ])
+  )
   const open =
     bracket.complete &&
     !bracket.review.length &&
     fresh &&
+    !(series && teams.some((t) => eliminated.has(t.id))) &&
     !(champion
       ? bracket.champion || bracket.series.some((s) => s.review.length)
       : series?.winnerId || series?.review.length) &&
@@ -223,13 +268,6 @@ export function playoffMarketPicks(
     Number.isFinite(market.closeTime) &&
     market.closeTime! > now &&
     answers.every((a) => !a.resolution && !a.resolutionTime)
-  const eliminated = new Set(
-    bracket.series.flatMap((s) =>
-      s.winnerId === null
-        ? []
-        : s.teams.filter((t) => t.id !== s.winnerId).map((t) => t.id)
-    )
-  )
   const picks: PlayoffPick[] = []
   for (const team of teams) {
     const index = entrants.indexOf(team.id),
@@ -263,6 +301,13 @@ export function playoffMarketPicks(
       teamId: team.id,
       name: answer.text,
       probability,
+      eliminated: eliminated.has(team.id),
+      marketLabel: series
+        ? 'Series winner vs ' +
+          (series.teams[0].id === team.id ? series.teams[1] : series.teams[0])
+            .name
+        : 'NBA champion',
+      scoreEvidence,
       buyable: open && !eliminated.has(team.id) && probability < MAX_CPMM_PROB,
     })
   }
@@ -292,6 +337,8 @@ export function currentPlayoffPick(
       p.answerId === selected.answerId &&
       p.teamId === selected.teamId &&
       p.name === selected.name &&
+      p.scoreEvidence === selected.scoreEvidence &&
+      p.marketLabel === selected.marketLabel &&
       p.probability === selected.probability
   )
 }

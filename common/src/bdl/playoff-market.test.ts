@@ -13,7 +13,7 @@ import {
   playoffMarketPicks,
   type PlayoffMarket,
 } from './playoff-market'
-import { DAY_MS } from '../util/time'
+import { DAY_MS, MINUTE_MS } from '../util/time'
 const now = Date.UTC(2026, 4, 1)
 function raw(
   id: number,
@@ -175,6 +175,76 @@ test('withholds an estimate on missing, stale, wrong-team, wrong-game, conflicti
   expect(estimate({ ...bracket, complete: false }, odds)).toBeNull()
   expect(estimate({ ...bracket, review: ['identity'] }, odds)).toBeNull()
 })
+test('ordinary finals and consecutive potential games need at least 48 minutes at the estimate clock', () => {
+  const { series, odds, rawGames } = setup(3, 2)
+  const duration = 48 * MINUTE_MS
+  const scheduled = rawGames[5]
+  for (const span of [1000, duration - 1, duration, duration + 1]) {
+    for (const useFinal of [true, false]) {
+      const changed = rawGames.map((g, i) =>
+        useFinal && i === 4
+          ? { ...g, datetime: new Date(now - span).toISOString() }
+          : !useFinal && i === 6
+          ? {
+              ...g,
+              datetime: new Date(
+                Date.parse(scheduled.datetime) + span
+              ).toISOString(),
+            }
+          : g
+      )
+      const projected = projectNbaPlayoffSeries(2025, changed, true)
+      expect(projected.review).toEqual([])
+      const estimate = nbaSeriesOpeningEstimate(
+        projected,
+        series.eventId,
+        odds,
+        now
+      )
+      if (span < duration) expect(estimate).toBeNull()
+      else expect(estimate).not.toBeNull()
+    }
+  }
+})
+
+test('an earlier or undated unresolved postponement prevents pricing an apparent game seven', () => {
+  const { series, odds, rawGames } = setup(3, 3)
+  const last = rawGames[6]
+  for (const [status, datetime, eligible] of [
+    ['postponed', new Date(now - DAY_MS).toISOString(), false],
+    ['postponed', last.datetime, false],
+    ['postponed', '', false],
+    ['canceled', new Date(now - DAY_MS).toISOString(), true],
+    [
+      'postponed',
+      new Date(Date.parse(last.datetime) + DAY_MS).toISOString(),
+      true,
+    ],
+  ] as const) {
+    const fallback = { ...last, id: 91, status_state: status, datetime }
+    const b = projectNbaPlayoffSeries(2025, [fallback, ...rawGames], true)
+    expect(b.review).toEqual([])
+    expect(
+      nbaSeriesOpeningEstimate(b, series.eventId, odds, now) !== null
+    ).toBe(eligible)
+  }
+})
+
+test('an eliminated entrant holds both sides of an otherwise open canceled-only matchup', () => {
+  const completed = Array.from({ length: 4 }, (_, i) =>
+    raw(i + 1, 1, 2, i - 9, true)
+  )
+  const canceled = { ...raw(90, 2, 3, 1), status_state: 'canceled' }
+  const b = projectNbaPlayoffSeries(2025, [...completed, canceled], true)
+  expect(b.review).toEqual([])
+  const id = 'bdl:nba-series:2025:2-3'
+  const fixture = market(id, [2, 3], [0.55, 0.45])
+  const quotes = playoffMarketPicks(b, id, fixture, now, now)
+  expect(quotes.map((q) => [q.teamId, q.eliminated, q.buyable])).toEqual([
+    [2, true, false],
+    [3, false, false],
+  ])
+})
 test('all sixteen current scores require distinct future tipoffs and strictly earlier finals', () => {
   for (let a = 0; a < 4; a++) {
     for (let b = 0; b < 4; b++) {
@@ -258,6 +328,25 @@ test('a disputed final from the season reader withdraws the estimate and closes 
       currentPlayoffPick(revised, linked, now, selected, now)
     ).toBeUndefined()
   }
+  const reconciled = projectNbaPlayoffSeries(
+    2025,
+    [correction, ...rawGames.slice(1)],
+    true
+  )
+  expect(reconciled.series[0].wins).toEqual([0, 1])
+  const [fresh] = playoffMarketPicks(
+    reconciled,
+    series.eventId,
+    linked,
+    now,
+    now
+  )
+  expect(fresh.probability).toBe(selected.probability)
+  expect(fresh.buyable).toBe(true)
+  expect(
+    currentPlayoffPick(reconciled, linked, now, selected, now)
+  ).toBeUndefined()
+  expect(currentPlayoffPick(reconciled, linked, now, fresh, now)).toEqual(fresh)
 })
 
 test('native outcome, team, visible label and current quote are bound independently of row order', () => {
