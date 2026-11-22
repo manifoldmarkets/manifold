@@ -108,7 +108,7 @@ export function BracketView({
           role="region"
           aria-label="Tournament rounds"
           ref={roundList}
-          className="flex max-w-full snap-x gap-3 overflow-x-auto pb-3"
+          className="relative flex max-w-full snap-x gap-3 overflow-x-auto pb-3"
         >
           {bracket.rounds.map((round) => (
             <section
