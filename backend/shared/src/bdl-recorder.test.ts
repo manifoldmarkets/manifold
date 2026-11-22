@@ -13,7 +13,11 @@ import * as path from 'node:path'
 
 import { bdlRecordingPathParts } from './balldontlie-request'
 import { createBdlFixtureTransport } from './balldontlie-fixture'
-import { bdlJournalDirectory, bdlRevisionFile } from './balldontlie-recording'
+import {
+  bdlJournalDirectory,
+  bdlLatestCache,
+  bdlRevisionFile,
+} from './balldontlie-recording'
 import { main } from '../../scripts/bdl-recorder'
 import type { PlanStep } from '../../scripts/bdl-recorder/plan'
 import { createRecorder } from '../../scripts/bdl-recorder/recorder'
@@ -348,7 +352,7 @@ it('publishes equal-time observations individually and recovers an interrupted c
     )
   ).toEqual([[0], [1], [2]])
   // Process stopped after immutable publication and before replacing the cache.
-  writeFileSync(cache, JSON.stringify(attempt(1)))
+  writeFileSync(bdlLatestCache(cache), JSON.stringify(attempt(1)))
   const env = process.env
   try {
     process.env = { ...env, LOCAL_ONLY: 'true', BDL_FIXTURE_DIR: out }
@@ -361,7 +365,10 @@ it('publishes equal-time observations individually and recovers an interrupted c
   const resumed = setup([], true)
   await resumed.recorder.run([step()])
   expect(resumed.recorder.summary).toMatchObject({ dispatched: 0, resumed: 1 })
-  expect(JSON.parse(readFileSync(cache, 'utf8'))).toEqual(attempt(2))
+  expect(JSON.parse(readFileSync(bdlLatestCache(cache), 'utf8'))).toEqual(
+    attempt(2)
+  )
+  expect(readFileSync(cache, 'utf8')).toBe(JSON.stringify(attempt(0)))
   expect(readdirSync(journal).sort()).toEqual(['1', '2', '3'])
 })
 
@@ -394,6 +401,109 @@ it.each([false, true])(
     expect(first.read(endpoint, {})?.body).toEqual({ data: [1] })
   }
 )
+
+it.each([
+  [1, 2, 4],
+  [1, 2, 3, 4, 6],
+])(
+  'reads only the contiguous prefix and holds further writes with revisions %j',
+  async (...revisions: number[]) => {
+    const { cache, journal } = nbaArchive()
+    const last = revisions[revisions.length - 1]
+    for (const n of revisions) {
+      const file = bdlRevisionFile(journal, n)
+      mkdirSync(path.dirname(file), { recursive: true })
+      writeFileSync(file, JSON.stringify(attempt(n)))
+    }
+    // A legacy copy of the orphan must not promote it into the missing slot.
+    writeFileSync(cache, JSON.stringify(attempt(last)))
+    const store = createRecordingStore(out)
+    expect(store.read(endpoint, {})).toEqual(attempt(last - 2))
+    const resumed = setup([], true)
+    await resumed.recorder.run([step()])
+    expect(resumed.recorder.summary).toMatchObject({
+      dispatched: 0,
+      resumed: 1,
+    })
+    expect(() => store.save(attempt(99))).toThrow('missing or incomplete')
+    expect(readdirSync(journal).sort()).toEqual(revisions.map(String))
+    expect(readFileSync(cache, 'utf8')).toBe(JSON.stringify(attempt(last)))
+  }
+)
+
+it('leaves old-writer bytes intact at the exact instant of a new-writer cache rename', () => {
+  const { directory, cache, journal } = nbaArchive()
+  mkdirSync(directory, { recursive: true })
+  const legacy = (id: number) => JSON.stringify(attempt(id), null, 2)
+  writeFileSync(cache, legacy(0))
+  const store = createRecordingStore(out)
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const rename = fs.renameSync
+  let raced = false
+  jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+    if (!raced && String(to) === bdlLatestCache(cache)) {
+      raced = true
+      writeFileSync(cache, legacy(2))
+    }
+    return rename(from, to)
+  })
+  store.save(attempt(1))
+  expect(raced).toBe(true)
+  expect(readFileSync(cache, 'utf8')).toBe(legacy(2))
+  expect(createRecordingStore(out).read(endpoint, {})).toEqual(attempt(2))
+  store.save(attempt(3))
+  expect(createRecordingStore(out).read(endpoint, {})).toEqual(attempt(3))
+  expect(readFileSync(cache, 'utf8')).toBe(legacy(2))
+  expect(readFileSync(bdlRevisionFile(journal, 3), 'utf8')).toBe(legacy(2))
+  expect(readdirSync(journal).sort()).toEqual(['1', '2', '3', '4'])
+})
+
+it('counts usable publication after a failed mirror refresh and resumes the committed revision', async () => {
+  const { cache, journal } = nbaArchive()
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const rename = fs.renameSync
+  const spy = jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+    if (String(to) === bdlLatestCache(cache))
+      throw new Error('mirror unavailable')
+    return rename(from, to)
+  })
+  const { recorder } = setup([[200, attempt(1).body]])
+  await expect(recorder.run([step()])).rejects.toThrow('Snapshot saved')
+  expect(recorder.summary).toMatchObject({
+    dispatched: 1,
+    httpResponses: 1,
+    usableSnapshots: 1,
+    cacheRefreshFailures: 1,
+  })
+  expect(
+    JSON.parse(readFileSync(bdlRevisionFile(journal, 1), 'utf8')).body
+  ).toEqual(attempt(1).body)
+  spy.mockRestore()
+  const resumed = setup([], true)
+  await resumed.recorder.run([step()])
+  expect(resumed.recorder.summary).toMatchObject({ dispatched: 0, resumed: 1 })
+  expect(readdirSync(journal)).toEqual(['1'])
+})
+
+it('counts neither a usable publication nor a cache failure when the revision cannot commit', async () => {
+  const { journal } = nbaArchive()
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const rename = fs.renameSync
+  jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+    if (String(to) === path.join(journal, '1'))
+      throw new Error('publication failed')
+    return rename(from, to)
+  })
+  const { recorder } = setup([[200, attempt(1).body]])
+  await expect(recorder.run([step()])).rejects.toThrow('publication failed')
+  expect(recorder.summary).toMatchObject({
+    dispatched: 1,
+    httpResponses: 1,
+    usableSnapshots: 0,
+    cacheRefreshFailures: 0,
+  })
+  expect(readdirSync(journal)).toEqual([])
+})
 
 it('counts no dispatch if acquiring the shared rate slot fails', async () => {
   const { clock } = setup([])

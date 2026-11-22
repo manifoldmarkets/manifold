@@ -31,6 +31,7 @@ export const emptySummary = () => ({
   dispatched: 0,
   httpResponses: 0,
   usableSnapshots: 0,
+  cacheRefreshFailures: 0,
   get calls() {
     return this.dispatched
   },
@@ -109,12 +110,18 @@ export function createRecorder(options: RecorderOptions) {
     maxAttempts: 6,
     onAttempt(attempt) {
       safeToPersist(attempt, key)
-      store.save(attempt)
+      const { cacheRefreshed } = store.save(attempt)
+      if (usable(attempt)) summary.usableSnapshots++
+      if (!cacheRefreshed) {
+        summary.cacheRefreshFailures++
+        throw new Error(
+          'Snapshot saved, but the recording cache could not be refreshed.'
+        )
+      }
       if (consecutiveServerErrors >= 3)
         throw new Error(
           'Three consecutive server errors. Use --resume after the provider recovers.'
         )
-      if (usable(attempt)) summary.usableSnapshots++
     },
   })
 
