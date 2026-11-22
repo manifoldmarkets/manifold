@@ -1,0 +1,22 @@
+{
+  "data": [
+    {
+      "id": 44387878,
+      "type": "PLAYER",
+      "tournament_id": 6905,
+      "player": {
+        "id": 235,
+        "display_name": "Tiger Woods"
+      }
+    },
+    {
+      "id": 44387879,
+      "type": "PLAYER",
+      "tournament_id": 6905,
+      "player": {
+        "id": 236,
+        "display_name": "Gary Woodland"
+      }
+    }
+  ]
+}

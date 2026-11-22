@@ -1,0 +1,122 @@
+{
+  "data": [
+    {
+      "id": 22,
+      "season": 2026,
+      "name": "Zurich Classic of New Orleans",
+      "start_date": "2026-04-23",
+      "end_date": "2026-04-26",
+      "format_type": "TEAM_STROKE",
+      "course_name": "TPC Louisiana",
+      "status": "COMPLETED",
+      "status_state": "final",
+      "rounds": []
+    },
+    {
+      "id": 6900,
+      "season": 2026,
+      "name": "Butterfield Bermuda Championship",
+      "start_date": "2026-10-22",
+      "end_date": "2026-10-25",
+      "format_type": "STROKE_PLAY",
+      "course_name": "Port Royal Golf Course",
+      "status": "COMPLETED",
+      "status_state": "final",
+      "rounds": [
+        {
+          "round_number": 1,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 2,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 3,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 4,
+          "status": "SUSPENDED",
+          "status_state": "suspended"
+        }
+      ]
+    },
+    {
+      "id": 6903,
+      "season": 2026,
+      "name": "Austin Championship presented by Compliance Solutions",
+      "start_date": "2026-11-12",
+      "end_date": "2026-11-15",
+      "format_type": "STROKE_PLAY",
+      "course_name": "Fazio Canyons Course - Omni Barton Creek Resort & Spa",
+      "status": "COMPLETED",
+      "status_state": "final",
+      "rounds": [
+        {
+          "round_number": 1,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 2,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 3,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 4,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        }
+      ]
+    },
+    {
+      "id": 6904,
+      "season": 2026,
+      "name": "The RSM Classic",
+      "start_date": "2026-11-19",
+      "end_date": "2026-11-22",
+      "format_type": "STROKE_PLAY",
+      "course_name": "Sea Island Golf Club - Seaside Course",
+      "status": "IN_PROGRESS",
+      "status_state": "in_progress",
+      "rounds": [
+        {
+          "round_number": 1,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 2,
+          "status": "OFFICIAL",
+          "status_state": "final"
+        },
+        {
+          "round_number": 3,
+          "status": "SUSPENDED",
+          "status_state": "suspended"
+        }
+      ]
+    },
+    {
+      "id": 6905,
+      "season": 2026,
+      "name": "Hero World Challenge",
+      "start_date": "2026-12-03",
+      "end_date": "2026-12-06",
+      "format_type": "STROKE_PLAY",
+      "course_name": "Albany GC",
+      "status": "NOT_STARTED",
+      "status_state": "scheduled",
+      "rounds": []
+    }
+  ]
+}

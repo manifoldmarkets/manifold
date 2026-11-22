@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "id": 29,
+      "season": 2026,
+      "name": "Maybank Championship",
+      "start_date": "2026-10-29",
+      "end_date": "2026-11-01",
+      "status": "final",
+      "format": null,
+      "course": "Kuala Lumpur Golf & Country Club, West Course",
+      "current_round": 4
+    },
+    {
+      "id": 31,
+      "season": 2026,
+      "name": "The ANNIKA driven by Gainbridge at Pelican",
+      "start_date": "2026-11-12",
+      "end_date": "2026-11-15",
+      "status": "final",
+      "format": "Stroke Play",
+      "course": "Pelican Golf Club",
+      "current_round": 4
+    },
+    {
+      "id": 32,
+      "season": 2026,
+      "name": "CME Group Tour Championship",
+      "start_date": "2026-11-19",
+      "end_date": "2026-11-22",
+      "status": "in_progress",
+      "format": "Stroke Play",
+      "course": "Ritz Carlton Golf Resort, Tiburón Golf Club",
+      "current_round": 4
+    }
+  ]
+}
