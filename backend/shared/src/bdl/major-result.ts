@@ -13,7 +13,7 @@ import { isLinkedCpmmMulti2 } from 'common/sports-kickoff-interface'
 import type { SportsFinalQualifier } from 'common/sports-scoreboard'
 import { bdlEventId } from 'common/sports-ids'
 import { providerOf } from 'common/sports-provider'
-import type { MajorGame } from './major-games'
+import { hasConfirmedEntrants, type MajorObservation } from './major-games'
 import type { ResolutionParams } from '../resolve-market-helpers'
 
 export type MajorResult = {
@@ -43,6 +43,7 @@ export type MajorMarket = CPMMMultiContract &
 
 export type MajorIncident =
   | 'unexpected entrants'
+  | 'unidentifiable entrants'
   | 'invalid final scores'
   | 'unexpected level final'
   | 'irregular result'
@@ -76,8 +77,12 @@ export function isMajorMarket(
   )
 }
 
-export function matchesEntrants(market: Sports, game: MajorGame) {
+export function matchesEntrants(
+  market: Pick<Sports, 'sportsHomeTeamId' | 'sportsAwayTeamId'>,
+  game: MajorObservation
+) {
   return (
+    hasConfirmedEntrants(game) &&
     game.home.id !== game.away.id &&
     ((market.sportsHomeTeamId === String(game.home.id) &&
       market.sportsAwayTeamId === String(game.away.id)) ||
@@ -91,8 +96,9 @@ const validScore = (n: number | null): n is number =>
 
 export function reviewedResult(
   league: MajorLeague,
-  game: MajorGame
+  game: MajorObservation
 ): { record?: MajorResult; incident?: MajorIncident } {
+  if (!hasConfirmedEntrants(game)) return { incident: game.entrantIssue }
   if (
     !game.eligible ||
     game.irregular ||

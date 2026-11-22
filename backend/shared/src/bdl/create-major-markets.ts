@@ -64,7 +64,12 @@ import {
   requireBdlCreationBudget,
 } from './creation-budget'
 import { existingMajorGroups, majorCreationHold } from './major-creation-store'
-import { fetchMajorGames, fetchMajorOdds, MajorGame } from './major-games'
+import {
+  hasConfirmedEntrants,
+  fetchMajorGames,
+  fetchMajorOdds,
+  MajorGame,
+} from './major-games'
 import { getMajorSettings } from './major-settings'
 
 export type MajorCreationOptions = {
@@ -318,7 +323,23 @@ export async function runMajorCreation(
           easternDay.format(began + maxLead)
         )
         const seen = games.map((g) => bdlEventId(league, g.id))
-        const slate = games.map((game) => ({
+        for (const game of games) {
+          if (hasConfirmedEntrants(game)) continue
+          const eventId = bdlEventId(league, game.id)
+          if (
+            selected
+              ? selected.has(eventId)
+              : game.startTime && Date.parse(game.startTime) > began
+          )
+            push({
+              league,
+              eventId,
+              status: 'skipped',
+              question: null,
+              reason: game.entrantIssue,
+            })
+        }
+        const slate = games.filter(hasConfirmedEntrants).map((game) => ({
           game,
           eventId: bdlEventId(league, game.id),
           ...kickoffBounds(game),

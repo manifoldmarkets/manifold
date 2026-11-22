@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import { PGlite, type Transaction } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { SPORTS_CALENDAR } from 'common/sports-calendar'
@@ -86,12 +84,18 @@ const phase = SPORTS_CALENDAR.find(
     p.endDate >= '2026-11-07'
 )!
 const scorePolling = { sports: {}, leagues: { nba: 30 }, games: {}, finals: 60 }
-const fixture = (name: string): Record<string, unknown> =>
-  JSON.parse(
-    readFileSync(join(__dirname, '../../test/fixtures/bdl/nba', name), 'utf8')
-  ).data[0]
-const original = fixture('games__spec-major-slate.json')
+const original = {
+  id: 101,
+  status_state: 'scheduled',
+  period: 0,
+  home_team: { id: 11, full_name: 'Lake City Owls' },
+  visitor_team: { id: 12, full_name: 'Northport Foxes' },
+  home_team_score: 0,
+  visitor_team_score: 0,
+}
 let raw: Record<string, unknown>
+let otherGames: Record<string, unknown>[]
+const quotedIds: string[][] = []
 let client: ReturnType<typeof createBdlClient>
 const requests: string[] = []
 let testTx: Transaction | undefined
@@ -202,6 +206,8 @@ beforeEach(async () => {
   jest.clearAllMocks()
   now = initial
   requests.length = 0
+  quotedIds.length = 0
+  otherGames = []
   raw = {
     ...original,
     date: '2026-11-06',
@@ -218,19 +224,25 @@ beforeEach(async () => {
         path = u.pathname
       requests.push(path)
       let data: unknown
-      if (path === '/nba/v1/games/101') data = raw
-      else if (path === '/nba/v1/games')
-        data = u.searchParams.getAll('dates[]').includes(String(raw.date))
-          ? [raw]
-          : []
-      else if (path === '/nba/v2/odds')
-        data = [
-          {
-            ...fixture('odds__spec-major-moneyline.json'),
-            updated_at: iso(now),
-          },
-        ]
-      else if (path === '/nba/v1/standings')
+      const slate = [raw, ...otherGames]
+      if (path.startsWith('/nba/v1/games/')) {
+        data = slate.find((game) => String(game.id) === path.split('/').pop())
+        if (!data) return new Response(null, { status: 404 })
+      } else if (path === '/nba/v1/games')
+        data = slate.filter((game) =>
+          u.searchParams.getAll('dates[]').includes(String(game.date))
+        )
+      else if (path === '/nba/v2/odds') {
+        const ids = u.searchParams.getAll('game_ids[]')
+        quotedIds.push(ids)
+        data = ids.map((id) => ({
+          game_id: Number(id),
+          vendor: 'test-book',
+          moneyline_home_odds: 150,
+          moneyline_away_odds: -150,
+          updated_at: iso(now),
+        }))
+      } else if (path === '/nba/v1/standings')
         data = [
           {
             season: 2026,
@@ -361,6 +373,135 @@ it('creates, syncs a live scoreboard and pays one recorded final to both linked 
   expect(await listMajorMarkets(pg, house, 'nba', true, now)).toEqual([])
   expect(resolveMarketHelper).toHaveBeenCalledTimes(2)
   expect(sendTextEmail).not.toHaveBeenCalled()
+})
+const heldId = 'bdl:nba:102'
+async function addEarlierMarket() {
+  const names = ['Northport Foxes', 'Lake City Owls']
+  await addMarket(
+    {
+      sportsMarketType: 'moneyline',
+      sportsProvider: 'bdl',
+      sportsLeagueKey: 'nba',
+      sportsLeague: 'NBA',
+      sportsEventId: heldId,
+      sportsStartTimestamp: iso(initial - HOUR_MS),
+      sportsHomeTeamId: '11',
+      sportsAwayTeamId: '12',
+      sportsCompetitionId: phase.competitionId,
+      sportsCompetitionPhase: phase.phase,
+      sportsEntrantIds: [12, 11],
+      sportsTeamNames: names,
+      closeTime: initial + DAY_MS,
+    },
+    'affected',
+    names
+  )
+}
+it('holds a new ID and alerts possible-reid when its same-team predecessor has actually vanished', async () => {
+  await addEarlierMarket()
+  const candidate = await runMajorCreation(
+    { league: 'nba' },
+    { pg, clock, client }
+  )
+  expect(candidate.log).toContainEqual(
+    expect.objectContaining({
+      eventId: 'bdl:nba:101',
+      status: 'skipped',
+      reason: 'possible-reid: affected',
+    })
+  )
+  expect(await read('select id from contracts')).toEqual([{ id: 'affected' }])
+  expect(await runner('sync')).toMatchObject({
+    observed: 1,
+    attention: 1,
+    settled: 0,
+    errors: 0,
+  })
+  expect(await loadMarket('affected')).toMatchObject({
+    sportsAttentionReason: 'possible-reid',
+    isResolved: false,
+  })
+  expect(requests).toContain('/nba/v1/games/102')
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+it('retains the incomplete game for discovery, alerts its existing market, and pays only the confirmed game', async () => {
+  await addEarlierMarket()
+  otherGames = [
+    {
+      ...raw,
+      id: 102,
+      visitor_team: { id: null, full_name: 'Northport Foxes' },
+    },
+  ]
+  const created = await runMajorCreation(
+    { league: 'nba' },
+    { pg, clock, client }
+  )
+  expect(created.log).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        eventId: heldId,
+        status: 'skipped',
+        reason: 'unidentifiable entrants',
+      }),
+      expect.objectContaining({
+        eventId: 'bdl:nba:101',
+        status: 'created',
+        contractId: 'one',
+      }),
+    ])
+  )
+  expect(createSportsContract).toHaveBeenCalledTimes(1)
+  expect(quotedIds).toEqual([['101']])
+  now = kickoff + HOUR_MS
+  raw = {
+    ...raw,
+    status_state: 'in_progress',
+    period: 2,
+    home_team_score: 40,
+    visitor_team_score: 44,
+  }
+  otherGames = [
+    {
+      ...otherGames[0],
+      status_state: 'final',
+      home_team_score: 130,
+      visitor_team_score: 90,
+    },
+  ]
+  expect(await runner('sync')).toMatchObject({
+    observed: 2,
+    attention: 1,
+    settled: 0,
+    errors: 0,
+  })
+  const held = await loadMarket('affected')
+  expect(held).toMatchObject({
+    isResolved: false,
+    sportsAttentionReason: 'unidentifiable entrants',
+    sportsHomeScore: null,
+    sportsAwayScore: null,
+    sportsRecordedResult: null,
+    sportsResultHash: null,
+  })
+  expect(await loadMarket('one')).toMatchObject({ sportsHomeScore: 40 })
+  now += 2 * HOUR_MS
+  raw = {
+    ...raw,
+    status_state: 'final',
+    home_team_score: 110,
+    visitor_team_score: 98,
+  }
+  expect(await runner('resolve')).toMatchObject({
+    observed: 2,
+    settled: 1,
+    errors: 0,
+  })
+  expect(
+    jest.mocked(resolveMarketHelper).mock.calls.map(([market]) => market.id)
+  ).toEqual(['one'])
+  expect((await loadMarket('one')).resolution).toBe('one-1')
+  expect((await loadMarket('affected')).isResolved).toBe(false)
 })
 it('is inert for disabled master and phases and excludes other providers, private contracts and fixtures', async () => {
   const m = await create()
@@ -583,6 +724,25 @@ it('rejects an unrelated doubleheader ID and older provider revisions even after
   now += MINUTE_MS
   expect(
     await write({ ...g, status: 'final', scoreUpdatedTime: now - HOUR_MS })
+  ).toEqual([])
+  const revision = now
+  expect(
+    await write({
+      ...g,
+      eligible: false,
+      entrantIssue: 'unidentifiable entrants',
+      away: { id: null, name: null },
+      scoreUpdatedTime: revision,
+    })
+  ).toHaveLength(1)
+  expect(await loadMarket('one')).toMatchObject({
+    sportsAttentionReason: 'unidentifiable entrants',
+    sportsScoreUpdatedTime: revision,
+    sportsRecordedResult: null,
+  })
+  now += MINUTE_MS
+  expect(
+    await write({ ...g, status: 'final', scoreUpdatedTime: revision - 1 })
   ).toEqual([])
   expect((await loadMarket('one')).sportsRecordedResult).toBeNull()
 })

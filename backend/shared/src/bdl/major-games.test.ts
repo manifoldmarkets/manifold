@@ -233,9 +233,11 @@ it('rejects unrelated dates, ignored WNBA phase, conflicting schedule IDs and un
   await expect(
     fetch([{ ...row, visitor_team: row.home_team }])
   ).rejects.toThrow('Both sides')
-  await expect(fetch([{ ...row, home_team: { id: 11 } }])).rejects.toThrow(
-    'identifiable team'
-  )
+  await expect(
+    fetch([{ ...row, home_team: { id: 11 } }])
+  ).resolves.toMatchObject([
+    { id: row.id, eligible: false, entrantIssue: 'unidentifiable entrants' },
+  ])
   await expect(
     fetchMajorGames(
       localClient(() => fixture('wnba', 'games')).client,

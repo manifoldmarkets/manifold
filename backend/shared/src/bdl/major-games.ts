@@ -45,6 +45,19 @@ export type MajorGame = {
   season: number
 }
 
+type ObservedTeam = { id: number | null; name: string | null; code?: string }
+export type MajorObservation =
+  | MajorGame
+  | (Omit<MajorGame, 'home' | 'away' | 'eligible'> & {
+      eligible: false
+      entrantIssue: 'unidentifiable entrants'
+      home: ObservedTeam
+      away: ObservedTeam
+    })
+export const hasConfirmedEntrants = (
+  game: MajorObservation
+): game is MajorGame => !('entrantIssue' in game)
+
 type Row = Record<string, unknown>
 const asRow = (value: unknown): Row | undefined =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -116,12 +129,12 @@ function scheduleTime(league: MajorLeague, row: Row) {
   }
 }
 
-function team(league: MajorLeague, value: unknown): Team {
+function team(league: MajorLeague, value: unknown): ObservedTeam {
   const row = asRow(value)
   const name = league === 'mlb' ? row?.display_name : row?.full_name
-  if (!isId(row?.id) || typeof name !== 'string' || !name.trim())
-    throw new Error('[sports-bdl-' + league + '] Game has no identifiable team')
-  const trimmed = name.trim()
+  const trimmed = typeof name === 'string' ? name.trim() : ''
+  if (!isId(row?.id) || !trimmed)
+    return { id: isId(row?.id) ? row.id : null, name: trimmed || null }
   const teams = Object.entries(TEAM_CODES[league] ?? {})
   const normalized = normalizeTeam(trimmed)
   const exact = teams.find(
@@ -151,23 +164,47 @@ function team(league: MajorLeague, value: unknown): Team {
 const unknownOpponent = /^(tbd|tba|to be (determined|announced))$/i
 const exhibition =
   /\b(pre[ -]?season|spring training|exhibition|all[ -]?stars?|pro bowl|rising stars)\b/i
-export function mapMajorGame(league: MajorLeague, raw: unknown): MajorGame {
+const identified = (value: ObservedTeam): value is Team =>
+  value.id !== null && value.name !== null
+
+export function mapMajorGame(
+  league: MajorLeague,
+  raw: unknown
+): MajorObservation {
   const row = asRow(raw)
   if (!row) throw new Error('[sports-bdl-' + league + '] Invalid game record')
   if (!isId(row.id) || !isId(row.season))
     throw new Error('[sports-bdl-' + league + '] Invalid game ID or season')
   const { startTime, slateDate, dateOnly } = scheduleTime(league, row)
+  const status = normalizeBdlStatus(row.status_state)
+  const changed = league === 'nfl' ? providerMs(row.updated_at) : NaN
   const home = team(league, row.home_team)
   const away = team(
     league,
     league === 'nhl' || league === 'mlb' ? row.away_team : row.visitor_team
   )
+  if (!identified(home) || !identified(away)) {
+    // The event is present, but its scores cannot be assigned to known entrants.
+    return {
+      id: row.id,
+      season: row.season,
+      slateDate,
+      startTime,
+      status,
+      home,
+      away,
+      ...(Number.isFinite(changed) && { scoreUpdatedTime: changed }),
+      homeScore: null,
+      awayScore: null,
+      eligible: false,
+      entrantIssue: 'unidentifiable entrants',
+    }
+  }
   if (home.id === away.id)
     throw new Error(
       '[sports-bdl-' + league + '] Both sides have the same provider team ID'
     )
   const visitorScores = league === 'nba' || league === 'nfl'
-  const status = normalizeBdlStatus(row.status_state)
   const homeScore = score(
     league === 'mlb'
       ? asRow(row.home_team_data)?.runs
@@ -198,7 +235,6 @@ export function mapMajorGame(league: MajorLeague, raw: unknown): MajorGame {
       (value) => typeof value === 'string' && exhibition.test(value)
     )
   const detail = scoreDetail(league, row)
-  const changed = league === 'nfl' ? providerMs(row.updated_at) : NaN
   const overtime =
     status === 'final' &&
     (((league === 'nba' || league === 'wnba') &&
@@ -284,9 +320,10 @@ function scoreDetail(
   return pairs.length ? { periodScores: pairs } : undefined
 }
 
-function numberDoubleheaders(games: MajorGame[]) {
-  const series = new Map<string, MajorGame[]>()
+function numberDoubleheaders(games: MajorObservation[]) {
+  const series = new Map<string, MajorObservation[]>()
   for (const game of games) {
+    if (game.home.id === null || game.away.id === null) continue
     const key = [
       game.slateDate,
       Math.min(game.home.id, game.away.id),
@@ -320,12 +357,12 @@ export async function fetchMajorGames(
   league: MajorLeague,
   fromDate: string,
   toDate: string
-): Promise<MajorGame[]> {
+): Promise<MajorObservation[]> {
   const from = dayMs(fromDate),
     to = dayMs(toDate)
   if (!Number.isFinite(from) || !Number.isFinite(to) || from > to)
     throw new Error('Invalid BDL schedule date range')
-  const games = new Map<number, MajorGame>()
+  const games = new Map<number, MajorObservation>()
   // Pad the provider filter by a day at each end. US-local and UTC slates can differ.
   for (let first = from - DAY_MS; first <= to + DAY_MS; first += 14 * DAY_MS) {
     const dates: string[] = []
@@ -392,11 +429,11 @@ export async function fetchMajorGames(
 export async function fetchMajorOdds(
   client: Client,
   league: MajorLeague,
-  games: readonly MajorGame[]
+  games: readonly MajorObservation[]
 ): Promise<Map<number, ProviderOdds[]>> {
   const result = new Map<number, ProviderOdds[]>(games.map((g) => [g.id, []]))
   const settings = BDL_LEAGUES[league]
-  for (const batch of chunk(games, 50)) {
+  for (const batch of chunk(games.filter(hasConfirmedEntrants), 50)) {
     const byId = new Map(batch.map((game) => [game.id, game]))
     const rows = await client.getAll<unknown>(
       settings.oddsApiBase + '/odds',

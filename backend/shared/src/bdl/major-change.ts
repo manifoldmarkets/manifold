@@ -13,7 +13,11 @@ import {
 import type { SportsLiveScore } from 'common/sports-schedule'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import type { SportsKickoffSignal } from '../sports-kickoff-signal'
-import type { MajorGame } from './major-games'
+import {
+  hasConfirmedEntrants,
+  type MajorGame,
+  type MajorObservation,
+} from './major-games'
 import {
   majorResultHash,
   matchesEntrants,
@@ -132,7 +136,7 @@ export type MajorChange = {
 export function majorChange(
   m: MajorMarket,
   league: MajorLeague,
-  game: MajorGame | undefined,
+  observation: MajorObservation | undefined,
   at: number,
   flags: {
     replacement?: boolean
@@ -140,13 +144,17 @@ export function majorChange(
     sync?: boolean
   } = {}
 ): MajorChange {
+  const game =
+    observation && hasConfirmedEntrants(observation) ? observation : undefined
   const patch: MajorPatch = { sportsLastCheckedTime: at }
   if (flags.sync) patch.sportsLastSyncTime = at
   const change: MajorChange = { patch }
   const settled = !!(m.resolution || m.isResolved)
   const decision = game ? reviewedResult(league, game) : {}
   let incident: MajorIncident | undefined
-  if (flags.conflictingSibling) incident = 'conflicting sibling results'
+  if (observation && !hasConfirmedEntrants(observation))
+    incident = observation.entrantIssue
+  else if (flags.conflictingSibling) incident = 'conflicting sibling results'
   else if (
     !game &&
     (settled || parseSportsKickoffMs(m.sportsStartTimestamp) <= at)
@@ -172,7 +180,7 @@ export function majorChange(
     const firstSince = m.sportsFinalSince
     const hash = decision.record ? majorResultHash(decision.record) : null
     const same = hash !== null && hash === m.sportsResultHash
-    if (game?.status === 'final' || game?.status === 'canceled') {
+    if (observation?.status === 'final' || observation?.status === 'canceled') {
       if (m.closeTime === undefined || m.closeTime > at) patch.closeTime = at
     }
     if (incident) {
@@ -183,7 +191,11 @@ export function majorChange(
           game?.status === 'abandoned' ? 'ABANDONED' : 'UNKNOWN',
         sportsLiveMinute: null,
         sportsLiveUpdatedTime: at,
-        sportsScoreUpdatedTime: null,
+        // A newer incomplete NFL revision must still invalidate older final evidence.
+        sportsScoreUpdatedTime:
+          observation && !game
+            ? observation.scoreUpdatedTime ?? m.sportsScoreUpdatedTime ?? null
+            : null,
         sportsLivePeriod: null,
         sportsLiveClock: null,
         sportsLiveDetail: null,
@@ -318,7 +330,7 @@ export function majorChange(
   }
   if (!settled) {
     if (patch.sportsObservedStartTime) change.signal = 'started'
-    else if (!game && !m.sportsAttentionReason && incident)
+    else if (!observation && !m.sportsAttentionReason && incident)
       change.signal = 'missing'
     else if (game?.status === 'canceled' && !m.sportsCanceledSince)
       change.signal = 'canceled'

@@ -6,7 +6,12 @@ import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import { DAY_MS } from 'common/util/time'
 import { BdlHttpError, type createBdlClient } from '../balldontlie-client'
 import { log } from '../monitoring/log'
-import { mapMajorGame, type MajorGame } from './major-games'
+import {
+  hasConfirmedEntrants,
+  mapMajorGame,
+  type MajorGame,
+  type MajorObservation,
+} from './major-games'
 
 type Client = Pick<ReturnType<typeof createBdlClient>, 'get' | 'getAll'>
 type Target = { id: number; season?: number; startTime?: string }
@@ -85,9 +90,9 @@ export async function fetchMajorSnapshots(
   league: MajorLeague,
   targets: readonly Target[],
   options: { standings?: boolean } = {}
-): Promise<Map<number, MajorGame>> {
+): Promise<Map<number, MajorObservation>> {
   const base = BDL_LEAGUES[league].apiBase + '/games'
-  const result = new Map<number, MajorGame>()
+  const result = new Map<number, MajorObservation>()
   const ids = new Set(targets.map((t) => t.id))
   for (const id of ids) {
     if (!Number.isSafeInteger(id) || id <= 0)
@@ -162,8 +167,10 @@ export async function fetchMajorSnapshots(
   }
   if (options.standings) {
     const seasons = new Map<number, MajorGame[]>()
-    for (const game of result.values())
-      seasons.set(game.season, [...(seasons.get(game.season) ?? []), game])
+    for (const game of result.values()) {
+      if (hasConfirmedEntrants(game))
+        seasons.set(game.season, [...(seasons.get(game.season) ?? []), game])
+    }
     for (const games of seasons.values()) {
       try {
         await addStandings(client, league, games)

@@ -25,7 +25,7 @@ import type { SupabaseDirectClient } from '../supabase/init'
 import { SPORTS_CREATION_BUDGET_LOCK_SQL } from './major-settings'
 import { reportSportsKickoffSignal } from '../sports-kickoff-signal'
 import { majorChange, type MajorChange } from './major-change'
-import type { MajorGame } from './major-games'
+import type { MajorObservation } from './major-games'
 import {
   isMajorMarket,
   majorPayout,
@@ -108,7 +108,7 @@ export async function recordMajorObservation(
   creatorId: string,
   league: MajorLeague,
   eventId: string,
-  game: MajorGame | undefined,
+  game: MajorObservation | undefined,
   requestedAt: number,
   observedAt: number,
   replacement: boolean,

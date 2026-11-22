@@ -65,6 +65,7 @@ jest.mock('./major-creation-store', () => ({
   existingMajorGroups: jest.fn(),
 }))
 jest.mock('./major-games', () => ({
+  ...jest.requireActual('./major-games'),
   fetchMajorGames: jest.fn(),
   fetchMajorOdds: jest.fn(),
 }))
@@ -112,7 +113,7 @@ const game = (id: number, extra: Partial<MajorGame> = {}): MajorGame => ({
   season: 2026,
   ...extra,
 })
-const line = (league: MajorLeague, g: MajorGame): ProviderOdds => ({
+const line = (league: MajorLeague, g: Pick<MajorGame, 'id'>): ProviderOdds => ({
   eventId: bdlEventId(league, g.id),
   vendor: 'polymarket',
   updatedAtMs: initial,

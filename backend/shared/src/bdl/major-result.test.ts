@@ -68,6 +68,19 @@ function observed(
   const change = majorChange(m, league, g, now)
   return { change, m: { ...m, ...change.patch } as MajorMarket }
 }
+it('does not signal a missing event or record a payout for a present final with an unidentified entrant', () => {
+  const observation = {
+    ...game(),
+    eligible: false as const,
+    entrantIssue: 'unidentifiable entrants' as const,
+    home: { id: null, name: 'Home' },
+  }
+  const change = majorChange(market(), 'nba', observation, at)
+  expect(change.signal).toBeUndefined()
+  expect(change.alert).toBe('unidentifiable entrants')
+  expect(change.record).toBeUndefined()
+  expect(change.patch.sportsResultHash).toBeNull()
+})
 it.each([
   'scheduled',
   'in_progress',
