@@ -54,6 +54,9 @@ function resultSources() {
 }
 
 const sources = resultSources()
+const sourceLeagueKeys = Object.fromEntries(
+  [...sources].map(([key, value]) => [key, value.league])
+)
 // Event namespaces predate the optional league metadata on stored contracts.
 const sourceSql = `case when starts_with(c.data->>'sportsEventId', 'fd-') then 'football-data'
   when starts_with(c.data->>'sportsEventId','bdl-f1:') then 'bdl:f1'
@@ -76,6 +79,9 @@ type Row = {
   away: string | null
   homeScore: unknown
   awayScore: unknown
+  duration: string | null
+  penHome: unknown
+  penAway: unknown
 }
 
 function marketOutcome(row: Row): string {
@@ -104,7 +110,8 @@ function marketOutcome(row: Row): string {
   }
   const total = [...payouts.values()].reduce((sum, pct) => sum + pct, 0)
   // The resolver accepts rounded input within 0.1 of 100 and normalizes it before payout.
-  if (Math.abs(total - 100) > 0.1) return 'Settled'
+  const roundingError = Number.EPSILON * 100 * payouts.size
+  if (Math.abs(total - 100) > 0.1 + roundingError) return 'Settled'
   const paid = answers.filter((a) => payouts.has(a.id))
   if (paid.length === 1) return paid[0].name
   return paid
@@ -132,12 +139,32 @@ function finalScore(row: Row): SportsResult['finalScore'] {
   const oldTeams = row.source === 'football-data' ? row.answers : null
   const home = row.home || oldTeams?.find((a) => a.position === 0)?.name
   const away = row.away || oldTeams?.find((a) => a.position === 1)?.name
-  if (!home || !away || home === away) return null
+  const homeName = splitFlag(home ?? '').name.normalize('NFC')
+  const awayName = splitFlag(away ?? '').name.normalize('NFC')
+  if (
+    !homeName ||
+    !awayName ||
+    homeName.toLowerCase() === awayName.toLowerCase()
+  )
+    return null
+  const shootout = row.duration === 'PENALTY_SHOOTOUT'
+  if (shootout && row.homeScore !== row.awayScore) return null
   return {
-    home: splitFlag(home).name,
+    home: homeName,
     homeScore: row.homeScore,
-    away: splitFlag(away).name,
+    away: awayName,
     awayScore: row.awayScore,
+    ...(shootout
+      ? { qualifier: 'penalties' as const }
+      : row.duration === 'EXTRA_TIME'
+      ? { qualifier: 'extra-time' as const }
+      : {}),
+    ...(shootout &&
+    score(row.penHome) &&
+    score(row.penAway) &&
+    row.penHome !== row.penAway
+      ? { penalties: { home: row.penHome, away: row.penAway } }
+      : {}),
   }
 }
 
@@ -160,6 +187,7 @@ export async function readSportsResults(
      c.data->'resolutions' as resolutions,c.group_slugs as "groupSlugs",c.data->>'sportsLiveStatus' as "liveStatus",
      c.data->>'sportsHomeTeam' as home,c.data->>'sportsAwayTeam' as away,
      c.data->'sportsHomeScore' as "homeScore",c.data->'sportsAwayScore' as "awayScore",
+     c.data->>'sportsScoreDuration' as duration,c.data->'sportsPenHome' as "penHome",c.data->'sportsPenAway' as "penAway",
      (select jsonb_agg(jsonb_build_object('id',a.id,'name',a.text,'position',a.index) order by a.index,a.id)
         from answers a where a.contract_id=c.id) as answers
      from contracts c
@@ -168,8 +196,7 @@ export async function readSportsResults(
        and c.outcome_type='MULTIPLE_CHOICE' and ${officialSportsGameSql('c')}
        and coalesce(c.data->>'sportsMarketType','moneyline') in ('moneyline','winner')
        and (${sourceSql})=any($2)
-       and (c.data->>'sportsLeagueKey' is null or not starts_with(c.data->>'sportsEventId','bdl')
-            or (${sourceSql})='bdl:' || (c.data->>'sportsLeagueKey'))
+       and (c.data->>'sportsLeagueKey' is null or c.data->>'sportsLeagueKey' = ($6::jsonb ->> (${sourceSql})))
        and c.data->>'creatorUsername' ~ '^[A-Za-z0-9_-]+$' and c.slug ~ '^[A-Za-z0-9_-]+$'
        and ($3::timestamptz is null or (c.resolution_time,c.id collate "C") < ($3::timestamptz,$4::text collate "C"))
      order by c.resolution_time desc,c.id collate "C" desc limit $5`,
@@ -179,6 +206,7 @@ export async function readSportsResults(
       before ?? null,
       beforeId ?? null,
       limit + 1,
+      JSON.stringify(sourceLeagueKeys),
     ]
   )
   const page = rows.slice(0, limit)

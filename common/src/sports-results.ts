@@ -11,6 +11,7 @@ const cursor = z
     const stamp = value.split('|')[0]
     const time = Date.parse(stamp)
     return (
+      !stamp.startsWith('0000-') &&
       Number.isFinite(time) &&
       new Date(time).toISOString().slice(0, 23) === stamp.slice(0, 23)
     )
@@ -40,6 +41,8 @@ export type SportsResult = {
     homeScore: number
     away: string
     awayScore: number
+    qualifier?: 'extra-time' | 'penalties'
+    penalties?: { home: number; away: number }
   } | null
   groupSlugs: string[]
 }

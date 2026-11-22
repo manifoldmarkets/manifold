@@ -157,6 +157,10 @@ export default function SportPage() {
     >
       <QueryUncontrolledTabs
         trackingName="sport tabs"
+        labelsParentClassName={
+          isSportsBdlEnabled() ? 'gap-1 sm:gap-4' : undefined
+        }
+        labelClassName={isSportsBdlEnabled() ? 'max-sm:!mr-1' : undefined}
         tabs={[
           {
             title: 'Games',

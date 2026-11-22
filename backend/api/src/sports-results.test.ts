@@ -130,6 +130,11 @@ it('exposes only settled public house MANA game markets, including both official
     { id: 'unsettled', resolution: null },
     { id: 'no-time', stamp: null },
     { id: 'prop', data: { sportsMarketType: 'prop' } },
+    { id: 'legacy-conflict', data: { sportsLeagueKey: 'laliga' } },
+    {
+      id: 'cup-conflict',
+      data: { sportsEventId: 'fd-22', sportsLeagueKey: 'epl' },
+    },
     { id: 'fake', data: { sportsFixture: true } },
     { id: 'forged', data: { sportsProvider: 'bdl' } },
     { id: 'plain', data: { sportsEventId: undefined } },
@@ -237,6 +242,102 @@ it('retains proven World Cup home/away ordering for games without stored names, 
   })
 })
 
+it('uses payout tolerance independent of JSON key order, with a strict outer boundary', async () => {
+  for (const [id, weights] of [
+    ['a', [4.1, 4.1, 91.7]],
+    ['b', [91.7, 4.1, 4.1]],
+    ['edge-high', [4.1, 4.1, 91.9]],
+    ['invalid-low', [4.1, 4.1, 91.69]],
+    ['invalid-high', [4.1, 4.1, 91.91]],
+  ] as const) {
+    await seed({
+      id,
+      resolution: 'CHOOSE_MULTIPLE',
+      data: {
+        resolutions: {
+          [id + '-h']: weights[0],
+          [id + '-a']: weights[1],
+          [id + '-d']: weights[2],
+        },
+      },
+    })
+  }
+  const by = Object.fromEntries(
+    (await read({ sport: 'soccer' })).items.map((i) => [i.id, i.payout])
+  )
+  expect(by.a).toBe('Harbor 4.1% · River 4.1% · Draw 91.79%')
+  expect(by.b).toBe('Harbor 91.79% · River 4.1% · Draw 4.1%')
+  expect(by['edge-high']).toContain('Draw')
+  expect(by['invalid-low']).toBe('Settled')
+  expect(by['invalid-high']).toBe('Settled')
+})
+it('attributes shootout tallies by side and omits malformed normalized score identities', async () => {
+  const tie = {
+    sportsHomeScore: 1,
+    sportsAwayScore: 1,
+    sportsEventId: 'fd-12345',
+    sportsScoreDuration: 'PENALTY_SHOOTOUT',
+    sportsPenHome: 4,
+    sportsPenAway: 5,
+    sportsHomeTeam: '🇬🇧 England',
+    sportsAwayTeam: 'Japan',
+  }
+  await seed({ id: 'pens', data: tie, resolution: 'pens-a' })
+  await seed({ id: 'missing', data: { ...tie, sportsPenHome: null } })
+  await seed({ id: 'level-pens', data: { ...tie, sportsPenHome: 5 } })
+  await seed({
+    id: 'conflicting-aggregate',
+    data: { ...tie, sportsAwayScore: 2 },
+  })
+  await seed({
+    id: 'extra-time',
+    data: { ...tie, sportsScoreDuration: 'EXTRA_TIME' },
+  })
+  await seed({ id: 'flag-only', data: { ...tie, sportsHomeTeam: '🇬🇧' } })
+  await seed({ id: 'same', data: { ...tie, sportsAwayTeam: ' england ' } })
+  const by = Object.fromEntries(
+    (await read({ sport: 'soccer', league: 'fifa/worldcup' })).items.map(
+      (i) => [i.id, i]
+    )
+  )
+  expect(by.pens).toMatchObject({
+    payout: 'River',
+    finalScore: {
+      home: 'England',
+      away: 'Japan',
+      homeScore: 1,
+      awayScore: 1,
+      qualifier: 'penalties',
+      penalties: { home: 4, away: 5 },
+    },
+  })
+  for (const key of ['missing', 'level-pens']) {
+    expect(by[key].finalScore?.qualifier).toBe('penalties')
+    expect(by[key].finalScore?.penalties).toBeUndefined()
+  }
+  expect(by['extra-time'].finalScore?.qualifier).toBe('extra-time')
+  for (const key of ['flag-only', 'same', 'conflicting-aggregate'])
+    expect(by[key].finalScore).toBeNull()
+})
+it('rejects conflicting explicit league metadata on legacy routes without losing a correctly attributed game', async () => {
+  const cases = [
+    ['epl', 'odds:soccer_epl:abc', 'epl'],
+    ['legacy-epl', 'odds:soccer_epl:def', undefined],
+    ['wrong', 'odds:soccer_epl:ghi', 'laliga'],
+    ['wrong-cup', 'fd-883', 'epl'],
+  ] as const
+  for (const [id, sportsEventId, sportsLeagueKey] of cases)
+    await seed({ id, data: { sportsEventId, sportsLeagueKey } })
+  expect(
+    (await read({ sport: 'soccer' })).items.map((r) => r.id).sort()
+  ).toEqual(['epl', 'legacy-epl'])
+  expect(
+    (await read({ sport: 'soccer', league: 'epl' })).items
+      .map((r) => r.id)
+      .sort()
+  ).toEqual(['epl', 'legacy-epl'])
+})
+
 it('pages tied settlement timestamps and sub-millisecond neighbors in deterministic newest order', async () => {
   for (const id of ['a', 'b', 'c', 'd']) await seed({ id })
   await seed({ id: 'z', stamp: '2026-11-21T11:32:00.123455Z' })
@@ -257,6 +358,7 @@ it('pages tied settlement timestamps and sub-millisecond neighbors in determinis
 
 it('rejects malformed cursors, unsupported league filters, all-sports and invalid limits', () => {
   for (const cursor of [
+    '0000-01-01T00:00:00.000000Z|a',
     '2026-02-31T11:00:00.123456Z|a',
     stamp + '|a/b',
     stamp + '|' + 'x'.repeat(129),
