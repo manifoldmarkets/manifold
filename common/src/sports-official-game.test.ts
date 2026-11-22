@@ -163,3 +163,44 @@ it('does not publish an old in-progress score as a final score after a BDL resol
     })
   ).toMatchObject({ winnerAnswerId: 'home', finalScore: { home: 2, away: 1 } })
 })
+
+it('hides a previous fixture’s score, clock and receipt immediately after reassignment while preserving the off-state projection', () => {
+  const props = {
+    ...market,
+    sportsProvider: 'odds',
+    sportsLeagueKey: undefined,
+    sportsLeague: 'NBA',
+    sportsEventId: 'odds:basketball_nba:new',
+    sportsLiveStatus: 'IN_PLAY',
+    sportsHomeScore: 37,
+    sportsAwayScore: 29,
+    sportsLiveClock: '4:00',
+    sportsLiveUpdatedTime: now,
+    sportsScoreUpdatedTime: now,
+    scoreFixture: {
+      eventId: 'odds:basketball_nba:old',
+      home: 'Lake City',
+      away: 'Port City',
+      homeId: '17',
+      awayId: '9',
+    },
+  }
+  const read = (enabled: boolean) =>
+    toOfficialGame(
+      props as unknown as Contract,
+      answers,
+      [],
+      undefined,
+      now,
+      enabled
+    )
+  expect(read(true)).toMatchObject({
+    liveScore: null,
+    finalScore: null,
+    liveUpdatedTime: null,
+    scoreUpdatedTime: null,
+  })
+  expect(read(false)?.liveScore).toMatchObject({ home: 37, away: 29 })
+  props.scoreFixture.eventId = props.sportsEventId
+  expect(read(true)?.liveScore).toMatchObject({ home: 37, away: 29 })
+})

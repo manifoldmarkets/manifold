@@ -737,12 +737,9 @@ export async function pollOddsScoresAndResolve(
     const games = (bySport[sportKey] ?? []).filter(
       (game) => !reservedAtStart.has(game.contract.id)
     )
-    let scores: OddsApiScore[]
+    let read: Awaited<ReturnType<typeof readScores>>
     try {
-      scores = await getScores(
-        sportKey,
-        withFinished ? { finishedDays: LOOKBACK_DAYS } : {}
-      )
+      read = await readScores(sportKey, withFinished)
       if (!isCurrent()) return stats
       delete state.failures[sportKey]
     } catch (e) {
@@ -763,7 +760,7 @@ export async function pollOddsScoresAndResolve(
     // If the follow-up call fails the live response still counts, and the
     // game is flagged below so the finals check takes it from there.
     if (!isCurrent()) return stats
-    const listed = new Set(scores.map((s) => s.id))
+    const listed = new Set(read.scores.map((s) => s.id))
     const dropped = games.some(
       (g) => !listed.has(g.eventId) && !(g.contract.id in state.missing)
     )
@@ -771,14 +768,14 @@ export async function pollOddsScoresAndResolve(
       stats.polled++
       state.lastFinished[sportKey] = now
       try {
-        scores = await getScores(sportKey, { finishedDays: LOOKBACK_DAYS })
+        read = await readScores(sportKey, true)
       } catch (e) {
         if (!isCurrent()) return stats
         log(`[sports-odds-resolve] finished games for ${sportKey} failed: ${e}`)
       }
     }
     if (!isCurrent()) return stats
-    const scoreById = new Map(scores.map((s) => [s.id, s]))
+    const scoreById = new Map(read.scores.map((s) => [s.id, s]))
     for (const game of games) {
       if (!isCurrent()) return stats
       const id = game.contract.id
@@ -800,7 +797,7 @@ export async function pollOddsScoresAndResolve(
             id,
             runId,
             isCurrent,
-            (run) => finishGame(pg, game, score, creator!, run, now)
+            (run) => finishGame(pg, game, score, creator!, run, read.interval)
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -819,7 +816,7 @@ export async function pollOddsScoresAndResolve(
             id,
             runId,
             isCurrent,
-            (run) => writeLiveScore(pg, game, score, now, run)
+            (run) => writeLiveScore(pg, game, score, now, run, read.interval)
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -848,6 +845,23 @@ export async function pollOddsScoresAndResolve(
     if (!resolved.has(game.contract.id)) alertIfOverdue(game, state, now)
   }
   return stats
+}
+
+type ScoreInterval = { startedAt: number; receivedAt: number }
+
+async function readScores(sportKey: string, finished: boolean) {
+  const startedAt = isSportsBdlEnabled() ? Date.now() : undefined
+  const scores = await getScores(
+    sportKey,
+    finished ? { finishedDays: LOOKBACK_DAYS } : {}
+  )
+  return {
+    scores,
+    interval:
+      startedAt === undefined
+        ? undefined
+        : { startedAt, receivedAt: Date.now() },
+  }
 }
 
 interface ScoreGameRun {
@@ -990,7 +1004,8 @@ async function writeLiveScore(
   game: PendingGame,
   score: OddsApiScore,
   now: number,
-  run: ScoreGameRun
+  run: ScoreGameRun,
+  interval?: ScoreInterval
 ) {
   const teams = gameTeams(game)
   const scores = teamScores(score, teams)
@@ -1005,11 +1020,14 @@ async function writeLiveScore(
     sportsLiveStatus: 'IN_PLAY',
     // The Odds API has no clock; show the score observation time instead.
     sportsLiveMinute: null,
-    sportsLiveUpdatedTime: isSportsBdlEnabled() ? Date.now() : now,
-    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, now),
+    sportsLiveUpdatedTime: interval?.receivedAt ?? now,
+    sportsScoreUpdatedTime: scoreUpdatedTime(
+      score.last_update,
+      interval?.receivedAt ?? now
+    ),
   }
   if (!run.isCurrent()) return
-  const source = isSportsBdlEnabled() ? oddsScoreSource(game) : undefined
+  const source = interval ? oddsScoreSource(game) : undefined
   const written = source
     ? (
         await run.mutate(() =>
@@ -1017,7 +1035,7 @@ async function writeLiveScore(
             pg,
             source,
             patch,
-            now,
+            interval!.startedAt,
             game.contract.id,
             run.isCurrent
           )
@@ -1041,7 +1059,7 @@ async function finishGame(
   score: OddsApiScore,
   creator: User,
   run: ScoreGameRun,
-  startedAt: number
+  interval: ScoreInterval | undefined
 ) {
   const { contract } = game
   const d = contract as any
@@ -1058,11 +1076,12 @@ async function finishGame(
   // A level final in a sport that plays on until someone wins is missing its
   // decider. Paying 50/50 would be wrong, so leave it for a person (and for a
   // corrected score on the next poll).
-  if (side === 'tie' && !canEndLevel(game.sportKey)) {
-    throw new Error(
+  const missingDecider = side === 'tie' && !canEndLevel(game.sportKey)
+  const incompleteResult = () =>
+    new Error(
       `${contract.id} finished level at ${home}–${away}, but ${game.sportKey} games can't end level; resolve by hand`
     )
-  }
+  if (!interval && missingDecider) throw incompleteResult()
 
   // Tell the page the game is over before resolving, so the live badge clears
   // even if resolution throws.
@@ -1071,18 +1090,21 @@ async function finishGame(
     sportsAwayScore: away,
     sportsLiveStatus: 'FINISHED',
     sportsLiveMinute: null,
-    sportsLiveUpdatedTime: Date.now(),
-    sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, Date.now()),
+    sportsLiveUpdatedTime: interval?.receivedAt ?? Date.now(),
+    sportsScoreUpdatedTime: scoreUpdatedTime(
+      score.last_update,
+      interval?.receivedAt ?? Date.now()
+    ),
   }
   if (!run.isCurrent()) return
-  const source = isSportsBdlEnabled() ? oddsScoreSource(game) : undefined
+  const source = interval ? oddsScoreSource(game) : undefined
   const confirmed = source
     ? await run.mutate(() =>
         writeFixtureScore(
           pg,
           source,
           patch,
-          startedAt,
+          interval!.startedAt,
           contract.id,
           run.isCurrent
         )
@@ -1101,6 +1123,7 @@ async function finishGame(
   )
   if (!run.isCurrent()) return
 
+  if (missingDecider) throw incompleteResult()
   run.setStage('answer-read')
   const answers = (
     await pg.manyOrNone(`select * from answers where contract_id = $1`, [

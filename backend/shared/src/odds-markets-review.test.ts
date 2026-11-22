@@ -786,27 +786,26 @@ describe('fixture-bound provider writes', () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce(reviewAnswers)
     jest.mocked(getScores).mockResolvedValue([reviewScore(true)])
-    let allowed = false
-    jest.mocked(resolveMarketHelper).mockImplementationOnce(async (...args) => {
-      expect(d.committed()).toBe(true)
-      expect(args[5]).toBeDefined()
-      const fresh = {
-        ...d.data,
-        answers: reviewAnswers,
-      } as unknown as MarketContract
-      expect(() => args[5]?.(fresh)).not.toThrow()
-      args[5]?.(
-        Object.assign({}, fresh, {
-          sportsEventId: 'odds:americanfootball_nfl:another',
-        })
-      )
-      allowed = true
-      throw Error('unreachable')
-    })
+    jest
+      .mocked(resolveMarketHelper)
+      .mockRejectedValueOnce(new Error('held by test before payout'))
     const result = await pollOddsScoresAndResolve(d.client, newScorePollState())
     expect(result.resolved).toBe(0)
-    expect(allowed).toBe(false)
+    expect(d.committed()).toBe(true)
     expect(resolveMarketHelper).toHaveBeenCalledTimes(1)
+    const callback = jest.mocked(resolveMarketHelper).mock.calls[0][5]
+    expect(callback).toBeDefined()
+    const fresh = {
+      ...d.data,
+      answers: reviewAnswers,
+    } as unknown as MarketContract
+    expect(() => callback!(fresh)).not.toThrow()
+    expect(() =>
+      callback!({
+        ...fresh,
+        sportsEventId: 'odds:americanfootball_nfl:another',
+      } as unknown as MarketContract)
+    ).toThrow()
     expect(publishSportsLiveScore).toHaveBeenCalledWith(
       'game',
       expect.objectContaining({
@@ -864,10 +863,235 @@ describe('fixture-bound provider writes', () => {
         },
       } as FDMatch
       expect(
-        await resolveTournamentMarketsForMatches(config, [match])
+        await resolveTournamentMarketsForMatches(config, [match], {
+          observation: { startedAt: NOW - 1, receivedAt: NOW },
+        })
       ).toMatchObject({ resolved: 0, skipped: 1, errors: 0 })
       expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
       expect(resolveMarketHelper).not.toHaveBeenCalled()
+    }
+  )
+  const config = {
+    ...WORLD_CUP_2026,
+    manifoldSportsUserId: { dev: creator.id, prod: creator.id },
+  }
+  const acquisition = { startedAt: NOW - 100, receivedAt: NOW }
+  const match = (id = 22) =>
+    ({
+      id,
+      status: 'FINISHED',
+      homeTeam: { name: 'Home' },
+      awayTeam: { name: 'Away' },
+      score: {
+        winner: 'HOME_TEAM',
+        duration: 'REGULAR',
+        fullTime: { home: 2, away: 1 },
+      },
+    } as FDMatch)
+  function makeTournament(
+    extra: Record<string, unknown> = {},
+    answers = reviewAnswers
+  ) {
+    const d = store(
+      {
+        ...official,
+        sportsEventId: 'fd-22',
+        sportsLeague: config.sportsLeague,
+        ...extra,
+      },
+      answers
+    )
+    d.pg.manyOrNone.mockResolvedValue([
+      { data: { ...d.data, answers: reviewAnswers } },
+    ])
+    jest
+      .mocked(createSupabaseDirectClient)
+      .mockReturnValue(
+        d.pg as unknown as ReturnType<typeof createSupabaseDirectClient>
+      )
+    return d
+  }
+  it('holds a prefetched final without its original acquisition interval', async () => {
+    const d = makeTournament()
+    expect(
+      await resolveTournamentMarketsForMatches(config, [match()])
+    ).toMatchObject({ resolved: 0, skipped: 1 })
+    expect(d.tx.none).not.toHaveBeenCalled()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it('rejects conflicting shootout duplicates before the first write, even when the goal totals match', async () => {
+    const d = makeTournament()
+    const m = match()
+    m.score = {
+      ...m.score,
+      duration: 'PENALTY_SHOOTOUT',
+      fullTime: { home: 1, away: 1 },
+      penalties: { home: 5, away: 3 },
+    }
+    const other = {
+      ...m,
+      score: {
+        ...m.score,
+        winner: 'AWAY_TEAM' as const,
+        penalties: { home: 3, away: 5 },
+      },
+    }
+    const result = await resolveTournamentMarketsForMatches(
+      config,
+      [m, other],
+      { observation: acquisition }
+    )
+    expect(result).toMatchObject({ resolved: 0, errors: 1 })
+    expect(d.tx.none).not.toHaveBeenCalled()
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it('previews verified public native answers with zero score writes or broadcasts, and rejects the same private/renamed rows as an actual run', async () => {
+    for (const [extra, rows, expected] of [
+      [{}, reviewAnswers, 1],
+      [{ visibility: 'unlisted' }, reviewAnswers, 0],
+      [{}, reviewAnswers.map((a) => ({ ...a, text: 'Changed' })), 0],
+    ] as const) {
+      const d = makeTournament(extra, rows)
+      const r = await resolveTournamentMarketsForMatches(config, [match()], {
+        observation: acquisition,
+        dryRun: true,
+      })
+      expect(r.resolved).toBe(expected)
+      expect(d.tx.none).not.toHaveBeenCalled()
+      expect(
+        d.tx.manyOrNone.mock.calls.map((args) => args[0]).join(' ')
+      ).not.toMatch(/for (update|share)/)
+    }
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+  })
+  it('continues a healthy sibling after a failed fixture write and retains its accepted result when its broadcast fails', async () => {
+    const d = makeTournament()
+    d.tx.manyOrNone.mockRejectedValueOnce(new Error('fixture lock timeout'))
+    jest
+      .mocked(publishSportsLiveScore)
+      .mockRejectedValueOnce(new Error('transport unavailable'))
+    const r = await resolveTournamentMarketsForMatches(
+      config,
+      [match(11), match(), match()],
+      { observation: acquisition }
+    )
+    expect(r).toMatchObject({ resolved: 1, errors: 2 })
+    expect(r.log).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          question: 'fd-11',
+          result: expect.stringContaining('lock timeout'),
+        }),
+        expect.objectContaining({
+          question: 'game',
+          result: expect.stringContaining('transport unavailable'),
+        }),
+      ])
+    )
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(1)
+    expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toMatchObject({
+      outcome: 'home-answer',
+    })
+  })
+  it('clears a withdrawn shootout and duration together under the new terminal receipt', async () => {
+    const d = makeTournament({
+      sportsPenHome: 5,
+      sportsPenAway: 3,
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+    })
+    const m = match()
+    const incomplete = {
+      ...m,
+      score: { ...m.score, winner: null, duration: undefined },
+    } as unknown as FDMatch
+    await resolveTournamentMarketsForMatches(config, [incomplete], {
+      observation: acquisition,
+    })
+    expect(d.data).toMatchObject({
+      sportsScoreWinner: null,
+      sportsScoreDuration: null,
+      sportsPenHome: null,
+      sportsPenAway: null,
+      sportsLiveStatus: 'FINISHED',
+    })
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it('publishes a confirmed level NBA final while withholding payout', async () => {
+    const d = store({
+      ...official,
+      sportsEventId: 'odds:basketball_nba:event',
+      sportsLeague: 'NBA',
+    })
+    d.pg.manyOrNone
+      .mockResolvedValueOnce([{ data: d.data, token: 'MANA' }])
+      .mockResolvedValueOnce([])
+    jest.mocked(getScores).mockResolvedValue([
+      {
+        ...reviewScore(true),
+        scores: [
+          { name: 'Home', score: '99' },
+          { name: 'Away', score: '99' },
+        ],
+      },
+    ])
+    const r = await pollOddsScoresAndResolve(d.client, newScorePollState())
+    expect(r.resolved).toBe(0)
+    expect(d.data).toMatchObject({
+      sportsHomeScore: 99,
+      sportsAwayScore: 99,
+      sportsLiveStatus: 'FINISHED',
+    })
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it.each([false, true])(
+    'timestamps the actual Odds request including a successful finals follow-up %s, before processing the fetched fixture',
+    async (followUp) => {
+      const d = store({
+        ...official,
+        sportsLiveUpdatedTime: NOW + 5,
+        sportsStartTimestamp: new Date(
+          NOW - (followUp ? 10 : 240) * 60_000
+        ).toISOString(),
+      })
+      Object.assign(d.pg, {
+        map: async (
+          _sql: string,
+          _bind: unknown,
+          convert: (row: {
+            target: string
+            interval_seconds: number
+          }) => unknown
+        ) => {
+          jest.mocked(Date.now).mockReturnValue(NOW + 10)
+          return [convert({ target: 'sport:nfl', interval_seconds: 30 })]
+        },
+      })
+      d.pg.manyOrNone
+        .mockResolvedValueOnce([{ data: d.data, token: 'MANA' }])
+        .mockResolvedValueOnce(reviewAnswers)
+      if (followUp)
+        jest.mocked(getScores).mockImplementationOnce(async () => {
+          jest.mocked(Date.now).mockReturnValue(NOW + 20)
+          return []
+        })
+      jest.mocked(getScores).mockImplementationOnce(async () => {
+        jest.mocked(Date.now).mockReturnValue(NOW + 30)
+        return [reviewScore(true)]
+      })
+      d.tx.manyOrNone.mockImplementationOnce(async () => {
+        jest.mocked(Date.now).mockReturnValue(NOW + 700)
+        return [{ id: 'game', data: d.data, token: 'MANA' }]
+      })
+      await pollOddsScoresAndResolve(d.client, newScorePollState())
+      expect(getScores).toHaveBeenCalledTimes(followUp ? 2 : 1)
+      expect(d.data.sportsLiveUpdatedTime).toBe(NOW + 30)
+      expect(publishSportsLiveScore).toHaveBeenCalledWith(
+        'game',
+        expect.objectContaining({ sportsLiveUpdatedTime: NOW + 30 })
+      )
     }
   )
 })

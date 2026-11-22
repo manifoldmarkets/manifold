@@ -1,4 +1,5 @@
 import type { Answer } from 'common/answer'
+import type { FDMatch } from 'common/sports'
 import { isMultiCpmm, MarketContract, Sports } from 'common/contract'
 import {
   ScoreFixture,
@@ -13,15 +14,16 @@ export type ScoreSource = ScoreFixture & {
   league: string
 }
 
-type ScoreMarket = MarketContract & Partial<Sports & SportsLiveScore>
+type ScoreMarket = MarketContract & Partial<Sports & Observation>
 type ScoreAnswer = Pick<
   Answer,
   'id' | 'text' | 'index' | 'resolution' | 'resolutionTime'
 >
 type Observation = SportsLiveScore & {
-  sportsScoreDuration?: string
-  sportsPenHome?: number
-  sportsPenAway?: number
+  sportsScoreWinner?: FDMatch['score']['winner']
+  sportsScoreDuration?: string | null
+  sportsPenHome?: number | null
+  sportsPenAway?: number | null
 }
 
 export function boundScore(
@@ -37,6 +39,72 @@ function sameNames(left: string, right: string) {
     splitFlag(left).name.trim().toLowerCase() ===
     splitFlag(right).name.trim().toLowerCase()
   )
+}
+
+function sameFixture(a: ScoreFixture | undefined, b: ScoreFixture) {
+  return (
+    a?.eventId === b.eventId &&
+    a.home === b.home &&
+    a.away === b.away &&
+    a.homeId === b.homeId &&
+    a.awayId === b.awayId
+  )
+}
+
+function validScore(n: unknown): n is number {
+  return typeof n === 'number' && Number.isSafeInteger(n) && n >= 0
+}
+
+function terminal(status: string | undefined) {
+  return status === 'FINISHED' || status === 'AWARDED'
+}
+
+/** Native tournament markets are home, away, then optionally Draw, ordered by answer index. */
+export function confirmedTournamentAnswer(
+  patch: Observation,
+  answers: readonly ScoreAnswer[]
+) {
+  const {
+    sportsHomeScore: home,
+    sportsAwayScore: away,
+    sportsScoreDuration: duration,
+    sportsScoreWinner: winner,
+    sportsPenHome: penHome,
+    sportsPenAway: penAway,
+  } = patch
+  if (
+    !terminal(patch.sportsLiveStatus) ||
+    !validScore(home) ||
+    !validScore(away)
+  )
+    return
+  let left = home
+  let right = away
+  if (duration === 'PENALTY_SHOOTOUT') {
+    if (
+      answers.length !== 2 ||
+      home !== away ||
+      !validScore(penHome) ||
+      !validScore(penAway) ||
+      penHome === penAway
+    )
+      return
+    left = penHome
+    right = penAway
+  } else if (
+    (duration !== 'REGULAR' &&
+      !(duration === 'EXTRA_TIME' && answers.length === 2)) ||
+    penHome != null ||
+    penAway != null
+  ) {
+    return
+  }
+  const result =
+    left > right ? 'HOME_TEAM' : left < right ? 'AWAY_TEAM' : 'DRAW'
+  if (winner !== result) return
+  return [...answers].sort((a, b) => a.index - b.index)[
+    result === 'HOME_TEAM' ? 0 : result === 'AWAY_TEAM' ? 1 : 2
+  ]
 }
 
 function identifiesGame(
@@ -115,10 +183,16 @@ export async function writeFixtureScore(
   patch: Observation,
   startedAt: number,
   contractId?: string,
-  isCurrent: () => boolean = () => true
+  isCurrent: () => boolean = () => true,
+  preview = false
 ): Promise<WrittenScore[]> {
   if (
+    !(patch.sportsHomeScore === null || validScore(patch.sportsHomeScore)) ||
+    !(patch.sportsAwayScore === null || validScore(patch.sportsAwayScore)) ||
+    (patch.sportsPenHome != null && !validScore(patch.sportsPenHome)) ||
+    (patch.sportsPenAway != null && !validScore(patch.sportsPenAway)) ||
     !Number.isSafeInteger(startedAt) ||
+    startedAt < 0 ||
     !Number.isSafeInteger(patch.sportsLiveUpdatedTime) ||
     startedAt > patch.sportsLiveUpdatedTime
   )
@@ -134,7 +208,7 @@ export async function writeFixtureScore(
        where data->>'sportsEventId' = $1 and creator_id = $2 and token = 'MANA'
          and resolution is null and visibility = 'public' and deleted = false
          and ($3::text is null or id = $3)
-       order by id for update`,
+       order by id ${preview ? '' : 'for update'}`,
       [source.eventId, source.creatorId, contractId ?? null]
     )
     const accepted: WrittenScore[] = []
@@ -147,25 +221,55 @@ export async function writeFixtureScore(
           previous >= patch.sportsLiveUpdatedTime)
       )
         continue
-      const terminal = (status: unknown) =>
-        status === 'FINISHED' || status === 'AWARDED'
-      if (terminal(data.sportsLiveStatus) && !terminal(patch.sportsLiveStatus))
+      const replacement =
+        data.scoreFixture != null && !sameFixture(data.scoreFixture, source)
+      const priorProviderTime = data.sportsScoreUpdatedTime
+      const providerTime = patch.sportsScoreUpdatedTime
+      if (
+        !replacement &&
+        ((terminal(data.sportsLiveStatus) &&
+          !terminal(patch.sportsLiveStatus)) ||
+          (source.provider === 'odds' &&
+            priorProviderTime != null &&
+            providerTime != null &&
+            Number.isSafeInteger(priorProviderTime) &&
+            priorProviderTime > 0 &&
+            priorProviderTime > providerTime))
+      )
         continue
       const answers = await tx.manyOrNone<ScoreAnswer>(
-        `select id, text, index, resolution, extract(epoch from resolution_time) * 1000 as "resolutionTime" from answers where contract_id = $1 order by id for share`,
+        `select id, text, index, resolution, extract(epoch from resolution_time) * 1000 as "resolutionTime" from answers where contract_id = $1 order by id ${
+          preview ? '' : 'for share'
+        }`,
         [id]
       )
       if (!isCurrent() || !identifiesGame({ ...data, token }, source, answers))
         continue
-      await tx.none(`update contracts set data=data || $1::jsonb where id=$2`, [
-        JSON.stringify(patch),
-        id,
-      ])
+      if (!preview) {
+        const cleared = replacement
+          ? {
+              sportsScoreWinner: null,
+              sportsScoreDuration: null,
+              sportsPenHome: null,
+              sportsPenAway: null,
+              sportsLivePeriod: null,
+              sportsLiveClock: null,
+              sportsLiveDetail: null,
+              sportsFinalQualifier: null,
+              sportsScoreUpdatedTime: null,
+              sportsResumptionTime: null,
+            }
+          : {}
+        await tx.none(
+          `update contracts set data=data || $1::jsonb where id=$2`,
+          [JSON.stringify({ ...cleared, ...boundScore(source, patch) }), id]
+        )
+      }
       accepted.push({
         id,
         answers,
-        old_home: data.sportsHomeScore ?? null,
-        old_away: data.sportsAwayScore ?? null,
+        old_home: replacement ? null : data.sportsHomeScore ?? null,
+        old_away: replacement ? null : data.sportsAwayScore ?? null,
       })
     }
     return accepted
@@ -183,10 +287,17 @@ export function assertObservedResult(
   if (
     !isMultiCpmm(c) ||
     !identifiesGame(c, source, c.answers) ||
+    !sameFixture(c.scoreFixture, source) ||
+    !terminal(patch.sportsLiveStatus) ||
     c.sportsLiveStatus !== patch.sportsLiveStatus ||
     c.sportsLiveUpdatedTime !== patch.sportsLiveUpdatedTime ||
     c.sportsHomeScore !== patch.sportsHomeScore ||
     c.sportsAwayScore !== patch.sportsAwayScore ||
+    (source.provider === 'football-data' &&
+      (c.sportsScoreWinner !== patch.sportsScoreWinner ||
+        c.sportsScoreDuration !== patch.sportsScoreDuration ||
+        c.sportsPenHome !== patch.sportsPenHome ||
+        c.sportsPenAway !== patch.sportsPenAway)) ||
     c.answers.length !== previous.length ||
     !previous.every((old) =>
       c.answers.some(

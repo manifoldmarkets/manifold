@@ -2,11 +2,12 @@ import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import {
   assertObservedResult,
   boundScore,
+  confirmedTournamentAnswer,
   ScoreSource,
   writeFixtureScore,
   WrittenScore,
 } from './sports-score-observation'
-import { camelCase } from 'lodash'
+import { camelCase, isEqual } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
@@ -566,14 +567,97 @@ function tournamentScore(
       ? null
       : String(match.minute),
     sportsLiveUpdatedTime: receipt,
-    ...(terminal && match.score.duration
-      ? { sportsScoreDuration: match.score.duration }
-      : {}),
-    ...(terminal && penalties?.home != null && penalties.away != null
-      ? { sportsPenHome: penalties.home, sportsPenAway: penalties.away }
+    ...(terminal
+      ? {
+          sportsScoreWinner: match.score.winner ?? null,
+          sportsScoreDuration: match.score.duration ?? null,
+          sportsPenHome: penalties?.home ?? null,
+          sportsPenAway: penalties?.away ?? null,
+        }
       : {}),
   }
   return { source, patch }
+}
+
+type TournamentRecord = ReturnType<typeof tournamentScore> & {
+  match: FDMatch
+  market: WrittenScore
+}
+
+async function readTournamentObservations(
+  pg: SupabaseDirectClient,
+  config: TournamentConfig,
+  matches: FDMatch[],
+  interval: ScoreRead | undefined,
+  preview: boolean,
+  log: ResolveLogEntry[]
+) {
+  const accepted = new Map<string, TournamentRecord>()
+  // A batch has one acquisition interval. Audit all copies of an event before
+  // accepting any of them, including conflicting copies with the same goal totals.
+  if (!interval) return accepted
+  const events = new Map<string, FDMatch[]>()
+  for (const match of matches) {
+    const id = sportsEventId(match)
+    const rows = events.get(id)
+    if (rows) rows.push(match)
+    else events.set(id, [match])
+  }
+  for (const [id, rows] of events) {
+    try {
+      const match = rows[0]
+      if (match.status !== 'FINISHED' && match.status !== 'AWARDED') continue
+      const observation = tournamentScore(config, match, interval.receivedAt)
+      if (
+        rows.length > 1 &&
+        rows.some(
+          (row) =>
+            !isEqual(
+              tournamentScore(config, row, interval.receivedAt),
+              observation
+            )
+        )
+      ) {
+        log.push({
+          question: id,
+          status: 'error',
+          result: 'Conflicting observations for one event',
+        })
+        continue
+      }
+      const { source, patch } = observation
+      const markets = await writeFixtureScore(
+        pg,
+        source,
+        patch,
+        interval.startedAt,
+        undefined,
+        undefined,
+        preview
+      )
+      for (const market of markets) {
+        accepted.set(market.id, { ...observation, market, match })
+        if (!preview) {
+          try {
+            await publishSportsLiveScore(market.id, boundScore(source, patch))
+          } catch (error) {
+            log.push({
+              question: market.id,
+              status: 'error',
+              result: `Score publication failed: ${error}`,
+            })
+          }
+        }
+      }
+    } catch (error) {
+      log.push({
+        question: id,
+        status: 'error',
+        result: `Score acquisition failed: ${error}`,
+      })
+    }
+  }
+  return accepted
 }
 
 // Resolve unresolved markets against an already-fetched set of terminal
@@ -601,29 +685,16 @@ export async function resolveTournamentMarketsForMatches(
 
   // The observation survives a missing winner, provider correction or settlement retry.
   const guarded = isSportsBdlEnabled()
-  const now = Date.now()
-  const observation = opts.observation ?? { startedAt: now, receivedAt: now }
-  const committed = new Map<string, WrittenScore>()
-  if (guarded && !dryRun) {
-    for (const match of terminalMatches) {
-      if (match.status !== 'FINISHED' && match.status !== 'AWARDED') continue
-      const { source, patch } = tournamentScore(
-        config,
-        match,
-        observation.receivedAt
-      )
-      const written = await writeFixtureScore(
+  const committed = guarded
+    ? await readTournamentObservations(
         pg,
-        source,
-        patch,
-        observation.startedAt
+        config,
+        terminalMatches,
+        opts.observation,
+        dryRun,
+        log
       )
-      for (const market of written) {
-        committed.set(market.id, market)
-        await publishSportsLiveScore(market.id, boundScore(source, patch))
-      }
-    }
-  }
+    : undefined
   const creatorUser = await getUser(creatorId)
   if (!creatorUser)
     throw new Error(`ManifoldSports user ${creatorId} not found`)
@@ -635,7 +706,7 @@ export async function resolveTournamentMarketsForMatches(
   )
 
   if (unresolvedMarkets.length === 0)
-    return { resolved: 0, skipped: 0, errors: 0, log }
+    return { resolved: 0, skipped: 0, errors: log.length, log }
 
   const finishedById = new Map(
     terminalMatches.map((m) => [sportsEventId(m), m])
@@ -643,15 +714,20 @@ export async function resolveTournamentMarketsForMatches(
 
   let resolved = 0
   let skipped = 0
-  let errors = 0
+  let errors = log.length
 
   for (const market of unresolvedMarkets) {
-    const match = finishedById.get(market.sportsEventId)
-    if (!match || (guarded && !dryRun && !committed.has(market.id))) {
+    const bound = committed?.get(market.id)
+    const match = guarded
+      ? bound?.match
+      : finishedById.get(market.sportsEventId)
+    if (!match) {
       skipped++
       log.push({
         question: market.question,
-        result: 'Match not finished yet',
+        result: guarded
+          ? 'No eligible, current terminal observation'
+          : 'Match not finished yet',
         status: 'skipped',
       })
       continue
@@ -668,14 +744,16 @@ export async function resolveTournamentMarketsForMatches(
       continue
     }
 
-    const winningAnswer = pickSportsWinningAnswer(
-      {
-        homeTeamName: match.homeTeam.name,
-        awayTeamName: match.awayTeam.name,
-        winner,
-      },
-      committed.get(market.id)?.answers ?? market.answers
-    )
+    const winningAnswer = bound
+      ? confirmedTournamentAnswer(bound.patch, bound.market.answers)
+      : pickSportsWinningAnswer(
+          {
+            homeTeamName: match.homeTeam.name,
+            awayTeamName: match.awayTeam.name,
+            winner,
+          },
+          market.answers
+        )
     if (!winningAnswer) {
       errors++
       const winningText =
@@ -686,7 +764,9 @@ export async function resolveTournamentMarketsForMatches(
           : 'Draw'
       log.push({
         question: market.question,
-        result: `No answer matching "${winningText}"`,
+        result: bound
+          ? 'Terminal result does not confirm a native winning answer'
+          : `No answer matching "${winningText}"`,
         status: 'error',
       })
       continue
@@ -721,17 +801,11 @@ export async function resolveTournamentMarketsForMatches(
       }
 
       const contract = convertContract(contractRow) as CPMMMultiContract
-      const bound = committed.get(market.id)
       const result = {
         outcome: winningAnswer.id,
         resolutions: { [winningAnswer.id]: 100 },
       }
-      if (guarded && bound) {
-        const { source, patch } = tournamentScore(
-          config,
-          match,
-          observation.receivedAt
-        )
+      if (bound) {
         await resolveMarketHelper(
           contract,
           creatorUser,
@@ -739,7 +813,12 @@ export async function resolveTournamentMarketsForMatches(
           result,
           undefined,
           (current: MarketContract) =>
-            assertObservedResult(current, source, patch, bound.answers)
+            assertObservedResult(
+              current,
+              bound.source,
+              bound.patch,
+              bound.market.answers
+            )
         )
       } else {
         await resolveMarketHelper(contract, creatorUser, creatorUser, result)

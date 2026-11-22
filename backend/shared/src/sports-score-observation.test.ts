@@ -5,6 +5,7 @@ import type { SupabaseDirectClient } from './supabase/init'
 import {
   assertObservedResult,
   boundScore,
+  confirmedTournamentAnswer,
   ScoreSource,
   writeFixtureScore,
 } from './sports-score-observation'
@@ -234,5 +235,268 @@ it('does not settle individually resolved or timestamped native answers', async 
         300
       )
     ).resolves.toEqual([])
+  }
+})
+
+it.each([
+  ['sportsHomeScore', -1],
+  ['sportsAwayScore', 1.5],
+  ['sportsHomeScore', NaN],
+  ['sportsAwayScore', Infinity],
+  ['sportsHomeScore', '2'],
+  ['sportsAwayScore', undefined],
+  ['sportsPenHome', -2],
+  ['sportsPenAway', 0.25],
+  ['sportsPenHome', '4'],
+] as const)(
+  'rejects malformed %s %p before opening a score transaction',
+  async (field, value) => {
+    const tx = jest.fn()
+    await expect(
+      writeFixtureScore(
+        { tx } as unknown as SupabaseDirectClient,
+        tournament,
+        { ...final, [field]: value },
+        150
+      )
+    ).resolves.toEqual([])
+    expect(tx).not.toHaveBeenCalled()
+  }
+)
+
+it('honors genuine provider chronology for Odds, with local acquisition order as the fallback when either provider time is missing', async () => {
+  await seed()
+  const write = (
+    start: number,
+    receipt: number,
+    providerTime: number | null,
+    home: number
+  ) =>
+    writeFixtureScore(
+      pg,
+      source,
+      {
+        ...final,
+        sportsScoreUpdatedTime: providerTime,
+        sportsLiveUpdatedTime: receipt,
+        sportsHomeScore: home,
+      },
+      start
+    )
+  expect(await write(90, 100, 87, 2)).toHaveLength(1)
+  expect(await write(110, 120, 85, 0)).toHaveLength(0)
+  expect(await current()).toMatchObject({
+    sportsHomeScore: 2,
+    sportsLiveUpdatedTime: 100,
+  })
+  expect(await write(130, 140, null, 1)).toHaveLength(1)
+  expect(await write(150, 160, 120, 3)).toHaveLength(1)
+})
+
+it('permits the first current observation for a reassigned fixture and removes the former final and decider atomically', async () => {
+  await seed()
+  await writeFixtureScore(
+    pg,
+    source,
+    {
+      ...final,
+      sportsLiveClock: 'FT',
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsPenHome: 5,
+      sportsPenAway: 3,
+    },
+    150
+  )
+  const replacement = { ...source, eventId: 'odds:americanfootball_nfl:two' }
+  await db.query('update contracts set data=data || $1::jsonb', [
+    JSON.stringify({ sportsEventId: replacement.eventId }),
+  ])
+  expect(
+    await writeFixtureScore(
+      pg,
+      source,
+      { ...live, sportsLiveUpdatedTime: 210 },
+      205
+    )
+  ).toHaveLength(0)
+  const [accepted] = await writeFixtureScore(
+    pg,
+    replacement,
+    { ...live, sportsLiveUpdatedTime: 210 },
+    205
+  )
+  expect(accepted).toMatchObject({ old_home: null, old_away: null })
+  expect(await current()).toMatchObject({
+    scoreFixture: { eventId: replacement.eventId },
+    sportsLiveStatus: 'IN_PLAY',
+    sportsLiveClock: null,
+    sportsScoreDuration: null,
+    sportsPenHome: null,
+    sportsPenAway: null,
+  })
+})
+
+const knockoutAnswers = [
+  { id: '01', text: 'Equatorial Guinea', index: 1 },
+  { id: '02', text: 'Guinea', index: 0 },
+]
+const groupAnswers = [...knockoutAnswers, { id: '03', text: 'Draw', index: 2 }]
+const scored = {
+  ...final,
+  sportsScoreWinner: 'HOME_TEAM' as const,
+  sportsScoreDuration: 'REGULAR',
+}
+it.each([
+  ['home', groupAnswers, {}, '02'],
+  [
+    'away',
+    groupAnswers,
+    { sportsScoreWinner: 'AWAY_TEAM', sportsHomeScore: 0, sportsAwayScore: 1 },
+    '01',
+  ],
+  [
+    'group draw',
+    groupAnswers,
+    { sportsHomeScore: 0, sportsScoreWinner: 'DRAW' },
+    '03',
+  ],
+  [
+    'knockout draw',
+    knockoutAnswers,
+    { sportsHomeScore: 0, sportsScoreWinner: 'DRAW' },
+    undefined,
+  ],
+  [
+    'contradictory winner',
+    groupAnswers,
+    { sportsScoreWinner: 'AWAY_TEAM' },
+    undefined,
+  ],
+  [
+    'unknown winner',
+    groupAnswers,
+    { sportsHomeScore: 0, sportsScoreWinner: 'UNKNOWN' },
+    undefined,
+  ],
+  ['no winner', groupAnswers, { sportsScoreWinner: null }, undefined],
+  ['scored award', groupAnswers, { sportsLiveStatus: 'AWARDED' }, '02'],
+  [
+    'scoreless award',
+    groupAnswers,
+    {
+      sportsLiveStatus: 'AWARDED',
+      sportsHomeScore: null,
+      sportsAwayScore: null,
+    },
+    undefined,
+  ],
+  ['extra time', knockoutAnswers, { sportsScoreDuration: 'EXTRA_TIME' }, '02'],
+  [
+    'unexpected extra time',
+    groupAnswers,
+    { sportsScoreDuration: 'EXTRA_TIME' },
+    undefined,
+  ],
+  ['unexpected penalties', knockoutAnswers, { sportsPenHome: 4 }, undefined],
+  [
+    'shootout',
+    knockoutAnswers,
+    {
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsHomeScore: 0,
+      sportsPenHome: 5,
+      sportsPenAway: 3,
+    },
+    '02',
+  ],
+  [
+    'missing shootout score',
+    knockoutAnswers,
+    {
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsHomeScore: 0,
+      sportsPenHome: 5,
+    },
+    undefined,
+  ],
+  [
+    'level shootout',
+    knockoutAnswers,
+    {
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsHomeScore: 0,
+      sportsPenHome: 4,
+      sportsPenAway: 4,
+    },
+    undefined,
+  ],
+  [
+    'contradictory shootout',
+    knockoutAnswers,
+    {
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsHomeScore: 0,
+      sportsPenHome: 3,
+      sportsPenAway: 5,
+    },
+    undefined,
+  ],
+  [
+    'decided before shootout',
+    knockoutAnswers,
+    {
+      sportsScoreDuration: 'PENALTY_SHOOTOUT',
+      sportsPenHome: 5,
+      sportsPenAway: 3,
+    },
+    undefined,
+  ],
+  [
+    'unknown duration',
+    knockoutAnswers,
+    { sportsScoreDuration: 'UNKNOWN' },
+    undefined,
+  ],
+] as const)(
+  'checks %s against the scored result and the ordered native market',
+  (name, answers, patch, result) => {
+    expect(
+      confirmedTournamentAnswer(
+        { ...scored, ...patch } as typeof scored,
+        answers
+      )?.id
+    ).toBe(result)
+  }
+)
+
+it('checks the stored winning side, decision method and penalty goals again at the money boundary', async () => {
+  await seed(tournament, {}, ['Home', 'Away'])
+  const patch = {
+    ...scored,
+    sportsScoreDuration: 'PENALTY_SHOOTOUT',
+    sportsHomeScore: 0,
+    sportsPenHome: 5,
+    sportsPenAway: 3,
+  }
+  const [written] = await writeFixtureScore(pg, tournament, patch, 150)
+  const original = await current()
+  expect(() =>
+    assertObservedResult(original, tournament, patch, written.answers)
+  ).not.toThrow()
+  for (const change of [
+    { sportsScoreWinner: 'AWAY_TEAM' },
+    { sportsScoreDuration: 'REGULAR' },
+    { sportsPenHome: 3 },
+    { sportsPenAway: 5 },
+    { scoreFixture: undefined },
+  ]) {
+    expect(() =>
+      assertObservedResult(
+        { ...original, ...change } as MarketContract,
+        tournament,
+        patch,
+        written.answers
+      )
+    ).toThrow()
   }
 })

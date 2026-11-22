@@ -49,12 +49,6 @@ export function toOfficialGame(
   const isResolved = !!c.resolution
   const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
   const label = league?.shortLabel || d.sportsLeague || ''
-  const details: ScheduleScoreFields | undefined = isCanceled
-    ? { gameState: 'canceled' as const }
-    : league
-    ? scheduleScoreFields(d, isResolved)
-    : undefined
-
   const ordered = sortBy(answers, 'index')
   const drawAnswer = ordered.find((a) => isDrawAnswer(a.text))
   const teams = ordered.filter((a) => a !== drawAnswer)
@@ -67,6 +61,29 @@ export function toOfficialGame(
   )
   const home = toTeam(homeAnswer, label, leagueKey, d.sportsHomeTeamId)
   const away = toTeam(awayAnswer, label, leagueKey, d.sportsAwayTeamId)
+  const fixture = bdlEnabled ? d.scoreFixture : undefined
+  const normalize = (name: string) => splitFlag(name).name.trim().toLowerCase()
+  const scores: Partial<SportsLiveScore> =
+    fixture &&
+    (typeof fixture.home !== 'string' ||
+      typeof fixture.away !== 'string' ||
+      fixture.eventId !== sportsEventId ||
+      fixture.homeId !== d.sportsHomeTeamId ||
+      fixture.awayId !== d.sportsAwayTeamId ||
+      normalize(fixture.home) !== normalize(home.name) ||
+      normalize(fixture.away) !== normalize(away.name) ||
+      (d.sportsHomeTeam != null &&
+        normalize(fixture.home) !== normalize(d.sportsHomeTeam)) ||
+      (d.sportsAwayTeam != null &&
+        normalize(fixture.away) !== normalize(d.sportsAwayTeam)))
+      ? {}
+      : d
+  const details: ScheduleScoreFields | undefined = isCanceled
+    ? { gameState: 'canceled' as const }
+    : league
+    ? scheduleScoreFields(scores, isResolved)
+    : undefined
+
   const draw = drawAnswer
     ? { answerId: drawAnswer.id, prob: drawAnswer.prob }
     : null
@@ -85,8 +102,8 @@ export function toOfficialGame(
   // (the row then says "Closes").
   const closeTime = c.closeTime ?? (kickoff ?? now) + 3 * HOUR_MS
   const startTime = kickoff ?? closeTime
-  const liveStatus: string | null = d.sportsLiveStatus ?? null
-  const liveUpdatedTime: number | null = d.sportsLiveUpdatedTime ?? null
+  const liveStatus: string | null = scores.sportsLiveStatus ?? null
+  const liveUpdatedTime: number | null = scores.sportsLiveUpdatedTime ?? null
   const status = gameStatus({
     startTime,
     closeTime,
@@ -99,11 +116,11 @@ export function toOfficialGame(
   })
 
   const homeScore = bdlEnabled
-    ? validScore(d.sportsHomeScore)
-    : d.sportsHomeScore ?? null
+    ? validScore(scores.sportsHomeScore)
+    : scores.sportsHomeScore ?? null
   const awayScore = bdlEnabled
-    ? validScore(d.sportsAwayScore)
-    : d.sportsAwayScore ?? null
+    ? validScore(scores.sportsAwayScore)
+    : scores.sportsAwayScore ?? null
   const terminalScore =
     !league || /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '')
   const liveScore =
@@ -114,7 +131,7 @@ export function toOfficialGame(
       ? {
           home: homeScore,
           away: awayScore,
-          minute: d.sportsLiveMinute ?? null,
+          minute: scores.sportsLiveMinute ?? null,
           ...(details?.period != null && { period: details.period }),
           ...(details?.clock != null && { clock: details.clock }),
           status: liveStatus,
@@ -157,7 +174,7 @@ export function toOfficialGame(
     uniqueBettorCount: c.uniqueBettorCount ?? 0,
     liveScore,
     liveUpdatedTime: isCanceled ? null : liveUpdatedTime,
-    scoreUpdatedTime: isCanceled ? null : d.sportsScoreUpdatedTime ?? null,
+    scoreUpdatedTime: isCanceled ? null : scores.sportsScoreUpdatedTime ?? null,
     finalScore,
     related: [],
     relatedCount: 0,
