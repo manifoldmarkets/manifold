@@ -95,7 +95,24 @@ export type UfcMethod =
   | 'technical-draw'
   | 'no-contest'
 
+// Archived decision details also use "Victory by Decision - Split" and
+// "Decision - Split (Draw)". Unrecognized free text is not winner evidence.
+const decisionVote = (value: string | null) => {
+  const s = value?.trim().toLowerCase() ?? ''
+  const native =
+    /^(?:victory by )?decision\s*-\s*(unanimous|split|majority)(?:\s*\(draw\))?$/.exec(
+      s
+    )
+  const plain = /^(unanimous|split|majority) (decision|draw)$/.exec(s)
+  return native
+    ? { vote: native[1], draw: s.endsWith('(draw)') }
+    : plain
+    ? { vote: plain[1], draw: plain[2] === 'draw' }
+    : null
+}
 export function ufcMethod(method: string | null): UfcMethod | null {
+  const adjudication = decisionVote(method)
+  if (adjudication) return adjudication.draw ? 'draw' : 'decision'
   switch (method?.trim().toLowerCase()) {
     case 'decision':
     case 'unanimous decision':
@@ -130,6 +147,48 @@ export function ufcMethod(method: string | null): UfcMethod | null {
     default:
       return null
   }
+}
+
+export function verifiedUfcMethod(
+  primary: string | null,
+  detail: string | null
+) {
+  const first = ufcMethod(primary),
+    second = ufcMethod(detail)
+  if (!first || !primary) return null
+  const a = decisionVote(primary),
+    b = decisionVote(detail)
+  if (a && b && a.vote !== b.vote) return null
+  const technicalDraw =
+    (first === 'technical-draw' && second === 'draw') ||
+    (first === 'draw' && second === 'technical-draw')
+  const refinedDecision =
+    primary.trim().toLowerCase() === 'decision' &&
+    (second === 'technical-decision' ||
+      second === 'technical-draw' ||
+      second === 'draw')
+  if (second && first !== second && !refinedDecision && !technicalDraw)
+    return null
+  const kind = technicalDraw
+    ? 'technical-draw'
+    : refinedDecision
+    ? second!
+    : first
+  const vote = a?.vote ?? b?.vote
+  const label =
+    kind === 'technical-draw'
+      ? first === kind
+        ? primary
+        : detail!
+      : vote
+      ? vote[0].toUpperCase() +
+        vote.slice(1) +
+        ' ' +
+        (kind === 'draw' ? 'draw' : 'decision')
+      : second
+      ? detail!
+      : primary
+  return { kind, vote, label }
 }
 
 export type UfcObservation = { key: string; since: number; at: number }
@@ -227,28 +286,10 @@ export function ufcWinnerDecision(
       (bout.scheduledRounds != null && bout.resultRound > bout.scheduledRounds))
   )
     return attention('Fight result exceeds scheduled rounds', true)
-  const mainMethod = ufcMethod(bout.method)
-  if (!mainMethod) return attention('Unknown fight result method', true)
-  const detailMethod = ufcMethod(bout.methodDetail)
-  const decisionDetail =
-    (bout.method?.trim().toLowerCase() === 'decision' &&
-      (detailMethod === 'technical-decision' ||
-        detailMethod === 'technical-draw' ||
-        detailMethod === 'draw')) ||
-    (bout.method?.trim().toLowerCase() === 'draw' &&
-      detailMethod === 'technical-draw')
-  const vote = (value: string | null) =>
-    /^(unanimous|split|majority) (decision|draw)$/i
-      .exec(value?.trim() ?? '')?.[1]
-      .toLowerCase()
-  const mainVote = vote(bout.method),
-    detailVote = vote(bout.methodDetail)
-  if (
-    (mainVote && detailVote && mainVote !== detailVote) ||
-    (detailMethod && detailMethod !== mainMethod && !decisionDetail)
-  )
-    return attention('Conflicting fight result methods', true)
-  const method = decisionDetail ? detailMethod : mainMethod
+  const result = verifiedUfcMethod(bout.method, bout.methodDetail)
+  if (!result)
+    return attention('Unknown or conflicting fight result methods', true)
+  const { kind: method, vote } = result
   const neutral =
     method === 'draw' || method === 'technical-draw' || method === 'no-contest'
   if (
@@ -259,7 +300,11 @@ export function ufcWinnerDecision(
     return attention('Fight winner conflicts with the result or entrants', true)
   const outcome = neutral ? 'draw-or-no-contest' : bout.winnerId!
   const obs = observe(
-    JSON.stringify([outcome, method, bout.resultRound, bout.resultTime])
+    JSON.stringify(
+      vote
+        ? [outcome, method, bout.resultRound, bout.resultTime, vote]
+        : [outcome, method, bout.resultRound, bout.resultTime]
+    )
   )
   if (!Number.isFinite(settleMs) || settleMs < 0)
     return attention('Invalid settlement delay', true)

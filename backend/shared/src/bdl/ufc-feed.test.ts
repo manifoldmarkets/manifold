@@ -188,6 +188,45 @@ test('distinguishes an explicit technical draw from a conflicted or unknown fini
     decide({ method: 'No contest', methodDetail: 'Submission', winnerId: null })
   ).toMatchObject({ kind: 'attention' })
 })
+test('a different judges vote restarts a configured nonzero hold for the same winner', () => {
+  const first = decide(
+    { method: 'Decision', methodDetail: 'Victory by Decision - Unanimous' },
+    at,
+    null,
+    100
+  )
+  const revised = decide(
+    { method: 'Decision', methodDetail: 'Victory by Decision - Split' },
+    at + 99,
+    first.observation,
+    100
+  )
+  expect(revised).toMatchObject({
+    kind: 'hold',
+    observation: { since: at + 99 },
+  })
+  expect(
+    decide(
+      { method: 'Split decision', methodDetail: null },
+      at + 199,
+      revised.observation,
+      100
+    )
+  ).toMatchObject({ kind: 'resolve' })
+})
+test.each([
+  ['Draw', 'Technical draw'],
+  ['Technical draw', 'Draw'],
+  ['Decision', 'Decision - Split (Draw)'],
+])('neutral evidence %s / %s preserves its payout', (method, methodDetail) => {
+  expect(decide({ method, methodDetail, winnerId: null })).toMatchObject({
+    kind: 'resolve',
+    outcome: 'draw-or-no-contest',
+  })
+  expect(decide({ method, methodDetail, winnerId: 22 })).toMatchObject({
+    kind: 'attention',
+  })
+})
 test('a changed normalized result restarts the delay; stale pages and absence cannot establish a new final', () => {
   const initial = decide({}, at, null, 100)
   expect(initial).toMatchObject({ kind: 'hold', close: true })

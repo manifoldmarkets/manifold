@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Answer } from '../answer'
 import { type Contract, isMultiCpmm, isSportsContract } from '../contract'
 import { officialBdlLeagueKey } from '../sports-league-label'
+import { MANIFOLD_SPORTS_USER_IDS } from '../sports'
 import { DAY_MS } from '../util/time'
 import { LIVE_STALE_MS } from '../sports-schedule'
 import { bdlHeadToHeadEventId, parseBdlEventId } from '../sports-ids'
@@ -10,6 +11,7 @@ import {
   UFC_SEGMENTS,
   ufcWinnerDecision,
   ufcMethod,
+  verifiedUfcMethod,
   type UfcBout,
   type UfcCard,
 } from './ufc'
@@ -172,9 +174,7 @@ export function ufcMarketObservation(
         ? decision.outcome
         : null,
     method: verifiedResult
-      ? ufcMethod(bout.methodDetail)
-        ? bout.methodDetail
-        : bout.method
+      ? verifiedUfcMethod(bout.method, bout.methodDetail)?.label ?? null
       : null,
     round: verifiedResult ? bout.resultRound : null,
     roundTime: verifiedResult ? bout.resultTime : null,
@@ -188,7 +188,12 @@ export function isOfficialUfcWinnerMarket(contract: Contract) {
   return (
     isSportsContract(contract) &&
     contract.sportsMarketType === 'moneyline' &&
-    officialBdlLeagueKey(contract) === 'mma'
+    (officialBdlLeagueKey(contract) === 'mma' ||
+      (MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) &&
+        !contract.sportsFixture &&
+        contract.sportsProvider === 'bdl' &&
+        contract.sportsLeagueKey === 'mma' &&
+        contract.sportsUfc != null))
   )
 }
 
@@ -226,6 +231,16 @@ export function toUfcMarketBout(
   )
     return null
   const sorted = [...answers].sort((a, b) => a.index - b.index)
+  const renderedNames = sorted.map((a) =>
+    typeof a.text === 'string'
+      ? a.text
+          .normalize('NFKC')
+          .replace(/\p{Default_Ignorable_Code_Point}/gu, '')
+          .trim()
+          .replace(/\s+/gu, ' ')
+          .toLowerCase()
+      : ''
+  )
   if (
     sorted.length !== 3 ||
     new Set(sorted.map((a) => a.id)).size !== 3 ||
@@ -234,17 +249,12 @@ export function toUfcMarketBout(
         a.index !== i ||
         !a.id ||
         a.contractId !== c.id ||
-        typeof a.text !== 'string' ||
-        !a.text.trim() ||
+        !renderedNames[i] ||
         !Number.isFinite(a.prob) ||
         a.prob < 0 ||
         a.prob > 1
     ) ||
-    new Set(
-      sorted.map((a) =>
-        a.text.normalize().trim().replace(/\s+/gu, ' ').toLowerCase()
-      )
-    ).size !== 3 ||
+    new Set(renderedNames).size !== 3 ||
     sorted[2].text !== UFC_DRAW_ANSWER
   )
     return null

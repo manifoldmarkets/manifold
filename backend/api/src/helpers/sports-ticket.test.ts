@@ -220,6 +220,18 @@ it('rechecks the three-way UFC event, every answer binding, receipt and promised
     sportsTicket: { binding: ufcTicketBinding(current), closeTime: now + 1000 },
     answerId: 'd',
   }
+  await expect(
+    lockContractAndGetBetData(
+      transaction({ ...fight, sportsEventId: 'bdl:mma:77' }, offered).pg,
+      {
+        contractId: body.contractId,
+        outcome: 'YES',
+        answerId: 'h',
+        amount: 10,
+      },
+      'buyer'
+    )
+  ).rejects.toMatchObject({ code: 409 })
   const ghost = { ...offered[0], id: 'old', index: 3 }
   const withGhost = { ...fight, answers: [ghost] }
   const direct = {
@@ -228,6 +240,45 @@ it('rechecks the three-way UFC event, every answer binding, receipt and promised
     answerId: 'h',
     amount: 10,
   }
+  const pinned = selection.sportsTicket
+  for (const [patched, changedAnswers] of [
+    [
+      {
+        ...fight,
+        sportsHomeTeam: fight.sportsAwayTeam,
+        sportsAwayTeam: fight.sportsHomeTeam,
+        sportsEntrantIds: [10, 20, null],
+      },
+      offered.map((a, i) => ({
+        ...a,
+        text: i === 0 ? offered[1].text : i === 1 ? offered[0].text : a.text,
+      })),
+    ],
+    [{ ...fight, creatorId: 'community', sportsUfc: undefined }, offered],
+  ] as const) {
+    await expect(
+      lockContractAndGetBetData(
+        transaction(patched, [...changedAnswers]).pg,
+        direct,
+        'buyer',
+        pinned
+      )
+    ).rejects.toMatchObject({ code: 409 })
+  }
+  await expect(
+    lockContractAndGetBetData(transaction(fight, offered).pg, direct, 'buyer', {
+      ...pinned,
+      closeTime: now,
+    })
+  ).rejects.toMatchObject({ code: 409 })
+  await expect(
+    lockContractAndGetBetData(
+      transaction(fight, offered).pg,
+      direct,
+      'buyer',
+      pinned
+    )
+  ).resolves.toHaveProperty('contract.id', 'local')
   for (const order of [selection, direct]) {
     const t = transaction(withGhost, offered)
     const result = await lockContractAndGetBetData(t.pg, order, 'buyer')

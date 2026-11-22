@@ -2,7 +2,8 @@ import {
   isOfficialUfcWinnerMarket,
   toUfcMarketBout,
   ufcCanBet,
-  verifiedUfcTicket,
+  ufcObservationEnd,
+  ufcTicketBinding,
 } from 'common/bdl/ufc-card'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import {
@@ -127,40 +128,50 @@ export const assertContractTradeable = (contract: {
 function checkSportsTicket(
   body: BetDataBody,
   contract: Contract,
-  answers: Answer[]
-) {
-  const watched = isSportsBdlEnabled() && isOfficialUfcWinnerMarket(contract)
-  if (!body.sportsTicket) {
-    if (!watched) return false
+  answers: Answer[],
+  pinned?: SportsTicket
+): SportsTicket | undefined {
+  const now = Date.now()
+  const enabled = isSportsBdlEnabled()
+  const watched = enabled && isOfficialUfcWinnerMarket(contract)
+  if (!pinned && !body.sportsTicket && !watched) return
+  if (watched) {
     const bout = toUfcMarketBout(contract, answers)
     const selected = body.answerIds ?? (body.answerId ? [body.answerId] : [])
     if (
       bout &&
-      ufcCanBet(bout, Date.now()) &&
-      selected.length > 0 &&
+      ufcCanBet(bout, now) &&
+      selected.length &&
       selected.every((id) => bout.answers.some((a) => a.answerId === id))
-    )
-      return true
-    throw new APIError(
-      409,
-      'The sports market changed. Refresh it before placing this order.'
-    )
-  }
-  if (
-    !isSportsBdlEnabled() ||
-    !answers.some((a) => a.id === body.answerId) ||
-    !(watched ? verifiedUfcTicket : verifiedSportsTicket)(
-      body.sportsTicket,
-      contract,
-      answers,
-      Date.now()
-    )
+    ) {
+      const binding = ufcTicketBinding(bout)
+      const closeTime = Math.min(
+        bout.closeTime ?? 0,
+        ufcObservationEnd(bout),
+        pinned?.closeTime ?? Infinity,
+        body.sportsTicket?.closeTime ?? Infinity
+      )
+      if (
+        now < closeTime &&
+        (!pinned || pinned.binding === binding) &&
+        (!body.sportsTicket ||
+          (Number.isFinite(body.sportsTicket.closeTime) &&
+            body.sportsTicket.binding === binding))
+      )
+        return { binding, closeTime }
+    }
+  } else if (
+    !pinned &&
+    enabled &&
+    body.sportsTicket &&
+    answers.some((a) => a.id === body.answerId) &&
+    verifiedSportsTicket(body.sportsTicket, contract, answers, now)
   )
-    throw new APIError(
-      409,
-      'The sports market changed. Refresh it before placing this order.'
-    )
-  return watched
+    return
+  throw new APIError(
+    409,
+    'The sports market changed. Refresh it before placing this order.'
+  )
 }
 
 export const fetchContractBetDataAndValidate = async (
@@ -175,7 +186,8 @@ export const fetchContractBetDataAndValidate = async (
   },
   uid: string,
   isApi: boolean,
-  isAdminTrade: boolean = false
+  isAdminTrade: boolean = false,
+  pinnedUfc?: SportsTicket
 ) => {
   const startTime = Date.now()
   const { amount, contractId, outcome } = body
@@ -247,7 +259,7 @@ export const fetchContractBetDataAndValidate = async (
     creator.entitlements = (results[9] ?? []).map(convertEntitlement)
   }
   const answers = results[2].map(convertAnswer)
-  const verifiedUfc = checkSportsTicket(body, contract, answers)
+  const verifiedUfc = checkSportsTicket(body, contract, answers, pinnedUfc)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
   })[]
@@ -355,6 +367,7 @@ export const fetchContractBetDataAndValidate = async (
     user,
     contract,
     creator,
+    pinnedUfc: verifiedUfc,
     answers,
     unfilledBets,
     balanceByUserId,
@@ -377,7 +390,8 @@ export const fetchContractBetDataAndValidate = async (
 export const lockContractAndGetBetData = async (
   pgTrans: SupabaseTransaction,
   body: BetDataBody,
-  uid: string
+  uid: string,
+  pinnedUfc?: SportsTicket
 ) => {
   const { contractId, outcome } = body
   const { answerIds, isSumsToOne, whereLimitOrderBets } =
@@ -388,7 +402,7 @@ export const lockContractAndGetBetData = async (
     select * from answers
       where contract_id = $2 and (
         $3 is null or id in ($3:list) or ${isSumsToOne}
-      ) order by index${body.sportsTicket ? ' for share' : ''};
+      ) order by index${body.sportsTicket || pinnedUfc ? ' for share' : ''};
     select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
   `,
@@ -402,6 +416,7 @@ export const lockContractAndGetBetData = async (
   // caught here instead of being traded against.
   assertContractTradeable(contract)
   const lockUfcAnswers =
+    !pinnedUfc &&
     !body.sportsTicket &&
     isSportsBdlEnabled() &&
     isOfficialUfcWinnerMarket(contract)
@@ -413,7 +428,7 @@ export const lockContractAndGetBetData = async (
         )
       : results[1]
   ).map(convertAnswer)
-  const verifiedUfc = checkSportsTicket(body, contract, answers)
+  const verifiedUfc = checkSportsTicket(body, contract, answers, pinnedUfc)
   // isMultiCpmm, matching the pre-transaction read above — the in-transaction locked
   // re-read must merge the fresh SQL answers for BOTH multi mechanisms, or a
   // cpmm-multi-2 bet executes against the stale denormalized blob answers.

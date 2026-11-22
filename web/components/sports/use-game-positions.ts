@@ -87,18 +87,23 @@ export function useGamePositions(gameIds: string[]) {
   // Bumped on every account change, so a read for account A that returns
   // after A → B → A is still thrown away.
   const epoch = useRef(0)
-  // When each game last got newer data (a targeted re-read or a broadcast),
-  // keyed `${account}/${id}`: a full re-read that started earlier must not
-  // put older data back.
+  // An orders broadcast and a metrics broadcast carry different facts.
   const touchedAt = useRef(new Map<string, number>())
   const revision = useRef(0)
-  const touchedFor = (account: string, ids: string[]) => {
-    const map = new Map<string, number>()
+  const acceptRead = (
+    account: string,
+    ids: string[],
+    kind: 'metrics' | 'orders',
+    started: number
+  ) => {
+    const previous = new Map<string, number>()
     for (const id of ids) {
-      const at = touchedAt.current.get(`${account}/${id}`)
-      if (at !== undefined) map.set(id, at)
+      const key = JSON.stringify([account, id, kind])
+      const at = touchedAt.current.get(key) ?? 0
+      previous.set(id, at)
+      if (at <= started) touchedAt.current.set(key, started)
     }
-    return map
+    return previous
   }
 
   const refresh = useEvent(async () => {
@@ -122,9 +127,10 @@ export function useGamePositions(gameIds: string[]) {
         session !== epoch.current
       )
         return
+      const metricRevisions = acceptRead(account, ids, 'metrics', startedAt)
+      const orderRevisions = acceptRead(account, ids, 'orders', startedAt)
       setState((old) => {
         const held = old.userId === account ? old : empty(account)
-        const touched = touchedFor(account, ids)
         return {
           userId: account,
           metrics: mergeFullRefresh(
@@ -132,14 +138,14 @@ export function useGamePositions(gameIds: string[]) {
             metrics,
             ids,
             startedAt,
-            touched
+            metricRevisions
           ),
           orders: mergeFullRefresh(
             held.orders,
             orders,
             ids,
             startedAt,
-            touched
+            orderRevisions
           ),
           loaded: true,
           error: false,
@@ -171,16 +177,24 @@ export function useGamePositions(gameIds: string[]) {
       // The data is as of when the read started, not when it returned: if
       // the game got newer data meanwhile (a broadcast, a later re-read),
       // this read is stale.
-      const key = `${account}/${id}`
-      if ((touchedAt.current.get(key) ?? 0) > startedAt) return
-      touchedAt.current.set(key, startedAt)
+      const acceptMetrics =
+        (acceptRead(account, [id], 'metrics', startedAt).get(id) ?? 0) <=
+        startedAt
+      const acceptOrders =
+        (acceptRead(account, [id], 'orders', startedAt).get(id) ?? 0) <=
+        startedAt
+      if (!acceptMetrics && !acceptOrders) return
       setState((old) => {
         if (session !== epoch.current) return old
         const held = old.userId === account ? old : empty(account)
         return {
           ...held,
-          metrics: { ...held.metrics, [id]: metrics[id] ?? [] },
-          orders: { ...held.orders, [id]: orders[id] ?? [] },
+          metrics: acceptMetrics
+            ? { ...held.metrics, [id]: metrics[id] ?? [] }
+            : held.metrics,
+          orders: acceptOrders
+            ? { ...held.orders, [id]: orders[id] ?? [] }
+            : held.orders,
         }
       })
     } catch (e) {
@@ -276,9 +290,15 @@ export function useGamePositions(gameIds: string[]) {
     onBroadcast: ({ topic, data }) => {
       const [, id, kind] = topic.split('/')
       if (!id || !userId) return
-      touchedAt.current.set(`${userId}/${id}`, ++revision.current)
       if (kind === 'user-metrics') {
-        const updated = (data.metrics ?? []) as ContractMetric[]
+        const updated = ((data.metrics ?? []) as ContractMetric[]).filter(
+          (m) => m.answerId && m.userId === userId && m.contractId === id
+        )
+        if (!updated.length) return
+        touchedAt.current.set(
+          JSON.stringify([userId, id, 'metrics']),
+          ++revision.current
+        )
         setState((old) => {
           if (old.userId !== userId) return old
           const byAnswer = new Map(
@@ -295,9 +315,13 @@ export function useGamePositions(gameIds: string[]) {
         })
       } else if (kind === 'orders') {
         const mine = ((data.bets ?? []) as LimitBet[]).filter(
-          (bet) => bet.userId === userId
+          (bet) => bet.userId === userId && bet.contractId === id
         )
         if (mine.length === 0) return
+        touchedAt.current.set(
+          JSON.stringify([userId, id, 'orders']),
+          ++revision.current
+        )
         setState((old) => {
           if (old.userId !== userId) return old
           const orders = uniqBy([...mine, ...(old.orders[id] ?? [])], 'id')

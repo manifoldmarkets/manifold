@@ -819,6 +819,7 @@ async function getUpcomingMarkets(
     closeTo: `${UPCOMING_DAYS} days`,
     orderBy: 'close',
     limit: MAX_UPCOMING,
+    excludeStampedUfc: observed,
   })
   return rows
     .filter(
@@ -846,6 +847,7 @@ async function querySportsMarkets(
     closeTo: string
     orderBy: 'importance' | 'close'
     limit: number
+    excludeStampedUfc?: boolean
   }
 ): Promise<(RelatedCandidate & { groupIds: string[] })[]> {
   const order =
@@ -879,11 +881,24 @@ async function querySportsMarkets(
        and c.resolution is null
        and c.data->'sportsFixture' is distinct from 'true'::jsonb
        and c.outcome_type = any($4::text[])
+       ${
+         opts.excludeStampedUfc
+           ? `and (c.creator_id = any($5::text[]) and c.data->>'sportsProvider' = 'bdl'
+           and c.data->>'sportsLeagueKey' = 'mma' and c.data->>'sportsMarketType' = 'moneyline'
+           and jsonb_typeof(c.data->'sportsUfc') = 'object') is not true`
+           : ''
+       }
        and c.close_time > now() + $2::interval
        and c.close_time < now() + $3::interval
      order by ${order}
      limit ${opts.limit}`,
-    [opts.groupIds, opts.closeFrom, opts.closeTo, MARKET_OUTCOME_TYPES]
+    [
+      opts.groupIds,
+      opts.closeFrom,
+      opts.closeTo,
+      MARKET_OUTCOME_TYPES,
+      MANIFOLD_SPORTS_USER_IDS,
+    ]
   )
   return rows.map((r) => {
     // API callers can set sports metadata. Only pipeline-owned markets may

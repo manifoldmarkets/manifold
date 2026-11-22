@@ -203,6 +203,32 @@ test('last-result chronology uses disjoint observation intervals rather than mut
     ufcCardDisplay([live, { ...live, id: 'another' }]).live
   ).toBeUndefined()
 })
+test('visually identical fighter names cannot identify different payable choices', () => {
+  const names = ['River', 'Ri\u200Bver']
+  expect(
+    market(
+      { sportsHomeTeam: names[0], sportsAwayTeam: names[1] },
+      answers.map((a, i) => ({ ...a, text: names[i] ?? a.text }))
+    )
+  ).toBeNull()
+})
+test.each([
+  ['Technical draw', 'Draw', 'Technical draw'],
+  ['Decision', 'Decision - Split (Draw)', 'Split draw'],
+  ['Decision', 'Victory by Decision - Split', 'Split decision'],
+])(
+  'prefers the verified decision label %s / %s',
+  (method, methodDetail, label) => {
+    const winnerId = label.toLowerCase().includes('draw') ? null : 10
+    const v = ufcMarketObservation(
+      card,
+      { ...bout, status: 'final', method, methodDetail, winnerId },
+      500,
+      observation
+    )
+    expect(v.method).toBe(label)
+  }
+)
 test('private markets cannot contribute a result, a sole remaining bout, or a headline to the visible card', () => {
   const latest = ufcMarketObservation(
     card,

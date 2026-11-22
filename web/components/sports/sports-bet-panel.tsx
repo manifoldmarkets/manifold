@@ -11,15 +11,14 @@ import { gameScoreLabel } from 'common/sports-scoreboard'
 import { sportsViewNow } from 'common/sports-view-clock'
 import { escapeRegExp } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
-import { db } from 'web/lib/supabase/db'
+import { readSportsContract } from 'web/lib/read-sports-contract'
 import { AnswerCpmmBetPanel } from 'web/components/answers/answer-bet-panel'
 import {
   Modal,
   MODAL_CLASS,
   SCROLLABLE_MODAL_CLASS,
 } from 'web/components/layout/modal'
-import { getContract, getAnswersForContracts } from 'common/supabase/contracts'
-import { CPMMMultiContract, isMultiCpmm } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import {
   isThreeWayMulti,
   MultiBetDialog,
@@ -35,49 +34,7 @@ import {
 } from 'common/bdl/ufc-card'
 import { SportsMatch, MatchOutcome } from './sports-match-card'
 
-/** Answers live in their own table. Bracket that read with two fixture checks;
- * the order endpoint repeats the check under the platform's contract lock. */
-export async function readSportsContract(
-  contractId: string,
-  expected?: ScheduleGame | UfcMarketBout
-) {
-  const first = await getContract(db, contractId)
-  if (!first || !isMultiCpmm(first)) return null
-  const answers = (await getAnswersForContracts(db, [contractId]))[contractId]
-  if (!expected) {
-    const legacy = first as CPMMMultiContract
-    return { ...legacy, answers: answers ?? legacy.answers ?? [] }
-  }
-  const latest = await getContract(db, contractId)
-  const rows = answers ?? []
-  if (
-    !latest ||
-    !isMultiCpmm(latest) ||
-    latest.outcomeType !== 'MULTIPLE_CHOICE' ||
-    ![first, latest].every((c) =>
-      'observedEventId' in expected
-        ? !!verifiedUfcTicket(
-            {
-              binding: ufcTicketBinding(expected),
-              closeTime: expected.closeTime ?? 0,
-            },
-            c,
-            rows,
-            sportsViewNow()
-          )
-        : matchesSportsTicket(expected, c, rows, sportsViewNow())
-    )
-  )
-    return null
-  return {
-    ...latest,
-    closeTime: Math.min(
-      first.closeTime ?? Infinity,
-      latest.closeTime ?? Infinity
-    ),
-    answers: rows,
-  }
-}
+export { readSportsContract } from 'web/lib/read-sports-contract'
 
 // Game markets are bet on with Manifold's standard dialogs: knockout markets
 // have no Draw answer, so they're two-answer "versus" markets; soccer markets
@@ -88,6 +45,8 @@ function useSportsContract(
 ) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
   const [failed, setFailed] = useState(!contractId)
+  const [changed, setChanged] = useState(false)
+  const [retryId, setRetryId] = useState(0)
 
   // A changed quote invalidates the native curves as well as the picker's label.
   const [readQuote, setReadQuote] = useState<string>()
@@ -113,22 +72,26 @@ function useSportsContract(
         if (cancelled) return
         setReadQuote(quote)
         setContract(value)
+        setChanged(!!ufc && !value)
         setFailed(!value)
       })
       .catch(() => {
         if (!cancelled) {
           setReadQuote(quote)
+          setChanged(false)
           setFailed(true)
         }
       })
     return () => {
       cancelled = true
     }
-  }, [contractId, quote])
+  }, [contractId, quote, retryId])
 
   return {
     contract,
-    refreshing: !!ufc && readQuote !== quote,
+    refreshing: !!ufc && (readQuote !== quote || failed),
+    changed: !!ufc && readQuote === quote && changed,
+    retry: () => setRetryId((n) => n + 1),
     failed: failed && (!ufc || readQuote === quote),
   }
 }
@@ -214,11 +177,14 @@ export function UfcWinnerBetDialog({
   bout: UfcMarketBout
   selected: string
   initialClose: number
-  onInvalid?: () => void
+  onInvalid?: (reason?: 'selection') => void
   onClose: () => void
   onBetPlaced?: () => void
 }) {
-  const { contract, refreshing, failed } = useSportsContract(bout.id, bout)
+  const { contract, refreshing, failed, changed, retry } = useSportsContract(
+    bout.id,
+    bout
+  )
   const [activeAnswer, setActiveAnswer] = useState(selected)
   const [, updateClock] = useState(0)
   const earliestNativeClose = useRef(initialClose)
@@ -241,6 +207,10 @@ export function UfcWinnerBetDialog({
     (!!contract &&
       (!current || !verifiedUfcTicket(ticket, contract, contract.answers, now)))
   useEffect(() => {
+    if (changed) {
+      ;(onInvalid ?? onClose)('selection')
+      return
+    }
     if (invalid) {
       onClose()
       return
@@ -250,9 +220,9 @@ export function UfcWinnerBetDialog({
       Math.min(2147483647, Math.max(0, deadline - sportsViewNow()))
     )
     return () => clearTimeout(timer)
-  }, [invalid, deadline, onClose, now])
-  if (invalid) return null
-  if (failed) return <SportsLoadError onClose={onClose} />
+  }, [changed, invalid, deadline, onInvalid, onClose, now])
+  if (invalid || changed) return null
+  if (failed && !contract) return <SportsLoadError onClose={onClose} />
   const selectedName = bout.answers.find(
     (a) => a.answerId === activeAnswer
   )?.name
@@ -291,7 +261,23 @@ export function UfcWinnerBetDialog({
         description={
           <span aria-live="polite">
             {current.cardName} · Selected: {selectedName}
-            {refreshing ? ' · Updating prices…' : ''}
+            {failed ? (
+              <>
+                {' '}
+                · Price refresh failed.{' '}
+                <button
+                  type="button"
+                  onClick={retry}
+                  className="text-primary-700 min-h-[44px] underline"
+                >
+                  Retry prices
+                </button>
+              </>
+            ) : refreshing ? (
+              ' · Updating prices…'
+            ) : (
+              ''
+            )}
           </span>
         }
       />

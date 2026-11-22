@@ -292,10 +292,8 @@ export const BuyPanelBody = (
   // Bumped when the user opens the book, so only that scrolls it into view.
   const [revealOrders, setRevealOrders] = useState(0)
   const ordersId = useId()
-  const { sportsTicket, canSubmit, unavailable } = useSportsOrder(
-    contract,
-    multiProps?.answerToBuy.id
-  )
+  const sportsOrder = useSportsOrder(contract, multiProps?.answerToBuy.id)
+  const { sportsTicket, canSubmit, unavailable, retryRefusal } = sportsOrder
   const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
@@ -956,7 +954,16 @@ export const BuyPanelBody = (
       >
         {unavailable && (
           <p className="text-ink-600 text-sm" role="status">
-            Betting unavailable for this fight.
+            Betting unavailable for this fight.{' '}
+            {retryRefusal && (
+              <button
+                type="button"
+                className="text-primary-700 min-h-[44px] underline"
+                onClick={retryRefusal}
+              >
+                Refresh market
+              </button>
+            )}
           </p>
         )}
         <Row
@@ -1191,6 +1198,7 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
+              parentOrder={sportsOrder}
               onBetPlaced={recordBetPlaced}
               location={location}
               compact={compact}

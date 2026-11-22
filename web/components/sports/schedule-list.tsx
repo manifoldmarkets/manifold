@@ -191,18 +191,6 @@ export function GameFeed(props: {
   }, [selectedFeatured?.id])
   const featured =
     view === 'cards' && !hasFilters ? selectedFeatured : undefined
-  const ufcFirst =
-    featured?.status === 'upcoming' &&
-    shownCards.some((c) => c.bouts.some(liveFight))
-  const fightCards = shownCards.length ? (
-    <UfcFightCards
-      cards={shownCards}
-      stakes={stakes}
-      allMatches={hasFilters}
-      onBetPlaced={(id) => void positions.refreshGame(id)}
-      onScheduleRefresh={props.onScheduleRefresh}
-    />
-  ) : null
   const onSelectedDay = (item: FeedItem) =>
     date === 'all' || scheduleDayKey(item) === date
   const filteredGames = active.filter(
@@ -575,85 +563,96 @@ export function GameFeed(props: {
             </p>
           )}
         </div>
-        {ufcFirst && fightCards}
-        {featured &&
-          (isSession(featured) ? (
-            <RaceWeekendHero
-              key={featured.id}
-              event={featured}
-              compact={!fullRaceHero}
-              likeFor={likeFor}
-            />
-          ) : (
-            <GameRow
-              onScheduleRefresh={props.onScheduleRefresh}
-              key={featured.id}
-              variant="featured"
-              game={featured}
-              showLeague={showLeague}
-              liked={likes.liked.has(featured.id)}
-              likeDisabled={likes.disabled(featured.id)}
-              onToggleLike={() => void likes.toggle(featured.id)}
-              stake={stakes[featured.id]}
-              onPositionsChange={() => void positions.refreshGame(featured.id)}
-            />
-          ))}
-        {!hasFilters && belowFeatured}
-        {filtered.length === 0 && !shownCards.length && (
-          <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
-            <h3 className="text-ink-900 font-semibold">
-              {filter === 'liked'
-                ? !likes.user && !likes.loading
-                  ? 'Sign in to see your liked games'
-                  : likes.error
-                  ? 'Your likes are unavailable'
-                  : likes.loading
-                  ? 'Loading your liked games…'
-                  : 'No liked games here yet'
-                : filter === 'mine'
-                ? needsSignIn
-                  ? 'Sign in to see your bets'
-                  : positions.error
-                  ? 'Your bets are unavailable'
-                  : positions.loading
-                  ? 'Loading your bets…'
-                  : 'No bets on these games yet'
-                : filter === 'live'
-                ? sessions.length > 0
-                  ? 'Nothing live right now'
-                  : 'No games live right now'
-                : sessions.length > 0
-                ? 'Nothing matches'
-                : 'No matching games'}
-            </h3>
-            <p className="text-ink-500 mt-1 text-sm">
-              {filter === 'liked'
-                ? 'Heart a game to add it to your Manifold likes.'
-                : filter === 'mine'
-                ? 'Tap a price to back a team. Your picks and open orders show up here.'
-                : 'Try another date, team, or filter.'}
-            </p>
-            <button
-              type="button"
-              onClick={needsSignIn ? firebaseLogin : reset}
-              className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
-            >
-              {needsSignIn ? 'Sign in' : 'Show all games'}
-            </button>
-          </div>
-        )}
-        {live.length > 0 && (
-          <Col className="gap-2">
-            <SectionHeader
-              label="Live now"
-              count={live.length}
-              unit={unitFor(live)}
-              accent
-            />
-            {renderItems(live)}
-          </Col>
-        )}
-        {!ufcFirst && fightCards}
+        <UfcFightCards
+          cards={shownCards}
+          stakes={stakes}
+          allMatches={hasFilters}
+          promoteCard={(c) =>
+            featured?.status === 'upcoming' && c.bouts.some(liveFight)
+          }
+          onBetPlaced={(id) => void positions.refreshGame(id)}
+          onScheduleRefresh={props.onScheduleRefresh}
+        >
+          {featured &&
+            (isSession(featured) ? (
+              <RaceWeekendHero
+                key={featured.id}
+                event={featured}
+                compact={!fullRaceHero}
+                likeFor={likeFor}
+              />
+            ) : (
+              <GameRow
+                onScheduleRefresh={props.onScheduleRefresh}
+                key={featured.id}
+                variant="featured"
+                game={featured}
+                showLeague={showLeague}
+                liked={likes.liked.has(featured.id)}
+                likeDisabled={likes.disabled(featured.id)}
+                onToggleLike={() => void likes.toggle(featured.id)}
+                stake={stakes[featured.id]}
+                onPositionsChange={() =>
+                  void positions.refreshGame(featured.id)
+                }
+              />
+            ))}
+          {!hasFilters && belowFeatured}
+          {filtered.length === 0 && !shownCards.length && (
+            <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
+              <h3 className="text-ink-900 font-semibold">
+                {filter === 'liked'
+                  ? !likes.user && !likes.loading
+                    ? 'Sign in to see your liked games'
+                    : likes.error
+                    ? 'Your likes are unavailable'
+                    : likes.loading
+                    ? 'Loading your liked games…'
+                    : 'No liked games here yet'
+                  : filter === 'mine'
+                  ? needsSignIn
+                    ? 'Sign in to see your bets'
+                    : positions.error
+                    ? 'Your bets are unavailable'
+                    : positions.loading
+                    ? 'Loading your bets…'
+                    : 'No bets on these games yet'
+                  : filter === 'live'
+                  ? sessions.length > 0
+                    ? 'Nothing live right now'
+                    : 'No games live right now'
+                  : sessions.length > 0
+                  ? 'Nothing matches'
+                  : 'No matching games'}
+              </h3>
+              <p className="text-ink-500 mt-1 text-sm">
+                {filter === 'liked'
+                  ? 'Heart a game to add it to your Manifold likes.'
+                  : filter === 'mine'
+                  ? 'Tap a price to back a team. Your picks and open orders show up here.'
+                  : 'Try another date, team, or filter.'}
+              </p>
+              <button
+                type="button"
+                onClick={needsSignIn ? firebaseLogin : reset}
+                className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
+              >
+                {needsSignIn ? 'Sign in' : 'Show all games'}
+              </button>
+            </div>
+          )}
+          {live.length > 0 && (
+            <Col className="gap-2">
+              <SectionHeader
+                label="Live now"
+                count={live.length}
+                unit={unitFor(live)}
+                accent
+              />
+              {renderItems(live)}
+            </Col>
+          )}
+        </UfcFightCards>
         {days.map((day) => (
           <Col key={day.key} className="gap-2">
             <SectionHeader

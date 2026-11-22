@@ -72,6 +72,7 @@ import {
   broadcastUpdatedAnswers,
   broadcastUpdatedContract,
 } from 'shared/websockets/helpers'
+import type { SportsTicket } from 'common/sports-official-game'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { redeemShares } from './redeem-shares'
 
@@ -98,7 +99,7 @@ const queueDependenciesThenBet = async (
   const { dryRun, contractId } = props
   const minimalDeps = [auth.uid, contractId]
   return await ordersQueue.enqueueFn(async () => {
-    const { contract, answers, unfilledBets, balanceByUserId } =
+    const { contract, answers, unfilledBets, balanceByUserId, pinnedUfc } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
         props,
@@ -124,7 +125,7 @@ const queueDependenciesThenBet = async (
 
     const makerIds = getMakerIdsFromBetResult(simulatedResult)
     return await betsQueue.enqueueFn(async () => {
-      return placeBetMain(props, auth.uid, isApi)
+      return placeBetMain(props, auth.uid, isApi, pinnedUfc)
     }, [...minimalDeps, ...makerIds])
   }, minimalDeps)
 }
@@ -132,18 +133,28 @@ const queueDependenciesThenBet = async (
 export const placeBetMain = async (
   body: ValidatedAPIParams<'bet'>,
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  queuedUfc?: SportsTicket
 ) => {
   const startTime = Date.now()
   const { contractId, replyToCommentId, deterministic, answerId, silent } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
-  const { user, contract, creator, answers, unfilledBets, balanceByUserId } =
-    await fetchContractBetDataAndValidate(
-      createSupabaseDirectClient(),
-      body,
-      uid,
-      isApi
-    )
+  const {
+    user,
+    contract,
+    creator,
+    answers,
+    unfilledBets,
+    balanceByUserId,
+    pinnedUfc,
+  } = await fetchContractBetDataAndValidate(
+    createSupabaseDirectClient(),
+    body,
+    uid,
+    isApi,
+    false,
+    queuedUfc
+  )
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
@@ -164,7 +175,7 @@ export const placeBetMain = async (
       answers: lockedAnswers,
       unfilledBets: lockedUnfilledBets,
       balanceByUserId: lockedMakerBalances,
-    } = await lockContractAndGetBetData(pgTrans, body, uid)
+    } = await lockContractAndGetBetData(pgTrans, body, uid, pinnedUfc)
     // Refetch just user balance and metrics in transaction, since queue only enforces contract and bets not changing.
     const { balanceByUserId, contractMetrics } =
       await getUserBalancesAndMetrics(

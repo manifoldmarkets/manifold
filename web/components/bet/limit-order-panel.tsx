@@ -48,7 +48,8 @@ const expirationOptions = EXPIRATION_OPTIONS
 
 const WAIT_TO_DISMISS = 3000
 
-export default function LimitOrderPanel(props: {
+type LimitOrderProps = {
+  parentOrder?: ReturnType<typeof useSportsOrder>
   contract: MarketContract
   multiProps?: MultiBetProps
   user: User | null | undefined
@@ -74,11 +75,22 @@ export default function LimitOrderPanel(props: {
   expiration?: number
   prefillTimestamp?: number
   compact?: boolean
-}) {
-  const { sportsTicket, canSubmit, unavailable } = useSportsOrder(
-    props.contract,
-    props.multiProps?.answerToBuy.id
+}
+export default function LimitOrderPanel(props: LimitOrderProps) {
+  return props.parentOrder ? (
+    <LimitForm {...props} order={props.parentOrder} />
+  ) : (
+    <StandaloneLimitForm {...props} />
   )
+}
+function StandaloneLimitForm(props: LimitOrderProps) {
+  const order = useSportsOrder(props.contract, props.multiProps?.answerToBuy.id)
+  return <LimitForm {...props} order={order} />
+}
+function LimitForm(
+  props: LimitOrderProps & { order: ReturnType<typeof useSportsOrder> }
+) {
+  const { sportsTicket, canSubmit, unavailable, retryRefusal } = props.order
   const {
     contract,
     multiProps,
@@ -410,9 +422,18 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      {unavailable && (
+      {!props.parentOrder && unavailable && (
         <p className="text-ink-600 text-sm" role="status">
-          Betting unavailable for this fight.
+          Betting unavailable for this fight.{' '}
+          {retryRefusal && (
+            <button
+              type="button"
+              className="text-primary-700 min-h-[44px] underline"
+              onClick={retryRefusal}
+            >
+              Refresh market
+            </button>
+          )}
         </p>
       )}
       <Col className=" gap-1">
