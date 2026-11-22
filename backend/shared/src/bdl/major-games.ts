@@ -91,6 +91,10 @@ function providerMs(value: unknown) {
       )
     : NaN
 }
+export function majorSourceRevision(league: MajorLeague, row: unknown) {
+  const ms = league === 'nfl' ? providerMs(asRow(row)?.updated_at) : NaN
+  return Number.isFinite(ms) ? ms : undefined
+}
 const isoDay = (time: number) => new Date(time).toISOString().slice(0, 10)
 
 function scheduleTime(league: MajorLeague, row: Row) {
@@ -210,7 +214,7 @@ export function mapMajorGame(
     throw new Error('[sports-bdl-' + league + '] Invalid game ID or season')
   const { startTime, slateDate, dateOnly } = scheduleTime(league, row)
   const status = normalizeBdlStatus(row.status_state)
-  const changed = league === 'nfl' ? providerMs(row.updated_at) : NaN
+  const changed = majorSourceRevision(league, row)
   const home = team(league, row.home_team)
   const away = team(
     league,
@@ -226,7 +230,7 @@ export function mapMajorGame(
       status,
       home,
       away,
-      ...(Number.isFinite(changed) && { scoreUpdatedTime: changed }),
+      ...(changed !== undefined && { scoreUpdatedTime: changed }),
       homeScore: null,
       awayScore: null,
       eligible: false,
@@ -283,6 +287,9 @@ export function mapMajorGame(
   const contradicted = descriptions.some((value) => {
     if (typeof value !== 'string') return false
     const label = normalizeResultLabel(value)
+    // WNBA uses 'post' for both played finals and unplayed canceled games.
+    if (league === 'wnba' && status === 'canceled' && label === 'post')
+      return row.period !== 0 || homeScore !== 0 || awayScore !== 0
     if (
       /^(?:live|pre|fut|crit)$/.test(label) ||
       /^(?:game )?(?:cancelled|canceled|postponed|suspended|delayed|scheduled|in progress)\b/.test(
@@ -320,7 +327,7 @@ export function mapMajorGame(
     homeScore,
     awayScore,
     ...(detail && { detail }),
-    ...(Number.isFinite(changed) && { scoreUpdatedTime: changed }),
+    ...(changed !== undefined && { scoreUpdatedTime: changed }),
     ...(overtime && { finalQualifier: 'OT' as const }),
     ...(irregular && { irregular: true }),
     eligible,

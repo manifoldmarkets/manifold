@@ -980,6 +980,43 @@ it.each([
     })
   }
 )
+it('distinguishes played WNBA finals from recorded unplayed post cancellations', () => {
+  const final = fixture('wnba', 'games').data[0]
+  const read = (row: Raw) => reviewedResult('wnba', mapMajorGame('wnba', row))
+  expect(read(final).record).toMatchObject({ status: 'final', winnerId: 1 })
+  expect(read({ ...final, status_state: 'canceled' })).toEqual({
+    incident: 'irregular result',
+  })
+  const cancellations: Page = JSON.parse(
+    readFileSync(
+      join(
+        __dirname,
+        '../../test/fixtures/bdl/wnba/games__recorded-postseason-cancellations.json'
+      ),
+      'utf8'
+    )
+  )
+  expect(cancellations.data.map((row) => row.id)).toEqual([1392675, 1392697])
+  for (const row of cancellations.data) {
+    expect(read(row).record?.status).toBe('canceled')
+    for (const changed of [
+      { period: 1 },
+      { period: null },
+      { home_score: 1 },
+      { away_score: 1 },
+      { home_score: null },
+      { away_score: null },
+    ]) {
+      expect(read({ ...row, ...changed })).toEqual({
+        incident: 'irregular result',
+      })
+    }
+  }
+  expect(
+    read({ ...final, status_state: 'canceled', status: 'Canceled' }).record
+      ?.status
+  ).toBe('canceled')
+})
 it.each(['T.B.D.', 'T. B. D .', 'To  Be Determined'])(
   'holds placeholder %s in creation and a reported final',
   (name) => {
@@ -996,3 +1033,49 @@ it.each(['T.B.D.', 'T. B. D .', 'To  Be Determined'])(
     expect(reviewedResult('nba', game).record).toBeUndefined()
   }
 )
+
+it('binds an identified malformed NFL revision and timing to its own HTTP page', async () => {
+  const source = fixture('nfl', 'games').data[0]
+  const t = Date.parse('2026-11-22T17:00:00Z')
+  let clock = t
+  const client = createBdlClient({
+    role: 'recorder',
+    key: 'fixture',
+    clock: {
+      now: () => clock,
+      sleep: async (ms) => {
+        clock += ms
+      },
+    },
+    transport: async () => {
+      clock += 2
+      return new Response(
+        JSON.stringify({
+          data: {
+            ...source,
+            date: 'bad',
+            updated_at: new Date(t + 1).toISOString(),
+          },
+        })
+      )
+    },
+    onAttempt: async () => {
+      clock += 1000
+    },
+  })
+  const malformed = jest.fn()
+  const receipt = jest.fn()
+  const rows = await fetchMajorSnapshots(
+    client,
+    'nfl',
+    [{ id: Number(source.id) }],
+    { onMalformed: malformed, onReceipt: receipt }
+  )
+  expect(rows.size).toBe(0)
+  expect(malformed).toHaveBeenCalledWith(source.id, t + 1)
+  expect(receipt).toHaveBeenCalledWith(source.id, {
+    requestedAt: t,
+    receivedAt: t + 2,
+  })
+  expect(clock).toBe(t + 1002)
+})

@@ -86,14 +86,14 @@ export async function majorCreationHold(
     if (
       row.source === 'bdl' &&
       (started || other <= now) &&
-      start -
-        Math.min(
-          now,
-          started && !Number.isFinite(other)
-            ? observed
-            : storedGameDayEnd(other, row.date_only, row.latest_start)
-        ) <=
-        BDL_REISSUED_EVENT_MATCH_WINDOW_MS
+      ((started &&
+        Math.abs(start - observed) <= BDL_REISSUED_EVENT_MATCH_WINDOW_MS) ||
+        start -
+          Math.min(
+            now,
+            storedGameDayEnd(other, row.date_only, row.latest_start)
+          ) <=
+          BDL_REISSUED_EVENT_MATCH_WINDOW_MS)
     )
       return 'possible-reid: ' + row.id
     if (row.source === 'odds' && start < other) beforeOpenOdds = true

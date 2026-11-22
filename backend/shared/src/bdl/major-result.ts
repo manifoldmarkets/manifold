@@ -41,6 +41,7 @@ export type MajorMarket = CPMMMultiContract &
     sportsPostponedSince?: number
     sportsFirstFinalHash?: string
     sportsRevisionWatermark?: number
+    sportsObservationRevision?: number | null
     sportsObservationStartedAt?: number
     sportsLastObservationKey?: string
     sportsIncidentKey?: string | null

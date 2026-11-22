@@ -40,6 +40,7 @@ export type MajorPatch = Partial<SportsLiveScore> & {
   sportsLatestPossibleStartTimestamp?: string
   sportsFirstFinalHash?: string
   sportsRevisionWatermark?: number
+  sportsObservationRevision?: number | null
   sportsObservationStartedAt?: number
   sportsLastObservationKey?: string
   sportsIncidentKey?: string | null
@@ -162,6 +163,8 @@ export function majorChange(
     sync?: boolean
     orderingIssue?: boolean
     malformed?: boolean
+    revision?: number
+    receivedAt?: number
   } = {}
 ): MajorChange {
   const game =
@@ -179,12 +182,12 @@ export function majorChange(
   if (baseline && !m.sportsFirstFinalHash && !settled)
     patch.sportsFirstFinalHash = baseline
   const priorRevision = m.sportsRevisionWatermark ?? m.sportsScoreUpdatedTime
-  const revision = observation?.scoreUpdatedTime
+  const revision = flags.revision ?? observation?.scoreUpdatedTime
   const trustedRevision =
     revision != null &&
     Number.isSafeInteger(revision) &&
     revision > 0 &&
-    revision <= at
+    revision <= (flags.receivedAt ?? at)
   if (trustedRevision)
     patch.sportsRevisionWatermark = Math.max(priorRevision ?? 0, revision)
   else if (priorRevision != null && !m.sportsRevisionWatermark)
@@ -204,7 +207,10 @@ export function majorChange(
     !game &&
     (settled || parseSportsKickoffMs(m.sportsStartTimestamp) <= at)
   )
-    incident = flags.replacement ? 'possible-reid' : 'missing game'
+    incident =
+      flags.replacement || m.sportsAttentionReason === 'possible-reid'
+        ? 'possible-reid'
+        : 'missing game'
   else if (game && !matchesEntrants(m, game)) incident = 'unexpected entrants'
   else if (
     game?.status === 'final' &&
@@ -403,15 +409,48 @@ export function majorChange(
   if (incident) {
     markMajorIncident(m, change, incident, at, decision.record)
     delete change.record
-  } else if (m.sportsAttentionReason) {
-    // Manual attention reasons are owned by the operator; only clear our own episodes.
-    if (m.sportsIncidentKey || m.sportsAttentionNotified) {
+  } else if (m.sportsIncidentKey) {
+    if (ownsAttention(m, incidentFromKey(m.sportsIncidentKey))) {
       patch.sportsAttentionReason = null
       patch.sportsAttentionSince = null
-      patch.sportsIncidentKey = null
     }
+    patch.sportsIncidentKey = null
   }
   return change
+}
+
+// Legacy three-field incident keys include the exact reason and episode start.
+function incidentFromKey(key?: string | null) {
+  if (!key) return
+  try {
+    const value: unknown = JSON.parse(key)
+    if (!Array.isArray(value)) return
+    const [reason, since, detail, sequence = 0] = value as unknown[]
+    if (
+      typeof reason === 'string' &&
+      typeof since === 'number' &&
+      Number.isSafeInteger(since) &&
+      (detail === null || typeof detail === 'string') &&
+      typeof sequence === 'number' &&
+      Number.isSafeInteger(sequence) &&
+      sequence >= 0
+    )
+      return { reason, since, detail, sequence }
+  } catch {
+    // An unrecognized legacy marker cannot release an operator hold.
+  }
+  return undefined
+}
+
+function ownsAttention(
+  m: MajorMarket,
+  prior: ReturnType<typeof incidentFromKey>
+) {
+  return (
+    !!prior &&
+    prior.reason === m.sportsAttentionReason &&
+    prior.since === m.sportsAttentionSince
+  )
 }
 
 export function markMajorIncident(
@@ -421,15 +460,20 @@ export function markMajorIncident(
   at: number,
   record?: MajorResult
 ) {
-  const since =
-    m.sportsAttentionReason === reason ? m.sportsAttentionSince ?? at : at
-  const key = JSON.stringify([
+  const prior = incidentFromKey(m.sportsIncidentKey)
+  const since = prior?.reason === reason ? prior.since : at
+  const detail =
+    reason === 'result corrected' && record ? majorResultHash(record) : null
+  if (!m.sportsAttentionReason || ownsAttention(m, prior)) {
+    change.patch.sportsAttentionReason = reason
+    change.patch.sportsAttentionSince = since
+  }
+  if (prior?.reason === reason && prior.detail === detail) return
+  change.patch.sportsIncidentKey = JSON.stringify([
     reason,
     since,
-    reason === 'result corrected' && record ? majorResultHash(record) : null,
+    detail,
+    (prior?.sequence ?? 0) + 1,
   ])
-  change.patch.sportsAttentionReason = reason
-  change.patch.sportsAttentionSince = since
-  change.patch.sportsIncidentKey = key
-  if (m.sportsIncidentKey !== key) change.alert = reason
+  change.alert = reason
 }

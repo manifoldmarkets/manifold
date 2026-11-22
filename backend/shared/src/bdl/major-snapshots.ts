@@ -4,11 +4,16 @@ import type { MajorLeague } from 'common/bdl/major-leagues'
 import type { SportsScoreboard } from 'common/sports-scoreboard'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import { DAY_MS } from 'common/util/time'
-import { BdlHttpError, type createBdlClient } from '../balldontlie-client'
+import {
+  BdlHttpError,
+  type BdlReadInterval,
+  type createBdlClient,
+} from '../balldontlie-client'
 import { log } from '../monitoring/log'
 import {
   hasConfirmedEntrants,
   mapMajorGame,
+  majorSourceRevision,
   type MajorGame,
   type MajorObservation,
 } from './major-games'
@@ -89,7 +94,12 @@ export async function fetchMajorSnapshots(
   client: Client,
   league: MajorLeague,
   targets: readonly Target[],
-  options: { standings?: boolean; onMalformed?: (id: number) => void } = {}
+  options: {
+    standings?: boolean
+    onMalformed?: (id: number, revision?: number) => void
+    onUnavailable?: (id: number) => void
+    onReceipt?: (id: number, interval: BdlReadInterval) => void
+  } = {}
 ): Promise<Map<number, MajorObservation>> {
   const base = BDL_LEAGUES[league].apiBase + '/games'
   const result = new Map<number, MajorObservation>()
@@ -99,14 +109,38 @@ export async function fetchMajorSnapshots(
       throw new Error('Invalid BDL game ID')
   }
   const invalid = new Set<number>()
+  const revisions = new Map<number, number>()
+  const intervals = new Map<unknown, BdlReadInterval>()
+  const onPage =
+    options.onReceipt &&
+    ((rows: readonly unknown[], interval: BdlReadInterval) => {
+      for (const row of rows) {
+        const id = object(row)?.id
+        if (typeof id === 'number' && ids.has(id)) {
+          intervals.set(row, interval)
+          options.onReceipt?.(id, interval)
+        }
+      }
+    })
+  const malformedDates = new Set<unknown>()
   function reject(id: number, error: unknown) {
     if (!options.onMalformed) throw error
     result.delete(id)
     invalid.add(id)
-    options.onMalformed(id)
+    options.onMalformed(id, revisions.get(id))
   }
   function accept(row: unknown, id: number) {
-    if (invalid.has(id)) return
+    const revision = majorSourceRevision(league, row)
+    const received = intervals.get(row)?.receivedAt
+    if (
+      revision !== undefined &&
+      (received === undefined || revision <= received)
+    )
+      revisions.set(id, Math.max(revisions.get(id) ?? 0, revision))
+    if (invalid.has(id) || malformedDates.has(row)) {
+      reject(id, new Error('Unconfirmed or duplicate game'))
+      return
+    }
     try {
       const game = mapMajorGame(league, row)
       if (game.id !== id || !ids.has(id) || result.has(id))
@@ -125,6 +159,7 @@ export async function fetchMajorSnapshots(
         { game_ids: group },
         {
           maxPages: 10,
+          onPage,
           matches: (row) => expected.has(Number(object(row)?.id)),
         }
       )
@@ -149,6 +184,7 @@ export async function fetchMajorSnapshots(
           { dates: days },
           {
             maxPages: 20,
+            onPage,
             matches: (row) => {
               const raw = object(row),
                 date = raw?.date
@@ -161,7 +197,7 @@ export async function fetchMajorSnapshots(
                 typeof raw?.id === 'number' &&
                 ids.has(raw.id)
               ) {
-                reject(raw.id, new Error('Unconfirmed game date'))
+                malformedDates.add(row)
                 return true
               }
               return false
@@ -177,14 +213,25 @@ export async function fetchMajorSnapshots(
     for (const id of ids) {
       if (result.has(id) || invalid.has(id)) continue
       try {
-        const response = await client.get(base + '/' + id)
+        let interval: BdlReadInterval | undefined
+        const response = await client.get(
+          base + '/' + id,
+          {},
+          options.onReceipt &&
+            ((value) => {
+              interval = value
+              options.onReceipt?.(id, value)
+            })
+        )
         const record = object(response.body)?.data
+        if (interval) intervals.set(record, interval)
         if (object(record)?.id !== id)
           reject(id, new Error('BDL detail returned a different game ID'))
         else accept(record, id)
       } catch (error) {
-        if (!(error instanceof BdlHttpError && error.status === 404))
-          throw error
+        if (error instanceof BdlHttpError && error.status === 404) continue
+        if (!options.onUnavailable) throw error
+        options.onUnavailable(id)
       }
     }
   }

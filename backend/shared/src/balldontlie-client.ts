@@ -210,6 +210,8 @@ function retryAt(headers: Headers, now: number) {
   return Date.parse(raw) || 0
 }
 
+export type BdlReadInterval = { requestedAt: number; receivedAt: number }
+
 export type BdlClientOptions = {
   key?: string
   clock?: BdlClock
@@ -264,7 +266,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
 
   const get = async (
     path: string,
-    params: BdlParams = {}
+    params: BdlParams = {},
+    onReceipt?: (interval: BdlReadInterval) => void
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
     const slug = matchBdlEndpoint(path)?.league
@@ -355,6 +358,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
           },
         })
       let body: unknown
+      let receivedAt: number | undefined
       try {
         body = await res.json()
       } catch {
@@ -366,6 +370,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         }
         body = null
       } finally {
+        if (onReceipt) receivedAt = clock.now()
         await accounting
       }
       if (
@@ -379,6 +384,11 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         )
       const attempt = { request, status: res.status, rateLimit, body }
       await options.onAttempt?.(attempt)
+      if (
+        receivedAt !== undefined &&
+        (res.ok || !retryable || attemptIndex + 1 >= maxAttempts)
+      )
+        onReceipt?.({ requestedAt, receivedAt })
       if (res.ok) return attempt
       if (!retryable || attemptIndex + 1 >= maxAttempts)
         throw httpError(res.status)
@@ -389,7 +399,15 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   const getAll = async <T>(
     path: string,
     params: BdlParams,
-    { maxPages, matches }: { maxPages: number; matches: (row: T) => boolean }
+    {
+      maxPages,
+      matches,
+      onPage,
+    }: {
+      maxPages: number
+      matches: (row: T) => boolean
+      onPage?: (rows: readonly T[], interval: BdlReadInterval) => void
+    }
   ): Promise<T[]> => {
     if (!Number.isSafeInteger(maxPages) || maxPages < 1)
       throw new Error('[sports-bdl-client] Invalid page cap')
@@ -407,7 +425,16 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         ...params,
         ...(cursor != null ? { cursor } : {}),
       }
-      const { body } = await get(path, pageParams)
+      let interval: BdlReadInterval | undefined
+      const { body } = await get(
+        path,
+        pageParams,
+        onPage
+          ? (receipt) => {
+              interval = receipt
+            }
+          : undefined
+      )
       const page = body as {
         data?: T[]
         meta?: { next_cursor?: unknown }
@@ -418,6 +445,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         throw new Error(
           '[sports-bdl-client] Provider ignored the requested filter'
         )
+      if (interval) onPage?.(page.data, interval)
       rows.push(...page.data)
       const next = page.meta?.next_cursor
       if (next == null || next === '') return rows

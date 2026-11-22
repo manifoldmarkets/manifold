@@ -548,3 +548,38 @@ it('rechecks live authorization for each page, even when a run started enabled',
   ).rejects.toThrow('League disabled')
   expect(transport).toHaveBeenCalledTimes(1)
 })
+
+it('binds each admitted page to its own response clock and withholds an ignored-filter page', async () => {
+  const clock = fakeClock()
+  const slots: { requestedAt: number; receivedAt: number }[] = []
+  const client = createBdlClient({
+    role: 'recorder',
+    key,
+    clock,
+    transport: async () => {
+      const requestedAt = clock.now()
+      await clock.sleep(19)
+      slots.push({ requestedAt, receivedAt: clock.now() })
+      return json({
+        data: [slots.length],
+        meta: { next_cursor: slots.length < 3 ? slots.length : null },
+      })
+    },
+    onAttempt: async () => {
+      await clock.sleep(31)
+    },
+  })
+  const onPage = jest.fn()
+  await expect(
+    client.getAll<number>(
+      endpoint,
+      {},
+      { maxPages: 3, matches: (row) => row < 3, onPage }
+    )
+  ).rejects.toThrow('ignored')
+  expect(slots).toHaveLength(3)
+  expect(onPage.mock.calls).toEqual([
+    [[1], slots[0]],
+    [[2], slots[1]],
+  ])
+})

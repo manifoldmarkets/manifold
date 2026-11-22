@@ -15,7 +15,12 @@ import { manifoldSportsUserId } from 'common/sports'
 import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import { contractPath } from 'common/contract'
 import { DOMAIN } from 'common/envs/constants'
-import { bdlClock, createBdlClient, type BdlClock } from '../balldontlie-client'
+import {
+  bdlClock,
+  createBdlClient,
+  type BdlClock,
+  type BdlReadInterval,
+} from '../balldontlie-client'
 import {
   createSupabaseDirectClient,
   type SupabaseDirectClient,
@@ -222,7 +227,9 @@ export async function runMajorLifecycle(
             isLeagueEnabled: async (asked) => asked === league && authorized(),
           })
         const requestedAt = clock.now()
-        const malformed = new Set<number>()
+        const malformed = new Map<number, number | undefined>()
+        const unavailable = new Set<number>()
+        const receipts = new Map<number, BdlReadInterval>()
         let games: Awaited<ReturnType<typeof fetchMajorSnapshots>>
         try {
           games = await fetchMajorSnapshots(
@@ -234,7 +241,34 @@ export async function runMajorLifecycle(
             })),
             {
               standings: job === 'sync',
-              onMalformed: (id) => malformed.add(id),
+              onMalformed: (id, revision) => {
+                const prior = malformed.get(id)
+                malformed.set(
+                  id,
+                  revision === undefined
+                    ? prior
+                    : Math.max(prior ?? 0, revision)
+                )
+              },
+              onUnavailable: (id) => unavailable.add(id),
+              onReceipt: (id, interval) => {
+                const prior = receipts.get(id)
+                receipts.set(
+                  id,
+                  prior
+                    ? {
+                        requestedAt: Math.min(
+                          prior.requestedAt,
+                          interval.requestedAt
+                        ),
+                        receivedAt: Math.max(
+                          prior.receivedAt,
+                          interval.receivedAt
+                        ),
+                      }
+                    : interval
+                )
+              },
             }
           )
         } catch (error) {
@@ -254,60 +288,89 @@ export async function runMajorLifecycle(
         for (const { m, id } of targets) {
           if (!current()) break
           try {
+            if (unavailable.has(id)) {
+              result.errors++
+              log.warn('[sports-bdl-' + league + '] exact game unavailable', {
+                id,
+              })
+              continue
+            }
             const game = games.get(id)
             if (game && game.id !== id) continue
-            const seen = game?.observedAt
+            const receipt = receipts.get(id)
+            const requestStart = receipt?.requestedAt ?? requestedAt
+            const seen = receipt?.receivedAt ?? game?.observedAt
             if (
               seen !== undefined &&
               (!Number.isSafeInteger(seen) ||
-                seen < requestedAt ||
+                seen < requestStart ||
+                requestStart < requestedAt ||
                 seen > completed)
             )
               continue
             const at = seen ?? completed
             const start = parseSportsKickoffMs(m.sportsStartTimestamp)
-            let replacement = false
+            const record = (replacement: boolean, refineMissing = false) =>
+              recordMajorObservation(
+                pg,
+                creatorId,
+                league,
+                m.sportsEventId,
+                game,
+                requestStart,
+                at,
+                replacement,
+                current,
+                job === 'watch',
+                job === 'sync',
+                malformed.has(id),
+                malformed.get(id),
+                refineMissing
+              )
+            // Revoke any outstanding payout before a second provider lookup can fail or stall.
+            let changes = await record(false)
             if (
+              changes.length &&
               !game &&
               !malformed.has(id) &&
               job === 'sync' &&
               Number.isFinite(start) &&
-              start < at
+              start < at &&
+              current()
             ) {
-              const date = etDate.format(start)
-              let candidates = replacements.get(date)
-              if (!candidates) {
-                candidates = await fetchMajorGames(
-                  client,
-                  league,
-                  day(start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS),
-                  day(start + BDL_REISSUED_EVENT_MATCH_WINDOW_MS)
+              try {
+                const date = etDate.format(start)
+                let candidates = replacements.get(date)
+                if (!candidates) {
+                  candidates = await fetchMajorGames(
+                    client,
+                    league,
+                    day(start - BDL_REISSUED_EVENT_MATCH_WINDOW_MS),
+                    day(start + BDL_REISSUED_EVENT_MATCH_WINDOW_MS)
+                  )
+                  replacements.set(date, candidates)
+                }
+                if (
+                  candidates.some(
+                    (candidate) =>
+                      candidate.id !== id &&
+                      matchesMajorEntrantIds(m, candidate) &&
+                      candidate.startTime !== null &&
+                      Math.abs(Date.parse(candidate.startTime) - start) <=
+                        BDL_REISSUED_EVENT_MATCH_WINDOW_MS
+                  )
+                ) {
+                  const refined = await record(true, true)
+                  if (refined.length) changes = refined
+                }
+              } catch {
+                result.errors++
+                log.warn(
+                  '[sports-bdl-' + league + '] replacement search unavailable',
+                  { id }
                 )
-                replacements.set(date, candidates)
               }
-              replacement = candidates.some(
-                (candidate) =>
-                  candidate.id !== id &&
-                  matchesMajorEntrantIds(m, candidate) &&
-                  candidate.startTime !== null &&
-                  Math.abs(Date.parse(candidate.startTime) - start) <=
-                    BDL_REISSUED_EVENT_MATCH_WINDOW_MS
-              )
             }
-            const changes = await recordMajorObservation(
-              pg,
-              creatorId,
-              league,
-              m.sportsEventId,
-              game,
-              requestedAt,
-              at,
-              replacement,
-              current,
-              job === 'watch',
-              job === 'sync',
-              malformed.has(id)
-            )
             for (const row of changes) {
               result.observed++
               if (row.change.alert) result.attention++

@@ -298,6 +298,7 @@ beforeEach(async () => {
           [
             {
               resolution: outcome.outcome,
+              resolutions: outcome.resolutions,
               isResolved: true,
               resolutionTime: now,
             },
@@ -307,6 +308,11 @@ beforeEach(async () => {
           ]
         )
       )
+      if (outcome.resolutions)
+        await read(
+          'update answers set prob=coalesce(($1::jsonb->>id)::float/100,0) where contract_id=$2',
+          [outcome.resolutions, candidate.id]
+        )
       observer?.('committed')
       return { contract: { ...fresh, isResolved: true }, userUpdates: [] }
     })
@@ -943,7 +949,19 @@ it('holds a different paid sibling outcome or contradictory native weights throu
       () => true
     )
   ).toBe(false)
-  await modify('second-1', { 'second-1': 100 })
+  await read("update contracts set data=data-'resolutions' where id='second'")
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  await modify('CHOOSE_MULTIPLE', { 'second-1': 100 })
   expect(
     await settleRecordedMajor(
       pg,
@@ -1039,3 +1057,230 @@ it.each([15, 20, 30])(
     expect(recovered.change.patch.sportsCanceledSince).toBe(t + 40)
   }
 )
+
+async function observedFixture() {
+  const m = await create()
+  const t = kickoff + 2 * HOUR_MS
+  now = t
+  raw = {
+    ...raw,
+    status_state: 'final',
+    home_team_score: 12,
+    visitor_team_score: 10,
+  }
+  const final = (await fetchMajorSnapshots(client, 'nba', [{ id: 101 }])).get(
+    101
+  )!
+  const playing = { ...final, status: 'in_progress' as const }
+  const write = (
+    g: typeof final | undefined,
+    start: number,
+    end: number,
+    malformed = false,
+    revision?: number
+  ) =>
+    recordMajorObservation(
+      pg,
+      house,
+      'nba',
+      m.sportsEventId,
+      g,
+      t + start,
+      t + end,
+      false,
+      () => true,
+      false,
+      false,
+      malformed,
+      revision
+    )
+  return { m, t, final, playing, write }
+}
+
+it('extends both ends of an overlapping identical observation before comparing the next final', async () => {
+  const { t, final, playing, write } = await observedFixture()
+  await write(playing, 2, 10)
+  await write(playing, 1, 30)
+  expect(await loadMarket('one')).toMatchObject({
+    sportsObservationStartedAt: t + 1,
+    sportsLastCheckedTime: t + 30,
+  })
+  const [decision] = await write(final, 20, 40)
+  expect(decision.change.alert).toBe('unconfirmed observation order')
+  expect(decision.payout).toBeUndefined()
+  expect((await write(final, 41, 42))[0].payout?.status).toBe('final')
+})
+
+it('keeps the watermark without allowing an earlier revisioned final to supersede a later unversioned read', async () => {
+  const { t, final, playing, write } = await observedFixture()
+  await write({ ...playing, scoreUpdatedTime: t + 10 }, 10, 11)
+  await write(playing, 40, 50)
+  expect(await write({ ...final, scoreUpdatedTime: t + 20 }, 20, 30)).toEqual(
+    []
+  )
+  expect(await loadMarket('one')).toMatchObject({
+    sportsRevisionWatermark: t + 10,
+    sportsObservationRevision: null,
+    sportsRecordedResult: null,
+  })
+  // One versioned result cannot assign a revision to a conflicting unversioned interval.
+  const [conflict] = await write({ ...final, scoreUpdatedTime: t + 30 }, 42, 55)
+  expect(conflict.payout).toBeUndefined()
+  const [stillUnordered] = await write(
+    { ...final, scoreUpdatedTime: t + 31, homeScore: final.homeScore! + 1 },
+    43,
+    54
+  )
+  expect(stillUnordered.payout).toBeUndefined()
+  expect((await loadMarket('one')).sportsObservationRevision).toBeNull()
+})
+
+it('compares a future revision to its own receipt and retains the previous trusted watermark', async () => {
+  const { t, final, playing, write } = await observedFixture()
+  await write({ ...playing, scoreUpdatedTime: t + 10 }, 10, 50)
+  const [decision] = await write({ ...final, scoreUpdatedTime: t + 35 }, 20, 30)
+  expect(decision.change.alert).toBe('unconfirmed observation order')
+  expect(decision.payout).toBeUndefined()
+  expect((await loadMarket('one')).sportsRevisionWatermark).toBe(t + 10)
+})
+
+it('persists an identified malformed source revision before an old clean final retries', async () => {
+  const { t, final, write } = await observedFixture()
+  await write(undefined, 3, 4, true, t + 3)
+  expect(await loadMarket('one')).toMatchObject({
+    sportsRevisionWatermark: t + 3,
+    sportsAttentionReason: 'malformed game',
+  })
+  expect(await write({ ...final, scoreUpdatedTime: t + 2 }, 5, 6)).toEqual([])
+  expect((await loadMarket('one')).sportsRecordedResult).toBeNull()
+})
+
+it('honors the durable first final on an unpaid sibling during recording and at settlement', async () => {
+  const { m, final, write } = await observedFixture()
+  const [offer] = await write(final, 1, 2)
+  expect(offer.payout).toBeDefined()
+  await addMarket(
+    { ...m, sportsFirstFinalHash: 'opposite-first-final' },
+    'second',
+    ['Northport Foxes', 'Lake City Owls']
+  )
+  expect(
+    await settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  const decisions = await write(final, 3, 4)
+  expect(decisions.every((x) => !x.payout)).toBe(true)
+  expect((await loadMarket('one')).sportsAttentionReason).toBe(
+    'conflicting sibling results'
+  )
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+
+it('keeps the operator hold through malformed reads, recovery, and a legacy lifetime mail flag', async () => {
+  const { t, final, write } = await observedFixture()
+  await read("update contracts set data=data||$1::jsonb where id='one'", [
+    {
+      sportsAttentionReason: 'Operator reconciliation',
+      sportsAttentionSince: t,
+      sportsAttentionNotified: true,
+    },
+  ])
+  expect((await write(undefined, 1, 2, true))[0].change.alert).toBe(
+    'malformed game'
+  )
+  const [recovered] = await write(final, 3, 4)
+  expect(recovered.payout).toBeUndefined()
+  expect(await loadMarket('one')).toMatchObject({
+    sportsAttentionReason: 'Operator reconciliation',
+    sportsAttentionSince: t,
+    sportsIncidentKey: null,
+  })
+  await write(final, 5, 6)
+  expect((await loadMarket('one')).sportsAttentionReason).toBe(
+    'Operator reconciliation'
+  )
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+
+it('records a newly fetched correction when the market settles before the sync worker locks it', async () => {
+  const { t, final, write } = await observedFixture()
+  await write(final, 1, 2)
+  await read(
+    "update contracts set resolution='one-1',resolution_time=$1 where id='one'",
+    [new Date(t + 4)]
+  )
+  const [late] = await write({ ...final, homeScore: 2 }, 3, 5)
+  expect(late.change.alert).toBe('result corrected')
+  expect(late.payout).toBeUndefined()
+  expect(
+    await read('select reason from sports_market_attention_deliveries')
+  ).toEqual([{ reason: 'result corrected' }])
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+
+it('assigns distinct durable notice keys to B C B and suppresses consecutive identical corrections', async () => {
+  const { final, write } = await observedFixture()
+  await write(final, 1, 2)
+  const corrected = { ...final, homeScore: 9 }
+  await write(corrected, 3, 4)
+  await write({ ...final, homeScore: 8 }, 5, 6)
+  await write(corrected, 7, 8)
+  await write(corrected, 9, 10)
+  const notices = await read<{ incident_key: string }>(
+    "select incident_key from sports_market_attention_deliveries where reason='result corrected'"
+  )
+  expect(new Set(notices.map((v) => v.incident_key)).size).toBe(3)
+})
+
+it('persists the exact missing observation before an unavailable replacement lookup', async () => {
+  const { final, write, t } = await observedFixture()
+  const [offered] = await write(final, 1, 2)
+  expect(offered.payout).toBeDefined()
+  raw = { ...raw, id: 999 }
+  now = t + 20 * MINUTE_MS
+  const replacement = jest
+    .spyOn(client, 'getAll')
+    .mockImplementationOnce(async () => {
+      const market = await loadMarket('one')
+      expect(market.sportsRecordedResult).toBeNull()
+      expect(market.sportsAttentionReason).toBe('missing game')
+      throw new Error('Replacement fixture response unavailable')
+    })
+  try {
+    const result = await runner('sync')
+    expect(result.errors).toBe(1)
+    expect(replacement).toHaveBeenCalled()
+    expect((await loadMarket('one')).sportsRecordedResult).toBeNull()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  } finally {
+    replacement.mockRestore()
+  }
+})
+it('keeps a healthy terminal game when another exact detail read fails', async () => {
+  const { t } = await observedFixture()
+  await addEarlierMarket()
+  now = t + 20 * MINUTE_MS
+  const get = client.get
+  const failed = jest
+    .spyOn(client, 'get')
+    .mockImplementation(async (path, ...args) => {
+      if (path.endsWith('/102'))
+        throw new Error('Individual fixture unavailable')
+      return get(path, ...args)
+    })
+  try {
+    const result = await runner('sync')
+    expect(result).toMatchObject({ errors: 1, settled: 1 })
+    expect((await loadMarket('affected')).sportsAttentionReason).toBeUndefined()
+    expect((await loadMarket('one')).isResolved).toBe(true)
+  } finally {
+    failed.mockRestore()
+  }
+})

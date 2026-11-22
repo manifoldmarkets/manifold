@@ -129,7 +129,14 @@ async function siblingAgrees(
   valid: MajorResult | undefined,
   lock = false
 ) {
-  if (!prior.isResolved && !prior.resolution) return true
+  if (!prior.isResolved && !prior.resolution) {
+    const firstFinal =
+      prior.sportsFirstFinalHash ??
+      (prior.sportsRecordedResult?.status === 'final'
+        ? prior.sportsResultHash
+        : undefined)
+    return !valid || !firstFinal || firstFinal === majorResultHash(valid)
+  }
   if (
     prior.resolution === 'CANCEL' &&
     prior.resolutionTime &&
@@ -164,15 +171,17 @@ async function siblingAgrees(
   )
   if (
     !expected ||
-    expected.outcome !== prior.resolution ||
+    (prior.resolution !== 'CHOOSE_MULTIPLE' &&
+      expected.outcome !== prior.resolution) ||
     !expected.resolutions
   )
     return false
   const weights = prior.resolutions
   if (!weights)
     return (
+      expected.outcome === prior.resolution &&
       expected.outcome !== 'CHOOSE_MULTIPLE' &&
-      answers.some((a) => a.id === prior.resolution)
+      answers.every((a) => a.prob === (a.id === prior.resolution ? 1 : 0))
     )
   return (
     Object.keys(weights).every((id) => answers.some((a) => a.id === id)) &&
@@ -197,7 +206,9 @@ export async function recordMajorObservation(
   live: () => boolean,
   watch: boolean,
   sync = false,
-  malformed = false
+  malformed = false,
+  malformedRevision?: number,
+  refineMissing = false
 ): Promise<MajorWrite[]> {
   if (
     !live() ||
@@ -228,28 +239,42 @@ export async function recordMajorObservation(
     for (const m of siblings) {
       const settled = !!(m.isResolved || m.resolution)
       const watermark = m.sportsRevisionWatermark ?? m.sportsScoreUpdatedTime
+      const revision = game?.scoreUpdatedTime ?? malformedRevision
+      const validRevision =
+        revision !== undefined &&
+        Number.isSafeInteger(revision) &&
+        revision > 0 &&
+        revision <= observedAt
+      const currentRevision = m.sportsObservationRevision
       const newer =
-        game?.scoreUpdatedTime != null &&
-        watermark != null &&
-        game.scoreUpdatedTime > watermark
+        validRevision && currentRevision != null && revision > currentRevision
       const last = Math.max(
         m.sportsLastCheckedTime ?? 0,
         m.sportsLiveUpdatedTime ?? 0
       )
-      const key = JSON.stringify([
-        malformed,
-        replacement,
-        game?.status,
-        game?.home,
-        game?.away,
-        game?.startTime,
-        game?.eligible,
-        game?.homeScore,
-        game?.awayScore,
-        game?.irregular,
-        hash,
-      ])
-      const overlap = last >= requestedAt && !newer
+      const observationKey = (hasReplacement: boolean) =>
+        JSON.stringify([
+          malformed,
+          hasReplacement,
+          game?.status,
+          game?.home,
+          game?.away,
+          game?.startTime,
+          game?.eligible,
+          game?.homeScore,
+          game?.awayScore,
+          game?.irregular,
+          hash,
+        ])
+      const key = observationKey(replacement)
+      if (
+        refineMissing &&
+        (m.sportsLastObservationKey !== observationKey(false) ||
+          m.sportsObservationStartedAt !== requestedAt ||
+          last !== observedAt)
+      )
+        continue
+      const overlap = last >= requestedAt && !newer && !refineMissing
       // The order of two intersecting acquisitions is unknown even when the
       // earlier completion obtains its database lock second.
       const definitelyOlder =
@@ -261,18 +286,45 @@ export async function recordMajorObservation(
       if (
         !live() ||
         !majorPhaseEnabled(m, league, switches) ||
-        (overlap && (definitelyOlder || key === m.sportsLastObservationKey)) ||
-        (game?.scoreUpdatedTime !== undefined &&
-          watermark != null &&
-          game.scoreUpdatedTime < watermark) ||
-        (watch &&
-          (!settled ||
-            !m.resolutionTime ||
-            observedAt - m.resolutionTime > BDL_CORRECTION_WATCH_MS)) ||
-        (!watch && settled)
+        (overlap && definitelyOlder) ||
+        (validRevision && watermark != null && revision < watermark) ||
+        (watch && !settled) ||
+        (settled &&
+          (!m.resolutionTime ||
+            (!watch && !m.sportsResultHash) ||
+            observedAt - m.resolutionTime > BDL_CORRECTION_WATCH_MS))
       )
         continue
+      if (
+        overlap &&
+        key === m.sportsLastObservationKey &&
+        (revision === undefined || validRevision)
+      ) {
+        // Identical data can still extend the interval across a later, different read.
+        const bounds = {
+          sportsObservationStartedAt: Math.min(
+            requestedAt,
+            m.sportsObservationStartedAt ?? requestedAt
+          ),
+          sportsLastCheckedTime: Math.max(observedAt, last),
+          sportsObservationRevision:
+            validRevision && currentRevision === revision ? revision : null,
+          ...(validRevision && {
+            sportsRevisionWatermark: Math.max(watermark ?? 0, revision),
+          }),
+          ...(sync && {
+            sportsLastSyncTime: Math.max(observedAt, m.sportsLastSyncTime ?? 0),
+          }),
+        }
+        await tx.none(
+          'update contracts set data=data || $1::jsonb where id=$2',
+          [JSON.stringify(bounds), m.id]
+        )
+        continue
+      }
       const change = majorChange(m, league, game, Math.max(observedAt, last), {
+        receivedAt: observedAt,
+        revision,
         sync,
         malformed,
         orderingIssue: overlap,
@@ -290,6 +342,8 @@ export async function recordMajorObservation(
       change.patch.sportsObservationStartedAt = overlap
         ? Math.min(requestedAt, m.sportsObservationStartedAt ?? requestedAt)
         : requestedAt
+      change.patch.sportsObservationRevision =
+        validRevision && !overlap ? revision : null
       change.patch.sportsLastObservationKey = key
       const next = { ...m, ...change.patch } as MajorMarket
       let payout: MajorResult | undefined
@@ -305,7 +359,7 @@ export async function recordMajorObservation(
             ? Number(next.sportsCanceledSince) + BDL_CANCELLATION_HOLD_MS
             : Number(next.sportsFinalSince) + BDL_FINAL_SETTLEMENT_DELAY_MS
         if (majorPayout(next, change.record, observedAt)) payout = change.record
-        else if (observedAt >= due) {
+        else if (!next.sportsAttentionReason && observedAt >= due) {
           markMajorIncident(m, change, 'unexpected market answers', observedAt)
         }
       }

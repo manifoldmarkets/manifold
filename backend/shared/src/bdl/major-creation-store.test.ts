@@ -175,3 +175,18 @@ it('uses the durable observed start of an unresolved match after a future resump
     await majorCreationHold(db, { ...input, seenEventIds: [bdl.sportsEventId] })
   ).toBeNull()
 })
+
+it('holds a missing old ID by its observed start after a long postponement, while a listed doubleheader can proceed', async () => {
+  await insert({
+    ...bdl,
+    sportsStartTimestamp: new Date(now - 30 * 24 * 3600000).toISOString(),
+    sportsObservedStartTime: now - 1,
+  })
+  expect(await majorCreationHold(db, input)).toBe('possible-reid: prior')
+  expect(
+    await majorCreationHold(db, {
+      ...input,
+      seenEventIds: [...input.seenEventIds, bdl.sportsEventId],
+    })
+  ).toBeNull()
+})

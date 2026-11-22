@@ -1,0 +1,48 @@
+{
+  "data": [
+    {
+      "id": 1392675,
+      "date": "2026-10-01T23:00:00.000Z",
+      "season": 2026,
+      "postseason": true,
+      "status": "post",
+      "status_state": "canceled",
+      "period": 0,
+      "time": "0.0",
+      "home_score": 0,
+      "away_score": 0,
+      "home_team": {
+        "id": 7,
+        "full_name": "Minnesota Lynx",
+        "abbreviation": "MIN"
+      },
+      "visitor_team": {
+        "id": 1,
+        "full_name": "New York Liberty",
+        "abbreviation": "NY"
+      }
+    },
+    {
+      "id": 1392697,
+      "date": "2026-10-11T04:00:00.000Z",
+      "season": 2026,
+      "postseason": true,
+      "status": "post",
+      "status_state": "canceled",
+      "period": 0,
+      "time": "0.0",
+      "home_score": 0,
+      "away_score": 0,
+      "home_team": {
+        "id": 1,
+        "full_name": "New York Liberty",
+        "abbreviation": "NY"
+      },
+      "visitor_team": {
+        "id": 4,
+        "full_name": "Atlanta Dream",
+        "abbreviation": "ATL"
+      }
+    }
+  ]
+}
