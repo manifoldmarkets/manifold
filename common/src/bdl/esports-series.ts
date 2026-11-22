@@ -69,6 +69,7 @@ function entrant(value: unknown) {
 const isForfeit = (row: Record<string, unknown>) =>
   row.forfeit === true ||
   row.is_forfeit === true ||
+  esportsText(row.status)?.toLowerCase() === 'defwin' ||
   /\b(?:forfeit(?:ed|ure)?|walk[ -]?over|disqualified|defaulted|w\/o)\b/i.test(
     String(row.status ?? '').replace(/_/g, ' ')
   )

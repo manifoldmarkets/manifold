@@ -161,6 +161,46 @@ test.each([
 ] as const)('holds contradictory or unknown evidence %#', (changes, review) => {
   expect(game('cs', changes)).toMatchObject({ review, winnerId: null })
 })
+test.each(['cs', 'dota', 'valorant', 'lol'] as const)(
+  '%s default wins retain the reported result for review',
+  (league) => {
+    const first = { id: 771, name: 'First' },
+      second = { id: 769, name: 'Second' }
+    const received = {
+      ...raw,
+      id: 64290,
+      tournament: { id: 2142, name: 'Tournament', tier: 's' },
+      best_of: 1,
+      bo_type: 1,
+      team1: first,
+      team2: second,
+      team1_score: 1,
+      team2_score: 0,
+      winner: first,
+      loser: second,
+      status: 'defwin',
+      status_state: 'final',
+    }
+    const result = readEsportsSeriesPage(
+      league,
+      page('/' + league + '/v1/matches', [received], { tournament_id: 2142 })
+    )
+    expect(result?.series[0]).toMatchObject({
+      score: { team1: 1, team2: 0 },
+      review: 'forfeit',
+      reportedWinnerId: 771,
+      winnerId: null,
+    })
+    expect(
+      readEsportsSeries(league, { ...received, status: ' DEFWIN ' })?.review
+    ).toBe('forfeit')
+    if (league !== 'valorant')
+      expect(
+        readEsportsSeries(league, { ...received, status: 'finished' })
+      ).toMatchObject({ review: null, winnerId: 771 })
+  }
+)
+
 test.each([1, 3, 5])('Bo%s only verifies a physically clinched score', (bo) => {
   const needed = (bo + 1) / 2
   expect(
