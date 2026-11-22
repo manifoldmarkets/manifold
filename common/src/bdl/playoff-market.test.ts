@@ -189,7 +189,7 @@ test('all sixteen current scores require distinct future tipoffs and strictly ea
         if (wins + a >= 4) weight += 0.6 ** wins * 0.4 ** (n - wins)
       }
       expect(seen!.probability).toBeCloseTo(weight, 12)
-      function reprice(games: typeof rawGames) {
+      const reprice = (games: typeof rawGames) => {
         const observed = projectNbaPlayoffSeries(2025, games, true)
         return nbaSeriesOpeningEstimate(observed, series.eventId, odds, now)
       }
