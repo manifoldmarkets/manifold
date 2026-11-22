@@ -1,0 +1,56 @@
+{
+  "id": 270,
+  "season": 2025,
+  "round": "MF",
+  "scheduled_time": "2025-01-25T08:40:00.000Z",
+  "tournament": {
+    "id": 7,
+    "name": "AUSTRALIAN OPEN",
+    "location": "MELBOURNE, AUS",
+    "season": 2025,
+    "category": "Grand Slam",
+    "start_date": "2025-01-12",
+    "end_date": "2025-01-26"
+  },
+  "set_scores": [
+    {
+      "set_number": 1,
+      "player1_games": 3,
+      "player2_games": 6,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 2,
+      "player1_games": 6,
+      "player2_games": 2,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 3,
+      "player1_games": 5,
+      "player2_games": 7,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    }
+  ],
+  "match_status": "finished",
+  "status_state": "final",
+  "player1_game_score": null,
+  "player2_game_score": null,
+  "server": null,
+  "number_of_sets": 3,
+  "player1": {
+    "id": 1,
+    "full_name": "Aryna Sabalenka"
+  },
+  "player2": {
+    "id": 9,
+    "full_name": "Madison Keys"
+  },
+  "winner": {
+    "id": 9,
+    "full_name": "Madison Keys"
+  }
+}

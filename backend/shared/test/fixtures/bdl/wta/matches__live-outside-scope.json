@@ -1,0 +1,53 @@
+{
+  "id": 20155928,
+  "season": 2026,
+  "round": "Semifinals",
+  "scheduled_time": "2026-11-21T19:44:57.900Z",
+  "tournament": {
+    "id": 381,
+    "name": "COLINA 125",
+    "location": "COLINA, CHI",
+    "season": 2026,
+    "category": "WTA 125",
+    "start_date": "2026-11-16",
+    "end_date": "2026-11-22"
+  },
+  "set_scores": [
+    {
+      "set_number": 1,
+      "player1_games": 6,
+      "player2_games": 3,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 2,
+      "player1_games": 3,
+      "player2_games": 6,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 3,
+      "player1_games": 6,
+      "player2_games": 5,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    }
+  ],
+  "match_status": "in_progress",
+  "status_state": "in_progress",
+  "player1_game_score": "0",
+  "player2_game_score": "0",
+  "server": 2,
+  "number_of_sets": 3,
+  "player1": {
+    "id": 302,
+    "full_name": "Leyre Romero Gormaz"
+  },
+  "player2": {
+    "id": 93,
+    "full_name": "Lucia Bronzetti"
+  },
+  "winner": null
+}

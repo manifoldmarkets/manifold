@@ -1,0 +1,49 @@
+{
+  "id": 20268,
+  "season": 2025,
+  "round": "Finals",
+  "scheduled_time": null,
+  "tournament": {
+    "id": 237,
+    "name": "BNP Paribas Open",
+    "location": "Indian Wells",
+    "season": 2025,
+    "category": "Masters 1000",
+    "start_date": "2025-03-05",
+    "end_date": "2025-03-16"
+  },
+  "set_scores": [
+    {
+      "set_number": 1,
+      "player1_games": 6,
+      "player2_games": 2,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 2,
+      "player1_games": 6,
+      "player2_games": 2,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    }
+  ],
+  "match_status": "finished",
+  "status_state": "final",
+  "player1_game_score": null,
+  "player2_game_score": null,
+  "server": null,
+  "number_of_sets": 2,
+  "player1": {
+    "id": 15,
+    "full_name": "Holger Rune"
+  },
+  "player2": {
+    "id": 10,
+    "full_name": "Jack Draper"
+  },
+  "winner": {
+    "id": 10,
+    "full_name": "Jack Draper"
+  }
+}

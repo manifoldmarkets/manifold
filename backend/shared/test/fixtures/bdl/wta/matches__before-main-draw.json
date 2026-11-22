@@ -1,0 +1,49 @@
+{
+  "id": 95,
+  "season": 2025,
+  "round": "Quarterfinals",
+  "scheduled_time": "2025-01-07T09:25:00.000Z",
+  "tournament": {
+    "id": 7,
+    "name": "AUSTRALIAN OPEN",
+    "location": "MELBOURNE, AUS",
+    "season": 2025,
+    "category": "Grand Slam",
+    "start_date": "2025-01-12",
+    "end_date": "2025-01-26"
+  },
+  "set_scores": [
+    {
+      "set_number": 1,
+      "player1_games": 7,
+      "player2_games": 6,
+      "player1_tiebreak": 8,
+      "player2_tiebreak": 6
+    },
+    {
+      "set_number": 2,
+      "player1_games": 6,
+      "player2_games": 0,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    }
+  ],
+  "match_status": "finished",
+  "status_state": "final",
+  "player1_game_score": null,
+  "player2_game_score": null,
+  "server": null,
+  "number_of_sets": 2,
+  "player1": {
+    "id": 238,
+    "full_name": "Anastasia Zakharova"
+  },
+  "player2": {
+    "id": 300,
+    "full_name": "Kyoka Okamura"
+  },
+  "winner": {
+    "id": 238,
+    "full_name": "Anastasia Zakharova"
+  }
+}

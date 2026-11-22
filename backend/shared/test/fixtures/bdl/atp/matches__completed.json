@@ -1,0 +1,49 @@
+{
+  "id": 15451,
+  "season": 2025,
+  "round": "Finals",
+  "scheduled_time": null,
+  "tournament": {
+    "id": 325,
+    "name": "Rolex Paris Masters",
+    "location": "Paris",
+    "season": 2025,
+    "category": "Masters 1000",
+    "start_date": "2025-10-27",
+    "end_date": "2025-11-02"
+  },
+  "set_scores": [
+    {
+      "set_number": 1,
+      "player1_games": 6,
+      "player2_games": 4,
+      "player1_tiebreak": null,
+      "player2_tiebreak": null
+    },
+    {
+      "set_number": 2,
+      "player1_games": 7,
+      "player2_games": 6,
+      "player1_tiebreak": 7,
+      "player2_tiebreak": 4
+    }
+  ],
+  "match_status": "finished",
+  "status_state": "final",
+  "player1_game_score": null,
+  "player2_game_score": null,
+  "server": null,
+  "number_of_sets": 2,
+  "player1": {
+    "id": 2,
+    "full_name": "Jannik Sinner"
+  },
+  "player2": {
+    "id": 5,
+    "full_name": "Felix Auger-Aliassime"
+  },
+  "winner": {
+    "id": 2,
+    "full_name": "Jannik Sinner"
+  }
+}
