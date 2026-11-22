@@ -1,4 +1,5 @@
 import * as pgPromise from 'pg-promise'
+import { API } from 'common/api/schema'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   sportsResultsProps,
@@ -282,26 +283,55 @@ it('attributes shootout tallies by side and omits malformed normalized score ide
     sportsHomeTeam: '🇬🇧 England',
     sportsAwayTeam: 'Japan',
   }
-  await seed({ id: 'pens', data: tie, resolution: 'pens-a' })
-  await seed({ id: 'missing', data: { ...tie, sportsPenHome: null } })
-  await seed({ id: 'level-pens', data: { ...tie, sportsPenHome: 5 } })
-  await seed({
+  const cup = (row: Seed) => seed({ answers: ['England', 'Japan'], ...row })
+  await cup({ id: 'pens', data: tie, resolution: 'pens-a' })
+  await cup({ id: 'missing', data: { ...tie, sportsPenHome: null } })
+  await cup({ id: 'level-pens', data: { ...tie, sportsPenHome: 5 } })
+  await cup({
     id: 'conflicting-aggregate',
     data: { ...tie, sportsAwayScore: 2 },
   })
-  await seed({
+  await cup({
     id: 'extra-time',
-    data: { ...tie, sportsScoreDuration: 'EXTRA_TIME' },
+    data: { ...tie, sportsAwayScore: 2, sportsScoreDuration: 'EXTRA_TIME' },
   })
-  await seed({ id: 'flag-only', data: { ...tie, sportsHomeTeam: '🇬🇧' } })
-  await seed({ id: 'same', data: { ...tie, sportsAwayTeam: ' england ' } })
+  await cup({ id: 'flag-only', data: { ...tie, sportsHomeTeam: '🇬🇧' } })
+  await cup({
+    id: 'same',
+    answers: ['England', 'England'],
+    data: { ...tie, sportsAwayTeam: ' england ' },
+  })
+  for (const [id, gap] of [
+    ['double-space', '  '],
+    ['nonbreaking', '\u00a0\u2003'],
+    ['next-line', '\u0085\t'],
+  ]) {
+    await seed({
+      id,
+      answers: ['New York', 'New' + gap + 'York'],
+      data: {
+        ...tie,
+        sportsHomeTeam: 'New York',
+        sportsAwayTeam: 'New' + gap + 'York',
+      },
+    })
+  }
+  await seed({
+    id: 'distinct-spaced',
+    answers: ['New York', 'Los Angeles'],
+    data: {
+      ...tie,
+      sportsHomeTeam: 'New\u00a0  York',
+      sportsAwayTeam: 'Los\t\u2003Angeles',
+    },
+  })
   const by = Object.fromEntries(
     (await read({ sport: 'soccer', league: 'fifa/worldcup' })).items.map(
       (i) => [i.id, i]
     )
   )
   expect(by.pens).toMatchObject({
-    payout: 'River',
+    payout: 'Japan',
     finalScore: {
       home: 'England',
       away: 'Japan',
@@ -316,8 +346,89 @@ it('attributes shootout tallies by side and omits malformed normalized score ide
     expect(by[key].finalScore?.penalties).toBeUndefined()
   }
   expect(by['extra-time'].finalScore?.qualifier).toBe('extra-time')
-  for (const key of ['flag-only', 'same', 'conflicting-aggregate'])
+  expect(by['distinct-spaced'].finalScore).toMatchObject({
+    home: 'New York',
+    away: 'Los Angeles',
+  })
+  for (const key of [
+    'flag-only',
+    'same',
+    'double-space',
+    'nonbreaking',
+    'next-line',
+    'conflicting-aggregate',
+  ])
     expect(by[key].finalScore).toBeNull()
+})
+it('reconciles World Cup score participants and knockout deciders independently of the paid answer', async () => {
+  const tie = {
+    sportsEventId: 'fd-215',
+    sportsHomeScore: 1,
+    sportsAwayScore: 1,
+    sportsHomeTeam: undefined,
+    sportsAwayTeam: undefined,
+  }
+  const cup = (
+    id: string,
+    data: Seed['data'] = {},
+    answers = ['Harbor', 'River']
+  ) => seed({ id, answers, resolution: id + '-a', data: { ...tie, ...data } })
+  for (const [id, duration] of [
+    ['missing', undefined],
+    ['unknown', 'UNKNOWN'],
+    ['extra', 'EXTRA_TIME'],
+  ] as const)
+    await cup(id, { sportsScoreDuration: duration })
+  await cup('group', {}, ['Harbor', 'River', 'Draw'])
+  await cup('partial', { sportsHomeTeam: '  HARBOR ', sportsHomeScore: 2 })
+  await cup('wrong-away', { sportsAwayTeam: 'Elsewhere', sportsHomeScore: 2 })
+  await cup('swapped', {
+    sportsHomeTeam: 'River',
+    sportsAwayTeam: 'Harbor',
+    sportsHomeScore: 2,
+  })
+  await cup('malformed', { sportsHomeScore: 2 }, ['Harbor', 'River', 'Other'])
+  const shootout = {
+    sportsScoreDuration: 'PENALTY_SHOOTOUT',
+    sportsPenHome: 4,
+    sportsPenAway: 5,
+  }
+  await cup('wrong-teams', {
+    ...shootout,
+    sportsHomeTeam: 'England',
+    sportsAwayTeam: 'Japan',
+  })
+  await cup('contradictory', { ...shootout, sportsPenHome: 6 })
+  const results = Object.fromEntries(
+    (await read({ sport: 'soccer' })).items.map((i) => [i.id, i])
+  )
+  for (const id of [
+    'missing',
+    'unknown',
+    'extra',
+    'wrong-away',
+    'swapped',
+    'malformed',
+    'wrong-teams',
+  ])
+    expect(results[id]).toMatchObject({ payout: 'River', finalScore: null })
+  expect(results.group.finalScore).toMatchObject({
+    home: 'Harbor',
+    away: 'River',
+    homeScore: 1,
+    awayScore: 1,
+  })
+  expect(results.partial.finalScore).toMatchObject({
+    home: 'Harbor',
+    away: 'River',
+    homeScore: 2,
+    awayScore: 1,
+  })
+  expect(results.contradictory).toMatchObject({
+    payout: 'River',
+    finalScore: { qualifier: 'penalties' },
+  })
+  expect(results.contradictory.finalScore?.penalties).toBeUndefined()
 })
 it('rejects conflicting explicit league metadata on legacy routes without losing a correctly attributed game', async () => {
   const cases = [
@@ -374,6 +485,9 @@ it('rejects malformed cursors, unsupported league filters, all-sports and invali
     { sport: 'nba', limit: 51 },
   ])
     expect(sportsResultsProps.safeParse(bad).success).toBe(false)
+})
+it('requires shared intermediaries to fetch current publication status', () => {
+  expect(API['sports-results'].cache).toBe('no-store')
 })
 it('returns an empty anonymous result without opening a database connection when disabled', async () => {
   const previous = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED

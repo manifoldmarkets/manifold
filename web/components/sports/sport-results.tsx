@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { isBdlLeagueKey, type BdlLeagueKey } from 'common/bdl/leagues'
 import type { SportsResult, SportsResultsPage } from 'common/sports-results'
+import { sportPath } from 'common/sports-schedule'
 import { api, APIError } from 'web/lib/api/api'
 import type { HidesBlocked } from './blocked-topics-state'
 
@@ -16,7 +17,13 @@ export function SportResults(props: {
   if (league !== undefined && !selected)
     return (
       <section aria-label="Results" className="text-ink-600 py-4 text-sm">
-        Choose a supported league to see settled markets.
+        Choose a supported league to see settled markets.{' '}
+        <Link
+          href={sportPath(sport) + '?tab=results'}
+          className="text-primary-700 underline"
+        >
+          Show all results for this sport
+        </Link>
       </section>
     )
   return (
@@ -29,13 +36,11 @@ export function SportResults(props: {
   )
 }
 type Position = {
-  pages: number
+  scope: string
   anchor: string
   top: number
-  settledAt: number
+  oldest: Pick<SportsResult, 'id' | 'settledAt'>
 }
-// Keep only the navigation position. Public results and visibility are read again before painting them.
-let lastVisit: { scope: string; entry: unknown; position: Position } | undefined
 function ResultsPage({
   sport,
   league,
@@ -53,7 +58,6 @@ function ResultsPage({
   const [loading, setLoading] = useState(true)
   const section = useRef<HTMLElement>(null)
   const older = useRef<HTMLButtonElement>(null)
-  const pageCount = useRef(0)
   const focus = useRef<
     { anchor: string; top: number } | { prior: Set<string> }
   >()
@@ -68,42 +72,34 @@ function ResultsPage({
         { sport, league, cursor },
         { cache: 'no-store', signal: controller.signal }
       )
+    // Next retains a history entry's options across Back and Forward. Store only its position.
+    const saved: Position | undefined =
+      window.history.state?.options?.sportsResultsPosition
     const restore =
-      !request.cursor &&
-      lastVisit?.scope === scope &&
-      lastVisit.entry === window.history.state?.key
-        ? lastVisit.position
-        : undefined
+      !request.cursor && saved?.scope === scope ? saved : undefined
     async function load() {
       let next = await fetchPage(request.cursor)
       const rows = new Map(next.items.map((item) => [item.id, item]))
       const seen = new Set<string>()
-      let count = 1
-      // New settlements may have pushed the selected market beyond its old page.
-      // Walk fresh, contiguous pages until reaching the former position or an older settlement.
+      // Restore the former trailing rows as well as the anchor so the viewport can reach its old offset.
       while (
         restore &&
         next.nextCursor &&
         !seen.has(next.nextCursor) &&
-        (count < restore.pages ||
-          (!rows.has(restore.anchor) &&
-            !next.items.some((item) => item.settledAt < restore.settledAt)))
+        !rows.has(restore.oldest.id) &&
+        !next.items.some((item) => item.settledAt < restore.oldest.settledAt)
       ) {
         seen.add(next.nextCursor)
         next = await fetchPage(next.nextCursor)
         for (const item of next.items) rows.set(item.id, item)
-        count++
       }
-      return { items: [...rows.values()], nextCursor: next.nextCursor, count }
+      return { items: [...rows.values()], nextCursor: next.nextCursor }
     }
     load()
       .then((next) => {
         if (controller.signal.aborted) return
-        pageCount.current = request.cursor ? pageCount.current + 1 : next.count
-        if (restore) {
+        if (restore)
           focus.current = { anchor: restore.anchor, top: restore.top }
-          if (lastVisit?.position === restore) lastVisit = undefined
-        }
         setPage((prior) => ({
           items:
             request.cursor && prior
@@ -165,16 +161,22 @@ function ResultsPage({
     } else (link ?? older.current ?? section.current).focus()
   }, [page, loading, error])
   const remember = (item: SportsResult, top: number) => {
-    lastVisit = {
+    const last = page?.items[page.items.length - 1]
+    if (!last) return
+    const history = window.history
+    const position: Position = {
       scope,
-      entry: window.history.state?.key,
-      position: {
-        pages: pageCount.current,
-        anchor: item.id,
-        top,
-        settledAt: item.settledAt,
-      },
+      anchor: item.id,
+      top,
+      oldest: { id: last.id, settledAt: last.settledAt },
     }
+    history.replaceState(
+      {
+        ...history.state,
+        options: { ...history.state?.options, sportsResultsPosition: position },
+      },
+      ''
+    )
   }
   const items = page?.items.filter((item) => !hides(item.groupSlugs))
   const retry = () => setRequest((r) => ({ ...r, attempt: r.attempt + 1 }))
@@ -226,6 +228,14 @@ function ResultsPage({
         <button
           ref={older}
           aria-disabled={loading}
+          onBlur={(event) => {
+            if (
+              event.relatedTarget &&
+              focus.current &&
+              'prior' in focus.current
+            )
+              focus.current = undefined
+          }}
           onClick={() => {
             if (loading) return
             focus.current = {

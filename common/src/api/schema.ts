@@ -5277,7 +5277,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=30, stale-while-revalidate=60',
+    cache: 'no-store',
     props: sportsResultsProps,
     returns: {} as SportsResultsPage,
   },
