@@ -115,6 +115,7 @@ export function registeredLeaderboardSport(
   if (
     !market.publicRanked ||
     market.sportsFixture ||
+    market.sportsProvider === 'fixture' ||
     market.sportsEventId?.startsWith('fixture:')
   )
     return

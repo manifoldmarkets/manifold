@@ -497,6 +497,23 @@ describe('sports leaderboards', () => {
         { userId: 'bob', score: 200 },
         { userId: 'alice', score: 100 },
       ])
+      // An explicit fixture provider is sufficient even without a prefixed ID or flag.
+      await db.query(
+        "update contracts set data=data || $1::jsonb where id='nfl1'",
+        [JSON.stringify({ sportsProvider: 'fixture' })]
+      )
+      try {
+        await rebuildSportsLeaderboards(pg, NOW + 1000)
+        expect(
+          (await getSportsLeaderboards(pg, 'nfl', 'alice')).profit
+        ).toEqual([])
+      } finally {
+        await db.exec(
+          "update contracts set data=data - 'sportsProvider' where id='nfl1'"
+        )
+      }
+      await rebuildSportsLeaderboards(pg, NOW + 1000)
+
       await db.query(
         "delete from group_contracts where group_id=$1 and contract_id='nfl1'",
         [NFL]
