@@ -64,6 +64,7 @@ export function parseGolfTournament(
   tour: GolfTour,
   raw: unknown
 ): GolfTournament | null {
+  if (tour !== 'pga' && tour !== 'lpga') return null
   const c = calendar.safeParse(raw)
   if (!c.success) return null
   const { id, season, name } = c.data
@@ -104,16 +105,29 @@ export function parseGolfTournament(
   const rounds = t.rounds
     .slice()
     .sort((a, b) => a.round_number - b.round_number)
-  const unique =
-    new Set(rounds.map((r) => r.round_number)).size === rounds.length
+  const roundStates: Record<string, string> = {
+    OFFICIAL: 'final',
+    IN_PROGRESS: 'in_progress',
+    SUSPENDED: 'suspended',
+    NOT_STARTED: 'scheduled',
+    SCHEDULED: 'scheduled',
+  }
+  const coherent =
+    new Set(rounds.map((r) => r.round_number)).size === rounds.length &&
+    rounds.every(
+      (r) =>
+        r.status !== null &&
+        r.status_state !== null &&
+        roundStates[r.status] === r.status_state
+    )
   const underway = rounds.filter(
     (r) => r.status === 'IN_PROGRESS' || r.status === 'SUSPENDED'
   )
-  const current = unique && underway.length === 1 ? underway[0] : undefined
+  const current = coherent && underway.length === 1 ? underway[0] : undefined
   let state: GolfTournament['state'] = 'unavailable'
-  if (unique && current?.status === 'SUSPENDED') state = 'suspended'
+  if (coherent && current?.status === 'SUSPENDED') state = 'suspended'
   else if (
-    unique &&
+    coherent &&
     t.status === 'COMPLETED' &&
     t.status_state === 'final' &&
     rounds.length &&
@@ -121,14 +135,14 @@ export function parseGolfTournament(
   )
     state = 'final'
   else if (
-    unique &&
+    coherent &&
     t.status === 'IN_PROGRESS' &&
     t.status_state === 'in_progress' &&
     underway.length <= 1
   )
     state = 'live'
   else if (
-    unique &&
+    coherent &&
     !underway.length &&
     (t.status === 'NOT_STARTED' || t.status === 'SCHEDULED') &&
     t.status_state === 'scheduled'
@@ -217,7 +231,8 @@ export function projectGolfField(
     competitors = new Map<number, number>()
   const pending = new Set<number>(),
     rejected = new Set<number>()
-  const resultIds = new Set<number>()
+  const playersWithResults = new Set<number>()
+  const resultOwners = new Map<number, number>()
   let incomplete = false
   // A repeated or contradictory identity cannot produce a named quote or leaderboard row.
   function add(p: GolfPlayer, fromResults: boolean) {
@@ -240,7 +255,7 @@ export function projectGolfField(
     players.set(p.playerId, p)
     if (fromResults) {
       pending.delete(p.playerId)
-      resultIds.add(p.playerId)
+      playersWithResults.add(p.playerId)
     } else pending.add(p.playerId)
   }
   if (tournament.tour === 'pga') {
@@ -256,7 +271,7 @@ export function projectGolfField(
           playerId: player.id,
           competitorId: id,
           name: player.display_name,
-          state: 'entered',
+          state: tournament.state === 'scheduled' ? 'entered' : 'unknown',
           fieldPresent: null,
           position: null,
           toPar: null,
@@ -279,9 +294,23 @@ export function projectGolfField(
         scoring,
         thru,
       } = r.data
+      const previous = resultOwners.get(r.data.id)
+      if (previous !== undefined && previous !== c.player.id) {
+        rejected.add(previous)
+        rejected.add(c.player.id)
+        incomplete = true
+        continue
+      }
+      resultOwners.set(r.data.id, c.player.id)
+      const statusRank = golfRank(status)
       const state = playerState(status, position, true),
         rank = golfRank(position)
-      if (position_numeric !== null && position_numeric !== rank?.rank) {
+      if (
+        (position_numeric !== null && position_numeric !== rank?.rank) ||
+        (statusRank &&
+          rank &&
+          (statusRank.rank !== rank.rank || statusRank.tied !== rank.tied))
+      ) {
         incomplete = true
         rejected.add(c.player.id)
         continue
@@ -331,13 +360,13 @@ export function projectGolfField(
   }
   for (const id of rejected) {
     players.delete(id)
-    resultIds.delete(id)
+    playersWithResults.delete(id)
   }
   return {
     tournament,
     readStartedAt,
     incomplete,
-    hasResults: resultIds.size > 0,
+    hasResults: playersWithResults.size > 0,
     players: [...players.values()].sort(
       (a, b) =>
         (a.position?.rank ?? Infinity) - (b.position?.rank ?? Infinity) ||
@@ -357,7 +386,12 @@ export async function readGolfField(
   enabled: () => Promise<boolean> | boolean,
   now = Date.now
 ) {
+  if (tour !== 'pga' && tour !== 'lpga') return null
   const on = () => isSportsBdlEnabled() && enabled()
+  const disabled = new Error('Golf field phase disabled')
+  const beforeRequest = async () => {
+    if (!(await on())) throw disabled
+  }
   if (!(await on())) return null
   if (
     tour === 'lpga' &&
@@ -378,54 +412,71 @@ export async function readGolfField(
   // explicitly local fixture transport can exercise its two read endpoints.
   const reader = tour === 'lpga' ? createBdlClient({ role: 'codex' }) : client
   const expected = calendar.pick({ id: true, season: true })
-  const calendars = await reader.getAll<unknown>(
+  const read = (
+    path: string,
+    params: Parameters<Client['getAll']>[1],
+    maxPages: number,
+    matches: (row: unknown) => boolean
+  ) =>
+    reader
+      .getAll<unknown>(path, params, { maxPages, matches, beforeRequest })
+      .catch((error) => {
+        if (error === disabled) return null
+        throw error
+      })
+  const calendars = await read(
     tour === 'pga' ? '/pga/v2/tournaments' : '/lpga/v1/tournaments',
     {
       tournament_ids: [tournamentId],
       season,
       ...(tour === 'pga' ? { include_format: 'true' } : {}),
     },
-    {
-      maxPages: 1,
-      matches: (row) => {
-        const parsed = expected.safeParse(row)
-        return (
-          parsed.success &&
-          parsed.data.id === tournamentId &&
-          parsed.data.season === season
-        )
-      },
+    1,
+    (row) => {
+      const parsed = expected.safeParse(row)
+      return (
+        parsed.success &&
+        parsed.data.id === tournamentId &&
+        parsed.data.season === season
+      )
     }
   )
   const t =
-    calendars.length === 1 ? parseGolfTournament(tour, calendars[0]) : null
+    calendars?.length === 1 ? parseGolfTournament(tour, calendars[0]) : null
   if (!t || !(await on())) return null
   const matchRoster = z.object({ tournament_id: z.literal(tournamentId) })
   if (tour === 'lpga') {
-    const entries = await reader.getAll<unknown>(
+    const entries = await read(
       '/lpga/v1/entries',
       { tournament_id: tournamentId },
-      { maxPages: 4, matches: (row) => matchRoster.safeParse(row).success }
+      4,
+      (row) => matchRoster.safeParse(row).success
     )
-    return (await on()) ? projectGolfField(t, [], entries, seen) : null
+    return entries && (await on())
+      ? projectGolfField(t, [], entries, seen)
+      : null
   }
   if (!isOfficialGolfTournament(t)) return null
-  const roster = await client.getAll<unknown>(
+  const roster = await read(
     '/pga/v2/tournament_competitors',
     { tournament_id: tournamentId },
-    { maxPages: 4, matches: (row) => matchRoster.safeParse(row).success }
+    4,
+    (row) => matchRoster.safeParse(row).success
   )
-  if (!(await on())) return null
+  if (!roster || !(await on())) return null
   const matchResult = z.object({
     tournament: z.object({ id: z.literal(tournamentId) }),
   })
   const results =
     t.state === 'scheduled'
       ? []
-      : await client.getAll<unknown>(
+      : await read(
           '/pga/v2/tournament_results',
           { tournament_id: tournamentId },
-          { maxPages: 4, matches: (row) => matchResult.safeParse(row).success }
+          4,
+          (row) => matchResult.safeParse(row).success
         )
-  return (await on()) ? projectGolfField(t, roster, results, seen) : null
+  return results && (await on())
+    ? projectGolfField(t, roster, results, seen)
+    : null
 }

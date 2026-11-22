@@ -56,7 +56,11 @@ export type GolfPick = {
   name: string
   probability: number
   buyable: boolean
+  kind: 'winner' | 'top_n'
+  excludedPlayerIds?: readonly number[]
 }
+export const golfMarketLabel = (kind: GolfPick['kind']) =>
+  kind === 'winner' ? 'Tournament winner' : 'Finish in the top 10'
 /** Rebind the displayed contract, outcome and player before passing a pick on. */
 export function currentGolfPick(
   field: GolfField,
@@ -71,6 +75,14 @@ export function currentGolfPick(
       pick.eventId === selected.eventId &&
       pick.answerId === selected.answerId &&
       pick.playerId === selected.playerId &&
+      pick.kind === selected.kind &&
+      (pick.playerId !== null ||
+        (pick.excludedPlayerIds !== undefined &&
+          selected.excludedPlayerIds?.length ===
+            pick.excludedPlayerIds.length &&
+          pick.excludedPlayerIds.every(
+            (id, index) => id === selected.excludedPlayerIds?.[index]
+          ))) &&
       pick.name === selected.name &&
       pick.probability === selected.probability
   )
@@ -106,6 +118,7 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
     m.answers.filter((a) => a.isOther).length !== (winner ? 1 : 0)
   )
     return null
+  const kind = winner ? ('winner' as const) : ('top_n' as const)
   const fresh =
     Number.isFinite(now) &&
     Number.isSafeInteger(field.readStartedAt) &&
@@ -174,9 +187,18 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
         player.state === 'disqualified' ||
         player.state === 'cut' ||
         player.state === 'unknown' ||
+        (t.state === 'live' && player.state !== 'active') ||
         player.fieldPresent === false)
     picks.push({
       contractId: m.id,
+      kind,
+      ...(a.isOther
+        ? {
+            excludedPlayerIds: entrants
+              .filter((id): id is number => id !== null)
+              .sort((a, b) => a - b),
+          }
+        : {}),
       eventId: t.eventId,
       playerId: entrant,
       answerId: a.id,
@@ -200,7 +222,7 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
   )
     return null
   return {
-    kind: winner ? ('winner' as const) : ('top_n' as const),
+    kind,
     picks: picks.sort(
       (a, b) =>
         Number(a.playerId === null) - Number(b.playerId === null) ||

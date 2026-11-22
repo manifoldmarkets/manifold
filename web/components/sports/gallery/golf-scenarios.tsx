@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import type { GolfField, GolfPlayer, GolfTournament } from 'common/bdl/golf'
 import {
   currentGolfPick,
+  golfMarketLabel,
   type GolfMarket,
   type GolfPick,
 } from 'common/bdl/golf-market'
@@ -126,13 +127,15 @@ function GalleryPick({
 }) {
   const [amount, setAmount] = useState('10'),
     [receipt, setReceipt] = useState<number>()
-  const at = useGolfMarketTime(
+  const { now: at, readNow } = useGolfMarketTime(
     now,
     market.closeTime,
     field.readStartedAt,
     clock
   )
   const active = currentGolfPick(field, market, pick, at)
+  const proposition = golfMarketLabel(pick.kind)
+  const context = field.tournament.name + ' · ' + proposition
   const stake = Number(amount),
     valid = !!active && Number.isSafeInteger(stake) && stake > 0
   return (
@@ -141,10 +144,11 @@ function GalleryPick({
       setOpen={(open) => {
         if (!open) close()
       }}
-      ariaLabel={'Preview pick for ' + pick.name}
+      ariaLabel={'Preview pick for ' + pick.name + ' · ' + context}
       className={MODAL_CLASS}
       size="sm"
     >
+      <p className="text-ink-600 text-sm">{context}</p>
       <h3 className="text-ink-900 text-lg font-semibold">{pick.name}</h3>
       <p className="text-ink-600 text-sm">
         Gallery ticket · {formatSportsPrice(pick.probability)}
@@ -154,10 +158,7 @@ function GalleryPick({
           className="mt-4 grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
-            if (
-              valid &&
-              currentGolfPick(field, market, pick, Math.max(at, clock()))
-            )
+            if (valid && currentGolfPick(field, market, pick, readNow()))
               setReceipt(stake)
           }}
         >
@@ -186,7 +187,7 @@ function GalleryPick({
         </form>
       ) : (
         <p className="text-ink-800 mt-3" role="status">
-          {formatMoney(receipt)} preview for {pick.name}
+          {formatMoney(receipt)} preview for {pick.name} · {context}
         </p>
       )}
     </Modal>
@@ -195,7 +196,7 @@ function GalleryPick({
 export default function GolfScenarios() {
   const [scenario, setScenario] = useState<Scenario>('Live leaderboard'),
     [pick, setPick] = useState<GolfPick>()
-  const [openedAt] = useState(Date.now)
+  const [openedAt, setOpenedAt] = useState(Date.now)
   const clock = useCallback(() => now + (Date.now() - openedAt), [openedAt])
   const { field, source } = sample(scenario)
   return (
@@ -211,6 +212,7 @@ export default function GolfScenarios() {
               const next = scenarios.find((s) => s === e.target.value)
               if (next) {
                 setPick(undefined)
+                setOpenedAt(Date.now())
                 setScenario(next)
               }
             }}

@@ -264,7 +264,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
 
   const get = async (
     path: string,
-    params: BdlParams = {}
+    params: BdlParams = {},
+    beforeRequest?: () => Promise<void>
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
     const slug = matchBdlEndpoint(path)?.league
@@ -284,6 +285,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     for (let attemptIndex = 0; ; attemptIndex++) {
       if (!(await leagueIsOn(slug)))
         throw new Error('[sports-bdl-client] League disabled')
+      if (beforeRequest) await beforeRequest()
       await limiter.acquire(
         rate,
         options.acquireSharedSlot,
@@ -296,6 +298,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
       )
       let requestedAt = clock.now()
       const send = async () => {
+        if (beforeRequest) await beforeRequest()
         requestedAt = clock.now()
         if (fixture) return fixture(path, params)
         try {
@@ -389,7 +392,15 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   const getAll = async <T>(
     path: string,
     params: BdlParams,
-    { maxPages, matches }: { maxPages: number; matches: (row: T) => boolean }
+    {
+      maxPages,
+      matches,
+      beforeRequest,
+    }: {
+      maxPages: number
+      matches: (row: T) => boolean
+      beforeRequest?: () => Promise<void>
+    }
   ): Promise<T[]> => {
     if (!Number.isSafeInteger(maxPages) || maxPages < 1)
       throw new Error('[sports-bdl-client] Invalid page cap')
@@ -407,7 +418,7 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         ...params,
         ...(cursor != null ? { cursor } : {}),
       }
-      const { body } = await get(path, pageParams)
+      const { body } = await get(path, pageParams, beforeRequest)
       const page = body as {
         data?: T[]
         meta?: { next_cursor?: unknown }

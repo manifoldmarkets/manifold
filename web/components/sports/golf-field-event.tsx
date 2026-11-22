@@ -3,6 +3,7 @@ import type { GolfField, GolfPlayer } from 'common/bdl/golf'
 import {
   currentGolfPick,
   golfMarketView,
+  golfMarketLabel,
   type GolfMarket,
   type GolfPick,
 } from 'common/bdl/golf-market'
@@ -86,7 +87,14 @@ export function useGolfMarketTime(
       window.removeEventListener('focus', refresh)
     }
   }, [close, readAt, clock])
-  return Math.max(initial, tick)
+  const now = Math.max(initial, tick)
+  // Apply the same wall-clock observation to both the action and its visible state.
+  const readNow = () => {
+    const at = Math.max(now, clock())
+    setTick((previous) => Math.max(previous, at))
+    return at
+  }
+  return { now, readNow }
 }
 export function FieldEvent({
   field,
@@ -102,7 +110,8 @@ export function FieldEvent({
   onPick?: (pick: GolfPick) => void
 }) {
   const [expanded, setExpanded] = useState(false)
-  const now = useGolfMarketTime(
+  const [focusedPrice, setFocusedPrice] = useState<string>()
+  const { now, readNow } = useGolfMarketTime(
     initial,
     market.closeTime,
     field.readStartedAt,
@@ -125,6 +134,16 @@ export function FieldEvent({
     now - field.readStartedAt >= LIVE_STALE_MS
   const state =
     t.state === 'live' && stale ? 'Awaiting update' : statusName[t.state]
+  const tradingStatus =
+    market.isResolved || market.resolution
+      ? 'Resolved market · pool prices'
+      : !Number.isFinite(market.closeTime) || market.closeTime! <= now
+      ? 'Closed market · pool prices'
+      : !view.picks.some((p) => p.buyable)
+      ? stale
+        ? 'Trading on hold · field update expired'
+        : 'Trading on hold'
+      : ''
   return (
     <section
       aria-label={t.name}
@@ -144,20 +163,13 @@ export function FieldEvent({
         {t.course && <p className="text-ink-600 text-sm">{t.course}</p>}
       </header>
       <div className="space-y-3 px-4 py-4 sm:px-6">
-        <h3 className="font-semibold">
-          {view.kind === 'winner'
-            ? 'Tournament winner'
-            : 'Finish in the top 10'}
-        </h3>
-        {market.isResolved || market.resolution ? (
-          <p className="text-ink-600 text-sm">Resolved market · pool prices</p>
-        ) : !Number.isFinite(market.closeTime) || market.closeTime! <= now ? (
-          <p className="text-ink-600 text-sm">Closed market · pool prices</p>
-        ) : (
-          !view.picks.some((p) => p.buyable) && (
-            <p className="text-ink-600 text-sm">Trading on hold</p>
-          )
-        )}
+        <h3 className="font-semibold">{golfMarketLabel(view.kind)}</h3>
+        <p
+          role="status"
+          className={tradingStatus ? 'text-ink-600 text-sm' : 'sr-only'}
+        >
+          {tradingStatus}
+        </p>
         <ul className="divide-ink-100 divide-y">
           {prices.map((p) => (
             <li
@@ -170,23 +182,32 @@ export function FieldEvent({
                   {pickStanding(field, p.playerId)}
                 </span>
               </span>
-              {p.buyable && onPick ? (
+              {onPick && (p.buyable || focusedPrice === p.answerId) ? (
                 <button
                   type="button"
+                  aria-disabled={!p.buyable || undefined}
+                  onFocus={() => setFocusedPrice(p.answerId)}
+                  onBlur={() => setFocusedPrice(undefined)}
                   aria-label={
                     p.name +
                     ', ' +
                     formatSportsPrice(p.probability) +
                     ', ' +
-                    (view.kind === 'winner' ? 'tournament winner' : 'top 10')
+                    (view.kind === 'winner' ? 'tournament winner' : 'top 10') +
+                    (p.buyable ? '' : ', unavailable')
                   }
-                  className="bg-primary-100 text-primary-800 hover:bg-primary-200 min-h-[44px] min-w-[76px] rounded-md px-3 text-right text-lg font-bold tabular-nums"
+                  className={
+                    'min-h-[44px] min-w-[76px] rounded-md px-3 text-right text-lg font-bold tabular-nums ' +
+                    (p.buyable
+                      ? 'bg-primary-100 text-primary-800 hover:bg-primary-200'
+                      : 'text-ink-600')
+                  }
                   onClick={() => {
                     const selected = currentGolfPick(
                       field,
                       market,
                       p,
-                      Math.max(now, clock())
+                      readNow()
                     )
                     if (selected) onPick(selected)
                   }}

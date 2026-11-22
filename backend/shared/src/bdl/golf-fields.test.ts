@@ -144,6 +144,8 @@ it('attaches a separately returned standing only to the matching player and even
   })
   for (const bad of [
     { ...sample, position_numeric: 3 },
+    { ...sample, status: 'T11' },
+    { ...sample, status: '4' },
     { ...sample, competitor: { ...sample.competitor, id: 123 } },
     {
       ...sample,
@@ -233,6 +235,88 @@ it('keeps genuine zero separate from missing score or strokes', () => {
     expect(field.players[0].toPar).toBeNull()
   }
 })
+
+it('requires consistent status and state for each PGA round', () => {
+  const raw = {
+    ...pga.find((x) => x.id === 6904),
+    status: 'IN_PROGRESS',
+    status_state: 'in_progress',
+  }
+  const parse = (status: string, status_state: string) =>
+    parseGolfTournament('pga', {
+      ...raw,
+      rounds: [{ round_number: 2, status, status_state }],
+    })
+  expect(parse('IN_PROGRESS', 'in_progress')).toMatchObject({
+    state: 'live',
+    round: 2,
+  })
+  for (const [status, state] of [
+    ['IN_PROGRESS', 'suspended'],
+    ['SUSPENDED', 'in_progress'],
+    ['OFFICIAL', 'in_progress'],
+    ['NOT_STARTED', 'final'],
+  ])
+    expect(parse(status, state)).toMatchObject({
+      state: 'unavailable',
+      round: null,
+    })
+})
+
+it('holds both players when a PGA result identifier is reused, in either order', () => {
+  const next = {
+    ...sample,
+    competitor: {
+      id: 3322,
+      type: 'PLAYER',
+      player: { id: 17, display_name: 'Second player' },
+    },
+  }
+  for (const pair of [
+    [sample, next],
+    [next, sample],
+  ]) {
+    const field = projectGolfField(tournament('pga', 6905), [], pair, time)
+    expect(field).toMatchObject({
+      hasResults: false,
+      incomplete: true,
+      players: [],
+    })
+  }
+  expect(
+    projectGolfField(
+      tournament('pga', 6905),
+      [],
+      [sample, { ...next, id: 201 }],
+      time
+    ).players
+  ).toHaveLength(2)
+})
+
+it.each([
+  ['WD', 'withdrawn'],
+  ['DQ', 'disqualified'],
+])(
+  'requires fresh positive evidence after %s disappears from live results',
+  (raw, state) => {
+    const t = { ...tournament('pga', 6905), state: 'live' as const }
+    const player = (result: unknown[]) =>
+      projectGolfField(t, roster, result, time).players.find(
+        (p) => p.playerId === 235
+      )
+    expect(
+      player([
+        { ...sample, status: raw, position: raw, position_numeric: null },
+      ])?.state
+    ).toBe(state)
+    expect(player([])?.state).toBe('unknown')
+    expect(player([sample])?.state).toBe('active')
+    expect(
+      projectGolfField({ ...t, state: 'scheduled' }, roster, [], time)
+        .players[0].state
+    ).toBe('entered')
+  }
+)
 
 function transport(pages: unknown[][], after?: () => void) {
   let clock = time
@@ -324,6 +408,60 @@ it('classifies only the three PGA v2 field routes for service accounting', () =>
     expect(bdlStatsEndpoint('/nba/v1/' + resource)).toBeUndefined()
   }
 })
+it.each(['LPGA', 'foo', 'PGA', ' pga'])(
+  'does not dispatch unsupported runtime tour %s',
+  async (value) => {
+    const { client, get } = transport([])
+    expect(
+      await readGolfField(
+        client,
+        value as GolfTournament['tour'],
+        6904,
+        2026,
+        () => true
+      )
+    ).toBeNull()
+    expect(
+      parseGolfTournament(value as GolfTournament['tour'], pga[0])
+    ).toBeNull()
+    expect(get).not.toHaveBeenCalled()
+  }
+)
+
+it.each([200, 503])(
+  'stops before a further page or retry after phase disable on HTTP %i',
+  async (status) => {
+    let on = true
+    const get = jest.fn(async (url: string) => {
+      if (url.includes('/tournament_competitors')) {
+        on = false
+        return new Response(
+          JSON.stringify({ data: [], meta: { next_cursor: 4 } }),
+          { status }
+        )
+      }
+      return new Response(
+        JSON.stringify({ data: pga.filter((t) => t.id === 6904) })
+      )
+    })
+    let ticks = time
+    const client = createBdlClient({
+      role: 'api',
+      key: 'synthetic-offline-golf',
+      enabledLeagues: new Set(['pga']),
+      transport: get,
+      clock: {
+        now: () => ticks,
+        sleep: async (ms) => {
+          ticks += ms
+        },
+      },
+    })
+    expect(await readGolfField(client, 'pga', 6904, 2026, () => on)).toBeNull()
+    expect(get).toHaveBeenCalledTimes(2)
+  }
+)
+
 it('sends zero requests for disabled PGA or held LPGA', async () => {
   const { client, get } = transport([])
   expect(await readGolfField(client, 'pga', 6904, 2026, () => false)).toBeNull()

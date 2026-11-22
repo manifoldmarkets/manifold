@@ -109,6 +109,58 @@ it('rechecks the clicked player or Other against the live cutoff, source, native
   }
 })
 
+it('rebinds market kind for every pick and the named field excluded by Other', () => {
+  const picks = golfMarketView(field, market, now)!.picks
+  const other = picks.find((p) => p.playerId === null)!
+  const withThird = { ...field, players: [...field.players, named(3, 'Casey')] }
+  const remapped = {
+    ...market,
+    sportsEntrantIds: [1, 3, null],
+    answers: market.answers.map((a) =>
+      a.index === 1 ? { ...a, text: 'Casey' } : a
+    ),
+  }
+  expect(currentGolfPick(withThird, remapped, other, now)).toBeUndefined()
+  expect(currentGolfPick(withThird, remapped, picks[0], now)).toEqual(picks[0])
+  const reordered = {
+    ...market,
+    sportsEntrantIds: [2, 1, null],
+    answers: market.answers
+      .map((a) => (a.isOther ? a : { ...a, index: 1 - a.index }))
+      .reverse(),
+  }
+  expect(currentGolfPick(field, reordered, other, now)).toEqual(other)
+  const top = {
+    ...market,
+    sportsMarketType: 'top_n',
+    topN: 10,
+    shouldAnswersSumToOne: false,
+    sportsEntrantIds: [1, 2],
+    answers: market.answers.filter((a) => !a.isOther),
+  }
+  const topPick = golfMarketView(field, top, now)!.picks[0]
+  expect(currentGolfPick(field, top, picks[0], now)).toBeUndefined()
+  expect(currentGolfPick(field, market, topPick, now)).toBeUndefined()
+})
+it('requires active evidence for a live named quote; a scheduled roster entry suffices', () => {
+  const entered = {
+    ...field,
+    players: field.players.map((p) => ({ ...p, state: 'entered' as const })),
+  }
+  expect(
+    golfMarketView(entered, market, now)
+      ?.picks.filter((p) => p.playerId !== null)
+      .every((p) => !p.buyable)
+  ).toBe(true)
+  expect(
+    golfMarketView(
+      { ...entered, tournament: { ...field.tournament, state: 'scheduled' } },
+      market,
+      now
+    )?.picks.every((p) => p.buyable)
+  ).toBe(true)
+})
+
 it('requires unique exact event, positions, IDs, and participant labels', () => {
   const s = { ...market },
     a = s.answers
