@@ -31,6 +31,60 @@ const states = {
 }
 const href = (b: UfcMarketBout) => `/${b.creatorUsername}/${b.slug}`
 
+function CardDate({ date, local }: { date: string; local: boolean }) {
+  // The provider publishes a card date without a timezone. Keep its calendar day everywhere.
+  const ms = Date.parse(date + 'T00:00:00Z')
+  if (!Number.isFinite(ms)) return null
+  return (
+    <time dateTime={date}>
+      {new Intl.DateTimeFormat(local ? undefined : 'en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(ms)}
+    </time>
+  )
+}
+
+function SegmentLabel({
+  segment,
+  bouts,
+  local,
+}: {
+  segment: (typeof UFC_SEGMENTS)[number]
+  bouts: UfcMarketBout[]
+  local: boolean
+}) {
+  const starts = new Set(
+    bouts
+      .filter((b) => b.segment === segment && b.segmentStart != null)
+      .map((b) => b.segmentStart)
+  )
+  const [at] = starts
+  return (
+    <>
+      {segments[segment]}
+      {starts.size === 1 && at != null && (
+        <>
+          {' '}
+          · Segment start{' '}
+          <time dateTime={new Date(at).toISOString()}>
+            {new Intl.DateTimeFormat(local ? undefined : 'en-US', {
+              weekday: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZoneName: 'short',
+              timeZone: local ? undefined : 'UTC',
+            }).format(at)}
+          </time>
+        </>
+      )}
+    </>
+  )
+}
+
 function finalText(b: UfcMarketBout) {
   const pick = b.answers.find((a) => a.answerId === b.winnerAnswerId)
   return [
@@ -94,7 +148,17 @@ function BoutRow({
           href={href(b)}
           className="text-ink-900 font-semibold hover:underline"
         >
-          {featured ?? states[b.status]}
+          {b.status === 'in_progress' ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-bold text-red-600 dark:text-red-400">
+              <span
+                aria-hidden
+                className="h-2 w-2 rounded-full bg-red-500 motion-safe:animate-pulse"
+              />
+              Live
+            </span>
+          ) : (
+            featured ?? states[b.status]
+          )}
         </Link>
         {b.headline && <span>Main event</span>}
         {b.titleFight && <span>Title fight</span>}
@@ -222,7 +286,7 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
           >
             <header className="bg-canvas-50 border-ink-200 border-b px-3 py-3">
               <div className="text-ink-600 text-xs font-semibold">
-                UFC · <time dateTime={c.date}>{c.date}</time>
+                UFC · <CardDate date={c.date} local={now !== 0} />
               </div>
               <h2 className="text-ink-900 mt-1 break-words text-lg font-semibold">
                 {c.name}
@@ -244,6 +308,16 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
             {!archive && recent && (
               <ResultLine bout={recent} last={confirmedLast && !c.partial} />
             )}
+            {featured?.segment &&
+              !listed.some((b) => b.segment === featured.segment) && (
+                <h3 className="bg-canvas-50 text-ink-600 px-3 py-1.5 text-xs font-semibold">
+                  <SegmentLabel
+                    segment={featured.segment}
+                    bouts={c.bouts}
+                    local={now !== 0}
+                  />
+                </h3>
+              )}
             {featured && (
               <BoutRow
                 b={featured}
@@ -258,7 +332,11 @@ export function UfcFightCards({ cards }: { cards: UfcMarketCard[] }) {
               return (
                 <div key={segment}>
                   <h3 className="bg-canvas-50 text-ink-600 px-3 py-1.5 text-xs font-semibold">
-                    {segments[segment]}
+                    <SegmentLabel
+                      segment={segment}
+                      bouts={c.bouts}
+                      local={now !== 0}
+                    />
                   </h3>
                   {rows.map((b) =>
                     b.status === 'final' ? (
