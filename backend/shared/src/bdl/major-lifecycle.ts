@@ -227,7 +227,10 @@ export async function runMajorLifecycle(
             isLeagueEnabled: async (asked) => asked === league && authorized(),
           })
         const requestedAt = clock.now()
-        const malformed = new Map<number, number | undefined>()
+        const malformed = new Map<
+          number,
+          { revision?: number; partiallyVersioned: boolean }
+        >()
         const unavailable = new Set<number>()
         const receipts = new Map<number, BdlReadInterval>()
         let games: Awaited<ReturnType<typeof fetchMajorSnapshots>>
@@ -241,15 +244,8 @@ export async function runMajorLifecycle(
             })),
             {
               standings: job === 'sync',
-              onMalformed: (id, revision) => {
-                const prior = malformed.get(id)
-                malformed.set(
-                  id,
-                  revision === undefined
-                    ? prior
-                    : Math.max(prior ?? 0, revision)
-                )
-              },
+              onMalformed: (id, revision, partiallyVersioned = false) =>
+                malformed.set(id, { revision, partiallyVersioned }),
               onUnavailable: (id) => unavailable.add(id),
               onReceipt: (id, interval) => {
                 const prior = receipts.get(id)
@@ -285,6 +281,13 @@ export async function runMajorLifecycle(
           string,
           Awaited<ReturnType<typeof fetchMajorGames>>
         >()
+        type Writes = Awaited<ReturnType<typeof recordMajorObservation>>
+        const persisted: {
+          m: MajorMarket
+          id: number
+          changes: Writes
+          refine?: () => Promise<Writes>
+        }[] = []
         for (const { m, id } of targets) {
           if (!current()) break
           try {
@@ -324,20 +327,40 @@ export async function runMajorLifecycle(
                 job === 'watch',
                 job === 'sync',
                 malformed.has(id),
-                malformed.get(id),
-                refineMissing
+                malformed.get(id)?.revision,
+                refineMissing,
+                malformed.get(id)?.partiallyVersioned
               )
-            // Revoke any outstanding payout before a second provider lookup can fail or stall.
-            let changes = await record(false)
-            if (
-              changes.length &&
-              !game &&
-              !malformed.has(id) &&
-              job === 'sync' &&
-              Number.isFinite(start) &&
-              start < at &&
-              current()
-            ) {
+            // Persist the whole verified batch before any second network request or payout.
+            const changes = await record(false)
+            if (changes.length)
+              persisted.push({
+                m,
+                id,
+                changes,
+                refine:
+                  !game &&
+                  !malformed.has(id) &&
+                  job === 'sync' &&
+                  Number.isFinite(start) &&
+                  start < at
+                    ? () => record(true, true)
+                    : undefined,
+              })
+          } catch (error) {
+            result.errors++
+            log.error('[sports-bdl-' + league + '] game observation failed', {
+              id,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+        }
+        for (const item of persisted) {
+          const { m, id, refine } = item
+          let changes = item.changes
+          try {
+            if (refine && current()) {
+              const start = parseSportsKickoffMs(m.sportsStartTimestamp)
               try {
                 const date = etDate.format(start)
                 let candidates = replacements.get(date)
@@ -360,7 +383,7 @@ export async function runMajorLifecycle(
                         BDL_REISSUED_EVENT_MATCH_WINDOW_MS
                   )
                 ) {
-                  const refined = await record(true, true)
+                  const refined = await refine()
                   if (refined.length) changes = refined
                 }
               } catch {

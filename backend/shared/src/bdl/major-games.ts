@@ -285,11 +285,19 @@ export function mapMajorGame(
     league === 'nhl' ? row.game_state : undefined,
   ]
   const contradicted = descriptions.some((value) => {
-    if (typeof value !== 'string') return false
+    if (typeof value !== 'string')
+      return league === 'wnba' && status === 'canceled' && value === row.status
     const label = normalizeResultLabel(value)
     // WNBA uses 'post' for both played finals and unplayed canceled games.
-    if (league === 'wnba' && status === 'canceled' && label === 'post')
-      return row.period !== 0 || homeScore !== 0 || awayScore !== 0
+    if (league === 'wnba' && status === 'canceled') {
+      if (/^(?:game )?cancell?ed$/.test(label)) return false
+      return (
+        label !== 'post' ||
+        row.period !== 0 ||
+        homeScore !== 0 ||
+        awayScore !== 0
+      )
+    }
     if (
       /^(?:live|pre|fut|crit)$/.test(label) ||
       /^(?:game )?(?:cancelled|canceled|postponed|suspended|delayed|scheduled|in progress)\b/.test(

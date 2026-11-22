@@ -1079,3 +1079,113 @@ it('binds an identified malformed NFL revision and timing to its own HTTP page',
   })
   expect(clock).toBe(t + 1002)
 })
+
+it('holds played WNBA cancellations with completed or unfamiliar wording and preserves explicit cancellation', () => {
+  const final = fixture('wnba', 'games').data[0]
+  for (const status of [
+    'Completed',
+    'COMPLETE',
+    'Undetermined',
+    null,
+    undefined,
+  ])
+    expect(
+      reviewedResult(
+        'wnba',
+        mapMajorGame('wnba', { ...final, status, status_state: 'canceled' })
+      ).record
+    ).toBeUndefined()
+  expect(
+    reviewedResult(
+      'wnba',
+      mapMajorGame('wnba', {
+        ...final,
+        status: 'Game canceled',
+        status_state: 'canceled',
+      })
+    ).record?.status
+  ).toBe('canceled')
+})
+
+it('reports whether every duplicate NFL row carries a comparable revision in either order', async () => {
+  const raw = fixture('nfl', 'games').data[0],
+    ts = Date.parse('2026-11-22T20:00:00Z')
+  for (const reverse of [false, true]) {
+    const date = String(raw.date),
+      id = Number(raw.id)
+    const batch = [
+      { ...raw, updated_at: new Date(ts - 2000).toISOString() },
+      { ...raw, updated_at: null, visitor_team_score: 23 },
+    ]
+    if (reverse) batch.reverse()
+    let clock=ts
+    const client = createBdlClient({
+      role: 'recorder',
+      key: 'fixture',
+      clock: { now: () => clock, sleep: async (ms) => {clock+=ms} },
+      transport: async (input) =>
+        new Response(
+          JSON.stringify({
+            data: String(input).includes('/games/')
+              ? { ...raw, id: id + 1 }
+              : batch,
+          })
+        ),
+    })
+    const held = jest.fn()
+    await fetchMajorSnapshots(
+      client,
+      'nfl',
+      [
+        { id, startTime: date },
+        { id: id + 1, startTime: date },
+      ],
+      { onMalformed: held, onReceipt: () => {} }
+    )
+    expect(held).toHaveBeenCalledWith(id, ts - 2000, true)
+  }
+})
+
+it('timestamps an absent NHL ID at the completed game collection before optional standings', async () => {
+  const row = fixture('nhl', 'games').data[0],
+    id = Number(row.id)
+  let t = Date.parse('2026-11-22T20:00:00Z')
+  const start = t
+  const client = createBdlClient({
+    role: 'recorder',
+    key: 'fixture',
+    clock: {
+      now: () => t,
+      sleep: async (ms) => {
+        t += ms
+      },
+    },
+    transport: async (input) => {
+      const u = new URL(String(input))
+      if (u.pathname.endsWith('/standings')) {
+        t += 5000
+        return new Response(JSON.stringify({ data: [] }))
+      }
+      t += 10
+      return new Response(
+        JSON.stringify(
+          u.searchParams.has('cursor')
+            ? { data: [] }
+            : { data: [row], meta: { next_cursor: 2 } }
+        )
+      )
+    },
+  })
+  const seen = jest.fn()
+  await fetchMajorSnapshots(client, 'nhl', [{ id }, { id: id + 1 }], {
+    onReceipt: seen,
+    standings: true,
+  })
+  const missing = seen.mock.calls.filter(([i]) => i === id + 1)
+  expect(missing).toHaveLength(1)
+  expect(missing[0][1].requestedAt).toBe(start)
+  expect(missing[0][1].receivedAt).toBeLessThan(t - 4999)
+  expect(missing[0][1].receivedAt).toBeGreaterThan(
+    seen.mock.calls.find(([i]) => i === id)![1].receivedAt
+  )
+})

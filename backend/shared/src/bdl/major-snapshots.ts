@@ -96,7 +96,11 @@ export async function fetchMajorSnapshots(
   targets: readonly Target[],
   options: {
     standings?: boolean
-    onMalformed?: (id: number, revision?: number) => void
+    onMalformed?: (
+      id: number,
+      revision?: number,
+      partiallyVersioned?: boolean
+    ) => void
     onUnavailable?: (id: number) => void
     onReceipt?: (id: number, interval: BdlReadInterval) => void
   } = {}
@@ -110,6 +114,7 @@ export async function fetchMajorSnapshots(
   }
   const invalid = new Set<number>()
   const revisions = new Map<number, number>()
+  const unversioned = new Set<number>()
   const intervals = new Map<unknown, BdlReadInterval>()
   const onPage =
     options.onReceipt &&
@@ -127,7 +132,9 @@ export async function fetchMajorSnapshots(
     if (!options.onMalformed) throw error
     result.delete(id)
     invalid.add(id)
-    options.onMalformed(id, revisions.get(id))
+    if (unversioned.has(id) && revisions.has(id))
+      options.onMalformed(id, revisions.get(id), true)
+    else options.onMalformed(id, revisions.get(id))
   }
   function accept(row: unknown, id: number) {
     const revision = majorSourceRevision(league, row)
@@ -137,6 +144,7 @@ export async function fetchMajorSnapshots(
       (received === undefined || revision <= received)
     )
       revisions.set(id, Math.max(revisions.get(id) ?? 0, revision))
+    else unversioned.add(id)
     if (invalid.has(id) || malformedDates.has(row)) {
       reject(id, new Error('Unconfirmed or duplicate game'))
       return
@@ -154,16 +162,38 @@ export async function fetchMajorSnapshots(
     // NHL has game_ids[] on the collection and no single-game route.
     for (const group of chunk([...ids], 50)) {
       const expected = new Set(group)
+      let collection: BdlReadInterval | undefined
       const rows = await client.getAll<unknown>(
         base,
         { game_ids: group },
         {
           maxPages: 10,
-          onPage,
+          onPage:
+            onPage &&
+            ((page, interval) => {
+              onPage(page, interval)
+              collection = {
+                requestedAt: Math.min(
+                  collection?.requestedAt ?? interval.requestedAt,
+                  interval.requestedAt
+                ),
+                receivedAt: Math.max(
+                  collection?.receivedAt ?? interval.receivedAt,
+                  interval.receivedAt
+                ),
+              }
+            }),
           matches: (row) => expected.has(Number(object(row)?.id)),
         }
       )
-      for (const row of rows) accept(row, Number(object(row)?.id))
+      for (const row of rows) {
+        const id = Number(object(row)?.id)
+        expected.delete(id)
+        accept(row, id)
+      }
+      // Only a completely validated collection can certify absence.
+      if (collection)
+        for (const id of expected) options.onReceipt?.(id, collection)
     }
   } else {
     // Query a shared slate once when multiple targets have known kickoff dates.

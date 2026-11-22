@@ -40,6 +40,8 @@ export type MajorPatch = Partial<SportsLiveScore> & {
   sportsLatestPossibleStartTimestamp?: string
   sportsFirstFinalHash?: string
   sportsRevisionWatermark?: number
+  sportsRevisionReviewThroughMs?: number
+  sportsResultDisputed?: true
   sportsObservationRevision?: number | null
   sportsObservationStartedAt?: number
   sportsLastObservationKey?: string
@@ -208,13 +210,16 @@ export function majorChange(
     (settled || parseSportsKickoffMs(m.sportsStartTimestamp) <= at)
   )
     incident =
-      flags.replacement || m.sportsAttentionReason === 'possible-reid'
+      flags.replacement ||
+      incidentFromKey(m.sportsIncidentKey)?.reason === 'possible-reid' ||
+      m.sportsAttentionReason === 'possible-reid'
         ? 'possible-reid'
         : 'missing game'
   else if (game && !matchesEntrants(m, game)) incident = 'unexpected entrants'
   else if (
     game?.status === 'final' &&
-    parseSportsKickoffMs(game.startTime ?? m.sportsStartTimestamp) > at
+    parseSportsKickoffMs(game.startTime ?? m.sportsStartTimestamp) >
+      (flags.receivedAt ?? at)
   )
     incident = 'irregular result'
   else if (m.sportsRecordedResult?.status === 'final' && !decision.record)
@@ -373,14 +378,20 @@ export function majorChange(
       }
       if (!baseline && decision.record?.status === 'final')
         patch.sportsFirstFinalHash = hash!
-      if ((baseline && baseline !== hash) || (m.sportsResultHash && !same))
+      if ((baseline && baseline !== hash) || (m.sportsResultHash && !same)) {
         incident = 'result corrected'
+        patch.sportsResultDisputed = true
+      }
     }
     if (
+      m.sportsResultDisputed ||
       m.sportsAttentionReason === 'result corrected' ||
       m.sportsAttentionReason === 'conflicting sibling results'
     )
-      incident = m.sportsAttentionReason
+      incident =
+        m.sportsAttentionReason === 'conflicting sibling results'
+          ? 'conflicting sibling results'
+          : 'result corrected'
   }
   if (!settled) {
     if (patch.sportsObservedStartTime) change.signal = 'started'
@@ -407,6 +418,22 @@ export function majorChange(
       change.signal = 'moved-earlier'
   }
   if (incident) {
+    // Provider timestamps are stored to milliseconds. Two revisions inside a
+    // disputed millisecond cannot establish that the later, healthy row won.
+    if (
+      trustedRevision &&
+      !settled &&
+      (flags.malformed ||
+        flags.orderingIssue ||
+        (observation && !hasConfirmedEntrants(observation)) ||
+        incident === 'unexpected entrants' ||
+        incident === 'invalid final scores' ||
+        incident === 'irregular result')
+    )
+      patch.sportsRevisionReviewThroughMs = Math.max(
+        m.sportsRevisionReviewThroughMs ?? 0,
+        revision
+      )
     markMajorIncident(m, change, incident, at, decision.record)
     delete change.record
   } else if (m.sportsIncidentKey) {
@@ -468,7 +495,10 @@ export function markMajorIncident(
     change.patch.sportsAttentionReason = reason
     change.patch.sportsAttentionSince = since
   }
-  if (prior?.reason === reason && prior.detail === detail) return
+  if (prior?.reason === reason && prior.detail === detail) {
+    change.patch.sportsIncidentKey = m.sportsIncidentKey
+    return
+  }
   change.patch.sportsIncidentKey = JSON.stringify([
     reason,
     since,

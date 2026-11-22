@@ -28,7 +28,8 @@ import {
   settleRecordedMajor,
 } from './major-lifecycle-store'
 import { fetchMajorSnapshots } from './major-snapshots'
-import type { MajorMarket } from './major-result'
+import { majorSourceRevision } from './major-games'
+import { majorPayout, reviewedResult, type MajorMarket } from './major-result'
 import type { User } from 'common/user'
 
 jest.mock('../supabase/init', () => ({
@@ -1283,4 +1284,207 @@ it('keeps a healthy terminal game when another exact detail read fails', async (
   } finally {
     failed.mockRestore()
   }
+})
+
+it('withholds the original final offer across a disputed unpaid sibling', async () => {
+  const { m, t, final, write } = await observedFixture()
+  await write({ ...final, scoreUpdatedTime: t + 4 }, 4, 5)
+  await write({ ...final, homeScore: 2, scoreUpdatedTime: t + 10 }, 10, 11)
+  expect((await loadMarket('one')).sportsAttentionReason).toBe(
+    'result corrected'
+  )
+  await addMarket({ ...m }, 'second', ['Northport Foxes', 'Lake City Owls'])
+  const decisions = await write({ ...final, scoreUpdatedTime: t + 4 }, 12, 13)
+  expect(decisions.map((r) => r.payout)).toEqual([undefined])
+  // Even an independently held, already produced offer is checked at commit.
+  const old = {
+    ...(await loadMarket('second')),
+    sportsAttentionReason: undefined,
+    sportsFinalSince: t,
+    sportsResultHash: (await loadMarket('one')).sportsFirstFinalHash,
+  }
+  const target = {
+    ...old,
+    sportsRecordedResult: reviewedResult('nba', final).record,
+  } as MajorMarket
+  now = t + 30
+  expect(majorPayout(target, target.sportsRecordedResult!, now)).toBeDefined()
+  expect(majorPayout({...target,sportsResultDisputed:true},target.sportsRecordedResult!,now)).toBeUndefined()
+
+  expect(
+    await settleRecordedMajor(
+      pg,
+      target,
+      'nba',
+      target.sportsRecordedResult!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).toBe(false)
+  expect(resolveMarketHelper).not.toHaveBeenCalled()
+})
+
+it('withholds a mixed-version duplicate while ignoring an entirely older duplicate group', async () => {
+  const { m, t, final, write } = await observedFixture()
+  await write({ ...final, scoreUpdatedTime: t + 20 }, 20, 21)
+  const duplicate = (mixed: boolean) =>
+    recordMajorObservation(
+      pg,
+      house,
+      'nba',
+      m.sportsEventId,
+      undefined,
+      t + 30,
+      t + 31,
+      false,
+      () => true,
+      false,
+      false,
+      true,
+      t + 10,
+      false,
+      mixed
+    )
+  expect(await duplicate(false)).toEqual([])
+  expect((await loadMarket('one')).sportsRecordedResult?.status).toBe('final')
+  const [held] = await duplicate(true)
+  expect(held?.payout).toBeUndefined()
+  expect(await loadMarket('one')).toMatchObject({
+    sportsRecordedResult: null,
+    sportsRevisionWatermark: t + 20,
+    sportsObservationRevision: null,
+  })
+})
+
+it('revokes an identical overlapping terminal receipt without its previous revision', async () => {
+  const { m, t, final, write } = await observedFixture()
+  const [offer] = await write({ ...final, scoreUpdatedTime: t + 1 }, 1, 10)
+  expect(offer.payout).toBeDefined()
+  await write(final, 5, 12)
+  now = t + 20
+  expect(await loadMarket('one')).toMatchObject({
+    sportsAttentionReason: 'unconfirmed observation order',
+    sportsResultHash: null,
+  })
+  await expect(
+    settleRecordedMajor(
+      pg,
+      offer.market,
+      'nba',
+      offer.payout!,
+      user,
+      clock.now,
+      () => true
+    )
+  ).rejects.toThrow('evidence changed')
+  expect((await loadMarket(m.id)).isResolved).toBe(false)
+})
+
+it('records every acquired absence before the first replacement lookup or market side effect', async () => {
+  const { final, write, t } = await observedFixture()
+  await write(final, 1, 2)
+  await addEarlierMarket()
+  raw = { ...raw, id: 99999 }
+  now = t + 20 * MINUTE_MS
+  const get = client.getAll
+  const seen: (string | null | undefined)[][] = []
+  const list = jest
+    .spyOn(client, 'getAll')
+    .mockImplementation(async (path, params, options) => {
+      // Primary collection reads request receipt callbacks; replacement discovery does not.
+      if (path.endsWith('/games') && !options.onPage) {
+        seen.push([
+          (await loadMarket('affected')).sportsAttentionReason,
+          (await loadMarket('one')).sportsAttentionReason,
+        ])
+      }
+      return get(path, params, options)
+    })
+  try {
+    await runner('sync')
+    expect(seen.length).toBeGreaterThan(0)
+    expect(seen[0]).toEqual(['missing game', 'missing game'])
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  } finally {
+    list.mockRestore()
+  }
+})
+
+it('requires a new provider millisecond after a disputed submillisecond NFL revision', async () => {
+  const { t, final, write } = await observedFixture()
+  const rev = (digits: string) =>
+    majorSourceRevision('nfl', {
+      updated_at: iso(t + 123).replace('.123Z', '.' + digits + 'Z'),
+    })!
+  await write(undefined, 124, 125, true, rev('123900'))
+  const older = await write(
+    { ...final, scoreUpdatedTime: rev('123100') },
+    126,
+    127
+  )
+  expect(older[0]?.payout).toBeUndefined()
+  expect((await loadMarket('one')).sportsResultHash).toBeNull()
+  expect(
+    (await write({ ...final, scoreUpdatedTime: t + 124 }, 128, 129))[0].payout
+      ?.status
+  ).toBe('final')
+})
+
+it('retains repeated answer-validation ownership and releases it only after repair', async () => {
+  const { final, write } = await observedFixture()
+  await read("update answers set resolution='NO' where id='one-0'")
+  await write(final, 1, 2)
+  const first = await loadMarket('one')
+  expect(first.sportsIncidentKey).toBeTruthy()
+  const [again] = await write(final, 3, 4)
+  expect(again.change.alert).toBeUndefined()
+  expect((await loadMarket('one')).sportsIncidentKey).toBe(
+    first.sportsIncidentKey
+  )
+  await read('update answers set resolution=null')
+  expect((await write(final, 5, 6))[0].payout?.status).toBe('final')
+})
+
+it('uses the terminal receipt time for kickoff even after a later scheduled check', async () => {
+  const { final, write } = await observedFixture()
+  const offset = -2 * HOUR_MS
+  await write(
+    { ...final, status: 'scheduled', scoreUpdatedTime: kickoff - 20 },
+    offset - 18,
+    offset + 8
+  )
+  const [decision] = await write(
+    { ...final, scoreUpdatedTime: kickoff - 10 },
+    offset - 12,
+    offset - 2
+  )
+  expect(decision.change.alert).toBe('irregular result')
+  expect(decision.payout).toBeUndefined()
+  expect((await loadMarket('one')).sportsFirstFinalHash).toBeUndefined()
+  const [regular] = await write(
+    { ...final, homeScore: 8, scoreUpdatedTime: kickoff + 10 },
+    offset + 10,
+    offset + 12
+  )
+  expect(regular.change.record?.status).toBe('final')
+})
+
+it('remembers the machine reissue incident beside a separate operator reason', async () => {
+  await addEarlierMarket()
+  await read("update contracts set data=data||$1::jsonb where id='affected'", [
+    {
+      sportsAttentionReason: 'Operator note',
+      sportsAttentionSince: initial - 10,
+    },
+  ])
+  await runner('sync')
+  const first = await loadMarket('affected')
+  expect(first.sportsIncidentKey).toContain('possible-reid')
+  expect(first.sportsAttentionReason).toBe('Operator note')
+  now += 20 * MINUTE_MS
+  expect((await runner('sync')).attention).toBe(0)
+  expect((await loadMarket('affected')).sportsIncidentKey).toBe(
+    first.sportsIncidentKey
+  )
 })

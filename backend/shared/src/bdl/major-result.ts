@@ -41,6 +41,8 @@ export type MajorMarket = CPMMMultiContract &
     sportsPostponedSince?: number
     sportsFirstFinalHash?: string
     sportsRevisionWatermark?: number
+    sportsRevisionReviewThroughMs?: number
+    sportsResultDisputed?: true
     sportsObservationRevision?: number | null
     sportsObservationStartedAt?: number
     sportsLastObservationKey?: string
@@ -201,6 +203,7 @@ export function majorPayout(
     c.isResolved ||
     c.resolution ||
     c.sportsAttentionReason ||
+    c.sportsResultDisputed ||
     c.sportsEventId !== record.eventId ||
     !c.sportsRecordedResult ||
     majorResultHash(c.sportsRecordedResult) !== majorResultHash(record) ||
