@@ -47,8 +47,14 @@ const next = {
   ...final,
   id: 402,
   status: 'STATUS_SCHEDULED',
-  status_detail: null,
+  status_detail: 'Sat, November 21st at 9:00 AM EST',
   status_state: 'scheduled',
+  home_score: 0,
+  away_score: 0,
+  first_half_home_score: null,
+  first_half_away_score: null,
+  second_half_home_score: null,
+  second_half_away_score: null,
 }
 const decode = (
   rows: unknown[],
@@ -149,12 +155,16 @@ it.each(CLUB_LEAGUES)(
     expect(api.get).toHaveBeenCalledWith(route + '/teams', { season })
     expect(slate?.matches[0]).toMatchObject({
       eventId: 'bdl:' + league + ':402',
-      hold: null,
+      hold: league === 'ucl' || league === 'mls' ? 'unverified-phase' : null,
     })
-    await readClubOdds(api, league, slate!.matches, true)
+    await readClubOdds(api, league, slate!.matches, true, () =>
+      Date.parse(when + 'T13:00Z')
+    )
     expect(api.calls).toEqual([
       { path: route + '/matches', params: { season, dates: [when] } },
-      { path: route + '/odds', params: { match_ids: [402] } },
+      ...(league === 'ucl' || league === 'mls'
+        ? []
+        : [{ path: route + '/odds', params: { match_ids: [402] } }]),
     ])
   }
 )
@@ -286,7 +296,7 @@ it('awards the verified away club, and preserves partial halftime data without a
   expect(
     decode([
       {
-        ...next,
+        ...final,
         status: 'STATUS_SECOND_HALF',
         status_state: 'in_progress',
         status_detail: "55'",
@@ -306,7 +316,7 @@ it('keeps complete synthetic current prices in home/away/draw order and never re
   const quote = {
     match_id: 402,
     vendor: 'fixture-book',
-    updated_at: date,
+    updated_at: new Date(at - 4000).toISOString(),
     moneyline_home_odds: 100,
     moneyline_away_odds: 200,
     moneyline_draw_odds: 500,
@@ -317,7 +327,11 @@ it('keeps complete synthetic current prices in home/away/draw order and never re
     entrantIds: ['11', '22'] as const,
   }
   const select = (r: unknown[]) =>
-    selectOpeningLine(decodeClubOdds(rows, r).get(402)!, game, at + 2000)
+    selectOpeningLine(
+      decodeClubOdds(rows, r, at - 1000).get(402)!,
+      game,
+      at - 1000
+    )
   expect(select([quote]).probs).toEqual([0.5, 1 / 3, 1 / 6])
   expect(
     select([
@@ -325,7 +339,7 @@ it('keeps complete synthetic current prices in home/away/draw order and never re
       {
         ...quote,
         moneyline_draw_odds: null,
-        updated_at: new Date(at + 1000).toISOString(),
+        updated_at: new Date(at - 2000).toISOString(),
       },
     ]).source
   ).toBe('none')
@@ -337,11 +351,13 @@ it('keeps complete synthetic current prices in home/away/draw order and never re
     'none'
   )
   const api = client([], teams, [{ ...quote, match_id: 401 }])
-  await expect(readClubOdds(api, 'epl', rows, true)).rejects.toThrow(
-    'Unexpected row'
-  )
+  await expect(
+    readClubOdds(api, 'epl', rows, true, () => at - 1000)
+  ).rejects.toThrow('Unexpected row')
   const other = decode([next], 'laliga').matches
-  expect((await readClubOdds(api, 'epl', other, true))?.size).toBe(0)
+  expect(
+    (await readClubOdds(api, 'epl', other, true, () => at - 1000))?.size
+  ).toBe(0)
 })
 
 it('replays the real P0 local transport and follows its opaque cursor without a network fallback', async () => {
@@ -424,3 +440,198 @@ it('replays the real P0 local transport and follows its opaque cursor without a 
     rmdirSync(root)
   }
 })
+
+it.each([false, true])(
+  'retains the ID and holds out-of-scope date or season duplicates in either order (reverse=%s)',
+  (reverse) => {
+    for (const change of [{ date: '2026-11-22T14:00:00Z' }, { season: 2025 }]) {
+      const moved = { ...next, ...change, id: 401 }
+      const rows = reverse ? [moved, final] : [final, moved]
+      const slate = decodeClubSlate(
+        'epl',
+        season,
+        teams,
+        [...rows, { ...final, id: 403 }],
+        new Set([day])
+      )
+      expect(slate.incomplete).toBe(true)
+      expect(slate.matches).toEqual([
+        expect.objectContaining({
+          id: 401,
+          season: null,
+          hold: 'conflicting-rows',
+          regulationResult: null,
+        }),
+        expect.objectContaining({
+          id: 403,
+          hold: null,
+          regulationResult: { winnerId: '11' },
+        }),
+      ])
+    }
+  }
+)
+
+it.each(['ucl', 'mls'] as const)(
+  'holds %s without a recorded stage discriminator, including a plausible round number',
+  (league) => {
+    for (const round_number of [null, 1, 8, 90]) {
+      const r = {
+        ...final,
+        round_number,
+        date: league === 'ucl' ? date : '2026-09-10T14:00:00Z',
+      }
+      expect(decode([r], league).matches[0]).toMatchObject({
+        hold: 'unverified-phase',
+        regulationResult: null,
+      })
+    }
+  }
+)
+
+it.each([
+  { status: null },
+  { status: 'UNRECOGNIZED' },
+  { status_detail: 'FT' },
+  { status_detail: "45+1'" },
+  { home_score: 1 },
+  { away_score: -1 },
+  { first_half_away_score: 0 },
+  { second_half_home_score: 1 },
+])('holds contradictory or unknown scheduled data %j', (patch) => {
+  expect(decode([{ ...next, ...patch }]).matches[0]).toMatchObject({
+    hold: 'unverified-status',
+    regulationResult: null,
+  })
+})
+
+it.each(['TBD', 'TBA', 'to be determined', 'Winner of quarterfinal 2'])(
+  'keeps an unresolved %s opponent out of results and prices',
+  async (name) => {
+    const slate = decode([final, next], 'epl', [{ id: 11, name }, teams[1]])
+    expect(slate.matches.map((m) => [m.hold, m.regulationResult])).toEqual([
+      ['unverified-clubs', null],
+      ['unverified-clubs', null],
+    ])
+    const api = client([])
+    expect(
+      (await readClubOdds(api, 'epl', slate.matches, true, () => at - 10))?.size
+    ).toBe(0)
+    expect(api.calls).toEqual([])
+  }
+)
+
+it('identifies incomplete date batches even if the misplaced row matches a different requested day', async () => {
+  const dates = Array.from(
+    { length: 15 },
+    (_, i) => '2026-11-' + String(i + 1).padStart(2, '0')
+  )
+  const late = { ...final, date: dates[14] + 'T14:00:00Z' }
+  const api = client([late])
+  const options = { league: 'epl' as const, season, dates, enabled: true }
+  const both = await readClubSlate(api, options)
+  expect(both).toMatchObject({
+    incomplete: true,
+    matches: [{ id: 401, hold: null }],
+  })
+  expect(api.calls.map((c) => c.params.dates)).toEqual([
+    dates.slice(0, 14),
+    dates.slice(14),
+  ])
+  const missed = {
+    ...api,
+    getAll: async <T>(_path: string, params: BdlParams): Promise<T[]> =>
+      Array.isArray(params.dates) && params.dates.length === 14
+        ? [late as T]
+        : [],
+  }
+  expect(await readClubSlate(missed, options)).toMatchObject({
+    incomplete: true,
+    matches: [{ id: 401, hold: 'invalid-schedule', regulationResult: null }],
+  })
+})
+
+it('requires a pre-kickoff acquisition and quote timestamp, including when retrieval crosses kickoff', async () => {
+  const matches = decode([next]).matches
+  const quote = {
+    match_id: 402,
+    vendor: 'book-a',
+    updated_at: new Date(at - 5000).toISOString(),
+    moneyline_home_odds: 120,
+  }
+  const before = client([], teams, [quote])
+  expect(
+    (await readClubOdds(before, 'epl', matches, true, () => at - 1))?.get(402)
+  ).toHaveLength(1)
+  for (const time of [at, at + 1]) {
+    const already = client([], teams, [quote])
+    expect(
+      (await readClubOdds(already, 'epl', matches, true, () => time))?.size
+    ).toBe(0)
+    expect(already.calls).toHaveLength(0)
+    const checks = [at - 1, at - 1, time]
+    const crossing = client([], teams, [quote])
+    expect(
+      (
+        await readClubOdds(
+          crossing,
+          'epl',
+          matches,
+          true,
+          () => checks.shift()!
+        )
+      )?.get(402)
+    ).toEqual([])
+    expect(crossing.calls).toHaveLength(1)
+    const stamped = client([], teams, [
+      quote,
+      { ...quote, updated_at: new Date(time).toISOString() },
+    ])
+    expect(
+      (await readClubOdds(stamped, 'epl', matches, true, () => at - 1))?.get(
+        402
+      )
+    ).toEqual([])
+  }
+})
+
+it.each([false, true])(
+  'isolates an undated quote to the identified vendor and never revives its earlier quote (reverse=%s)',
+  (reverse) => {
+    const matches = decode([next]).matches
+    const quote = {
+      match_id: 402,
+      vendor: 'Book-A',
+      updated_at: new Date(at - 5000).toISOString(),
+      moneyline_home_odds: 100,
+      moneyline_away_odds: 200,
+      moneyline_draw_odds: 500,
+    }
+    const rows = [
+      quote,
+      { ...quote, vendor: ' BOOK-a ', updated_at: 'unknown' },
+      { ...quote, vendor: 'Book-B' },
+    ]
+    if (reverse) rows.reverse()
+    const offers = decodeClubOdds(matches, rows, at - 1).get(402)!
+    expect(offers.map((q) => q.vendor)).toEqual(['book-b'])
+    expect(
+      selectOpeningLine(
+        offers,
+        {
+          eventId: matches[0].eventId,
+          league: 'epl',
+          entrantIds: ['11', '22'],
+        },
+        at - 1
+      ).vendors
+    ).toEqual(['book-b'])
+    expect(
+      decodeClubOdds(
+        matches,
+        [...rows, { ...quote, vendor: null }],
+        at - 1
+      ).get(402)
+    ).toEqual([])
+  }
+)

@@ -64,6 +64,9 @@ export const clubTime = (value: unknown) =>
       )
     : NaN
 
+const unresolvedClub =
+  /^(?:tbd|tba|tbc|unknown|n\/a|to be (?:determined|decided|announced|confirmed)|(?:winner|loser) (?:of\b.*|(?:match|tie|quarterfinal|semifinal) \d+))$/i
+
 function directory(rows: readonly unknown[]) {
   const teams = new Map<number, ProviderEntrant | null>()
   for (const raw of rows) {
@@ -73,7 +76,10 @@ function directory(rows: readonly unknown[]) {
     const previous = teams.get(r.id)
     teams.set(
       r.id,
-      !name || previous === null || (previous && previous.name !== name)
+      !name ||
+        unresolvedClub.test(name) ||
+        previous === null ||
+        (previous && previous.name !== name)
         ? null
         : { id: String(r.id), name }
     )
@@ -83,10 +89,11 @@ function directory(rows: readonly unknown[]) {
 
 /** Date alone cannot move an MLS playoff or a UCL knockout into regulation settlement. */
 function competitionFor(league: ClubLeague, season: number, day: string) {
+  // Neither recorded match feed provides an unambiguous phase discriminator.
+  // A calendar window and a numeric round cannot identify the competition format.
+  if (league === 'ucl' || league === 'mls') return null
   const competitionId =
-    league === 'mls'
-      ? league + '-' + season
-      : league + '-' + season + '-' + String(season + 1).slice(-2)
+    league + '-' + season + '-' + String(season + 1).slice(-2)
   const onDate = SPORTS_CALENDAR.filter(
     (c) =>
       c.sport === 'soccer' &&
@@ -95,13 +102,9 @@ function competitionFor(league: ClubLeague, season: number, day: string) {
       day <= c.endDate
   )
   if (onDate.length !== 1 || onDate[0].locked) return null
-  const phase =
-    league === 'ucl'
-      ? 'League Phase'
-      : league === 'mls'
-      ? 'Regular Season'
-      : 'Season'
-  return onDate[0].phase === phase ? { id: competitionId, phase } : null
+  return onDate[0].phase === 'Season'
+    ? { id: competitionId, phase: onDate[0].phase }
+    : null
 }
 
 const sourceStates: Readonly<Record<string, ProviderGameStatus | undefined>> = {
@@ -117,6 +120,46 @@ const sourceStates: Readonly<Record<string, ProviderGameStatus | undefined>> = {
   STATUS_ABANDONED: 'abandoned',
 }
 
+// Confirmed scheduled rows carry no interval scores; their aggregate can be 0–0.
+function verifiedPregame(r: Record<string, unknown>) {
+  const detail = r.status_detail
+  if (detail != null) {
+    if (typeof detail !== 'string') return false
+    const text = detail.trim()
+    const scheduledLabel = /^(?:NS|scheduled|not started|TBD)$/i
+    const scheduledDate =
+      /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Za-z]+ \d{1,2}(?:st|nd|rd|th)? at \d{1,2}:\d{2} (?:AM|PM) [A-Z]{2,5}$/
+    if (text && !scheduledLabel.test(text) && !scheduledDate.test(text))
+      return false
+  }
+  return (
+    [r.home_score, r.away_score].every((v) => v == null || v === 0) &&
+    [
+      r.first_half_home_score,
+      r.first_half_away_score,
+      r.second_half_home_score,
+      r.second_half_away_score,
+    ].every((v) => v == null)
+  )
+}
+
+function conflictingMatch(match: ClubMatch): ClubMatch {
+  return {
+    ...match,
+    season: null,
+    startTime: null,
+    home: null,
+    away: null,
+    status: 'unknown',
+    statusDetail: null,
+    score: null,
+    halves: [null, null],
+    competition: null,
+    hold: 'conflicting-rows',
+    regulationResult: null,
+  }
+}
+
 /** Decode one complete acquisition. Different times are separate observations, not duplicate rows. */
 export function decodeClubSlate(
   league: ClubLeague,
@@ -127,6 +170,7 @@ export function decodeClubSlate(
 ): ClubSlate {
   const clubs = directory(teams)
   const matches = new Map<number, ClubMatch>()
+  const outsideScope = new Set<number>()
   let incomplete = false
   for (const raw of rows) {
     const r = clubRow(raw)
@@ -140,6 +184,7 @@ export function decodeClubSlate(
       (id(r.season) && r.season !== season) ||
       (dates && startTime && !dates.has(startTime.slice(0, 10)))
     ) {
+      outsideScope.add(r.id)
       incomplete = true
       continue
     }
@@ -186,7 +231,8 @@ export function decodeClubSlate(
     else if (exceptional || !competition) hold = 'unverified-phase'
     else if (
       status === 'unknown' ||
-      (sourceState && sourceState !== status) ||
+      sourceState !== status ||
+      (status === 'scheduled' && !verifiedPregame(r)) ||
       (status === 'final') !== isFt
     )
       hold = 'unverified-status'
@@ -222,45 +268,59 @@ export function decodeClubSlate(
     }
     const prior = matches.get(r.id)
     if (prior && JSON.stringify(prior) !== JSON.stringify(match)) {
-      matches.set(r.id, {
-        ...match,
-        startTime: null,
-        home: null,
-        away: null,
-        status: 'unknown',
-        statusDetail: null,
-        score: null,
-        halves: [null, null],
-        competition: null,
-        hold: 'conflicting-rows',
-        regulationResult: null,
-      })
+      matches.set(r.id, conflictingMatch(match))
     } else matches.set(r.id, match)
   }
+  for (const id of outsideScope) {
+    const match = matches.get(id)
+    if (match) matches.set(id, conflictingMatch(match))
+  }
   return { league, matches: [...matches.values()], incomplete }
+}
+
+export function isClubPregameAt(match: ClubMatch, observedAt: number) {
+  return (
+    !match.hold &&
+    match.status === 'scheduled' &&
+    Number.isFinite(observedAt) &&
+    clubTime(match.startTime) > observedAt
+  )
 }
 
 /** Preserve later partial or withdrawn rows so the common opening-line selector cannot use superseded prices. */
 export function decodeClubOdds(
   matches: readonly ClubMatch[],
-  rows: readonly unknown[]
+  rows: readonly unknown[],
+  observedAt: number
 ) {
   const byId = new Map(matches.map((match) => [match.id, match]))
   const quotes = new Map<number, ProviderOdds[]>(
     matches.map((match) => [match.id, []])
   )
-  const uncertain = new Set<number>()
+  const unknownVendor = new Set<number>()
+  const withdrawn = new Map<number, Set<string>>()
   for (const raw of rows) {
     const r = clubRow(raw)
     const match = id(r.match_id) ? byId.get(r.match_id) : undefined
-    if (!match || match.hold || !match.home || !match.away) continue
-    const updatedAtMs = clubTime(r.updated_at)
     if (
-      typeof r.vendor !== 'string' ||
-      !r.vendor.trim() ||
-      !Number.isFinite(updatedAtMs)
-    ) {
-      uncertain.add(match.id)
+      !match ||
+      !isClubPregameAt(match, observedAt) ||
+      !match.home ||
+      !match.away
+    )
+      continue
+    if (typeof r.vendor !== 'string' || !r.vendor.trim()) {
+      unknownVendor.add(match.id)
+      continue
+    }
+    const vendor = r.vendor.trim().toLowerCase()
+    const updatedAtMs = clubTime(r.updated_at)
+    // A malformed or future update cannot establish which of this book's
+    // quotes is current. Other identified books remain independent.
+    if (!Number.isFinite(updatedAtMs) || updatedAtMs > observedAt) {
+      const vendors = withdrawn.get(match.id) ?? new Set<string>()
+      vendors.add(vendor)
+      withdrawn.set(match.id, vendors)
       continue
     }
     const outcomes: ProviderOdds['outcomes'][number][] = []
@@ -273,11 +333,16 @@ export function decodeClubOdds(
         outcomes.push({ outcome, americanOdds: price })
     quotes.get(match.id)!.push({
       eventId: match.eventId,
-      vendor: r.vendor.trim().toLowerCase(),
+      vendor,
       updatedAtMs,
       outcomes,
     })
   }
-  for (const id of uncertain) quotes.set(id, [])
+  for (const [id, vendors] of withdrawn)
+    quotes.set(
+      id,
+      quotes.get(id)!.filter((q) => !vendors.has(q.vendor))
+    )
+  for (const id of unknownVendor) quotes.set(id, [])
   return quotes
 }

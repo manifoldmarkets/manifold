@@ -10,6 +10,7 @@ import {
   clubTime,
   decodeClubOdds,
   decodeClubSlate,
+  isClubPregameAt,
 } from './club-soccer'
 
 type Client = Pick<ReturnType<typeof createBdlClient>, 'get' | 'getAll'>
@@ -47,35 +48,65 @@ export async function readClubSlate(
     throw new Error('Incomplete club soccer team directory')
   const requestedDates = new Set(dates)
   const rows: unknown[] = []
+  const seenInBatch = new Set<number>()
+  let wrongBatch = false
   for (const days of chunk([...requestedDates], 14)) {
-    // The decoder retains identifiable malformed matches and reports incomplete coverage.
-    rows.push(
-      ...(await client.getAll<unknown>(
-        apiBase + '/matches',
-        { season, dates: days },
-        { maxPages: 50, matches: () => true }
-      ))
+    const page = await client.getAll<unknown>(
+      apiBase + '/matches',
+      { season, dates: days },
+      { maxPages: 50, matches: () => true }
     )
+    // Keep even the misplaced versions until duplicate identities are checked.
+    for (const raw of page) {
+      const r = clubRow(raw)
+      const start = clubTime(r.date)
+      if (
+        Number.isFinite(start) &&
+        !days.includes(new Date(start).toISOString().slice(0, 10))
+      )
+        wrongBatch = true
+      else if (typeof r.id === 'number') seenInBatch.add(r.id)
+      rows.push(raw)
+    }
   }
-  return decodeClubSlate(league, season, directory.data, rows, requestedDates)
+  const slate = decodeClubSlate(
+    league,
+    season,
+    directory.data,
+    rows,
+    requestedDates
+  )
+  if (wrongBatch) {
+    slate.incomplete = true
+    for (const m of slate.matches) {
+      if (seenInBatch.has(m.id) || m.hold) continue
+      m.hold = 'invalid-schedule'
+      m.regulationResult = null
+    }
+  }
+  return slate
 }
 
 export async function readClubOdds(
   client: Client,
   league: ClubLeague,
   matches: readonly ClubMatch[],
-  enabled = false
+  enabled = false,
+  clock: () => number = Date.now
 ) {
   if (!enabled || !isSportsBdlEnabled()) return null
+  let observedAt = clock()
   const eligible = matches.filter(
     (m) =>
-      !m.hold &&
-      m.status === 'scheduled' &&
-      m.eventId === bdlEventId(league, m.id)
+      isClubPregameAt(m, observedAt) && m.eventId === bdlEventId(league, m.id)
   )
   const rows: unknown[] = []
   for (const batch of chunk(eligible, 50)) {
-    const ids = new Set(batch.map((m) => m.id))
+    observedAt = Math.max(observedAt, clock())
+    const ids = new Set(
+      batch.filter((m) => isClubPregameAt(m, observedAt)).map((m) => m.id)
+    )
+    if (!ids.size) continue
     rows.push(
       ...(await client.getAll<unknown>(
         BDL_LEAGUES[league].oddsApiBase + '/odds',
@@ -90,5 +121,5 @@ export async function readClubOdds(
       ))
     )
   }
-  return decodeClubOdds(eligible, rows)
+  return decodeClubOdds(eligible, rows, Math.max(observedAt, clock()))
 }
