@@ -100,7 +100,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
         const singleMillisecond = pin.statement_at === pin.observed_at
         const unchanged =
           previous &&
-        previous.visibility === pin.visibility &&
+          previous.visibility === pin.visibility &&
           previous.observed_at >= previous.statement_at &&
           previous.observed_at <= pin.statement_at &&
           pin.statement_at <= pin.observed_at
