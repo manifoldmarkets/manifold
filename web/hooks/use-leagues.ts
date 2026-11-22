@@ -69,6 +69,9 @@ function subscribeToSeason(notify: () => void) {
   }
 }
 
+export const useCurrentSeason = () =>
+  useSyncExternalStore(subscribeToSeason, getSeasonSnapshot, () => undefined)
+
 // The user's league this season: undefined until known, null for none. The
 // stored result names its season, so a row from an earlier season is never
 // shown as this season's, even when this season's lookup fails.
@@ -76,11 +79,7 @@ export const useLeagueInfo = (userId: string | null | undefined) => {
   const [stored, setStored] = usePersistentLocalState<
     { season: number; info: league_user_info | null } | undefined
   >(undefined, `league-info-by-season-${userId}`)
-  const season = useSyncExternalStore(
-    subscribeToSeason,
-    getSeasonSnapshot,
-    () => undefined
-  )
+  const season = useCurrentSeason()
 
   useEffect(() => {
     if (!userId || season === undefined) return

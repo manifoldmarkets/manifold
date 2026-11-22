@@ -25,6 +25,7 @@ jest.mock('shared/supabase/init', () => ({
   createSupabaseDirectClient: jest.fn(),
   pgp: jest.requireActual('pg-promise')(),
   SERIAL_MODE: {},
+  READ_ONLY_REPEATABLE_MODE: {},
 }))
 jest.mock('shared/supabase/users', () => ({ broadcastUserUpdates: jest.fn() }))
 jest.mock('api/get-user-achievements', () => ({
