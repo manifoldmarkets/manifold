@@ -1,4 +1,5 @@
 import { camelCase } from 'lodash'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
@@ -1211,8 +1212,10 @@ export async function createSportsContract(
     chooseAnte?: (tx: SupabaseTransaction) => Promise<SportsAnteDecision>
     groupEmbeddingBatch?: Set<string>
     notifyFollowers?: boolean
-    /** Recheck the legacy creator under the operator lock during a BDL cutover. */
+    /** Recheck Odds phase switches under the operator lock on rollout-enabled inserts. */
     checkOddsCutover?: (tx: SupabaseTransaction) => Promise<void>
+    /** Check for an open BDL market at an overlapping BDL/Odds phase. */
+    checkOpenBdl?: boolean
     deduplicateMoneyline?: boolean
     /** Explicit admin correction of a canceled BDL game identified by this key. */
     allowCanceledEventId?: string
@@ -1365,6 +1368,7 @@ export async function createSportsContract(
       : opts.deduplicateMarketType
   if (params.sportsProvider === 'bdl' && !dedupeType)
     throw new Error('BDL creation requires a market type for deduplication')
+  const guardedFunding = isSportsBdlEnabled()
   const balanceUpdates: UserUpdate[] = []
   const assertLeadTime = () => {
     if (opts.minLeadMs == null) return
@@ -1379,7 +1383,7 @@ export async function createSportsContract(
         params,
         dedupeType,
         opts.allowCanceledEventId,
-        !!opts.checkOddsCutover
+        opts.checkOpenBdl ?? !!opts.checkOddsCutover
       )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
@@ -1392,7 +1396,8 @@ export async function createSportsContract(
     )
       throw new Error('Invalid sports ante decision')
     // Both callbacks can wait on another transaction before funding the game.
-    if (opts.checkOddsCutover || opts.chooseAnte) assertLeadTime()
+    if (guardedFunding && (opts.checkOddsCutover || opts.chooseAnte))
+      assertLeadTime()
     const { contract, multi, contractQuery, insertAnswersQuery, ante } =
       legacyRows ?? buildRows(decision)
     if (insertAnswersQuery) {
@@ -1402,7 +1407,7 @@ export async function createSportsContract(
       await tx.none(contractQuery)
     }
     // Inserts, the debit, and the LP row can each wait on a database lock.
-    assertLeadTime()
+    if (guardedFunding) assertLeadTime()
     const debit: TxnData = {
       fromId: providerId,
       fromType: 'USER',
@@ -1412,7 +1417,7 @@ export async function createSportsContract(
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
     }
-    if (opts.minLeadMs == null) {
+    if (!guardedFunding) {
       await runTxnOutsideBetQueue(tx, debit)
     } else {
       await runTxnOutsideBetQueue(tx, debit, false, (updates) =>
@@ -1421,7 +1426,7 @@ export async function createSportsContract(
       assertLeadTime()
     }
     await generateAntes(tx, providerId, contract, ante, ante)
-    assertLeadTime()
+    if (guardedFunding) assertLeadTime()
     return contract
   })
   if (balanceUpdates.length) {

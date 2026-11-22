@@ -126,7 +126,11 @@ beforeEach(() => {
   let id = 0
   jest.spyOn(random, 'randomString').mockImplementation(() => 'id' + ++id)
 })
-afterEach(() => jest.restoreAllMocks())
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+  jest.restoreAllMocks()
+})
 
 it('preserves the pre-hook contract, answer, debit and LP rows byte for byte', async () => {
   const { pg } = database()
@@ -388,6 +392,7 @@ it('keeps failed group embeddings for retry without repeating successful groups'
 it.each(['insert', 'debit', 'liquidity', 'commit'] as const)(
   'enforces the injected funding clock through %s and broadcasts only a committed balance',
   async (boundary) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
     const { tx, pg } = database()
     const lead = 300_000
     let now = start - lead - 1
@@ -456,6 +461,7 @@ it.each(['insert', 'debit', 'liquidity', 'commit'] as const)(
 it.each(['cutover', 'funding'])(
   'rejects an elapsed kickoff lead after the %s lock with no write or debit',
   async (lock) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
     const { tx, pg } = database()
     const lead = 5 * 60_000
     jest.spyOn(Date, 'now').mockReturnValue(start - lead - 1)
@@ -483,5 +489,75 @@ it.each(['cutover', 'funding'])(
     expect(tx.multi).not.toHaveBeenCalled()
     expect(tx.none).not.toHaveBeenCalled()
     expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
+
+it.each(['odds:basketball_nba:old', 'fd-100'])(
+  'retains the original single lead check and debit callback with rollout off for %s',
+  async (eventId) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'false' }
+    const { tx, pg } = database()
+    const now = jest
+      .fn()
+      .mockReturnValueOnce(start - 300_001)
+      .mockReturnValue(start)
+    await createSportsContract(
+      pg,
+      creator,
+      { ...legacy, sportsEventId: eventId },
+      {
+        minLeadMs: 300_000,
+        now,
+      }
+    )
+    expect(now).toHaveBeenCalledTimes(1)
+    expect(runTxnOutsideBetQueue).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({ amount: 1000 })
+    )
+    expect(insertLiquidity).toHaveBeenCalledTimes(1)
+    expect(broadcastUserUpdates).not.toHaveBeenCalled()
+  }
+)
+
+it.each([false, true])(
+  'publishes an enabled no-cutoff ordinary debit only after successful liquidity (failure=%s)',
+  async (fail) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const { pg } = database()
+    const update: UserUpdate = {
+      id: creator.id,
+      balance: 0,
+      cash_balance: 0,
+      spice_balance: 0,
+      total_deposits: 1000,
+      total_cash_deposits: 0,
+    }
+    const debit = jest.mocked(runTxnOutsideBetQueue)
+    const original = debit.getMockImplementation()!
+    debit.mockImplementationOnce(async (...args) => {
+      expect(args[3]).toEqual(expect.any(Function))
+      args[3]!([update])
+      expect(broadcastUserUpdates).not.toHaveBeenCalled()
+      return original(...args)
+    })
+    if (fail)
+      jest.mocked(insertLiquidity).mockRejectedValueOnce(new Error('failed LP'))
+    const result = createSportsContract(pg, creator, {
+      ...legacy,
+      sportsEventId: 'fd-100',
+    })
+    if (fail) {
+      await expect(result).rejects.toThrow('failed LP')
+      expect(broadcastUserUpdates).not.toHaveBeenCalled()
+    } else {
+      await result
+      expect(broadcastUserUpdates).toHaveBeenCalledWith([update])
+      expect(
+        jest.mocked(insertLiquidity).mock.invocationCallOrder[0]
+      ).toBeLessThan(
+        jest.mocked(broadcastUserUpdates).mock.invocationCallOrder[0]
+      )
+    }
   }
 )
