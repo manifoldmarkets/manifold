@@ -7,7 +7,11 @@ import { getF1Sessions, getF1SessionResults } from '../balldontlie-f1-client'
 import { sendTextEmail } from '../send-email'
 import type { SupabaseDirectClient } from '../supabase/init'
 import { getSportsAttention } from './attention-queries'
-import { f1ClassificationHash, f1WatchSeed } from './f1-classification'
+import {
+  f1ClassificationHash,
+  f1WatchSeed,
+  noteF1WatchScope,
+} from './f1-classification'
 import { f1WatchDue, runF1CorrectionWatch } from './f1-correction-watch'
 
 jest.mock('../balldontlie-f1-client', () => ({
@@ -106,6 +110,8 @@ const old = process.env
 beforeAll(async () => {
   db = new PGlite()
   await db.exec(`create table contracts(id text primary key,data jsonb not null,creator_id text,visibility text,token text,outcome_type text,resolution text,resolution_time timestamptz,close_time timestamptz,deleted boolean,slug text,question text);
+create table contract_edits(contract_id text,editor_id text,data jsonb,updated_keys text[],idempotency_key text);
+create table answers(id text,contract_id text,resolution text,resolver_id text,resolution_time timestamptz);
 create table sports_competition_switches(competition_id text,phase text,enabled boolean,updated_by text,updated_time timestamptz)`)
 })
 beforeEach(async () => {
@@ -116,7 +122,7 @@ beforeEach(async () => {
     SPORTS_BDL_F1_CORRECTION_WATCH: 'true',
   }
   await db.exec(
-    `truncate contracts,sports_competition_switches; insert into sports_competition_switches values ('f1-2026','2026 Remaining',true,'fixture',now())`
+    `truncate contracts,contract_edits,answers,sports_competition_switches; insert into sports_competition_switches values ('f1-2026','2026 Remaining',true,'fixture',now())`
   )
   jest.clearAllMocks()
   now = resolved + HOUR_MS
@@ -385,4 +391,64 @@ test('a disabled phase, expired watch or changed settlement during provider I/O 
     expect((await get('race')).data.sportsF1Watch).toEqual(stored())
   }
   expect(sendTextEmail).not.toHaveBeenCalled()
+})
+
+test('missing coverage requires an opted-in native terminal edit and disappears at its original deadline', async () => {
+  const owner = MANIFOLD_SPORTS_USER_IDS[0]
+  await insert('missing', { sportsF1Watch: null, resolverId: owner })
+  const items = async (at = now) => (await getSportsAttention(pg, {}, at)).items
+  expect(await items()).toEqual([])
+  await db.exec("update contracts set resolution=null where id='missing'")
+  await noteF1WatchScope(
+    { none: query } as unknown as SupabaseDirectClient,
+    'missing',
+    stored()
+  )
+  await db.query(
+    "update contracts set resolution='answer-1' where id='missing'"
+  )
+  expect(await items()).toEqual([])
+  await db.query(
+    `insert into contract_edits select id,creator_id,data || jsonb_build_object('creatorId',creator_id),
+    array['isResolved','resolution','resolutionTime'],'resolution:market:' || $1::text from contracts`,
+    [String(resolved)]
+  )
+  const missing = await items()
+  expect(missing).toHaveLength(1)
+  expect(missing[0]).toMatchObject({
+    id: 'missing',
+    since: resolved,
+    reason: expect.stringContaining('baseline unavailable'),
+  })
+  expect(await items(resolved + 14 * DAY_MS - 1)).toHaveLength(1)
+  expect(await items(resolved + 14 * DAY_MS)).toEqual([])
+  await db.exec(
+    "update contracts set data=data || jsonb_build_object('sportsAttentionReason','Review existing issue','sportsAttentionSince',1)"
+  )
+  expect((await items())[0]).toMatchObject({
+    since: 1,
+    reason: expect.stringMatching(
+      /Review existing issue.*baseline unavailable/
+    ),
+  })
+  await db.query(
+    "update contracts set data=data || jsonb_build_object('sportsF1Watch',$1::jsonb)",
+    [JSON.stringify(stored())]
+  )
+  expect(await items()).toEqual([])
+  await db.exec("update contracts set data=data-'sportsF1Watch'")
+  await db.exec(
+    "update contract_edits set idempotency_key='undone:1:' || idempotency_key"
+  )
+  expect(await items()).toEqual([])
+  await db.exec(
+    'update contract_edits set idempotency_key=substr(idempotency_key,10)'
+  )
+  await db.exec('update sports_competition_switches set enabled=false')
+  expect(await items()).toEqual([])
+  await db.exec(
+    "update sports_competition_switches set enabled=true,updated_time=updated_time+interval '1 second'"
+  )
+  expect(await items()).toEqual([])
+  expect(getF1SessionResults).not.toHaveBeenCalled()
 })

@@ -224,12 +224,16 @@ describe('resolveF1Markets', () => {
         }))
       await resolveF1Markets(db.pg)
       expect(resolveMarketHelper).toHaveBeenCalledTimes(5)
-      expect(db.none).toHaveBeenCalledTimes(2)
-      expect(db.none.mock.calls.map((c) => c[1][1])).toEqual([
-        'winner',
-        'podium',
-      ])
-      for (const call of db.none.mock.calls)
+      const enrollments = db.none.mock.calls.filter(([sql]) =>
+        sql.includes("jsonb_build_object('sportsF1Watch',")
+      )
+      const scopeMarks = db.none.mock.calls.filter(([sql]) =>
+        sql.includes("jsonb_build_object('sportsF1WatchScope',")
+      )
+      expect(scopeMarks.map((call) => call[1][0])).toEqual(['winner', 'podium'])
+      expect(enrollments).toHaveLength(2)
+      expect(enrollments.map((c) => c[1][1])).toEqual(['winner', 'podium'])
+      for (const call of enrollments)
         expect(call[1][0]).toMatchObject({
           eventId: 'bdl-f1:374:1870',
           phase: 'f1-2026:2026 Remaining',
@@ -237,9 +241,7 @@ describe('resolveF1Markets', () => {
           resolutionTime: NOW,
           baseline: expect.stringMatching(/^[0-9a-f]{64}$/),
         })
-      expect(db.none.mock.calls[0][1][0].baseline).toBe(
-        db.none.mock.calls[1][1][0].baseline
-      )
+      expect(enrollments[0][1][0].baseline).toBe(enrollments[1][1][0].baseline)
     } finally {
       process.env = previous
     }
@@ -811,7 +813,7 @@ describe('createF1MarketsForActiveCalendar', () => {
   })
 })
 
-// â”€â”€â”€ Titles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Titles ───────────────────────────────────────────────────────────────────
 
 const driverRow = (id: number, points: number, position = 0, season = 2026) =>
   ({
@@ -1533,7 +1535,7 @@ describe('resolveF1TitleMarkets', () => {
   })
 })
 
-// â”€â”€â”€ Following sessions that move â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Following sessions that move ────────────────────────────────────────────
 
 describe('syncF1SessionMarkets', () => {
   // Three days before the Mexico City race (1 Nov 20:00Z, closes 23:00Z).

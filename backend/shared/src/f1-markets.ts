@@ -17,7 +17,11 @@
  */
 
 import { sortBy, sum, uniq } from 'lodash'
-import { f1WatchSeed, recordF1WatchBaseline } from './bdl/f1-classification'
+import {
+  f1WatchSeed,
+  noteF1WatchScope,
+  recordF1WatchBaseline,
+} from './bdl/f1-classification'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
@@ -107,7 +111,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 /** Tod, 28 Oct 2026: look three to four weeks out or more, or the F1 page is bare. */
 const ROLLING_WINDOW_DAYS = F1_DAYS_AHEAD
 /**
- * The odds pipeline's tier: á¹€100 an answer, so about á¹€2,300 for a winner
+ * The odds pipeline's tier: Ṁ100 an answer, so about Ṁ2,300 for a winner
  * market over a full grid. Tod, 27 Oct 2026: fine for now (F4199-05).
  */
 const LIQUIDITY_TIER = 1000
@@ -146,7 +150,7 @@ async function providerCall<T>(
   }
 }
 
-// â”€â”€â”€ Creating markets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Creating markets ─────────────────────────────────────────────────────────
 
 export type F1CreateStatus = 'created' | 'skipped' | 'dry-run' | 'error'
 
@@ -190,7 +194,7 @@ function describeF1Market(
     }`,
     `opens ${top.join(', ')}${more > 0 ? `, +${more} more` : ''}`,
     `closes ${new Date(params.closeTime).toISOString().slice(0, 16)}Z`,
-    `ante á¹€${ante}`,
+    `ante Ṁ${ante}`,
   ].join('; ')
 }
 
@@ -753,7 +757,7 @@ export async function createF1MarketsForActiveCalendar(
   return out
 }
 
-// â”€â”€â”€ Resolving markets â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Resolving markets ────────────────────────────────────────────────────────
 
 const iso = (t: number) => new Date(t).toISOString().slice(0, 16) + 'Z'
 
@@ -1275,6 +1279,7 @@ export async function resolveF1Markets(
       const watchSeed = f1WatchSeed(contract.sportsEventId, session, results)
       creator ??= await sportsCreator()
       if (resolution.kind === 'sum-to-one') {
+        if (watchSeed) await noteF1WatchScope(pg, contract.id, watchSeed)
         const paid = await settle(creator, {
           outcome: resolution.outcome,
           resolutions: resolution.resolutions,
@@ -1297,6 +1302,7 @@ export async function resolveF1Markets(
         continue
       }
       const intended = (answerId: string) => resolution.resolutions[answerId]
+      if (watchSeed) await noteF1WatchScope(pg, contract.id, watchSeed)
       for (const a of sortBy(answers, (x) => x.index)) {
         if (a.resolution) continue
         const paid = await settle(
@@ -1324,7 +1330,7 @@ export async function resolveF1Markets(
   return result
 }
 
-// â”€â”€â”€ Following sessions that move â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Following sessions that move ────────────────────────────────────────────
 
 export interface F1SyncResult {
   checked: number
@@ -1437,7 +1443,7 @@ export async function syncF1SessionMarkets(
   return result
 }
 
-// â”€â”€â”€ Resolving titles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Resolving titles ─────────────────────────────────────────────────────────
 
 /** The most open title markets a run reads: there are two a season. */
 const MAX_TITLE_MARKETS = 20
@@ -1538,7 +1544,7 @@ export async function resolveF1TitleMarkets(
               close
             )} to ${iso(target)}, by the final race's`
           )
-          add(contract, 'moved', `close ${iso(close)} â†’ ${iso(target)}`)
+          add(contract, 'moved', `close ${iso(close)} → ${iso(target)}`)
           continue
         }
       }

@@ -6,6 +6,9 @@ import { isSportsBdlEnabled } from 'common/bdl/rollout'
 export const useSharedF1Client = () =>
   process.env.SPORTS_BDL_F1_SHARED_CLIENT === 'true' && isSportsBdlEnabled()
 
+export const f1WatchEnabled = () =>
+  useSharedF1Client() && process.env.SPORTS_BDL_F1_CORRECTION_WATCH === 'true'
+
 // The scheduler is the ordinary caller. The authenticated admin endpoint
 // identifies its own concurrent reads without changing that job's budget.
 const apiRead = new AsyncLocalStorage<boolean>()

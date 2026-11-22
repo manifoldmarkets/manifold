@@ -450,6 +450,8 @@ export type Sports = {
   sportsResumptionTime?: number
   sportsFinalQualifier?: import('./sports-scoreboard').SportsFinalQualifier
   sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
+  /** An observed F1 watch opt-in. Only its original payout receipt can enroll a watch. */
+  sportsF1WatchScope?: { eventId: string; phase: string; activation: string }
   /** F1 classification used at settlement and the last post-settlement observation. */
   sportsF1Watch?: {
     eventId: string

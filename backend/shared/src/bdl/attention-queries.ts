@@ -24,6 +24,11 @@ import { HOUR_MS } from 'common/util/time'
 import type { SupabaseDirectClient } from '../supabase/init'
 import { sportsProviderSql } from '../supabase/sports-provider'
 
+import { f1WatchEnabled } from './f1-read-role'
+import { missingF1WatchSql } from './f1-watch-enrollment'
+
+const missingMessage =
+  'F1 correction watch baseline unavailable; verify the original settlement receipt'
 type Row = Omit<SportsAttentionItem, 'href'> & {
   creatorUsername: string | null
   slug: string | null
@@ -67,15 +72,18 @@ export async function getSportsAttention(
   )
     throw new Error('Invalid sports attention query')
   const asOf = after?.asOf ?? now
+  const watch = f1WatchEnabled()
+  const gap = watch ? 'missing.paid_at' : 'null::bigint'
   const rows = await pg.manyOrNone<Row>(
-    `with official as (
+    `with ${watch ? `missing as (${missingF1WatchSql}),` : ''} official as (
       select c.id, left(c.question, 500) as question, c.slug, c.data->>'creatorUsername' as username,
         c.data->>'sportsEventId' as event, ${sportsProviderSql()} as provider,
         c.data->>'sportsMarketType' as kind, c.data->>'sportsLeagueKey' as league_key,
         left(c.data->>'sportsLeague',100) as league, upper(coalesce(c.data->>'sportsLiveStatus','')) as status,
         case when jsonb_typeof(c.data->'sportsAttentionReason')='string' then
-          nullif(left(btrim(regexp_replace(c.data->>'sportsAttentionReason','[[:space:][:cntrl:]]+',' ','g')), 500),'') end as reason,
-        ${storedMs('sportsAttentionSince')} as marked, ${storedMs(
+          nullif(left(btrim(regexp_replace(c.data->>'sportsAttentionReason','[[:space:][:cntrl:]]+',' ','g')), 500),'') end as stored_reason,
+        ${gap} as missing_at,
+        ${storedMs('sportsAttentionSince')} as stored_mark, ${storedMs(
       'sportsFinalSince'
     )} as final_at,
         ${storedMs('sportsCanceledSince')} as canceled_at, ${storedMs(
@@ -86,12 +94,13 @@ export async function getSportsAttention(
         c.data->>'sportsStartTimestamp' as start_text,
         case when c.resolution is not null then watch.corrected_ms end as correction_ms
       from contracts c
+      ${watch ? 'left join missing on missing.id=c.id' : ''}
       cross join lateral (select case
         when jsonb_typeof(c.data#>'{sportsF1Watch,correctedTime}')='number'
           and c.data#>>'{sportsF1Watch,correctedTime}' ~ '^[1-9][0-9]{0,15}$'
         then (c.data#>>'{sportsF1Watch,correctedTime}')::bigint end as corrected_ms) watch
       where c.creator_id = any($1) and c.token='MANA' and c.visibility='public'
-        and (c.resolution is null or (c.resolution <> 'CANCEL'
+        and (c.resolution is null or ${gap} is not null or (c.resolution <> 'CANCEL'
           and c.data->>'sportsEventId' ~ '^bdl-f1:[1-9][0-9]*:[1-9][0-9]*$'
           and c.data#>>'{sportsF1Watch,eventId}' = c.data->>'sportsEventId'
           and c.data#>'{sportsF1Watch,resolutionTime}' = to_jsonb((extract(epoch from c.resolution_time)*1000)::bigint)
@@ -104,9 +113,11 @@ export async function getSportsAttention(
         and c.id ~ '^[a-zA-Z0-9_-]{1,128}$'
         and c.data->>'sportsFixture' is distinct from 'true'
         and not starts_with(coalesce(c.data->>'sportsEventId',''),'fixture:')
-        and (c.data ? 'sportsAttentionReason' or c.close_time < $3::timestamptz)
+        and (${gap} is not null or c.data ? 'sportsAttentionReason' or c.close_time < $3::timestamptz)
     ), events as (
-      select *, event ~ '^bdl-f1:[1-9][0-9]*:[1-9][0-9]*$' as f1_session,
+      select *, case when missing_at is null then stored_reason
+        else concat_ws(' · ',stored_reason,'${missingMessage}') end as reason,
+        case when stored_reason is null then missing_at else stored_mark end as marked, event ~ '^bdl-f1:[1-9][0-9]*:[1-9][0-9]*$' as f1_session,
         event ~ '^bdl-f1-title:[0-9]{4}:(drivers|constructors)$' as f1_title
       from official where provider <> 'fixture'
     ), deadlines as (
