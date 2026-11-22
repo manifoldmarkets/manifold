@@ -31,6 +31,7 @@ export type NbaPlayoffSeries = {
 export type NbaPlayoffBracket = {
   season: number
   championEventId: string
+  complete: boolean
   series: NbaPlayoffSeries[]
   /** Derived only from a complete four-round elimination tree. */
   champion: { teamId: number; seriesId: string; clinchingGameId: number } | null
@@ -217,6 +218,7 @@ export function projectNbaPlayoffSeries(
   if (!nbaPlayoffSeason(season)) throw Error('Unsupported NBA playoff season')
   const bracket: NbaPlayoffBracket = {
     season,
+    complete,
     championEventId: 'bdl:nba-champion:' + season,
     series: [],
     champion: null,

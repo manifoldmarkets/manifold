@@ -427,6 +427,8 @@ export type SportsMarketType =
   | 'winner'
   | 'podium'
   | 'title'
+  | 'series'
+  | 'champion'
 
 export type Sports = {
   sportsProvider?: import('./sports-provider').SportsProvider
