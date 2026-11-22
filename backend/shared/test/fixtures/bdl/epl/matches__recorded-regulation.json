@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "id": 3818267,
+      "date": "2026-10-25T16:30:00.000Z",
+      "season": 2026,
+      "status": "STATUS_FULL_TIME",
+      "status_state": "final",
+      "status_detail": "FT",
+      "home_team_id": 17,
+      "away_team_id": 11,
+      "home_score": 0,
+      "away_score": 0,
+      "first_half_home_score": 0,
+      "first_half_away_score": 0,
+      "second_half_home_score": 0,
+      "second_half_away_score": 0
+    },
+    {
+      "id": 3818207,
+      "date": "2026-09-06T13:00:00.000Z",
+      "season": 2026,
+      "status": "STATUS_FULL_TIME",
+      "status_state": "final",
+      "status_detail": "FT",
+      "home_team_id": 9,
+      "away_team_id": 14,
+      "home_score": 2,
+      "away_score": 2,
+      "first_half_home_score": 0,
+      "first_half_away_score": 0,
+      "second_half_home_score": 1,
+      "second_half_away_score": 2
+    }
+  ]
+}
