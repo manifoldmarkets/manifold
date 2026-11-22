@@ -839,3 +839,31 @@ it.each([false, true])(
     })
   }
 )
+
+it('retains the displayed dated final as disputed when an overlapping undated opposite result challenges that stored row', async () => {
+  await seed()
+  const accepted = oddsFinal(200, 120, 7, 1)
+  const [first] = await writeFixtureScore(pg, source, accepted, 150)
+  const [disputed] = await writeFixtureScore(
+    pg,
+    source,
+    oddsFinal(250, null, 2, 6),
+    190
+  )
+  expect(disputed.held?.sportsLiveStatus).toBe('UNKNOWN')
+  const held = await current()
+  expect(held).toMatchObject({
+    sportsScoreConflictStamp: 120,
+    sportsScoreProviderWatermark: 120,
+  })
+  expect(() =>
+    assertObservedResult(held, source, accepted, first.answers)
+  ).toThrow()
+  expect(
+    await writeFixtureScore(pg, source, oddsFinal(300, null, 2, 6), 280)
+  ).toHaveLength(0)
+  expect(
+    (await writeFixtureScore(pg, source, oddsFinal(330, 315, 2, 6), 320))[0]
+      .held
+  ).toBeUndefined()
+})

@@ -1303,6 +1303,31 @@ describe('fixture-bound provider writes', () => {
       sportsScoreProviderWatermark: NOW - 100,
     })
   })
+  it('clears a later undated batch disagreement after an independent clean Odds poll and retains the historical vendor floor', async () => {
+    const { d, done } = pollBatches([scored(10, 3, null), scored(3, 10, null)])
+    expect((await done).resolved).toBe(0)
+    expect(d.data).toMatchObject({
+      sportsLiveStatus: 'UNKNOWN',
+      sportsScoreConflictStamp: null,
+      sportsScoreProviderWatermark: NOW - 100,
+    })
+    d.pg.manyOrNone
+      .mockResolvedValueOnce([{ data: d.data, token: 'MANA' }])
+      .mockResolvedValue(reviewAnswers)
+    jest.mocked(Date.now).mockReturnValue(NOW + 40)
+    jest.mocked(getScores).mockResolvedValueOnce([scored(3, 10, null)])
+    expect(
+      (await pollOddsScoresAndResolve(d.client, newScorePollState())).resolved
+    ).toBe(1)
+    expect(d.data).toMatchObject({
+      sportsLiveStatus: 'FINISHED',
+      sportsScoreConflict: false,
+      sportsScoreProviderWatermark: NOW - 100,
+    })
+    expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toMatchObject({
+      outcome: 'away-answer',
+    })
+  })
   it('holds a reserved market using contradictory finals already returned for its unreserved sibling', async () => {
     const { d, state, done } = pollBatches(
       [scored(10, 3, NOW - 10), scored(3, 10, NOW - 10)],

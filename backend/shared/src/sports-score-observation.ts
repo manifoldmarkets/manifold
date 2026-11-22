@@ -476,7 +476,13 @@ export async function writeFixtureScore(
                 held && source.provider === 'odds'
                   ? Math.max(
                       watermark,
-                      replacement
+                      // A later, internally inconsistent batch disputes its
+                      // own rows. The prior vendor timestamp remains a
+                      // regression floor, but did not take part in that tie.
+                      replacement ||
+                        (evidence.conflict &&
+                          startedAt >= priorCompleted &&
+                          patch.sportsLiveUpdatedTime > priorCompleted)
                         ? 0
                         : comparableTime(data.sportsScoreUpdatedTime),
                       !replacement && data.sportsScoreConflict
