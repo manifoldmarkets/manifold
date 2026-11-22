@@ -1118,11 +1118,16 @@ it('reports whether every duplicate NFL row carries a comparable revision in eit
       { ...raw, updated_at: null, visitor_team_score: 23 },
     ]
     if (reverse) batch.reverse()
-    let clock=ts
+    let clock = ts
     const client = createBdlClient({
       role: 'recorder',
       key: 'fixture',
-      clock: { now: () => clock, sleep: async (ms) => {clock+=ms} },
+      clock: {
+        now: () => clock,
+        sleep: async (ms) => {
+          clock += ms
+        },
+      },
       transport: async (input) =>
         new Response(
           JSON.stringify({

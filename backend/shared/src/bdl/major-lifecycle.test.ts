@@ -1309,7 +1309,13 @@ it('withholds the original final offer across a disputed unpaid sibling', async 
   } as MajorMarket
   now = t + 30
   expect(majorPayout(target, target.sportsRecordedResult!, now)).toBeDefined()
-  expect(majorPayout({...target,sportsResultDisputed:true},target.sportsRecordedResult!,now)).toBeUndefined()
+  expect(
+    majorPayout(
+      { ...target, sportsResultDisputed: true },
+      target.sportsRecordedResult!,
+      now
+    )
+  ).toBeUndefined()
 
   expect(
     await settleRecordedMajor(
