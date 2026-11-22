@@ -16,6 +16,10 @@
  * standings by resolveF1TitleMarkets, in the same job.
  */
 
+import {
+  beginF1Observation,
+  finishF1Observation,
+} from './bdl/f1-session-observation'
 import { sortBy, sum, uniq } from 'lodash'
 import {
   f1WatchSeed,
@@ -35,7 +39,7 @@ import {
   SportsMarketAlreadyExistsError,
 } from 'shared/sports-markets'
 import { sportsCreator } from 'shared/odds-markets'
-import { F1ReadEvidenceError } from './bdl/f1-read-evidence'
+import { F1ReadEvidenceError, validF1Entrants } from './bdl/f1-read-evidence'
 import { useSharedF1Client } from './bdl/f1-read-role'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import {
@@ -538,12 +542,35 @@ export async function createF1Markets(
   if (events.length === 0) return result
   const eventById = new Map(events.map((e) => [e.id, e]))
 
+  let calendar: F1Session[]
+  try {
+    calendar = await providerCall('/sessions', PLAN_REFUSED, () =>
+      getF1Sessions(events.map((e) => e.id))
+    )
+  } catch (error) {
+    if (
+      !(error instanceof F1ReadEvidenceError) ||
+      !error.disputed ||
+      !useSharedF1Client()
+    )
+      throw error
+    calendar = error.disputed.verifiedSiblings
+    for (const id of error.disputed.sessionIds) {
+      if (picked && ![...picked].some((key) => key.startsWith(`${id}:`)))
+        continue
+      result.skipped++
+      result.log.push({
+        key: `${id}:none`,
+        question: `F1 session ${id}`,
+        status: 'skipped',
+        reason: error.message,
+      })
+    }
+  }
   const sessions = sortBy(
-    (
-      await providerCall('/sessions', PLAN_REFUSED, () =>
-        getF1Sessions(events.map((e) => e.id))
-      )
-    ).filter((s) => eventById.has(s.event?.id) && inRun(Date.parse(s.date))),
+    calendar.filter(
+      (s) => eventById.has(s.event?.id) && inRun(Date.parse(s.date))
+    ),
     (s) => Date.parse(s.date)
   )
   if (sessions.length === 0) return result
@@ -956,6 +983,11 @@ async function readMarketSessions(
   )
   const problems = new Map<string, string>()
   const shared = useSharedF1Client()
+  const receipt =
+    shared && eventIds.length
+      ? await beginF1Observation(pg, eventIds)
+      : undefined
+  const startedAt = receipt ? Date.now() : 0
   let sessions: F1Session[]
   try {
     sessions = eventIds.length
@@ -979,6 +1011,14 @@ async function readMarketSessions(
     }
     sessions = error.disputed?.verifiedSiblings ?? []
   }
+  const observedAt = receipt ? Date.now() : 0
+  if (
+    receipt &&
+    (!Number.isSafeInteger(startedAt) ||
+      startedAt <= 0 ||
+      observedAt < startedAt)
+  )
+    throw new Error('F1 observation clock moved backwards')
   const sessionById = new Map(sessions.map((session) => [session.id, session]))
   if (shared) {
     // Both events may be legitimately requested together. A session is only
@@ -986,6 +1026,11 @@ async function readMarketSessions(
     for (const contract of contracts) {
       const id = ids.get(contract.id)
       const session = id && sessionById.get(id.sessionId)
+      if (id && !session && !problems.has(contract.sportsEventId!))
+        problems.set(
+          contract.sportsEventId!,
+          `The F1 schedule does not list session ${id.sessionId} for event ${id.eventId}`
+        )
       if (id && session && session.event.id !== id.eventId)
         problems.set(
           contract.sportsEventId!,
@@ -993,15 +1038,10 @@ async function readMarketSessions(
         )
     }
   }
-  if (problems.size)
-    await pg.none(
-      `update contracts set data = data - 'sportsCanceledSince' - 'sportsFinalSince'
-       where creator_id = any($1) and token = 'MANA' and resolution is null
-         and data->>'sportsEventId' = any($2::text[])
-         and (data ? 'sportsCanceledSince' or data ? 'sportsFinalSince')`,
-      [MANIFOLD_SPORTS_USER_IDS, [...problems.keys()]]
-    )
-  return { ids, sessionById, problems }
+  const marks = receipt
+    ? await finishF1Observation(pg, receipt, eventIds, sessions, observedAt)
+    : undefined
+  return { ids, sessionById, problems, marks, receipt, observedAt }
 }
 
 const getAnswers = async (pg: SupabaseDirectClient, contractId: string) =>
@@ -1060,7 +1100,8 @@ export async function resolveF1Markets(
   const { add, attention } = resolveLog(result, alerted)
 
   const sharedRead = useSharedF1Client()
-  const { ids, sessionById, problems } = await readMarketSessions(pg, contracts)
+  const read = await readMarketSessions(pg, contracts)
+  const { ids, sessionById, problems } = read
   const resultsBySession = new Map<
     number,
     F1SessionResult[] | F1ReadEvidenceError
@@ -1108,12 +1149,14 @@ export async function resolveF1Markets(
         )
         continue
       }
-      const observed = await observeF1Session(
-        pg,
-        contract,
-        session.status_state,
-        now
-      )
+      const observed = read.marks
+        ? read.marks.get(contract.id)
+        : await observeF1Session(pg, contract, session.status_state, now)
+      if (!observed) {
+        add(contract, 'waiting', 'A newer F1 schedule read is pending')
+        continue
+      }
+      const checkAt = read.receipt ? read.observedAt : now
       const settleAt = f1SessionSettleAt(session)
       if (settleAt === null) {
         attention(
@@ -1126,7 +1169,7 @@ export async function resolveF1Markets(
         // N/A once the cancellation has held, so a flicker refunds nothing.
         const since = observed.canceledSince
         const confirmMs = F1_CANCEL_CONFIRM_HOURS * HOUR_MS
-        if (since === undefined || now - since < confirmMs) {
+        if (since === undefined || checkAt - since < confirmMs) {
           wait(
             'the session was cancelled; N/A once that has held',
             since === undefined ? settleAt : since + confirmMs
@@ -1149,7 +1192,7 @@ export async function resolveF1Markets(
         settleAt,
         (observed.finalSince ?? now) + F1_RESOLVE_DELAY_HOURS * HOUR_MS
       )
-      if (session.status_state === 'final' && now < dueAt) {
+      if (session.status_state === 'final' && checkAt < dueAt) {
         add(contract, 'waiting', `pays out from ${iso(dueAt)}`)
         continue
       }
@@ -1169,6 +1212,8 @@ export async function resolveF1Markets(
               const stored = fresh as SportsContract
               if (
                 stored.sportsEventId !== contract.sportsEventId ||
+                stored.sportsF1SchedulePending !== undefined ||
+                stored.sportsF1ScheduleReceipt !== read.receipt ||
                 stored.sportsFinalSince !== observed.finalSince ||
                 stored.sportsCanceledSince !== observed.canceledSince
               )
@@ -1261,14 +1306,18 @@ export async function resolveF1Markets(
         attention(contract, `unknown market type ${marketType}`)
         continue
       }
-      const resolution = f1SessionResolution(
-        session,
-        results,
-        answers,
-        contract.sportsEntrantIds ?? [],
-        marketType,
-        contract.addAnswersMode
-      )
+      const resolveField = (fresh: CPMMMultiContract & SportsContract) =>
+        sharedRead && !validF1Entrants(fresh.sportsEntrantIds)
+          ? null
+          : f1SessionResolution(
+              session,
+              results,
+              fresh.answers,
+              fresh.sportsEntrantIds ?? [],
+              marketType,
+              fresh.addAnswersMode
+            )
+      const resolution = resolveField(multi)
       if (!resolution) {
         attention(
           contract,
@@ -1280,10 +1329,32 @@ export async function resolveF1Markets(
       creator ??= await sportsCreator()
       if (resolution.kind === 'sum-to-one') {
         if (watchSeed) await noteF1WatchScope(pg, contract.id, watchSeed)
-        const paid = await settle(creator, {
-          outcome: resolution.outcome,
-          resolutions: resolution.resolutions,
-        })
+        const paid = await settle(
+          creator,
+          {
+            outcome: resolution.outcome,
+            resolutions: resolution.resolutions,
+          },
+          sharedRead
+            ? (fresh) => {
+                const c = fresh as CPMMMultiContract & SportsContract
+                const next =
+                  c.sportsMarketType === marketType &&
+                  c.shouldAnswersSumToOne &&
+                  Array.isArray(c.answers)
+                    ? resolveField(c)
+                    : null
+                if (
+                  next?.kind !== 'sum-to-one' ||
+                  next.outcome !== resolution.outcome
+                )
+                  throw new F1ReadEvidenceError(
+                    'market_field',
+                    'The F1 winner no longer maps to the same market answer'
+                  )
+              }
+            : undefined
+        )
         if (watchSeed) await recordF1WatchBaseline(pg, paid.contract, watchSeed)
         const winner = answers.find((a) => a.id === resolution.outcome)
         add(contract, 'resolved', `${winner?.text ?? resolution.outcome}`)
@@ -1308,7 +1379,31 @@ export async function resolveF1Markets(
         const paid = await settle(
           creator,
           { outcome: intended(a.id), answerId: a.id },
-          agreesWith(intended)
+          sharedRead
+            ? (fresh) => {
+                const c = fresh as CPMMMultiContract & SportsContract
+                const next =
+                  c.sportsMarketType === marketType &&
+                  !c.shouldAnswersSumToOne &&
+                  Array.isArray(c.answers)
+                    ? resolveField(c)
+                    : null
+                if (
+                  next?.kind !== 'independent' ||
+                  next.resolutions[a.id] !== intended(a.id) ||
+                  Object.keys(resolution.resolutions).length !==
+                    Object.keys(next.resolutions).length ||
+                  Object.keys(resolution.resolutions).some(
+                    (id) => next.resolutions[id] !== intended(id)
+                  )
+                )
+                  throw new F1ReadEvidenceError(
+                    'market_field',
+                    'The F1 podium no longer maps to the same market answers'
+                  )
+                agreesWith(intended)(fresh)
+              }
+            : agreesWith(intended)
         )
         if (watchSeed && paid.contract.isResolved)
           await recordF1WatchBaseline(pg, paid.contract, watchSeed)
@@ -1322,6 +1417,10 @@ export async function resolveF1Markets(
           .join(', ')}`
       )
     } catch (e) {
+      if (useSharedF1Client() && e instanceof F1ReadEvidenceError) {
+        attention(contract, e.message)
+        continue
+      }
       const reason = e instanceof Error ? e.message : String(e)
       add(contract, 'error', reason)
       log.error(`[sports-f1-resolve] ${contract.id} failed: ${reason}`)
@@ -1376,7 +1475,8 @@ export async function syncF1SessionMarkets(
   )
   const contracts = rows.map((r) => convertContract(r) as SportsContract)
   result.checked = contracts.length
-  const { ids, sessionById } = await readMarketSessions(pg, contracts)
+  const read = await readMarketSessions(pg, contracts)
+  const { ids, sessionById } = read
 
   for (const contract of contracts) {
     const id = ids.get(contract.id)
@@ -1393,15 +1493,18 @@ export async function syncF1SessionMarkets(
       )
     }
 
-    const observed = await observeF1Session(
-      pg,
-      contract,
-      session.status_state,
-      now
-    )
-    if (observed.changes.length > 0) {
+    const current = read.marks?.get(contract.id)
+    if (read.marks && !current) continue
+    const changes = current
+      ? current.finalSince !== contract.sportsFinalSince ||
+        current.canceledSince !== contract.sportsCanceledSince
+        ? ['updated session confirmation']
+        : []
+      : (await observeF1Session(pg, contract, session.status_state, now))
+          .changes
+    if (changes.length) {
       result.marked++
-      record(observed.changes.join('; '))
+      record(changes.join('; '))
     }
 
     if (contract.closeTime === undefined) continue
@@ -1626,14 +1729,17 @@ export async function resolveF1TitleMarkets(
         continue
       }
       const answers = await getAnswers(pg, contract.id)
-      const resolution = f1TitleResolution(
-        id.season,
-        id.kind,
-        standings,
-        answers,
-        contract.sportsEntrantIds ?? [],
-        contract.addAnswersMode
-      )
+      const resolution =
+        useSharedF1Client() && !validF1Entrants(contract.sportsEntrantIds)
+          ? null
+          : f1TitleResolution(
+              id.season,
+              id.kind,
+              standings,
+              answers,
+              contract.sportsEntrantIds ?? [],
+              contract.addAnswersMode
+            )
       if (!resolution) {
         const margin = f1TitleMargin(standings)
         const safe = F1_TITLE_SAFE_MARGIN[id.kind]
@@ -1673,6 +1779,10 @@ export async function resolveF1TitleMarkets(
       const champion = answers.find((a) => a.id === resolution.outcome)
       add(contract, 'resolved', champion?.text ?? resolution.outcome)
     } catch (e) {
+      if (useSharedF1Client() && e instanceof F1ReadEvidenceError) {
+        attention(contract, e.message)
+        continue
+      }
       const reason = e instanceof Error ? e.message : String(e)
       add(contract, 'error', reason)
       log.error(`[sports-f1-resolve] ${contract.id} failed: ${reason}`)

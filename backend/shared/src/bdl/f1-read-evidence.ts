@@ -3,7 +3,12 @@ import type { F1Session } from 'common/f1-markets'
 /** An HTTP response arrived, but cannot establish the requested sporting fact. */
 export class F1ReadEvidenceError extends Error {
   constructor(
-    readonly resource: 'sessions' | 'session_results',
+    readonly resource:
+      | 'sessions'
+      | 'session_results'
+      | 'driver_standings'
+      | 'team_standings'
+      | 'market_field',
     message: string,
     readonly disputed?: {
       sessionIds: ReadonlySet<number>
@@ -51,3 +56,11 @@ export function verifiedF1Sessions(rows: F1Session[]): F1Session[] {
     )
   return [...byId.values()]
 }
+
+export const validF1Id = (id: unknown): id is number =>
+  typeof id === 'number' && Number.isSafeInteger(id) && id > 0
+
+export const validF1Entrants = (ids: unknown): ids is (number | null)[] =>
+  Array.isArray(ids) &&
+  ids.some(validF1Id) &&
+  Array.from(ids).every((id) => id === null || validF1Id(id))
