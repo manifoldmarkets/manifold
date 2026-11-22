@@ -33,6 +33,11 @@ const serviceResources = new Set([
   'rosters',
 ])
 const priceResources = new Set(['odds', 'odds/opening'])
+const pgaFieldResources = new Set([
+  'tournaments',
+  'tournament_competitors',
+  'tournament_results',
+])
 
 export function bdlStatsEndpoint(path: string) {
   const parsed = matchBdlEndpoint(path)
@@ -49,6 +54,8 @@ export function bdlStatsEndpoint(path: string) {
 
 function isBdlStatsRoute(league: string, version: string, resource: string) {
   if (!isBdlLeagueKey(league)) return false
+  if (league === 'pga' && pgaFieldResources.has(resource))
+    return version === 'v2'
   const config = BDL_LEAGUES[league]
   const base = priceResources.has(resource)
     ? config.oddsApiBase
