@@ -284,7 +284,7 @@ export function FieldEvent({
                   <tr key={p.playerId} className="border-ink-100 border-t">
                     <td className="py-2 pr-1">{standing(p)}</td>
                     <th scope="row" className="break-words pr-1 font-normal">
-                      {golfPickLabel(p)}
+                      {p.name}
                     </th>
                     {field.hasResults && (
                       <>
