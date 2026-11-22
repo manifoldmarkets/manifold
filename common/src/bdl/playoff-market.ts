@@ -38,7 +38,9 @@ export function nbaSeriesOpeningEstimate(
     return null
   if (
     s.games.some(
-      (g) => !['final', 'scheduled', 'canceled', 'postponed'].includes(g.status)
+      (g) =>
+        !['final', 'scheduled', 'canceled', 'postponed'].includes(g.status) ||
+        (g.status === 'final' && (g.startTime === null || g.startTime >= now))
     )
   )
     return null
@@ -46,7 +48,8 @@ export function nbaSeriesOpeningEstimate(
   const games = s.games.filter((g) => g.status === 'scheduled')
   if (
     games.length !== remaining ||
-    new Set(games.map((g) => g.id)).size !== remaining
+    new Set(games.map((g) => g.id)).size !== remaining ||
+    new Set(games.map((g) => g.startTime)).size !== remaining
   )
     return null
   const probabilities: number[] = []

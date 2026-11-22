@@ -66,7 +66,7 @@ function setup(aWins = 0, bWins = 0) {
       ],
     })
   )
-  return { bracket, series, odds }
+  return { bracket, series, odds, rawGames: [...played, ...remaining] }
 }
 const answer = (id: string, team: number, index: number, q: number) => ({
   id: 'answer-' + team,
@@ -175,6 +175,48 @@ test('withholds an estimate on missing, stale, wrong-team, wrong-game, conflicti
   expect(estimate({ ...bracket, complete: false }, odds)).toBeNull()
   expect(estimate({ ...bracket, review: ['identity'] }, odds)).toBeNull()
 })
+test('all sixteen current scores require distinct future tipoffs and strictly earlier finals', () => {
+  for (let a = 0; a < 4; a++) {
+    for (let b = 0; b < 4; b++) {
+      const { bracket, series, odds, rawGames } = setup(a, b)
+      const seen = nbaSeriesOpeningEstimate(bracket, series.eventId, odds, now)
+      expect(seen).not.toBeNull()
+      const n = 7 - a - b
+      // Independently enumerate every possible outcome string, including unused games.
+      let weight = 0
+      for (let sequence = 0; sequence < 2 ** n; sequence++) {
+        const wins = sequence.toString(2).replace(/0/g, '').length
+        if (wins + a >= 4) weight += 0.6 ** wins * 0.4 ** (n - wins)
+      }
+      expect(seen!.probability).toBeCloseTo(weight, 12)
+      function reprice(games: typeof rawGames) {
+        const observed = projectNbaPlayoffSeries(2025, games, true)
+        return nbaSeriesOpeningEstimate(observed, series.eventId, odds, now)
+      }
+      if (n >= 2) {
+        const cloned = rawGames.map((g, i) =>
+          i === rawGames.length - 1
+            ? { ...g, datetime: rawGames[i - 1].datetime }
+            : g
+        )
+        expect(reprice(cloned)).toBeNull()
+      }
+      if (a + b > 0) {
+        for (const offset of [0, 1])
+          expect(
+            reprice(
+              rawGames.map((g, i) =>
+                i === 0
+                  ? { ...g, datetime: new Date(now + offset).toISOString() }
+                  : g
+              )
+            )
+          ).toBeNull()
+      }
+    }
+  }
+})
+
 test('native outcome, team, visible label and current quote are bound independently of row order', () => {
   const { bracket, series } = setup()
   const m = market(series.eventId)
