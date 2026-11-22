@@ -263,6 +263,7 @@ import {
 } from './admin-sports-score-polling'
 import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
+import { sportsResults } from './sports-results'
 import { sportsIndex } from './sports-index'
 import { sportsLeaderboards } from './sports-leaderboards'
 import { electionLeaderboards } from './election-leaderboards'
@@ -675,6 +676,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-set-score-polling': adminSportsSetScorePolling,
   'sports-markets': sportsMarkets,
   'sports-schedule': sportsSchedule,
+  'sports-results': sportsResults,
   'sports-index': sportsIndex,
   'sports-leaderboards': sportsLeaderboards,
   'election-leaderboards': electionLeaderboards,

@@ -78,6 +78,10 @@ import {
   SportsScheduleResponse,
   SportsSubtopic,
 } from 'common/sports-schedule'
+import {
+  sportsResultsProps,
+  type SportsResultsPage,
+} from 'common/sports-results'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
 import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
@@ -5268,6 +5272,14 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as SportsScheduleResponse,
+  },
+  'sports-results': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    props: sportsResultsProps,
+    returns: {} as SportsResultsPage,
   },
   // Every sport on the sports pages and every other topic under Sports, with
   // the topics behind each. Topic pages use it to send a topic to its page

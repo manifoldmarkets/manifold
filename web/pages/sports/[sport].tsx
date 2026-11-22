@@ -5,6 +5,8 @@ import { useEffect, useMemo } from 'react'
 import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { SportResults } from 'web/components/sports/sport-results'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RaceChampionships } from 'web/components/sports/race-championships'
 import { GameFeed } from 'web/components/sports/schedule-list'
@@ -198,6 +200,22 @@ export default function SportPage() {
             queryString: 'markets',
             content: <div className="pt-3">{markets}</div>,
           },
+          ...(isSportsBdlEnabled() && ready && key
+            ? [
+                {
+                  title: 'Results',
+                  queryString: 'results',
+                  content:
+                    router.query.tab === 'results' ? (
+                      <SportResults
+                        sport={key}
+                        league={router.query.league}
+                        hides={hides}
+                      />
+                    ) : null,
+                },
+              ]
+            : []),
           ...topic.tabs,
         ]}
       />
