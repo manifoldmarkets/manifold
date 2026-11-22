@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs'
-import { join } from 'path'
 import type { ProviderOdds } from '../sports-provider'
 import { DAY_MS } from '../util/time'
 import { BDL_ODDS_MAX_AGE_MS } from './constants'
@@ -43,38 +41,30 @@ function row(
 const select = (rows: ProviderOdds[], target = game) =>
   selectOpeningLine(rows, target, now)
 
-type FixtureRow = {
-  game_id: number
-  vendor: string
-  moneyline_home_odds: number
-  moneyline_away_odds: number
-  updated_at: string
-}
-const fixture: { data: FixtureRow[] } = JSON.parse(
-  readFileSync(
-    join(
-      __dirname,
-      '../../../backend/shared/test/fixtures/bdl/nba/odds__spec-opening-line.json'
-    ),
-    'utf8'
-  )
-)
-const slate = fixture.data.map((x) =>
-  row(
-    x.vendor,
-    [x.moneyline_away_odds, x.moneyline_home_odds],
-    Date.parse(x.updated_at),
-    String(x.game_id)
-  )
-)
+const sampleGames = [
+  ['11', 'polymarket', 0, 180 / 280],
+  ['12', 'polymarket', 0, 140 / 240],
+  ['13', 'polymarket', 2, 149 / 249],
+  ['14', 'kalshi', 1, 145 / 245],
+] as const
+const preferredExchange = sampleGames[0][1]
+const fallbackExchange = sampleGames[3][1]
+
+// Mixed-provider pricing and coverage scenarios use fictional quotes.
+const slate = [
+  row(preferredExchange, [-180, 180], now, '11'),
+  row(fallbackExchange, [-125, 125], now, '12'),
+  row(preferredExchange, [-140, 140], now, '12'),
+  row('sample-book-a', [-155, 138], now, '13'),
+  row('sample-book-b', [-162, 142], now, '13'),
+  row(fallbackExchange, [-130, 130], now, '13'),
+  row(preferredExchange, [-149, 149], now, '13'),
+  row(fallbackExchange, [-145, 145], now, '14'),
+  row('sample-book-a', [-151, 134], now, '14'),
+]
 
 describe('BDL opening moneylines', () => {
-  it.each([
-    ['11', 'polymarket', 0, 180 / 280],
-    ['12', 'polymarket', 0, 140 / 240],
-    ['13', 'polymarket', 2, 149 / 249],
-    ['14', 'kalshi', 1, 145 / 245],
-  ] as const)(
+  it.each(sampleGames)(
     'prices synthetic game %s from %s with %i complete books',
     (eventId, source, bookCount, first) => {
       const result = select(slate, { ...game, eventId })

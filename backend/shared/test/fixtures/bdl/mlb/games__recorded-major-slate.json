@@ -1,0 +1,31 @@
+{
+  "data": [
+    {
+      "id": 5059601,
+      "date": "2026-08-14T02:07:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "season_type": "regular",
+      "status": "STATUS_FINAL",
+      "status_state": "final",
+      "period": 9,
+      "display_clock": "0:00",
+      "home_team": {
+        "id": 13,
+        "display_name": "Los Angeles Angels",
+        "abbreviation": "LAA"
+      },
+      "away_team": {
+        "id": 28,
+        "display_name": "Texas Rangers",
+        "abbreviation": "TEX"
+      },
+      "home_team_data": {
+        "runs": 7
+      },
+      "away_team_data": {
+        "runs": 0
+      }
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "data": [
+    {
+      "id": 1392367,
+      "date": "2026-11-22T18:00:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "status": "11/22 - 1:00 PM EST",
+      "status_state": "scheduled",
+      "week": 11,
+      "home_team_score": null,
+      "visitor_team_score": null,
+      "home_team": {
+        "id": 3,
+        "full_name": "Buffalo Bills",
+        "abbreviation": "BUF"
+      },
+      "visitor_team": {
+        "id": 5,
+        "full_name": "Miami Dolphins",
+        "abbreviation": "MIA"
+      }
+    }
+  ]
+}
