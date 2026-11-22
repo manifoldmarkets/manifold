@@ -349,6 +349,39 @@ test('a disputed final from the season reader withdraws the estimate and closes 
   expect(currentPlayoffPick(reconciled, linked, now, fresh, now)).toEqual(fresh)
 })
 
+test('a corrected opening opponent withdraws a selected semifinal ticket at the same pool price', () => {
+  const opening = Array.from({ length: 8 }, (_, i) =>
+    Array.from({ length: 4 }, (_, g) =>
+      raw(4 * i + g + 1, 2 * i + 1, 2 * i + 2, g - 30, true)
+    )
+  ).flat()
+  const semis = [
+    ...Array.from({ length: 4 }, (_, g) => raw(33 + g, 1, 3, g - 15, true)),
+    ...Array.from({ length: 4 }, (_, g) => raw(37 + g, 5, 7, g - 15, true)),
+    raw(41, 1, 5, 1),
+  ]
+  const project = (games: typeof opening) =>
+    projectNbaPlayoffSeries(2025, [...games, ...semis], true)
+  const initial = project(opening)
+  const event = 'bdl:nba-series:2025:1-5'
+  const linked = market(event, [1, 5])
+  const [pick] = playoffMarketPicks(initial, event, linked, now, now)
+  expect(pick.buyable).toBe(true)
+  const revised = project(
+    opening.map((g) =>
+      g.home_team.id === 3
+        ? { ...g, home_team_score: 95, visitor_team_score: 101 }
+        : g
+    )
+  )
+  expect(revised.series.find((s) => s.eventId === event)?.review).toContain(
+    'Entrant advancement conflicts with the observed games'
+  )
+  expect(
+    playoffMarketPicks(revised, event, linked, now, now).map((p) => p.buyable)
+  ).toEqual([false, false])
+  expect(currentPlayoffPick(revised, linked, now, pick, now)).toBeUndefined()
+})
 test('native outcome, team, visible label and current quote are bound independently of row order', () => {
   const { bracket, series } = setup()
   const m = market(series.eventId)

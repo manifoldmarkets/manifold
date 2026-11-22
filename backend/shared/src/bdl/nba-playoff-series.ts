@@ -52,8 +52,7 @@ export async function readNbaPlayoffSeason(
       // retained this metadata while omitting next_cursor.
       const { meta } = parsed.data
       if (
-        meta.prev_cursor != null &&
-        String(meta.prev_cursor) !== String(request.params.cursor ?? '')
+        String(meta.prev_cursor ?? '') !== String(request.params.cursor ?? '')
       )
         throw Error('NBA season page does not match its requested cursor')
     },
