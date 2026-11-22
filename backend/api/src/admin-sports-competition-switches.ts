@@ -19,6 +19,7 @@ import {
   calendarStatus,
   competitionSwitchError,
   overlappingPhases,
+  opposingCreationPhases,
   getSportsCalendar,
 } from 'common/sports-calendar'
 
@@ -49,6 +50,9 @@ export const adminSportsCompetitionSwitches: APIHandler<
   return {
     switches: scheduled.map((e) => {
       const row = byKey[calendarPhaseKey(e)]
+      const on = autoCreates(e, switches)
+      const conflicts =
+        on && isSportsBdlEnabled() ? opposingCreationPhases(e, switches) : []
       return {
         competitionId: e.competitionId,
         competition: e.competition,
@@ -57,7 +61,12 @@ export const adminSportsCompetitionSwitches: APIHandler<
         startDate: e.startDate,
         endDate: e.endDate,
         status: calendarStatus(e, now),
-        on: autoCreates(e, switches),
+        on,
+        ...(conflicts.length > 0 && {
+          creationConflicts: conflicts.map(
+            (other) => `${other.competition} / ${other.phase}`
+          ),
+        }),
         defaultOn: autoCreates(e, {}),
         locked: e.locked,
         notes: e.notes,

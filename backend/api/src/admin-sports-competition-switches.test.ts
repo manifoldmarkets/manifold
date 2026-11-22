@@ -1,3 +1,4 @@
+import type { CompetitionSwitchState } from 'common/sports-calendar'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getCompetitionSwitchRows,
@@ -28,7 +29,7 @@ const set = adminSportsSetCompetitionSwitch as unknown as (
 const get = adminSportsCompetitionSwitches as unknown as (
   c: Record<string, never>,
   a: { uid: string }
-) => Promise<{ switches: { phase: string }[] }>
+) => Promise<{ switches: CompetitionSwitchState[] }>
 const auth = { uid: 'admin' }
 const legacy = {
   competitionId: 'nba-regular-2026-27',
@@ -38,6 +39,7 @@ const legacy = {
 const bdl = { ...legacy, phase: 'Regular Season (BDL)' }
 const tx = { one: jest.fn() }
 const db = {
+  map: jest.fn().mockResolvedValue([['admin', 'operator']]),
   tx: jest.fn(async (fn: (conn: typeof tx) => Promise<void>) => fn(tx)),
 }
 beforeEach(() => {
@@ -84,3 +86,61 @@ it('serializes a switch change and rechecks conflicting providers after opt-in',
   )
   expect(setCompetitionSwitch).not.toHaveBeenCalled()
 })
+
+it.each([legacy, bdl])(
+  'shows both configured switches and allows disabling either conflicting phase: $phase',
+  async (disable) => {
+    const saved = new Map<string, boolean>()
+    const people = jest.mocked(getCompetitionSwitchRows)
+    people.mockImplementation(async () =>
+      Array.from(saved, ([phase, on]) => ({
+        competitionId: legacy.competitionId,
+        phase,
+        on,
+        updatedBy: auth.uid,
+        updatedTime: 1000,
+      }))
+    )
+    jest
+      .mocked(getCompetitionSwitches)
+      .mockImplementation(async () =>
+        Object.fromEntries(
+          Array.from(saved, ([phase, on]) => [
+            legacy.competitionId + ':' + phase,
+            on,
+          ])
+        )
+      )
+    jest.mocked(setCompetitionSwitch).mockImplementation(async (_, change) => {
+      saved.set(change.phase, change.on)
+    })
+    const pair = async () =>
+      (await get({}, auth)).switches.filter(
+        (row) => row.competitionId === legacy.competitionId
+      )
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+    await set(bdl, auth)
+    await expect(set(legacy, auth)).rejects.toMatchObject({ code: 400 })
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'false'
+    await set(legacy, auth)
+    expect((await pair()).map((r) => r.phase)).toEqual([legacy.phase])
+    expect((await pair())[0]).not.toHaveProperty('creationConflicts')
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+    const both = await pair()
+    expect(both).toHaveLength(2)
+    for (const row of both) {
+      expect(row.on).toBe(true)
+      const other = both.find((r) => r.phase !== row.phase)!
+      expect(row.creationConflicts).toContain(
+        `${other.competition} / ${other.phase}`
+      )
+    }
+    expect(setCompetitionSwitch).toHaveBeenCalledTimes(2)
+    await set({ ...disable, on: false }, auth)
+    const cleared = await pair()
+    expect(cleared.map((r) => r.on)).toEqual(
+      cleared.map((r) => r.phase !== disable.phase)
+    )
+    expect(cleared.every((r) => !r.creationConflicts)).toBe(true)
+  }
+)

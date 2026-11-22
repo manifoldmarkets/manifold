@@ -1726,3 +1726,88 @@ it.each(['off', 'dual', 'on'] as const)(
     }
   }
 )
+
+it.each([true, false])(
+  'holds a new Odds game before group or money writes in a known overlap (dry run=%s)',
+  async (dryRun) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const competitionId = 'nba-regular-2026-27'
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+    jest.mocked(getUpcomingOdds).mockResolvedValue([
+      {
+        ...event,
+        sport_key: 'basketball_nba',
+        commence_time: '2026-11-22T00:00:00Z',
+      },
+    ])
+    const db = database()
+    const report = await createOddsMarketsForCompetition(
+      db.client,
+      competitionId,
+      {
+        dryRun,
+        switches: {
+          [competitionId + ':Regular Season']: true,
+          [competitionId + ':Regular Season (BDL)']: true,
+        },
+      }
+    )
+    expect(report).toMatchObject({
+      created: 0,
+      skipped: 1,
+      errors: 0,
+      log: [
+        { status: 'skipped', reason: 'BDL creation is enabled for this game' },
+      ],
+    })
+    expect(getUser).not.toHaveBeenCalled()
+    expect(
+      db.pg.oneOrNone.mock.calls.some(([sql]) => sql.includes('from groups'))
+    ).toBe(false)
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+    expect(generateAntes).not.toHaveBeenCalled()
+  }
+)
+
+it('continues to resync an existing Odds game in a known provider overlap', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  const competitionId = 'nba-regular-2026-27'
+  const commence_time = '2026-11-22T00:00:00Z'
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+  jest
+    .mocked(getUpcomingOdds)
+    .mockResolvedValue([
+      { ...event, sport_key: 'basketball_nba', commence_time },
+    ])
+  const db = database()
+  db.pg.oneOrNone.mockImplementation(async (sql) => {
+    if (sql.includes("data->>'sportsStartTimestamp' as start"))
+      return {
+        start: '2026-11-23T00:00:00Z',
+        resolution: null,
+        question: 'Existing game',
+      }
+    if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
+    return null
+  })
+  const report = await createOddsMarketsForCompetition(
+    db.client,
+    competitionId,
+    {
+      creator,
+      switches: {
+        [competitionId + ':Regular Season']: true,
+        [competitionId + ':Regular Season (BDL)']: true,
+      },
+    }
+  )
+  expect(report.log[0]).toMatchObject({
+    status: 'skipped',
+    reason: expect.stringContaining('moved its kickoff'),
+  })
+  expect(db.pg.none).toHaveBeenCalledWith(
+    expect.stringContaining('update contracts'),
+    [expect.stringContaining(commence_time), 'existing']
+  )
+  expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+})

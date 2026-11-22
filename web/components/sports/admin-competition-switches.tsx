@@ -42,6 +42,7 @@ export function AdminCompetitionSwitches() {
   if (!data) return <LoadingIndicator />
   const shown = filterSwitches(data.switches, filter)
   const counts = countByReadiness(data.switches, filter)
+  const hasConflict = data.switches.some((s) => s.creationConflicts?.length)
   const finished = data.switches.filter((s) => s.status === 'completed')
   const sports = sortBy(
     Object.keys(groupBy(data.switches, (s) => s.sport)) as SportId[],
@@ -76,6 +77,29 @@ export function AdminCompetitionSwitches() {
         {ENV !== 'PROD' &&
           ' On dev every phase defaults to off: switch on only what you want to test.'}
       </p>
+      {hasConflict && (
+        <div
+          role="status"
+          className="rounded border border-amber-500 px-3 py-2 text-sm"
+        >
+          Two providers are enabled for overlapping games. New games in the
+          overlap are on hold until you switch off one of the conflicting
+          phases.{' '}
+          <button
+            type="button"
+            className="text-primary-700 underline"
+            onClick={() =>
+              setFilter({
+                ...DEFAULT_SWITCH_FILTER,
+                readiness: 'on',
+                showFinished: true,
+              })
+            }
+          >
+            Show enabled phases
+          </button>
+        </div>
+      )}
       <SwitchFilters
         filter={filter}
         setFilter={setFilter}
@@ -235,6 +259,11 @@ function SwitchRow(props: {
           </span>
           <StatusPill status={s.status} />
         </Row>
+        {!!s.creationConflicts?.length && (
+          <span className="text-xs font-semibold text-amber-700">
+            Creation held during overlap with {s.creationConflicts.join(', ')}.
+          </span>
+        )}
         {s.locked && <span className="text-xs text-amber-600">{s.locked}</span>}
         {s.notes && <span className="text-ink-500 text-xs">{s.notes}</span>}
         {s.overlaps.length > 0 && (

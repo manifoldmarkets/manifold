@@ -541,3 +541,23 @@ it('caps accepted games per league and across a run in earliest-start order', as
     Object.defineProperty(settingsConstants, 'BDL_GLOBAL_RUN_CAP', original)
   }
 })
+
+it.each([false, true])(
+  'holds a restored dual-provider switch before BDL schedule, odds or funding (force=%s)',
+  async (force) => {
+    const phase = firstPhase('nba')
+    const other = SPORTS_CALENDAR.find(
+      (p) => p.oddsKey && p.competitionId === phase.competitionId
+    )!
+    switches.mockResolvedValue({
+      [calendarPhaseKey(phase)]: true,
+      [calendarPhaseKey(other)]: true,
+    })
+    const result = await run({ force, competitionId: phase.competitionId })
+    expect(result).toMatchObject({ created: 0, wouldCreate: 0, errors: 0 })
+    expect(createBdlClient).not.toHaveBeenCalled()
+    expect(schedule).not.toHaveBeenCalled()
+    expect(odds).not.toHaveBeenCalled()
+    expect(save).not.toHaveBeenCalled()
+  }
+)

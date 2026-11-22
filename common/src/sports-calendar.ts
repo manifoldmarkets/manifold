@@ -759,6 +759,21 @@ export function autoCreates(
   )
 }
 
+/** Enabled phases on the competing provider whose creation windows overlap. */
+export function opposingCreationPhases(
+  entry: SportsCalendarEntry,
+  switches: CompetitionSwitches
+) {
+  if (!entry.oddsKey && entry.provider !== 'bdl') return []
+  const window = phaseWindow(entry)
+  return calendarEntriesOverlapping(window.from, window.to).filter(
+    (other) =>
+      other.sport === entry.sport &&
+      (entry.oddsKey ? other.provider === 'bdl' : !!other.oddsKey) &&
+      autoCreates(other, switches)
+  )
+}
+
 /** Why a phase's switch can't be set, or undefined when it can. */
 export function competitionSwitchError(
   competitionId: string,
@@ -773,18 +788,8 @@ export function competitionSwitchError(
   if (!entry.oddsKey && !entry.provider)
     return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
-  if (on && switches && (entry.oddsKey || entry.provider === 'bdl')) {
-    const window = phaseWindow(entry)
-    const conflict = getSportsCalendar().find((other) => {
-      if (
-        other.sport !== entry.sport ||
-        !(entry.oddsKey ? other.provider === 'bdl' : other.oddsKey) ||
-        !autoCreates(other, switches)
-      )
-        return false
-      const otherWindow = phaseWindow(other)
-      return window.from <= otherWindow.to && otherWindow.from <= window.to
-    })
+  if (on && switches) {
+    const [conflict] = opposingCreationPhases(entry, switches)
     if (conflict)
       return `Switch off ${conflict.competition} / ${conflict.phase} first`
   }
@@ -800,8 +805,10 @@ export interface CompetitionSwitchState {
   startDate: string
   endDate: string
   status: SportsCalendarStatus
-  /** Whether the scheduler creates games in this phase. */
+  /** Configured switch value, including the environment default. */
   on: boolean
+  /** Enabled opposing provider phases holding new games in the overlapping dates. */
+  creationConflicts?: string[]
   /** What `on` is without a switch. */
   defaultOn: boolean
   locked?: string

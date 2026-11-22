@@ -245,6 +245,22 @@ export async function createOddsMarketsForCompetition(
         })
         continue
       }
+      const atKickoff = isSportsBdlEnabled()
+        ? calendarEntriesOverlapping(start, start)
+        : []
+      const competing = atKickoff.filter(
+        (p) => p.provider === 'bdl' && p.sport === entry.sport
+      )
+      if (competing.some((phase) => autoCreates(phase, switches))) {
+        result.skipped++
+        result.log.push({
+          eventId: event.id,
+          question: params.question,
+          status: 'skipped',
+          reason: 'BDL creation is enabled for this game',
+        })
+        continue
+      }
       const answerProbs = params.answerProbs
       if (!answerProbs) {
         // A game with no line would open level with the full ante behind it.
@@ -309,12 +325,6 @@ export async function createOddsMarketsForCompetition(
           ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
-      const atKickoff = isSportsBdlEnabled()
-        ? calendarEntriesOverlapping(start, start)
-        : []
-      const competing = atKickoff.filter(
-        (p) => p.provider === 'bdl' && p.sport === entry.sport
-      )
       const contract = await createSportsContract(
         pg,
         creator,
