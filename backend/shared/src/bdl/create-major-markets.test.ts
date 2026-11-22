@@ -12,6 +12,7 @@ import { createBdlClient } from '../balldontlie-client'
 import {
   createSportsContract,
   flushSportsGroupEmbeddings,
+  SportsGameStartedError,
 } from '../sports-markets'
 import { log } from '../utils'
 import { findLockedSportsMarket } from '../sports-market-dedupe'
@@ -31,6 +32,7 @@ jest.mock('../supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('../sports-markets', () => ({
   createSportsContract: jest.fn(),
   flushSportsGroupEmbeddings: jest.fn(),
+  SportsGameStartedError: class extends Error {},
   SportsMarketAlreadyExistsError: class extends Error {
     constructor(readonly contractId: string) {
       super()
@@ -194,6 +196,9 @@ it('creates a priced market with its stored line, fixed answers, notified budget
     openingSampledTime: initial,
     groupIds: ['topic'],
   })
+  const fundingOptions = save.mock.calls[0][3]!
+  expect(fundingOptions.minLeadMs).toBe(BDL_MIN_CREATION_LEAD_MS)
+  expect(fundingOptions.now?.()).toBe(initial)
   expect(requireBdlCreationBudget).toHaveBeenCalledWith(
     expect.anything(),
     expect.objectContaining({ ante: 175, expectedBaseAnte: 175 })
@@ -202,6 +207,17 @@ it('creates a priced market with its stored line, fixed answers, notified budget
   const opts = jest.mocked(createBdlClient).mock.calls[0][0]!
   expect(opts.enabledLeagues?.has('nba')).toBe(true)
 })
+it('reports an elapsed lead during a funding write as a skipped game', async () => {
+  save.mockRejectedValueOnce(new SportsGameStartedError('fixture'))
+  const result = await run()
+  expect(result).toMatchObject({
+    created: 0,
+    skipped: 1,
+    errors: 0,
+    log: [{ status: 'skipped', reason: 'kicks off too soon' }],
+  })
+})
+
 const originalEnv = process.env
 afterEach(() => {
   process.env = originalEnv
