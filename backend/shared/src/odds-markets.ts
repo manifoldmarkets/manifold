@@ -10,6 +10,8 @@
  */
 
 import { groupBy, uniq } from 'lodash'
+import { reconcileOddsKickoff } from './odds-cutover-resync'
+import { scheduleFetchStartedAt } from './sports-schedule-observation'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, getUser, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
@@ -28,7 +30,7 @@ import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
+import { isMajorLeague } from 'common/bdl/major-leagues'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
@@ -182,6 +184,9 @@ export async function createOddsMarketsForCompetition(
   // the provider moved earlier; the lead only stops new markets, checked
   // before each game is created and again inside its transaction.
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
+  const enabled = isSportsBdlEnabled()
+  const observedAt =
+    enabled && !opts.dryRun ? await scheduleFetchStartedAt(pg) : undefined
   const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS, {
     retryDelaysMs: opts.retryDelaysMs,
   })
@@ -210,22 +215,35 @@ export async function createOddsMarketsForCompetition(
       question = params.question
       const existing = await findSportsMoneyline(pg, params.sportsEventId)
       if (existing) {
-        const moved = await resyncKickoff(pg, existing.id, params, {
-          dryRun: opts.dryRun,
-          titleFor: (start) =>
-            buildOddsMarketParams({ ...event, commence_time: start }, entry)
-              .question,
-        })
+        const titleFor = (start: string) =>
+          buildOddsMarketParams({ ...event, commence_time: start }, entry)
+            .question
+        let change = ''
+        if (enabled) {
+          change = await reconcileOddsKickoff(pg, params, {
+            observedAt,
+            dryRun: opts.dryRun,
+            checkBdl: isMajorLeague(entry.sport),
+            titleFor,
+          })
+        } else if (
+          await resyncKickoff(pg, existing.id, params, {
+            dryRun: opts.dryRun,
+            titleFor,
+          })
+        ) {
+          change = `${opts.dryRun ? 'would move' : 'moved'} its kickoff to ${
+            params.sportsStartTimestamp
+          }`
+        }
         result.skipped++
         result.log.push({
           eventId: event.id,
           question: params.question,
           status: 'skipped',
-          reason: moved
-            ? `market ${existing.id} already exists; ${
-                opts.dryRun ? 'would move' : 'moved'
-              } its kickoff to ${params.sportsStartTimestamp}`
-            : `market ${existing.id} already exists`,
+          reason: [`market ${existing.id} already exists`, change]
+            .filter(Boolean)
+            .join('; '),
         })
         continue
       }
@@ -341,9 +359,10 @@ export async function createOddsMarketsForCompetition(
         {
           deduplicateMoneyline: true,
           minLeadMs: MIN_CREATE_LEAD_MS,
-          checkOddsCutover: competing.length
+          checkOpenBdl: competing.length > 0,
+          oddsFetchStartedAt: observedAt,
+          checkOddsCutover: isSportsBdlEnabled()
             ? async (tx) => {
-                await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
                 const latest = await getCompetitionSwitches(tx)
                 if (competing.some((p) => autoCreates(p, latest)))
                   throw new OddsCutoverHold(
@@ -392,7 +411,7 @@ export async function createOddsMarketsForCompetition(
 /**
  * A game the provider has moved keeps its market, with the new kickoff and
  * close time written onto it, so trading closes, the live window opens and
- * the resolver polls at the real time. True if the kickoff changed.
+ * the resolver polls at the real time.
  */
 async function resyncKickoff(
   pg: SupabaseDirectClient,

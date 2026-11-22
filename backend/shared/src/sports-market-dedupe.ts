@@ -1,6 +1,7 @@
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_OPEN_ODDS_MATCH_WINDOW_MS } from 'common/bdl/constants'
 import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
+import { parseOddsEventId } from 'common/odds-markets'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { SPORT_LEAGUE_LABEL, SportId } from 'common/sports-calendar'
 import { providerOf, SportsProvider } from 'common/sports-provider'
@@ -23,17 +24,28 @@ export const findSportsMarket = (
   eventId: string,
   marketType: string,
   includeCanceled = false
-) =>
-  pg.oneOrNone<{ id: string }>(
-    `select id from contracts
+) => {
+  const historicalOdds =
+    isSportsBdlEnabled() &&
+    marketType === 'moneyline' &&
+    parseOddsEventId(eventId)
+  return pg.oneOrNone<{ id: string }>(
+    `select id from contracts c
      where data->>'sportsEventId' = $1
        and creator_id = any($2)
        and token = 'MANA'
        ${includeCanceled ? '' : "and resolution is distinct from 'CANCEL'"}
-       and data->>'sportsMarketType' = $3
+       and ${
+         historicalOdds
+           ? `c.deleted is not true and ${oddsMoneylineSql()}`
+           : `data->>'sportsMarketType' = $3`
+       }
      limit 1`,
-    [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
+    historicalOdds
+      ? [eventId, MANIFOLD_SPORTS_USER_IDS]
+      : [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
   )
+}
 
 type Market = {
   sportsEventId: string
@@ -81,9 +93,9 @@ export async function findLockedSportsMarket(
   checkOpenBdl = false
 ) {
   const bdl = candidate.sportsProvider === 'bdl'
-  const lock = (key: string) =>
-    tx.one('select pg_advisory_xact_lock(hashtext($1))', [key])
-  await lock(`sports-${marketType}:${candidate.sportsEventId}`)
+  await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
+    `sports-${marketType}:${candidate.sportsEventId}`,
+  ])
   const exact = await findSportsMarket(
     tx,
     candidate.sportsEventId,
@@ -95,8 +107,20 @@ export async function findLockedSportsMarket(
       )
   )
   if (exact || marketType !== 'moneyline') return exact
+  return (
+    (await findOpenSportsCounterparts(tx, candidate, checkOpenBdl))[0] ?? null
+  )
+}
+
+/** Serialize the final matchup check with inserts and confirmed Odds kickoff changes. */
+export async function findOpenSportsCounterparts(
+  tx: Pick<SupabaseTransaction, 'one' | 'manyOrNone'>,
+  candidate: Market,
+  checkOpenBdl: boolean | 'resync'
+) {
+  const bdl = candidate.sportsProvider === 'bdl'
   if (!bdl && (!isSportsBdlEnabled() || providerOf(candidate) !== 'odds'))
-    return null
+    return []
 
   const sport: SportId | null | undefined = bdl
     ? candidate.sportsLeagueKey &&
@@ -105,11 +129,11 @@ export async function findLockedSportsMarket(
   const teams = teamPair(candidate.sportsHomeTeam, candidate.sportsAwayTeam)
   const start = Date.parse(candidate.sportsStartTimestamp)
   if (!sport || !teams || !Number.isFinite(start)) {
-    if (bdl || checkOpenBdl)
+    if (bdl || checkOpenBdl === true)
       throw new Error(
         'BDL cutover moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
       )
-    return null
+    return []
   }
   // The six-hour window can cross Eastern midnight. Lock all touched dates in
   // the same order so overlapping runs coordinate at midnight and across DST.
@@ -121,8 +145,10 @@ export async function findLockedSportsMarket(
     ),
   ].sort()
   for (const day of lockDays)
-    await lock(`sports-moneyline:${sport}:${day}:${teams}`)
-  if (!bdl && !checkOpenBdl) return null
+    await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
+      `sports-moneyline:${sport}:${day}:${teams}`,
+    ])
+  if (!bdl && !checkOpenBdl) return []
 
   // Read the kickoff recorded on the contract. Its close time can differ, e.g.
   // after a manual change. Normalize both sides in TS using the same team rules.
@@ -134,6 +160,7 @@ export async function findLockedSportsMarket(
         and c.resolution is null and c.deleted is not true
         and (c.close_time is null or c.close_time > now())
         and c.data->>'sportsFixture' is distinct from 'true'
+        and not starts_with(c.data->>'sportsEventId','fixture:')
         and ${
           bdl
             ? `${oddsMoneylineSql()} and (${oddsEventKeySql} = any($3::text[]) or ${oddsLegacyLabelSql} = $2)`
@@ -148,13 +175,11 @@ export async function findLockedSportsMarket(
         ]
       : [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport]]
   )
-  return (
-    open.find(
-      (row) =>
-        row.start &&
-        Math.abs(start - Date.parse(row.start)) <=
-          BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
-        teamPair(row.home, row.away) === teams
-    ) ?? null
+  return open.filter(
+    (row) =>
+      row.start &&
+      Math.abs(start - Date.parse(row.start)) <=
+        BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
+      teamPair(row.home, row.away) === teams
   )
 }

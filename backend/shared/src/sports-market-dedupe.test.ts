@@ -333,3 +333,34 @@ it('uses the Odds event key for an open pre-metadata market inside the funding t
   await pg.exec("update contracts set mechanism = 'cpmm-1'")
   expect(await findLockedSportsMarket(tx, candidate, 'moneyline')).toBeNull()
 })
+
+it.each([true, false])(
+  'looks up the canonical untyped Odds retry at both admission checks only when rollout is enabled (%s)',
+  async (enabled) => {
+    process.env = {
+      ...process.env,
+      NEXT_PUBLIC_SPORTS_BDL_ENABLED: String(enabled),
+    }
+    await insert('historical', {
+      ...odds,
+      sportsMarketType: undefined,
+      sportsLeague: undefined,
+    })
+    const expected = enabled ? { id: 'historical' } : null
+    expect(await findSportsMarket(tx, odds.sportsEventId, 'moneyline')).toEqual(
+      expected
+    )
+    expect(await findLockedSportsMarket(tx, odds, 'moneyline')).toEqual(
+      expected
+    )
+    expect(await findSportsMarket(tx, odds.sportsEventId, 'total')).toBeNull()
+    await pg.exec("update contracts set mechanism = 'cpmm-1'")
+    expect(
+      await findSportsMarket(tx, odds.sportsEventId, 'moneyline')
+    ).toBeNull()
+    await pg.exec(
+      'update contracts set mechanism=\'cpmm-multi-2\', data=data || \'{"sportsProvider":"fixture"}\'::jsonb'
+    )
+    expect(await findLockedSportsMarket(tx, odds, 'moneyline')).toBeNull()
+  }
+)

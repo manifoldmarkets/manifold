@@ -118,6 +118,7 @@ function database(
   opts: {
     onLock?: (sql: string) => void
     latestSwitches?: Record<string, boolean>
+    competitionId?: string
   } = {}
 ) {
   const contracts: Contract[] = []
@@ -129,10 +130,13 @@ function database(
       return { id: 'official', slug: 'official', privacy_status: 'curated' }
     return null
   })
-  const none = jest.fn(async (sql: string) => {
+  const none = jest.fn(async (sql: string, _values?: unknown[]) => {
     writes.push(sql)
   })
   const pg = {
+    one: jest.fn(async (_sql: string) => ({
+      stamp: new Date(NOW).toISOString(),
+    })),
     oneOrNone,
     manyOrNone: jest.fn().mockResolvedValue([]),
     map: jest.fn().mockResolvedValue([]),
@@ -151,7 +155,11 @@ function database(
           convert: (row: unknown) => unknown
         ) =>
           Object.entries(opts.latestSwitches ?? {}).map(([phase, enabled]) =>
-            convert({ competition_id: 'nba-regular-2026-27', phase, enabled })
+            convert({
+              competition_id: opts.competitionId ?? 'nba-regular-2026-27',
+              phase,
+              enabled,
+            })
           ),
         one: async (query: string, [key]: [string] = [query]) => {
           if (releases.has(key)) return {}
@@ -164,9 +172,18 @@ function database(
           opts.onLock?.(query)
           return {}
         },
-        none: async (encoded: string) => {
-          const { values } = JSON.parse(encoded) as { values: [string, string] }
-          inserted.push(JSON.parse(values[1]) as Contract)
+        none: async (encoded: string, values?: unknown[]) => {
+          if (
+            encoded.startsWith('update contracts') ||
+            encoded.startsWith(
+              'insert into sports_market_schedule_observations'
+            )
+          )
+            return pg.none(encoded, values)
+          const { values: row } = JSON.parse(encoded) as {
+            values: [string, string]
+          }
+          inserted.push(JSON.parse(row[1]) as Contract)
         },
         // Multiple-choice markets insert the contract and its answers together.
         multi: async (query: string) => {
@@ -1679,6 +1696,10 @@ it('preserves legacy NBA creation without BDL locks or switch rechecks when roll
     }
   )
   expect(result.created).toBe(1)
+  expect(db.pg.one).not.toHaveBeenCalled()
+  expect(db.pg.none.mock.calls.flat()).not.toContainEqual(
+    expect.stringContaining('sports_market_schedule_observations')
+  )
   expect(locks).toHaveBeenCalledTimes(1)
   expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
 })
@@ -1712,8 +1733,19 @@ it.each(['off', 'dual', 'on'] as const)(
     expect(locks).toHaveBeenCalledWith(
       "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
     )
+    expect(locks.mock.calls[0][0]).toContain('sports-creation-budget')
+    expect(db.pg.one.mock.calls[0][0]).toContain('clock_timestamp()')
+    expect(db.pg.one.mock.invocationCallOrder[0]).toBeLessThan(
+      jest.mocked(getUpcomingOdds).mock.invocationCallOrder[0]
+    )
     if (state === 'on') {
       expect(result.created).toBe(1)
+      expect(db.pg.none).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'insert into sports_market_schedule_observations'
+        ),
+        [db.contracts[0].id, new Date(NOW).toISOString(), [], [], false]
+      )
       expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
     } else {
       expect(result).toMatchObject({ created: 0, errors: 0, skipped: 1 })
@@ -1724,5 +1756,102 @@ it.each(['off', 'dual', 'on'] as const)(
       )
       expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
     }
+  }
+)
+
+it.each([false, true])(
+  'rechecks an Odds phase with no BDL competition at kickoff only when enabled (%s)',
+  async (enabled) => {
+    process.env = {
+      ...process.env,
+      NEXT_PUBLIC_SPORTS_BDL_ENABLED: String(enabled),
+    }
+    const competitionId = 'nfl-regular-2026'
+    const lock = jest.fn()
+    const db = database({
+      onLock: lock,
+      competitionId,
+      latestSwitches: { 'Regular Season': false },
+    })
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      competitionId,
+      { creator, switches: { [competitionId + ':Regular Season']: true } }
+    )
+    expect(result.errors).toBe(0)
+    expect(result.created).toBe(enabled ? 0 : 1)
+    if (enabled) {
+      expect(lock).toHaveBeenCalledWith(
+        "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+      )
+      expect(result.log[0].reason).toContain('Odds creation was switched off')
+      expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+    } else expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+  }
+)
+
+it.each([null, 'Existing provider incident'])(
+  'keeps a genuine kickoff correction and reports an independently funded BDL overlap (prior attention: %s)',
+  async (attention) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const locks = jest.fn()
+    const db = database({ onLock: locks })
+    db.pg.oneOrNone.mockResolvedValue({ id: 'odds-existing' })
+    db.pg.manyOrNone.mockImplementation(async (sql: string) =>
+      sql.includes('left join sports_market_schedule_observations')
+        ? [
+            {
+              id: 'odds-existing',
+              start: '2026-09-13T09:00:00Z',
+              home: event.home_team,
+              away: event.away_team,
+              question: 'Manual title',
+              attention,
+              superseded: false,
+            },
+          ]
+        : [
+            {
+              id: 'bdl-funded',
+              home: event.home_team,
+              away: event.away_team,
+              start: event.commence_time,
+            },
+          ]
+    )
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      'nfl-regular-2026',
+      { creator }
+    )
+    expect(result).toMatchObject({ created: 0, skipped: 1, errors: 0 })
+    expect(result.log[0].reason).toContain(
+      'market odds-existing already exists'
+    )
+    expect(result.log[0].reason).toContain(
+      'overlaps open BDL market bdl-funded'
+    )
+    expect(locks).toHaveBeenCalled()
+    expect(db.pg.manyOrNone).toHaveBeenCalledWith(
+      expect.stringContaining('for update of c'),
+      expect.any(Array)
+    )
+    expect(db.pg.none).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'insert into sports_market_schedule_observations'
+      ),
+      ['odds-existing', expect.any(String), ['bdl-funded'], [], false]
+    )
+    const fields = JSON.parse(db.pg.none.mock.calls[0][1]![0] as string)
+    expect(fields.sportsStartTimestamp).toBe(event.commence_time)
+    expect(fields.question).toBeUndefined()
+    if (attention) expect(fields.sportsAttentionReason).toBeUndefined()
+    else {
+      expect(fields.sportsAttentionReason).toBe(
+        'Odds schedule needs operator review'
+      )
+      expect(fields.sportsAttentionSince).toBe(NOW)
+    }
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
   }
 )
