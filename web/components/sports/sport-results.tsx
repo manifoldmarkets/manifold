@@ -40,6 +40,21 @@ type Position = {
   anchor: string
   top: number
   oldest: Pick<SportsResult, 'id' | 'settledAt'>
+  oldestCursor?: string | null
+}
+// New history entries retain the database cursor, including all six fractional digits.
+function reachedSavedWindow(
+  page: SportsResultsPage,
+  rows: Map<string, SportsResult>,
+  saved: Position
+) {
+  if (saved.oldestCursor?.includes('|') && page.nextCursor?.includes('|'))
+    return page.nextCursor <= saved.oldestCursor
+  return (
+    (rows.has(saved.anchor) &&
+      rows.get(saved.oldest.id)?.settledAt === saved.oldest.settledAt) ||
+    page.items.some((item) => item.settledAt < saved.oldest.settledAt)
+  )
 }
 function ResultsPage({
   sport,
@@ -59,9 +74,35 @@ function ResultsPage({
   const section = useRef<HTMLElement>(null)
   const older = useRef<HTMLButtonElement>(null)
   const focus = useRef<
-    { anchor: string; top: number } | { prior: Set<string> }
+    | { anchor: string; top: number; cursors: Set<string> }
+    | { prior: Set<string> }
   >()
   const scope = sport + '/' + (league ?? '')
+  useEffect(() => {
+    // A fresh Back request can take several pages. Respect subsequent user navigation.
+    const cancelRestore = () => {
+      if (focus.current && 'anchor' in focus.current) focus.current = undefined
+    }
+    const focused = (event: FocusEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.matches(
+          'a[href],button,input,select,textarea,[tabindex="0"]'
+        )
+      )
+        cancelRestore()
+    }
+    window.addEventListener('focusin', focused)
+    window.addEventListener('keydown', cancelRestore)
+    window.addEventListener('pointerdown', cancelRestore)
+    window.addEventListener('wheel', cancelRestore, { passive: true })
+    return () => {
+      window.removeEventListener('focusin', focused)
+      window.removeEventListener('keydown', cancelRestore)
+      window.removeEventListener('pointerdown', cancelRestore)
+      window.removeEventListener('wheel', cancelRestore)
+    }
+  }, [])
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
@@ -77,6 +118,12 @@ function ResultsPage({
       window.history.state?.options?.sportsResultsPosition
     const restore =
       !request.cursor && saved?.scope === scope ? saved : undefined
+    if (restore)
+      focus.current = {
+        anchor: restore.anchor,
+        top: restore.top,
+        cursors: new Set(),
+      }
     async function load() {
       let next = await fetchPage(request.cursor)
       const rows = new Map(next.items.map((item) => [item.id, item]))
@@ -84,10 +131,11 @@ function ResultsPage({
       // Restore the former trailing rows as well as the anchor so the viewport can reach its old offset.
       while (
         restore &&
+        focus.current &&
+        'anchor' in focus.current &&
         next.nextCursor &&
         !seen.has(next.nextCursor) &&
-        !rows.has(restore.oldest.id) &&
-        !next.items.some((item) => item.settledAt < restore.oldest.settledAt)
+        !reachedSavedWindow(next, rows, restore)
       ) {
         seen.add(next.nextCursor)
         next = await fetchPage(next.nextCursor)
@@ -98,8 +146,12 @@ function ResultsPage({
     load()
       .then((next) => {
         if (controller.signal.aborted) return
-        if (restore)
-          focus.current = { anchor: restore.anchor, top: restore.top }
+        if (
+          focus.current &&
+          'prior' in focus.current &&
+          document.activeElement !== older.current
+        )
+          focus.current = undefined
         setPage((prior) => ({
           items:
             request.cursor && prior
@@ -147,7 +199,6 @@ function ResultsPage({
     if (!loading && section.current) section.current.hidden = false
     const target = focus.current
     if (!target || loading || error || !section.current) return
-    focus.current = undefined
     const links = Array.from(
       section.current.querySelectorAll<HTMLAnchorElement>('a[data-result-id]')
     )
@@ -156,9 +207,28 @@ function ResultsPage({
         ? links.find((a) => a.dataset.resultId === target.anchor)
         : links.find((a) => !target.prior.has(a.dataset.resultId ?? ''))
     if (link && 'top' in target) {
+      const scroll = document.scrollingElement
+      const desired =
+        window.scrollY + link.getBoundingClientRect().top - target.top
+      const cursor = page?.nextCursor
+      if (
+        cursor &&
+        !target.cursors.has(cursor) &&
+        scroll &&
+        desired > scroll.scrollHeight - scroll.clientHeight + 1
+      ) {
+        target.cursors.add(cursor)
+        setRequest({ cursor, attempt: 0 })
+        return
+      }
+      focus.current = undefined
       link.focus({ preventScroll: true })
       window.scrollBy(0, link.getBoundingClientRect().top - target.top)
-    } else (link ?? older.current ?? section.current).focus()
+    } else {
+      focus.current = undefined
+      const fallback = link ?? older.current ?? section.current
+      fallback.focus()
+    }
   }, [page, loading, error])
   const remember = (item: SportsResult, top: number) => {
     const last = page?.items[page.items.length - 1]
@@ -169,6 +239,7 @@ function ResultsPage({
       anchor: item.id,
       top,
       oldest: { id: last.id, settledAt: last.settledAt },
+      oldestCursor: page?.nextCursor,
     }
     history.replaceState(
       {
@@ -222,20 +293,23 @@ function ResultsPage({
             : league
             ? 'No settled markets for this sport and league.'
             : 'No settled markets to show.'}
+          {league && !page?.nextCursor && (
+            <>
+              {' '}
+              <Link
+                href={sportPath(sport) + '?tab=results'}
+                className="text-primary-700 underline"
+              >
+                Show all results for this sport
+              </Link>
+            </>
+          )}
         </p>
       )}
       {page?.nextCursor && (
         <button
           ref={older}
           aria-disabled={loading}
-          onBlur={(event) => {
-            if (
-              event.relatedTarget &&
-              focus.current &&
-              'prior' in focus.current
-            )
-              focus.current = undefined
-          }}
           onClick={() => {
             if (loading) return
             focus.current = {

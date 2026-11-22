@@ -380,6 +380,20 @@ it('reconciles World Cup score participants and knockout deciders independently 
   ] as const)
     await cup(id, { sportsScoreDuration: duration })
   await cup('group', {}, ['Harbor', 'River', 'Draw'])
+  for (const duration of ['EXTRA_TIME', 'PENALTY_SHOOTOUT']) {
+    const id = 'group-' + duration
+    await seed({
+      id,
+      answers: ['Harbor', 'River', 'Draw'],
+      resolution: id + '-d',
+      data: {
+        ...tie,
+        sportsScoreDuration: duration,
+        sportsPenHome: 5,
+        sportsPenAway: 4,
+      },
+    })
+  }
   await cup('partial', { sportsHomeTeam: '  HARBOR ', sportsHomeScore: 2 })
   await cup('wrong-away', { sportsAwayTeam: 'Elsewhere', sportsHomeScore: 2 })
   await cup('swapped', {
@@ -412,6 +426,11 @@ it('reconciles World Cup score participants and knockout deciders independently 
     'wrong-teams',
   ])
     expect(results[id]).toMatchObject({ payout: 'River', finalScore: null })
+  for (const duration of ['EXTRA_TIME', 'PENALTY_SHOOTOUT'])
+    expect(results['group-' + duration]).toMatchObject({
+      payout: 'Draw',
+      finalScore: null,
+    })
   expect(results.group.finalScore).toMatchObject({
     home: 'Harbor',
     away: 'River',

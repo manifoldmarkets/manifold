@@ -164,7 +164,8 @@ function finalScore(row: Row): SportsResult['finalScore'] {
         homeName.toLowerCase() !== answerHome.toLowerCase()) ||
       (row.away !== null &&
         awayName.toLowerCase() !== answerAway.toLowerCase()) ||
-      (answers.length === 2 && row.homeScore === row.awayScore && !shootout)
+      (answers.length === 2 && row.homeScore === row.awayScore && !shootout) ||
+      (answers.length === 3 && (shootout || row.duration === 'EXTRA_TIME'))
     )
       return null
     homeName = answerHome
