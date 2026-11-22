@@ -9,6 +9,7 @@ jest.mock('shared/utils', () => ({
   contractColumnsToSelect: 'data',
 }))
 jest.mock('shared/supabase/init', () => ({
+  createSupabaseDirectClient: jest.fn(),
   pgp: {
     as: {
       format: (sql: string, values: unknown[]) =>
@@ -61,7 +62,13 @@ import { APIError } from 'common/api/utils'
 import { User } from 'common/user'
 import { getUser, log } from 'shared/utils'
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { FDMatch, WORLD_CUP_2026 } from 'common/sports'
+import { MarketContract } from 'common/contract'
+import { resolveTournamentMarketsForMatches } from './sports-markets'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
 import { newScorePollState, pollOddsScoresAndResolve } from './odds-markets'
@@ -701,3 +708,166 @@ it.each([false, true])(
     expect(state.inFlightDetails.size).toBe(0)
   }
 )
+
+describe('fixture-bound provider writes', () => {
+  let previous: string | undefined
+  beforeEach(() => {
+    previous = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+  })
+  afterEach(() => {
+    if (previous === undefined)
+      delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = previous
+  })
+
+  const official = {
+    ...reviewGame().data,
+    creatorId: creator.id,
+    token: 'MANA',
+    visibility: 'public',
+    shouldAnswersSumToOne: true,
+    isResolved: false,
+  }
+  function store(initial: Record<string, unknown>, answers = reviewAnswers) {
+    const data = { ...initial }
+    let committed = false
+    const tx = {
+      manyOrNone: jest.fn(async (sql: string) =>
+        sql.includes('from contracts')
+          ? [{ id: 'game', data, token: 'MANA' }]
+          : answers
+      ),
+      none: jest.fn(async (_sql: string, params: string[]) =>
+        Object.assign(data, JSON.parse(params[0]))
+      ),
+    }
+    const pg = {
+      tx: async <T>(f: (db: typeof tx) => Promise<T>) => {
+        const r = await f(tx)
+        committed = true
+        return r
+      },
+      manyOrNone: jest.fn(),
+      oneOrNone: jest
+        .fn()
+        .mockImplementation(async () => ({ data, importance_score: 0 })),
+    }
+    return {
+      data,
+      answers,
+      tx,
+      pg,
+      client: pg as unknown as SupabaseDirectClient,
+      committed: () => committed,
+    }
+  }
+  it('holds the Odds fixture if sides change between discovery and the durable write', async () => {
+    const d = store({
+      ...official,
+      sportsHomeTeam: 'Away',
+      sportsAwayTeam: 'Home',
+    })
+    d.pg.manyOrNone
+      .mockResolvedValueOnce([{ data: official, token: 'MANA' }])
+      .mockResolvedValueOnce([]) // polling settings
+    jest.mocked(getScores).mockResolvedValue([reviewScore(true)])
+    expect(
+      (await pollOddsScoresAndResolve(d.client, newScorePollState())).resolved
+    ).toBe(0)
+    expect(d.tx.none).not.toHaveBeenCalled()
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it('publishes the stored Odds fixture and rechecks its independently loaded event before payout', async () => {
+    const d = store(official)
+    d.pg.manyOrNone
+      .mockResolvedValueOnce([{ data: official, token: 'MANA' }])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce(reviewAnswers)
+    jest.mocked(getScores).mockResolvedValue([reviewScore(true)])
+    let allowed = false
+    jest.mocked(resolveMarketHelper).mockImplementationOnce(async (...args) => {
+      expect(d.committed()).toBe(true)
+      expect(args[5]).toBeDefined()
+      const fresh = {
+        ...d.data,
+        answers: reviewAnswers,
+      } as unknown as MarketContract
+      expect(() => args[5]?.(fresh)).not.toThrow()
+      args[5]?.(
+        Object.assign({}, fresh, {
+          sportsEventId: 'odds:americanfootball_nfl:another',
+        })
+      )
+      allowed = true
+      throw Error('unreachable')
+    })
+    const result = await pollOddsScoresAndResolve(d.client, newScorePollState())
+    expect(result.resolved).toBe(0)
+    expect(allowed).toBe(false)
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(1)
+    expect(publishSportsLiveScore).toHaveBeenCalledWith(
+      'game',
+      expect.objectContaining({
+        scoreFixture: expect.objectContaining({
+          eventId: official.sportsEventId,
+        }),
+      })
+    )
+  })
+  it.each(['FINISHED', 'AWARDED'] as const)(
+    'persists and publishes a %s tournament even without a winner, before trying settlement',
+    async (status) => {
+      const config = {
+        ...WORLD_CUP_2026,
+        manifoldSportsUserId: { dev: creator.id, prod: creator.id },
+      }
+      const d = store({
+        ...official,
+        sportsEventId: 'fd-22',
+        sportsLeague: config.sportsLeague,
+        sportsHomeTeam: undefined,
+        sportsAwayTeam: undefined,
+      })
+      d.pg.manyOrNone.mockResolvedValue([
+        { data: { ...d.data, answers: reviewAnswers } },
+      ])
+      jest
+        .mocked(createSupabaseDirectClient)
+        .mockReturnValue(
+          d.pg as unknown as ReturnType<typeof createSupabaseDirectClient>
+        )
+      jest
+        .mocked(publishSportsLiveScore)
+        .mockImplementationOnce(async (_id, score) => {
+          expect(d.committed()).toBe(true)
+          expect(d.data).toMatchObject({
+            sportsLiveStatus: status,
+            sportsLiveUpdatedTime: NOW,
+          })
+          expect(score.scoreFixture).toMatchObject({
+            eventId: 'fd-22',
+            home: 'Home',
+            away: 'Away',
+          })
+        })
+      const match = {
+        id: 22,
+        status,
+        homeTeam: { name: 'Home' },
+        awayTeam: { name: 'Away' },
+        score: {
+          winner: null,
+          fullTime: { home: 1, away: 0 },
+          duration: 'REGULAR',
+        },
+      } as FDMatch
+      expect(
+        await resolveTournamentMarketsForMatches(config, [match])
+      ).toMatchObject({ resolved: 0, skipped: 1, errors: 0 })
+      expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+      expect(resolveMarketHelper).not.toHaveBeenCalled()
+    }
+  )
+})

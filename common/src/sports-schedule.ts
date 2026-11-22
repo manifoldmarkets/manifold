@@ -1213,7 +1213,16 @@ export function findRelatedMarkets(
 
 export type GameStatus = 'live' | 'upcoming' | 'finished'
 
+export type ScoreFixture = {
+  eventId: string
+  home: string
+  away: string
+  homeId?: string
+  awayId?: string
+}
+
 export interface SportsLiveScore {
+  scoreFixture?: ScoreFixture
   sportsHomeScore: number | null
   sportsAwayScore: number | null
   sportsLiveStatus: string

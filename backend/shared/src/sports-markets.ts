@@ -1,3 +1,11 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import {
+  assertObservedResult,
+  boundScore,
+  ScoreSource,
+  writeFixtureScore,
+  WrittenScore,
+} from './sports-score-observation'
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
@@ -24,6 +32,7 @@ import {
   Contract,
   contractPath,
   CPMMMultiContract,
+  MarketContract,
   Sports,
   nativeContractColumnsArray,
 } from 'common/contract'
@@ -526,6 +535,47 @@ async function postFinalScoreComment(
   )
 }
 
+type ScoreRead = { startedAt: number; receivedAt: number }
+function tournamentScore(
+  config: TournamentConfig,
+  match: FDMatch,
+  receipt: number
+) {
+  const source: ScoreSource = {
+    provider: 'football-data',
+    eventId: sportsEventId(match),
+    home: match.homeTeam.name,
+    away: match.awayTeam.name,
+    league: config.sportsLeague,
+    creatorId:
+      ENV === 'DEV'
+        ? config.manifoldSportsUserId.dev
+        : config.manifoldSportsUserId.prod,
+  }
+  const terminal = match.status === 'FINISHED' || match.status === 'AWARDED'
+  const penalties = match.score.penalties
+  const patch = {
+    sportsHomeScore: match.score.fullTime.home,
+    sportsAwayScore: match.score.fullTime.away,
+    sportsLiveStatus: match.status,
+    sportsLiveMinute: terminal
+      ? null
+      : match.status === 'PAUSED'
+      ? 'HT'
+      : match.minute == null
+      ? null
+      : String(match.minute),
+    sportsLiveUpdatedTime: receipt,
+    ...(terminal && match.score.duration
+      ? { sportsScoreDuration: match.score.duration }
+      : {}),
+    ...(terminal && penalties?.home != null && penalties.away != null
+      ? { sportsPenHome: penalties.home, sportsPenAway: penalties.away }
+      : {}),
+  }
+  return { source, patch }
+}
+
 // Resolve unresolved markets against an already-fetched set of terminal
 // (FINISHED/AWARDED) matches. Shared by the 15-min backstop cron and the 10s
 // live poller, so a finished match resolves within ~10s of full time off the
@@ -533,7 +583,7 @@ async function postFinalScoreComment(
 export async function resolveTournamentMarketsForMatches(
   config: TournamentConfig,
   terminalMatches: FDMatch[],
-  opts: { dryRun?: boolean } = {}
+  opts: { dryRun?: boolean; observation?: ScoreRead } = {}
 ): Promise<{
   resolved: number
   skipped: number
@@ -549,6 +599,31 @@ export async function resolveTournamentMarketsForMatches(
       ? config.manifoldSportsUserId.dev
       : config.manifoldSportsUserId.prod
 
+  // The observation survives a missing winner, provider correction or settlement retry.
+  const guarded = isSportsBdlEnabled()
+  const now = Date.now()
+  const observation = opts.observation ?? { startedAt: now, receivedAt: now }
+  const committed = new Map<string, WrittenScore>()
+  if (guarded && !dryRun) {
+    for (const match of terminalMatches) {
+      if (match.status !== 'FINISHED' && match.status !== 'AWARDED') continue
+      const { source, patch } = tournamentScore(
+        config,
+        match,
+        observation.receivedAt
+      )
+      const written = await writeFixtureScore(
+        pg,
+        source,
+        patch,
+        observation.startedAt
+      )
+      for (const market of written) {
+        committed.set(market.id, market)
+        await publishSportsLiveScore(market.id, boundScore(source, patch))
+      }
+    }
+  }
   const creatorUser = await getUser(creatorId)
   if (!creatorUser)
     throw new Error(`ManifoldSports user ${creatorId} not found`)
@@ -572,7 +647,7 @@ export async function resolveTournamentMarketsForMatches(
 
   for (const market of unresolvedMarkets) {
     const match = finishedById.get(market.sportsEventId)
-    if (!match) {
+    if (!match || (guarded && !dryRun && !committed.has(market.id))) {
       skipped++
       log.push({
         question: market.question,
@@ -599,7 +674,7 @@ export async function resolveTournamentMarketsForMatches(
         awayTeamName: match.awayTeam.name,
         winner,
       },
-      market.answers
+      committed.get(market.id)?.answers ?? market.answers
     )
     if (!winningAnswer) {
       errors++
@@ -646,17 +721,36 @@ export async function resolveTournamentMarketsForMatches(
       }
 
       const contract = convertContract(contractRow) as CPMMMultiContract
-      await resolveMarketHelper(contract, creatorUser, creatorUser, {
+      const bound = committed.get(market.id)
+      const result = {
         outcome: winningAnswer.id,
         resolutions: { [winningAnswer.id]: 100 },
-      })
+      }
+      if (guarded && bound) {
+        const { source, patch } = tournamentScore(
+          config,
+          match,
+          observation.receivedAt
+        )
+        await resolveMarketHelper(
+          contract,
+          creatorUser,
+          creatorUser,
+          result,
+          undefined,
+          (current: MarketContract) =>
+            assertObservedResult(current, source, patch, bound.answers)
+        )
+      } else {
+        await resolveMarketHelper(contract, creatorUser, creatorUser, result)
+      }
       // Store final score (+ how it was decided) for dashboard display. fullTime
       // is the post-ET aggregate; for a shootout we also store the penalty score
       // so the card can show e.g. "1–1 · 4–2 pens" instead of a bare 1–1 next to
       // the advancing team.
       const homeScore = match.score.fullTime.home
       const awayScore = match.score.fullTime.away
-      if (homeScore !== null && awayScore !== null) {
+      if (!guarded && homeScore !== null && awayScore !== null) {
         const scorePatch: Record<string, unknown> = {
           sportsHomeScore: homeScore,
           sportsAwayScore: awayScore,
@@ -717,11 +811,18 @@ export async function resolveTournamentMarkets(
   errors: number
   log: ResolveLogEntry[]
 }> {
+  const startedAt = Date.now()
   const allMatches = await fetchAllCompetitionMatches(config, apiKey)
   const terminal = allMatches.filter(
     (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
   )
-  return resolveTournamentMarketsForMatches(config, terminal, opts)
+  return resolveTournamentMarketsForMatches(
+    config,
+    terminal,
+    isSportsBdlEnabled()
+      ? { ...opts, observation: { startedAt, receivedAt: Date.now() } }
+      : opts
+  )
 }
 
 // ─── Market creation ───────────────────────────────────────────────────────────
@@ -1009,6 +1110,8 @@ export async function pollAndStoreLiveScores(
   // Fetch a tight date window rather than only status=IN_PLAY, so the same pull
   // also sees PAUSED (half-time) and the FINISHED transition it needs for
   // live-clearing + resolution. Still one football-data call.
+  const startedAt = Date.now()
+  const guarded = isSportsBdlEnabled()
   const dayMs = 24 * 60 * 60 * 1000
   const matches = await fetchAllCompetitionMatches(config, apiKey, {
     dateFrom: isoDateStr(new Date(Date.now() - dayMs)),
@@ -1022,6 +1125,8 @@ export async function pollAndStoreLiveScores(
     const isLive = status === 'IN_PLAY' || status === 'PAUSED'
     const isTerminal = status === 'FINISHED' || status === 'AWARDED'
     if (!isLive && !isTerminal) continue
+    // Enabled terminal reads are committed and published by the shared resolver below.
+    if (guarded && isTerminal) continue
 
     const patch = {
       sportsHomeScore: m.score.fullTime.home,
@@ -1042,12 +1147,17 @@ export async function pollAndStoreLiveScores(
       // Capture each contract's prior score in the SAME statement that overwrites
       // it, so we can diff for goals. Writing the new score here is also what
       // dedups annotations: next poll sees old == new and detects no goal.
-      const rows = await pg.manyOrNone<{
-        id: string
-        old_home: number | null
-        old_away: number | null
-      }>(
-        `with prev as (
+      const source = guarded
+        ? tournamentScore(config, m, updatedTime).source
+        : undefined
+      const rows = source
+        ? await writeFixtureScore(pg, source, patch, startedAt)
+        : await pg.manyOrNone<{
+            id: string
+            old_home: number | null
+            old_away: number | null
+          }>(
+            `with prev as (
            select id,
                   (data->>'sportsHomeScore')::int as old_home,
                   (data->>'sportsAwayScore')::int as old_away
@@ -1060,12 +1170,17 @@ export async function pollAndStoreLiveScores(
          update contracts c set data = c.data || $1::jsonb
          from prev where c.id = prev.id
          returning c.id, prev.old_home, prev.old_away`,
-        [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
-      )
+            [JSON.stringify(patch), sportsEventId(m), config.sportsLeague]
+          )
       updated += rows.length
       // The API writer fans out to every open dashboard.
       await Promise.all(
-        rows.map((row) => publishSportsLiveScore(row.id, patch))
+        rows.map((row) =>
+          publishSportsLiveScore(
+            row.id,
+            source ? boundScore(source, patch) : patch
+          )
+        )
       )
       // Detect goals (score deltas) and back-date a marker onto the price spike.
       // Off the hot path unless a score actually changed.
@@ -1105,7 +1220,13 @@ export async function pollAndStoreLiveScores(
   )
   let resolved = 0
   if (terminal.length > 0) {
-    const r = await resolveTournamentMarketsForMatches(config, terminal)
+    const r = await resolveTournamentMarketsForMatches(
+      config,
+      terminal,
+      guarded
+        ? { observation: { startedAt, receivedAt: updatedTime } }
+        : undefined
+    )
     resolved = r.resolved
   }
 

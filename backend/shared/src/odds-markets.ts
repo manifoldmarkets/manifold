@@ -27,6 +27,12 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
+import {
+  assertObservedResult,
+  boundScore,
+  ScoreSource,
+  writeFixtureScore,
+} from './sports-score-observation'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
@@ -794,7 +800,7 @@ export async function pollOddsScoresAndResolve(
             id,
             runId,
             isCurrent,
-            (run) => finishGame(pg, game, score, creator!, run)
+            (run) => finishGame(pg, game, score, creator!, run, now)
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -964,6 +970,21 @@ async function writeScorePatch(
   )
 }
 
+function oddsScoreSource(game: PendingGame): ScoreSource {
+  const d = game.contract as MarketContract &
+    Partial<import('common/contract').Sports>
+  return {
+    provider: 'odds',
+    eventId: `odds:${game.sportKey}:${game.eventId}`,
+    home: d.sportsHomeTeam ?? '',
+    away: d.sportsAwayTeam ?? '',
+    homeId: d.sportsHomeTeamId,
+    awayId: d.sportsAwayTeamId,
+    creatorId: d.creatorId,
+    league: d.sportsLeague ?? '',
+  }
+}
+
 async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
@@ -984,14 +1005,33 @@ async function writeLiveScore(
     sportsLiveStatus: 'IN_PLAY',
     // The Odds API has no clock; show the score observation time instead.
     sportsLiveMinute: null,
-    sportsLiveUpdatedTime: now,
+    sportsLiveUpdatedTime: isSportsBdlEnabled() ? Date.now() : now,
     sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, now),
   }
   if (!run.isCurrent()) return
-  const written = await writeScorePatch(pg, game.contract.id, patch, run)
+  const source = isSportsBdlEnabled() ? oddsScoreSource(game) : undefined
+  const written = source
+    ? (
+        await run.mutate(() =>
+          writeFixtureScore(
+            pg,
+            source,
+            patch,
+            now,
+            game.contract.id,
+            run.isCurrent
+          )
+        )
+      ).length > 0
+    : await writeScorePatch(pg, game.contract.id, patch, run)
   if (!written || !run.isCurrent()) return
   run.setStage('score-publication')
-  await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
+  await run.mutate(() =>
+    publishSportsLiveScore(
+      game.contract.id,
+      source ? boundScore(source, patch) : patch
+    )
+  )
   return true
 }
 
@@ -1000,7 +1040,8 @@ async function finishGame(
   game: PendingGame,
   score: OddsApiScore,
   creator: User,
-  run: ScoreGameRun
+  run: ScoreGameRun,
+  startedAt: number
 ) {
   const { contract } = game
   const d = contract as any
@@ -1034,10 +1075,30 @@ async function finishGame(
     sportsScoreUpdatedTime: scoreUpdatedTime(score.last_update, Date.now()),
   }
   if (!run.isCurrent()) return
-  const written = await writeScorePatch(pg, contract.id, patch, run)
+  const source = isSportsBdlEnabled() ? oddsScoreSource(game) : undefined
+  const confirmed = source
+    ? await run.mutate(() =>
+        writeFixtureScore(
+          pg,
+          source,
+          patch,
+          startedAt,
+          contract.id,
+          run.isCurrent
+        )
+      )
+    : undefined
+  const written = confirmed
+    ? confirmed.length > 0
+    : await writeScorePatch(pg, contract.id, patch, run)
   if (!written || !run.isCurrent()) return
   run.setStage('score-publication')
-  await run.mutate(() => publishSportsLiveScore(contract.id, patch))
+  await run.mutate(() =>
+    publishSportsLiveScore(
+      contract.id,
+      source ? boundScore(source, patch) : patch
+    )
+  )
   if (!run.isCurrent()) return
 
   run.setStage('answer-read')
@@ -1047,7 +1108,12 @@ async function finishGame(
     ])
   ).map(convertAnswer)
   if (!run.isCurrent()) return
-  const args = gameResolution(answers, side, d.sportsHomeTeam, d.sportsAwayTeam)
+  const args = gameResolution(
+    confirmed?.[0]?.answers ?? answers,
+    side,
+    d.sportsHomeTeam,
+    d.sportsAwayTeam
+  )
   if (!args) {
     throw new Error(
       `answers on ${contract.id} don't look like a game: ${answers
@@ -1055,17 +1121,30 @@ async function finishGame(
         .join(', ')}`
     )
   }
+  const observed = confirmed?.[0]
   const multi = { ...(contract as CPMMMultiContract), answers }
   if (!run.isCurrent()) return
   run.setStage('resolution-connection')
   await run.mutate(() =>
-    resolveMarketHelper(multi, creator, creator, args, (transactionState) => {
-      run.setStage(
-        transactionState === 'started'
-          ? 'resolution-transaction'
-          : 'resolution-post-commit'
-      )
-    })
+    resolveMarketHelper(
+      multi,
+      creator,
+      creator,
+      args,
+      (transactionState) => {
+        run.setStage(
+          transactionState === 'started'
+            ? 'resolution-transaction'
+            : 'resolution-post-commit'
+        )
+      },
+      ...(source && observed
+        ? [
+            (current: MarketContract) =>
+              assertObservedResult(current, source, patch, observed.answers),
+          ]
+        : [])
+    )
   )
   return true
 }

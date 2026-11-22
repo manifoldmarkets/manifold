@@ -97,6 +97,15 @@ const liveStatus = z.enum([
   'abandoned',
 ])
 export const publicSportsScoreSchema = z.object({
+  scoreFixture: z
+    .object({
+      eventId: z.string().min(1).max(512),
+      home: z.string().min(1).max(240),
+      away: z.string().min(1).max(240),
+      homeId: z.string().min(1).max(128).optional(),
+      awayId: z.string().min(1).max(128).optional(),
+    })
+    .optional(),
   sportsHomeScore: z.number().finite().nonnegative().nullable(),
   sportsAwayScore: z.number().finite().nonnegative().nullable(),
   sportsLiveStatus: z.preprocess(
