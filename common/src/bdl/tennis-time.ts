@@ -1,12 +1,19 @@
+import * as dayjsModule from 'dayjs'
+import * as utcModule from 'dayjs/plugin/utc'
+import * as timezoneModule from 'dayjs/plugin/timezone'
 import { parseSportsKickoffMs } from '../sports-kickoff-interface'
 import { DAY_MS, HOUR_MS } from '../util/time'
 import { BDL_TENNIS_CLOSE_HOURS } from './constants'
 
-const dayjs: typeof import('dayjs') = require('dayjs')
-const utc: typeof import('dayjs/plugin/utc') = require('dayjs/plugin/utc')
-const timezone: typeof import('dayjs/plugin/timezone') = require('dayjs/plugin/timezone')
-dayjs.extend(utc)
-dayjs.extend(timezone)
+// CommonJS loads these three callables directly. The web's ES module loader wraps them.
+function callableExport<T extends (...args: never[]) => unknown>(
+  loaded: T | { default: T }
+): T {
+  return typeof loaded === 'function' ? loaded : loaded.default
+}
+const dayjs = callableExport(dayjsModule)
+dayjs.extend(callableExport(utcModule))
+dayjs.extend(callableExport(timezoneModule))
 
 // BALLDONTLIE publishes the venue as a location string. Canadian venues alternate.
 const venueZones: Record<string, string> = {
