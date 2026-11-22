@@ -14,10 +14,71 @@ import { reviewedResult } from './major-result'
 type Raw = Record<string, unknown>
 type Page = { data: Raw[]; meta?: { next_cursor: number | null } }
 const leagues: MajorLeague[] = ['nba', 'nhl', 'wnba', 'mlb', 'nfl']
+// Expected public schedule identity and scores for each trimmed response.
+const schedules = {
+  nba: {
+    id: 21718156,
+    slateDate: '2026-11-21',
+    status: 'scheduled',
+    home: { id: 23, name: 'Philadelphia 76ers' },
+    away: { id: 17, name: 'Milwaukee Bucks' },
+    homeScore: 0,
+    awayScore: 0,
+    postseason: false,
+    eligible: true,
+  },
+  nhl: {
+    id: 3328405,
+    slateDate: '2026-11-19',
+    status: 'final',
+    home: { id: 57, name: 'Seattle Kraken' },
+    away: { id: 60, name: 'Vancouver Canucks' },
+    homeScore: 5,
+    awayScore: 1,
+    postseason: false,
+    eligible: true,
+  },
+  wnba: {
+    id: 25005,
+    slateDate: '2026-08-13',
+    status: 'final',
+    home: { id: 1, name: 'New York Liberty' },
+    away: { id: 12, name: 'Los Angeles Sparks' },
+    homeScore: 85,
+    awayScore: 81,
+    postseason: false,
+    eligible: true,
+  },
+  mlb: {
+    id: 5059601,
+    slateDate: '2026-08-13',
+    status: 'final',
+    home: { id: 13, name: 'Los Angeles Angels' },
+    away: { id: 28, name: 'Texas Rangers' },
+    homeScore: 7,
+    awayScore: 0,
+    postseason: false,
+    eligible: true,
+  },
+  nfl: {
+    id: 1392367,
+    slateDate: '2026-11-22',
+    status: 'scheduled',
+    home: { id: 3, name: 'Buffalo Bills' },
+    away: { id: 5, name: 'Miami Dolphins' },
+    homeScore: null,
+    awayScore: null,
+    postseason: false,
+    eligible: true,
+  },
+} as const
+const recordedOdds: MajorLeague[] = ['nba', 'nhl', 'nfl']
 function fixture(league: MajorLeague, kind: 'games' | 'odds'): Page {
   const file =
     kind === 'games'
-      ? 'games__spec-major-slate.json'
+      ? 'games__recorded-major-slate.json'
+      : recordedOdds.includes(league)
+      ? 'odds__recorded-synthetic-moneyline.json'
       : 'odds__spec-major-moneyline.json'
   return JSON.parse(
     readFileSync(
@@ -110,6 +171,16 @@ it.each(leagues)(
   }
 )
 
+function mayNbaGame(): Raw {
+  return {
+    ...fixture('nba', 'games').data[0],
+    id: 101,
+    date: '2026-05-14',
+    datetime: '2026-05-15T02:30:00Z',
+    status: null,
+    status_state: 'scheduled',
+  }
+}
 function localClient(
   response: (url: URL) => { data: unknown; meta?: Page['meta'] }
 ) {
@@ -132,38 +203,19 @@ function localClient(
   })
   return { client, urls }
 }
-const dateFor = (league: MajorLeague) =>
-  league === 'nfl' ? '2026-11-19' : '2026-05-14'
+const dateFor = (league: MajorLeague) => schedules[league].slateDate
 
 it.each(leagues)(
-  'maps %s schedule and prices using league-specific fields and exact IDs',
+  'maps the %s schedule, filter and entrant identity',
   async (league) => {
-    const { client, urls } = localClient((url) => {
-      if (url.pathname.endsWith('/odds')) return fixture(league, 'odds')
-      if (league === 'wnba' && url.searchParams.get('season_type') === '3')
-        return { data: [] }
-      return fixture(league, 'games')
-    })
-    const date = dateFor(league)
-    const games = await fetchMajorGames(client, league, date, date)
-    const game = games[0]
-    expect(game).toMatchObject({
-      id: { nba: 101, nhl: 201, wnba: 301, mlb: 402, nfl: 501 }[league],
-      slateDate: date,
-      home: { name: expect.stringMatching(/^Lake City/) },
-      away: { name: expect.stringMatching(/^Northport/) },
-      status: {
-        nba: 'scheduled',
-        nhl: 'in_progress',
-        wnba: 'final',
-        mlb: 'scheduled',
-        nfl: 'final',
-      }[league],
-      homeScore: { nba: 0, nhl: 1, wnba: 84, mlb: 0, nfl: 24 }[league],
-      awayScore: { nba: 0, nhl: 2, wnba: 78, mlb: 0, nfl: 24 }[league],
-      eligible: true,
-      postseason: league === 'nhl' || league === 'nba',
-    })
+    const { client, urls } = localClient((url) =>
+      league === 'wnba' && url.searchParams.get('season_type') === '3'
+        ? { data: [] }
+        : fixture(league, 'games')
+    )
+    const day = dateFor(league)
+    const games = await fetchMajorGames(client, league, day, day)
+    expect(games[0]).toMatchObject(schedules[league])
     expect(urls[0].pathname).toBe('/' + league + '/v1/games')
     expect(urls[0].searchParams.getAll('dates[]')).toHaveLength(3)
     expect(urls[0].searchParams.get('per_page')).toBe('100')
@@ -174,42 +226,49 @@ it.each(leagues)(
       ])
     if (league === 'nfl')
       expect(urls[0].searchParams.getAll('season_types[]')).toEqual(['2', '3'])
-    if (league === 'nhl')
-      expect(game).toMatchObject({ period: '3', clock: '05:21' })
-    if (league === 'mlb') {
-      expect(games.find((g) => g.id === 401)).toMatchObject({
-        gameNumber: 1,
-        status: 'suspended',
-        period: '6',
-        homeScore: 4,
-        awayScore: 2,
-      })
-      expect(game.gameNumber).toBe(2)
-    }
-    const rows = await fetchMajorOdds(client, league, games)
-    const last = urls[urls.length - 1]
-    expect(last.pathname).toBe(
+    if (league === 'nhl') expect(games[0].clock).toBeUndefined()
+  }
+)
+
+it.each(leagues)(
+  'maps %s current prices to the requested game and its two entrants',
+  async (league) => {
+    const page = fixture(league, 'odds')
+    const { client, urls } = localClient((url) =>
+      url.pathname.endsWith('/odds')
+        ? page
+        : league === 'wnba' && url.searchParams.get('season_type') === '3'
+        ? { data: [] }
+        : fixture(league, 'games')
+    )
+    const day = dateFor(league)
+    const [match] = await fetchMajorGames(client, league, day, day)
+    // Price-only spec examples use fictional game IDs. Recorded game and odds IDs must match unchanged.
+    const game = recordedOdds.includes(league)
+      ? match
+      : { ...match, id: Number(page.data[0].game_id) }
+    const prices = await fetchMajorOdds(client, league, [game])
+    const url = urls[urls.length - 1]
+    expect(url.pathname).toBe(
       '/' + league + (league === 'nba' ? '/v2/odds' : '/v1/odds')
     )
-    expect(last.searchParams.getAll('game_ids[]')).toEqual(
-      games.map((g) => String(g.id))
-    )
-    const quote = rows.get(game.id)![0]
+    expect(url.searchParams.getAll('game_ids[]')).toEqual([String(game.id)])
+    const quote = prices.get(game.id)![0]
     expect(quote).toMatchObject({
       eventId: 'bdl:' + league + ':' + game.id,
       outcomes: [
         {
           outcome: { entrantId: String(game.away.id) },
-          americanOdds: league === 'nba' ? -150 : -175,
+          americanOdds: page.data[0].moneyline_away_odds,
         },
         {
           outcome: { entrantId: String(game.home.id) },
-          americanOdds: league === 'nba' ? 150 : 155,
+          americanOdds: page.data[0].moneyline_home_odds,
         },
       ],
     })
     const line = selectOpeningLine(
-      rows.get(game.id)!,
+      [quote],
       {
         league,
         eventId: quote.eventId,
@@ -217,13 +276,56 @@ it.each(leagues)(
       },
       quote.updatedAtMs
     )
-    expect(line.source).toBe(league === 'nba' ? 'kalshi' : 'books')
-    if (league === 'mlb') expect(rows.get(401)).toEqual([])
+    expect(line.source).toBe('books')
+    expect(line.probs[0]).toBeGreaterThan(line.probs[1])
   }
 )
 
+it('passes a synthetic Kalshi moneyline through the NBA adapter and exchange selector', async () => {
+  const { client } = localClient((url) =>
+    url.pathname.endsWith('/odds')
+      ? {
+          data: [
+            {
+              id: 901,
+              game_id: 101,
+              vendor: 'kalshi',
+              moneyline_home_odds: 150,
+              moneyline_away_odds: -150,
+              updated_at: '2026-05-13T14:00:00Z',
+            },
+          ],
+        }
+      : { data: [mayNbaGame()] }
+  )
+  const [game] = await fetchMajorGames(
+    client,
+    'nba',
+    '2026-05-14',
+    '2026-05-14'
+  )
+  const quotes = (await fetchMajorOdds(client, 'nba', [game])).get(game.id)!
+  expect(quotes).toHaveLength(1)
+  expect(quotes[0].vendor).toBe('kalshi')
+  const line = selectOpeningLine(
+    quotes,
+    {
+      league: 'nba',
+      eventId: 'bdl:nba:101',
+      entrantIds: [String(game.away.id), String(game.home.id)],
+    },
+    Date.parse('2026-05-13T14:00:00Z')
+  )
+  expect(line).toMatchObject({
+    source: 'kalshi',
+    vendors: ['kalshi'],
+    bookCount: 0,
+    probs: [0.6, 0.4],
+  })
+})
+
 it('requests protected dates, follows real cursor pages and crops on Eastern kickoff at the window boundary', async () => {
-  const row = fixture('nba', 'games').data[0]
+  const row = mayNbaGame()
   const { client, urls } = localClient((url) =>
     url.searchParams.has('cursor')
       ? {
@@ -293,20 +395,78 @@ it('retains unknown lifecycle, excludes spring training, exhibitions and unknown
   ])
 })
 
-it('leaves tied start times unnumbered and ineligible in MLB', async () => {
-  const [row, second] = fixture('mlb', 'games').data
-  const { client } = localClient(() => ({
-    data: [row, { ...second, date: row.date }],
-  }))
+it('numbers a doubleheader by kickoff, isolates game-two quotes, and holds tied starts', async () => {
+  const source = fixture('mlb', 'games').data[0]
+  const first = {
+    ...source,
+    id: 401,
+    date: '2026-05-14T18:10:00Z',
+    status_state: 'suspended',
+    period: 6,
+    home_team_data: { runs: 4 },
+    away_team_data: { runs: 2 },
+  }
+  const second = {
+    ...source,
+    id: 402,
+    date: '2026-05-14T23:10:00Z',
+    status_state: 'scheduled',
+    period: 0,
+    home_team_data: { runs: 0 },
+    away_team_data: { runs: 0 },
+  }
+  const { client, urls } = localClient((url) =>
+    url.pathname.endsWith('/odds')
+      ? fixture('mlb', 'odds')
+      : { data: [second, first] }
+  )
   const games = await fetchMajorGames(client, 'mlb', '2026-05-14', '2026-05-14')
-  expect(games.map((g) => [g.eligible, g.gameNumber])).toEqual([
+  expect(games[0]).toMatchObject({
+    id: 402,
+    gameNumber: 2,
+    status: 'scheduled',
+    homeScore: 0,
+    awayScore: 0,
+    eligible: true,
+  })
+  expect(games[1]).toMatchObject({
+    id: 401,
+    gameNumber: 1,
+    status: 'suspended',
+    period: '6',
+    homeScore: 4,
+    awayScore: 2,
+  })
+  const quotes = await fetchMajorOdds(client, 'mlb', games)
+  expect(urls.at(-1)!.searchParams.getAll('game_ids[]').sort()).toEqual([
+    '401',
+    '402',
+  ])
+  expect(quotes.get(401)).toEqual([])
+  expect(quotes.get(402)).toEqual([
+    expect.objectContaining({
+      eventId: 'bdl:mlb:402',
+      outcomes: [
+        {
+          outcome: { entrantId: String(games[0].away.id) },
+          americanOdds: -175,
+        },
+        { outcome: { entrantId: String(games[0].home.id) }, americanOdds: 155 },
+      ],
+    }),
+  ])
+  const tied = localClient(() => ({
+    data: [first, { ...second, date: first.date }],
+  })).client
+  const unknown = await fetchMajorGames(tied, 'mlb', '2026-05-14', '2026-05-14')
+  expect(unknown.map((g) => [g.eligible, g.gameNumber])).toEqual([
     [false, undefined],
     [false, undefined],
   ])
 })
 
 it('rejects unrelated dates, ignored WNBA phase, conflicting schedule IDs and unusable teams', async () => {
-  const row = fixture('nba', 'games').data[0]
+  const row = mayNbaGame()
   const fetch = (data: Raw[]) =>
     fetchMajorGames(
       localClient(() => ({ data })).client,
@@ -332,14 +492,14 @@ it('rejects unrelated dates, ignored WNBA phase, conflicting schedule IDs and un
     fetchMajorGames(
       localClient(() => fixture('wnba', 'games')).client,
       'wnba',
-      '2026-05-14',
-      '2026-05-14'
+      dateFor('wnba'),
+      dateFor('wnba')
     )
   ).rejects.toThrow('ignored the requested filter')
 })
 
 it('batches 50 game IDs, preserves withdrawn quotes, rejects unrequested odds and skips empty slates', async () => {
-  const schedule = localClient(() => fixture('nba', 'games'))
+  const schedule = localClient(() => ({ data: [mayNbaGame()] }))
   const [g] = await fetchMajorGames(
     schedule.client,
     'nba',
@@ -373,7 +533,11 @@ it('batches 50 game IDs, preserves withdrawn quotes, rejects unrequested odds an
   expect(
     selectOpeningLine(
       rows,
-      { league: 'nba', eventId: 'bdl:nba:1', entrantIds: ['12', '11'] },
+      {
+        league: 'nba',
+        eventId: 'bdl:nba:1',
+        entrantIds: [String(game.away.id), String(game.home.id)],
+      },
       rows[1].updatedAtMs
     ).source
   ).toBe('none')
@@ -384,7 +548,7 @@ it('batches 50 game IDs, preserves withdrawn quotes, rejects unrequested odds an
 })
 
 it('uses existing Odds team names only when an abbreviation and nickname identify the same team', async () => {
-  const raw = fixture('nba', 'games').data[0]
+  const raw = mayNbaGame()
   const { client } = localClient(() => ({
     data: [
       {
@@ -420,7 +584,7 @@ it('uses the normalized provider lifecycle exclusively and preserves missing sco
     'abandoned',
     'unknown',
   ]
-  const raw = fixture('nba', 'games').data[0]
+  const raw = mayNbaGame()
   const { client } = localClient(() => ({
     data: states.map((status_state, i) => ({
       ...raw,
@@ -439,7 +603,7 @@ it('uses the normalized provider lifecycle exclusively and preserves missing sco
 })
 
 it('rejects invalid schedule dates and nonattributable quotes before price selection', async () => {
-  const row = fixture('nba', 'games').data[0]
+  const row = mayNbaGame()
   const provider = localClient(() => ({ data: [row] }))
   await expect(
     fetchMajorGames(provider.client, 'nba', '2026-02-30', '2026-05-14')
@@ -456,7 +620,9 @@ it('rejects invalid schedule dates and nonattributable quotes before price selec
   )
   for (const fields of [{ vendor: '' }, { updated_at: 'yesterday' }]) {
     const odds = localClient(() => ({
-      data: [{ ...fixture('nba', 'odds').data[0], ...fields }],
+      data: [
+        { ...fixture('nba', 'odds').data[0], game_id: game.id, ...fields },
+      ],
     }))
     await expect(fetchMajorOdds(odds.client, 'nba', [game])).rejects.toThrow(
       'vendor or timestamp'
@@ -520,7 +686,7 @@ it.each(['nba', 'nhl'] as const)(
 )
 
 it('keeps contradictory NBA kickoff evidence unflagged and rejects conflicting duplicate date-only rows', async () => {
-  const raw = { ...fixture('nba', 'games').data[0], datetime: null }
+  const raw = { ...mayNbaGame(), datetime: null }
   const client = localClient(() => ({
     data: [{ ...raw, status: '2026-05-15T03:00:00Z' }],
   })).client
@@ -653,7 +819,7 @@ it.each(leagues)(
 )
 
 it('preserves line score gaps and actual zeros, falls back to the same moved ID and skips optional standings errors', async () => {
-  const raw = fixture('nba', 'games').data[0]
+  const raw = mayNbaGame()
   const row = {
     ...raw,
     home_q1: 0,
@@ -710,4 +876,81 @@ it('rejects incorrect detail identities and repeated IDs before sending a settle
   await expect(
     fetchMajorSnapshots(duplicate, 'nhl', [{ id: Number(nhl.id) }])
   ).rejects.toThrow('duplicate')
+})
+
+it('preserves period and clock on a synthetic live NHL playoff game', async () => {
+  const base = fixture('nhl', 'games').data[0]
+  const client = localClient(() => ({
+    data: [
+      {
+        ...base,
+        status_state: 'in_progress',
+        postseason: true,
+        period: 3,
+        time_remaining: '05:21',
+        home_score: 1,
+        away_score: 2,
+      },
+    ],
+  })).client
+  const [game] = await fetchMajorGames(
+    client,
+    'nhl',
+    dateFor('nhl'),
+    dateFor('nhl')
+  )
+  expect(game).toMatchObject({
+    status: 'in_progress',
+    postseason: true,
+    period: '3',
+    clock: '05:21',
+    homeScore: 1,
+    awayScore: 2,
+  })
+})
+
+it('keeps both scores on a synthetic tied NFL final', async () => {
+  const base = fixture('nfl', 'games').data[0]
+  const client = localClient(() => ({
+    data: [
+      {
+        ...base,
+        status_state: 'final',
+        home_team_score: 24,
+        visitor_team_score: 24,
+      },
+    ],
+  })).client
+  const [game] = await fetchMajorGames(
+    client,
+    'nfl',
+    dateFor('nfl'),
+    dateFor('nfl')
+  )
+  expect(game).toMatchObject({ status: 'final', homeScore: 24, awayScore: 24 })
+})
+
+it('keeps archived opening odds separate from current game quotes', async () => {
+  const page: Page = JSON.parse(
+    readFileSync(
+      join(
+        __dirname,
+        '../../test/fixtures/bdl/nba/odds-opening__recorded-synthetic-moneyline.json'
+      ),
+      'utf8'
+    )
+  )
+  const { client } = localClient((url) =>
+    url.pathname.endsWith('/odds') ? page : fixture('nba', 'games')
+  )
+  const day = dateFor('nba')
+  const [game] = await fetchMajorGames(client, 'nba', day, day)
+  expect(page.data[0]).toMatchObject({
+    game_id: game.id,
+    opened_at: expect.any(String),
+  })
+  expect(Number.isFinite(Date.parse(String(page.data[0].opened_at)))).toBe(true)
+  await expect(fetchMajorOdds(client, 'nba', [game])).rejects.toThrow(
+    'vendor or timestamp'
+  )
 })
