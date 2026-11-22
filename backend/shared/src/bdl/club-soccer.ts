@@ -78,7 +78,7 @@ function directory(rows: readonly unknown[]) {
       r.id,
       !name ||
         unresolvedClub.test(
-          name.replace(/\.\s*/gu, '').replace(/\s+/gu, ' ')
+          name.replace(/\.\s*/gu, '').replace(/\s+/gu, ' ').trim()
         ) ||
         previous === null ||
         (previous && previous.name !== name)
@@ -331,7 +331,7 @@ export function isClubPregameAt(match: ClubMatch, observedAt: number) {
 export function decodeClubOdds(
   matches: readonly ClubMatch[],
   rows: readonly unknown[],
-  observedAt: number
+  receivedAt: number | readonly number[]
 ) {
   const byId = new Map(matches.map((match) => [match.id, match]))
   const quotes = new Map<number, ProviderOdds[]>(
@@ -339,7 +339,9 @@ export function decodeClubOdds(
   )
   const unknownVendor = new Set<number>()
   const withdrawn = new Map<number, Set<string>>()
-  for (const raw of rows) {
+  for (const [index, raw] of rows.entries()) {
+    const observedAt =
+      typeof receivedAt === 'number' ? receivedAt : receivedAt[index]
     const r = clubRow(raw)
     const match = id(r.match_id) ? byId.get(r.match_id) : undefined
     if (

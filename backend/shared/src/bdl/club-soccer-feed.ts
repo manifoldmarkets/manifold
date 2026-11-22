@@ -1,4 +1,4 @@
-import { chunk } from 'lodash'
+import { chunk, isEqual } from 'lodash'
 import { bdlEventId } from 'common/sports-ids'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
@@ -97,18 +97,37 @@ export async function readClubOdds(
 ) {
   if (!enabled || !isSportsBdlEnabled()) return null
   let observedAt = clock()
-  const eligible = matches.filter(
-    (m) =>
-      isClubPregameAt(m, observedAt) && m.eventId === bdlEventId(league, m.id)
+  let clockValid = Number.isFinite(observedAt)
+  const sampleTime = () => {
+    const current = clock()
+    if (!Number.isFinite(current) || current < observedAt) clockValid = false
+    observedAt = current
+    return current
+  }
+
+  // A later held or differently oriented copy also disqualifies the ID.
+  // Resolve duplicates before filtering for scheduled rows and before chunking.
+  const unique = new Map<number, ClubMatch | null>()
+  for (const match of matches) {
+    const previous = unique.get(match.id)
+    if (previous === undefined) unique.set(match.id, match)
+    else if (previous && !isEqual(previous, match)) unique.set(match.id, null)
+  }
+  const eligible = [...unique.values()].filter(
+    (m): m is ClubMatch =>
+      !!m &&
+      isClubPregameAt(m, observedAt) &&
+      m.eventId === bdlEventId(league, m.id)
   )
-  const quotes = new Map<number, ProviderOdds[]>(
-    eligible.map((m) => [m.id, []])
-  )
+  const empty = new Map<number, ProviderOdds[]>(eligible.map((m) => [m.id, []]))
+  const quotes = new Map(empty)
   for (const batch of chunk(eligible, 50)) {
-    observedAt = Math.max(observedAt, clock())
-    const current = batch.filter((m) => isClubPregameAt(m, observedAt))
+    const startedAt = sampleTime()
+    if (!clockValid) return empty
+    const current = batch.filter((m) => isClubPregameAt(m, startedAt))
     const ids = new Set(current.map((m) => m.id))
     if (!ids.size) continue
+    const receipts: number[] = []
     const rows = await client.getAll<unknown>(
       BDL_LEAGUES[league].oddsApiBase + '/odds',
       { match_ids: [...ids] },
@@ -118,22 +137,23 @@ export async function readClubOdds(
           const id = clubRow(raw).match_id
           return typeof id === 'number' && ids.has(id)
         },
+      },
+      {
+        now: sampleTime,
+        onPage: (page, receivedAt) => {
+          for (let i = 0; i < page.length; i++) receipts.push(receivedAt)
+        },
       }
     )
-    const receivedAt = clock()
-    // No trustworthy acquisition interval if the local clock went backwards.
-    if (!Number.isFinite(receivedAt) || receivedAt < observedAt) continue
-    observedAt = receivedAt
-    for (const [id, currentQuotes] of decodeClubOdds(
-      current,
-      rows,
-      receivedAt
-    )) {
+    if (!clockValid) return empty
+    if (rows.length !== receipts.length) continue
+    for (const [id, currentQuotes] of decodeClubOdds(current, rows, receipts)) {
       quotes.set(id, currentQuotes)
     }
   }
-  // Even a timely earlier batch is unusable once a later request crosses its kickoff.
-  const returnedAt = Math.max(observedAt, clock())
+  // A later request can cross another game's kickoff or invalidate the whole clock.
+  const returnedAt = sampleTime()
+  if (!clockValid) return empty
   for (const m of eligible) {
     if (!isClubPregameAt(m, returnedAt)) quotes.set(m.id, [])
   }

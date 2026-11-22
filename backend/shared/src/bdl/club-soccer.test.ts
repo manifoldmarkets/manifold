@@ -17,7 +17,11 @@ import {
   decodeClubSlate,
 } from './club-soccer'
 import { readClubSlate, readClubOdds } from './club-soccer-feed'
-import { createBdlClient, type BdlParams } from '../balldontlie-client'
+import {
+  createBdlClient,
+  type BdlParams,
+  type BdlPageTiming,
+} from '../balldontlie-client'
 
 const season = 2026,
   day = '2026-11-21',
@@ -83,12 +87,14 @@ const client = (
   const getAll = async <T>(
     path: string,
     params: BdlParams,
-    options: { matches: (row: T) => boolean; maxPages: number }
+    options: { matches: (row: T) => boolean; maxPages: number },
+    timing?: BdlPageTiming<T>
   ): Promise<T[]> => {
     calls.push({ path, params })
     const response = (path.endsWith('/odds') ? odds : schedule) as T[]
     if (!response.every(options.matches))
       throw Error('Unexpected row for selector')
+    if (timing) timing.onPage(response, timing.now())
     return response
   }
   return { get, getAll, calls }
@@ -509,6 +515,7 @@ it.each([
   'TBD',
   'TBA',
   'T.B.D.',
+  'T. B. D .',
   'T. B. D.',
   'T B D',
   'N / A',
@@ -711,31 +718,41 @@ it.each([1, 50, 51])(
       calls = 0
     const transport = {
       ...client([]),
-      getAll: async <T>(_path: string, params: BdlParams): Promise<T[]> => {
+      getAll: async <T>(
+        _path: string,
+        params: BdlParams,
+        _options: unknown,
+        timing?: BdlPageTiming<T>
+      ): Promise<T[]> => {
         calls++
         if (calls === 2) observed += 30000
         const ids = params.match_ids
-        if (!Array.isArray(ids) || !ids.includes(1000)) return []
-        return [
-          {
-            match_id: 1000,
-            vendor: 'book-a',
-            updated_at: new Date(start - 1000).toISOString(),
-            moneyline_home_odds: 100,
-          },
-          {
-            match_id: 1000,
-            vendor: 'book-a',
-            updated_at: new Date(start + 10000).toISOString(),
-            moneyline_home_odds: 100,
-          },
-          {
-            match_id: 1000,
-            vendor: 'book-b',
-            updated_at: new Date(start).toISOString(),
-            moneyline_home_odds: 100,
-          },
-        ] as T[]
+        const rows = (
+          Array.isArray(ids) && ids.includes(1000)
+            ? [
+                {
+                  match_id: 1000,
+                  vendor: 'book-a',
+                  updated_at: new Date(start - 1000).toISOString(),
+                  moneyline_home_odds: 100,
+                },
+                {
+                  match_id: 1000,
+                  vendor: 'book-a',
+                  updated_at: new Date(start + 10000).toISOString(),
+                  moneyline_home_odds: 100,
+                },
+                {
+                  match_id: 1000,
+                  vendor: 'book-b',
+                  updated_at: new Date(start).toISOString(),
+                  moneyline_home_odds: 100,
+                },
+              ]
+            : []
+        ) as T[]
+        if (timing) timing.onPage(rows, timing.now())
+        return rows
       },
     }
     const book = await readClubOdds(
@@ -774,4 +791,214 @@ it.each([
     )
   ).toEqual([])
   expect(api.calls).toHaveLength(1)
+})
+
+const syntheticQuote = (match_id: number, when: number, vendor = 'book-a') => ({
+  match_id,
+  vendor,
+  updated_at: new Date(when).toISOString(),
+  moneyline_home_odds: 100,
+  moneyline_away_odds: 200,
+  moneyline_draw_odds: 500,
+})
+const opening = (
+  quotes: Awaited<ReturnType<typeof readClubOdds>>,
+  id: number,
+  when: number
+) =>
+  selectOpeningLine(
+    quotes?.get(id) ?? [],
+    { eventId: 'bdl:epl:' + id, league: 'epl', entrantIds: ['11', '22'] },
+    when
+  )
+
+it.each([false, true])(
+  'uses each actual cursor page body receipt before delayed accounting and preserves vendor holds across pages (between-page clock retreats=%s)',
+  async (retreat) => {
+    const start = at - 120000
+    let now = start
+    const transport = jest.fn(async (url: string) => {
+      const second = new URL(url).searchParams.get('cursor') === 'page-two'
+      if (second) now = start + 20000
+      const rows = second
+        ? [
+            syntheticQuote(next.id, now, 'book-a'),
+            syntheticQuote(next.id, now, 'book-b'),
+          ]
+        : [syntheticQuote(next.id, start + 1000)]
+      return new Response(
+        JSON.stringify({
+          data: rows,
+          meta: { next_cursor: second ? null : 'page-two' },
+        })
+      )
+    })
+    // The real HTTP parser and bounded pagination run over a local response double.
+    const source = createBdlClient({
+      role: 'recorder',
+      key: 'synthetic-reader',
+      recorderRate: 60000,
+      transport,
+      clock: {
+        now: () => now,
+        sleep: async (ms) => {
+          now += ms
+        },
+      },
+      onAttempt: async () => {
+        now =
+          retreat && transport.mock.calls.length === 1
+            ? start - 1000
+            : now + 20000
+      },
+    })
+    const rows = await readClubOdds(
+      source,
+      'epl',
+      decode([next]).matches,
+      true,
+      () => now
+    )
+    expect(transport).toHaveBeenCalledTimes(2)
+    const expected = retreat ? [] : ['book-b']
+    expect(rows?.get(next.id)?.map((r) => r.vendor)).toEqual(expected)
+    expect(opening(rows, next.id, now).vendors).toEqual(expected)
+  }
+)
+
+it.each([
+  ['second batch start', [1, 2, 3, 1, 5, 6]],
+  ['second batch receipt', [1, 2, 3, 4, 2, 6]],
+  ['second batch nonfinite', [1, 2, 3, 4, NaN, 6]],
+  ['nonfinite batch start', [1, 2, 3, NaN, 5, 6]],
+  ['return retreats', [1, 2, 3, 4, 5, 2]],
+  ['return is nonfinite', [1, 2, 3, 4, 5, Infinity]],
+] as const)(
+  'withholds every prior opening if the %s clock is invalid',
+  async (_name, offsets) => {
+    const base = at - 60000
+    const matches = decode(
+      Array.from({ length: 51 }, (_, i) => ({ ...next, id: 1000 + i }))
+    ).matches
+    const quotes = await readClubOdds(
+      {
+        ...client([]),
+        getAll: async <T>(
+          _path: string,
+          params: BdlParams,
+          _options: unknown,
+          timing?: BdlPageTiming<T>
+        ) => {
+          const ids = params.match_ids
+          const rows = (
+            Array.isArray(ids) && ids.includes(1000)
+              ? [syntheticQuote(1000, base)]
+              : []
+          ) as T[]
+          if (timing) timing.onPage(rows, timing.now())
+          return rows
+        },
+      },
+      'epl',
+      matches,
+      true,
+      (() => {
+        let i = 0
+        return () => base + offsets[i++]
+      })()
+    )
+    expect(quotes?.get(1000)).toEqual([])
+    expect(opening(quotes, 1000, base + 10).source).toBe('none')
+  }
+)
+
+it('keeps a withdrawal authoritative when the final clock retreats between the two vendor updates', async () => {
+  const start = at - 60000,
+    tick = [start, start, start + 10000, start + 5000]
+  const offer = syntheticQuote(next.id, start)
+  const api = client([], teams, [
+    offer,
+    { ...syntheticQuote(next.id, start + 8000), moneyline_away_odds: null },
+  ])
+  const result = await readClubOdds(
+    api,
+    'epl',
+    decode([next]).matches,
+    true,
+    () => tick.shift()!
+  )
+  expect(result?.get(next.id)).toEqual([])
+  expect(opening(result, next.id, start + 5000).source).toBe('none')
+})
+
+it.each([false, true])(
+  'deduplicates identical events and quarantines conflicting or held copies across the batch boundary (reverse=%s)',
+  async (reverse) => {
+    const start = at - 60000
+    const matches = decode(
+      Array.from({ length: 50 }, (_, i) => ({ ...next, id: 1000 + i }))
+    ).matches
+    async function read(copy: (typeof matches)[number]) {
+      const requested: number[][] = []
+      const api = {
+        ...client([]),
+        getAll: async <T>(
+          _p: string,
+          params: BdlParams,
+          _o: unknown,
+          timing?: BdlPageTiming<T>
+        ) => {
+          const ids = params.match_ids as number[]
+          requested.push(ids)
+          const rows = ids.map((id) => syntheticQuote(id, start)) as T[]
+          if (timing) timing.onPage(rows, timing.now())
+          return rows
+        },
+      }
+      const input = [...matches, copy]
+      const result = await readClubOdds(
+        api,
+        'epl',
+        reverse ? input.reverse() : input,
+        true,
+        () => start
+      )
+      expect(requested).toHaveLength(1)
+      expect(opening(result, 1001, start).source).toBe('books')
+      return {
+        ids: requested.flat(),
+        selection: opening(result, 1000, start).source,
+        rows: result?.get(1000),
+      }
+    }
+    const same = await read({ ...matches[0] })
+    expect(same.ids.filter((id) => id === 1000)).toHaveLength(1)
+    expect(same.selection).toBe('books')
+    for (const conflicting of [
+      { ...matches[0], away: matches[0].home, home: matches[0].away },
+      { ...matches[0], hold: 'unverified-clubs' as const },
+      { ...matches[0], startTime: new Date(at + 3600000).toISOString() },
+    ]) {
+      const held = await read(conflicting)
+      expect(held.ids).not.toContain(1000)
+      expect(held.rows ?? []).toEqual([])
+      expect(held.selection).toBe('none')
+    }
+  }
+)
+
+it('withholds offers when a transport cannot confirm the page receipt', async () => {
+  const when = at - 60000
+  const rows = await readClubOdds(
+    {
+      ...client([]),
+      getAll: async <T>() => [syntheticQuote(next.id, when)] as T[],
+    },
+    'epl',
+    decode([next]).matches,
+    true,
+    () => when
+  )
+  expect(rows?.get(next.id)).toEqual([])
+  expect(opening(rows, next.id, when).source).toBe('none')
 })
