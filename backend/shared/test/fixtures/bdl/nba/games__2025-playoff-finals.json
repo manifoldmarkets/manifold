@@ -1,0 +1,109 @@
+{
+  "data": [
+    {
+      "id": 21716134,
+      "season": 2025,
+      "postseason": true,
+      "datetime": "2026-06-04T00:30:00.000Z",
+      "status_state": "final",
+      "home_team_score": 95,
+      "visitor_team_score": 105,
+      "home_team": {
+        "id": 27,
+        "full_name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "conference": "West"
+      },
+      "visitor_team": {
+        "id": 20,
+        "full_name": "New York Knicks",
+        "abbreviation": "NYK",
+        "conference": "East"
+      }
+    },
+    {
+      "id": 21716135,
+      "season": 2025,
+      "postseason": true,
+      "datetime": "2026-06-06T00:30:00.000Z",
+      "status_state": "final",
+      "home_team_score": 104,
+      "visitor_team_score": 105,
+      "home_team": {
+        "id": 27,
+        "full_name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "conference": "West"
+      },
+      "visitor_team": {
+        "id": 20,
+        "full_name": "New York Knicks",
+        "abbreviation": "NYK",
+        "conference": "East"
+      }
+    },
+    {
+      "id": 21716136,
+      "season": 2025,
+      "postseason": true,
+      "datetime": "2026-06-09T00:30:00.000Z",
+      "status_state": "final",
+      "home_team_score": 111,
+      "visitor_team_score": 115,
+      "home_team": {
+        "id": 20,
+        "full_name": "New York Knicks",
+        "abbreviation": "NYK",
+        "conference": "East"
+      },
+      "visitor_team": {
+        "id": 27,
+        "full_name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "conference": "West"
+      }
+    },
+    {
+      "id": 21716137,
+      "season": 2025,
+      "postseason": true,
+      "datetime": "2026-06-11T00:30:00.000Z",
+      "status_state": "final",
+      "home_team_score": 107,
+      "visitor_team_score": 106,
+      "home_team": {
+        "id": 20,
+        "full_name": "New York Knicks",
+        "abbreviation": "NYK",
+        "conference": "East"
+      },
+      "visitor_team": {
+        "id": 27,
+        "full_name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "conference": "West"
+      }
+    },
+    {
+      "id": 21716138,
+      "season": 2025,
+      "postseason": true,
+      "datetime": "2026-06-14T00:30:00.000Z",
+      "status_state": "final",
+      "home_team_score": 90,
+      "visitor_team_score": 94,
+      "home_team": {
+        "id": 27,
+        "full_name": "San Antonio Spurs",
+        "abbreviation": "SAS",
+        "conference": "West"
+      },
+      "visitor_team": {
+        "id": 20,
+        "full_name": "New York Knicks",
+        "abbreviation": "NYK",
+        "conference": "East"
+      }
+    }
+  ]
+}
