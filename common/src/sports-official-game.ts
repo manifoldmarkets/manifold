@@ -2,6 +2,7 @@ import { sortBy } from 'lodash'
 import type { Answer } from './answer'
 import { BDL_LEAGUES, BdlLeagueKey } from './bdl/leagues'
 import { Contract, isMultiCpmm, isSportsContract } from './contract'
+import { marketLeagueKey } from './bdl/league-navigation'
 import { officialBdlLeagueKey } from './sports-league-label'
 import { recordedTeamCode } from './bdl/team-codes'
 import { parseBdlEventId } from './sports-ids'
@@ -37,6 +38,7 @@ export function toOfficialGame(
   const leagueKey = bdlEnabled ? officialBdlLeagueKey(c) : undefined
   const provider = providerOf(c)
   if (bdlEnabled && (d.sportsFixture || provider === 'fixture')) return null
+  const navigationKey = bdlEnabled ? marketLeagueKey(c) : undefined
   const league = leagueKey ? BDL_LEAGUES[leagueKey] : undefined
   if (
     bdlEnabled &&
@@ -135,10 +137,12 @@ export function toOfficialGame(
     creatorUsername: c.creatorUsername,
     question: c.question,
     sport:
+      (navigationKey && BDL_LEAGUES[navigationKey].sportKey) ??
       league?.sportKey ??
       sportForMarket({ sportsLeague: label, groupIds }, index),
     groupSlugs: c.groupSlugs ?? [],
     league: label,
+    ...(bdlEnabled && { navigationLeagueKey: navigationKey ?? null }),
     ...(leagueKey && { sportsLeagueKey: leagueKey }),
     ...details,
     sportsEventId,

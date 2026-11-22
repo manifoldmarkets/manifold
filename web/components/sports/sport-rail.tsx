@@ -13,7 +13,7 @@ import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
 import { useSportsNavigation } from './sports-navigation-context'
-import { byEngagement } from 'common/bdl/league-navigation'
+import { sportRailSections } from 'common/bdl/league-navigation'
 
 // Tabs every sports page has. The first tab differs (Upcoming on /sports,
 // Games on a sport), so switching sports from it opens the other one.
@@ -46,20 +46,11 @@ export function SportRail(props: {
       s.groupIds.length > 0 || (counts[s.key] ?? 0) > 0 || s.key === selected
   )
   const navigation = useSportsNavigation()
-  const ordered =
-    navigation &&
-    byEngagement(
-      visibleSports.filter(
-        (s) => s.key !== 'other' || (counts[s.key] ?? 0) > 0
-      ),
-      (s) => s.key,
-      navigation.engagement.sports
-    )
-  const withGames =
-    ordered ?? visibleSports.filter((s) => (counts[s.key] ?? 0) > 0)
-  const withoutGames = ordered
-    ? []
-    : visibleSports.filter((s) => !(counts[s.key] ?? 0) && s.key !== 'other')
+  const [withGames, withoutGames] = sportRailSections(
+    visibleSports,
+    counts,
+    navigation?.engagement.sports
+  )
   const totalGames = Object.values(counts).reduce<number>(
     (a, b) => a + (b ?? 0),
     0
@@ -124,7 +115,10 @@ export function SportRail(props: {
         selectedItemName={selected}
         items={[
           { key: 'all', label: 'All sports', emoji: '🏟️' },
-          ...(ordered ?? visibleSports).filter((s) => s.key !== 'other'),
+          ...(navigation
+            ? [...withGames, ...withoutGames]
+            : visibleSports
+          ).filter((s) => s.key !== 'other'),
         ].map((s) => ({
           name: s.key,
           isLink: true,

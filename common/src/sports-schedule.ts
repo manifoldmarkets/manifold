@@ -1242,6 +1242,8 @@ export interface ScheduleTeam {
 }
 
 export interface ScheduleGame extends ScheduleScoreFields {
+  /** Verified across provider, canonical event and historical label. Null means unclassified. */
+  navigationLeagueKey?: BdlLeagueKey | null
   sportsLeagueKey?: BdlLeagueKey
   id: string
   slug: string
@@ -1300,6 +1302,8 @@ export interface UpcomingMarketRef {
 }
 
 export interface SportsScheduleResponse {
+  /** Market-backed leagues in this sport/topic before pagination; first page only. */
+  availableLeagues?: BdlLeagueKey[]
   /** Server time before snapshot reads; survives HTTP and client caching. */
   snapshotTime?: number
   /**

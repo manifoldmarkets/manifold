@@ -1112,3 +1112,65 @@ it('uses the legacy single capped close-time scan and original scores when rollo
     jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   }
 })
+
+it('returns only this public feed’s actual leagues before either SQL or UI pagination', async () => {
+  const base = official[1].data
+  officialRows = Array.from({ length: 205 }, (_, i) => ({
+    data: {
+      ...base,
+      id: 's' + String(i).padStart(3, '0'),
+      sportsEventId:
+        'odds:' +
+        (i === 204 ? 'soccer_spain_la_liga' : 'soccer_epl') +
+        ':game' +
+        i,
+    },
+  }))
+  officialRows.push(
+    {
+      data: {
+        ...base,
+        id: 'bad-provider',
+        sportsEventId: 'odds:soccer_italy_serie_a:bad',
+        sportsProvider: 'football-data',
+      },
+    },
+    {
+      data: {
+        ...base,
+        id: 'bad-league',
+        sportsEventId: 'odds:soccer_italy_serie_a:bad2',
+        sportsLeagueKey: 'bundesliga',
+      },
+    },
+    {
+      data: {
+        ...base,
+        id: 'terminal',
+        sportsEventId: 'odds:soccer_france_ligue_one:f',
+        resolution: 'winner',
+      },
+    }
+  )
+  gameGroups = [{ contract_id: 's204', group_id: 'laliga' }]
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const read = async (props: Parameters<typeof get>[0]) => {
+    const response = await get({ ...props, limit: 1, includeRelated: false })
+    return 'result' in response ? response.result : response
+  }
+  const first = await read({ sport: 'soccer' })
+  expect(first.availableLeagues).toEqual(['epl', 'laliga'])
+  expect(first.games).toHaveLength(1)
+  expect(first.nextCursor).toBeTruthy()
+  expect(officialPages).toEqual([200, 8])
+  expect(
+    (await read({ sport: 'soccer', cursor: first.nextCursor! }))
+      .availableLeagues
+  ).toBeUndefined()
+  expect(
+    (await read({ sport: 'soccer', topic: 'laliga' })).availableLeagues
+  ).toEqual(['laliga'])
+  expect((await read({ sport: 'nba' })).availableLeagues).toEqual([])
+})

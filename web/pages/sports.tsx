@@ -1,3 +1,5 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { sportsNavigationPath } from 'common/bdl/league-navigation'
 import { keyBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
@@ -79,8 +81,19 @@ export default function SportsPage({
       : undefined
   }, [router.isReady, router.query.sport, router.query.tab])
   useEffect(() => {
-    if (legacySport) router.replace(sportPath(legacySport))
-  }, [legacySport])
+    if (!legacySport) return
+    const path = sportPath(legacySport)
+    void router.replace(
+      isSportsBdlEnabled()
+        ? sportsNavigationPath(
+            path,
+            legacySport,
+            router.query.league,
+            router.query.tab
+          )
+        : path
+    )
+  }, [legacySport, router.query.league, router.query.tab])
 
   const ready = router.isReady && !legacySport
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
@@ -119,6 +132,7 @@ export default function SportsPage({
 
   return (
     <SportsShell
+      schedule={schedule}
       selected="all"
       rail={rail}
       heading="Sports"

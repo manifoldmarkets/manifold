@@ -8,6 +8,7 @@ import {
   SportInfo,
   sportPath,
   SportSelection,
+  SportsScheduleResponse,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { BackButton } from 'web/components/contract/back-button'
@@ -29,6 +30,7 @@ import { UpcomingMarkets } from './upcoming-markets'
  * sports never moves the rail or the content under it.
  */
 export function SportsShell(props: {
+  schedule?: SportsScheduleResponse
   selected: SportSelection
   /** The open topic's slug, on a topic's page. */
   selectedTopic?: string
@@ -120,7 +122,11 @@ export function SportsShell(props: {
       </Col>
     </Page>
   )
-  return <SportsNavigation sport={selected}>{page}</SportsNavigation>
+  return (
+    <SportsNavigation sport={selected} schedule={props.schedule}>
+      {page}
+    </SportsNavigation>
+  )
 }
 
 /**

@@ -1,6 +1,11 @@
-import { BDL_LEAGUES, BDL_LEAGUE_KEYS } from './leagues'
+import { BDL_LEAGUE_KEYS, BdlLeagueKey } from './leagues'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from '../sports'
 import {
+  availableGameLeagues,
+  marketLeagueKey,
+  sportsNavigationPath,
+  sportRailSections,
+  leagueForSport,
   byEngagement,
   gameLeagueKey,
   leagueChoices,
@@ -79,25 +84,112 @@ it('orders canonical leagues by distinct engaged markets and keeps preset ties s
   const { leagues, sports } = sportsEngagement(recent)
   expect(Object.fromEntries(leagues)).toEqual({ laliga: 2, epl: 1, nba: 1 })
   expect(Object.fromEntries(sports)).toEqual({ soccer: 3, nba: 1 })
-  expect(leagueChoices('soccer', leagues).slice(0, 2)).toEqual([
-    'laliga',
-    'epl',
-  ])
+  expect(
+    leagueChoices('soccer', leagues, ['epl', 'laliga']).slice(0, 2)
+  ).toEqual(['laliga', 'epl'])
   expect(
     byEngagement(['nfl', 'wnba', 'nba', 'soccer'], (key) => key, sports)
   ).toEqual(['soccer', 'nba', 'nfl', 'wnba'])
 })
 
-it('shows exactly the registry for All and just its own leagues on each sport, with stable presets for new and anonymous viewers', () => {
+it('advertises only available leagues and keeps preset order for viewers with no history', () => {
+  const available: BdlLeagueKey[] = ['laliga', 'nba', 'epl', 'ncaaw']
   const empty = sportsEngagement([])
-  expect(leagueChoices('all', empty.leagues)).toEqual(BDL_LEAGUE_KEYS)
-  expect(leagueChoices('soccer', empty.leagues)).toEqual(
-    BDL_LEAGUE_KEYS.filter((key) => BDL_LEAGUES[key].sportKey === 'soccer')
+  expect(leagueChoices('all', empty.leagues, available)).toEqual(
+    BDL_LEAGUE_KEYS.filter((k) => available.includes(k))
   )
-  expect(leagueChoices('unrelated', empty.leagues)).toEqual([])
-  expect(leagueChoices('soccer', empty.leagues)).toContain('fifa/worldcup')
-  expect(byEngagement(['nba', 'soccer'], (key) => key, empty.sports)).toEqual([
-    'nba',
-    'soccer',
+  expect(leagueChoices('soccer', empty.leagues, available)).toEqual([
+    'epl',
+    'laliga',
   ])
+  expect(leagueChoices('unrelated', empty.leagues, available)).toEqual([])
+  expect(leagueChoices('all', empty.leagues, [])).toEqual([])
+  expect(leagueForSport('fifa/worldcup', 'soccer')).toBe('fifa/worldcup')
+  expect(leagueForSport('epl', 'nfl')).toBeUndefined()
+  expect(leagueForSport(['epl', 'laliga'], 'soccer')).toBeUndefined()
+})
+
+it.each([
+  ['bdl:laliga:24', 'Soccer', 'laliga'],
+  ['old-laliga', 'LA LIGA', 'laliga'],
+  ['odds:basketball_wncaab:abc', 'WNCAAB', 'ncaaw'],
+  ['old-college', 'WNCAAB', 'ncaaw'],
+  ['odds:icehockey_nhl_preseason:h', 'NHL Preseason', 'nhl'],
+  ['bdl-f1:1:2', 'Formula 1', 'f1'],
+  ['bdl-f1-title:2026:drivers', 'Formula 1', 'f1'],
+  ['odds:constructor:foo', 'EPL', undefined],
+  ['odds:__proto__:foo', 'EPL', undefined],
+  ['odds:toString:foo', 'EPL', undefined],
+  ['odds:unknown:foo', 'EPL', undefined],
+  ['bdl:laliga:oops', 'EPL', undefined],
+  ['bdl:laliga:24', 'EPL', undefined],
+] as const)(
+  'uses the same %s identity for an official game and engagement',
+  (id, label, expected) => {
+    expect(gameLeagueKey(game(id, label))).toBe(expected)
+    const counts = sportsEngagement([
+      { id: 'row', creatorId: house, sportsEventId: id, sportsLeague: label },
+    ])
+    expect([...counts.leagues]).toEqual(expected ? [[expected, 1]] : [])
+  }
+)
+it('rejects contradictory provider and league evidence including a projected disagreement', () => {
+  expect(
+    marketLeagueKey({ sportsEventId: 'bdl:nhl:22', sportsLeagueKey: 'nba' })
+  ).toBeUndefined()
+  expect(
+    marketLeagueKey({
+      sportsEventId: 'odds:soccer_epl:abc',
+      sportsProvider: 'football-data',
+      sportsLeague: 'EPL',
+    })
+  ).toBeUndefined()
+  expect(
+    availableGameLeagues(
+      [{ ...game('odds:soccer_epl:abc', 'Soccer'), navigationLeagueKey: null }],
+      false
+    )
+  ).toEqual([])
+  expect(
+    availableGameLeagues(
+      [game('bdl:laliga:24', 'Soccer'), game('odds:soccer_epl:abc', 'Soccer')],
+      true
+    )
+  ).toEqual(['epl', 'laliga', 'f1'])
+})
+
+it('keeps a valid league and destination tab through sport and topic redirects', () => {
+  expect(
+    sportsNavigationPath('/sports/soccer', 'soccer', 'fifa/worldcup', 'markets')
+  ).toBe('/sports/soccer?league=fifa%2Fworldcup&tab=markets')
+  expect(sportsNavigationPath('/sports', 'all', 'epl', 'upcoming')).toBe(
+    '/sports?league=epl&tab=upcoming'
+  )
+  expect(sportsNavigationPath('/sports/f1', 'f1', 'epl', 'upcoming')).toBe(
+    '/sports/f1'
+  )
+  expect(
+    gameLeagueKey({ ...game('bdl:nhl:22', 'NHL'), navigationLeagueKey: 'nba' })
+  ).toBeUndefined()
+})
+
+it('preserves games-first ordering and the divider for anonymous, empty and tied histories', () => {
+  const sports = ['nhl', 'epl', 'nba', 'other'].map((key) => ({ key }))
+  const counts = { epl: 1, nba: 3 }
+  const sections = (history?: ReadonlyMap<string, number>) =>
+    sportRailSections(sports, counts, history).map((group) =>
+      group.map((s) => s.key)
+    )
+  expect(sections()).toEqual([['epl', 'nba'], ['nhl']])
+  expect(sections(new Map())).toEqual(sections())
+  expect(
+    sections(
+      new Map([
+        ['nhl', 1],
+        ['epl', 1],
+        ['nba', 1],
+      ])
+    )
+  ).toEqual(sections())
+  expect(sections(new Map([['nhl', 3]]))).toEqual([['nhl', 'epl', 'nba'], []])
 })

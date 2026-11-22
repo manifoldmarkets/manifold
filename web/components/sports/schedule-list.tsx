@@ -150,6 +150,8 @@ export function GameFeed(props: {
   const normalized = query.trim().toLowerCase()
   const hasSearchFilters = filter !== 'all' || date !== 'all' || !!normalized
   const hasFilters = hasSearchFilters || !!league
+  const showBelowFeatured =
+    !hasSearchFilters && (!league || league === 'f1') && belowFeatured
   const everything: FeedItem[] = [...active, ...sessions]
   const selectedFeatured = selectFeaturedGame(
     everything,
@@ -172,7 +174,8 @@ export function GameFeed(props: {
       (!normalized ||
         `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
           .toLowerCase()
-          .includes(normalized))
+          .includes(normalized) ||
+        (!!navigation && matchesLeagueLabel(game, normalized)))
   )
   // Sessions take the same filters as games, except My bets: positions don't
   // cover them yet. A session is liked when any of its markets is.
@@ -184,7 +187,10 @@ export function GameFeed(props: {
             (filter !== 'live' || s.status === 'live') &&
             (filter !== 'liked' || sessionLiked(s)) &&
             onSelectedDay(s) &&
-            (!normalized || raceSessionSearchText(s).includes(normalized))
+            (!normalized ||
+              raceSessionSearchText(s).includes(normalized) ||
+              (!!navigation &&
+                BDL_LEAGUES.f1.label.toLowerCase().includes(normalized)))
         )
   const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
     sort === 'volume' ? compareGameVolume : compareGameStartTime
@@ -203,6 +209,14 @@ export function GameFeed(props: {
   const upcoming = filtered.filter((g) => g.status === 'upcoming' && listed(g))
   const days = groupScheduleDays(upcoming)
   const allDays = groupScheduleDays(everything)
+  if (date !== 'all' && !allDays.some((day) => day.key === date)) {
+    allDays.push({ key: date, label: dayjs(date).format('dddd'), items: [] })
+    allDays.sort((a, b) => a.key.localeCompare(b.key))
+  }
+  const leagueNotLoaded =
+    !!league && everything.length === 0 && hasMore && filter !== 'live'
+  const clearDate = !!league && date !== 'all'
+  const clearSearch = !!league && !!normalized && !clearDate
   // A section with a session in it counts events, not games.
   const unitFor = (items: FeedItem[]) =>
     items.some(isSession) ? 'event' : 'game'
@@ -255,15 +269,42 @@ export function GameFeed(props: {
     </div>
   )
 
-  if (loading && games.length === 0 && sessions.length === 0) {
+  const leagueSelector = navigation &&
+    (league || navigation.choices.length > 1) && (
+      <select
+        aria-label="League"
+        className="border-ink-200 bg-canvas-0 text-ink-700 focus:ring-primary-500 min-h-[44px] max-w-[11rem] rounded-lg border py-1.5 pl-2 pr-7 text-xs font-medium"
+        value={league ?? ''}
+        onChange={(event) => navigation.chooseLeague(event.target.value)}
+      >
+        <option value="">All leagues</option>
+        {(league && !navigation.choices.includes(league)
+          ? [league, ...navigation.choices]
+          : navigation.choices
+        ).map((key) => (
+          <option key={key} value={key}>
+            {BDL_LEAGUES[key].label}
+          </option>
+        ))}
+      </select>
+    )
+  const waiting = loading && games.length === 0 && sessions.length === 0
+  if (waiting && (!navigation || !hasFilters)) {
     return (
       <Col className="gap-2">
+        {leagueSelector}
         <SectionHeader label="Up next" />
         <FeedSkeleton view={view} rows={4} />
       </Col>
     )
   }
-  if (everything.length === 0 && !league) return <>{empty}</>
+  if (
+    !waiting &&
+    everything.length === 0 &&
+    !league &&
+    (!navigation || !hasSearchFilters)
+  )
+    return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -290,23 +331,7 @@ export function GameFeed(props: {
                 </button>
               )}
             </div>
-            {navigation && navigation.choices.length > 1 && (
-              <select
-                aria-label="League"
-                className="border-ink-200 bg-canvas-0 text-ink-700 focus:ring-primary-500 min-h-[44px] max-w-[11rem] rounded-lg border py-1.5 pl-2 pr-7 text-xs font-medium"
-                value={league ?? ''}
-                onChange={(event) =>
-                  navigation.chooseLeague(event.target.value)
-                }
-              >
-                <option value="">All leagues</option>
-                {navigation.choices.map((key) => (
-                  <option key={key} value={key}>
-                    {BDL_LEAGUES[key].label}
-                  </option>
-                ))}
-              </select>
-            )}
+            {leagueSelector}
             <label className="text-ink-500 flex items-center gap-2 text-xs">
               <span className="sr-only sm:not-sr-only">Sort</span>
               <select
@@ -460,7 +485,7 @@ export function GameFeed(props: {
                   key={day.key}
                   disabled={filter === 'live'}
                   aria-pressed={date === day.key}
-                  onClick={() => setDate(day.key)}
+                  onClick={() => setDate(date === day.key ? 'all' : day.key)}
                   className={clsx(
                     'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-left text-xs',
                     date === day.key
@@ -544,54 +569,81 @@ export function GameFeed(props: {
               onPositionsChange={() => void positions.refreshGame(featured.id)}
             />
           ))}
-        {!hasFilters && belowFeatured}
-        {filtered.length === 0 && (
-          <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
-            <h3 className="text-ink-900 font-semibold">
-              {filter === 'liked'
-                ? !likes.user && !likes.loading
-                  ? 'Sign in to see your liked games'
-                  : likes.error
-                  ? 'Your likes are unavailable'
-                  : likes.loading
-                  ? 'Loading your liked games…'
-                  : 'No liked games here yet'
-                : filter === 'mine'
-                ? needsSignIn
-                  ? 'Sign in to see your bets'
-                  : positions.error
-                  ? 'Your bets are unavailable'
-                  : positions.loading
-                  ? 'Loading your bets…'
-                  : 'No bets on these games yet'
-                : filter === 'live'
-                ? sessions.length > 0
-                  ? 'Nothing live right now'
-                  : 'No games live right now'
-                : sessions.length > 0
-                ? 'Nothing matches'
-                : 'No matching games'}
-            </h3>
-            <p className="text-ink-500 mt-1 text-sm">
-              {filter === 'liked'
-                ? 'Heart a game to add it to your Manifold likes.'
-                : filter === 'mine'
-                ? 'Tap a price to back a team. Your picks and open orders show up here.'
-                : league
-                ? hasMore
-                  ? 'Try another league or load more games.'
-                  : 'Try another league.'
-                : 'Try another date, team, or filter.'}
-            </p>
-            <button
-              type="button"
-              onClick={needsSignIn ? firebaseLogin : reset}
-              className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
-            >
-              {needsSignIn ? 'Sign in' : 'Show all games'}
-            </button>
-          </div>
-        )}
+        {showBelowFeatured}
+        {waiting && <FeedSkeleton view={view} rows={4} />}
+        {!waiting &&
+          filtered.length === 0 &&
+          !(league === 'f1' && showBelowFeatured) && (
+            <div className="border-ink-200 rounded-xl border border-dashed px-5 py-8 text-center">
+              <h3 className="text-ink-900 font-semibold">
+                {filter === 'liked'
+                  ? !likes.user && !likes.loading
+                    ? 'Sign in to see your liked games'
+                    : likes.error
+                    ? 'Your likes are unavailable'
+                    : likes.loading
+                    ? 'Loading your liked games…'
+                    : 'No liked games here yet'
+                  : filter === 'mine'
+                  ? needsSignIn
+                    ? 'Sign in to see your bets'
+                    : positions.error
+                    ? 'Your bets are unavailable'
+                    : positions.loading
+                    ? 'Loading your bets…'
+                    : 'No bets on these games yet'
+                  : filter === 'live'
+                  ? sessions.length > 0
+                    ? 'Nothing live right now'
+                    : 'No games live right now'
+                  : leagueNotLoaded
+                  ? 'No games in this league loaded yet'
+                  : clearDate
+                  ? 'No matching games on this date'
+                  : sessions.length > 0
+                  ? 'Nothing matches'
+                  : 'No matching games'}
+              </h3>
+              <p className="text-ink-500 mt-1 text-sm">
+                {filter === 'liked'
+                  ? 'Heart a game to add it to your Manifold likes.'
+                  : filter === 'mine'
+                  ? 'Tap a price to back a team. Your picks and open orders show up here.'
+                  : clearDate
+                  ? 'Choose another date or clear the date filter.'
+                  : clearSearch
+                  ? 'Try a different team or league name.'
+                  : leagueNotLoaded
+                  ? 'Load more games to see this league.'
+                  : league
+                  ? hasMore && filter !== 'live'
+                    ? 'Try another league or load more games.'
+                    : 'Try another league.'
+                  : 'Try another date, team, or filter.'}
+              </p>
+              <button
+                type="button"
+                onClick={
+                  needsSignIn
+                    ? firebaseLogin
+                    : clearDate
+                    ? () => setDate('all')
+                    : clearSearch
+                    ? () => setQuery('')
+                    : reset
+                }
+                className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
+              >
+                {needsSignIn
+                  ? 'Sign in'
+                  : clearDate
+                  ? 'Clear date'
+                  : clearSearch
+                  ? 'Clear search'
+                  : 'Show all games'}
+              </button>
+            </div>
+          )}
         {live.length > 0 && (
           <Col className="gap-2">
             <SectionHeader
@@ -614,7 +666,7 @@ export function GameFeed(props: {
             {renderItems(day.items)}
           </Col>
         ))}
-        {hasMore && (filter !== 'live' || !!league) ? (
+        {waiting ? null : hasMore && filter !== 'live' ? (
           <>
             {hasFilters ? (
               <button
@@ -716,5 +768,15 @@ export function SectionHeader(props: {
         </span>
       )}
     </Row>
+  )
+}
+
+function matchesLeagueLabel(game: ScheduleGame, search: string) {
+  const key = gameLeagueKey(game)
+  if (!key) return false
+  const { label, shortLabel } = BDL_LEAGUES[key]
+  return (
+    label.toLowerCase().includes(search) ||
+    shortLabel.toLowerCase().includes(search)
   )
 }

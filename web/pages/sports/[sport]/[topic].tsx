@@ -1,3 +1,5 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { sportsNavigationPath } from 'common/bdl/league-navigation'
 import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -70,10 +72,29 @@ export default function SportTopicPage() {
     if (!router.isReady) return
     const tab = first(router.query.tab)
     const query = tab ? `?tab=${encodeURIComponent(tab)}` : ''
+    const replace = (path: string, sport: string) =>
+      router.replace(
+        isSportsBdlEnabled()
+          ? sportsNavigationPath(
+              path,
+              sport,
+              router.query.league,
+              router.query.tab
+            )
+          : path + query
+      )
     if (topic && (rawSport !== topic.sport || rawTopic !== topic.slug))
-      router.replace(sportTopicPath(topic.sport, topic.slug) + query)
-    else if (!topic && mainOf) router.replace(sportPath(mainOf.key) + query)
-  }, [router.isReady, topic, mainOf, rawSport, rawTopic])
+      void replace(sportTopicPath(topic.sport, topic.slug), topic.sport)
+    else if (!topic && mainOf) void replace(sportPath(mainOf.key), mainOf.key)
+  }, [
+    router.isReady,
+    topic,
+    mainOf,
+    rawSport,
+    rawTopic,
+    router.query.league,
+    router.query.tab,
+  ])
 
   const ready = router.isReady && !!topic
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
@@ -157,6 +178,7 @@ export default function SportTopicPage() {
 
   return (
     <SportsShell
+      schedule={schedule}
       selected={topic?.sport ?? rawSport ?? 'all'}
       selectedTopic={topic?.slug}
       rail={rail}

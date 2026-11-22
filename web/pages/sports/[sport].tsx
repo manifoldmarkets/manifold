@@ -2,6 +2,8 @@ import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo } from 'react'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { sportsNavigationPath } from 'common/bdl/league-navigation'
 import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
@@ -43,9 +45,16 @@ export default function SportPage() {
   useSaveScroll(`sports-${key ?? ''}`, true)
   // One URL per sport, and All is /sports.
   useEffect(() => {
-    if (key === 'all') router.replace(sportPath('all'))
-    else if (raw && key && raw !== key) router.replace(sportPath(key))
-  }, [raw, key])
+    if (!key || (key !== 'all' && raw === key)) return
+    const path = sportPath(key)
+    if (!isSportsBdlEnabled()) {
+      void router.replace(path)
+      return
+    }
+    void router.replace(
+      sportsNavigationPath(path, key, router.query.league, router.query.tab)
+    )
+  }, [raw, key, router.query.league, router.query.tab])
 
   const ready = router.isReady && !!key && key !== 'all'
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
@@ -122,6 +131,7 @@ export default function SportPage() {
 
   return (
     <SportsShell
+      schedule={schedule}
       selected={key ?? 'all'}
       rail={rail}
       heading={

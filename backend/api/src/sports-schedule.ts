@@ -22,6 +22,7 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
+import { availableGameLeagues } from 'common/bdl/league-navigation'
 import { scheduleFeedTime } from 'common/sports-game-feed'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
@@ -347,6 +348,13 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 
   const response: SportsScheduleResponse = {
     snapshotTime: now,
+    ...(isSportsBdlEnabled() &&
+      !cursor && {
+        availableLeagues: availableGameLeagues(
+          feed,
+          shownWeekends.length > 0 || championships.length > 0
+        ),
+      }),
     games: [...live, ...page],
     nextCursor:
       later.length > page.length && last ? scheduleCursor(last) : null,

@@ -163,3 +163,29 @@ it('does not publish an old in-progress score as a final score after a BDL resol
     })
   ).toMatchObject({ winnerAnswerId: 'home', finalScore: { home: 2, away: 1 } })
 })
+
+it('binds navigation to the original provider and explicit league before projection drops legacy metadata', () => {
+  const legacy = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:soccer_epl:match',
+    sportsLeagueKey: undefined,
+    sportsLeague: 'Soccer',
+  }
+  expect(project(legacy)).toMatchObject({
+    sport: 'soccer',
+    navigationLeagueKey: 'epl',
+  })
+  expect(project({ ...legacy, sportsProvider: 'football-data' })).toMatchObject(
+    { navigationLeagueKey: null }
+  )
+  expect(project({ ...legacy, sportsLeagueKey: 'laliga' })).toMatchObject({
+    navigationLeagueKey: null,
+  })
+  expect(
+    project({
+      ...legacy,
+      sportsProvider: undefined,
+      sportsEventId: 'bdl:laliga:24',
+    })
+  ).toMatchObject({ navigationLeagueKey: 'laliga' })
+})

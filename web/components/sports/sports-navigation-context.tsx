@@ -9,8 +9,14 @@ import {
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
-import { sportsEngagement, leagueChoices } from 'common/bdl/league-navigation'
-import { BdlLeagueKey, isBdlLeagueKey } from 'common/bdl/leagues'
+import {
+  sportsEngagement,
+  leagueChoices,
+  availableGameLeagues,
+  leagueForSport,
+} from 'common/bdl/league-navigation'
+import { BdlLeagueKey } from 'common/bdl/leagues'
+import type { SportsScheduleResponse } from 'common/sports-schedule'
 import { useRouter } from 'next/router'
 
 const preset = sportsEngagement([])
@@ -23,10 +29,13 @@ type Navigation = {
 const Context = createContext<Navigation | null>(null)
 export const useSportsNavigation = () => useContext(Context)
 
-export function SportsNavigation(props: {
+type NavigationProps = {
+  schedule?: SportsScheduleResponse
   sport: string
   children: ReactElement
-}) {
+}
+
+export function SportsNavigation(props: NavigationProps) {
   return isSportsBdlEnabled() ? (
     <PersonalSportsNavigation {...props} />
   ) : (
@@ -37,10 +46,8 @@ export function SportsNavigation(props: {
 function PersonalSportsNavigation({
   sport,
   children,
-}: {
-  sport: string
-  children: ReactElement
-}) {
+  schedule,
+}: NavigationProps) {
   const account = useUser()?.id
   const router = useRouter()
   const [history, setHistory] = useState<{
@@ -69,12 +76,21 @@ function PersonalSportsNavigation({
   const engagement =
     history && history.account === account ? history.engagement : preset
   const value = useMemo(() => {
-    const choices = leagueChoices(sport, engagement.leagues)
-    const requested = router.query.league
+    const confirmed = schedule?.availableLeagues
+    const available =
+      confirmed ??
+      availableGameLeagues(
+        schedule?.games ?? [],
+        !!schedule?.raceWeekends?.length ||
+          !!schedule?.raceChampionships?.length
+      )
+    const choices = leagueChoices(sport, engagement.leagues, available)
+    const requested = leagueForSport(router.query.league, sport)
+    // On older workers later pages may still supply a requested league. Keep
+    // its direct link clearable while advertising only observed alternatives.
+    const incomplete = !schedule || (!confirmed && !!schedule.nextCursor)
     const league =
-      typeof requested === 'string' &&
-      isBdlLeagueKey(requested) &&
-      choices.includes(requested)
+      requested && (incomplete || choices.includes(requested))
         ? requested
         : undefined
     const chooseLeague = (value: string) => {
@@ -87,6 +103,6 @@ function PersonalSportsNavigation({
       })
     }
     return { engagement, choices, league, chooseLeague }
-  }, [sport, engagement, router, router.query])
+  }, [sport, engagement, router, router.query, schedule])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
