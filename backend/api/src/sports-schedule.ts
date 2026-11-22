@@ -22,6 +22,7 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
+import { scheduleScoreFields } from 'common/sports-scoreboard'
 import { scheduleFeedTime } from 'common/sports-game-feed'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
@@ -36,6 +37,7 @@ import {
   SportsIndex,
   SportsScheduleResponse,
   atSportsObservationTime,
+  gameStatus,
   LIVE_STALE_MS,
   sportsMembershipEnd,
   sportsLiveEnd,
@@ -389,6 +391,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     counts,
     liveCount,
     ...(observed && {
+      liveExpiryVersion: 1 as const,
       membershipExpiries: [...memberships].flatMap(([sport, byTime]) =>
         [...byTime].map(([at, count]): [number, AnySportKey, number] => [
           at,
@@ -595,19 +598,30 @@ async function getOfficialGames(
             index,
             now
           )
-          const game =
-            observed && projected
-              ? atSportsObservationTime(projected, now)
-              : projected
+          if (!projected) continue
+          let game = projected
+          if (observed) {
+            // Original non-BDL rows did not surface suspended and postponed
+            // states. The optional view uses the same validated public fields.
+            if (!game.sportsLeagueKey && !game.isResolved) {
+              const details = scheduleScoreFields(contract, false)
+              if (details.gameState)
+                game = {
+                  ...game,
+                  ...details,
+                  status: gameStatus({ ...game, ...details, now }),
+                }
+            }
+            game = atSportsObservationTime(game, now)
+          }
           if (
-            !game ||
-            (scan !== 'close' &&
-              (!game.sportsLeagueKey ||
-                (!observed &&
-                  BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors') ||
-                (scan === 'resume'
-                  ? !game.resumptionTime
-                  : game.status !== 'live')))
+            scan !== 'close' &&
+            (!game.sportsLeagueKey ||
+              (!observed &&
+                BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors') ||
+              (scan === 'resume'
+                ? !game.resumptionTime
+                : game.status !== 'live'))
           )
             continue
           games.push(game)

@@ -1222,6 +1222,8 @@ it('returns the baseline enabled schedule unless the public reader opts in, and 
     const observed = await read(true)
     expect(observed.games).toEqual(current.games)
     expect(observed).toHaveProperty('liveExpiries')
+    expect(observed.liveExpiryVersion).toBe(1)
+    expect(current.liveExpiryVersion).toBeUndefined()
     expect(observed).not.toHaveProperty('sportsTicketVersion')
     jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
     expect(await read(true)).toEqual(await read())
@@ -1254,4 +1256,36 @@ it('discards an impossible future receipt without inferring live activity before
   })
   expect(observed.liveCount).toBe(0)
   expect(observed.liveExpiries).toEqual([])
+})
+
+it('ends traditional suspended membership at the indexed close window even with a later confirmed restart', async () => {
+  const now = Date.now(),
+    hour = 3600000
+  officialRows = [
+    {
+      data: {
+        ...official[0].data,
+        closeTime: now - hour,
+        sportsStartTimestamp: new Date(now - 2 * hour).toISOString(),
+        sportsLiveStatus: 'SUSPENDED',
+        sportsResumptionTime: now + 48 * hour,
+      },
+    },
+  ]
+  const get = sportsSchedule as (
+    p: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const raw = await get({ sport: 'nfl', observedGames: true })
+  const response = 'result' in raw ? raw.result : raw
+  expect(response.games[0]).toMatchObject({
+    gameState: 'suspended',
+    resumptionTime: now + 48 * hour,
+    closeTime: now - hour,
+  })
+  expect(response.membershipExpiries).toEqual([[now + 17 * hour, 'nfl', 1]])
+  officialRows[0].data.sportsResumptionTime = now - 4 * hour
+  const older = await get({ sport: 'nfl', observedGames: true })
+  const previous = 'result' in older ? older.result : older
+  expect(previous.membershipExpiries).toEqual([[now + 14 * hour, 'nfl', 1]])
+  expect(response.liveExpiries).toEqual([])
 })

@@ -1330,6 +1330,8 @@ export interface SportsScheduleResponse {
   /** Live and upcoming games per sport, for the rail badges. */
   counts: Partial<Record<AnySportKey, number>>
   liveCount: number
+  /** This census carries a deadline for every populated team live count. */
+  liveExpiryVersion?: 1
   /** Global observed live games expiring at each instant, with no event identifiers. */
   liveExpiries?: [at: number, count: number][]
   /** End of each sport badge contribution, grouped by UTC millisecond and sport. */
@@ -1417,14 +1419,30 @@ export function sportsLiveEnd(game: ScheduleGame) {
 /** End of eligibility for the schedule's ordinary close, resumption or receipt
  * window. This is separate from the contract's cutoff for placing a bet. */
 export function sportsMembershipEnd(game: ScheduleGame) {
-  if (!game.sportsLeagueKey && !game.gameState)
-    return Math.max(
-      game.closeTime,
-      LIVE_STATUSES.has(game.liveScore?.status ?? '')
-        ? (game.liveUpdatedTime ?? 0) + LIVE_STALE_MS
-        : 0
-    )
   const grace = SCHEDULE_CLOSE_GRACE_HOURS * 60 * 60 * 1000
+  // Only canonical BDL games enter either recovery scan after the ordinary
+  // close window. A legacy suspension cannot survive on its remote ETA alone.
+  if (!game.sportsLeagueKey) {
+    const closeWindowEnd = game.closeTime + grace
+    if (
+      (game.gameState === 'suspended' || game.gameState === 'postponed') &&
+      game.resumptionTime != null
+    )
+      return Math.min(
+        closeWindowEnd,
+        Math.max(game.closeTime, game.resumptionTime + grace)
+      )
+    if (game.gameState) return closeWindowEnd
+    return Math.min(
+      closeWindowEnd,
+      Math.max(
+        game.closeTime,
+        LIVE_STATUSES.has(game.liveScore?.status ?? '')
+          ? (game.liveUpdatedTime ?? 0) + LIVE_STALE_MS
+          : 0
+      )
+    )
+  }
   if (
     (game.gameState === 'suspended' || game.gameState === 'postponed') &&
     game.resumptionTime != null
