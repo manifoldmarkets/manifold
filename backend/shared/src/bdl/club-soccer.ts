@@ -65,7 +65,7 @@ export const clubTime = (value: unknown) =>
     : NaN
 
 const unresolvedClub =
-  /^(?:tbd|tba|tbc|unknown|n\/a|to be (?:determined|decided|announced|confirmed)|(?:winner|loser) (?:of\b.*|(?:match|tie|quarterfinal|semifinal) \d+))$/i
+  /^(?:t\s*b\s*[dac]|unknown|n\s*\/\s*a|to be (?:determined|decided|announced|confirmed)|(?:winner|loser) (?:of\b.*|(?:match|tie|quarterfinal|semifinal) \d+))$/i
 
 function directory(rows: readonly unknown[]) {
   const teams = new Map<number, ProviderEntrant | null>()
@@ -77,7 +77,9 @@ function directory(rows: readonly unknown[]) {
     teams.set(
       r.id,
       !name ||
-        unresolvedClub.test(name) ||
+        unresolvedClub.test(
+          name.replace(/\.\s*/gu, '').replace(/\s+/gu, ' ')
+        ) ||
         previous === null ||
         (previous && previous.name !== name)
         ? null
@@ -120,16 +122,54 @@ const sourceStates: Readonly<Record<string, ProviderGameStatus | undefined>> = {
   STATUS_ABANDONED: 'abandoned',
 }
 
+// The archived human-readable schedules identify the US Eastern zone explicitly.
+// Format the confirmed instant into that zone, including its DST designation,
+// rather than parsing a yearless date in the server's local time zone.
+const easternKickoff = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  weekday: 'short',
+  month: 'long',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZoneName: 'short',
+})
+function matchesKickoffDetail(text: string, at: number) {
+  if (!Number.isFinite(at)) return false
+  const parts = Object.fromEntries(
+    easternKickoff.formatToParts(at).map((p) => [p.type, p.value])
+  )
+  const day = Number(parts.day)
+  const suffix =
+    day >= 11 && day <= 13
+      ? 'th'
+      : ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[day % 10] ??
+        'th'
+  const date = parts.weekday + ', ' + parts.month + ' ' + parts.day
+  const time =
+    ' at ' +
+    parts.hour +
+    ':' +
+    parts.minute +
+    ' ' +
+    parts.dayPeriod +
+    ' ' +
+    parts.timeZoneName
+  return text === date + suffix + time || text === date + time
+}
+
 // Confirmed scheduled rows carry no interval scores; their aggregate can be 0–0.
-function verifiedPregame(r: Record<string, unknown>) {
+function verifiedPregame(r: Record<string, unknown>, at: number) {
   const detail = r.status_detail
   if (detail != null) {
     if (typeof detail !== 'string') return false
     const text = detail.trim()
-    const scheduledLabel = /^(?:NS|scheduled|not started|TBD)$/i
-    const scheduledDate =
-      /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), [A-Za-z]+ \d{1,2}(?:st|nd|rd|th)? at \d{1,2}:\d{2} (?:AM|PM) [A-Z]{2,5}$/
-    if (text && !scheduledLabel.test(text) && !scheduledDate.test(text))
+    if (
+      text &&
+      !/^(?:NS|scheduled|not started|TBD)$/i.test(text) &&
+      !matchesKickoffDetail(text, at)
+    )
       return false
   }
   return (
@@ -232,7 +272,7 @@ export function decodeClubSlate(
     else if (
       status === 'unknown' ||
       sourceState !== status ||
-      (status === 'scheduled' && !verifiedPregame(r)) ||
+      (status === 'scheduled' && !verifiedPregame(r, at)) ||
       (status === 'final') !== isFt
     )
       hold = 'unverified-status'

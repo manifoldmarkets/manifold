@@ -505,7 +505,18 @@ it.each([
   })
 })
 
-it.each(['TBD', 'TBA', 'to be determined', 'Winner of quarterfinal 2'])(
+it.each([
+  'TBD',
+  'TBA',
+  'T.B.D.',
+  'T. B. D.',
+  'T B D',
+  'N / A',
+  'To  Be Determined',
+  'To\tBe  Confirmed',
+  'to be determined',
+  'Winner of quarterfinal 2',
+])(
   'keeps an unresolved %s opponent out of results and prices',
   async (name) => {
     const slate = decode([final, next], 'epl', [{ id: 11, name }, teams[1]])
@@ -569,7 +580,7 @@ it('requires a pre-kickoff acquisition and quote timestamp, including when retri
       (await readClubOdds(already, 'epl', matches, true, () => time))?.size
     ).toBe(0)
     expect(already.calls).toHaveLength(0)
-    const checks = [at - 1, at - 1, time]
+    const checks = [at - 1, at - 1, time, time]
     const crossing = client([], teams, [quote])
     expect(
       (
@@ -635,3 +646,132 @@ it.each([false, true])(
     ).toEqual([])
   }
 )
+
+it.each([
+  ['2026-11-21T16:00:00Z', 'Sat, November 21st at 9:00 AM EST'],
+  ['2026-11-21T14:00:00Z', 'Fri, November 21st at 9:00 AM EST'],
+  ['2026-11-21T14:00:00Z', 'Sat, November 22nd at 9:00 AM EST'],
+  ['2026-11-21T14:00:00Z', 'Sat, November 21st at 9:01 AM EST'],
+  ['2026-11-21T14:00:00Z', 'Sat, November 21st at 9:00 AM EDT'],
+])(
+  'does not request opening odds when the independent kickoff detail disagrees (%s, %s)',
+  async (date, status_detail) => {
+    const slate = decode([{ ...next, date, status_detail }])
+    expect(slate.matches[0].hold).toBe('unverified-status')
+    const api = client([])
+    expect(
+      (
+        await readClubOdds(
+          api,
+          'epl',
+          slate.matches,
+          true,
+          () => Date.parse(date) - 3600000
+        )
+      )?.size
+    ).toBe(0)
+    expect(api.calls).toHaveLength(0)
+  }
+)
+it.each([
+  ['2026-11-21T14:00:58Z', 'Sat, November 21st at 9:00 AM EST'],
+  ['2026-10-12T04:05:15Z', 'Mon, October 12th at 12:05 AM EDT'],
+  ['2026-10-13T03:59:59Z', 'Mon, October 12 at 11:59 PM EDT'],
+])(
+  'honors an agreeing local date and displayed minute across offsets and midnight (%s)',
+  (date, status_detail) => {
+    expect(
+      decode([{ ...next, date, status_detail }]).matches[0].hold
+    ).toBeNull()
+  }
+)
+it('keeps a genuine club with dotted initials available for results and a pregame opening', async () => {
+  const slate = decode([final, next], 'epl', [
+    { id: 11, name: 'Hill T.B. Athletic' },
+    teams[1],
+  ])
+  expect(slate.matches[0].regulationResult).toEqual({ winnerId: '11' })
+  const api = client([])
+  expect(
+    (await readClubOdds(api, 'epl', slate.matches, true, () => at - 1))?.has(
+      next.id
+    )
+  ).toBe(true)
+  expect(api.calls).toHaveLength(1)
+})
+
+it.each([1, 50, 51])(
+  'isolates future vendor stamps to their own successful odds batch (%i games)',
+  async (size) => {
+    const matches = decode(
+      Array.from({ length: size }, (_, i) => ({ ...next, id: i + 1000 }))
+    ).matches
+    const start = at - 3600000
+    let observed = start,
+      calls = 0
+    const transport = {
+      ...client([]),
+      getAll: async <T>(_path: string, params: BdlParams): Promise<T[]> => {
+        calls++
+        if (calls === 2) observed += 30000
+        const ids = params.match_ids
+        if (!Array.isArray(ids) || !ids.includes(1000)) return []
+        return [
+          {
+            match_id: 1000,
+            vendor: 'book-a',
+            updated_at: new Date(start - 1000).toISOString(),
+            moneyline_home_odds: 100,
+          },
+          {
+            match_id: 1000,
+            vendor: 'book-a',
+            updated_at: new Date(start + 10000).toISOString(),
+            moneyline_home_odds: 100,
+          },
+          {
+            match_id: 1000,
+            vendor: 'book-b',
+            updated_at: new Date(start).toISOString(),
+            moneyline_home_odds: 100,
+          },
+        ] as T[]
+      },
+    }
+    const book = await readClubOdds(
+      transport,
+      'epl',
+      matches,
+      true,
+      () => observed
+    )
+    expect(calls).toBe(Math.ceil(size / 50))
+    expect(book?.get(1000)?.map((q) => q.vendor)).toEqual(['book-b'])
+  }
+)
+it.each([
+  [
+    'checks kickoff again after all odds acquisition',
+    [at - 5000, at - 4000, at - 3000, at],
+  ],
+  [
+    'skips a reversed clock interval',
+    [at - 5000, at - 4000, at - 5000, at - 1000],
+  ],
+] as const)('%s', async (_label, sample) => {
+  const times: number[] = [...sample]
+  const matches = decode([next]).matches
+  const quote = {
+    match_id: next.id,
+    vendor: 'book-a',
+    updated_at: new Date(at - 6000).toISOString(),
+    moneyline_home_odds: 100,
+  }
+  const api = client([], teams, [quote])
+  expect(
+    (await readClubOdds(api, 'epl', matches, true, () => times.shift()!))?.get(
+      next.id
+    )
+  ).toEqual([])
+  expect(api.calls).toHaveLength(1)
+})

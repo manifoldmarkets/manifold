@@ -2,6 +2,7 @@ import { chunk } from 'lodash'
 import { bdlEventId } from 'common/sports-ids'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import type { ProviderOdds } from 'common/sports-provider'
 import type { createBdlClient } from '../balldontlie-client'
 import {
   ClubLeague,
@@ -100,26 +101,41 @@ export async function readClubOdds(
     (m) =>
       isClubPregameAt(m, observedAt) && m.eventId === bdlEventId(league, m.id)
   )
-  const rows: unknown[] = []
+  const quotes = new Map<number, ProviderOdds[]>(
+    eligible.map((m) => [m.id, []])
+  )
   for (const batch of chunk(eligible, 50)) {
     observedAt = Math.max(observedAt, clock())
-    const ids = new Set(
-      batch.filter((m) => isClubPregameAt(m, observedAt)).map((m) => m.id)
-    )
+    const current = batch.filter((m) => isClubPregameAt(m, observedAt))
+    const ids = new Set(current.map((m) => m.id))
     if (!ids.size) continue
-    rows.push(
-      ...(await client.getAll<unknown>(
-        BDL_LEAGUES[league].oddsApiBase + '/odds',
-        { match_ids: [...ids] },
-        {
-          maxPages: 20,
-          matches: (raw) => {
-            const id = clubRow(raw).match_id
-            return typeof id === 'number' && ids.has(id)
-          },
-        }
-      ))
+    const rows = await client.getAll<unknown>(
+      BDL_LEAGUES[league].oddsApiBase + '/odds',
+      { match_ids: [...ids] },
+      {
+        maxPages: 20,
+        matches: (raw) => {
+          const id = clubRow(raw).match_id
+          return typeof id === 'number' && ids.has(id)
+        },
+      }
     )
+    const receivedAt = clock()
+    // No trustworthy acquisition interval if the local clock went backwards.
+    if (!Number.isFinite(receivedAt) || receivedAt < observedAt) continue
+    observedAt = receivedAt
+    for (const [id, currentQuotes] of decodeClubOdds(
+      current,
+      rows,
+      receivedAt
+    )) {
+      quotes.set(id, currentQuotes)
+    }
   }
-  return decodeClubOdds(eligible, rows, Math.max(observedAt, clock()))
+  // Even a timely earlier batch is unusable once a later request crosses its kickoff.
+  const returnedAt = Math.max(observedAt, clock())
+  for (const m of eligible) {
+    if (!isClubPregameAt(m, returnedAt)) quotes.set(m.id, [])
+  }
+  return quotes
 }
