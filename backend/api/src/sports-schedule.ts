@@ -22,7 +22,11 @@ import {
   raceSessionId,
   RaceWeekend,
 } from 'common/race-weekends'
-import { availableGameLeagues } from 'common/bdl/league-navigation'
+import { isSportsContract } from 'common/contract'
+import {
+  availableGameLeagues,
+  marketLeagueKey,
+} from 'common/bdl/league-navigation'
 import { scheduleFeedTime } from 'common/sports-game-feed'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
@@ -92,8 +96,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const [
     { games: official, groupIds: gameGroupIds },
     weekAll,
-    { weekends: allWeekends, groupIds: raceGroupIds },
-    championships,
+    { weekends: allWeekends, groupIds: raceGroupIds, verifiedSessions },
+    { championships, verifiedTitle },
   ] = await Promise.all([
     isSportsBdlEnabled()
       ? getOfficialGames(pg, index, daysAhead, now)
@@ -102,7 +106,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     getRaceWeekends(pg, raceDays, now),
     sport === 'f1' && !cursor && !topicIds
       ? getRaceChampionships(pg, index, now)
-      : Promise.resolve([]),
+      : Promise.resolve({ championships: [], verifiedTitle: false }),
   ])
   const games = official.filter((g) => {
     if (
@@ -352,7 +356,20 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
       !cursor && {
         availableLeagues: availableGameLeagues(
           feed,
-          shownWeekends.length > 0 || championships.length > 0
+          verifiedTitle ||
+            shownWeekends.some((w) =>
+              w.sessions.some(
+                (session) =>
+                  session.status !== 'finished' &&
+                  session.startTime <
+                    (sport === 'all' && !topicIds ? horizon : raceHorizon) &&
+                  session.markets.some(
+                    (m) =>
+                      verifiedSessions.has(m.id) &&
+                      (!topicIds || inTopic(raceGroupIds[m.id]))
+                  )
+              )
+            )
         ),
       }),
     games: [...live, ...page],
@@ -597,7 +614,20 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
       w.sessions.flatMap((s) => s.markets.flatMap((m) => slugs.get(m.id) ?? []))
     ),
   }))
-  return { weekends, groupIds }
+  const verifiedSessions = new Set(
+    isSportsBdlEnabled()
+      ? full
+          .filter(
+            (c) =>
+              isSportsContract(c) &&
+              !c.resolution &&
+              !c.isResolved &&
+              marketLeagueKey(c) === 'f1'
+          )
+          .map((c) => c.id)
+      : []
+  )
+  return { weekends, groupIds, verifiedSessions }
 }
 
 // The F1 page's title markets: our own (a `bdl-f1-title:` market from
@@ -612,13 +642,22 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
     bettors: number | null
     volume: number | null
     official_event_id: string | null
+    navigation?: Parameters<typeof marketLeagueKey>[0]
   }>(
     `select c.question, c.id,
             (c.data->>'uniqueBettorCount')::float8 as bettors,
             (c.data->>'volume')::float8 as volume,
             case when c.creator_id = any($4)
                   and c.data->>'sportsEventId' like 'bdl-f1-title:%'
-                 then c.data->>'sportsEventId' end as official_event_id
+                 then c.data->>'sportsEventId' end as official_event_id${
+                   isSportsBdlEnabled()
+                     ? `,
+              jsonb_build_object('sportsProvider',c.data->'sportsProvider',
+                                 'sportsFixture',c.data->'sportsFixture',
+                                 'sportsLeagueKey',c.data->'sportsLeagueKey',
+                                 'sportsLeague',c.data->'sportsLeague') as navigation`
+                     : ''
+                 }
      from contracts c
      where exists (
          select 1 from group_contracts gc
@@ -643,7 +682,7 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
       MANIFOLD_SPORTS_USER_IDS,
     ]
   )
-  return pickRaceChampionships(
+  const championships = pickRaceChampionships(
     rows.map((r) => ({
       id: r.id,
       question: r.question,
@@ -653,6 +692,19 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
     })),
     now
   )
+  // Question-only community titles remain valid for the historical sidebar.
+  // Only a chosen, verified official title can establish league availability.
+  const verifiedTitle =
+    isSportsBdlEnabled() &&
+    rows.some(
+      (r) =>
+        championships.some((c) => c.id === r.id) &&
+        marketLeagueKey({
+          ...r.navigation,
+          sportsEventId: r.official_event_id,
+        }) === 'f1'
+    )
+  return { championships, verifiedTitle }
 }
 
 async function getAnswers(

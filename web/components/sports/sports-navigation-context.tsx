@@ -81,16 +81,14 @@ function PersonalSportsNavigation({
       confirmed ??
       availableGameLeagues(
         schedule?.games ?? [],
-        !!schedule?.raceWeekends?.length ||
-          !!schedule?.raceChampionships?.length
+        false // Older F1 sidebar rows omit the provider and fixture stamps.
       )
     const choices = leagueChoices(sport, engagement.leagues, available)
     const requested = leagueForSport(router.query.league, sport)
-    // On older workers later pages may still supply a requested league. Keep
-    // its direct link clearable while advertising only observed alternatives.
-    const incomplete = !schedule || (!confirmed && !!schedule.nextCursor)
+    // A bookmarked league is clearable before the first response. Once one
+    // arrives, show only positively verified choices, including during skew.
     const league =
-      requested && (incomplete || choices.includes(requested))
+      requested && (!schedule || choices.includes(requested))
         ? requested
         : undefined
     const chooseLeague = (value: string) => {
@@ -104,5 +102,21 @@ function PersonalSportsNavigation({
     }
     return { engagement, choices, league, chooseLeague }
   }, [sport, engagement, router, router.query, schedule])
+  useEffect(() => {
+    if (!router.isReady || !schedule || !router.query.league || value.league)
+      return
+    const query = { ...router.query }
+    delete query.league
+    void router.replace({ pathname: router.pathname, query }, undefined, {
+      shallow: true,
+      scroll: false,
+    })
+  }, [
+    router.isReady,
+    router.pathname,
+    router.query.league,
+    schedule,
+    value.league,
+  ])
   return <Context.Provider value={value}>{children}</Context.Provider>
 }

@@ -19,7 +19,7 @@ import {
 import { ScheduleGame } from 'common/sports-schedule'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { useSportsNavigation } from './sports-navigation-context'
-import { gameLeagueKey } from 'common/bdl/league-navigation'
+import { publishedGameLeagueKey } from 'common/bdl/league-navigation'
 import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -113,7 +113,7 @@ export function GameFeed(props: {
   const active = games.filter(
     (game) =>
       (game.status === 'upcoming' || game.status === 'live') &&
-      (!league || gameLeagueKey(game) === league)
+      (!league || publishedGameLeagueKey(game) === league)
   )
   const weekends = !league || league === 'f1' ? props.raceWeekends ?? [] : []
   const sessions = raceSessionEvents(weekends)
@@ -772,7 +772,7 @@ export function SectionHeader(props: {
 }
 
 function matchesLeagueLabel(game: ScheduleGame, search: string) {
-  const key = gameLeagueKey(game)
+  const key = publishedGameLeagueKey(game)
   if (!key) return false
   const { label, shortLabel } = BDL_LEAGUES[key]
   return (

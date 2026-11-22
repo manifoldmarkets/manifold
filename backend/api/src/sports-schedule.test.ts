@@ -726,6 +726,63 @@ describe('F1 race weekends', () => {
     ]
   })
 
+  it.each([
+    { sportsFixture: true },
+    { sportsProvider: 'odds' },
+    { sportsLeagueKey: 'nba' },
+    { sportsEventId: 'bdl-f1:374:01869' },
+  ])(
+    'keeps a legacy racing card visible without using its unverified session to advertise the league',
+    async (stamp) => {
+      officialRows = [{ data: { ...f1Rows[0].data, ...stamp } }]
+      const response = await getSchedule({ sport: 'f1' })
+      const result = 'result' in response ? response.result : response
+      expect(result.raceWeekends).toHaveLength(1)
+      expect(result.availableLeagues).toEqual([])
+    }
+  )
+  it('requires an eligible session market in this topic even when another market on its weekend qualifies', async () => {
+    officialRows = [
+      f1Rows[0],
+      { data: { ...f1Rows[1].data, sportsFixture: true } },
+    ]
+    const selected = async () => {
+      const response = await getSchedule({ sport: 'nba', topic: 'gp-mexico' })
+      return 'result' in response ? response.result : response
+    }
+    gameGroups = [{ contract_id: f1Rows[1].data.id, group_id: 'gp-mexico' }]
+    const fixture = await selected()
+    expect(fixture.raceWeekends).toHaveLength(1)
+    expect(fixture.availableLeagues).toEqual([])
+    gameGroups.push({ contract_id: f1Rows[0].data.id, group_id: 'gp-mexico' })
+    expect((await selected()).availableLeagues).toEqual(['f1'])
+  })
+  it.each([
+    [null, {}, false],
+    ['official', { sportsFixture: true }, false],
+    ['official', { sportsProvider: 'football-data' }, false],
+    ['official', { sportsLeagueKey: 'nba' }, false],
+    ['official', { sportsProvider: 'bdl' }, true],
+  ] as const)(
+    'keeps sidebar championship selection distinct from verified league availability',
+    async (id, navigation, eligible) => {
+      officialRows = []
+      const season = f1Season(Date.now())
+      championshipRows = [
+        {
+          id: 'wdc',
+          question: `Who will win the ${season} Formula 1 Drivers Championship?`,
+          official_event_id: id && `bdl-f1-title:${season}:drivers`,
+          navigation,
+        },
+      ]
+      const response = await getSchedule({ sport: 'f1' })
+      const result = 'result' in response ? response.result : response
+      expect(result.raceChampionships).toEqual([{ id: 'wdc', kind: 'drivers' }])
+      expect(result.availableLeagues).toEqual(eligible ? ['f1'] : [])
+    }
+  )
+
   it('shows a weekend on the page of a topic one of its markets is in', async () => {
     gameGroups = [
       ...defaultGameGroups,

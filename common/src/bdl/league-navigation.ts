@@ -6,7 +6,12 @@ import {
 } from './leagues'
 import { legacyOddsLeagueLabel } from '../sports-league-label'
 import { parseBdlEventId } from '../sports-ids'
-import { parseF1EventId, parseF1TitleEventId } from '../f1-markets'
+import {
+  f1EventId,
+  f1TitleEventId,
+  parseF1EventId,
+  parseF1TitleEventId,
+} from '../f1-markets'
 import { providerOf, SportsProvider } from '../sports-provider'
 import { ScheduleGame, sportForMarket } from '../sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from '../sports'
@@ -58,8 +63,7 @@ export function marketLeagueKey(
   const label = aliases.get(market.sportsLeague?.trim().toLowerCase() ?? '')
   const key =
     provider === 'bdl'
-      ? parseBdlEventId(id)?.league ??
-        (parseF1EventId(id) || parseF1TitleEventId(id) ? 'f1' : undefined)
+      ? parseBdlEventId(id)?.league ?? canonicalF1League(id)
       : provider === 'odds'
       ? aliases.get(legacyOddsLeagueLabel(id)?.toLowerCase() ?? '')
       : provider === 'football-data'
@@ -77,6 +81,16 @@ export function marketLeagueKey(
   return key
 }
 
+function canonicalF1League(id: string) {
+  const session = parseF1EventId(id)
+  if (session && f1EventId(session.eventId, session.sessionId) === id)
+    return 'f1'
+  const title = parseF1TitleEventId(id)
+  return title && f1TitleEventId(title.season, title.kind) === id
+    ? 'f1'
+    : undefined
+}
+
 type GameLeague = Pick<
   ScheduleGame,
   'navigationLeagueKey' | 'sportsLeagueKey' | 'league' | 'sportsEventId'
@@ -89,13 +103,23 @@ export function gameLeagueKey(game: GameLeague) {
     : undefined
 }
 
+// Older schedule DTOs discarded the original provider and league stamps.
+// Identical event text can therefore represent either a valid row or a conflict.
+export function publishedGameLeagueKey(game: GameLeague) {
+  return game.navigationLeagueKey !== undefined
+    ? gameLeagueKey(game)
+    : undefined
+}
+
 /** Source for public choices before pagination; older servers can prove only the games they sent. */
 export function availableGameLeagues(
   games: readonly GameLeague[],
   hasRacing: boolean
 ) {
-  const keys = new Set(games.map(gameLeagueKey))
+  const keys = new Set(games.map(publishedGameLeagueKey))
+  // Two-answer legacy rows alone cannot identify an eligible F1 session or title.
   if (hasRacing) keys.add('f1')
+  else keys.delete('f1')
   return BDL_LEAGUE_KEYS.filter((key) => keys.has(key))
 }
 

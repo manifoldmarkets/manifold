@@ -116,6 +116,8 @@ it.each([
   ['old-college', 'WNCAAB', 'ncaaw'],
   ['odds:icehockey_nhl_preseason:h', 'NHL Preseason', 'nhl'],
   ['bdl-f1:1:2', 'Formula 1', 'f1'],
+  ['bdl-f1:1e1:2', 'Formula 1', undefined],
+  ['bdl-f1:01:2', 'Formula 1', undefined],
   ['bdl-f1-title:2026:drivers', 'Formula 1', 'f1'],
   ['odds:constructor:foo', 'EPL', undefined],
   ['odds:__proto__:foo', 'EPL', undefined],
@@ -152,7 +154,13 @@ it('rejects contradictory provider and league evidence including a projected dis
   ).toEqual([])
   expect(
     availableGameLeagues(
-      [game('bdl:laliga:24', 'Soccer'), game('odds:soccer_epl:abc', 'Soccer')],
+      [
+        { ...game('bdl:laliga:24', 'Soccer'), navigationLeagueKey: 'laliga' },
+        {
+          ...game('odds:soccer_epl:abc', 'Soccer'),
+          navigationLeagueKey: 'epl',
+        },
+      ],
       true
     )
   ).toEqual(['epl', 'laliga', 'f1'])
@@ -192,4 +200,19 @@ it('preserves games-first ordering and the divider for anonymous, empty and tied
     )
   ).toEqual(sections())
   expect(sections(new Map([['nhl', 3]]))).toEqual([['nhl', 'epl', 'nba'], []])
+})
+
+it('requires separately verified racing eligibility even if an old team row looks like F1', () => {
+  expect(availableGameLeagues([game('bdl-f1:1:2', 'F1')], false)).toEqual([])
+})
+
+it('keeps old projections without their original provider stamps out of public league choices', () => {
+  const old = game('odds:soccer_italy_serie_a:abc', 'Soccer')
+  expect(availableGameLeagues([old], false)).toEqual([])
+  expect(
+    availableGameLeagues([{ ...old, navigationLeagueKey: 'seriea' }], false)
+  ).toEqual(['seriea'])
+  expect(
+    availableGameLeagues([{ ...old, navigationLeagueKey: null }], false)
+  ).toEqual([])
 })
