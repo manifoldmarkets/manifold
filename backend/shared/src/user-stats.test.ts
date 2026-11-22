@@ -5,6 +5,7 @@ import * as pgPromise from 'pg-promise'
 import { SupabaseDirectClient } from './supabase/init'
 import {
   backfillUserStatsWindow,
+  getUserTrades,
   isUserStatsTradesReady,
 } from './user-stats-backfill'
 
@@ -59,12 +60,12 @@ const pg = client as unknown as SupabaseDirectClient
 const tradeRows = async (sql: string) =>
   (await run(sql)) as { user_id: string; trades: number }[]
 
-const migration = () =>
-  readFileSync(
-    resolve(__dirname, '../../supabase/migrations/2026112220_user_stats.sql'),
-    'utf8'
-  )
-const install = () => db.exec(migration())
+const migration = (name: string) =>
+  readFileSync(resolve(__dirname, '../../supabase/migrations', name), 'utf8')
+const install = async () => {
+  await db.exec(migration('2026112220_user_stats.sql'))
+  await db.exec(migration('2026112222_contracts_token_fixed.sql'))
+}
 
 beforeEach(async () => {
   db = new PGlite()
@@ -437,5 +438,25 @@ describe('backfill', () => {
     ).toEqual({ done_before: null })
     await backfillAll()
     expect(await counters()).toEqual(await directCounts())
+  })
+})
+
+describe('reading a count and rank', () => {
+  beforeEach(install)
+
+  it('adds live and history, ranks ties together, and gives no rank for 0', async () => {
+    await run(
+      `insert into user_stats (user_id, trades) values ('a', 2), ('b', -1), ('c', 5)`
+    )
+    await run(
+      `insert into user_stats_baseline (user_id, trades) values ('b', 4), ('d', 5), ('e', 0)`
+    )
+    // Totals: a 2, b 3, c 5, d 5, e 0.
+    expect(await getUserTrades(pg, 'c')).toEqual({ count: 5, rank: 1 })
+    expect(await getUserTrades(pg, 'd')).toEqual({ count: 5, rank: 1 })
+    expect(await getUserTrades(pg, 'b')).toEqual({ count: 3, rank: 3 })
+    expect(await getUserTrades(pg, 'a')).toEqual({ count: 2, rank: 4 })
+    expect(await getUserTrades(pg, 'e')).toEqual({ count: 0, rank: null })
+    expect(await getUserTrades(pg, 'nobody')).toEqual({ count: 0, rank: null })
   })
 })

@@ -83,6 +83,8 @@ export async function backfillUserStatsWindow(
       return { from: null, to: null, bets: 0, users: 0, completed: true }
     }
 
+    // One statement, so it reads every bet and journal row at one moment:
+    // that is what makes each bet count exactly once. Don't split it.
     const { bets, users } = await tx.one<{ bets: number; users: number }>(
       `with counted as (
          select b.user_id
@@ -160,4 +162,33 @@ export async function isUserStatsTradesReady(pg: SupabaseDirectClient) {
      where stat = 'trades'`
   )
   return row?.ready ?? false
+}
+
+// A user's trade count, their live row plus their backfilled history, and
+// their competition rank among everyone with a counted trade (none for 0).
+// One statement, so a trade landing in between can't rank someone below
+// themselves. One pass over the two narrow tables: there is no index on
+// trades, which keeps the per-bet updates HOT.
+export async function getUserTrades(pg: SupabaseDirectClient, userId: string) {
+  const row = await pg.one<{ count: number; rank: number | null }>(
+    `with totals as (
+       select user_id, coalesce(s.trades, 0) + coalesce(b.trades, 0) as trades
+       from user_stats s
+       full join user_stats_baseline b using (user_id)
+     ),
+     mine as (
+       select coalesce((select trades from totals where user_id = $1), 0) as trades
+     )
+     select
+       mine.trades as count,
+       case when mine.trades > 0
+         then (select count(*) + 1 from totals where totals.trades > mine.trades)
+       end as rank
+     from mine`,
+    [userId]
+  )
+  return {
+    count: Math.max(0, Number(row.count)),
+    rank: row.rank === null ? null : Number(row.rank),
+  }
 }

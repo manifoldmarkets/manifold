@@ -3,12 +3,17 @@
 -- Design and rollout: dev-docs/user-stats.md. Deploy the API first, so no
 -- running server writes full-set redemption legs without isAutoRedemption.
 --
--- Two transactions. The first briefly blocks writes to contract_bets while it
+-- One transaction. It briefly blocks writes to contract_bets while it
 -- installs the triggers; if a write holds the table for more than 5 seconds
--- it gives up, and the file can simply be run again.
+-- it gives up, and the file can be run again (stop the backfill first if it
+-- has started). The guard on contracts.token is in 2026112222.
 begin;
 
 set local lock_timeout = '5s';
+
+-- The bound below is written into a function as text; ISO keeps that text
+-- unambiguous for every session that reads it.
+set local datestyle = 'ISO, YMD';
 
 -- First, before touching anything a bet's trigger uses: no writes to
 -- contract_bets from here to commit, and no lock-order clash with a bet that
@@ -92,21 +97,25 @@ create table if not exists user_stats_backfill (
 -- Readable by everyone through RLS; written only by the server (which
 -- bypasses RLS). TRUNCATE ignores RLS, so the API roles keep nothing but
 -- SELECT on the two count tables and nothing at all on the others.
-alter table user_stats enable row level security;
-
-alter table user_stats_baseline enable row level security;
-
-alter table user_stats_bet_journal enable row level security;
-
-alter table user_stats_backfill enable row level security;
-
-drop policy if exists "public read" on user_stats;
-
-create policy "public read" on user_stats for select using (true);
-
-drop policy if exists "public read" on user_stats_baseline;
-
-create policy "public read" on user_stats_baseline for select using (true);
+do $$
+declare
+  t text;
+begin
+  -- Only when missing: each of these takes the table's strongest lock.
+  foreach t in array array['user_stats', 'user_stats_baseline', 'user_stats_bet_journal', 'user_stats_backfill'] loop
+    if not (select relrowsecurity from pg_class where oid = t::regclass) then
+      execute format('alter table %I enable row level security', t);
+    end if;
+  end loop;
+  foreach t in array array['user_stats', 'user_stats_baseline'] loop
+    if not exists (
+      select 1 from pg_policies where tablename = t and policyname = 'public read'
+    ) then
+      execute format('create policy "public read" on %I for select using (true)', t);
+    end if;
+  end loop;
+end
+$$;
 
 do $$
 declare
@@ -277,27 +286,5 @@ for each statement execute function user_stats_bets_deleted ();
 create or replace trigger user_stats_bets_truncated
 before truncate on contract_bets
 for each statement execute function user_stats_bets_truncated ();
-
-commit;
-
--- A bet counts by its market's token when it is written. Nothing changes a
--- market's token after creation; this keeps it so. It fires only for an
--- UPDATE that names token, which no code does, so it costs nothing.
-begin;
-
-set local lock_timeout = '5s';
-
-create or replace function contracts_token_fixed () returns trigger language plpgsql as $$
-begin
-  if new.token is distinct from old.token then
-    raise exception 'contracts.token cannot change: user_stats counts trades by it (dev-docs/user-stats.md)';
-  end if;
-  return new;
-end
-$$;
-
-create or replace trigger contracts_token_fixed
-before update of token on contracts
-for each row execute function contracts_token_fixed ();
 
 commit;

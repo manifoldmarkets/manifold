@@ -43,7 +43,7 @@ The per-bet difference is within noise.
 
 **What the counts rely on:**
 
-- A market's token never changes after creation. A guard trigger on `contracts` refuses it; it fires only for an `UPDATE` that names `token`, which no code does.
+- A market's token never changes after creation. A guard trigger on `contracts` (migration `2026112222`) refuses it; it fires only for an `UPDATE` that names `token`, which no code does.
 - A bet is always written after its market exists, which every code path does.
 
 **Ranks:** live, in the same statement as the count: `1 + count(*)` of users with more trades, over live plus baseline. The rank is null for 0. Percentiles still divide by the number of accounts, counted once an hour.
@@ -79,7 +79,7 @@ Removing the journal check, either journal write, or the "moved back" marker fai
 ## Rollout
 
 1. **API first.** It writes `isAutoRedemption` and reads `user_stats` only once a backfill is complete, so it is safe before the migration. Deploying it first means no running server writes unflagged redemption legs after the triggers exist.
-2. Migration `2026112220_user_stats.sql` on dev, then prod. It is two short transactions: the first blocks `contract_bets` writes for well under a second. If a write holds the table more than 5 s it gives up, and the file can simply be run again.
+2. Migrations `2026112220_user_stats.sql`, then `2026112222_contracts_token_fixed.sql` (the token guard), on dev, then prod. Each is one short transaction. The first blocks `contract_bets` writes for well under a second; if a write holds the table more than 5 s it gives up and can be run again (stop the backfill first if it has started).
 3. `backfill-user-stats.ts --apply` on dev, then prod. It is resumable; `--verify <userId>` compares one user's count with a direct count, read at the same moment, and exits 1 on a mismatch once complete.
 4. Migration `2026112221_achievement_rank_definitions.sql`. It builds the two new rank views under other names, then swaps them in one short transaction.
 5. Web (one description).
