@@ -166,7 +166,7 @@ const endpoints = [
     query: 'season',
     value: '2026',
     run: () => getF1DriverStandings(2026),
-    row: { id: 44, season: 2026 },
+    row: { id: 44, season: 2026, driver: { id: 44 } },
     bad: { season: 2025 },
   },
   {
@@ -174,7 +174,7 @@ const endpoints = [
     query: 'season',
     value: '2026',
     run: () => getF1TeamStandings(2026),
-    row: { id: 55, season: 2026 },
+    row: { id: 55, season: 2026, team: { id: 55 } },
     bad: { season: 2025 },
   },
 ]
@@ -344,3 +344,20 @@ it('stops an opted-in page walk if the shared switch changes and never falls bac
   expect(bdlStatsEndpoint('/f1/v2/events')).toBeUndefined()
   expect(bdlStatsEndpoint('/f1/v1/unverified')).toBeUndefined()
 })
+
+it.each(['driver', 'team'] as const)(
+  'holds a named %s standing with a string entrant identity only on the shared path',
+  async (kind) => {
+    const row = { season: 2026, [kind]: { id: '44' } }
+    const get = kind === 'driver' ? getF1DriverStandings : getF1TeamStandings
+    for (const on of [false, true]) {
+      process.env.SPORTS_BDL_F1_SHARED_CLIENT = String(on)
+      localFetch.mockResolvedValueOnce(page([row]))
+      if (on)
+        await expect(get(2026)).rejects.toMatchObject({
+          resource: kind + '_standings',
+        })
+      else await expect(get(2026)).resolves.toEqual([row])
+    }
+  }
+)

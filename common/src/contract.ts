@@ -450,6 +450,9 @@ export type Sports = {
   sportsResumptionTime?: number
   sportsFinalQualifier?: import('./sports-scoreboard').SportsFinalQualifier
   sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
+  /** F1 schedule acquisition and the last completed acquisition for this market. */
+  sportsF1SchedulePending?: string
+  sportsF1ScheduleReceipt?: string
   sportsResultHash?: string
   sportsVerification?: {
     source: string

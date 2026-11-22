@@ -25,7 +25,11 @@ import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
 import { isProd, log } from 'shared/utils'
 import { sendDevBdlRequest } from './bdl/dev-admission'
 import { f1ServiceRole, useSharedF1Client } from './bdl/f1-read-role'
-import { F1ReadEvidenceError, verifiedF1Sessions } from './bdl/f1-read-evidence'
+import {
+  F1ReadEvidenceError,
+  validF1Id,
+  verifiedF1Sessions,
+} from './bdl/f1-read-evidence'
 
 const BASE_URL = 'https://api.balldontlie.io/f1/v1'
 
@@ -229,7 +233,15 @@ export const getF1DriverStandings = (season: number) =>
   getAll<F1DriverStanding>(
     'driver_standings',
     { season: String(season) },
-    (row) => row?.season === season
+    (row) => {
+      if (row?.season !== season) return false
+      if (!validF1Id(row.driver?.id))
+        throw new F1ReadEvidenceError(
+          'driver_standings',
+          'The F1 standings contain an unidentified driver'
+        )
+      return true
+    }
   )
 
 /** The season's teams with their points (ALL-STAR). */
@@ -237,5 +249,13 @@ export const getF1TeamStandings = (season: number) =>
   getAll<F1TeamStanding>(
     'team_standings',
     { season: String(season) },
-    (row) => row?.season === season
+    (row) => {
+      if (row?.season !== season) return false
+      if (!validF1Id(row.team?.id))
+        throw new F1ReadEvidenceError(
+          'team_standings',
+          'The F1 standings contain an unidentified team'
+        )
+      return true
+    }
   )
