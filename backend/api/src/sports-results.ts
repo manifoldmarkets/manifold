@@ -125,6 +125,11 @@ function marketOutcome(row: Row): string {
     .join(' · ')
 }
 
+function scoreTeamName(name: string | null) {
+  return splitFlag((name ?? '').normalize('NFC').replace(/[\s\u0085]+/gu, ' '))
+    .name
+}
+
 function finalScore(row: Row): SportsResult['finalScore'] {
   const score = (n: unknown): n is number =>
     typeof n === 'number' && Number.isSafeInteger(n) && n >= 0
@@ -135,19 +140,49 @@ function finalScore(row: Row): SportsResult['finalScore'] {
     !score(row.awayScore)
   )
     return null
-  // Football-data's World Cup builder stores home then away in the answer list.
-  const oldTeams = row.source === 'football-data' ? row.answers : null
-  const home = row.home || oldTeams?.find((a) => a.position === 0)?.name
-  const away = row.away || oldTeams?.find((a) => a.position === 1)?.name
-  const homeName = splitFlag(home ?? '').name.normalize('NFC')
-  const awayName = splitFlag(away ?? '').name.normalize('NFC')
+  const shootout = row.duration === 'PENALTY_SHOOTOUT'
+  let homeName = scoreTeamName(row.home)
+  let awayName = scoreTeamName(row.away)
+  let contraryPenaltyWinner = false
+  if (row.source === 'football-data') {
+    // The historical builder stored home, away, then Draw only for group games.
+    const answers = row.answers ?? []
+    const [home, away, draw] = answers
+    if (
+      home?.position !== 0 ||
+      away?.position !== 1 ||
+      !(
+        answers.length === 2 ||
+        (answers.length === 3 && draw.position === 2 && draw.name === 'Draw')
+      )
+    )
+      return null
+    const answerHome = scoreTeamName(home.name)
+    const answerAway = scoreTeamName(away.name)
+    if (
+      (row.home !== null &&
+        homeName.toLowerCase() !== answerHome.toLowerCase()) ||
+      (row.away !== null &&
+        awayName.toLowerCase() !== answerAway.toLowerCase()) ||
+      (answers.length === 2 && row.homeScore === row.awayScore && !shootout) ||
+      (answers.length === 3 && (shootout || row.duration === 'EXTRA_TIME'))
+    )
+      return null
+    homeName = answerHome
+    awayName = answerAway
+    if (shootout && score(row.penHome) && score(row.penAway)) {
+      const payout = marketOutcome(row)
+      contraryPenaltyWinner =
+        (payout === home.name && row.penHome < row.penAway) ||
+        (payout === away.name && row.penAway < row.penHome)
+    }
+  }
   if (
     !homeName ||
     !awayName ||
     homeName.toLowerCase() === awayName.toLowerCase()
   )
     return null
-  const shootout = row.duration === 'PENALTY_SHOOTOUT'
   if (shootout && row.homeScore !== row.awayScore) return null
   return {
     home: homeName,
@@ -160,6 +195,7 @@ function finalScore(row: Row): SportsResult['finalScore'] {
       ? { qualifier: 'extra-time' as const }
       : {}),
     ...(shootout &&
+    !contraryPenaltyWinner &&
     score(row.penHome) &&
     score(row.penAway) &&
     row.penHome !== row.penAway
