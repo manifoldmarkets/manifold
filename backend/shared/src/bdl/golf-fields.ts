@@ -11,7 +11,7 @@ import {
 } from 'common/bdl/golf'
 import { bdlEventId } from 'common/sports-ids'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { createBdlClient } from '../balldontlie-client'
+import { BdlLeagueDisabledError, createBdlClient } from '../balldontlie-client'
 
 const id = z.number().int().positive().safe()
 const label = z
@@ -143,7 +143,7 @@ export function parseGolfTournament(
     state = 'live'
   else if (
     coherent &&
-    !underway.length &&
+    rounds.every((r) => r.status_state === 'scheduled') &&
     (t.status === 'NOT_STARTED' || t.status === 'SCHEDULED') &&
     t.status_state === 'scheduled'
   )
@@ -163,9 +163,12 @@ const competitor = z.object({
   player: z.object({ id, display_name: label }),
 })
 const rosterRow = competitor.extend({ tournament_id: id })
-const resultRow = z.object({
+const resultIdentity = z.object({
   id,
   tournament: z.object({ id }),
+  competitor: z.object({ type: z.literal('PLAYER'), player: z.object({ id }) }),
+})
+const resultRow = resultIdentity.extend({
   competitor,
   position: text,
   position_numeric: number,
@@ -281,8 +284,25 @@ export function projectGolfField(
       )
     }
     for (const raw of results) {
+      const identity = resultIdentity.safeParse(raw)
+      if (!identity.success || identity.data.tournament.id !== tournament.id) {
+        incomplete = true
+        continue
+      }
+      const {
+        id: resultId,
+        competitor: { player },
+      } = identity.data
+      const previous = resultOwners.get(resultId)
+      if (previous !== undefined && previous !== player.id) {
+        rejected.add(previous)
+        rejected.add(player.id)
+        incomplete = true
+        continue
+      }
+      resultOwners.set(resultId, player.id)
       const r = resultRow.safeParse(raw)
-      if (!r.success || r.data.tournament.id !== tournament.id) {
+      if (!r.success) {
         incomplete = true
         continue
       }
@@ -294,14 +314,6 @@ export function projectGolfField(
         scoring,
         thru,
       } = r.data
-      const previous = resultOwners.get(r.data.id)
-      if (previous !== undefined && previous !== c.player.id) {
-        rejected.add(previous)
-        rejected.add(c.player.id)
-        incomplete = true
-        continue
-      }
-      resultOwners.set(r.data.id, c.player.id)
       const statusRank = golfRank(status)
       const state = playerState(status, position, true),
         rank = golfRank(position)
@@ -421,7 +433,11 @@ export async function readGolfField(
     reader
       .getAll<unknown>(path, params, { maxPages, matches, beforeRequest })
       .catch((error) => {
-        if (error === disabled) return null
+        if (
+          error === disabled ||
+          (error instanceof BdlLeagueDisabledError && error.league === tour)
+        )
+          return null
         throw error
       })
   const calendars = await read(

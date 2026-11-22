@@ -18,7 +18,7 @@ import {
   projectGolfField,
   readGolfField,
 } from './golf-fields'
-import { createBdlClient } from '../balldontlie-client'
+import { BdlLeagueDisabledError, createBdlClient } from '../balldontlie-client'
 import { bdlStatsEndpoint } from './request-stats'
 // Exercise the normal service transport without opening a service database.
 jest.mock('./request-stats', () => ({
@@ -515,4 +515,82 @@ it('rejects an ignored result filter and suppresses later requests after switch-
     await readGolfField(stopped.client, 'pga', 6904, 2026, () => on)
   ).toBeNull()
   expect(stopped.get).toHaveBeenCalledTimes(1)
+})
+
+it('requires every reported round to be unstarted before calling a PGA field scheduled', () => {
+  const raw = {
+    ...pga.find((v) => v.id === 6904),
+    status: 'NOT_STARTED',
+    status_state: 'scheduled',
+  }
+  const rounds = [
+    { round_number: 1, status: 'OFFICIAL', status_state: 'final' },
+    { round_number: 2, status: 'NOT_STARTED', status_state: 'scheduled' },
+  ]
+  expect(parseGolfTournament('pga', { ...raw, rounds })?.state).toBe(
+    'unavailable'
+  )
+  expect(
+    parseGolfTournament('pga', { ...raw, rounds: rounds.slice(1) })?.state
+  ).toBe('scheduled')
+})
+it.each([true, false])(
+  'rejects both owners of a result even if the disputed row has no scoring; reversed=%s',
+  (reverse) => {
+    const competitor = (id: number) => ({
+      type: 'PLAYER',
+      id: id + 700,
+      player: { id, display_name: 'Player ' + id },
+    })
+    const alternate = { ...sample, competitor: competitor(3001), scoring: null }
+    const separate = { ...sample, id: 201, competitor: competitor(3002) }
+    const pair = [sample, alternate]
+    const field = projectGolfField(
+      tournament('pga', 6905),
+      [],
+      [...(reverse ? pair.reverse() : pair), separate],
+      time
+    )
+    expect(field.incomplete).toBe(true)
+    expect(field.players.map((p) => p.playerId)).toEqual([3002])
+  }
+)
+it('holds only a matching shared disable and dispatches no further page', async () => {
+  let enabled = true
+  const transport = jest.fn(async (url: string) => {
+    if (url.includes('tournament_competitors')) {
+      enabled = false
+      return new Response(
+        JSON.stringify({ data: [], meta: { next_cursor: 4 } })
+      )
+    }
+    return new Response(
+      JSON.stringify({ data: pga.filter((v) => v.id === 6904) })
+    )
+  })
+  let at = time
+  const client = createBdlClient({
+    role: 'api',
+    key: 'offline',
+    enabledLeagues: new Set(['pga']),
+    isLeagueEnabled: async () => enabled,
+    transport,
+    clock: {
+      now: () => at,
+      sleep: async (ms) => {
+        at += ms
+      },
+    },
+  })
+  expect(await readGolfField(client, 'pga', 6904, 2026, () => true)).toBeNull()
+  expect(transport).toHaveBeenCalledTimes(2)
+  for (const error of [
+    new BdlLeagueDisabledError('nba'),
+    Error('provider failure'),
+  ]) {
+    const getAll = jest.fn().mockRejectedValue(error)
+    await expect(
+      readGolfField({ getAll }, 'pga', 6904, 2026, () => true)
+    ).rejects.toBe(error)
+  }
 })

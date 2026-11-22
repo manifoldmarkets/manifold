@@ -3,6 +3,7 @@ import type { GolfField, GolfPlayer, GolfTournament } from 'common/bdl/golf'
 import {
   currentGolfPick,
   golfMarketLabel,
+  golfPickLabel,
   type GolfMarket,
   type GolfPick,
 } from 'common/bdl/golf-market'
@@ -20,6 +21,7 @@ const scenarios = [
   'Final leaderboard',
   'LPGA preview',
   'Missing market',
+  'Partial leaderboard',
 ] as const
 type Scenario = (typeof scenarios)[number]
 const now = Date.UTC(2026, 10, 21, 15)
@@ -53,6 +55,7 @@ function sample(s: Scenario) {
     'Riley Brooks',
     'Jo Ellis',
     'Sam Calder',
+    'Taylor Ames',
   ]
   const players: GolfPlayer[] = names.map((name, i) => ({
     playerId: i + 1,
@@ -62,13 +65,13 @@ function sample(s: Scenario) {
     fieldPresent: true,
     position: scheduled
       ? null
-      : { rank: [1, 2, 2, 4, 5, 6][i], tied: i === 1 || i === 2 },
-    toPar: scheduled ? null : [-12, -10, -10, -8, -7, -6][i],
+      : { rank: [1, 2, 2, 4, 5, 6, 7][i], tied: i === 1 || i === 2 },
+    toPar: scheduled ? null : [-12, -10, -10, -8, -7, -6, -4][i],
     through: scheduled
       ? null
       : final
       ? 'F'
-      : ['14', '13', '15', '11', '12', '15'][i],
+      : ['14', '13', '15', '11', '12', '15', '11'][i],
   }))
   const field: GolfField = {
     tournament,
@@ -79,6 +82,7 @@ function sample(s: Scenario) {
   }
   const top = s === 'Independent top 10',
     quotes = top ? [68, 56, 52, 48, 39, 33] : [28, 22, 15, 12, 8, 5, 10]
+  const priced = players.slice(0, 6)
   const source: GolfMarket = {
     id: 'gallery-golf-' + (top ? 'top-ten' : 'winner'),
     creatorId: MANIFOLD_SPORTS_USER_IDS[0],
@@ -95,20 +99,24 @@ function sample(s: Scenario) {
     sportsEventId: tournament.eventId,
     sportsMarketType: top ? 'top_n' : 'winner',
     sportsEntrantIds: top
-      ? players.map((p) => p.playerId)
-      : [...players.map((p) => p.playerId), null],
+      ? priced.map((p) => p.playerId)
+      : [...priced.map((p) => p.playerId), null],
     answers: [],
   }
   source.answers = quotes.map((price, index) => ({
     id: source.id + '-' + index,
     contractId: source.id,
     index,
-    text: players[index]?.name ?? 'Other',
-    isOther: index === players.length,
+    text: priced[index]?.name ?? 'Other',
+    isOther: index === priced.length,
     p: 0.5,
     poolNo: price,
     poolYes: 100 - price,
   }))
+  if (s === 'Partial leaderboard') {
+    field.incomplete = true
+    field.players = players.filter((p) => p.playerId !== 4)
+  }
   return { field, source }
 }
 
@@ -116,25 +124,28 @@ function GalleryPick({
   pick,
   field,
   market,
-  clock,
+  at,
+  readNow,
   close,
 }: {
   pick: GolfPick
   field: GolfField
   market: GolfMarket
-  clock: () => number
+  at: number
+  readNow: () => number
   close: () => void
 }) {
   const [amount, setAmount] = useState('10'),
     [receipt, setReceipt] = useState<number>()
-  const { now: at, readNow } = useGolfMarketTime(
-    now,
-    market.closeTime,
-    field.readStartedAt,
-    clock
-  )
   const active = currentGolfPick(field, market, pick, at)
   const proposition = golfMarketLabel(pick.kind)
+  const choice = golfPickLabel(pick)
+  const excluded = pick.excludedPlayerIds
+    ? field.players
+        .filter((p) => pick.excludedPlayerIds?.includes(p.playerId))
+        .map((p) => p.name)
+        .sort()
+    : []
   const context = field.tournament.name + ' · ' + proposition
   const stake = Number(amount),
     valid = !!active && Number.isSafeInteger(stake) && stake > 0
@@ -144,15 +155,23 @@ function GalleryPick({
       setOpen={(open) => {
         if (!open) close()
       }}
-      ariaLabel={'Preview pick for ' + pick.name + ' · ' + context}
+      ariaLabel={'Preview pick for ' + choice + ' · ' + context}
       className={MODAL_CLASS}
       size="sm"
     >
       <p className="text-ink-600 text-sm">{context}</p>
-      <h3 className="text-ink-900 text-lg font-semibold">{pick.name}</h3>
+      <h3 className="text-ink-900 text-lg font-semibold">{choice}</h3>
       <p className="text-ink-600 text-sm">
         Gallery ticket · {formatSportsPrice(pick.probability)}
       </p>
+      {excluded.length > 0 && (
+        <details className="text-ink-700 text-sm">
+          <summary className="min-h-[44px] cursor-pointer py-3 font-medium">
+            Excluded golfers
+          </summary>
+          <p>{excluded.join(', ')}</p>
+        </details>
+      )}
       {receipt === undefined ? (
         <form
           className="mt-4 grid gap-3"
@@ -174,31 +193,71 @@ function GalleryPick({
               className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] w-full rounded-md border px-3"
             />
           </label>
-          {!active && (
-            <p role="status">This selection is no longer available.</p>
-          )}
+          <p
+            role="status"
+            className={active ? 'sr-only' : 'text-ink-700 text-sm'}
+          >
+            {!active && 'This selection is no longer available.'}
+          </p>
           <button
             type="submit"
-            disabled={!valid}
-            className="bg-primary-600 min-h-[44px] rounded-md px-4 font-semibold text-white disabled:opacity-50"
+            aria-disabled={!valid}
+            className="bg-primary-600 text-ink-0 min-h-[44px] rounded-md px-4 font-semibold aria-disabled:opacity-60"
           >
             Confirm preview
           </button>
         </form>
       ) : (
         <p className="text-ink-800 mt-3" role="status">
-          {formatMoney(receipt)} preview for {pick.name} · {context}
+          {formatMoney(receipt)} preview for {choice} · {context}
         </p>
       )}
     </Modal>
   )
 }
-export default function GolfScenarios() {
-  const [scenario, setScenario] = useState<Scenario>('Live leaderboard'),
-    [pick, setPick] = useState<GolfPick>()
-  const [openedAt, setOpenedAt] = useState(Date.now)
+function ScenarioField({ scenario }: { scenario: Scenario }) {
+  const [pick, setPick] = useState<GolfPick>()
+  const [returnFocusTo, setReturnFocusTo] = useState<string>()
+  const [openedAt] = useState(Date.now)
   const clock = useCallback(() => now + (Date.now() - openedAt), [openedAt])
   const { field, source } = sample(scenario)
+  const observed = useGolfMarketTime(
+    now,
+    source.closeTime,
+    field.readStartedAt,
+    clock
+  )
+  return (
+    <>
+      <FieldEvent
+        field={field}
+        market={scenario === 'Missing market' ? undefined : source}
+        now={observed.now}
+        clock={clock}
+        returnFocusTo={returnFocusTo}
+        onPick={(selected) => {
+          setReturnFocusTo(selected.answerId)
+          setPick(selected)
+        }}
+      />
+      {pick && (
+        <GalleryPick
+          pick={pick}
+          field={field}
+          market={source}
+          at={observed.now}
+          readNow={observed.readNow}
+          close={() => {
+            observed.readNow()
+            setPick(undefined)
+          }}
+        />
+      )}
+    </>
+  )
+}
+export default function GolfScenarios() {
+  const [scenario, setScenario] = useState<Scenario>('Live leaderboard')
   return (
     <section aria-label="Golf gallery" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -210,11 +269,7 @@ export default function GolfScenarios() {
             className="bg-canvas-0 border-ink-300 min-h-[44px] max-w-full rounded-md border py-2 pl-2 pr-9"
             onChange={(e) => {
               const next = scenarios.find((s) => s === e.target.value)
-              if (next) {
-                setPick(undefined)
-                setOpenedAt(Date.now())
-                setScenario(next)
-              }
+              if (next) setScenario(next)
             }}
           >
             {scenarios.map((s) => (
@@ -226,27 +281,7 @@ export default function GolfScenarios() {
       <p className="text-ink-600 text-sm">
         Sample field and Manifold prices. Picks stay in this gallery.
       </p>
-      {scenario === 'Missing market' ? (
-        <p className="text-ink-600 py-4">No linked Manifold market.</p>
-      ) : (
-        <FieldEvent
-          key={scenario}
-          field={field}
-          market={source}
-          now={now}
-          clock={clock}
-          onPick={setPick}
-        />
-      )}
-      {pick && (
-        <GalleryPick
-          pick={pick}
-          field={field}
-          market={source}
-          clock={clock}
-          close={() => setPick(undefined)}
-        />
-      )}
+      <ScenarioField key={scenario} scenario={scenario} />
     </section>
   )
 }

@@ -61,6 +61,10 @@ export type GolfPick = {
 }
 export const golfMarketLabel = (kind: GolfPick['kind']) =>
   kind === 'winner' ? 'Tournament winner' : 'Finish in the top 10'
+export const golfPickLabel = (pick: GolfPick) =>
+  pick.playerId === null && pick.excludedPlayerIds
+    ? 'Other than the ' + pick.excludedPlayerIds.length + ' named golfers'
+    : pick.name
 /** Rebind the displayed contract, outcome and player before passing a pick on. */
 export function currentGolfPick(
   field: GolfField,
@@ -145,6 +149,10 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
     if (players.has(player.playerId)) return null
     players.set(player.playerId, player)
   }
+  const available = (player: GolfPlayer) =>
+    player.fieldPresent !== false &&
+    (player.state === 'active' ||
+      (t.state === 'scheduled' && player.state === 'entered'))
   for (const a of m.answers) {
     if (
       !a.id ||
@@ -181,14 +189,11 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
       return null
     const prob = getCpmmProbability({ YES: a.poolYes, NO: a.poolNo }, p)
     if (!Number.isFinite(prob) || prob <= 0 || prob >= 1) return null
-    const inactive =
-      player &&
-      (player.state === 'withdrawn' ||
-        player.state === 'disqualified' ||
-        player.state === 'cut' ||
-        player.state === 'unknown' ||
-        (t.state === 'live' && player.state !== 'active') ||
-        player.fieldPresent === false)
+    const eligible = player
+      ? available(player)
+      : field.players.some(
+          (p) => !entrants.includes(p.playerId) && available(p)
+        )
     picks.push({
       contractId: m.id,
       kind,
@@ -206,7 +211,7 @@ export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {
       probability: prob,
       buyable:
         open &&
-        !inactive &&
+        eligible &&
         !a.resolution &&
         !a.resolutionTime &&
         prob < MAX_CPMM_PROB,

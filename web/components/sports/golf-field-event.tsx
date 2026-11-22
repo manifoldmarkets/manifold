@@ -4,6 +4,7 @@ import {
   currentGolfPick,
   golfMarketView,
   golfMarketLabel,
+  golfPickLabel,
   type GolfMarket,
   type GolfPick,
 } from 'common/bdl/golf-market'
@@ -101,31 +102,33 @@ export function FieldEvent({
   market,
   now: initial,
   clock = Date.now,
+  returnFocusTo,
   onPick,
 }: {
   field: GolfField
-  market: GolfMarket
+  market?: GolfMarket
   now: number
   clock?: () => number
+  returnFocusTo?: string
   onPick?: (pick: GolfPick) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [focusedPrice, setFocusedPrice] = useState<string>()
   const { now, readNow } = useGolfMarketTime(
     initial,
-    market.closeTime,
+    market?.closeTime,
     field.readStartedAt,
     clock
   )
-  const view = golfMarketView(field, market, now)
-  if (!view) return null
+  const view = market && golfMarketView(field, market, now)
   const t = field.tournament
-  const prices =
-    expanded || view.picks.length <= 4
-      ? view.picks
-      : view.kind === 'winner'
-      ? [...view.picks.slice(0, 3), view.picks[view.picks.length - 1]]
-      : view.picks.slice(0, 4)
+  const prices = !view
+    ? []
+    : expanded || view.picks.length <= 4
+    ? view.picks
+    : view.kind === 'winner'
+    ? [...view.picks.slice(0, 3), view.picks[view.picks.length - 1]]
+    : view.picks.slice(0, 4)
   const stale =
     !Number.isSafeInteger(field.readStartedAt) ||
     field.readStartedAt < 0 ||
@@ -135,7 +138,11 @@ export function FieldEvent({
   const state =
     t.state === 'live' && stale ? 'Awaiting update' : statusName[t.state]
   const tradingStatus =
-    market.isResolved || market.resolution
+    !view || !market
+      ? field.incomplete
+        ? 'Partial field · no verified market prices'
+        : 'No linked Manifold market.'
+      : market.isResolved || market.resolution
       ? 'Resolved market · pool prices'
       : !Number.isFinite(market.closeTime) || market.closeTime! <= now
       ? 'Closed market · pool prices'
@@ -163,66 +170,78 @@ export function FieldEvent({
         {t.course && <p className="text-ink-600 text-sm">{t.course}</p>}
       </header>
       <div className="space-y-3 px-4 py-4 sm:px-6">
-        <h3 className="font-semibold">{golfMarketLabel(view.kind)}</h3>
+        {view && (
+          <h3 className="font-semibold">{golfMarketLabel(view.kind)}</h3>
+        )}
         <p
           role="status"
           className={tradingStatus ? 'text-ink-600 text-sm' : 'sr-only'}
         >
           {tradingStatus}
         </p>
-        <ul className="divide-ink-100 divide-y">
-          {prices.map((p) => (
-            <li
-              key={p.answerId}
-              className="flex min-h-[50px] items-center justify-between gap-3 py-1"
-            >
-              <span className="min-w-0 break-words font-medium">
-                {p.name}
-                <span className="text-ink-600 block text-xs font-normal tabular-nums">
-                  {pickStanding(field, p.playerId)}
+        {view && market && (
+          <ul className="divide-ink-100 divide-y">
+            {prices.map((p) => (
+              <li
+                key={p.answerId}
+                className="flex min-h-[50px] items-center justify-between gap-3 py-1"
+              >
+                <span className="min-w-0 break-words font-medium">
+                  {golfPickLabel(p)}
+                  <span className="text-ink-600 block text-xs font-normal tabular-nums">
+                    {pickStanding(field, p.playerId)}
+                  </span>
                 </span>
-              </span>
-              {onPick && (p.buyable || focusedPrice === p.answerId) ? (
-                <button
-                  type="button"
-                  aria-disabled={!p.buyable || undefined}
-                  onFocus={() => setFocusedPrice(p.answerId)}
-                  onBlur={() => setFocusedPrice(undefined)}
-                  aria-label={
-                    p.name +
-                    ', ' +
-                    formatSportsPrice(p.probability) +
-                    ', ' +
-                    (view.kind === 'winner' ? 'tournament winner' : 'top 10') +
-                    (p.buyable ? '' : ', unavailable')
-                  }
-                  className={
-                    'min-h-[44px] min-w-[76px] rounded-md px-3 text-right text-lg font-bold tabular-nums ' +
-                    (p.buyable
-                      ? 'bg-primary-100 text-primary-800 hover:bg-primary-200'
-                      : 'text-ink-600')
-                  }
-                  onClick={() => {
-                    const selected = currentGolfPick(
-                      field,
-                      market,
-                      p,
-                      readNow()
-                    )
-                    if (selected) onPick(selected)
-                  }}
-                >
-                  {formatSportsPrice(p.probability)}
-                </button>
-              ) : (
-                <span className="text-ink-600 py-2 text-right text-lg font-semibold tabular-nums">
-                  {formatSportsPrice(p.probability)}
-                </span>
-              )}
-            </li>
-          ))}
-        </ul>
-        {view.picks.length > 4 && (
+                {onPick &&
+                (p.buyable ||
+                  focusedPrice === p.answerId ||
+                  returnFocusTo === p.answerId) ? (
+                  <button
+                    type="button"
+                    aria-disabled={!p.buyable || undefined}
+                    tabIndex={p.buyable ? undefined : -1}
+                    onFocus={() => setFocusedPrice(p.answerId)}
+                    onBlur={() => setFocusedPrice(undefined)}
+                    aria-label={
+                      golfPickLabel(p) +
+                      ', ' +
+                      formatSportsPrice(p.probability) +
+                      ', ' +
+                      (view.kind === 'winner'
+                        ? 'tournament winner'
+                        : 'top 10') +
+                      (p.buyable ? '' : ', unavailable')
+                    }
+                    className={
+                      'min-h-[44px] min-w-[76px] rounded-md px-3 text-right text-lg font-bold tabular-nums ' +
+                      (p.buyable
+                        ? 'bg-primary-100 text-primary-800 hover:bg-primary-200'
+                        : 'text-ink-600')
+                    }
+                    onClick={() => {
+                      const selected = currentGolfPick(
+                        field,
+                        market,
+                        p,
+                        readNow()
+                      )
+                      if (selected) {
+                        onPick(selected)
+                      }
+                    }}
+                  >
+                    {formatSportsPrice(p.probability)}
+                  </button>
+                ) : (
+                  <span className="text-ink-600 py-2 text-right text-lg font-semibold tabular-nums">
+                    {formatSportsPrice(p.probability)}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {view && view.picks.length > 4 && (
           <button
             type="button"
             aria-expanded={expanded}
@@ -265,7 +284,7 @@ export function FieldEvent({
                   <tr key={p.playerId} className="border-ink-100 border-t">
                     <td className="py-2 pr-1">{standing(p)}</td>
                     <th scope="row" className="break-words pr-1 font-normal">
-                      {p.name}
+                      {golfPickLabel(p)}
                     </th>
                     {field.hasResults && (
                       <>

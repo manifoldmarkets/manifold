@@ -548,3 +548,134 @@ it('rechecks live authorization for each page, even when a run started enabled',
   ).rejects.toThrow('League disabled')
   expect(transport).toHaveBeenCalledTimes(1)
 })
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => {
+    resolve = done
+  })
+  return { resolve, promise }
+}
+
+it('spaces actual shared scheduler dispatches after a delayed final phase check', async () => {
+  let time = initial,
+    checks = 0
+  const entered = deferred<void>(),
+    release = deferred<void>()
+  const clock = {
+    now: () => time,
+    sleep: async (ms: number) => {
+      time += ms
+    },
+  }
+  const times: number[] = []
+  const options = {
+    clock,
+    key,
+    role: 'scheduler' as const,
+    enabledLeagues: new Set(['nba'] as const),
+    transport: async () => {
+      times.push(time)
+      return json({})
+    },
+  }
+  const held = createBdlClient(options).get(endpoint, {}, async () => {
+    if (++checks === 2) {
+      entered.resolve()
+      await release.promise
+    }
+  })
+  await entered.promise
+  const other = createBdlClient(options).get(endpoint)
+  await new Promise<void>((done) => setImmediate(done))
+  time = initial + 205
+  release.resolve()
+  await Promise.all([held, other])
+  expect(times).toHaveLength(2)
+  expect(times[1] - times[0]).toBeGreaterThanOrEqual(200)
+})
+
+it('rechecks a newly observed cooldown before a delayed scheduler phase grant dispatches', async () => {
+  let time = initial,
+    checks = 0
+  const started = deferred<void>(),
+    response = deferred<Response>(),
+    entered = deferred<void>(),
+    release = deferred<void>()
+  const clock = {
+    now: () => time,
+    sleep: async (ms: number) => {
+      time += ms
+    },
+  }
+  const options = {
+    clock,
+    key,
+    role: 'scheduler' as const,
+    enabledLeagues: new Set(['nba'] as const),
+    maxAttempts: 1,
+  }
+  const first = createBdlClient({
+    ...options,
+    transport: () => {
+      started.resolve()
+      return response.promise
+    },
+  }).get(endpoint)
+  await started.promise
+  const times: number[] = []
+  const delayed = createBdlClient({
+    ...options,
+    transport: async () => {
+      times.push(time)
+      return json({})
+    },
+  }).get(endpoint, {}, async () => {
+    if (++checks === 2) {
+      entered.resolve()
+      await release.promise
+    }
+  })
+  await entered.promise
+  const cooldownUntil = time + 3000
+  response.resolve(json({}, 429, { 'retry-after': '3' }))
+  await expect(first).rejects.toBeInstanceOf(BdlRateLimitError)
+  release.resolve()
+  const result = await delayed
+  expect(times).toEqual([cooldownUntil])
+  expect(Date.parse(result.request.at)).toBe(times[0])
+})
+
+it('rechecks the service league after a slow phase callback, while ordinary disabled calls keep their error shape', async () => {
+  const entered = deferred<void>(),
+    release = deferred<void>()
+  let count = 0,
+    enabled = true
+  const transport = jest.fn(async () => json({}))
+  const client = createBdlClient({
+    role: 'scheduler',
+    key,
+    transport,
+    clock: fakeClock(),
+    enabledLeagues: new Set(['nba']),
+    isLeagueEnabled: async () => enabled,
+  })
+  const attempt = client.get(endpoint, {}, async () => {
+    if (++count === 2) {
+      entered.resolve()
+      await release.promise
+    }
+  })
+  await entered.promise
+  enabled = false
+  release.resolve()
+  await expect(attempt).rejects.toMatchObject({
+    name: 'BdlLeagueDisabledError',
+    league: 'nba',
+  })
+  await expect(client.get(endpoint)).rejects.toMatchObject({
+    name: 'Error',
+    message: '[sports-bdl-client] League disabled',
+  })
+  expect(transport).not.toHaveBeenCalled()
+})

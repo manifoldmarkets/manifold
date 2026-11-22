@@ -31,7 +31,7 @@ const field: GolfField = {
   readStartedAt: now - 60000,
   hasResults: false,
   incomplete: false,
-  players: [named(2, 'Alex'), named(1, 'Morgan')],
+  players: [named(2, 'Alex'), named(1, 'Morgan'), named(4, 'Robin')],
 }
 const market: GolfMarket = {
   id: 'market',
@@ -289,4 +289,23 @@ it('does not offer an individual golfer who withdrew, missed the cut, was disqua
   expect(
     golfMarketView(f, market, now)?.picks.find((p) => p.playerId === 2)?.buyable
   ).toBe(false)
+})
+
+it('holds Other when every eligible golfer already has a named answer', () => {
+  const pick = golfMarketView(field, market, now)!.picks.find(
+    (p) => p.playerId === null
+  )!
+  for (const player of [
+    undefined,
+    { ...field.players[2], state: 'withdrawn' as const },
+    { ...field.players[2], fieldPresent: false },
+  ]) {
+    const players = field.players.slice(0, 2)
+    if (player) players.push(player)
+    const current = { ...field, players }
+    expect(currentGolfPick(current, market, pick, now)).toBeUndefined()
+    const choices = golfMarketView(current, market, now)!.picks
+    expect(choices.map((p) => p.buyable)).toEqual([true, true, false])
+  }
+  expect(currentGolfPick(field, market, pick, now)).toEqual(pick)
 })

@@ -45,6 +45,7 @@ export function bdlClock(): BdlClock {
 
 type BdlRole = keyof typeof BDL_REQUESTS_PER_MINUTE
 type Quota = { limit: number | null; remaining: number | null }
+type Started<T> = { response: Promise<T> }
 const MINUTE_MS = 60_000
 
 /** One token at most, shared by all requests in this process role. Applying
@@ -98,6 +99,25 @@ export class BdlRateLimiter {
     externalSlot?: (effectiveRate: number) => Promise<void>,
     checkBeforeGrant?: () => Promise<void>
   ) {
+    return this.dispatch(
+      rate,
+      externalSlot,
+      async (start) => {
+        if (checkBeforeGrant) await checkBeforeGrant()
+        return start()
+      },
+      async () => undefined
+    )
+  }
+
+  dispatch<T>(
+    rate: number,
+    externalSlot: ((effectiveRate: number) => Promise<void>) | undefined,
+    authorize: (
+      start: () => Started<T> | undefined
+    ) => Promise<Started<T> | undefined>,
+    send: () => Promise<T>
+  ): Promise<T> {
     const interval = this.interval(rate)
     const ticket = this.tail.then(async () => {
       for (;;) {
@@ -107,17 +127,16 @@ export class BdlRateLimiter {
         const due = Math.max(this.next, this.lastAt + gap)
         if (now >= due) {
           if (externalSlot) await externalSlot(slow ? rate / 2 : rate)
-          if (checkBeforeGrant) await checkBeforeGrant()
-          // Another response can pause or slow the key while an external check runs.
-          if (
-            (externalSlot || checkBeforeGrant) &&
-            (this.clock.now() < this.next ||
-              (!slow && this.clock.now() < this.slowUntil))
-          )
-            continue
-          this.lastAt = this.clock.now()
-          this.lastInterval = interval
-          return
+          const started = await authorize(() => {
+            // A different response can change the budget during an admission check.
+            const at = this.clock.now()
+            if (at < this.next || (!slow && at < this.slowUntil)) return
+            this.lastAt = at
+            this.lastInterval = interval
+            return { response: send() }
+          })
+          if (started) return started
+          continue
         }
         // Recalculate when the quota window resets. Long Node timers overflow.
         await this.clock.sleep(
@@ -129,8 +148,12 @@ export class BdlRateLimiter {
         )
       }
     })
-    this.tail = ticket.catch(() => undefined)
-    return ticket
+    // The next grant waits for dispatch, independently of the HTTP response.
+    this.tail = ticket.then(
+      () => undefined,
+      () => undefined
+    )
+    return ticket.then(({ response }) => response)
   }
 }
 
@@ -154,6 +177,13 @@ export type BdlAttempt = {
   status: number
   rateLimit: { limit: number | null; remaining: number | null }
   body: unknown
+}
+
+export class BdlLeagueDisabledError extends Error {
+  constructor(readonly league: BdlLeagueKey) {
+    super('[sports-bdl-client] League disabled')
+    this.name = 'BdlLeagueDisabledError'
+  }
 }
 
 export class BdlHttpError extends Error {
@@ -269,8 +299,15 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
     const slug = matchBdlEndpoint(path)?.league
-    if (!slug || !isBdlLeagueKey(slug) || !(await leagueIsOn(slug)))
+    if (!slug || !isBdlLeagueKey(slug))
       throw new Error('[sports-bdl-client] League disabled')
+    const checkLeague = async () => {
+      if (!(await leagueIsOn(slug))) {
+        if (beforeRequest) throw new BdlLeagueDisabledError(slug)
+        throw new Error('[sports-bdl-client] League disabled')
+      }
+    }
+    await checkLeague()
     const key = fixture ? undefined : options.key
     if (!fixture && !key)
       throw new Error('[sports-bdl-client] A BDL key is required')
@@ -283,22 +320,10 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         '[sports-bdl-client] Credential found in request parameters'
       )
     for (let attemptIndex = 0; ; attemptIndex++) {
-      if (!(await leagueIsOn(slug)))
-        throw new Error('[sports-bdl-client] League disabled')
+      await checkLeague()
       if (beforeRequest) await beforeRequest()
-      await limiter.acquire(
-        rate,
-        options.acquireSharedSlot,
-        serviceRole
-          ? async () => {
-              if (!(await leagueIsOn(slug)))
-                throw new Error('[sports-bdl-client] League disabled')
-            }
-          : undefined
-      )
       let requestedAt = clock.now()
       const send = async () => {
-        if (beforeRequest) await beforeRequest()
         requestedAt = clock.now()
         if (fixture) return fixture(path, params)
         try {
@@ -314,10 +339,22 @@ export function createBdlClient(options: BdlClientOptions = {}) {
           return undefined
         }
       }
-      const res =
-        serviceRole === 'dev'
-          ? await sendDevBdlRequest(slug, () => leagueIsOn(slug), send)
-          : await send()
+      const res = await limiter.dispatch(
+        rate,
+        options.acquireSharedSlot,
+        async (start) => {
+          const check = async () => {
+            if (beforeRequest) await beforeRequest()
+            if (serviceRole) await checkLeague()
+            return true
+          }
+          if (serviceRole === 'dev')
+            return sendDevBdlRequest(slug, check, async () => start())
+          await check()
+          return start()
+        },
+        send
+      )
       const backoff = Math.min(60_000, 1000 * 2 ** attemptIndex)
       if (!res) {
         if (attemptIndex + 1 >= maxAttempts)
