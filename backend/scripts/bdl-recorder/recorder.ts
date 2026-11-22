@@ -138,12 +138,7 @@ export function createRecorder(options: RecorderOptions) {
       }
     }
     try {
-      const received = await client.get(endpoint, params)
-      if (!usable(received))
-        throw new Error(
-          'Recorded HTTP response has no usable data page at ' + endpoint
-        )
-      return received
+      return await client.get(endpoint, params)
     } catch (error) {
       if (!(error instanceof BdlHttpError)) throw error
       if (step.rejectedStatuses?.includes(error.status)) {
@@ -159,6 +154,7 @@ export function createRecorder(options: RecorderOptions) {
   async function run(steps: PlanStep[], watching = false) {
     const observations: Record<string, unknown[]> = {}
     const observedAt: Record<string, string[]> = {}
+    let complete = true
     const history: History = new Map()
     const lastUse = new Map<string, number>()
     steps.forEach((step, index) => {
@@ -187,6 +183,10 @@ export function createRecorder(options: RecorderOptions) {
             step
           )
           if (!result) break
+          if (!usable(result)) {
+            complete = false
+            break
+          }
           if (keepHistory) bodies.push(result.body)
           if (watching) {
             const selected = step.select
@@ -212,7 +212,7 @@ export function createRecorder(options: RecorderOptions) {
         if (lastUse.get(source) === index) history.delete(source)
       }
     }
-    return { observations, observedAt }
+    return { observations, observedAt, complete }
   }
 
   async function watch(
@@ -225,7 +225,7 @@ export function createRecorder(options: RecorderOptions) {
     while (!signal.aborted) {
       const started = now()
       const before = summary.unauthorized
-      const { observations, observedAt } = await run(
+      const { observations, observedAt, complete } = await run(
         makeSteps(new Date(started)),
         true
       )
@@ -234,7 +234,7 @@ export function createRecorder(options: RecorderOptions) {
       const nextDigest = createHash('sha256')
         .update(JSON.stringify(observations))
         .digest('hex')
-      if (digest !== nextDigest) {
+      if (complete && digest !== nextDigest) {
         const change = {
           at: new Date(now()).toISOString(),
           digest: nextDigest,

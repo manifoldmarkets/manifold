@@ -301,10 +301,14 @@ it('separates dispatch, received HTTP and usable saved snapshots across retries'
   await recorder.run([step()])
   expect(counts()).toEqual([13, 7, 1])
   mode = 'empty'
-  await expect(recorder.run([step()])).rejects.toThrow('no usable data')
+  await expect(recorder.run([step()])).resolves.toMatchObject({
+    complete: false,
+  })
   expect(counts()).toEqual([14, 8, 1])
   mode = 'error-body'
-  await expect(recorder.run([step()])).rejects.toThrow('no usable data')
+  await expect(recorder.run([step()])).resolves.toMatchObject({
+    complete: false,
+  })
   expect(counts()).toEqual([15, 9, 1])
   expect(recorder.summary).toMatchObject({ calls: 15, successful: 1 })
   const second = setup([[200, { data: [] }]], true)
@@ -409,5 +413,37 @@ it('counts no dispatch if acquiring the shared rate slot fails', async () => {
     dispatched: 0,
     httpResponses: 0,
     usableSnapshots: 0,
+  })
+})
+
+it('continues other selectors and keeps an unusable watch page from replacing the last known state', async () => {
+  const { recorder, clock } = setup([
+    [200, { data: [{ id: 42 }] }],
+    [200, { error: 'temporarily unavailable' }],
+    [200, { data: [{ id: 42 }] }],
+  ])
+  const stop = new AbortController()
+  const sleep = clock.sleep
+  clock.sleep = async (ms) => {
+    await sleep(ms)
+    if (recorder.summary.dispatched === 3) stop.abort()
+  }
+  await recorder.watch('nba', '42', () => [step()], stop.signal)
+  const log = readFileSync(path.join(out, 'watch', 'nba-42.jsonl'), 'utf8')
+    .trim()
+    .split('\n')
+  expect(log).toHaveLength(1)
+  expect(JSON.parse(log[0]).observations[step().label]).toEqual([
+    { data: [{ id: 42 }] },
+  ])
+  const mixed = setup([
+    [200, { error: 'unavailable' }],
+    [200, { data: [] }],
+  ])
+  await mixed.recorder.run([step(), step('/mma/v1/events')])
+  expect(mixed.recorder.summary).toMatchObject({
+    dispatched: 2,
+    httpResponses: 2,
+    usableSnapshots: 1,
   })
 })
