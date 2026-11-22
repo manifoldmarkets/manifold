@@ -605,47 +605,78 @@ async function readTournamentObservations(
   }
   for (const [id, rows] of events) {
     try {
-      const match = rows[0]
-      if (match.status !== 'FINISHED' && match.status !== 'AWARDED') continue
+      const match = rows.find(
+        (row) => row.status === 'FINISHED' || row.status === 'AWARDED'
+      )
+      if (!match) continue
       const observation = tournamentScore(config, match, interval.receivedAt)
-      if (
-        rows.length > 1 &&
-        rows.some(
-          (row) =>
-            !isEqual(
-              tournamentScore(config, row, interval.receivedAt),
-              observation
-            )
-        )
-      ) {
+      const copies = rows.map((row) =>
+        tournamentScore(config, row, interval.receivedAt)
+      )
+      const conflict = copies.some((copy) => !isEqual(copy, observation))
+      if (conflict)
         log.push({
           question: id,
           status: 'error',
           result: 'Conflicting observations for one event',
         })
-        continue
-      }
-      const { source, patch } = observation
-      const markets = await writeFixtureScore(
-        pg,
-        source,
-        patch,
-        interval.startedAt,
-        undefined,
-        undefined,
-        preview
-      )
-      for (const market of markets) {
-        accepted.set(market.id, { ...observation, market, match })
-        if (!preview) {
-          try {
-            await publishSportsLiveScore(market.id, boundScore(source, patch))
-          } catch (error) {
-            log.push({
-              question: market.id,
-              status: 'error',
-              result: `Score publication failed: ${error}`,
+      // If the provider disagrees on the participants as well, only the copy
+      // positively identified by the locked contract and native answers may hold it.
+      const sources = conflict
+        ? copies.filter(
+            (copy, i) =>
+              copies.findIndex((c) => isEqual(c.source, copy.source)) === i
+          )
+        : [observation]
+      for (const { source, patch } of sources) {
+        const evidence = conflict
+          ? {
+              ...patch,
+              sportsHomeScore: null,
+              sportsAwayScore: null,
+              sportsPenHome: null,
+              sportsPenAway: null,
+              sportsLiveStatus: 'UNKNOWN',
+            }
+          : patch
+        const markets = await writeFixtureScore(
+          pg,
+          source,
+          evidence,
+          interval.startedAt,
+          undefined,
+          undefined,
+          preview,
+          { conflict }
+        )
+        for (const market of markets) {
+          if (!market.held && !conflict) {
+            const acceptedPatch =
+              market.replayedAt == null
+                ? patch
+                : { ...patch, sportsLiveUpdatedTime: market.replayedAt }
+            accepted.set(market.id, {
+              source,
+              patch: acceptedPatch,
+              market,
+              match,
             })
+          }
+          if (!preview && market.replayedAt == null) {
+            try {
+              const report = await publishSportsLiveScore(
+                market.id,
+                market.held ?? boundScore(source, patch),
+                true
+              )
+              if (report) throw new Error(report.error)
+            } catch (error) {
+              log.push({
+                question: market.id,
+                status: 'error',
+                result: `Score publication failed: ${error}`,
+              })
+            }
           }
         }
       }
@@ -897,7 +928,7 @@ export async function resolveTournamentMarkets(
   )
   return resolveTournamentMarketsForMatches(
     config,
-    terminal,
+    isSportsBdlEnabled() ? allMatches : terminal,
     isSportsBdlEnabled()
       ? { ...opts, observation: { startedAt, receivedAt: Date.now() } }
       : opts
@@ -1199,13 +1230,17 @@ export async function pollAndStoreLiveScores(
   const updatedTime = Date.now()
   let updated = 0
 
+  const terminal = matches.filter(
+    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
+  )
+  const finalIds = new Set(terminal.map(sportsEventId))
   for (const m of matches) {
     const status = m.status
     const isLive = status === 'IN_PLAY' || status === 'PAUSED'
     const isTerminal = status === 'FINISHED' || status === 'AWARDED'
     if (!isLive && !isTerminal) continue
     // Enabled terminal reads are committed and published by the shared resolver below.
-    if (guarded && isTerminal) continue
+    if (guarded && finalIds.has(sportsEventId(m))) continue
 
     const patch = {
       sportsHomeScore: m.score.fullTime.home,
@@ -1294,14 +1329,11 @@ export async function pollAndStoreLiveScores(
 
   // Resolve finished/awarded matches in the same pass (within ~10s of FT). The
   // 15-min sports-resolve cron remains a backstop for anything missed here.
-  const terminal = matches.filter(
-    (m) => m.status === 'FINISHED' || m.status === 'AWARDED'
-  )
   let resolved = 0
   if (terminal.length > 0) {
     const r = await resolveTournamentMarketsForMatches(
       config,
-      terminal,
+      guarded ? matches : terminal,
       guarded
         ? { observation: { startedAt, receivedAt: updatedTime } }
         : undefined

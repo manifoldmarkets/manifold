@@ -919,7 +919,7 @@ describe('fixture-bound provider writes', () => {
     expect(d.tx.none).not.toHaveBeenCalled()
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
-  it('rejects conflicting shootout duplicates before the first write, even when the goal totals match', async () => {
+  it('commits a held score for conflicting shootout duplicates even when goal totals match', async () => {
     const d = makeTournament()
     const m = match()
     m.score = {
@@ -942,10 +942,156 @@ describe('fixture-bound provider writes', () => {
       { observation: acquisition }
     )
     expect(result).toMatchObject({ resolved: 0, errors: 1 })
-    expect(d.tx.none).not.toHaveBeenCalled()
-    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+    expect(d.tx.none).toHaveBeenCalledTimes(1)
+    expect(d.data).toMatchObject({
+      sportsScoreConflict: true,
+      sportsLiveStatus: 'UNKNOWN',
+      sportsHomeScore: null,
+      sportsPenHome: null,
+    })
+    expect(publishSportsLiveScore).toHaveBeenCalledWith(
+      'game',
+      expect.objectContaining({
+        sportsLiveStatus: 'UNKNOWN',
+        sportsHomeScore: null,
+        sportsAwayScore: null,
+      }),
+      true
+    )
     expect(resolveMarketHelper).not.toHaveBeenCalled()
   })
+  it('invalidates the earlier football-data payout on a later disputed batch and recovers only from clean evidence', async () => {
+    const d = makeTournament()
+    const original = match()
+    await resolveTournamentMarketsForMatches(config, [original], {
+      observation: acquisition,
+    })
+    const callback = jest.mocked(resolveMarketHelper).mock.calls[0][5]!
+    const fresh = () =>
+      ({ ...d.data, answers: reviewAnswers } as unknown as MarketContract)
+    expect(() => callback(fresh())).not.toThrow()
+    const corrected = {
+      ...original,
+      score: {
+        ...original.score,
+        winner: 'AWAY_TEAM' as const,
+        fullTime: { home: 0, away: 1 },
+      },
+    }
+    const disputed = {
+      startedAt: acquisition.receivedAt + 1,
+      receivedAt: acquisition.receivedAt + 5,
+    }
+    const hold = await resolveTournamentMarketsForMatches(
+      config,
+      [original, corrected],
+      { observation: disputed }
+    )
+    expect(hold.resolved).toBe(0)
+    expect(() => callback(fresh())).toThrow()
+    const recovered = await resolveTournamentMarketsForMatches(
+      config,
+      [corrected],
+      {
+        observation: {
+          startedAt: disputed.receivedAt + 1,
+          receivedAt: disputed.receivedAt + 2,
+        },
+      }
+    )
+    expect(recovered.resolved).toBe(1)
+    expect(d.data).toMatchObject({
+      sportsLiveStatus: 'FINISHED',
+      sportsScoreWinner: 'AWAY_TEAM',
+      sportsScoreConflict: false,
+    })
+  })
+  it('retries an interrupted settlement with the exact accepted football-data input without republishing', async () => {
+    const d = makeTournament()
+    jest
+      .mocked(resolveMarketHelper)
+      .mockRejectedValueOnce(new Error('transient'))
+    const first = await resolveTournamentMarketsForMatches(config, [match()], {
+      observation: acquisition,
+    })
+    const next = await resolveTournamentMarketsForMatches(config, [match()], {
+      observation: acquisition,
+    })
+    expect(first.resolved).toBe(0)
+    expect(next.resolved).toBe(1)
+    expect(d.tx.none).toHaveBeenCalledTimes(1)
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+    expect(resolveMarketHelper).toHaveBeenCalledTimes(2)
+  })
+  it.each([true, false])(
+    'does not select either equal-time disputed Odds copy (reverse=%s)',
+    async (reverse) => {
+      const d = store(official)
+      d.pg.manyOrNone
+        .mockResolvedValueOnce([{ data: official, token: 'MANA' }])
+        .mockResolvedValueOnce([])
+      const winner = reviewScore(true),
+        other = {
+          ...winner,
+          scores: [
+            { name: 'Away', score: '14' },
+            { name: 'Home', score: '3' },
+          ],
+        }
+      jest
+        .mocked(getScores)
+        .mockResolvedValue(reverse ? [winner, other] : [other, winner])
+      const result = await pollOddsScoresAndResolve(
+        d.client,
+        newScorePollState()
+      )
+      expect(result.resolved).toBe(0)
+      expect(d.data).toMatchObject({
+        sportsScoreConflict: true,
+        sportsLiveStatus: 'UNKNOWN',
+        sportsHomeScore: null,
+      })
+      expect(resolveMarketHelper).not.toHaveBeenCalled()
+    }
+  )
+  it.each([true, false])(
+    'takes the newer dated final from a duplicated Odds response (reverse=%s)',
+    async (reverse) => {
+      const d = store(official)
+      d.pg.manyOrNone
+        .mockResolvedValueOnce([{ data: official, token: 'MANA' }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce(reviewAnswers)
+      const winner = {
+        ...reviewScore(true),
+        last_update: new Date(NOW - 100).toISOString(),
+      }
+      const earlier = {
+        ...winner,
+        last_update: new Date(NOW - 200).toISOString(),
+        scores: [
+          { name: 'Away', score: '14' },
+          { name: 'Home', score: '3' },
+        ],
+      }
+      jest
+        .mocked(getScores)
+        .mockResolvedValue(reverse ? [winner, earlier] : [earlier, winner])
+      const result = await pollOddsScoresAndResolve(
+        d.client,
+        newScorePollState()
+      )
+      expect(result.resolved).toBe(1)
+      expect(d.data).toMatchObject({
+        sportsHomeScore: 10,
+        sportsAwayScore: 3,
+        sportsScoreUpdatedTime: NOW - 100,
+      })
+      expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toMatchObject({
+        outcome: 'home-answer',
+      })
+    }
+  )
   it('previews verified public native answers with zero score writes or broadcasts, and rejects the same private/renamed rows as an actual run', async () => {
     for (const [extra, rows, expected] of [
       [{}, reviewAnswers, 1],
@@ -995,6 +1141,38 @@ describe('fixture-bound provider writes', () => {
       outcome: 'home-answer',
     })
   })
+  it('records real HTTP publication failure while the accepted native settlement still proceeds', async () => {
+    makeTournament()
+    const previousSecret = process.env.API_SECRET
+    process.env.API_SECRET = 'unit-test'
+    const fetch = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(null, { status: 503 }))
+    try {
+      const production = jest.requireActual<
+        typeof import('shared/publish-sports-live-score')
+      >('shared/publish-sports-live-score')
+      jest
+        .mocked(publishSportsLiveScore)
+        .mockImplementationOnce(production.publishSportsLiveScore)
+      const r = await resolveTournamentMarketsForMatches(config, [match()], {
+        observation: acquisition,
+      })
+      expect(r).toMatchObject({ resolved: 1, errors: 1 })
+      expect(r.log).toContainEqual(
+        expect.objectContaining({
+          question: 'game',
+          status: 'error',
+          result: expect.stringContaining('HTTP 503'),
+        })
+      )
+      expect(fetch).toHaveBeenCalledTimes(1)
+    } finally {
+      fetch.mockRestore()
+      if (previousSecret === undefined) delete process.env.API_SECRET
+      else process.env.API_SECRET = previousSecret
+    }
+  })
   it('clears a withdrawn shootout and duration together under the new terminal receipt', async () => {
     const d = makeTournament({
       sportsPenHome: 5,
@@ -1030,6 +1208,7 @@ describe('fixture-bound provider writes', () => {
     jest.mocked(getScores).mockResolvedValue([
       {
         ...reviewScore(true),
+        sport_key: 'basketball_nba',
         scores: [
           { name: 'Home', score: '99' },
           { name: 'Away', score: '99' },
@@ -1045,6 +1224,58 @@ describe('fixture-bound provider writes', () => {
     })
     expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
+  })
+  it('preserves a completed initial Odds row and its acquisition when a successful finals follow-up omits it', async () => {
+    const first = {
+      ...official,
+      sportsStartTimestamp: new Date(NOW - 600000).toISOString(),
+    }
+    const second = {
+      ...first,
+      id: 'sibling',
+      sportsEventId: 'odds:americanfootball_nfl:sibling',
+    }
+    const d = store(first)
+    const markers: Record<string, unknown> = { ...second }
+    Object.assign(d.pg, {
+      map: async (
+        _sql: string,
+        _args: unknown,
+        convert: (r: { target: string; interval_seconds: number }) => unknown
+      ) => [convert({ target: 'sport:nfl', interval_seconds: 30 })],
+    })
+    d.pg.manyOrNone
+      .mockResolvedValueOnce([
+        { data: first, token: 'MANA' },
+        { data: second, token: 'MANA' },
+      ])
+      .mockResolvedValue(reviewAnswers)
+    d.tx.manyOrNone.mockImplementation(async (sql: string) => {
+      if (!sql.includes('from contracts')) return reviewAnswers
+      // Seed separate copies exactly as the authoritative indexed query would.
+      return [
+        { id: 'game', data: d.data, token: 'MANA' },
+        { id: 'sibling', data: markers, token: 'MANA' },
+      ]
+    })
+    d.tx.none.mockImplementation(async (_sql: string, args: string[]) =>
+      Object.assign(args[1] === 'game' ? d.data : markers, JSON.parse(args[0]))
+    )
+    jest
+      .mocked(getScores)
+      .mockImplementationOnce(async () => {
+        jest.mocked(Date.now).mockReturnValue(NOW + 12)
+        return [reviewScore(true)]
+      })
+      .mockImplementationOnce(async () => {
+        jest.mocked(Date.now).mockReturnValue(NOW + 45)
+        return [{ ...reviewScore(true), id: 'sibling' }]
+      })
+    const result = await pollOddsScoresAndResolve(d.client, newScorePollState())
+    expect(getScores).toHaveBeenCalledTimes(2)
+    expect(result.resolved).toBe(2)
+    expect(d.data.sportsLiveUpdatedTime).toBe(NOW + 12)
+    expect(markers.sportsLiveUpdatedTime).toBe(NOW + 45)
   })
   it.each([false, true])(
     'timestamps the actual Odds request including a successful finals follow-up %s, before processing the fetched fixture',

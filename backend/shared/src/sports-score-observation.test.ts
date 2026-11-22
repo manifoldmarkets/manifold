@@ -500,3 +500,155 @@ it('checks the stored winning side, decision method and penalty goals again at t
     ).toThrow()
   }
 })
+
+const oddsFinal = (
+  receipt: number,
+  stamp: number | null,
+  home: number,
+  away: number
+) => ({
+  ...final,
+  sportsLiveUpdatedTime: receipt,
+  sportsScoreUpdatedTime: stamp,
+  sportsHomeScore: home,
+  sportsAwayScore: away,
+})
+
+it('supersedes an overlapping earlier Odds payout only with an ordered correction', async () => {
+  await seed()
+  const first = oddsFinal(200, 110, 2, 1),
+    next = oddsFinal(250, 210, 1, 2)
+  const [before] = await writeFixtureScore(pg, source, first, 100)
+  const [after] = await writeFixtureScore(pg, source, next, 150)
+  const c = await current()
+  expect(after.held).toBeUndefined()
+  expect(() => assertObservedResult(c, source, first, before.answers)).toThrow()
+  expect(() =>
+    assertObservedResult(c, source, next, after.answers)
+  ).not.toThrow()
+})
+
+it.each([
+  [160, 160],
+  [null, null],
+  [160, null],
+] as const)(
+  'holds competing winners with unordered stamps %p and %p',
+  async (a, b) => {
+    await seed()
+    const original = oddsFinal(200, a, 2, 1),
+      incoming = oddsFinal(250, b, 1, 2)
+    const [before] = await writeFixtureScore(pg, source, original, 100)
+    const [disputed] = await writeFixtureScore(pg, source, incoming, 150)
+    expect(disputed.held).toMatchObject({
+      sportsLiveStatus: 'UNKNOWN',
+      sportsHomeScore: null,
+      sportsAwayScore: null,
+    })
+    expect(await current()).toMatchObject({ sportsScoreConflict: true })
+    const held = await current()
+    expect(() =>
+      assertObservedResult(held, source, original, before.answers)
+    ).toThrow()
+    const fixed = oddsFinal(300, 290, 1, 2)
+    const [confirmed] = await writeFixtureScore(pg, source, fixed, 260)
+    const c = await current()
+    expect(() =>
+      assertObservedResult(c, source, fixed, confirmed.answers)
+    ).not.toThrow()
+  }
+)
+it('holds nonoverlapping conflicting copies of a single vendor timestamp and rejects older evidence after a null display time', async () => {
+  await seed()
+  const initial = oddsFinal(200, 120, 1, 1)
+  const [w] = await writeFixtureScore(pg, source, initial, 150)
+  expect(
+    (await writeFixtureScore(pg, source, oddsFinal(230, 120, 1, 1), 220))[0]
+  ).toMatchObject({ replayedAt: 200 })
+  await writeFixtureScore(pg, source, oddsFinal(250, null, 1, 1), 240)
+  expect(await current()).toMatchObject({
+    sportsScoreUpdatedTime: null,
+    sportsScoreProviderWatermark: 120,
+  })
+  expect(
+    await writeFixtureScore(pg, source, oddsFinal(270, 110, 0, 1), 260)
+  ).toHaveLength(0)
+  expect(
+    (await writeFixtureScore(pg, source, oddsFinal(290, 120, 0, 1), 280))[0]
+      .held
+  ).toBeDefined()
+  expect(
+    await writeFixtureScore(pg, source, oddsFinal(320, 120, 0, 1), 310)
+  ).toHaveLength(0)
+  const currentMarket = await current()
+  expect(() =>
+    assertObservedResult(currentMarket, source, initial, w.answers)
+  ).toThrow()
+})
+it('keeps the fixture watermark through a casing edit and separates an overlapping replacement', async () => {
+  await seed()
+  await writeFixtureScore(pg, source, oddsFinal(200, 160, 2, 1), 150)
+  await db.query('update contracts set data=data||$1::jsonb', [
+    JSON.stringify({ sportsHomeTeam: 'HOME' }),
+  ])
+  const renamed = { ...source, home: 'HOME' }
+  expect(
+    await writeFixtureScore(pg, renamed, oddsFinal(250, 140, 0, 1), 210)
+  ).toHaveLength(0)
+  const replaced = {
+    ...renamed,
+    eventId: 'odds:americanfootball_nfl:alternate',
+  }
+  await db.query('update contracts set data=data||$1::jsonb', [
+    JSON.stringify({ sportsEventId: replaced.eventId }),
+  ])
+  const replacement = oddsFinal(220, 111, 1, 2)
+  expect(await writeFixtureScore(pg, replaced, replacement, 180)).toHaveLength(
+    1
+  )
+  expect(await current()).toMatchObject({
+    sportsScoreProviderWatermark: 111,
+    scoreFixture: { eventId: replaced.eventId },
+  })
+})
+it('only replays the exact accepted tournament result against the original ordered native answer IDs', async () => {
+  await seed(tournament)
+  const patch = {
+    ...final,
+    sportsScoreDuration: 'REGULAR',
+    sportsScoreWinner: 'HOME_TEAM' as const,
+  }
+  await writeFixtureScore(pg, tournament, patch, 150)
+  expect(
+    (await writeFixtureScore(pg, tournament, patch, 150))[0]
+  ).toMatchObject({ replayedAt: 200 })
+  await db.query("update answers set text='🇬🇧 Home' where id='0'")
+  expect(await writeFixtureScore(pg, tournament, patch, 150)).toHaveLength(0)
+  await db.query("update answers set text='Home', index=-1 where id='0'")
+  expect(await writeFixtureScore(pg, tournament, patch, 150)).toHaveLength(0)
+  await db.query("update answers set id='new-home', index=0 where id='0'")
+  expect(await writeFixtureScore(pg, tournament, patch, 150)).toHaveLength(0)
+})
+
+it('requires a fresh independent read before binding a terminal saved by a previous worker version', async () => {
+  const old = oddsFinal(200, 120, 2, 1)
+  await seed(source, {
+    ...old,
+    scoreFixture: source,
+    sportsScoreReadStartedAt: 150,
+  })
+  expect(await writeFixtureScore(pg, source, old, 150)).toHaveLength(0)
+  const fresh = oddsFinal(250, 120, 2, 1)
+  const [bound] = await writeFixtureScore(pg, source, fresh, 225)
+  expect(bound.replayedAt).toBeUndefined()
+  expect(await current()).toMatchObject({
+    sportsScoreAnswers: [
+      ['0', 0, 'Home'],
+      ['1', 1, 'Away'],
+      ['2', 2, 'Draw'],
+    ],
+  })
+  expect((await writeFixtureScore(pg, source, fresh, 225))[0].replayedAt).toBe(
+    250
+  )
+})

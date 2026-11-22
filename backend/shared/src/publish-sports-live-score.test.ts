@@ -82,6 +82,24 @@ it('contains a network failure so resolution and other games can proceed', async
   await expect(publishSportsLiveScore('game', score)).resolves.toBeUndefined()
 })
 
+it('reports HTTP or transport failure to an opted-in caller without rejecting the sibling batch', async () => {
+  process.env.API_SECRET = 'test-secret'
+  const send = jest
+    .spyOn(globalThis, 'fetch')
+    .mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    .mockRejectedValueOnce(new Error('offline'))
+    .mockResolvedValueOnce(new Response('{}'))
+  await expect(publishSportsLiveScore('game', score, true)).resolves.toEqual({
+    error: 'HTTP 503',
+  })
+  await expect(publishSportsLiveScore('game', score, true)).resolves.toEqual({
+    error: 'Broadcast transport failed',
+  })
+  await expect(
+    publishSportsLiveScore('sibling', score, true)
+  ).resolves.toBeUndefined()
+  expect(send).toHaveBeenCalledTimes(3)
+})
 it('never contacts a deployed API from a local scheduler', async () => {
   process.env.API_SECRET = 'test-secret'
   jest.spyOn(utils, 'LOCAL_DEV', 'get').mockReturnValue(true)

@@ -14,7 +14,13 @@ export type ScoreSource = ScoreFixture & {
   league: string
 }
 
-type ScoreMarket = MarketContract & Partial<Sports & Observation>
+type ScoreMarket = MarketContract &
+  Partial<Sports & Observation> & {
+    sportsScoreReadStartedAt?: number
+    sportsScoreProviderWatermark?: number | null
+    sportsScoreAnswers?: [string, number, string][] | null
+    sportsScoreConflict?: boolean
+  }
 type ScoreAnswer = Pick<
   Answer,
   'id' | 'text' | 'index' | 'resolution' | 'resolutionTime'
@@ -44,8 +50,12 @@ function sameNames(left: string, right: string) {
 function sameFixture(a: ScoreFixture | undefined, b: ScoreFixture) {
   return (
     a?.eventId === b.eventId &&
-    a.home === b.home &&
-    a.away === b.away &&
+    typeof a.home === 'string' &&
+    typeof a.away === 'string' &&
+    typeof b.home === 'string' &&
+    typeof b.away === 'string' &&
+    sameNames(a.home, b.home) &&
+    sameNames(a.away, b.away) &&
     a.homeId === b.homeId &&
     a.awayId === b.awayId
   )
@@ -168,10 +178,103 @@ function identifiesGame(
   )
 }
 
+function comparableTime(value: number | null | undefined) {
+  return value != null && Number.isSafeInteger(value) && value > 0 ? value : 0
+}
+
+function sameResult(data: ScoreMarket, patch: Observation) {
+  return (
+    data.sportsLiveStatus === patch.sportsLiveStatus &&
+    data.sportsHomeScore === patch.sportsHomeScore &&
+    data.sportsAwayScore === patch.sportsAwayScore &&
+    (data.sportsScoreWinner ?? null) === (patch.sportsScoreWinner ?? null) &&
+    (data.sportsScoreDuration ?? null) ===
+      (patch.sportsScoreDuration ?? null) &&
+    (data.sportsPenHome ?? null) === (patch.sportsPenHome ?? null) &&
+    (data.sportsPenAway ?? null) === (patch.sportsPenAway ?? null)
+  )
+}
+
+// An independent later fetch can order undated observations. Overlapping or
+// tied conflicting results invalidate a pending payout until their order is known.
+function scoreDecision(
+  data: ScoreMarket,
+  source: ScoreSource,
+  patch: Observation,
+  startedAt: number,
+  replacement: boolean,
+  conflict: boolean,
+  seenProviderTime: number
+) {
+  const previous = data.sportsLiveUpdatedTime
+  if (previous == null || replacement) return conflict ? 'hold' : 'write'
+  if (!Number.isSafeInteger(previous)) return 'skip'
+  const odds = source.provider === 'odds'
+  const priorTime = odds
+    ? Math.max(
+        comparableTime(data.sportsScoreProviderWatermark),
+        comparableTime(data.sportsScoreUpdatedTime)
+      )
+    : 0
+  const providerTime = odds ? comparableTime(patch.sportsScoreUpdatedTime) : 0
+  if (priorTime && seenProviderTime && seenProviderTime < priorTime)
+    return 'skip'
+  const newer = providerTime > 0 && priorTime > 0 && providerTime > priorTime
+  const laterRead =
+    startedAt >= previous && patch.sportsLiveUpdatedTime > previous
+  if (!data.scoreFixture && !laterRead) return 'skip'
+  if (
+    !newer &&
+    patch.sportsLiveUpdatedTime < (data.sportsScoreReadStartedAt ?? 0)
+  )
+    return 'skip'
+  if (conflict) return 'hold'
+  if (data.sportsScoreConflict)
+    return newer || (laterRead && !priorTime) ? 'write' : 'skip'
+  const same = sameResult(data, patch)
+  const sameStamp = providerTime > 0 && providerTime === priorTime
+  if (terminal(data.sportsLiveStatus) && !terminal(patch.sportsLiveStatus))
+    return odds && (newer || sameStamp) ? 'hold' : 'skip'
+  if (newer) return 'write'
+  if (sameStamp && !same) return 'hold'
+  if (
+    same &&
+    terminal(patch.sportsLiveStatus) &&
+    sameFixture(data.scoreFixture, source) &&
+    (sameStamp ||
+      (patch.sportsLiveUpdatedTime === previous &&
+        startedAt === data.sportsScoreReadStartedAt))
+  ) {
+    // Earlier versions did not save the accepted answer set. A new independent
+    // provider read can establish it. Replaying the old receipt cannot.
+    if (!Array.isArray(data.sportsScoreAnswers))
+      return laterRead ? 'write' : 'skip'
+    return 'replay'
+  }
+  if (!laterRead) {
+    if (
+      !same &&
+      terminal(data.sportsLiveStatus) &&
+      terminal(patch.sportsLiveStatus)
+    )
+      return 'hold'
+    return 'skip'
+  }
+  return 'write'
+}
+
+function answerBindings(answers: readonly ScoreAnswer[]) {
+  return [...answers]
+    .sort((a, b) => a.index - b.index)
+    .map(({ id, index, text }): [string, number, string] => [id, index, text])
+}
+
 export type WrittenScore = {
   id: string
   old_home: number | null
   old_away: number | null
+  held?: SportsLiveScore
+  replayedAt?: number
   answers: ScoreAnswer[]
 }
 
@@ -184,7 +287,8 @@ export async function writeFixtureScore(
   startedAt: number,
   contractId?: string,
   isCurrent: () => boolean = () => true,
-  preview = false
+  preview = false,
+  evidence: { conflict?: boolean; providerWatermark?: number } = {}
 ): Promise<WrittenScore[]> {
   if (
     !(patch.sportsHomeScore === null || validScore(patch.sportsHomeScore)) ||
@@ -213,30 +317,25 @@ export async function writeFixtureScore(
     )
     const accepted: WrittenScore[] = []
     for (const { id, data, token } of markets) {
-      const previous = data.sportsLiveUpdatedTime
-      if (
-        previous != null &&
-        (!Number.isSafeInteger(previous) ||
-          previous > startedAt ||
-          previous >= patch.sportsLiveUpdatedTime)
-      )
-        continue
       const replacement =
         data.scoreFixture != null && !sameFixture(data.scoreFixture, source)
-      const priorProviderTime = data.sportsScoreUpdatedTime
-      const providerTime = patch.sportsScoreUpdatedTime
-      if (
-        !replacement &&
-        ((terminal(data.sportsLiveStatus) &&
-          !terminal(patch.sportsLiveStatus)) ||
-          (source.provider === 'odds' &&
-            priorProviderTime != null &&
-            providerTime != null &&
-            Number.isSafeInteger(priorProviderTime) &&
-            priorProviderTime > 0 &&
-            priorProviderTime > providerTime))
+      const watermark =
+        source.provider === 'odds'
+          ? Math.max(
+              comparableTime(patch.sportsScoreUpdatedTime),
+              comparableTime(evidence.providerWatermark)
+            )
+          : 0
+      const decision = scoreDecision(
+        data,
+        source,
+        patch,
+        startedAt,
+        replacement,
+        evidence.conflict === true,
+        watermark
       )
-        continue
+      if (decision === 'skip') continue
       const answers = await tx.manyOrNone<ScoreAnswer>(
         `select id, text, index, resolution, extract(epoch from resolution_time) * 1000 as "resolutionTime" from answers where contract_id = $1 order by id ${
           preview ? '' : 'for share'
@@ -245,7 +344,39 @@ export async function writeFixtureScore(
       )
       if (!isCurrent() || !identifiesGame({ ...data, token }, source, answers))
         continue
-      if (!preview) {
+      const bindings = answerBindings(answers)
+      const replay = decision === 'replay'
+      if (
+        replay &&
+        (!Array.isArray(data.sportsScoreAnswers) ||
+          data.sportsScoreAnswers.length !== bindings.length ||
+          !data.sportsScoreAnswers.every(
+            (row, i) =>
+              Array.isArray(row) &&
+              row.length === 3 &&
+              row.every((value, j) => value === bindings[i][j])
+          ))
+      )
+        continue
+      const held: Observation | undefined =
+        decision === 'hold'
+          ? {
+              sportsHomeScore: null,
+              sportsAwayScore: null,
+              sportsLiveMinute: null,
+              sportsLiveStatus: 'UNKNOWN',
+              sportsScoreUpdatedTime: null,
+              sportsLiveUpdatedTime: Math.max(
+                replacement ? 0 : data.sportsLiveUpdatedTime ?? 0,
+                patch.sportsLiveUpdatedTime
+              ),
+              sportsScoreWinner: null,
+              sportsScoreDuration: null,
+              sportsPenHome: null,
+              sportsPenAway: null,
+            }
+          : undefined
+      if (!preview && !replay) {
         const cleared = replacement
           ? {
               sportsScoreWinner: null,
@@ -262,12 +393,38 @@ export async function writeFixtureScore(
           : {}
         await tx.none(
           `update contracts set data=data || $1::jsonb where id=$2`,
-          [JSON.stringify({ ...cleared, ...boundScore(source, patch) }), id]
+          [
+            JSON.stringify({
+              ...cleared,
+              ...boundScore(source, held ?? patch),
+              sportsScoreReadStartedAt: startedAt,
+              sportsScoreConflict: !!held,
+              sportsScoreAnswers:
+                !held && terminal(patch.sportsLiveStatus) ? bindings : null,
+              ...(source.provider === 'odds' || replacement
+                ? {
+                    sportsScoreProviderWatermark:
+                      Math.max(
+                        watermark,
+                        replacement
+                          ? 0
+                          : comparableTime(data.sportsScoreProviderWatermark),
+                        replacement
+                          ? 0
+                          : comparableTime(data.sportsScoreUpdatedTime)
+                      ) || null,
+                  }
+                : {}),
+            }),
+            id,
+          ]
         )
       }
       accepted.push({
         id,
         answers,
+        ...(held && { held: boundScore(source, held) }),
+        ...(replay && { replayedAt: data.sportsLiveUpdatedTime }),
         old_home: replacement ? null : data.sportsHomeScore ?? null,
         old_away: replacement ? null : data.sportsAwayScore ?? null,
       })
@@ -285,6 +442,7 @@ export function assertObservedResult(
 ) {
   const c: ScoreMarket = current
   if (
+    c.sportsScoreConflict ||
     !isMultiCpmm(c) ||
     !identifiesGame(c, source, c.answers) ||
     !sameFixture(c.scoreFixture, source) ||

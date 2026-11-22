@@ -764,18 +764,29 @@ export async function pollOddsScoresAndResolve(
     const dropped = games.some(
       (g) => !listed.has(g.eventId) && !(g.contract.id in state.missing)
     )
+    const reads = [read]
     if (!withFinished && dropped) {
       stats.polled++
       state.lastFinished[sportKey] = now
       try {
         read = await readScores(sportKey, true)
+        reads.push(read)
       } catch (e) {
         if (!isCurrent()) return stats
         log(`[sports-odds-resolve] finished games for ${sportKey} failed: ${e}`)
       }
     }
     if (!isCurrent()) return stats
+    // Ordinary polls retain the historical follow-up and last-copy behavior.
     const scoreById = new Map(read.scores.map((s) => [s.id, s]))
+    const observations = read.interval
+      ? groupBy(
+          reads.flatMap(({ scores, interval }) =>
+            interval ? scores.map((score) => ({ score, interval })) : []
+          ),
+          (entry) => entry.score.id
+        )
+      : undefined
     for (const game of games) {
       if (!isCurrent()) return stats
       const id = game.contract.id
@@ -783,21 +794,73 @@ export async function pollOddsScoresAndResolve(
         stats.pending++
         continue
       }
-      const score = scoreById.get(game.eventId)
-      if (!score) {
-        if (!(id in state.missing)) state.missing[id] = now
-        stats.pending++
-        continue
-      }
+      let completed = false
       try {
+        const selected =
+          observations &&
+          selectOddsObservation(observations[game.eventId] ?? [], game)
+        const score = observations
+          ? selected?.score
+          : scoreById.get(game.eventId)
+        completed = !!score?.completed
+        const interval = selected?.interval ?? read.interval
+        if (!score) {
+          if (!(id in state.missing)) state.missing[id] = now
+          stats.pending++
+          continue
+        }
         if (!isCurrent()) return stats
+        if (selected?.conflict && interval) {
+          await withGameReservation(
+            state,
+            id,
+            runId,
+            isCurrent,
+            async (run) => {
+              const source = oddsScoreSource(game)
+              const held = await run.mutate(() =>
+                writeFixtureScore(
+                  pg,
+                  source,
+                  {
+                    sportsHomeScore: null,
+                    sportsAwayScore: null,
+                    sportsLiveStatus: 'UNKNOWN',
+                    sportsLiveMinute: null,
+                    sportsLiveUpdatedTime: interval.receivedAt,
+                  },
+                  interval.startedAt,
+                  id,
+                  run.isCurrent,
+                  false,
+                  { conflict: true, providerWatermark: selected.watermark }
+                )
+              )
+              for (const market of held)
+                if (market.held && run.isCurrent())
+                  await publishSportsLiveScore(id, market.held)
+            }
+          )
+          if (!(id in state.missing)) state.missing[id] = now
+          stats.pending++
+          continue
+        }
         if (score.completed) {
           const processed = await withGameReservation(
             state,
             id,
             runId,
             isCurrent,
-            (run) => finishGame(pg, game, score, creator!, run, read.interval)
+            (run) =>
+              finishGame(
+                pg,
+                game,
+                score,
+                creator!,
+                run,
+                interval,
+                selected?.watermark
+              )
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -816,7 +879,16 @@ export async function pollOddsScoresAndResolve(
             id,
             runId,
             isCurrent,
-            (run) => writeLiveScore(pg, game, score, now, run, read.interval)
+            (run) =>
+              writeLiveScore(
+                pg,
+                game,
+                score,
+                now,
+                run,
+                interval,
+                selected?.watermark
+              )
           )
           if (!isCurrent()) return stats
           if (!processed) {
@@ -834,7 +906,7 @@ export async function pollOddsScoresAndResolve(
         // that can't end level, a team mismatch) counts as missing: no live
         // polls, and the finals check keeps asking for finished games, so it
         // isn't asked for twice on every live poll.
-        if (score.completed && !(id in state.missing)) state.missing[id] = now
+        if (completed && !(id in state.missing)) state.missing[id] = now
         log(`[sports-odds-resolve] ${id}: ${e}`)
         stats.errors++
       }
@@ -848,6 +920,67 @@ export async function pollOddsScoresAndResolve(
 }
 
 type ScoreInterval = { startedAt: number; receivedAt: number }
+
+type OddsObservation = { score: OddsApiScore; interval: ScoreInterval }
+
+// Reconcile a batch and its optional follow-up per event. A completed read
+// cannot erase another event that was present only in the first batch.
+function selectOddsObservation(rows: OddsObservation[], game: PendingGame) {
+  const candidates = rows.map((r) => ({
+    ...r,
+    stamp: scoreUpdatedTime(r.score.last_update, r.interval.receivedAt) ?? 0,
+  }))
+  const watermark = candidates.reduce(
+    (highest, c) => Math.max(highest, c.stamp),
+    0
+  )
+  const eligible = candidates.filter((c) => !c.stamp || c.stamp === watermark)
+  const latest = eligible.filter(
+    (c) =>
+      !eligible.some(
+        (other) =>
+          other !== c &&
+          (!other.stamp || !c.stamp) &&
+          other.interval.startedAt >= c.interval.receivedAt &&
+          other.interval.receivedAt > c.interval.receivedAt
+      )
+  )
+  if (!latest.length) return
+  const picked = latest.reduce((a, b) =>
+    a.interval.receivedAt !== b.interval.receivedAt
+      ? a.interval.receivedAt > b.interval.receivedAt
+        ? a
+        : b
+      : a.stamp >= b.stamp
+      ? a
+      : b
+  )
+  const evidence = (row: OddsObservation) => {
+    const { score } = row,
+      scores = teamScores(score, gameTeams(game))
+    return [
+      score.sport_key,
+      score.completed,
+      scores?.home,
+      scores?.away,
+      // A different participant pair cannot silently confirm this score.
+      !!scores,
+    ] as const
+  }
+  const target = evidence(picked)
+  const relevant = latest.some(
+    (row) =>
+      row.score.sport_key === game.sportKey &&
+      teamScores(row.score, gameTeams(game)) != null
+  )
+  if (!relevant) return
+  const conflict = latest.some(
+    (row) =>
+      row.score.sport_key !== game.sportKey ||
+      evidence(row).some((v, i) => v !== target[i])
+  )
+  return { ...picked, watermark, conflict }
+}
 
 async function readScores(sportKey: string, finished: boolean) {
   const startedAt = isSportsBdlEnabled() ? Date.now() : undefined
@@ -1005,7 +1138,8 @@ async function writeLiveScore(
   score: OddsApiScore,
   now: number,
   run: ScoreGameRun,
-  interval?: ScoreInterval
+  interval?: ScoreInterval,
+  watermark?: number
 ) {
   const teams = gameTeams(game)
   const scores = teamScores(score, teams)
@@ -1028,19 +1162,27 @@ async function writeLiveScore(
   }
   if (!run.isCurrent()) return
   const source = interval ? oddsScoreSource(game) : undefined
-  const written = source
-    ? (
-        await run.mutate(() =>
-          writeFixtureScore(
-            pg,
-            source,
-            patch,
-            interval!.startedAt,
-            game.contract.id,
-            run.isCurrent
-          )
+  const committed = source
+    ? await run.mutate(() =>
+        writeFixtureScore(
+          pg,
+          source,
+          patch,
+          interval!.startedAt,
+          game.contract.id,
+          run.isCurrent,
+          false,
+          { providerWatermark: watermark }
         )
-      ).length > 0
+      )
+    : undefined
+  if (committed?.[0]?.held) {
+    if (run.isCurrent())
+      await publishSportsLiveScore(game.contract.id, committed[0].held)
+    return
+  }
+  const written = committed
+    ? committed.length > 0
     : await writeScorePatch(pg, game.contract.id, patch, run)
   if (!written || !run.isCurrent()) return
   run.setStage('score-publication')
@@ -1059,7 +1201,8 @@ async function finishGame(
   score: OddsApiScore,
   creator: User,
   run: ScoreGameRun,
-  interval: ScoreInterval | undefined
+  interval: ScoreInterval | undefined,
+  watermark?: number
 ) {
   const { contract } = game
   const d = contract as any
@@ -1106,7 +1249,9 @@ async function finishGame(
           patch,
           interval!.startedAt,
           contract.id,
-          run.isCurrent
+          run.isCurrent,
+          false,
+          { providerWatermark: watermark }
         )
       )
     : undefined
@@ -1114,13 +1259,22 @@ async function finishGame(
     ? confirmed.length > 0
     : await writeScorePatch(pg, contract.id, patch, run)
   if (!written || !run.isCurrent()) return
-  run.setStage('score-publication')
-  await run.mutate(() =>
-    publishSportsLiveScore(
-      contract.id,
-      source ? boundScore(source, patch) : patch
+  const observed = confirmed?.[0]
+  if (observed?.held) {
+    await run.mutate(() => publishSportsLiveScore(contract.id, observed.held!))
+    return
+  }
+  if (observed?.replayedAt != null)
+    patch.sportsLiveUpdatedTime = observed.replayedAt
+  else {
+    run.setStage('score-publication')
+    await run.mutate(() =>
+      publishSportsLiveScore(
+        contract.id,
+        source ? boundScore(source, patch) : patch
+      )
     )
-  )
+  }
   if (!run.isCurrent()) return
 
   if (missingDecider) throw incompleteResult()
@@ -1144,7 +1298,6 @@ async function finishGame(
         .join(', ')}`
     )
   }
-  const observed = confirmed?.[0]
   const multi = { ...(contract as CPMMMultiContract), answers }
   if (!run.isCurrent()) return
   run.setStage('resolution-connection')
