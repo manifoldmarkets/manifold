@@ -1,7 +1,7 @@
 import { MANIFOLD_SPORTS_USER_IDS } from '../sports'
 import { LIVE_STALE_MS } from '../sports-schedule'
 import type { GolfField, GolfPlayer } from './golf'
-import { golfMarketView, type GolfMarket } from './golf-market'
+import { currentGolfPick, golfMarketView, type GolfMarket } from './golf-market'
 
 const now = 1800000000000
 const named = (playerId: number, name: string): GolfPlayer => ({
@@ -73,6 +73,42 @@ it('binds named outcomes by player ID and answer index independent of field and 
     [null, 'a2', 0.1, true],
   ])
 })
+it('rechecks the clicked player or Other against the live cutoff, source, native answer and quoted pool', () => {
+  const open = { ...market, closeTime: now + 300 }
+  const picks = golfMarketView(field, open, now)!.picks
+  for (const pick of picks) {
+    expect(currentGolfPick(field, open, pick, now + 299)).toEqual(pick)
+    expect(currentGolfPick(field, open, pick, now + 300)).toBeUndefined()
+    expect(currentGolfPick(field, open, pick, now + 550)).toBeUndefined()
+    expect(
+      currentGolfPick(field, { ...open, visibility: 'private' }, pick, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(field, open, { ...pick, contractId: 'other' }, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(field, open, { ...pick, eventId: 'bdl:pga:9' }, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(field, open, { ...pick, playerId: 99 }, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(field, open, { ...pick, answerId: 'removed' }, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(field, open, { ...pick, probability: 0.99 }, now)
+    ).toBeUndefined()
+    expect(
+      currentGolfPick(
+        { ...field, readStartedAt: now - LIVE_STALE_MS + 100 },
+        open,
+        pick,
+        now + 100
+      )
+    ).toBeUndefined()
+  }
+})
+
 it('requires unique exact event, positions, IDs, and participant labels', () => {
   const s = { ...market },
     a = s.answers

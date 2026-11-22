@@ -1,11 +1,15 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { GolfField, GolfPlayer, GolfTournament } from 'common/bdl/golf'
-import type { GolfMarket, GolfPick } from 'common/bdl/golf-market'
+import {
+  currentGolfPick,
+  type GolfMarket,
+  type GolfPick,
+} from 'common/bdl/golf-market'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { formatSportsPrice } from 'common/sports-price'
 import { formatMoney } from 'common/util/format'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { FieldEvent } from '../golf-field-event'
+import { FieldEvent, useGolfMarketTime } from '../golf-field-event'
 
 const scenarios = [
   'Upcoming field',
@@ -107,11 +111,30 @@ function sample(s: Scenario) {
   return { field, source }
 }
 
-function GalleryPick({ pick, close }: { pick: GolfPick; close: () => void }) {
+function GalleryPick({
+  pick,
+  field,
+  market,
+  clock,
+  close,
+}: {
+  pick: GolfPick
+  field: GolfField
+  market: GolfMarket
+  clock: () => number
+  close: () => void
+}) {
   const [amount, setAmount] = useState('10'),
     [receipt, setReceipt] = useState<number>()
+  const at = useGolfMarketTime(
+    now,
+    market.closeTime,
+    field.readStartedAt,
+    clock
+  )
+  const active = currentGolfPick(field, market, pick, at)
   const stake = Number(amount),
-    valid = Number.isSafeInteger(stake) && stake > 0
+    valid = !!active && Number.isSafeInteger(stake) && stake > 0
   return (
     <Modal
       open
@@ -131,7 +154,11 @@ function GalleryPick({ pick, close }: { pick: GolfPick; close: () => void }) {
           className="mt-4 grid gap-3"
           onSubmit={(e) => {
             e.preventDefault()
-            if (valid) setReceipt(stake)
+            if (
+              valid &&
+              currentGolfPick(field, market, pick, Math.max(at, clock()))
+            )
+              setReceipt(stake)
           }}
         >
           <label className="text-ink-800 text-sm">
@@ -146,6 +173,9 @@ function GalleryPick({ pick, close }: { pick: GolfPick; close: () => void }) {
               className="bg-canvas-0 border-ink-300 mt-1 block min-h-[44px] w-full rounded-md border px-3"
             />
           </label>
+          {!active && (
+            <p role="status">This selection is no longer available.</p>
+          )}
           <button
             type="submit"
             disabled={!valid}
@@ -165,6 +195,8 @@ function GalleryPick({ pick, close }: { pick: GolfPick; close: () => void }) {
 export default function GolfScenarios() {
   const [scenario, setScenario] = useState<Scenario>('Live leaderboard'),
     [pick, setPick] = useState<GolfPick>()
+  const [openedAt] = useState(Date.now)
+  const clock = useCallback(() => now + (Date.now() - openedAt), [openedAt])
   const { field, source } = sample(scenario)
   return (
     <section aria-label="Golf gallery" className="space-y-4">
@@ -200,10 +232,19 @@ export default function GolfScenarios() {
           field={field}
           market={source}
           now={now}
+          clock={clock}
           onPick={setPick}
         />
       )}
-      {pick && <GalleryPick pick={pick} close={() => setPick(undefined)} />}
+      {pick && (
+        <GalleryPick
+          pick={pick}
+          field={field}
+          market={source}
+          clock={clock}
+          close={() => setPick(undefined)}
+        />
+      )}
     </section>
   )
 }

@@ -57,6 +57,24 @@ export type GolfPick = {
   probability: number
   buyable: boolean
 }
+/** Rebind the displayed contract, outcome and player before passing a pick on. */
+export function currentGolfPick(
+  field: GolfField,
+  market: GolfMarket,
+  selected: GolfPick,
+  now: number
+) {
+  return golfMarketView(field, market, now)?.picks.find(
+    (pick) =>
+      pick.buyable &&
+      pick.contractId === selected.contractId &&
+      pick.eventId === selected.eventId &&
+      pick.answerId === selected.answerId &&
+      pick.playerId === selected.playerId &&
+      pick.name === selected.name &&
+      pick.probability === selected.probability
+  )
+}
 const normalize = (s: string) =>
   s.trim().replace(/\s+/gu, ' ').normalize('NFC').toLowerCase()
 export function golfMarketView(field: GolfField, m: GolfMarket, now: number) {

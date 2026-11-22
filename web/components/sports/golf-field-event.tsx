@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GolfField, GolfPlayer } from 'common/bdl/golf'
 import {
+  currentGolfPick,
   golfMarketView,
   type GolfMarket,
   type GolfPick,
@@ -49,18 +50,64 @@ function pickStanding(field: GolfField, playerId: number | null) {
     player.toPar === null ? '' : relativeScore(player.toPar) + ' to par'
   return [place, score].filter(Boolean).join(' · ') || null
 }
+// Sleep until a stored close or freshness boundary. A delayed browser timer
+// cannot authorize a click because the action itself reads the clock again.
+export function useGolfMarketTime(
+  initial: number,
+  close: number | undefined,
+  readAt: number,
+  clock: () => number
+) {
+  const [tick, setTick] = useState(initial)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>
+    function refresh() {
+      clearTimeout(timer)
+      const at = clock()
+      setTick((previous) => Math.max(previous, at))
+      const next = Math.min(
+        ...[close, readAt + LIVE_STALE_MS].filter(
+          (value): value is number =>
+            typeof value === 'number' && Number.isFinite(value) && value > at
+        )
+      )
+      if (Number.isFinite(next))
+        timer = setTimeout(
+          refresh,
+          Math.min(2_147_483_647, Math.ceil(next - at))
+        )
+    }
+    refresh()
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [close, readAt, clock])
+  return Math.max(initial, tick)
+}
 export function FieldEvent({
   field,
   market,
-  now,
+  now: initial,
+  clock = Date.now,
   onPick,
 }: {
   field: GolfField
   market: GolfMarket
   now: number
+  clock?: () => number
   onPick?: (pick: GolfPick) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const now = useGolfMarketTime(
+    initial,
+    market.closeTime,
+    field.readStartedAt,
+    clock
+  )
   const view = golfMarketView(field, market, now)
   if (!view) return null
   const t = field.tournament
@@ -134,7 +181,15 @@ export function FieldEvent({
                     (view.kind === 'winner' ? 'tournament winner' : 'top 10')
                   }
                   className="bg-primary-100 text-primary-800 hover:bg-primary-200 min-h-[44px] min-w-[76px] rounded-md px-3 text-right text-lg font-bold tabular-nums"
-                  onClick={() => onPick(p)}
+                  onClick={() => {
+                    const selected = currentGolfPick(
+                      field,
+                      market,
+                      p,
+                      Math.max(now, clock())
+                    )
+                    if (selected) onPick(selected)
+                  }}
                 >
                   {formatSportsPrice(p.probability)}
                 </button>
