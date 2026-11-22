@@ -6,11 +6,78 @@ import {
   sportsOgOutcomeName,
 } from 'common/sports-og'
 import { readableTextColor } from 'common/sports-team-colors'
+import type { SportsSharingScope } from 'web/lib/sports-og'
 import Logo from 'web/public/logo.svg'
 import { OgSportGraphic } from './og-sport-graphic'
 
 // The featured market is a dated snapshot; the artwork is the outage fallback.
-export function OgSports({ market }: { market: SportsOgMarket | null }) {
+export function OgSports({
+  market,
+  scope,
+}: {
+  market: SportsOgMarket | null
+  scope?: SportsSharingScope | null
+}) {
+  if (scope)
+    return (
+      <div
+        style={{
+          width: OG_CARD_WIDTH * 2,
+          height: OG_CARD_HEIGHT * 2,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '44px 64px',
+          backgroundColor: '#eef2ff',
+          color: '#1e1b4b',
+          fontFamily: 'Figtree',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            color: '#4338ca',
+            fontSize: 32,
+          }}
+        >
+          <Logo stroke="#4338ca" width={58} height={58} />
+          <span style={{ marginLeft: 14 }}>Manifold Sports</span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              maxWidth: '68%',
+            }}
+          >
+            <span
+              style={{
+                fontSize: scope.label.length > 25 ? 64 : 92,
+                fontWeight: 700,
+                lineHeight: 1.05,
+              }}
+            >
+              {scope.label}
+            </span>
+            <span style={{ color: '#4338ca', fontSize: 37, marginTop: 20 }}>
+              Prediction markets
+            </span>
+          </div>
+          <OgSportGraphic sport={scope.key} scoped />
+        </div>
+        <span style={{ fontSize: 26, color: '#475569' }}>
+          manifold.markets/sports/{scope.key}
+        </span>
+      </div>
+    )
   return (
     <div
       className="flex flex-col bg-indigo-700"

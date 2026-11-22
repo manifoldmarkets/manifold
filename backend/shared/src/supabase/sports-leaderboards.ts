@@ -1,10 +1,16 @@
 import { groupBy } from 'lodash'
+import { isRegisteredSport } from 'common/bdl/registered-sports'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { loadSportsIndex } from 'shared/supabase/sports-index'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
   leaderboardBoardsForMarket,
+  registeredBoardKey,
+  registeredBoardMarker,
+  registeredLeaderboardSport,
+  type RegisteredBoardMarket,
   SPORTS_LEADERBOARD_SIZE,
   SportsLeaderboardEntry,
   SportsLeaderboardKind,
@@ -92,16 +98,42 @@ export async function rebuildSportsLeaderboards(
     throw new Error(
       'sports_leaderboard_positions does not exist; run migration 2026102902 first'
     )
+  if (!isSportsBdlEnabled()) return writeBoards(pg, now, false)
+  return pg.tx(async (tx) => {
+    // Serialize refreshes with both versions of the writer before reading
+    // membership. Readers keep using the previous committed snapshot.
+    await tx.none(
+      'lock table sports_leaderboard_positions in share row exclusive mode'
+    )
+    return writeBoards(tx, now, true)
+  })
+}
+
+async function writeBoards(
+  pg: SupabaseDirectClient,
+  now: number,
+  enhanced: boolean
+) {
   // Not the cached getSportsIndex: its fallback when the tree can't be read
   // (the curated sports alone) would replace whole boards with partial ones.
   const index = await loadSportsIndex(pg)
-  const markets = await pg.manyOrNone<{
-    id: string
-    sports_league: string | null
-    outcome_type: string
-    group_ids: string[]
-  }>(
+  const markets = await pg.manyOrNone<
+    RegisteredBoardMarket & {
+      id: string
+      sports_league: string | null
+      outcome_type: string
+      group_ids: string[]
+    }
+  >(
     `select c.id, c.data->>'sportsLeague' as sports_league, c.outcome_type,
+       ${
+         enhanced
+           ? `c.creator_id as "creatorId", c.data->>'sportsEventId' as "sportsEventId",
+       c.data->>'sportsLeagueKey' as "sportsLeagueKey", c.data->>'sportsProvider' as "sportsProvider",
+       (c.visibility = 'public' and c.deleted is not true and
+         coalesce(c.data->'sportsFixture', 'false'::jsonb) = 'false'::jsonb) as "publicRanked",`
+           : ''
+       }
        array_agg(gc.group_id) as group_ids
      from group_contracts gc
      join contracts c on c.id = gc.contract_id
@@ -122,6 +154,17 @@ export async function rebuildSportsLeaderboards(
       index,
       byGroupId
     )
+    if (enhanced) {
+      const sport = registeredLeaderboardSport(
+        {
+          ...m,
+          sportsLeague: m.sports_league ?? undefined,
+          groupIds: m.group_ids,
+        },
+        index
+      )
+      if (sport) boards.push(registeredBoardKey(sport))
+    }
     // Like the topic leaderboards: polls and bounties don't count for creators.
     const forCreators = m.outcome_type !== 'POLL' && m.outcome_type !== 'BOUNTY'
     for (const board of boards) {
@@ -186,6 +229,8 @@ export async function rebuildSportsLeaderboards(
           )
           .filter((e) => Number.isFinite(e.score)),
       }))
+      if (enhanced)
+        rows.push({ sport: registeredBoardMarker, kind: 'profit', entries: [] })
       await tx.none(`delete from sports_leaderboards`)
       await tx.none(
         `insert into sports_leaderboards (sport, kind, entries, updated_time)
@@ -196,7 +241,29 @@ export async function rebuildSportsLeaderboards(
       return rows.length
     })
   } catch (e) {
-    if (e instanceof NothingToRank) return 0
+    if (e instanceof NothingToRank) {
+      if (enhanced) {
+        // The old writer deliberately keeps its previous boards on an empty
+        // ranking pass. Expire only this version's positive membership.
+        await pg.tx(async (tx) => {
+          await tx.none(
+            `delete from sports_leaderboard_positions where starts_with(board, $1)`,
+            [registeredBoardMarker]
+          )
+          await tx.none(
+            `delete from sports_leaderboards where starts_with(sport, $1)`,
+            [registeredBoardMarker]
+          )
+          await tx.none(
+            `insert into sports_leaderboards(sport,kind,entries,updated_time)
+            select $1,'profit','[]'::jsonb,max(updated_time) from sports_leaderboards
+            having count(*) > 0`,
+            [registeredBoardMarker]
+          )
+        })
+      }
+      return 0
+    }
     throw e
   }
 }
@@ -206,25 +273,25 @@ const UNDEFINED_TABLE = '42P01'
 // A board's two kinds with the rebuild time, and the user's place on each
 // ($2, or null for none) with how many are ranked there. One statement, so
 // the boards and the place come from the same rebuild.
-const BOARDS_AND_PLACES = `
+const boardsAndPlaces = (selected: string) => `
   select b.built, k.kind, l.entries, p.rank, p.score,
     case when p.user_id is null then null else (
       select count(*) from sports_leaderboard_positions c
-      where c.board = $1 and c.kind = k.kind
+      where c.board = ${selected} and c.kind = k.kind
     ) end::int as of
   from (select max(updated_time) as built from sports_leaderboards) b
   cross join (values ('profit'), ('creator')) k(kind)
-  left join sports_leaderboards l on l.sport = $1 and l.kind = k.kind
+  left join sports_leaderboards l on l.sport = ${selected} and l.kind = k.kind
   left join sports_leaderboard_positions p
-    on p.board = $1 and p.kind = k.kind and p.user_id = $2`
+    on p.board = ${selected} and p.kind = k.kind and p.user_id = $2`
 
 // The same without places, from before their migration.
-const BOARDS = `
+const boards = (selected: string) => `
   select b.built, k.kind, l.entries,
     null::int as rank, null::numeric as score, null::int as of
   from (select max(updated_time) as built from sports_leaderboards) b
   cross join (values ('profit'), ('creator')) k(kind)
-  left join sports_leaderboards l on l.sport = $1 and l.kind = k.kind`
+  left join sports_leaderboards l on l.sport = ${selected} and l.kind = k.kind`
 
 const missingTable = (e: unknown) =>
   (e as { code?: string }).code === UNDEFINED_TABLE
@@ -244,7 +311,16 @@ export async function getSportsLeaderboards(
     creator: [],
     updatedTime: null,
   }
-  const read = (sql: string) =>
+  const enhanced = isSportsBdlEnabled() && isRegisteredSport(board)
+  // One statement reads the marker, entries and rank from the same snapshot.
+  // Before the first new rebuild, or after a legacy worker rebuilds, normal
+  // keys are the only complete snapshot available.
+  const boardQuery = (query: (selected: string) => string) =>
+    enhanced
+      ? `with requested as (select case when exists (select 1 from sports_leaderboards where sport=$3 and kind='profit') then $4 else $1 end as key)
+        ${query('(select key from requested)')}`
+      : query('$1')
+  const read = (sql: (selected: string) => string) =>
     pg.manyOrNone<{
       built: Date | null
       kind: string
@@ -252,11 +328,21 @@ export async function getSportsLeaderboards(
       rank: number | null
       score: string | null
       of: number | null
-    }>(sql, [board, userId ?? null])
-  const rows = await read(BOARDS_AND_PLACES)
+    }>(
+      boardQuery(sql),
+      enhanced
+        ? [
+            board,
+            userId ?? null,
+            registeredBoardMarker,
+            registeredBoardKey(board),
+          ]
+        : [board, userId ?? null]
+    )
+  const rows = await read(boardsAndPlaces)
     .catch((e) => {
       // Before migration 2026102902: the boards, with no places.
-      if (missingTable(e)) return read(BOARDS)
+      if (missingTable(e)) return read(boards)
       throw e
     })
     .catch((e) => {

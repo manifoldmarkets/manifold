@@ -1,3 +1,7 @@
+import { isRegisteredSport } from './bdl/registered-sports'
+import { officialBdlLeague } from './sports-league-label'
+import { SPORT_LEAGUE_LABEL } from './sports-calendar'
+import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import { uniq } from 'lodash'
 import {
   AnySportKey,
@@ -91,4 +95,58 @@ export function leaderboardBoardsForMarket(
     ...(sport ? [sport] : []),
     ...market.groupIds.flatMap((id) => byGroupId.get(id) ?? []),
   ])
+}
+
+// Internal storage keys are outside the public sport-key alphabet. This keeps
+// ordinary boards available while workers on either side of rollout coexist.
+export const registeredBoardKey = (sport: string) => `registry:${sport}`
+export const registeredBoardMarker = 'registry:'
+
+export type RegisteredBoardMarket = Parameters<typeof officialBdlLeague>[0] & {
+  publicRanked: boolean
+  groupIds: readonly string[]
+}
+
+/** Resolve the public sport board independently of an official market's title. */
+export function registeredLeaderboardSport(
+  market: RegisteredBoardMarket,
+  index: SportsIndex
+) {
+  if (
+    !market.publicRanked ||
+    market.sportsFixture ||
+    market.sportsEventId?.startsWith('fixture:')
+  )
+    return
+  const declaresBdl =
+    market.sportsEventId?.startsWith('bdl:') ||
+    (market.sportsProvider === 'bdl' &&
+      !market.sportsEventId?.startsWith('bdl-f1'))
+  let sport: string | undefined
+  if (declaresBdl && MANIFOLD_SPORTS_USER_IDS.includes(market.creatorId)) {
+    const league = officialBdlLeague(market)
+    if (!league) return
+    const label = market.sportsLeague?.trim().toLowerCase()
+    if (
+      label &&
+      ![
+        SPORT_LEAGUE_LABEL[league.sportId],
+        league.label,
+        league.shortLabel,
+      ].some((value) => value.toLowerCase() === label) &&
+      sportForMarket({ sportsLeague: label }) !== league.sportKey
+    )
+      return
+    sport = league.sportKey
+  } else {
+    sport = leaderboardSportForMarket(
+      declaresBdl ? { groupIds: market.groupIds } : market,
+      index
+    )
+  }
+  return sport &&
+    isRegisteredSport(sport) &&
+    index.sports.some((s) => s.key === sport)
+    ? sport
+    : undefined
 }

@@ -40,6 +40,7 @@ let db: PGlite
 
 // pg-promise formats the placeholders (arrays, jsonb, dates) as it would
 // in production; PGlite executes the result.
+let transactionDepth = 0
 const client = {
   manyOrNone: async (sql: string, params: unknown[]) =>
     (await db.query(pgp.as.format(sql, params))).rows,
@@ -53,14 +54,19 @@ const client = {
     await db.exec(pgp.as.format(sql, params))
   },
   tx: async <T>(fn: (tx: unknown) => Promise<T>) => {
-    await db.exec('begin')
+    const nested = transactionDepth++ > 0
+    await db.exec(nested ? 'savepoint nested_rebuild' : 'begin')
     try {
       const result = await fn(client)
-      await db.exec('commit')
+      await db.exec(nested ? 'release savepoint nested_rebuild' : 'commit')
       return result
     } catch (e) {
-      await db.exec('rollback')
+      await db.exec(
+        nested ? 'rollback to savepoint nested_rebuild' : 'rollback'
+      )
       throw e
+    } finally {
+      transactionDepth--
     }
   },
 }
@@ -135,7 +141,7 @@ beforeAll(async () => {
     );
     create table contracts (
       id text primary key, token text not null, outcome_type text not null,
-      creator_id text not null, data jsonb not null
+      creator_id text not null, data jsonb not null, visibility text not null default 'public', deleted boolean
     );
     create table user_contract_metrics (
       user_id text not null, contract_id text not null, answer_id text,
@@ -257,6 +263,91 @@ beforeAll(async () => {
   ])
 })
 
+it('uses registered family boards only for eligible public markets, preserving the legacy snapshot on disable', async () => {
+  const old = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  const id = 'series-identity'
+  const data = {
+    sportsLeague: 'CS2',
+    sportsProvider: 'bdl',
+    sportsEventId: 'bdl:cs:772',
+    sportsLeagueKey: 'cs',
+    uniqueBettorCount: 4,
+  }
+  try {
+    delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    await db.query(
+      "insert into groups(id,slug,name) values('gaming','esports','Esports')"
+    )
+    await db.query(
+      "insert into group_groups(top_id,bottom_id) values($1,'gaming')",
+      [SPORTS_DEFAULT_GROUP_ID]
+    )
+    await addMarkets([
+      { id, creator: BOT, traders: 4, topics: [SPORTS_DEFAULT_GROUP_ID] },
+    ])
+    await db.query('update contracts set data=$2 where id=$1', [
+      id,
+      JSON.stringify(data),
+    ])
+    await addProfits([['alice', id, 30]])
+    await rebuildSportsLeaderboards(pg, NOW)
+    const oldBoard = await getSportsLeaderboards(pg, 'esports', 'alice')
+    expect(oldBoard.profit).toEqual([])
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+    expect(await getSportsLeaderboards(pg, 'esports', 'alice')).toEqual(
+      oldBoard
+    )
+    await rebuildSportsLeaderboards(pg, NOW)
+    const active = await getSportsLeaderboards(pg, 'esports', 'alice')
+    expect(active.profit).toEqual([{ userId: 'alice', score: 30 }])
+    expect(active.you?.profit).toMatchObject({ rank: 1, score: 30, of: 1 })
+    delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    expect(await getSportsLeaderboards(pg, 'esports', 'alice')).toEqual(
+      oldBoard
+    )
+    process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+    for (const change of [
+      { visibility: 'private' },
+      { visibility: 'unlisted' },
+      { deleted: true },
+      { token: 'CASH' },
+      { metadata: { sportsFixture: true } },
+      { metadata: { sportsProvider: 'odds' } },
+      { metadata: { sportsLeagueKey: 'dota' } },
+      { metadata: { sportsLeague: 'NBA' } },
+      { metadata: { isRanked: false } },
+      { creator: 'carol' },
+      { metadata: { sportsEventId: 'bdl:cs:0' } },
+    ]) {
+      await db.query(
+        'update contracts set visibility=$2,deleted=$3,token=$4,creator_id=$5,data=$6 where id=$1',
+        [
+          id,
+          change.visibility ?? 'public',
+          change.deleted ?? false,
+          change.token ?? 'MANA',
+          change.creator ?? BOT,
+          JSON.stringify({ ...data, ...change.metadata }),
+        ]
+      )
+      await rebuildSportsLeaderboards(pg, NOW + 1)
+      const removed = await getSportsLeaderboards(pg, 'esports', 'alice')
+      expect(removed.profit).toEqual([])
+      expect(removed.you?.profit).toBeNull()
+    }
+  } finally {
+    if (old === undefined) delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = old
+    await db.query('delete from user_contract_metrics where contract_id=$1', [
+      id,
+    ])
+    await db.query('delete from group_contracts where contract_id=$1', [id])
+    await db.query('delete from contracts where id=$1', [id])
+    await db.exec(
+      "delete from group_groups where bottom_id='gaming';delete from groups where id='gaming';delete from sports_leaderboards;delete from sports_leaderboard_positions"
+    )
+  }
+})
 afterAll(async () => {
   await db.close()
 })
@@ -393,6 +484,33 @@ describe('sports leaderboards', () => {
       profit: { rank: 2, score: 100, of: 4 },
       creator: null,
     })
+  })
+
+  it('expires registered boards and personal places when all eligible membership disappears', async () => {
+    const old = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    try {
+      process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
+      await db.query("insert into group_contracts values ($1, 'nfl1')", [NFL])
+      await rebuildSportsLeaderboards(pg, NOW + 1000)
+      const before = await getSportsLeaderboards(pg, 'nfl', 'alice')
+      expect(before.profit).toEqual([
+        { userId: 'bob', score: 200 },
+        { userId: 'alice', score: 100 },
+      ])
+      await db.query(
+        "delete from group_contracts where group_id=$1 and contract_id='nfl1'",
+        [NFL]
+      )
+      expect(await rebuildSportsLeaderboards(pg, NOW + 2000)).toBe(0)
+      const after = await getSportsLeaderboards(pg, 'nfl', 'alice')
+      expect(after.profit).toEqual([])
+      expect(after.you?.profit).toBeNull()
+      delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+      expect(await getSportsLeaderboards(pg, 'nfl', 'alice')).toEqual(before)
+    } finally {
+      if (old === undefined) delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+      else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = old
+    }
   })
 
   it("keeps the boards it has when the topic tree can't be read", async () => {

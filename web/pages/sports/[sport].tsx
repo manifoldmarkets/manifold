@@ -1,3 +1,10 @@
+import type { NextPageContext } from 'next'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { OG_CARD_HEIGHT, OG_CARD_WIDTH } from 'common/edge/og'
+import {
+  loadSportsSharingScope,
+  type SportsSharingScope,
+} from 'web/lib/sports-og'
 import { keyBy, uniq } from 'lodash'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -31,7 +38,11 @@ import { useUser } from 'web/hooks/use-user'
  * One sport: its games match by match, each with the markets on it, and a
  * tab for everything else (futures, trending, this week's other markets).
  */
-export default function SportPage() {
+export default function SportPage({
+  sharingScope = null,
+}: {
+  sharingScope?: SportsSharingScope | null
+}) {
   const user = useUser()
   useSaveReferral(user)
   const router = useRouter()
@@ -150,6 +161,14 @@ export default function SportPage() {
           ? `Live odds on every ${sport.label} game, plus props, futures and side-bets.`
           : '',
         url: key ? sportPath(key) : '/sports',
+        ...(sharingScope &&
+          sharingScope.key === key && {
+            title: `${sharingScope.label} games and markets`,
+            description: `Explore ${sharingScope.label} prediction markets on Manifold.`,
+            ogProps: { endpoint: 'sports', props: { sport: sharingScope.key } },
+            imageSize: { width: OG_CARD_WIDTH * 2, height: OG_CARD_HEIGHT * 2 },
+            imageAlt: `${sharingScope.label} prediction markets on Manifold Sports.`,
+          }),
       }}
       trackPageView={`/sports/${key ?? ''}`}
     >
@@ -203,4 +222,12 @@ export default function SportPage() {
       />
     </SportsShell>
   )
+}
+
+// With rollout off the original statically optimized page has no data method.
+// On, initial props make the canonical card available in crawler HTML too.
+if (isSportsBdlEnabled()) {
+  SportPage.getInitialProps = async ({ query }: NextPageContext) => ({
+    sharingScope: await loadSportsSharingScope(query.sport),
+  })
 }
