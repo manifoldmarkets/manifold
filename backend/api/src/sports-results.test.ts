@@ -1,4 +1,3 @@
-import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import {
@@ -14,6 +13,14 @@ jest.mock('shared/supabase/init', () => ({
 }))
 jest.setTimeout(60_000)
 const pgp = pgPromise()
+type TestDatabase = {
+  query(sql: string): Promise<{ rows: Record<string, unknown>[] }>
+  exec(sql: string): Promise<unknown>
+  close(): Promise<void>
+}
+const { PGlite } = jest.requireActual<{ PGlite: new () => TestDatabase }>(
+  '@electric-sql/pglite'
+)
 const db = new PGlite()
 const read = (props: SportsResultsProps) =>
   readSportsResults(
