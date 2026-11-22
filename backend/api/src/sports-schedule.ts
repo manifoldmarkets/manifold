@@ -86,14 +86,15 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   const requestTime = Date.now()
   const index = await getSportsIndex(pg, requestTime)
   const readMarkets = async (db: Pg, now: number) => {
+    const observedAt = observed ? new Date(now) : undefined
     const [teams, weekAll, racing, championships] = await Promise.all([
       isSportsBdlEnabled()
         ? getOfficialGames(db, index, daysAhead, now, observed)
         : getLegacyOfficialGames(db, index, daysAhead, now),
-      getUpcomingMarkets(db, index),
-      getRaceWeekends(db, raceDays, now),
+      getUpcomingMarkets(db, index, observedAt),
+      getRaceWeekends(db, raceDays, now, observedAt),
       sport === 'f1' && !cursor && !props.topic
-        ? getRaceChampionships(db, index, now)
+        ? getRaceChampionships(db, index, now, observedAt)
         : Promise.resolve([]),
     ])
     return { now, teams, weekAll, racing, championships }
@@ -106,10 +107,13 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     championships,
   } = observed
     ? await pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
-        // BEGIN alone does not establish a repeatable-read snapshot. Pin it
-        // before sampling the clock used for scan bounds and public deadlines.
-        await tx.one('select pg_current_snapshot() is not null as pinned')
-        return readMarkets(tx, Date.now())
+        // Returning the pinned snapshot to Node can take longer than a live
+        // receipt has left. Read its projection clock in the same statement.
+        const { observed_at } = await tx.one<{ observed_at: number }>(
+          `select floor(extract(epoch from clock_timestamp()) * 1000)::float8 as observed_at
+           from pg_current_snapshot()`
+        )
+        return readMarkets(tx, observed_at)
       })
     : await readMarkets(pg, requestTime)
   const horizon = now + daysAhead * DAY_MS
@@ -171,7 +175,11 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     // Markets linked to a game go under it, where their creator put them.
     // A market linked to anything is left out of the team-name
     // matching, so it can't be guessed onto another game.
-    const allCandidates = await getRelatedCandidates(pg, index)
+    const allCandidates = await getRelatedCandidates(
+      pg,
+      index,
+      observed ? new Date(now) : undefined
+    )
     // An F1 session's markets are parents too: a market linked to one goes
     // under its session.
     const sessionMarketIds = weekends.flatMap((w) =>
@@ -644,7 +652,13 @@ async function getOfficialGames(
 const RACE_LOOKBACK_HOURS = 96
 const MAX_RACE_MARKETS = 100
 
-async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
+async function getRaceWeekends(
+  pg: Pg,
+  daysAhead: number,
+  now: number,
+  observedAt?: Date
+) {
+  const clock = observedAt ? '$3::timestamptz' : 'now()'
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -654,11 +668,15 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
        and visibility = 'public'
        and coalesce(deleted, false) = false
        and resolution is distinct from 'CANCEL'
-       and close_time > now() - interval '${RACE_LOOKBACK_HOURS} hours'
-       and close_time < now() + ($1 || ' days')::interval + interval '1 day'
+       and close_time > ${clock} - interval '${RACE_LOOKBACK_HOURS} hours'
+       and close_time < ${clock} + ($1 || ' days')::interval + interval '1 day'
      order by close_time asc
      limit ${MAX_RACE_MARKETS}`,
-    [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
+    [
+      String(daysAhead),
+      MANIFOLD_SPORTS_USER_IDS,
+      ...(observedAt ? [observedAt] : []),
+    ]
   )
   const full = rows.map((r) => convertContract(r))
   const contracts = full.map((c) => c as RaceContract)
@@ -682,7 +700,12 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
 // topics about F1 and a championship. Which ones count, and the pick of
 // each kind, is pickRaceChampionships. The order by repeats the test for
 // ours: Postgres can't read an output column's name inside an expression.
-async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
+async function getRaceChampionships(
+  pg: Pg,
+  index: SportsIndex,
+  now: number,
+  observedAt?: Date
+) {
   const rows = await pg.manyOrNone<{
     id: string
     question: string
@@ -705,7 +728,7 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
        and c.visibility = 'public'
        and coalesce(c.deleted, false) = false
        and c.resolution is null
-       and c.close_time > now()
+       and c.close_time > ${observedAt ? '$5::timestamptz' : 'now()'}
        and c.outcome_type = 'MULTIPLE_CHOICE'
        and c.question ~* $2
        and c.question ~* $3
@@ -718,6 +741,7 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
       '(champion|\\mwdc\\M|\\mwcc\\M)',
       '(formula (1|one)|\\mf1\\M)',
       MANIFOLD_SPORTS_USER_IDS,
+      ...(observedAt ? [observedAt] : []),
     ]
   )
   return pickRaceChampionships(
@@ -768,10 +792,12 @@ async function getGroupIds(
 // games still show their "first to score"-style props.
 async function getRelatedCandidates(
   pg: Pg,
-  index: SportsIndex
+  index: SportsIndex,
+  observedAt?: Date
 ): Promise<RelatedCandidate[]> {
   return querySportsMarkets(pg, index, {
     groupIds: index.allGroupIds,
+    observedAt,
     closeFrom: `-${FINISHED_GRACE_HOURS} hours`,
     closeTo: '45 days',
     orderBy: 'importance',
@@ -784,10 +810,12 @@ async function getRelatedCandidates(
 // sport is open; the response is filtered down afterwards.
 async function getUpcomingMarkets(
   pg: Pg,
-  index: SportsIndex
+  index: SportsIndex,
+  observedAt?: Date
 ): Promise<(UpcomingMarketRef & { groupIds: string[] })[]> {
   const rows = await querySportsMarkets(pg, index, {
     groupIds: index.allGroupIds,
+    observedAt,
     closeFrom: '0 seconds',
     closeTo: `${UPCOMING_DAYS} days`,
     orderBy: 'close',
@@ -808,13 +836,15 @@ async function querySportsMarkets(
   index: SportsIndex,
   opts: {
     groupIds: string[]
-    /** Postgres interval strings relative to now(). */
+    observedAt?: Date
+    /** Postgres interval strings relative to the projection clock. */
     closeFrom: string
     closeTo: string
     orderBy: 'importance' | 'close'
     limit: number
   }
 ): Promise<(RelatedCandidate & { groupIds: string[] })[]> {
+  const clock = opts.observedAt ? '$5::timestamptz' : 'now()'
   const order =
     opts.orderBy === 'close' ? 'c.close_time asc' : 'c.importance_score desc'
   const rows = await pg.manyOrNone<{
@@ -845,11 +875,17 @@ async function querySportsMarkets(
        and coalesce(c.deleted, false) = false
        and c.resolution is null
        and c.outcome_type = any($4::text[])
-       and c.close_time > now() + $2::interval
-       and c.close_time < now() + $3::interval
+       and c.close_time > ${clock} + $2::interval
+       and c.close_time < ${clock} + $3::interval
      order by ${order}
      limit ${opts.limit}`,
-    [opts.groupIds, opts.closeFrom, opts.closeTo, MARKET_OUTCOME_TYPES]
+    [
+      opts.groupIds,
+      opts.closeFrom,
+      opts.closeTo,
+      MARKET_OUTCOME_TYPES,
+      ...(opts.observedAt ? [opts.observedAt] : []),
+    ]
   )
   return rows.map((r) => {
     // API callers can set sports metadata. Only pipeline-owned markets may

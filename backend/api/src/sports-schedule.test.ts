@@ -74,7 +74,8 @@ type MarketRow = (typeof props)[number] & { sports_league?: string | null }
 let marketRows: MarketRow[] = props
 let liveRows: typeof officialRows
 let resumedRows: { data: Record<string, unknown> }[] = []
-let onPinSnapshot: (() => void) | undefined
+let onPinSnapshot: (() => number) | undefined
+let scheduleBounds: { sql: string; params: unknown[] }[] = []
 let officialPages: number[] = []
 let officialRows: { data: Record<string, unknown> }[] = official
 let answerRows: Record<string, unknown>[] = []
@@ -108,6 +109,7 @@ beforeEach(() => {
   officialRows = official
   officialPages = []
   onPinSnapshot = undefined
+  scheduleBounds = []
   liveRows = []
   resumedRows = []
   answerRows = []
@@ -125,9 +127,9 @@ beforeEach(() => {
       ) => Promise<unknown>
     ) => work(createSupabaseDirectClient()),
     one: async (sql: string, params: [string[], ...unknown[]]) => {
-      if (sql === 'select pg_current_snapshot() is not null as pinned') {
-        onPinSnapshot?.()
-        return { pinned: true }
+      if (sql.includes('from pg_current_snapshot()')) {
+        expect(sql).toContain('clock_timestamp()')
+        return { observed_at: onPinSnapshot?.() ?? Date.now() }
       }
       expect(sql).toContain('with eligible_links')
       expect(sql).toContain('as with_parents')
@@ -140,6 +142,12 @@ beforeEach(() => {
       }
     },
     manyOrNone: async (sql: string, params: unknown[]) => {
+      if (
+        sql.includes("like 'bdl-f1:%'") ||
+        sql.includes('as bettors') ||
+        sql.includes('select c.id, c.question')
+      )
+        scheduleBounds.push({ sql, params })
       if (linksMissing && sql.includes('market_links'))
         throw new Error('relation "market_links" does not exist')
       if (sql.includes('from market_links l')) {
@@ -1291,7 +1299,7 @@ it('discards an impossible future receipt without inferring live activity before
   expect(observed.liveExpiries).toEqual([])
 })
 
-it('uses the clock after pinning the snapshot for concurrent newer receipts and their deadlines', async () => {
+it('keeps the SQL snapshot time when a pinned live receipt expires before Node receives the result', async () => {
   const startedAt = Date.now()
   const received = startedAt + 250
   const clock = jest.spyOn(Date, 'now').mockReturnValue(startedAt)
@@ -1313,7 +1321,8 @@ it('uses the clock after pinning the snapshot for concurrent newer receipts and 
     },
   ]
   onPinSnapshot = () => {
-    clock.mockReturnValue(received)
+    clock.mockReturnValue(received + 600001)
+    return received
   }
   const get = sportsSchedule as (
     p: Parameters<typeof sportsSchedule>[0]
@@ -1416,3 +1425,33 @@ it('ends traditional suspended membership at the indexed close window even with 
   expect(previous.membershipExpiries).toEqual([[now + 14 * hour, 'nfl', 1]])
   expect(response.liveExpiries).toEqual([])
 })
+
+it.each([true, false])(
+  'uses one observed instant for weekly markets, linked candidates, F1 weekends and titles (opt-in=%s)',
+  async (observedGames) => {
+    const projection = Date.now() + 1500
+    onPinSnapshot = () => projection
+    const get = sportsSchedule as (
+      p: Parameters<typeof sportsSchedule>[0]
+    ) => ReturnType<typeof sportsSchedule>
+    const raw = await get({ sport: 'f1', observedGames })
+    const page = 'result' in raw ? raw.result : raw
+    if (observedGames) expect(page.snapshotTime).toBe(projection)
+    expect(scheduleBounds).toHaveLength(4)
+    for (const { sql, params } of scheduleBounds) {
+      const race = sql.includes("like 'bdl-f1:%'")
+      const title = sql.includes('as bettors')
+      const field = race ? 'close_time' : 'c.close_time'
+      const expr = observedGames
+        ? race
+          ? '$3::timestamptz'
+          : '$5::timestamptz'
+        : 'now()'
+      expect(sql).toContain(field + ' > ' + expr)
+      if (!title) expect(sql).toContain(field + ' < ' + expr)
+      if (observedGames)
+        expect(params[params.length - 1]).toEqual(new Date(projection))
+      else expect(params.some((p) => p instanceof Date)).toBe(false)
+    }
+  }
+)
