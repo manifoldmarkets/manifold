@@ -155,36 +155,54 @@ begin
 end
 $$;
 
--- A BEFORE row trigger saves OLD immediately before the change. All changes
--- in a writable WITH share a snapshot, so one sub-statement cannot change a
--- row inserted by another. Each OLD image is from before the statement and
--- precedes every AFTER statement marker, even when a bet_id is reused.
--- ON CONFLICT DO UPDATE takes the BEFORE UPDATE path for the conflicting row.
--- We have no BEFORE INSERT journal trigger. Across statements, an earlier
--- insert's marker already exists and wins the conflict with a later image.
--- The only other BEFORE row trigger, contract_bet_populate, always returns
--- NEW, so no subsequent trigger can skip a row after we save its image.
-create or replace function user_stats_save_old_bet () returns trigger language plpgsql as $$
+-- The first journal entry for an id wins. Save the old image before its id
+-- is freed, and mark a backdated insert or move before a nested statement can
+-- update or delete it. contract_bet_populate, the other row trigger, returns new.
+create or replace function user_stats_journal_bet () returns trigger language plpgsql as $$
 begin
-  insert into user_stats_bet_journal (
-    bet_id, user_id, contract_id, created_time, existed,
-    amount, is_redemption, is_api, is_auto_redemption
-  ) values (
-    old.bet_id, old.user_id, old.contract_id, old.created_time, true,
-    old.amount, old.is_redemption, old.is_api,
-    coalesce(old.data ->> 'isAutoRedemption' = 'true', false)
-  )
-  on conflict (bet_id) do nothing;
-
-  if tg_op = 'UPDATE' then
-    return new;
+  if tg_op <> 'INSERT' and old.created_time <= user_stats_bet_bound() then
+    insert into user_stats_bet_journal (
+      bet_id, user_id, contract_id, created_time, existed,
+      amount, is_redemption, is_api, is_auto_redemption
+    ) values (
+      old.bet_id, old.user_id, old.contract_id, old.created_time, true,
+      old.amount, old.is_redemption, old.is_api,
+      coalesce(old.data ->> 'isAutoRedemption' = 'true', false)
+    )
+    on conflict (bet_id) do nothing;
   end if;
-  return old;
+
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  if new.created_time <= user_stats_bet_bound() then
+    if tg_op = 'INSERT' then
+      -- A row with this id already there means this insert either fails on
+      -- the key or takes the upsert update path, whose before update trigger
+      -- saves that row's image: no marker. The lock makes that exact. A
+      -- concurrent delete of the row holds a conflicting lock, so this waits;
+      -- after it commits, read committed finds no row and writes the marker
+      -- (serializable fails to serialize and retries). A row found stays
+      -- locked, so it can't be deleted and its id reused by this insert.
+      perform 1 from contract_bets where bet_id = new.bet_id for key share;
+      if found then
+        return new;
+      end if;
+    end if;
+    insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
+    values (new.bet_id, new.user_id, new.contract_id, new.created_time, false)
+    on conflict (bet_id) do nothing;
+  end if;
+  return new;
 end
 $$;
 
 create or replace function user_stats_bets_inserted () returns trigger language plpgsql as $$
 begin
+  -- A backstop for the before insert marker, for rows actually inserted (an
+  -- upsert that took the update path isn't in new_bets). It adds nothing in
+  -- any case we know of, and new bets are never at or before the bound.
   insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
   select n.bet_id, n.user_id, n.contract_id, n.created_time, false
   from new_bets n
@@ -213,13 +231,6 @@ $$;
 -- and write nothing.
 create or replace function user_stats_bets_updated () returns trigger language plpgsql as $$
 begin
-  -- A new id or a later bet moved back before the bound needs a marker.
-  insert into user_stats_bet_journal (bet_id, user_id, contract_id, created_time, existed)
-  select n.bet_id, n.user_id, n.contract_id, n.created_time, false
-  from new_bets n
-  where n.created_time <= user_stats_bet_bound()
-  on conflict (bet_id) do nothing;
-
   insert into user_stats as s (user_id, trades, updated_time)
   select d.user_id, sum(d.trades), now()
   from (
@@ -275,26 +286,33 @@ $$;
 
 -- create or replace (not drop and create): running this file again needs
 -- only the share row exclusive lock taken above.
--- The bound goes into the two WHEN clauses as a literal. PostgreSQL doesn't
+-- The bound goes into every WHEN clause as a literal. PostgreSQL doesn't
 -- plan a trigger's WHEN, so calling user_stats_bet_bound() there would run
--- the SQL function for every updated or deleted bet, not only old ones
+-- the SQL function even for new bets outside the journal's range
 -- (measured: cancelling 5,000 new orders went from 160 ms to 262 ms).
 do $$
 declare
   b timestamptz := user_stats_bet_bound();
 begin
   execute format(
+    'create or replace trigger user_stats_before_bet_insert '
+    'before insert on contract_bets '
+    'for each row when (new.created_time <= %L::timestamptz) '
+    'execute function user_stats_journal_bet ()',
+    b
+  );
+  execute format(
     'create or replace trigger user_stats_before_bet_update '
     'before update on contract_bets '
-    'for each row when (old.created_time <= %L::timestamptz) '
-    'execute function user_stats_save_old_bet ()',
-    b
+    'for each row when (old.created_time <= %L::timestamptz or new.created_time <= %L::timestamptz) '
+    'execute function user_stats_journal_bet ()',
+    b, b
   );
   execute format(
     'create or replace trigger user_stats_before_bet_delete '
     'before delete on contract_bets '
     'for each row when (old.created_time <= %L::timestamptz) '
-    'execute function user_stats_save_old_bet ()',
+    'execute function user_stats_journal_bet ()',
     b
   );
 end
