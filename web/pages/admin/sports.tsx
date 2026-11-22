@@ -1706,8 +1706,9 @@ function SportsAdmin() {
         {/* ── 4. Market Status Monitor ── */}
         <Section title="4. Market Status">
           <Col className="gap-3">
-            <Row className="items-center gap-3">
+            <Row className="flex-wrap items-center gap-3">
               <ChoicesToggleGroup
+                className="max-w-full flex-wrap"
                 currentChoice={marketFilter}
                 choicesMap={{
                   All: 'ALL',
