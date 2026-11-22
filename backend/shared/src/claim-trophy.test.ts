@@ -5,7 +5,8 @@
 // here, with the real starter count, tier multiplier and payout
 // (runTxnOutsideBetQueue). Their SQL runs, as pg-promise formats it, in an
 // in-memory PostgreSQL built from the two trophy migrations plus minimal
-// users, contracts, contract_bets, txns and user_entitlements tables. A
+// users, contracts, contract_bets, txns, user_entitlements, leagues and
+// leagues_season_end_times tables. A
 // transaction that fails is rolled back. No live database or network is used.
 import { PGlite } from '@electric-sql/pglite'
 import * as fs from 'fs'
@@ -155,8 +156,20 @@ beforeAll(async () => {
       metadata jsonb,
       primary key (user_id, entitlement_id)
     );
+    create table leagues_season_end_times (
+      season integer primary key,
+      status text not null
+    );
+    create table leagues (
+      season integer not null,
+      division integer not null,
+      cohort text not null,
+      user_id text not null,
+      primary key (user_id, season)
+    );
     insert into contracts values
       ('m1', 'MANA'), ('m2', 'MANA'), ('m3', 'MANA'), ('cash1', 'CASH');
+    insert into leagues_season_end_times values (11, 'complete'), (12, 'active');
   `)
   const dir = path.resolve(__dirname, '../../supabase/migrations')
   for (const file of MIGRATIONS) {
@@ -184,6 +197,7 @@ beforeEach(async () => {
     delete from contract_bets;
     delete from user_entitlements;
     delete from users;
+    delete from leagues;
   `)
   jest.mocked(broadcastUserUpdates).mockClear()
 })
@@ -550,6 +564,18 @@ describe('showcase pins', () => {
       code: 400,
     })
     expect(await savedPins('u')).toEqual(['trophy-starter-trades'])
+  })
+
+  it("returns the current season's league with the pins", async () => {
+    await addUser('u')
+    await addUser('newcomer')
+    await rows(
+      `insert into leagues (season, division, cohort, user_id) values
+        (11, 4, 'c1', 'u'), (12, 2, 'c2', 'u'), (11, 3, 'c3', 'newcomer')`
+    )
+    expect((await trophiesOf('u')).league).toEqual({ season: 12, division: 2 })
+    // A league last season only: none this season.
+    expect((await trophiesOf('newcomer')).league).toBeNull()
   })
 
   it("refuses pins for another account's profile", async () => {
