@@ -34,6 +34,6 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
     const rewarded = isStarterAccount
       ? await getRewardedMilestones(tx, userId)
       : []
-    return { claims, pins, league, starter, rewarded }
+    return { claims, pins, league, season, starter, rewarded }
   })
 }

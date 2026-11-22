@@ -577,6 +577,8 @@ describe('showcase pins', () => {
     expect((await trophiesOf('u')).league).toEqual({ season: 12, division: 2 })
     // A league last season only: none this season.
     expect((await trophiesOf('newcomer')).league).toBeNull()
+    // The season the league was read for, even without one.
+    expect((await trophiesOf('newcomer')).season).toBe(12)
   })
 
   it("refuses pins for another account's profile", async () => {

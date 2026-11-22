@@ -3305,6 +3305,8 @@ export const API = (_apiTypeCheck = {
       // []: the user removed every pin.
       pins: string[] | null
       league: Pick<League, 'season' | 'division'> | null
+      // Effective season used for the league lookup, even when league is null.
+      season: number
       // Counts for the "Getting started" trophies, or null for accounts that
       // don't get them (see isStarterTrophyAccount).
       starter: StarterStats | null
