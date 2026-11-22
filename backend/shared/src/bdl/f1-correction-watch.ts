@@ -111,15 +111,30 @@ export async function runF1CorrectionWatch(
       // A truncated nonempty field can still name a winner; its missing
       // rows alone cannot establish a change to the complete classification.
       const classification = classifications.get(key)
-      const hash =
-        classification && classification.fieldSize >= watch.fieldSize
-          ? classification.baseline
+      // Older watches recorded only the original field size. A prior corrected
+      // digest must be seen again before its size can be recovered safely.
+      const lastSize =
+        watch.observedFieldSize ??
+        (watch.observedHash === watch.baseline ? watch.fieldSize : undefined)
+      const accepted =
+        classification &&
+        classification.fieldSize >= watch.fieldSize &&
+        (lastSize === undefined
+          ? classification.baseline === watch.observedHash
+          : Number.isSafeInteger(lastSize) &&
+            lastSize >= watch.fieldSize &&
+            classification.fieldSize >= lastSize)
+          ? classification
           : undefined
-      const changed = hash !== undefined && hash !== watch.observedHash
+      const changed =
+        accepted !== undefined && accepted.baseline !== watch.observedHash
       const next = {
         ...watch,
         checkedTime: now,
-        observedHash: hash ?? watch.observedHash,
+        ...(accepted && {
+          observedHash: accepted.baseline,
+          observedFieldSize: accepted.fieldSize,
+        }),
         ...(changed && { correctedTime: now }),
       }
       // Concurrent workers may inspect the same session. Only the one that
@@ -147,7 +162,7 @@ export async function runF1CorrectionWatch(
       )
       if (!updated) continue
       result.checked++
-      if (!hash) result.unavailable++
+      if (!accepted) result.unavailable++
       if (changed) {
         result.corrections++
         log.error(

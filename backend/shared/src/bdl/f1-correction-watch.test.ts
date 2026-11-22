@@ -212,6 +212,105 @@ test('parallel workers claim a changed classification once per market; later cor
   expect(sendTextEmail).toHaveBeenCalledTimes(2)
   expect((await get('winner')).resolution).toBe('answer-1')
 })
+test('field growth becomes the minimum for later comparisons and short reads preserve the last accepted evidence', async () => {
+  await insert('race')
+  const larger = rows([1, 2, 3, 4, 5])
+  jest.mocked(getF1SessionResults).mockResolvedValue(larger)
+  expect(await runF1CorrectionWatch(pg, clock)).toEqual({
+    checked: 1,
+    corrections: 1,
+    unavailable: 0,
+  })
+  const changedAt = now
+  now += HOUR_MS
+  jest.mocked(getF1SessionResults).mockResolvedValue(original)
+  expect(await runF1CorrectionWatch(pg, clock)).toEqual({
+    checked: 1,
+    corrections: 0,
+    unavailable: 1,
+  })
+  expect((await get('race')).data.sportsF1Watch).toMatchObject({
+    baseline: hash(original),
+    fieldSize: 4,
+    observedFieldSize: 5,
+    observedHash: hash(larger),
+    correctedTime: changedAt,
+    checkedTime: now,
+  })
+  now += HOUR_MS
+  jest.mocked(getF1SessionResults).mockResolvedValue(larger)
+  expect(await runF1CorrectionWatch(pg, clock)).toEqual({
+    checked: 1,
+    corrections: 0,
+    unavailable: 0,
+  })
+  now += HOUR_MS
+  jest.mocked(getF1SessionResults).mockResolvedValue(rows([2, 1, 3, 4, 5]))
+  expect((await runF1CorrectionWatch(pg, clock)).corrections).toBe(1)
+  expect((await get('race')).resolution).toBe('answer-1')
+  expect(sendTextEmail).toHaveBeenCalledTimes(1)
+})
+
+test('older corrected watches recover a field size only from a matching observed digest', async () => {
+  const larger = rows([1, 2, 3, 4, 5])
+  await insert('older', {
+    sportsF1Watch: {
+      ...stored(),
+      observedHash: hash(larger),
+      correctedTime: resolved,
+    },
+  })
+  expect((await runF1CorrectionWatch(pg, clock)).unavailable).toBe(1)
+  expect((await get('older')).data.sportsF1Watch).not.toHaveProperty(
+    'observedFieldSize'
+  )
+  now += HOUR_MS
+  jest.mocked(getF1SessionResults).mockResolvedValue(larger)
+  expect(await runF1CorrectionWatch(pg, clock)).toEqual({
+    checked: 1,
+    corrections: 0,
+    unavailable: 0,
+  })
+  expect((await get('older')).data.sportsF1Watch).toMatchObject({
+    observedFieldSize: 5,
+    correctedTime: resolved,
+  })
+  now += HOUR_MS
+  jest.mocked(getF1SessionResults).mockResolvedValue(original)
+  expect((await runF1CorrectionWatch(pg, clock)).unavailable).toBe(1)
+  expect(sendTextEmail).not.toHaveBeenCalled()
+})
+
+test('operator sees both scheduling and classification evidence with their own dates, in one row', async () => {
+  const originalReason = 'Session start change requires steward review'
+  const originalSince = resolved - DAY_MS
+  await insert('existing', {
+    sportsAttentionReason: originalReason,
+    sportsAttentionSince: originalSince,
+  })
+  await insert('plain')
+  jest.mocked(getF1SessionResults).mockResolvedValue(changed)
+  expect((await runF1CorrectionWatch(pg, clock)).corrections).toBe(2)
+  const result = (await getSportsAttention(pg, {}, now)).items
+  expect(result).toHaveLength(2)
+  expect(result[0]).toMatchObject({
+    id: 'existing',
+    since: originalSince,
+    reason: `${originalReason} · F1 classification changed after settlement (${new Date(
+      now
+    ).toISOString()})`,
+  })
+  expect(result[1]).toMatchObject({
+    id: 'plain',
+    since: now,
+    reason: 'F1 classification changed after settlement',
+  })
+  expect((await get('existing')).data.sportsAttentionReason).toBe(
+    originalReason
+  )
+  expect((await getSportsAttention(pg, {}, now - 1)).items).toHaveLength(0)
+})
+
 test('gaps, mismatched sessions and invalid classifications do not invent a correction', async () => {
   await insert('race')
   for (const sessions of [

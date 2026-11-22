@@ -459,6 +459,7 @@ export type Sports = {
     resolutionTime: number
     checkedTime: number
     observedHash: string
+    observedFieldSize?: number
     correctedTime?: number
   }
   sportsResultHash?: string

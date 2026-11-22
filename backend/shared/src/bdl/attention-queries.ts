@@ -27,6 +27,7 @@ import { sportsProviderSql } from '../supabase/sports-provider'
 type Row = Omit<SportsAttentionItem, 'href'> & {
   creatorUsername: string | null
   slug: string | null
+  correctionTime: number | null
 }
 type Query = { limit?: number; cursor?: string }
 
@@ -82,8 +83,13 @@ export async function getSportsAttention(
     )} as resumes,
         case when c.close_time > 'epoch' and c.close_time <= timestamptz '275760-09-13 00:00:00+00'
           then floor(extract(epoch from c.close_time) * 1000)::bigint end as close_ms,
-        c.data->>'sportsStartTimestamp' as start_text
+        c.data->>'sportsStartTimestamp' as start_text,
+        case when c.resolution is not null then watch.corrected_ms end as correction_ms
       from contracts c
+      cross join lateral (select case
+        when jsonb_typeof(c.data#>'{sportsF1Watch,correctedTime}')='number'
+          and c.data#>>'{sportsF1Watch,correctedTime}' ~ '^[1-9][0-9]{0,15}$'
+        then (c.data#>>'{sportsF1Watch,correctedTime}')::bigint end as corrected_ms) watch
       where c.creator_id = any($1) and c.token='MANA' and c.visibility='public'
         and (c.resolution is null or (c.resolution <> 'CANCEL'
           and c.data->>'sportsEventId' ~ '^bdl-f1:[1-9][0-9]*:[1-9][0-9]*$'
@@ -92,7 +98,7 @@ export async function getSportsAttention(
           and coalesce(c.data->>'sportsProvider','bdl')='bdl'
           and coalesce(c.data->>'sportsLeagueKey','f1')='f1'
           and c.data->>'sportsMarketType' in ('winner','podium')
-          and jsonb_typeof(c.data#>'{sportsF1Watch,correctedTime}')='number'
+          and watch.corrected_ms between (extract(epoch from c.resolution_time)*1000)::bigint and $2
           and nullif(trim(c.data->>'sportsAttentionReason'),'') is not null))
         and c.deleted is not true
         and c.id ~ '^[a-zA-Z0-9_-]{1,128}$'
@@ -164,7 +170,8 @@ export async function getSportsAttention(
       case when provider in ('odds','bdl','football-data') then provider else 'unknown' end as provider,
       coalesce(nullif(league,''),league_key) as league, coalesce(reason,'Overdue final') as reason,
       case when reason is null then 'overdue' else 'stored' end as source,
-      since::double precision as since, close_ms::double precision as "closeTime"
+      since::double precision as since, close_ms::double precision as "closeTime",
+      correction_ms::double precision as "correctionTime"
     from incidents
     where (reason is not null or since < $2)
       -- A dated incident first seen after this page sequence belongs on the next refresh.
@@ -189,8 +196,17 @@ export async function getSportsAttention(
 
   const items = rows
     .slice(0, limit)
-    .map(({ creatorUsername, slug, ...item }) => ({
+    .map(({ creatorUsername, slug, correctionTime, ...item }) => ({
       ...item,
+      reason:
+        correctionTime &&
+        item.reason !== 'F1 classification changed after settlement'
+          ? `${
+              item.reason
+            } · F1 classification changed after settlement (${new Date(
+              correctionTime
+            ).toISOString()})`
+          : item.reason,
       question: item.question || item.id,
       href:
         creatorUsername &&
