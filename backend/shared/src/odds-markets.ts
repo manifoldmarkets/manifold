@@ -10,8 +10,9 @@
  */
 
 import { groupBy, uniq } from 'lodash'
-import { findOpenSportsCounterpart } from 'shared/sports-market-dedupe'
-import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
+import { reconcileOddsKickoff } from './odds-cutover-resync'
+import { scheduleFetchStartedAt } from './sports-schedule-observation'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, getUser, isProd, log } from 'shared/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
@@ -30,7 +31,6 @@ import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { isMajorLeague } from 'common/bdl/major-leagues'
-import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
@@ -184,6 +184,9 @@ export async function createOddsMarketsForCompetition(
   // the provider moved earlier; the lead only stops new markets, checked
   // before each game is created and again inside its transaction.
   const picked = opts.eventIds ? new Set(opts.eventIds) : undefined
+  const enabled = isSportsBdlEnabled()
+  const observedAt =
+    enabled && !opts.dryRun ? await scheduleFetchStartedAt(pg) : undefined
   const fetched = await getUpcomingOdds(entry.oddsKey, ROLLING_WINDOW_DAYS, {
     retryDelaysMs: opts.retryDelaysMs,
   })
@@ -212,27 +215,35 @@ export async function createOddsMarketsForCompetition(
       question = params.question
       const existing = await findSportsMoneyline(pg, params.sportsEventId)
       if (existing) {
-        const change = await resyncKickoff(pg, existing.id, params, {
-          dryRun: opts.dryRun,
-          bdlLeague: isMajorLeague(entry.sport),
-          titleFor: (start) =>
-            buildOddsMarketParams({ ...event, commence_time: start }, entry)
-              .question,
-        })
+        const titleFor = (start: string) =>
+          buildOddsMarketParams({ ...event, commence_time: start }, entry)
+            .question
+        let change = ''
+        if (enabled) {
+          change = await reconcileOddsKickoff(pg, params, {
+            observedAt,
+            dryRun: opts.dryRun,
+            checkBdl: isMajorLeague(entry.sport),
+            titleFor,
+          })
+        } else if (
+          await resyncKickoff(pg, existing.id, params, {
+            dryRun: opts.dryRun,
+            titleFor,
+          })
+        ) {
+          change = `${opts.dryRun ? 'would move' : 'moved'} its kickoff to ${
+            params.sportsStartTimestamp
+          }`
+        }
         result.skipped++
         result.log.push({
           eventId: event.id,
           question: params.question,
           status: 'skipped',
-          reason: change.moved
-            ? `market ${existing.id} already exists; ${
-                opts.dryRun ? 'would move' : 'moved'
-              } its kickoff to ${params.sportsStartTimestamp}${
-                change.overlapId
-                  ? `; overlaps open BDL market ${change.overlapId}, operator review required`
-                  : ''
-              }`
-            : `market ${existing.id} already exists`,
+          reason: [`market ${existing.id} already exists`, change]
+            .filter(Boolean)
+            .join('; '),
         })
         continue
       }
@@ -349,9 +360,9 @@ export async function createOddsMarketsForCompetition(
           deduplicateMoneyline: true,
           minLeadMs: MIN_CREATE_LEAD_MS,
           checkOpenBdl: competing.length > 0,
+          oddsFetchStartedAt: observedAt,
           checkOddsCutover: isSportsBdlEnabled()
             ? async (tx) => {
-                await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
                 const latest = await getCompetitionSwitches(tx)
                 if (competing.some((p) => autoCreates(p, latest)))
                   throw new OddsCutoverHold(
@@ -400,7 +411,7 @@ export async function createOddsMarketsForCompetition(
 /**
  * A game the provider has moved keeps its market, with the new kickoff and
  * close time written onto it, so trading closes, the live window opens and
- * the resolver polls at the real time. Report any open BDL market the new time overlaps.
+ * the resolver polls at the real time.
  */
 async function resyncKickoff(
   pg: SupabaseDirectClient,
@@ -408,44 +419,34 @@ async function resyncKickoff(
   params: OddsMarketParams,
   opts: {
     dryRun?: boolean
-    bdlLeague: boolean
     /** The title the pipeline gives this game at a given kickoff. */
     titleFor: (start: string) => string
   }
-): Promise<{ moved: boolean; overlapId?: string }> {
-  type Stored = {
+): Promise<boolean> {
+  const row = await pg.oneOrNone<{
     start: string | null
     resolution: string | null
     question: string | null
-    attention: string | null
-  }
-  const read = (db: Pick<SupabaseDirectClient, 'oneOrNone'>, lock = false) =>
-    db.oneOrNone<Stored>(
-      `select data->>'sportsStartTimestamp' as start, resolution, question,
-              data->>'sportsAttentionReason' as attention
-       from contracts where id = $1 ${lock ? 'for update' : ''}`,
-      [contractId]
-    )
-  const needsUpdate = (row: Stored | null): row is Stored =>
-    !!row &&
-    !row.resolution &&
-    Date.parse(row.start ?? '') !== Date.parse(params.sportsStartTimestamp)
-  const observed = await read(pg)
-  if (!needsUpdate(observed)) return { moved: false }
-  if (opts.dryRun) return { moved: true }
-
-  const update = async (
-    db: Pick<SupabaseDirectClient, 'none'>,
-    row: Stored,
-    overlapId?: string
-  ) => {
-    const pipelineTitle = row.start ? opts.titleFor(row.start) : undefined
-    const retitle =
-      !!pipelineTitle &&
-      (row.question === pipelineTitle ||
-        row.question === pipelineTitle + LEGACY_OFFICIAL_SUFFIX) &&
-      params.question !== row.question
-    await db.none(
+  }>(
+    `select data->>'sportsStartTimestamp' as start, resolution, question
+     from contracts where id = $1`,
+    [contractId]
+  )
+  if (!row || row.resolution) return false
+  if (Date.parse(row.start ?? '') === Date.parse(params.sportsStartTimestamp))
+    return false
+  // The date is in the title, so repeat fixtures differ. Move it with the
+  // kickoff, but only while the title is still the one the pipeline wrote
+  // (or wrote before it dropped "[official]"): an edited title stays. The
+  // slug never changes.
+  const pipelineTitle = row.start ? opts.titleFor(row.start) : undefined
+  const retitle =
+    !!pipelineTitle &&
+    (row.question === pipelineTitle ||
+      row.question === pipelineTitle + LEGACY_OFFICIAL_SUFFIX) &&
+    params.question !== row.question
+  if (!opts.dryRun) {
+    await pg.none(
       `update contracts set data = data || $1::jsonb
        where id = $2 and resolution is null`,
       [
@@ -453,42 +454,15 @@ async function resyncKickoff(
           sportsStartTimestamp: params.sportsStartTimestamp,
           closeTime: params.closeTime,
           ...(retitle ? { question: params.question } : {}),
-          ...(overlapId && !row.attention?.trim()
-            ? {
-                sportsAttentionReason: `Confirmed Odds kickoff overlaps open BDL market ${overlapId}`,
-                sportsAttentionSince: Date.now(),
-              }
-            : {}),
         }),
         contractId,
       ]
     )
-    return { moved: true, overlapId }
-  }
-  let change: { moved: boolean; overlapId?: string }
-  if (isSportsBdlEnabled() && opts.bdlLeague) {
-    change = await pg.tx(async (tx: SupabaseTransaction) => {
-      const current = await read(tx, true)
-      if (!needsUpdate(current)) return { moved: false }
-      // A reschedule can converge with an already funded game. Keep the true
-      // kickoff and flag it. Changing the time cannot unwind a committed ante.
-      const overlap = await findOpenSportsCounterpart(tx, params, 'resync')
-      return update(tx, current, overlap?.id)
-    })
-  } else {
-    change = await update(pg, observed)
-  }
-  if (change.moved)
     log(
-      `[sports-odds-create] ${contractId}: kickoff moved from ${
-        observed.start
-      } to ${params.sportsStartTimestamp}${
-        change.overlapId
-          ? `; overlaps open BDL market ${change.overlapId}, operator review required`
-          : ''
-      }`
+      `[sports-odds-create] ${contractId}: kickoff moved from ${row.start} to ${params.sportsStartTimestamp}`
     )
-  return change
+  }
+  return true
 }
 
 /** What one scheduled run did, by competition. */

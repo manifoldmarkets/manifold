@@ -1,4 +1,7 @@
 import { camelCase } from 'lodash'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from './bdl/major-settings'
+import { saveScheduleObservation } from './sports-schedule-observation'
+import { providerOf } from 'common/sports-provider'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
@@ -1213,6 +1216,7 @@ export async function createSportsContract(
     groupEmbeddingBatch?: Set<string>
     notifyFollowers?: boolean
     /** Recheck Odds phase switches under the operator lock on rollout-enabled inserts. */
+    oddsFetchStartedAt?: string
     checkOddsCutover?: (tx: SupabaseTransaction) => Promise<void>
     /** Check for an open BDL market at an overlapping BDL/Odds phase. */
     checkOpenBdl?: boolean
@@ -1377,6 +1381,12 @@ export async function createSportsContract(
       throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
   }
   const result = await pg.tx(async (tx) => {
+    if (
+      guardedFunding &&
+      dedupeType === 'moneyline' &&
+      (params.sportsProvider === 'bdl' || providerOf(params) === 'odds')
+    )
+      await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
     if (dedupeType) {
       const existing = await findLockedSportsMarket(
         tx,
@@ -1406,6 +1416,8 @@ export async function createSportsContract(
     } else {
       await tx.none(contractQuery)
     }
+    if (guardedFunding && opts.oddsFetchStartedAt)
+      await saveScheduleObservation(tx, contract.id, opts.oddsFetchStartedAt)
     // Inserts, the debit, and the LP row can each wait on a database lock.
     if (guardedFunding) assertLeadTime()
     const debit: TxnData = {

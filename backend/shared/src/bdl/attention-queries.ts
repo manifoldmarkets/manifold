@@ -11,6 +11,11 @@ import {
   BDL_OVERDUE_ALERT_MS,
 } from 'common/bdl/constants'
 import { BDL_LEAGUE_KEYS } from 'common/bdl/leagues'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import {
+  describeOddsConflict,
+  ScheduleConflict,
+} from '../sports-schedule-observation'
 import { contractPath } from 'common/contract'
 import {
   F1_ATTENTION_AFTER_MS,
@@ -178,21 +183,36 @@ export async function getSportsAttention(
     ]
   )
 
-  const items = rows
-    .slice(0, limit)
-    .map(({ creatorUsername, slug, ...item }) => ({
-      ...item,
-      question: item.question || item.id,
-      href:
-        creatorUsername &&
-        slug &&
-        creatorUsername.length <= 128 &&
-        slug.length <= 256 &&
-        !/[^a-zA-Z0-9_-]/.test(creatorUsername) &&
-        !/[^a-zA-Z0-9_-]/.test(slug)
-          ? contractPath({ creatorUsername, slug })
-          : null,
-    }))
+  const page = rows.slice(0, limit)
+  const oddsIds = page
+    .filter((r) => r.provider === 'odds' && r.source === 'stored')
+    .map((r) => r.id)
+  const conflicts = new Map<string, string>()
+  if (isSportsBdlEnabled() && oddsIds.length) {
+    const observations = await pg.manyOrNone<
+      ScheduleConflict & { contract_id: string }
+    >(
+      `select contract_id,counterpart_contract_ids,same_event_contract_ids,participant_mismatch
+       from sports_market_schedule_observations where provider='odds' and contract_id=any($1::text[])`,
+      [oddsIds]
+    )
+    for (const row of observations)
+      conflicts.set(row.contract_id, describeOddsConflict(row))
+  }
+  const items = page.map(({ creatorUsername, slug, ...item }) => ({
+    ...item,
+    reason: [item.reason, conflicts.get(item.id)].filter(Boolean).join('; '),
+    question: item.question || item.id,
+    href:
+      creatorUsername &&
+      slug &&
+      creatorUsername.length <= 128 &&
+      slug.length <= 256 &&
+      !/[^a-zA-Z0-9_-]/.test(creatorUsername) &&
+      !/[^a-zA-Z0-9_-]/.test(slug)
+        ? contractPath({ creatorUsername, slug })
+        : null,
+  }))
   const last = items[items.length - 1]
   return {
     items,
