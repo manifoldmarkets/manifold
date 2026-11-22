@@ -20,8 +20,31 @@ export function createSportsViewClock(elapsed = () => performance.now()) {
       (Number.isSafeInteger(ageMs) ? ageMs : 0)
     if (!anchor || at > now()) anchor = { at, elapsed: elapsed() }
   }
-  return { now, observe }
+  function observeReceipt(at: number) {
+    if (!anchor || !Number.isSafeInteger(at) || at <= 0 || at > now() + 30_000)
+      return false
+    if (at > now()) anchor = { at, elapsed: elapsed() }
+    return true
+  }
+  return { now, observe, observeReceipt }
 }
 const clock = createSportsViewClock()
 export const sportsViewNow = clock.now
 export const observeSportsClock = clock.observe
+
+export const observeSportsReceipt = clock.observeReceipt
+
+/** A render can finish just before expiry and its effect can run just after. */
+export function sportsTimerDelay(
+  deadlines: number[],
+  renderedAt: number,
+  now: number
+) {
+  const next = deadlines.reduce(
+    (first, at) => (at > renderedAt && at < first ? at : first),
+    Infinity
+  )
+  return Number.isFinite(next)
+    ? Math.min(2147483647, Math.max(0, next - now))
+    : undefined
+}

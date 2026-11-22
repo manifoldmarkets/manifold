@@ -76,11 +76,8 @@ export default function SportTopicPage() {
   }, [router.isReady, topic, mainOf, rawSport, rawTopic])
 
   const ready = router.isReady && !!topic
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    topic?.sport ?? 'all',
-    ready,
-    topic?.id
-  )
+  const { schedule, rail, loading, loadMore, hasMore, refresh } =
+    useSportsSchedule(topic?.sport ?? 'all', ready, topic?.id)
   const sportsByKey = useMemo(
     () => keyBy(index.index?.sports ?? [], 'key'),
     [index.index?.sports]
@@ -200,6 +197,7 @@ export default function SportTopicPage() {
                     content: (
                       <div className="pt-3">
                         <GameFeed
+                          onScheduleRefresh={refresh}
                           key={topic.id}
                           games={games}
                           raceWeekends={weekends}

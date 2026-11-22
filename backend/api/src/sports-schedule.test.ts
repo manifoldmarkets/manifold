@@ -37,6 +37,7 @@ const official = ['nfl', 'soccer'].map((sport) => ({
     sportsLeague: sport === 'nfl' ? 'NFL' : 'Soccer',
     mechanism: 'cpmm-multi-2',
     outcomeType: 'MULTIPLE_CHOICE',
+    addAnswersMode: 'DISABLED',
     shouldAnswersSumToOne: true,
     closeTime: kickoff + 10000,
     sportsStartTimestamp: new Date(kickoff).toISOString(),
@@ -992,6 +993,7 @@ it('paginates the full market-backed slate across identical close times', async 
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
   const response = await get({
+    observedGames: true,
     sport: 'nfl',
     limit: 400,
     includeRelated: false,
@@ -1007,7 +1009,12 @@ it('paginates the full market-backed slate across identical close times', async 
   })
   expect(officialPages).toEqual([200, 200, 25])
   expect(page.games).toHaveLength(400)
-  const next = await get({ sport: 'nfl', limit: 400, cursor: page.nextCursor! })
+  const next = await get({
+    observedGames: true,
+    sport: 'nfl',
+    limit: 400,
+    cursor: page.nextCursor!,
+  })
   const tail = 'result' in next ? next.result : next
   expect(tail.counts.nfl).toBe(425)
   expect(tail.nextCursor).toBeNull()
@@ -1059,7 +1066,12 @@ it('uses the resumption time to order and page an old suspended market', async (
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
   const query = async (cursor?: string) => {
-    const response = await get({ sport: 'nfl', limit: 1, cursor })
+    const response = await get({
+      observedGames: true,
+      sport: 'nfl',
+      limit: 1,
+      cursor,
+    })
     return 'result' in response ? response.result : response
   }
   const first = await query(),
@@ -1146,10 +1158,65 @@ it('counts fresh resumed games outside a scoped page with only grouped receipt d
   const get = sportsSchedule as (
     props: Parameters<typeof sportsSchedule>[0]
   ) => ReturnType<typeof sportsSchedule>
-  const page = await get({ sport: 'soccer' })
+  const page = await get({ observedGames: true, sport: 'soccer' })
   const result = 'result' in page ? page.result : page
   expect(result.games).toEqual([])
   expect(result.counts.nfl).toBe(2)
   expect(result.liveCount).toBe(2)
   expect(result.liveExpiries).toEqual([[at + 600000, 2]])
+})
+
+it('requires an opted-in client for recently resumed team markets, including three-way club soccer', async () => {
+  const at = Date.now() - 1000
+  officialRows = []
+  liveRows = [
+    {
+      data: {
+        ...official[1].data,
+        id: 'epl-game',
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        sportsProvider: 'bdl',
+        sportsEventId: 'bdl:epl:112',
+        sportsLeagueKey: 'epl',
+        sportsMarketType: 'moneyline',
+        sportsHomeTeamId: '2',
+        sportsAwayTeamId: '3',
+        closeTime: at - 3 * 86400000,
+        sportsLiveStatus: 'IN_PROGRESS',
+        sportsLiveUpdatedTime: at,
+      },
+    },
+  ]
+  answerRows = [
+    ...gameAnswers(liveRows[0].data),
+    {
+      id: 'draw',
+      index: 2,
+      text: 'Draw',
+      contract_id: 'epl-game',
+      prob: 0.2,
+      pool_yes: 100,
+      pool_no: 100,
+    },
+  ]
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  for (const observedGames of [undefined, false, true]) {
+    const response = await get({ sport: 'soccer', observedGames })
+    const page = 'result' in response ? response.result : response
+    if (observedGames) {
+      expect(page.games).toHaveLength(1)
+      expect(page.games[0]).toMatchObject({
+        sportsLeagueKey: 'epl',
+        status: 'live',
+        closeTime: at - 3 * 86400000,
+        draw: { answerId: 'draw' },
+      })
+      expect(page.membershipExpiries).toEqual([[at + 600000, 'soccer', 1]])
+    } else {
+      expect(page.games).toEqual([])
+      expect(page).not.toHaveProperty('membershipExpiries')
+    }
+  }
 })

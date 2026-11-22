@@ -60,6 +60,7 @@ const isSession = (item: FeedItem): item is RaceSessionEvent =>
  */
 export function GameFeed(props: {
   games: ScheduleGame[]
+  onScheduleRefresh?: () => void
   loading: boolean
   hasMore: boolean
   loadMore: () => Promise<boolean>
@@ -230,6 +231,7 @@ export function GameFeed(props: {
           />
         ) : (
           <GameRow
+            onScheduleRefresh={props.onScheduleRefresh}
             key={item.id}
             game={item}
             variant={view === 'compact' ? 'compact' : 'card'}
@@ -504,6 +506,7 @@ export function GameFeed(props: {
             />
           ) : (
             <GameRow
+              onScheduleRefresh={props.onScheduleRefresh}
               key={featured.id}
               variant="featured"
               game={featured}

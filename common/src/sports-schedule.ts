@@ -1214,6 +1214,7 @@ export function findRelatedMarkets(
 export type GameStatus = 'live' | 'upcoming' | 'finished'
 
 export interface SportsLiveScore {
+  scoreFixture?: ScoreFixture
   sportsHomeScore: number | null
   sportsAwayScore: number | null
   sportsLiveStatus: string
@@ -1336,6 +1337,7 @@ export interface SportsScheduleResponse {
   liveCount: number
   /** Global observed live games expiring at each instant, with no event identifiers. */
   liveExpiries?: [at: number, count: number][]
+  membershipExpiries?: [at: number, sport: AnySportKey, count: number][]
   /** Every sport on the page, curated first; see buildSportsIndex. */
   sports: SportInfo[]
 }
@@ -1345,6 +1347,7 @@ export interface SportsScheduleResponse {
 export const LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED'])
 export const TERMINAL_STATUSES = new Set(['FINISHED', 'AWARDED'])
 export const LIVE_STALE_MS = 10 * 60 * 1000
+export const SCHEDULE_CLOSE_GRACE_HOURS = 18
 
 /** Age a BDL view by successful provider receipt. An expired observation changes
  * only the public display. A later identical in-progress observation can restore it. */
@@ -1352,12 +1355,11 @@ export function atSportsObservationTime(
   game: ScheduleGame,
   now: number
 ): ScheduleGame {
-  if (!game.sportsLeagueKey || game.isResolved) return game
+  if (game.isResolved || !game.gameState) return game
   if (
     game.gameState === 'scheduled' &&
-    (game.liveUpdatedTime == null || game.liveUpdatedTime < game.startTime) &&
     game.kickoffKnown &&
-    now >= game.startTime
+    now >= scheduledConfirmationEnd(game)
   )
     return { ...game, gameState: 'unavailable', status: 'upcoming' }
   if (game.gameState !== 'live') return game
@@ -1376,22 +1378,101 @@ export function atSportsObservationTime(
   }
 }
 
+export function atSportsFeedTime(game: ScheduleGame, now: number) {
+  if (game.gameState || game.isResolved || game.status === 'finished')
+    return atSportsObservationTime(game, now)
+  const status = gameStatus({
+    ...game,
+    liveStatus: game.liveScore?.status,
+    now,
+  })
+  return status === game.status
+    ? game
+    : { ...game, status, liveScore: status === 'live' ? game.liveScore : null }
+}
+
+export type ScoreFixture = {
+  eventId: string
+  home: string
+  away: string
+  homeId?: string
+  awayId?: string
+}
+
+/** A contract topic can be reused. Only a score bearing the producing fixture's
+ * event and ordered participants can update the currently displayed match. */
+export function scoreMatchesFixture(raw: unknown, game: ScheduleGame) {
+  if (!raw || typeof raw !== 'object') return false
+  const f = raw as Partial<ScoreFixture>
+  const same = (left: unknown, right: string) =>
+    typeof left === 'string' &&
+    !!left.trim() &&
+    splitFlag(left).name.trim().toLowerCase() ===
+      splitFlag(right).name.trim().toLowerCase()
+  return (
+    f.eventId === game.sportsEventId &&
+    same(f.home, game.home.name) &&
+    same(f.away, game.away.name) &&
+    f.homeId === game.home.entrantId &&
+    f.awayId === game.away.entrantId
+  )
+}
+
+function scheduledConfirmationEnd(game: ScheduleGame) {
+  const receipt = game.liveUpdatedTime
+  return receipt != null && receipt >= game.startTime
+    ? receipt + LIVE_STALE_MS
+    : game.startTime
+}
+
+/** The current live census contribution ends at a confirmed receipt or at the
+ * existing legacy time-based cutoff. A fresh legacy score can outlast close. */
+export function sportsLiveEnd(game: ScheduleGame) {
+  const receiptEnd =
+    game.liveUpdatedTime == null
+      ? undefined
+      : game.liveUpdatedTime + LIVE_STALE_MS
+  if (game.gameState) return game.gameState === 'live' ? receiptEnd : undefined
+  const scored = LIVE_STATUSES.has(game.liveScore?.status ?? '')
+    ? receiptEnd
+    : undefined
+  if (scored != null && (!game.kickoffKnown || game.startTime > scored))
+    return scored
+  return Math.max(game.closeTime, scored ?? 0)
+}
+
+/** End of eligibility for the schedule's ordinary close, resumption or receipt
+ * window. This is separate from the contract's cutoff for placing a bet. */
+export function sportsMembershipEnd(game: ScheduleGame) {
+  if (!game.sportsLeagueKey && !game.gameState)
+    return Math.max(
+      game.closeTime,
+      LIVE_STATUSES.has(game.liveScore?.status ?? '')
+        ? (game.liveUpdatedTime ?? 0) + LIVE_STALE_MS
+        : 0
+    )
+  const grace = SCHEDULE_CLOSE_GRACE_HOURS * 60 * 60 * 1000
+  if (
+    (game.gameState === 'suspended' || game.gameState === 'postponed') &&
+    game.resumptionTime != null
+  )
+    return Math.max(game.closeTime, game.resumptionTime + grace)
+  return Math.max(
+    game.closeTime + grace,
+    game.gameState === 'live' ? sportsLiveEnd(game) ?? 0 : 0
+  )
+}
+
 export function nextSportsObservationChange(
   game: ScheduleGame,
   now: number = Date.now()
 ): number | undefined {
   if (game.isResolved) return
-  const deadlines = [game.closeTime]
-  if (game.sportsLeagueKey) {
-    if (
-      game.gameState === 'scheduled' &&
-      game.kickoffKnown &&
-      (game.liveUpdatedTime == null || game.liveUpdatedTime < game.startTime)
-    )
-      deadlines.push(game.startTime)
-    if (game.gameState === 'live' && game.liveUpdatedTime != null)
-      deadlines.push(game.liveUpdatedTime + LIVE_STALE_MS)
-  }
+  const deadlines = [game.closeTime, sportsMembershipEnd(game)]
+  if (game.gameState === 'scheduled' && game.kickoffKnown)
+    deadlines.push(scheduledConfirmationEnd(game))
+  if (game.gameState === 'live' || game.status === 'live')
+    deadlines.push(game.liveUpdatedTime ?? 0, sportsLiveEnd(game) ?? 0)
   const next = Math.min(
     ...deadlines.filter((at) => Number.isFinite(at) && at > now)
   )

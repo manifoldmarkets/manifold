@@ -83,10 +83,8 @@ export default function SportsPage({
   }, [legacySport])
 
   const ready = router.isReady && !legacySport
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    'all',
-    ready
-  )
+  const { schedule, rail, loading, loadMore, hasMore, refresh } =
+    useSportsSchedule('all', ready)
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const topic = useSportTopicExtras(ALL)
@@ -152,6 +150,7 @@ export default function SportsPage({
             content: (
               <div className="pt-3">
                 <GameFeed
+                  onScheduleRefresh={refresh}
                   games={games}
                   raceWeekends={weekends}
                   loading={loading || !schedule || lookingPastBlocked}

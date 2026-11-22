@@ -23,7 +23,6 @@ import {
   RaceWeekend,
 } from 'common/race-weekends'
 import { scheduleFeedTime } from 'common/sports-game-feed'
-import { BDL_LEAGUES } from 'common/bdl/leagues'
 import { toOfficialGame } from 'common/sports-official-game'
 export { homeAndAway } from 'common/sports-official-game'
 import {
@@ -36,6 +35,9 @@ import {
   SportsIndex,
   SportsScheduleResponse,
   LIVE_STALE_MS,
+  sportsMembershipEnd,
+  sportsLiveEnd,
+  SCHEDULE_CLOSE_GRACE_HOURS as FINISHED_GRACE_HOURS,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
@@ -46,7 +48,6 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 // shows up in the "this week" list by close time. Finished games are loaded
 // for a while after kickoff (their markets can still be matched) but never
 // returned: the page is a feed of what's on and what's next.
-const FINISHED_GRACE_HOURS = 18
 const OFFICIAL_PAGE_SIZE = 200
 const MAX_CANDIDATES = 1000
 const MAX_RELATED_PER_GAME = 25
@@ -71,8 +72,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   _auth,
   req
 ) => {
-  if (isSportsBdlEnabled())
-    req?.res?.append('Access-Control-Expose-Headers', 'Date, Age')
+  const observed = isSportsBdlEnabled() && props.observedGames === true
+  if (observed) req?.res?.append('Access-Control-Expose-Headers', 'Date, Age')
   const sport: AnySportKey | 'all' = props.sport ?? 'all'
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
@@ -101,7 +102,7 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     { weekends: allWeekends, groupIds: raceGroupIds },
     championships,
   ] = await Promise.all([
-    isSportsBdlEnabled()
+    observed
       ? getOfficialGames(pg, index, daysAhead, now)
       : getLegacyOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
@@ -330,13 +331,20 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
   const counts: Partial<Record<AnySportKey, number>> = {}
   let liveCount = 0
   const expiries = new Map<number, number>()
+  const memberships = new Map<AnySportKey, Map<number, number>>()
   for (const g of ordered) {
     if (g.status === 'finished') continue
     counts[g.sport] = (counts[g.sport] ?? 0) + 1
+    if (observed) {
+      const end = sportsMembershipEnd(g)
+      const map = memberships.get(g.sport) ?? new Map<number, number>()
+      map.set(end, (map.get(end) ?? 0) + 1)
+      memberships.set(g.sport, map)
+    }
     if (g.status === 'live') {
       liveCount++
-      if (g.sportsLeagueKey && g.liveUpdatedTime != null) {
-        const at = g.liveUpdatedTime + LIVE_STALE_MS
+      const at = observed ? sportsLiveEnd(g) : undefined
+      if (at != null) {
         expiries.set(at, (expiries.get(at) ?? 0) + 1)
       }
     }
@@ -376,7 +384,14 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (
     raceChampionships: championships,
     counts,
     liveCount,
-    ...(isSportsBdlEnabled() && {
+    ...(observed && {
+      membershipExpiries: [...memberships].flatMap(([sport, byTime]) =>
+        [...byTime].map(([at, count]): [number, AnySportKey, number] => [
+          at,
+          sport,
+          count,
+        ])
+      ),
       liveExpiries: [...expiries].sort(([a], [b]) => a - b),
     }),
     sports: index.sports,
@@ -574,7 +589,6 @@ async function getOfficialGames(
             !game ||
             (scan !== 'close' &&
               (!game.sportsLeagueKey ||
-                BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors' ||
                 (scan === 'resume'
                   ? !game.resumptionTime
                   : game.status !== 'live')))

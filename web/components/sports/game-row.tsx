@@ -1,3 +1,4 @@
+import { sportsTicketBinding } from 'common/sports-official-game'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
@@ -18,7 +19,6 @@ import {
   ScheduleGame,
   ScheduleTeam,
   teamDisplayName,
-  sportsGameBinding,
 } from 'common/sports-schedule'
 import { gameScoreLabel, scoreboardDetailLines } from 'common/sports-scoreboard'
 import { formatFeedPrice } from 'common/sports-price'
@@ -45,6 +45,7 @@ import {
   SportsMatch,
 } from 'web/components/sports/sports-match-card'
 import {
+  readSportsContract,
   SportsThreeWayBetDialog,
   SportsVersusBetDialog,
 } from 'web/components/sports/sports-bet-panel'
@@ -118,6 +119,7 @@ const gameAnchor = (game: Pick<ScheduleGame, 'id'>) => `game-${game.id}`
  */
 export function GameRow(props: {
   game: ScheduleGame
+  onScheduleRefresh?: () => void
   variant?: 'card' | 'featured' | 'compact'
   showLeague?: boolean
   className?: string
@@ -156,12 +158,24 @@ export function GameRow(props: {
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
+  const verified = isSportsBdlEnabled()
+  const identity = verified ? sportsTicketBinding(game) : ''
+  const revision = JSON.stringify([
+    identity,
+    game.closeTime,
+    game.gameState,
+    game.bettingSidesUnverified,
+  ])
+  const [rejected, setRejected] = useState<string>()
+  const invalid = () => {
+    setRejected(revision)
+    setSelection(null)
+    props.onScheduleRefresh?.()
+  }
   const canBet = isSportsBdlEnabled()
-    ? canBetOnScheduledGame(game, sportsViewNow())
+    ? rejected !== revision && canBetOnScheduledGame(game, sportsViewNow())
     : !finished
 
-  const verified = isSportsBdlEnabled()
-  const identity = verified ? sportsGameBinding(game) : ''
   const betOutcome = selection?.outcome
   // Clear the actual intent before committing a corrected market to the screen.
   if (
@@ -177,12 +191,33 @@ export function GameRow(props: {
   const holdReason =
     !verified || canBet
       ? undefined
+      : rejected === revision
+      ? 'Market changed'
       : game.bettingSidesUnverified
       ? 'Team labels under review'
       : 'Betting closed'
   const hold = holdReason && (
     <p className="text-ink-600 px-4 pb-2 text-xs" id={holdId}>
       {holdReason}
+      {rejected === revision && (
+        <button
+          type="button"
+          className="text-primary-700 ml-2 underline"
+          onClick={async (event) => {
+            event.stopPropagation()
+            const valid = await readSportsContract(game.id, game).catch(
+              () => null
+            )
+            if (valid)
+              setRejected((current) =>
+                current === revision ? undefined : current
+              )
+            props.onScheduleRefresh?.()
+          }}
+        >
+          Check market again
+        </button>
+      )}
     </p>
   )
   const descriptionId = holdReason ? holdId : undefined
@@ -358,6 +393,7 @@ export function GameRow(props: {
       <SportsThreeWayBetDialog
         intentClose={verified ? selection?.closeTime : undefined}
         expectedGame={verified ? game : undefined}
+        onInvalid={verified ? invalid : undefined}
         match={toSportsMatch(game)}
         initialOutcome={betOutcome}
         onClose={closeDialog}
@@ -366,6 +402,7 @@ export function GameRow(props: {
       <SportsVersusBetDialog
         intentClose={verified ? selection?.closeTime : undefined}
         expectedGame={verified ? game : undefined}
+        onInvalid={verified ? invalid : undefined}
         contractId={game.id}
         initialAnswerId={
           betOutcome === 'teamB' ? game.away.answerId : game.home.answerId

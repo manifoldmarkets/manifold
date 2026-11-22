@@ -1,5 +1,11 @@
 import clsx from 'clsx'
-import { matchesSportsTicket } from 'common/sports-official-game'
+import dayjs from 'dayjs'
+import { SportsTicketContext } from 'web/components/bet/sports-ticket-context'
+import {
+  matchesSportsTicket,
+  sportsTicketBinding,
+  toOfficialGame,
+} from 'common/sports-official-game'
 import { ScheduleGame } from 'common/sports-schedule'
 import { gameScoreLabel } from 'common/sports-scoreboard'
 import { sportsViewNow } from 'common/sports-view-clock'
@@ -21,28 +27,59 @@ import {
 } from 'web/components/bet/bet-dialog'
 import { SportsMatch, MatchOutcome } from './sports-match-card'
 
+/** Answers live in their own table. Bracket that read with two fixture checks;
+ * the order endpoint repeats the check under the platform's contract lock. */
+export async function readSportsContract(
+  contractId: string,
+  expected?: ScheduleGame
+) {
+  const first = await getContract(db, contractId)
+  if (!first || !isMultiCpmm(first)) return null
+  const answers = (await getAnswersForContracts(db, [contractId]))[contractId]
+  if (!expected) {
+    const legacy = first as CPMMMultiContract
+    return { ...legacy, answers: answers ?? legacy.answers ?? [] }
+  }
+  const latest = await getContract(db, contractId)
+  const rows = answers ?? []
+  if (
+    !latest ||
+    !isMultiCpmm(latest) ||
+    latest.outcomeType !== 'MULTIPLE_CHOICE' ||
+    !matchesSportsTicket(expected, first, rows, sportsViewNow()) ||
+    !matchesSportsTicket(expected, latest, rows, sportsViewNow())
+  )
+    return null
+  return { ...latest, answers: rows }
+}
+
 // Game markets are bet on with Manifold's standard dialogs: knockout markets
 // have no Draw answer, so they're two-answer "versus" markets; soccer markets
 // with a Draw are three-way. Both load the contract by id.
-function useSportsContract(contractId: string | undefined, verify = false) {
+function useSportsContract(
+  contractId: string | undefined,
+  expected?: ScheduleGame
+) {
   const [contract, setContract] = useState<CPMMMultiContract | null>(null)
   const [failed, setFailed] = useState(!contractId)
 
+  // A changed quote invalidates the native curves as well as the picker's label.
+  const quote =
+    expected &&
+    JSON.stringify([
+      sportsTicketBinding(expected),
+      expected.home.prob,
+      expected.away.prob,
+      expected.draw?.prob,
+    ])
   useEffect(() => {
     if (!contractId) return
     let cancelled = false
-    getContract(db, contractId)
-      .then(async (c) => {
+    readSportsContract(contractId, expected)
+      .then((value) => {
         if (cancelled) return
-        // isMultiCpmm: a converted cpmm-multi-2 game would otherwise render a silent null.
-        if (!c || !isMultiCpmm(c)) return setFailed(true)
-        const answerMap = await getAnswersForContracts(db, [c.id])
-        if (cancelled) return
-        const multi = c as CPMMMultiContract
-        setContract({
-          ...multi,
-          answers: answerMap[c.id] ?? (verify ? [] : multi.answers ?? []),
-        })
+        setContract(value)
+        setFailed(!value)
       })
       .catch(() => {
         if (!cancelled) setFailed(true)
@@ -50,9 +87,30 @@ function useSportsContract(contractId: string | undefined, verify = false) {
     return () => {
       cancelled = true
     }
-  }, [contractId, verify])
+  }, [contractId, quote])
 
   return { contract, failed }
+}
+
+function bindTicket(
+  dialog: JSX.Element,
+  game: ScheduleGame | undefined,
+  contract: CPMMMultiContract,
+  initialClose?: number,
+  onInvalid?: () => void
+) {
+  if (!game) return dialog
+  const closeTime = Math.min(
+    game.closeTime,
+    contract.closeTime ?? Infinity,
+    initialClose ?? Infinity
+  )
+  const ticket = { binding: sportsTicketBinding(game), closeTime }
+  return (
+    <SportsTicketContext.Provider value={{ ticket, onInvalid }}>
+      {dialog}
+    </SportsTicketContext.Provider>
+  )
 }
 
 // While the dialog loads, the feed snapshot and the newly read market may diverge.
@@ -60,15 +118,17 @@ function useValidTicket(
   game: ScheduleGame | undefined,
   contract: CPMMMultiContract | null,
   onClose: () => void,
-  intentClose?: number
+  intentClose?: number,
+  failed = false
 ) {
   const [, rerender] = useState(0)
   const now = sportsViewNow()
   const valid =
     !game ||
-    !contract ||
-    ((intentClose == null || now < intentClose) &&
-      matchesSportsTicket(game, contract, contract.answers, now))
+    (!failed &&
+      (!contract ||
+        ((intentClose == null || now < intentClose) &&
+          matchesSportsTicket(game, contract, contract.answers, now))))
   useEffect(() => {
     if (!valid) onClose()
     if (!game || !valid || !contract || contract.closeTime == null) return
@@ -107,7 +167,9 @@ export function SportsVersusBetDialog({
   initialAnswerId,
   expectedGame,
   intentClose,
+  onInvalid,
 }: {
+  onInvalid?: () => void
   intentClose?: number
   expectedGame?: ScheduleGame
   contractId: string | undefined
@@ -115,8 +177,14 @@ export function SportsVersusBetDialog({
   /** The answer (team) the dialog opens on; defaults to the first answer. */
   initialAnswerId?: string
 }) {
-  const { contract, failed } = useSportsContract(contractId, !!expectedGame)
-  const valid = useValidTicket(expectedGame, contract, onClose, intentClose)
+  const { contract, failed } = useSportsContract(contractId, expectedGame)
+  const valid = useValidTicket(
+    expectedGame,
+    contract,
+    onInvalid ?? onClose,
+    intentClose,
+    failed
+  )
   if (!valid) return null
 
   if (failed) return <SportsLoadError onClose={onClose} />
@@ -128,7 +196,7 @@ export function SportsVersusBetDialog({
     initialAnswerId && contract.answers[1]?.id === initialAnswerId
       ? 'NO'
       : 'YES'
-  return (
+  const dialog = (
     <MultiBetDialog
       contract={contract}
       open
@@ -138,6 +206,7 @@ export function SportsVersusBetDialog({
       initialOutcome={initialOutcome}
     />
   )
+  return bindTicket(dialog, expectedGame, contract, intentClose, onInvalid)
 }
 
 /**
@@ -185,18 +254,23 @@ export function SportsThreeWayBetDialog({
   onClose,
   expectedGame,
   intentClose,
+  onInvalid,
 }: {
+  onInvalid?: () => void
   intentClose?: number
   expectedGame?: ScheduleGame
   match: SportsMatch
   initialOutcome: MatchOutcome
   onClose: () => void
 }) {
-  const { contract, failed } = useSportsContract(
-    match.contractId,
-    !!expectedGame
+  const { contract, failed } = useSportsContract(match.contractId, expectedGame)
+  const valid = useValidTicket(
+    expectedGame,
+    contract,
+    onInvalid ?? onClose,
+    intentClose,
+    failed
   )
-  const valid = useValidTicket(expectedGame, contract, onClose, intentClose)
   if (!valid) return null
 
   if (failed) return <SportsLoadError onClose={onClose} />
@@ -212,17 +286,26 @@ export function SportsThreeWayBetDialog({
     draw: match.drawAnswerId,
     teamB: match.teamBAnswerId,
   }
-  const live = match.liveScore
+  const fetched =
+    expectedGame &&
+    toOfficialGame(contract, contract.answers, [], undefined, sportsViewNow())
+  const displayed =
+    fetched &&
+    (fetched.liveUpdatedTime ?? -1) >= (expectedGame?.liveUpdatedTime ?? -1)
+      ? fetched
+      : expectedGame
+  const live = displayed ? displayed.liveScore : match.liveScore
   // Titles often end with the date ("Everton vs Chelsea, Oct 17"); repeat it
   // only when the local kickoff date differs.
   const titleHasDate = new RegExp(
     `\\b${escapeRegExp(match.closeDateLabel)}\\b`
   ).test(contract.question)
-  const kickoff = `Kickoff ${match.closeTime}`
+  const kickoff = `${
+    displayed && !displayed.kickoffKnown ? 'Closes' : 'Kickoff'
+  } ${match.closeTime}`
   const heldLabel =
-    expectedGame &&
-    ['suspended', 'postponed', 'delayed'].includes(expectedGame.gameState ?? '')
-      ? gameScoreLabel(expectedGame)
+    displayed && displayed.gameState !== 'live' && displayed.status !== 'live'
+      ? gameScoreLabel(displayed, (at) => dayjs(at).format('MMM D'))
       : undefined
   const description = heldLabel
     ? [
@@ -250,7 +333,7 @@ export function SportsThreeWayBetDialog({
     : titleHasDate
     ? kickoff
     : `${match.closeDateLabel} · ${kickoff}`
-  return (
+  const dialog = (
     <ThreeWayTradeDialog
       contract={contract}
       open
@@ -261,4 +344,5 @@ export function SportsThreeWayBetDialog({
       description={description}
     />
   )
+  return bindTicket(dialog, expectedGame, contract, intentClose, onInvalid)
 }

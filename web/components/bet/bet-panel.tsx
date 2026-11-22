@@ -1,3 +1,4 @@
+import { useSportsTicket } from './sports-ticket-context'
 import {
   ChevronDownIcon,
   LockClosedIcon,
@@ -291,6 +292,7 @@ export const BuyPanelBody = (
   // Bumped when the user opens the book, so only that scrolls it into view.
   const [revealOrders, setRevealOrders] = useState(0)
   const ordersId = useId()
+  const sportsTicket = useSportsTicket()
   const tradeFormRef = useRef<HTMLDivElement>(null)
 
   const user = useUser()
@@ -612,6 +614,7 @@ export const BuyPanelBody = (
         removeUndefinedProps({
           outcome,
           amount: betAmount,
+          ...(sportsTicket && { sportsTicket: sportsTicket.ticket }),
           contractId: contract.id,
           answerId: multiProps?.answerToBuy.id,
           replyToCommentId,
@@ -713,6 +716,15 @@ export const BuyPanelBody = (
       setBetAmount(undefined)
     } catch (e) {
       if (e instanceof APIError) {
+        if (
+          sportsTicket &&
+          (e.code === 409 ||
+            (e.code === 403 &&
+              /Trading is closed|Market is resolved|Market is deleted/.test(
+                e.message
+              )))
+        )
+          sportsTicket.onInvalid?.()
         const message = e.message.toString()
         if (message.includes('could not serialize access')) {
           setError(`Error placing ${TRADE_TERM} (could not serialize access)`)

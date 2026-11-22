@@ -7,6 +7,9 @@ import {
   gameStatus,
   atSportsObservationTime,
   sportsGameBinding,
+  sportsLiveEnd,
+  sportsMembershipEnd,
+  AnySportKey,
 } from './sports-schedule'
 import {
   publicSportsScoreSchema,
@@ -24,7 +27,7 @@ export type LiveGameState = {
   liveScore?: Stamped<ScheduleGame['liveScore']> & {
     status: string
     scoreUpdatedTime?: number | null
-    terminalPair?: ScheduleGame['finalScore']
+    terminalPair?: { home: number | null; away: number | null }
     fields?: ScheduleScoreFields
     finalScore?: ScheduleGame['finalScore']
   }
@@ -79,11 +82,9 @@ export function decodeSportsScoreTick(
           ...(fields.clock != null && { clock: fields.clock }),
         }
       : null,
-    ...(TERMINAL_STATUSES.has(status) &&
-      home != null &&
-      away != null && {
-        terminalPair: { home, away },
-      }),
+    ...(TERMINAL_STATUSES.has(status) && {
+      terminalPair: { home, away },
+    }),
     finalScore: hasFinal ? { home, away } : null,
   }
 }
@@ -207,7 +208,10 @@ export function applySportsLive(
         scoreboard: score.fields?.scoreboard,
         resumptionTime: score.fields?.resumptionTime,
         finalQualifier: score.fields?.finalQualifier,
-        finalScore: terminalPair || score.finalScore || null,
+        finalScore:
+          terminalPair && terminalPair.home != null && terminalPair.away != null
+            ? { home: terminalPair.home, away: terminalPair.away }
+            : score.finalScore ?? null,
         status: gameStatus({
           ...game,
           gameState,
@@ -220,51 +224,151 @@ export function applySportsLive(
   return bdlEnabled ? atSportsObservationTime(updated, now) : updated
 }
 
-/** Reconcile the global HTTP census with newer observations for the loaded rows.
- * Store only outstanding expiration counts so the rail also ages between views. */
-export function projectSportsRail(
-  source: SportsScheduleResponse,
+type RailSource = Pick<
+  SportsScheduleResponse,
+  | 'snapshotTime'
+  | 'counts'
+  | 'liveCount'
+  | 'liveExpiries'
+  | 'membershipExpiries'
+>
+
+export const sportsRailEntry = (g: ScheduleGame) => ({
+  sport: g.sport,
+  status: g.status,
+  liveUntil: sportsLiveEnd(g),
+  memberUntil: sportsMembershipEnd(g),
+})
+type RailEntry = ReturnType<typeof sportsRailEntry>
+type RailChange = { before: RailEntry; after: RailEntry; at: number }
+type CensusSource = RailSource & Pick<SportsScheduleResponse, 'sports'>
+export type SportsCensus = {
+  source: CensusSource
+  changes: Record<string, RailChange>
+}
+
+/** A cached sport contributes only newer, fixture-bound changes. Its older
+ * global totals can never displace the last successful census from any view. */
+export function reconcileSportsCensus(
+  previous: SportsCensus | undefined,
+  source: CensusSource,
   before: ScheduleGame[],
-  after: ScheduleGame[],
+  after: ScheduleGame[]
+): SportsCensus {
+  const readAt = source.snapshotTime ?? 0
+  const fresh = !previous || readAt > (previous.source.snapshotTime ?? 0)
+  const base = fresh
+    ? {
+        sports: source.sports,
+        counts: source.counts,
+        liveCount: source.liveCount,
+        snapshotTime: source.snapshotTime,
+        liveExpiries: source.liveExpiries,
+        membershipExpiries: source.membershipExpiries,
+      }
+    : previous.source
+  let next = fresh
+    ? {
+        source: base,
+        changes: Object.fromEntries(
+          Object.entries(previous?.changes ?? {}).filter(
+            ([, change]) => change.at > readAt
+          )
+        ),
+      }
+    : previous
+  for (let i = 0; i < before.length; i++) {
+    const original = before[i],
+      displayed = after[i],
+      at = displayed.liveUpdatedTime ?? 0
+    if (
+      at <= (original.liveUpdatedTime ?? 0) ||
+      at <= (next.changes[original.id]?.at ?? 0) ||
+      (readAt < (base.snapshotTime ?? 0) && at <= (base.snapshotTime ?? 0))
+    )
+      continue
+    if (next === previous)
+      next = { source: base, changes: { ...previous.changes } }
+    next.changes[original.id] = {
+      before: next.changes[original.id]?.before ?? sportsRailEntry(original),
+      after: sportsRailEntry(displayed),
+      at,
+    }
+  }
+  return next
+}
+
+export function displaySportsCensus(census: SportsCensus, now: number) {
+  return {
+    ...census.source,
+    ...projectEntries(census.source, Object.values(census.changes), now),
+  }
+}
+
+function projectEntries(
+  source: RailSource,
+  changes: { before: RailEntry; after: RailEntry }[],
   now: number
 ) {
   const fallbackEnd = (source.snapshotTime ?? 0) + LIVE_STALE_MS
   const deadlines = new Map<number, number>()
-  const addDeadline = (at: number | undefined, count: number) => {
-    if (at !== undefined && at > now)
-      deadlines.set(at, (deadlines.get(at) ?? 0) + count)
+  const memberships = new Map<AnySportKey, Map<number, number>>()
+  const add = (map: Map<number, number>, at: number | undefined, n: number) => {
+    if (at != null && at > now) map.set(at, (map.get(at) ?? 0) + n)
+  }
+  const addMembership = (sport: AnySportKey, at: number, n: number) => {
+    const perSport = memberships.get(sport) ?? new Map<number, number>()
+    add(perSport, at, n)
+    memberships.set(sport, perSport)
   }
   let liveCount = source.liveCount
-  for (const [at, count] of source.liveExpiries ?? [
-    [fallbackEnd, source.liveCount],
-  ]) {
-    if (at <= now) liveCount -= count
-    else addDeadline(at, count)
-  }
   const counts = { ...source.counts }
-  const receiptEnd = (game: ScheduleGame) =>
-    game.sportsLeagueKey && game.liveUpdatedTime != null
-      ? game.liveUpdatedTime + LIVE_STALE_MS
-      : undefined
-  before.forEach((game, i) => {
-    const displayed = after[i]
-    const wasLive = source.liveExpiries
-      ? atSportsObservationTime(game, now).status === 'live'
-      : now < fallbackEnd && game.status === 'live'
-    if (wasLive) {
+  for (const [at, n] of source.liveExpiries ?? [[fallbackEnd, liveCount]]) {
+    if (at <= now) liveCount -= n
+    else add(deadlines, at, n)
+  }
+  for (const [at, sport, n] of source.membershipExpiries ?? []) {
+    if (at <= now) counts[sport] = (counts[sport] ?? 0) - n
+    else addMembership(sport, at, n)
+  }
+  changes.forEach(({ before: original, after: displayed }) => {
+    const liveEnd = source.liveExpiries ? original.liveUntil : fallbackEnd
+    const originallyLive =
+      original.status === 'live' && (liveEnd == null || liveEnd > now)
+    const originallyVisible =
+      original.status !== 'finished' &&
+      (!source.membershipExpiries || original.memberUntil > now)
+    if (originallyLive) {
       liveCount--
-      addDeadline(source.liveExpiries ? receiptEnd(game) : fallbackEnd, -1)
+      add(deadlines, liveEnd, -1)
     }
-    if (displayed.status === 'live') {
-      liveCount++
-      addDeadline(receiptEnd(displayed), 1)
+    if (originallyVisible) {
+      counts[original.sport] = (counts[original.sport] ?? 0) - 1
+      if (source.membershipExpiries)
+        addMembership(original.sport, original.memberUntil, -1)
     }
-    if (game.status !== 'finished' && displayed.status === 'finished')
-      counts[game.sport] = Math.max(0, (counts[game.sport] ?? 0) - 1)
+    if (displayed.status !== 'finished' && displayed.memberUntil > now) {
+      counts[displayed.sport] = (counts[displayed.sport] ?? 0) + 1
+      addMembership(displayed.sport, displayed.memberUntil, 1)
+      if (
+        displayed.status === 'live' &&
+        (displayed.liveUntil == null || displayed.liveUntil > now)
+      ) {
+        liveCount++
+        add(deadlines, displayed.liveUntil, 1)
+      }
+    }
   })
+  for (const sport of Object.keys(counts))
+    counts[sport] = Math.max(0, counts[sport] ?? 0)
+  const membershipExpiries: NonNullable<RailSource['membershipExpiries']> = []
+  for (const [sport, map] of memberships)
+    for (const [at, n] of map)
+      if (n > 0) membershipExpiries.push([at, sport, n])
   return {
     counts,
     liveCount: Math.max(0, liveCount),
     liveExpiries: [...deadlines].filter(([, n]) => n > 0),
+    membershipExpiries,
   }
 }

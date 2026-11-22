@@ -964,6 +964,19 @@ async function writeScorePatch(
   )
 }
 
+function scoredFixture<T>(game: PendingGame, teams: GameTeams, patch: T) {
+  return isSportsBdlEnabled() && teams.home && teams.away
+    ? {
+        ...patch,
+        scoreFixture: {
+          eventId: `odds:${game.sportKey}:${game.eventId}`,
+          home: teams.home,
+          away: teams.away,
+        },
+      }
+    : patch
+}
+
 async function writeLiveScore(
   pg: SupabaseDirectClient,
   game: PendingGame,
@@ -991,7 +1004,9 @@ async function writeLiveScore(
   const written = await writeScorePatch(pg, game.contract.id, patch, run)
   if (!written || !run.isCurrent()) return
   run.setStage('score-publication')
-  await run.mutate(() => publishSportsLiveScore(game.contract.id, patch))
+  await run.mutate(() =>
+    publishSportsLiveScore(game.contract.id, scoredFixture(game, teams, patch))
+  )
   return true
 }
 
@@ -1037,7 +1052,9 @@ async function finishGame(
   const written = await writeScorePatch(pg, contract.id, patch, run)
   if (!written || !run.isCurrent()) return
   run.setStage('score-publication')
-  await run.mutate(() => publishSportsLiveScore(contract.id, patch))
+  await run.mutate(() =>
+    publishSportsLiveScore(contract.id, scoredFixture(game, teams, patch))
+  )
   if (!run.isCurrent()) return
 
   run.setStage('answer-read')

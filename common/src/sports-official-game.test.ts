@@ -13,12 +13,28 @@ import { matchesSportsTicket, toOfficialGame } from './sports-official-game'
 
 const now = Date.UTC(2026, 10, 21, 15)
 const answers = [
-  { id: 'away', text: 'Port City', index: 0, prob: 0.4, shortText: 'OLD' },
-  { id: 'home', text: 'Lake City', index: 1, prob: 0.6, shortText: 'OLD' },
+  {
+    contractId: 'local-market',
+    id: 'away',
+    text: 'Port City',
+    index: 0,
+    prob: 0.4,
+    shortText: 'OLD',
+  },
+  {
+    contractId: 'local-market',
+    id: 'home',
+    text: 'Lake City',
+    index: 1,
+    prob: 0.6,
+    shortText: 'OLD',
+  },
 ] as Answer[]
 const market = {
   id: 'local-market',
   slug: 'local-game',
+  shouldAnswersSumToOne: true,
+  addAnswersMode: 'DISABLED',
   creatorId: MANIFOLD_SPORTS_USER_IDS[0],
   sportsProvider: 'bdl',
   sportsEventId: 'bdl:nba:123',
@@ -427,3 +443,79 @@ it('expires an earlier scheduled receipt exactly at kickoff and the independent 
   expect(nextSportsObservationChange(live, now)).toBe(market.closeTime)
   expect(canBetOnScheduledGame(live, market.closeTime)).toBe(false)
 })
+
+it('rejects unavailable native shapes and an independently resolved answer in the feed as soon as they are observed', () => {
+  for (const data of [
+    { shouldAnswersSumToOne: false },
+    { addAnswersMode: 'ANYONE' },
+    { outcomeType: 'MULTI_NUMERIC' },
+  ])
+    expect(project(data)?.bettingSidesUnverified).toBe(true)
+  expect(
+    project(
+      {},
+      offered.map((a, i) => (i === 0 ? { ...a, resolution: 'NO' } : a))
+    )?.bettingSidesUnverified
+  ).toBe(true)
+  const attrs = {
+    sportsProvider: 'odds',
+    sportsEventId: 'odds:basketball_nba:game',
+    sportsLeagueKey: undefined,
+  }
+  const row = project(attrs)!
+  expect(row.home.entrantId).toBe('17')
+  expect(
+    matchesSportsTicket(
+      row,
+      { ...native, ...attrs, sportsAwayTeamId: '58' } as unknown as Contract,
+      offered,
+      now
+    )
+  ).toBe(false)
+  expect(
+    project({ ...attrs, sportsMarketType: 'spread' })?.bettingSidesUnverified
+  ).toBe(true)
+  for (const sportsLiveStatus of ['CANCELED', 'FINAL', 'FINISHED', 'AWARDED']) {
+    const updated = {
+      ...native,
+      ...attrs,
+      sportsLiveStatus,
+    } as unknown as Contract
+    expect(matchesSportsTicket(row, updated, offered, now)).toBe(false)
+    expect(
+      canBetOnScheduledGame(project({ ...attrs, sportsLiveStatus })!, now)
+    ).toBe(false)
+  }
+  expect(
+    matchesSportsTicket(
+      row,
+      {
+        ...native,
+        ...attrs,
+        sportsLiveStatus: 'SUSPENDED',
+      } as unknown as Contract,
+      offered,
+      now
+    )
+  ).toBe(true)
+})
+it.each([0, 1])(
+  'expires a scheduled confirmation received %i ms after kickoff, without closing the market',
+  (offset) => {
+    const receipt = now + offset
+    const c = {
+      sportsLiveStatus: 'SCHEDULED',
+      sportsStartTimestamp: new Date(now).toISOString(),
+      sportsLiveUpdatedTime: receipt,
+      closeTime: now + 2 * LIVE_STALE_MS,
+    }
+    const last = projectAt(c, receipt + LIVE_STALE_MS - 1)
+    expect(last.gameState).toBe('scheduled')
+    expect(nextSportsObservationChange(last, receipt + LIVE_STALE_MS - 1)).toBe(
+      receipt + LIVE_STALE_MS
+    )
+    const expired = projectAt(c, receipt + LIVE_STALE_MS)
+    expect(expired.gameState).toBe('unavailable')
+    expect(canBetOnScheduledGame(expired, receipt + LIVE_STALE_MS)).toBe(true)
+  }
+)

@@ -1,3 +1,4 @@
+import { useSportsTicket } from './sports-ticket-context'
 import { SelectorIcon } from '@heroicons/react/solid'
 import { useEvent } from 'client-common/hooks/use-event'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
@@ -74,6 +75,7 @@ export default function LimitOrderPanel(props: {
   prefillTimestamp?: number
   compact?: boolean
 }) {
+  const sportsTicket = useSportsTicket()
   const {
     contract,
     multiProps,
@@ -302,6 +304,7 @@ export default function LimitOrderPanel(props: {
         removeUndefinedProps({
           outcome,
           amount,
+          ...(sportsTicket && { sportsTicket: sportsTicket.ticket }),
           contractId: contract.id,
           answerId,
           limitProb,
@@ -341,6 +344,15 @@ export default function LimitOrderPanel(props: {
     } catch (e) {
       setLastBetDetails(null)
       if (e instanceof APIError) {
+        if (
+          sportsTicket &&
+          (e.code === 409 ||
+            (e.code === 403 &&
+              /Trading is closed|Market is resolved|Market is deleted/.test(
+                e.message
+              )))
+        )
+          sportsTicket.onInvalid?.()
         setError(e.message.toString())
       } else {
         console.error(e)

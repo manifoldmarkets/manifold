@@ -65,10 +65,11 @@ export function toOfficialGame(
     observedStatus === 'FINAL' ||
     observedStatus === 'FINISHED' ||
     observedStatus === 'AWARDED'
+  const fields = bdlEnabled ? scheduleScoreFields(d, isResolved) : undefined
   let details: ScheduleScoreFields | undefined = isCanceled
-    ? { gameState: 'canceled' as const }
-    : league
-    ? scheduleScoreFields(d, isResolved)
+    ? { gameState: 'canceled' }
+    : league || fields?.gameState
+    ? fields
     : undefined
 
   if (league && !details?.gameState) {
@@ -93,7 +94,11 @@ export function toOfficialGame(
   const { homeAnswer, awayAnswer, drawAnswer } = binding
   const bettingSidesUnverified =
     bdlEnabled &&
-    (c.outcomeType !== 'MULTIPLE_CHOICE' ||
+    ((d.sportsMarketType != null && d.sportsMarketType !== 'moneyline') ||
+      c.outcomeType !== 'MULTIPLE_CHOICE' ||
+      c.addAnswersMode !== 'DISABLED' ||
+      !c.shouldAnswersSumToOne ||
+      ordered.some((a) => a.contractId !== c.id || a.resolution != null) ||
       ordered.some((a) => !a.id || !a.text.trim()) ||
       new Set(ordered.map((a) => a.id)).size !== ordered.length ||
       normalizedName(homeAnswer.text) === normalizedName(awayAnswer.text) ||
@@ -106,14 +111,14 @@ export function toOfficialGame(
     homeAnswer,
     label,
     leagueKey,
-    d.sportsHomeTeamId,
+    bdlEnabled ? d.sportsHomeTeamId : undefined,
     bdlEnabled ? d.sportsHomeTeam : undefined
   )
   const away = toTeam(
     awayAnswer,
     label,
     leagueKey,
-    d.sportsAwayTeamId,
+    bdlEnabled ? d.sportsAwayTeamId : undefined,
     bdlEnabled ? d.sportsAwayTeam : undefined
   )
   const draw = drawAnswer
@@ -173,46 +178,44 @@ export function toOfficialGame(
       ? { home: homeScore, away: awayScore }
       : null
 
-  return atSportsObservationTime(
-    {
-      id: c.id,
-      ...(bettingSidesUnverified && { bettingSidesUnverified: true as const }),
-      ...(league &&
-        !isCanceled &&
-        terminalObservation && { observedFinal: true as const }),
-      slug: c.slug,
-      creatorUsername: c.creatorUsername,
-      question: c.question,
-      sport:
-        league?.sportKey ??
-        sportForMarket({ sportsLeague: label, groupIds }, index),
-      groupSlugs: c.groupSlugs ?? [],
-      league: label,
-      ...(leagueKey && { sportsLeagueKey: leagueKey }),
-      ...details,
-      sportsEventId,
-      startTime,
-      kickoffKnown: kickoff != null,
-      closeTime,
-      status,
-      isResolved,
-      ...(isCanceled && { isCanceled: true as const }),
-      winnerAnswerId,
-      resolutionTime: c.resolutionTime ?? null,
-      home,
-      away,
-      draw,
-      volume: c.volume ?? 0,
-      uniqueBettorCount: c.uniqueBettorCount ?? 0,
-      liveScore,
-      liveUpdatedTime: isCanceled ? null : liveUpdatedTime,
-      scoreUpdatedTime: isCanceled ? null : d.sportsScoreUpdatedTime ?? null,
-      finalScore,
-      related: [],
-      relatedCount: 0,
-    },
-    now
-  )
+  const game: ScheduleGame = {
+    id: c.id,
+    ...(bettingSidesUnverified && { bettingSidesUnverified: true as const }),
+    ...(league &&
+      !isCanceled &&
+      terminalObservation && { observedFinal: true as const }),
+    slug: c.slug,
+    creatorUsername: c.creatorUsername,
+    question: c.question,
+    sport:
+      league?.sportKey ??
+      sportForMarket({ sportsLeague: label, groupIds }, index),
+    groupSlugs: c.groupSlugs ?? [],
+    league: label,
+    ...(leagueKey && { sportsLeagueKey: leagueKey }),
+    ...details,
+    sportsEventId,
+    startTime,
+    kickoffKnown: kickoff != null,
+    closeTime,
+    status,
+    isResolved,
+    ...(isCanceled && { isCanceled: true as const }),
+    winnerAnswerId,
+    resolutionTime: c.resolutionTime ?? null,
+    home,
+    away,
+    draw,
+    volume: c.volume ?? 0,
+    uniqueBettorCount: c.uniqueBettorCount ?? 0,
+    liveScore,
+    liveUpdatedTime: isCanceled ? null : liveUpdatedTime,
+    scoreUpdatedTime: isCanceled ? null : d.sportsScoreUpdatedTime ?? null,
+    finalScore,
+    related: [],
+    relatedCount: 0,
+  }
+  return bdlEnabled ? atSportsObservationTime(game, now) : game
 }
 
 function sameTeamName(answer: string, stored?: string) {
@@ -338,7 +341,7 @@ function toTeam(
       : teamCodeForLeague(league, name))
   return {
     answerId: answer.id,
-    ...(leagueKey && entrantId && { entrantId }),
+    ...(typeof entrantId === 'string' && entrantId.trim() && { entrantId }),
     name,
     shortName: short || name,
     flag,
@@ -348,6 +351,42 @@ function toTeam(
   }
 }
 
+export type SportsTicket = { binding: string; closeTime: number }
+
+/** Prices and scores can move while a ticket is open. The event, participants
+ * and offered answers define the user's selection. */
+export const sportsTicketBinding = (g: ScheduleGame) =>
+  JSON.stringify([
+    sportsGameBinding(g),
+    normalizedName(g.home.name),
+    normalizedName(g.away.name),
+  ])
+
+export function verifiedSportsTicket(
+  expected: SportsTicket,
+  contract: Contract,
+  answers: Answer[],
+  now: number
+): ScheduleGame | undefined {
+  if (
+    !MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) ||
+    contract.deleted ||
+    contract.visibility !== 'public' ||
+    contract.token !== 'MANA' ||
+    contract.isResolved ||
+    !Number.isFinite(contract.closeTime) ||
+    !Number.isFinite(expected.closeTime) ||
+    expected.closeTime <= now
+  )
+    return
+  const game = toOfficialGame(contract, answers, [], undefined, now, true)
+  return game &&
+    canBetOnScheduledGame(game, now) &&
+    sportsTicketBinding(game) === expected.binding
+    ? game
+    : undefined
+}
+
 /** Revalidate a feed selection against the separately fetched native market and answers. */
 export function matchesSportsTicket(
   expected: ScheduleGame,
@@ -355,29 +394,13 @@ export function matchesSportsTicket(
   answers: Answer[],
   now: number
 ) {
-  if (
-    contract.id !== expected.id ||
-    !MANIFOLD_SPORTS_USER_IDS.includes(contract.creatorId) ||
-    contract.deleted ||
-    contract.visibility !== 'public' ||
-    contract.token !== 'MANA' ||
-    contract.isResolved ||
-    contract.closeTime == null ||
-    contract.closeTime <= now ||
-    !isMultiCpmm(contract) ||
-    contract.outcomeType !== 'MULTIPLE_CHOICE' ||
-    contract.addAnswersMode !== 'DISABLED' ||
-    !contract.shouldAnswersSumToOne ||
-    answers.some((a) => a.contractId !== contract.id || a.resolution != null)
-  )
-    return false
-  const current = toOfficialGame(contract, answers, [], undefined, now, true)
   return (
-    !!current &&
     canBetOnScheduledGame(expected, now) &&
-    canBetOnScheduledGame(current, now) &&
-    sportsGameBinding(expected) === sportsGameBinding(current) &&
-    sameTeamName(current.home.name, expected.home.name) &&
-    sameTeamName(current.away.name, expected.away.name)
+    !!verifiedSportsTicket(
+      { binding: sportsTicketBinding(expected), closeTime: expected.closeTime },
+      contract,
+      answers,
+      now
+    )
   )
 }
