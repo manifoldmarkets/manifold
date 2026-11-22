@@ -25,11 +25,15 @@ import {
 } from 'shared/balldontlie-client'
 import {
   bdlJournalDirectory,
-  bdlJournalState,
+  createBdlJournalReader,
   bdlLatestCache,
   bdlRevisionFile,
   latestBdlRevision,
+  parseFixture,
 } from 'shared/balldontlie-recording'
+import { bdlUrl } from 'shared/balldontlie-request'
+
+export class RecordingCacheRefreshError extends Error {}
 
 function assertOutsideGit(directory: string) {
   let current = directory
@@ -98,39 +102,30 @@ export function createRecordingStore(root: string) {
     return safeFile(canonical, [path.relative(canonical, filename)])
   }
 
-  // A rename to an existing *nonempty* directory cannot replace its contents.
-  // The first writer to claim a revision publishes a complete envelope. A
-  // loser can finish immediately at the next slot, even if the winner exits.
-  function publish(journal: string, bytes: Buffer, importLegacy = false) {
-    let compared = 0
+  const inspect = createBdlJournalReader()
+  const revisionAt = (journal: string, selector: string, forAppend = false) =>
+    latestBdlRevision(inspect(journal, selector), forAppend)
+
+  // Rename into a specific revision. A collision means a different publisher
+  // committed first. No shared lease or abandoned lock needs to be recovered.
+  function publishAt(journal: string, revision: number, bytes: Buffer) {
+    const target = checked(bdlRevisionFile(journal, revision))
     const pending = checked(path.join(journal, '.pending-' + randomUUID()))
     mkdirSync(pending, { mode: 0o700 })
     const file = path.join(pending, 'response.json')
     try {
       writeFileSync(file, bytes, { mode: 0o600, flag: 'wx' })
-      for (;;) {
-        const latest = latestBdlRevision(journal, true)
-        // Two new writers may both have read the same legacy cache. Compare
-        // any revisions that won the race before claiming a slot for it.
-        if (importLegacy) {
-          while (compared < latest) {
-            const old = checked(bdlRevisionFile(journal, ++compared))
-            if (readFileSync(old).equals(bytes)) return
-          }
-        }
-        const revision = latest + 1
-        const target = checked(bdlRevisionFile(journal, revision))
-        try {
-          renameSync(pending, path.dirname(target))
-          return
-        } catch (error) {
-          const code = (error as NodeJS.ErrnoException).code
-          if (
-            !['EEXIST', 'ENOTEMPTY', 'EPERM', 'EACCES'].includes(code ?? '') ||
-            !existsSync(target)
-          )
-            throw error
-        }
+      try {
+        renameSync(pending, path.dirname(target))
+        return true
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code
+        if (
+          ['EEXIST', 'ENOTEMPTY', 'EPERM', 'EACCES'].includes(code ?? '') &&
+          existsSync(target)
+        )
+          return false
+        throw error
       }
     } finally {
       if (existsSync(file)) unlinkSync(file)
@@ -138,76 +133,96 @@ export function createRecordingStore(root: string) {
     }
   }
 
-  // Only legacy writers replace filename. Once imported, those same bytes need
-  // no further history scan in this process. Reopening a store verifies history.
-  const imported = new Map<string, string>()
-  function importLegacy(filename: string, journal: string, endpoint: string) {
-    if (!existsSync(filename)) return
-    const bytes = readFileSync(filename)
-    const digest = createHash('sha256').update(bytes).digest('hex')
-    if (imported.get(filename) === digest) return
-    parseAttempt(bytes, endpoint, filename)
-    publish(journal, bytes, true)
-    imported.set(filename, digest)
+  function parseAttempt(bytes: Buffer, selector: string) {
+    const result = parseFixture(bytes.toString('utf8'), false)
+    if (
+      !result ||
+      bdlUrl(result.request.path, result.request.params).href !== selector
+    )
+      throw new Error('Recording request mismatch.')
+    return result
   }
 
-  function refresh(filename: string, journal: string) {
-    const mirror = checked(bdlLatestCache(filename))
+  function importLegacy(filename: string, journal: string, selector: string) {
+    if (!existsSync(filename)) return
     for (;;) {
-      const revision = latestBdlRevision(journal)
+      // Sample the mutable legacy file *after* the immutable prefix. If a
+      // competing importer wins this slot, never retry the old sample in a
+      // later revision. Read the current flat file against the new prefix.
+      const state = inspect(journal, selector)
+      const latest = latestBdlRevision(state, true)
+      const bytes = readFileSync(filename)
+      const digest = createHash('sha256').update(bytes).digest('hex')
+      if (state.digests.has(digest)) return
+      parseAttempt(bytes, selector)
+      if (publishAt(journal, latest + 1, bytes)) return
+    }
+  }
+
+  function refresh(filename: string, journal: string, selector: string) {
+    for (;;) {
+      const revision = revisionAt(journal, selector)
       if (!revision)
         return existsSync(filename) ? readFileSync(filename) : undefined
       const data = readFileSync(checked(bdlRevisionFile(journal, revision)))
-      const cached = existsSync(mirror) ? readFileSync(mirror) : undefined
-      if (!cached?.equals(data)) {
-        const tmp = checked(mirror + '.' + randomUUID() + '.tmp')
-        try {
-          writeFileSync(tmp, data, { mode: 0o600, flag: 'wx' })
-          renameSync(tmp, mirror)
-        } finally {
-          if (existsSync(tmp)) unlinkSync(tmp)
+      try {
+        const mirror = checked(bdlLatestCache(filename))
+        const cached = existsSync(mirror) ? readFileSync(mirror) : undefined
+        if (!cached?.equals(data)) {
+          const tmp = checked(mirror + '.' + randomUUID() + '.tmp')
+          try {
+            writeFileSync(tmp, data, { mode: 0o600, flag: 'wx' })
+            renameSync(tmp, mirror)
+          } finally {
+            if (existsSync(tmp)) unlinkSync(tmp)
+          }
         }
+      } catch {
+        throw new RecordingCacheRefreshError(
+          'The recording cache could not be refreshed.'
+        )
       }
-      // A delayed cache writer must not leave an older revision as latest.
-      if (latestBdlRevision(journal) === revision) return data
+      if (revisionAt(journal, selector) === revision) return data
     }
   }
 
-  function parseAttempt(bytes: Buffer, endpoint: string, filename: string) {
-    const attempt: BdlAttempt = JSON.parse(bytes.toString('utf8'))
-    if (
-      !Number.isInteger(attempt?.status) ||
-      !attempt.request ||
-      attempt.request.path !== endpoint ||
-      location(endpoint, attempt.request.params) !== filename ||
-      !Object.prototype.hasOwnProperty.call(attempt, 'body')
+  function assertAppendable(endpoint: string, params: BdlParams) {
+    revisionAt(
+      checked(bdlJournalDirectory(location(endpoint, params))),
+      bdlUrl(endpoint, params).href,
+      true
     )
-      throw new Error('Invalid recording at ' + filename)
-    return attempt
   }
-  function read(endpoint: string, params: BdlParams): BdlAttempt | undefined {
+
+  function read(endpoint: string, params: BdlParams) {
     const filename = location(endpoint, params)
     const journal = checked(bdlJournalDirectory(filename))
+    const selector = bdlUrl(endpoint, params).href
     if (existsSync(filename)) {
-      const state = bdlJournalState(journal)
+      const state = inspect(journal, selector)
       if (state.latest && !state.hasGap)
-        importLegacy(filename, journal, endpoint)
+        importLegacy(filename, journal, selector)
     }
-    const data = refresh(filename, journal)
-    return data && parseAttempt(data, endpoint, filename)
+    const data = refresh(filename, journal, selector)
+    return data && parseAttempt(data, selector)
   }
+
   function save(attempt: BdlAttempt) {
     const filename = location(attempt.request.path, attempt.request.params)
     const journal = checked(bdlJournalDirectory(filename))
+    const selector = bdlUrl(attempt.request.path, attempt.request.params).href
     mkdirSync(journal, { recursive: true, mode: 0o700 })
-    importLegacy(filename, journal, attempt.request.path)
-    publish(journal, Buffer.from(JSON.stringify(attempt) + '\n'))
+    importLegacy(filename, journal, selector)
+    const bytes = Buffer.from(JSON.stringify(attempt) + '\n')
+    for (;;) {
+      const next = revisionAt(journal, selector, true) + 1
+      if (publishAt(journal, next, bytes)) break
+    }
     try {
-      refresh(filename, journal)
+      refresh(filename, journal, selector)
       return { cacheRefreshed: true }
-    } catch {
-      // The revision is already committed. Report the derived failure without
-      // losing the successful publication or dispatching the request again.
+    } catch (err) {
+      if (!(err instanceof RecordingCacheRefreshError)) throw err
       return { cacheRefreshed: false }
     }
   }
@@ -265,5 +280,5 @@ export function createRecordingStore(root: string) {
     mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 })
     appendFileSync(filename, JSON.stringify(change) + '\n', { mode: 0o600 })
   }
-  return { read, save, watch, lastWatchDigest }
+  return { read, save, watch, lastWatchDigest, assertAppendable }
 }

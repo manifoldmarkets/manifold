@@ -11,7 +11,7 @@ import {
 import type { History, PlanStep } from './plan'
 import { maxPaidRecorderRate } from './rate'
 import { isRow } from './spec'
-import { createRecordingStore } from './store'
+import { createRecordingStore, RecordingCacheRefreshError } from './store'
 
 export const defaultRecorderRate = 3
 export { maxPaidRecorderRate } from './rate'
@@ -48,7 +48,8 @@ export const emptySummary = () => ({
 
 // The plan consumes provider pages with either a data list or a detail object.
 // Preserve other safely decoded replies as evidence, without claiming coverage.
-const usable = (attempt: BdlAttempt) =>
+type PageResponse = Pick<BdlAttempt, 'status' | 'body'>
+const usable = (attempt: PageResponse) =>
   attempt.status >= 200 &&
   attempt.status < 300 &&
   isRow(attempt.body) &&
@@ -89,41 +90,47 @@ export function createRecorder(options: RecorderOptions) {
   const now = options.clock?.now ?? Date.now
   const denied = new Set<string>()
   let consecutiveServerErrors = 0
-  const client = createBdlClient({
-    key,
-    async transport(url, init) {
-      summary.dispatched++
-      const response = await (options.transport ?? fetch)(url, init)
-      summary.httpResponses++
-      if (response.status === 401) summary.unauthorized++
-      if (response.status === 429) summary.rateLimited++
-      if (response.status >= 500 && response.status <= 599) {
-        summary.serverErrors++
-        consecutiveServerErrors++
-      } else consecutiveServerErrors = 0
-      return response
-    },
-    clock: options.clock,
-    role: 'recorder',
-    recorderRate: rate,
-    acquireSharedSlot: options.acquireSharedSlot,
-    maxAttempts: 6,
-    onAttempt(attempt) {
-      safeToPersist(attempt, key)
-      const { cacheRefreshed } = store.save(attempt)
-      if (usable(attempt)) summary.usableSnapshots++
-      if (!cacheRefreshed) {
-        summary.cacheRefreshFailures++
-        throw new Error(
-          'Snapshot saved, but the recording cache could not be refreshed.'
-        )
-      }
-      if (consecutiveServerErrors >= 3)
-        throw new Error(
-          'Three consecutive server errors. Use --resume after the provider recovers.'
-        )
-    },
-  })
+  const clientFor = (endpoint: string, params: BdlParams) =>
+    createBdlClient({
+      key,
+      async transport(url, init) {
+        summary.dispatched++
+        const response = await (options.transport ?? fetch)(url, init)
+        summary.httpResponses++
+        if (response.status === 401) summary.unauthorized++
+        if (response.status === 429) summary.rateLimited++
+        if (response.status >= 500 && response.status <= 599) {
+          summary.serverErrors++
+          consecutiveServerErrors++
+        } else consecutiveServerErrors = 0
+        return response
+      },
+      clock: options.clock,
+      role: 'recorder',
+      recorderRate: rate,
+      async acquireSharedSlot(rate) {
+        // Recheck on retries after any rate-limit/backoff wait, before using
+        // the machine-wide slot. The immutable publish checks again on commit.
+        store.assertAppendable(endpoint, params)
+        await options.acquireSharedSlot?.(rate)
+      },
+      maxAttempts: 6,
+      onAttempt(attempt) {
+        safeToPersist(attempt, key)
+        const { cacheRefreshed } = store.save(attempt)
+        if (usable(attempt)) summary.usableSnapshots++
+        if (!cacheRefreshed) {
+          summary.cacheRefreshFailures++
+          throw new Error(
+            'Snapshot saved, but the recording cache could not be refreshed.'
+          )
+        }
+        if (consecutiveServerErrors >= 3)
+          throw new Error(
+            'Three consecutive server errors. Use --resume after the provider recovers.'
+          )
+      },
+    })
 
   async function page(
     endpoint: string,
@@ -137,16 +144,18 @@ export function createRecorder(options: RecorderOptions) {
       summary.skippedUnentitled++
       return
     }
-    if (resume) {
-      const saved = store.read(endpoint, params)
-      if (saved && usable(saved)) {
-        summary.resumed++
-        return saved
-      }
-    }
     try {
-      return await client.get(endpoint, params)
+      if (resume) {
+        const saved = store.read(endpoint, params)
+        if (saved && usable(saved)) {
+          summary.resumed++
+          return saved
+        }
+      }
+      return await clientFor(endpoint, params).get(endpoint, params)
     } catch (error) {
+      if (error instanceof RecordingCacheRefreshError)
+        summary.cacheRefreshFailures++
       if (!(error instanceof BdlHttpError)) throw error
       if (step.rejectedStatuses?.includes(error.status)) {
         summary.rejectedProbes.push({ label: step.label, status: error.status })
@@ -183,7 +192,7 @@ export function createRecorder(options: RecorderOptions) {
               'Pagination repeated or exceeded the page cap at ' + request.path
             )
           seen.add(identity)
-          const result: BdlAttempt | undefined = await page(
+          const result: PageResponse | undefined = await page(
             request.path,
             params,
             !!options.resume && !watching,

@@ -4,6 +4,9 @@ import { isAbsolute, join, relative, sep } from 'path'
 import {
   bdlJournalDirectory,
   bdlRevisionFile,
+  createBdlJournalReader,
+  Fixture,
+  parseFixture,
   latestBdlRevision,
 } from './balldontlie-recording'
 import { BdlParams, bdlRecordingPathParts, bdlUrl } from './balldontlie-request'
@@ -17,47 +20,6 @@ export function requireBdlLocalOnly() {
     throw new Error(
       '[sports-bdl-client] BDL fixtures and fake time require LOCAL_ONLY'
     )
-}
-
-type Fixture = {
-  request: { path: string; params: BdlParams; at?: string }
-  recordedAt?: string
-  status: number
-  body: unknown
-  rateLimit?: { limit?: number | null; remaining?: number | null }
-}
-
-function parseFixture(text: string, namedSample: boolean): Fixture | undefined {
-  let value: Fixture
-  try {
-    value = JSON.parse(text)
-  } catch {
-    throw new Error('[sports-bdl-client] Invalid JSON in BDL fixture')
-  }
-  // Named adapter examples contain an unwrapped provider page, with no
-  // request identity. Never invent a request for them. Incomplete envelopes
-  // (or a malformed canonical recording) must still fail closed.
-  if (
-    namedSample &&
-    value &&
-    typeof value === 'object' &&
-    'data' in value &&
-    Object.keys(value).every((key) => key === 'data' || key === 'meta')
-  )
-    return
-  if (
-    !value?.request ||
-    typeof value.request.path !== 'string' ||
-    !value.request.params ||
-    typeof value.request.params !== 'object' ||
-    Array.isArray(value.request.params) ||
-    !Number.isInteger(value.status) ||
-    value.status < 200 ||
-    value.status > 599 ||
-    !('body' in value)
-  )
-    throw new Error('[sports-bdl-client] Invalid BDL fixture envelope')
-  return value
 }
 
 async function confined(root: string, candidate: string) {
@@ -83,6 +45,7 @@ export function createBdlFixtureTransport(now: () => number) {
   requireBdlLocalOnly()
   const dir = process.env.BDL_FIXTURE_DIR
   if (!dir) throw new Error('[sports-bdl-client] BDL_FIXTURE_DIR is required')
+  const inspectJournal = createBdlJournalReader()
   return async (path: string, params: BdlParams): Promise<Response> => {
     requireBdlLocalOnly()
     const { league, endpointSlug, parameterHash } = bdlRecordingPathParts(
@@ -100,7 +63,9 @@ export function createBdlFixtureTransport(now: () => number) {
       const journal = bdlJournalDirectory(cache)
       let revision = 0
       try {
-        revision = latestBdlRevision(await confined(root, journal))
+        revision = latestBdlRevision(
+          inspectJournal(await confined(root, journal), key)
+        )
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
       }

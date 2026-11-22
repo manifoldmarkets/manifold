@@ -478,6 +478,17 @@ it('counts usable publication after a failed mirror refresh and resumes the comm
   expect(
     JSON.parse(readFileSync(bdlRevisionFile(journal, 1), 'utf8')).body
   ).toEqual(attempt(1).body)
+  const failedResume = setup([], true)
+  await expect(failedResume.recorder.run([step()])).rejects.toThrow(
+    'cache could not be refreshed'
+  )
+  expect(failedResume.recorder.summary).toMatchObject({
+    cacheRefreshFailures: 1,
+    dispatched: 0,
+    httpResponses: 0,
+    usableSnapshots: 0,
+    resumed: 0,
+  })
   spy.mockRestore()
   const resumed = setup([], true)
   await resumed.recorder.run([step()])
@@ -556,4 +567,159 @@ it('continues other selectors and keeps an unusable watch page from replacing th
     httpResponses: 2,
     usableSnapshots: 1,
   })
+})
+
+it('rereads a changed legacy file after a competing resume imports its correction', () => {
+  const { cache, journal } = nbaArchive()
+  const first = createRecordingStore(out)
+  first.save(attempt(1))
+  writeFileSync(cache, JSON.stringify(attempt(2)))
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const rename = fs.renameSync
+  let interleaved = false
+  jest.spyOn(fs, 'renameSync').mockImplementation((from, to) => {
+    if (!interleaved && to === path.join(journal, '2')) {
+      interleaved = true
+      writeFileSync(cache, JSON.stringify(attempt(3)))
+      expect(createRecordingStore(out).read(endpoint, {})).toEqual(attempt(3))
+    }
+    return rename(from, to)
+  })
+  expect(first.read(endpoint, {})).toEqual(attempt(3))
+  expect(interleaved).toBe(true)
+  expect(readdirSync(journal).sort()).toEqual(['1', '2'])
+  expect(createRecordingStore(out).read(endpoint, {})).toEqual(attempt(3))
+})
+
+it.each([
+  ['truncated JSON', '{'],
+  [
+    'missing body',
+    JSON.stringify({ request: attempt(2).request, status: 200 }),
+  ],
+  ['invalid HTTP status', JSON.stringify({ ...attempt(2), status: 42 })],
+  [
+    'missing parameters',
+    JSON.stringify({ ...attempt(2), request: { path: endpoint } }),
+  ],
+  [
+    'another endpoint',
+    JSON.stringify({
+      ...attempt(2),
+      request: { path: '/nba/v1/teams', params: {} },
+    }),
+  ],
+  [
+    'another selector',
+    JSON.stringify({
+      ...attempt(2),
+      request: { path: endpoint, params: { cursor: 20 } },
+    }),
+  ],
+])(
+  'holds the first invalid slot (%s) on resume, replay and append',
+  async (_reason, invalid) => {
+    const { journal } = nbaArchive()
+    const store = createRecordingStore(out)
+    for (const n of [1, 2, 3]) store.save(attempt(n))
+    writeFileSync(bdlRevisionFile(journal, 2), invalid)
+    expect(store.read(endpoint, {})).toEqual(attempt(1))
+    const env = process.env
+    try {
+      process.env = { ...env, LOCAL_ONLY: 'true', BDL_FIXTURE_DIR: out }
+      delete process.env.GOOGLE_CLOUD_PROJECT
+      const response = await createBdlFixtureTransport(Date.now)(endpoint, {})
+      expect(await response.json()).toEqual(attempt(1).body)
+    } finally {
+      process.env = env
+    }
+    expect(() => store.save(attempt(4))).toThrow('missing or incomplete')
+    expect(readdirSync(journal).sort()).toEqual(['1', '2', '3'])
+  }
+)
+
+it.each([false, true])(
+  'rejects an unappendable journal before any quota grant (resume=%s)',
+  async (resume) => {
+    const { journal } = nbaArchive()
+    for (const n of [1, 2, 4]) {
+      const target = bdlRevisionFile(journal, n)
+      mkdirSync(path.dirname(target), { recursive: true })
+      writeFileSync(
+        target,
+        JSON.stringify({ ...attempt(n), status: n === 2 ? 429 : 200 })
+      )
+    }
+    const { clock } = setup([])
+    const slot = jest.fn(async () => undefined)
+    const transport = jest.fn()
+    const recorder = createRecorder({
+      out,
+      key: fakeKey,
+      resume,
+      clock,
+      acquireSharedSlot: slot,
+      transport,
+    })
+    await expect(recorder.run([step()])).rejects.toThrow(
+      'missing or incomplete'
+    )
+    expect(slot).not.toHaveBeenCalled()
+    expect(transport).not.toHaveBeenCalled()
+    expect(recorder.summary).toMatchObject({
+      dispatched: 0,
+      httpResponses: 0,
+      cacheRefreshFailures: 0,
+      resumed: 0,
+    })
+  }
+)
+
+it('checks the journal again before a retried quota grant when a gap appears during backoff', async () => {
+  const { journal } = nbaArchive()
+  const { clock } = setup([])
+  const sleep = clock.sleep
+  clock.sleep = async (ms) => {
+    const file = bdlRevisionFile(journal, 3)
+    mkdirSync(path.dirname(file), { recursive: true })
+    writeFileSync(file, JSON.stringify(attempt(3)))
+    await sleep(ms)
+  }
+  const slot = jest.fn(async () => undefined)
+  const transport = jest.fn(async () => new Response('{}', { status: 429 }))
+  const recorder = createRecorder({
+    out,
+    key: fakeKey,
+    clock,
+    transport,
+    acquireSharedSlot: slot,
+  })
+  await expect(recorder.run([step()])).rejects.toThrow('missing or incomplete')
+  expect(slot).toHaveBeenCalledTimes(1)
+  expect(transport).toHaveBeenCalledTimes(1)
+  expect(recorder.summary).toMatchObject({
+    dispatched: 1,
+    httpResponses: 1,
+    rateLimited: 1,
+    usableSnapshots: 0,
+  })
+})
+
+it('reuses verified revision metadata across reads and rechecks a same-length change', () => {
+  const { journal } = nbaArchive()
+  const store = createRecordingStore(out)
+  for (let i = 1; i <= 12; i++) store.save(attempt(i))
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const read = jest.spyOn(fs, 'readFileSync')
+  for (let i = 0; i < 3; i++)
+    expect(store.read(endpoint, {})).toEqual(attempt(12))
+  const historical = bdlRevisionFile(journal, 2)
+  expect(read.mock.calls.filter(([file]) => file === historical)).toHaveLength(
+    0
+  )
+  const bytes = fs.readFileSync(historical, 'utf8')
+  const replacement = historical + '.tmp'
+  writeFileSync(replacement, '{'.repeat(Buffer.byteLength(bytes)))
+  fs.renameSync(replacement, historical)
+  expect(store.read(endpoint, {})).toEqual(attempt(1))
 })
