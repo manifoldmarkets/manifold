@@ -791,7 +791,7 @@ function SportsAdmin() {
   return (
     <Page trackPageView={'sports admin page'}>
       <NoSEO />
-      <div className="mx-auto max-w-5xl px-4 pb-16">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-16">
         <Title>
           Sports Admin
           {admin && <ModActionTag admin className="ml-2 align-middle" />}
@@ -1005,7 +1005,7 @@ function SportsAdmin() {
                     value={groupSlug}
                     onChange={(e) => setGroupSlug(e.target.value)}
                     placeholder="ms-official-wc2026"
-                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 max-w-full rounded border px-3 py-1.5 font-mono text-sm"
                   />
                 </Row>
                 <p className="text-ink-400 text-xs">
@@ -2018,14 +2018,14 @@ function SportsAdmin() {
             </Row>
 
             <Row className="flex-wrap items-end gap-4">
-              <Col className="gap-1">
+              <Col className="max-w-full gap-1">
                 <label
                   htmlFor="sports-admin-community-topic"
                   className="text-ink-600 text-xs"
                 >
                   Browse a topic (slug) for community markets
                 </label>
-                <Row className="gap-2">
+                <Row className="flex-wrap gap-2">
                   <input
                     id="sports-admin-community-topic"
                     type="text"
@@ -2038,7 +2038,7 @@ function SportsAdmin() {
                       }
                     }}
                     placeholder="e.g. soccer, world-cup-predictions…"
-                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 rounded border px-3 py-1.5 font-mono text-sm"
+                    className="border-ink-300 bg-canvas-0 text-ink-900 w-72 max-w-full rounded border px-3 py-1.5 font-mono text-sm"
                   />
                   <Button
                     size="sm"
