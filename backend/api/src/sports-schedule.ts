@@ -93,20 +93,28 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
   const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
     topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
+  const readRacing = (db: Pick<Pg, 'manyOrNone'>) =>
+    Promise.all([
+      getRaceWeekends(db, raceDays, now),
+      sport === 'f1' && !cursor && !topicIds
+        ? getRaceChampionships(db, index, now)
+        : Promise.resolve({ championships: [], verifiedTitles: [] }),
+    ] as const)
   const [
     { games: official, groupIds: gameGroupIds },
     weekAll,
-    { weekends: allWeekends, groupIds: raceGroupIds, verifiedSessions },
-    { championships, verifiedTitle },
+    [
+      { weekends: allWeekends, groupIds: raceGroupIds, verifiedSessions },
+      { championships, verifiedTitles },
+    ],
   ] = await Promise.all([
     isSportsBdlEnabled()
       ? getOfficialGames(pg, index, daysAhead, now)
       : getLegacyOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
-    getRaceWeekends(pg, raceDays, now),
-    sport === 'f1' && !cursor && !topicIds
-      ? getRaceChampionships(pg, index, now)
-      : Promise.resolve({ championships: [], verifiedTitle: false }),
+    isSportsBdlEnabled()
+      ? pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, readRacing)
+      : readRacing(pg),
   ])
   const games = official.filter((g) => {
     if (
@@ -350,26 +358,32 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const page = later.slice(0, limit)
   const last = page[page.length - 1]
 
+  const verifiedRaceMarketIds = [
+    ...verifiedTitles,
+    ...shownWeekends.flatMap((w) =>
+      w.sessions.flatMap((session) =>
+        session.status === 'finished' ||
+        session.startTime >=
+          (sport === 'all' && !topicIds ? horizon : raceHorizon)
+          ? []
+          : session.markets
+              .filter(
+                (m) =>
+                  verifiedSessions.has(m.id) &&
+                  (!topicIds || inTopic(raceGroupIds[m.id]))
+              )
+              .map((m) => m.id)
+      )
+    ),
+  ]
   const response: SportsScheduleResponse = {
     snapshotTime: now,
     ...(isSportsBdlEnabled() &&
       !cursor && {
+        verifiedRaceMarketIds,
         availableLeagues: availableGameLeagues(
           feed,
-          verifiedTitle ||
-            shownWeekends.some((w) =>
-              w.sessions.some(
-                (session) =>
-                  session.status !== 'finished' &&
-                  session.startTime <
-                    (sport === 'all' && !topicIds ? horizon : raceHorizon) &&
-                  session.markets.some(
-                    (m) =>
-                      verifiedSessions.has(m.id) &&
-                      (!topicIds || inTopic(raceGroupIds[m.id]))
-                  )
-              )
-            )
+          verifiedRaceMarketIds.length > 0
         ),
       }),
     games: [...live, ...page],
@@ -584,7 +598,11 @@ async function getOfficialGames(
 const RACE_LOOKBACK_HOURS = 96
 const MAX_RACE_MARKETS = 100
 
-async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
+async function getRaceWeekends(
+  pg: Pick<Pg, 'manyOrNone'>,
+  daysAhead: number,
+  now: number
+) {
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
@@ -635,7 +653,11 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
 // topics about F1 and a championship. Which ones count, and the pick of
 // each kind, is pickRaceChampionships. The order by repeats the test for
 // ours: Postgres can't read an output column's name inside an expression.
-async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
+async function getRaceChampionships(
+  pg: Pick<Pg, 'manyOrNone'>,
+  index: SportsIndex,
+  now: number
+) {
   const rows = await pg.manyOrNone<{
     id: string
     question: string
@@ -694,17 +716,19 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
   )
   // Question-only community titles remain valid for the historical sidebar.
   // Only a chosen, verified official title can establish league availability.
-  const verifiedTitle =
-    isSportsBdlEnabled() &&
-    rows.some(
-      (r) =>
-        championships.some((c) => c.id === r.id) &&
-        marketLeagueKey({
-          ...r.navigation,
-          sportsEventId: r.official_event_id,
-        }) === 'f1'
-    )
-  return { championships, verifiedTitle }
+  const verifiedTitles = isSportsBdlEnabled()
+    ? rows
+        .filter(
+          (r) =>
+            championships.some((c) => c.id === r.id) &&
+            marketLeagueKey({
+              ...r.navigation,
+              sportsEventId: r.official_event_id,
+            }) === 'f1'
+        )
+        .map((r) => r.id)
+    : []
+  return { championships, verifiedTitles }
 }
 
 async function getAnswers(

@@ -754,8 +754,11 @@ describe('F1 race weekends', () => {
     const fixture = await selected()
     expect(fixture.raceWeekends).toHaveLength(1)
     expect(fixture.availableLeagues).toEqual([])
+    expect(fixture.verifiedRaceMarketIds).toEqual([])
     gameGroups.push({ contract_id: f1Rows[0].data.id, group_id: 'gp-mexico' })
-    expect((await selected()).availableLeagues).toEqual(['f1'])
+    const inTopic = await selected()
+    expect(inTopic.availableLeagues).toEqual(['f1'])
+    expect(inTopic.verifiedRaceMarketIds).toEqual([f1Rows[0].data.id])
   })
   it.each([
     [null, {}, false],
@@ -780,6 +783,7 @@ describe('F1 race weekends', () => {
       const result = 'result' in response ? response.result : response
       expect(result.raceChampionships).toEqual([{ id: 'wdc', kind: 'drivers' }])
       expect(result.availableLeagues).toEqual(eligible ? ['f1'] : [])
+      expect(result.verifiedRaceMarketIds).toEqual(eligible ? ['wdc'] : [])
     }
   )
 

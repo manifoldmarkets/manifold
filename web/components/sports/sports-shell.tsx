@@ -30,6 +30,8 @@ import { UpcomingMarkets } from './upcoming-markets'
  * sports never moves the rail or the content under it.
  */
 export function SportsShell(props: {
+  freshSchedule?: boolean
+  refreshSchedule?: () => Promise<void>
   schedule?: SportsScheduleResponse
   selected: SportSelection
   /** The open topic's slug, on a topic's page. */
@@ -123,7 +125,12 @@ export function SportsShell(props: {
     </Page>
   )
   return (
-    <SportsNavigation sport={selected} schedule={props.schedule}>
+    <SportsNavigation
+      sport={selected}
+      schedule={props.schedule}
+      fresh={props.freshSchedule}
+      refresh={props.refreshSchedule}
+    >
       {page}
     </SportsNavigation>
   )

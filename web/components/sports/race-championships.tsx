@@ -1,3 +1,4 @@
+import { useSportsNavigation } from './sports-navigation-context'
 import Link from 'next/link'
 import { sortBy } from 'lodash'
 import { useState } from 'react'
@@ -29,7 +30,11 @@ const TITLE_LABEL: Record<RaceChampionship['kind'], string> = {
 export function RaceChampionships(props: {
   championships: RaceChampionship[]
 }) {
-  const { championships } = props
+  const navigation = useSportsNavigation()
+  const championships =
+    navigation?.league === 'f1'
+      ? props.championships.filter((c) => navigation.verifiedRaceIds.has(c.id))
+      : props.championships
   // The page leaves out the topics the visitor blocked.
   const hides = useHidesBlocked()
   const ids = championships.map((c) => c.id)

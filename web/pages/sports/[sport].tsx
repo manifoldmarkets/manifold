@@ -57,10 +57,8 @@ export default function SportPage() {
   }, [raw, key, router.query.league, router.query.tab])
 
   const ready = router.isReady && !!key && key !== 'all'
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    key ?? 'all',
-    ready
-  )
+  const { schedule, rail, loading, loadMore, hasMore, freshSchedule, refresh } =
+    useSportsSchedule(key ?? 'all', ready)
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const sport = key ? sportsByKey[key] : undefined
@@ -89,7 +87,12 @@ export default function SportPage() {
     router.isReady && key !== 'all' && (!key || (!!schedule && !sport))
 
   // Tag cards with their league only when the sport has several (soccer).
-  const showLeague = uniq(games.map((g) => g.league)).length > 1
+  const showLeague =
+    uniq(
+      games.map((g) =>
+        isSportsBdlEnabled() ? g.navigationLeagueKey ?? g.league : g.league
+      )
+    ).length > 1
   // F1's weekends (the API sends them only for F1): each session in the feed,
   // the next one featured, and the title fight under it.
   const isF1 = key === 'f1'
@@ -132,6 +135,8 @@ export default function SportPage() {
   return (
     <SportsShell
       schedule={schedule}
+      freshSchedule={freshSchedule}
+      refreshSchedule={refresh}
       selected={key ?? 'all'}
       rail={rail}
       heading={

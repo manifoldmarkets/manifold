@@ -72,6 +72,11 @@ export function useSportsSchedule(
   // dropped rather than mixed in.
   const generation = useRef(0)
 
+  const visit = useMemo(() => ({}), [view, enabled])
+  const [confirmation, setConfirmation] = useState<{
+    visit: typeof visit
+    response: SportsScheduleResponse
+  }>()
   const refreshing = useRef(false)
   const refresh = useEvent(async () => {
     if (!enabled) return
@@ -91,6 +96,7 @@ export function useSportsSchedule(
       if (!result || gen !== generation.current) return
       setLive((prev) => result.pages.reduce(pruneLiveForPage, prev))
       setStored({ ...result.feed, sport: view })
+      setConfirmation({ visit, response: result.feed.response })
     } catch (e) {
       console.error('Failed to load the sports schedule', e)
     } finally {
@@ -274,6 +280,8 @@ export function useSportsSchedule(
 
   return {
     schedule: merged,
+    freshSchedule:
+      confirmation?.visit === visit && confirmation.response === feed?.response,
     rail,
     loading: loading && !feed,
     refresh,

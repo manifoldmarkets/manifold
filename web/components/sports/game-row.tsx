@@ -1,3 +1,4 @@
+import { gameLeagueLabel } from 'common/bdl/league-navigation'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
@@ -333,7 +334,9 @@ export function GameRow(props: {
             </div>
             {showLeague && (
               <span className="text-ink-400 text-[10px] font-semibold">
-                {game.league}
+                {isSportsBdlEnabled() && game.navigationLeagueKey
+                  ? gameLeagueLabel(game)
+                  : game.league}
               </span>
             )}
           </div>
@@ -390,7 +393,10 @@ export function GameRow(props: {
               <div className="@container/scoreboard mx-auto my-auto w-full max-w-md px-4 pb-5 pt-3 sm:px-5">
                 <div className="text-ink-500 mb-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
                   <span>
-                    {game.league} · {dayjs(game.startTime).format('ddd, MMM D')}
+                    {isSportsBdlEnabled() && game.navigationLeagueKey
+                      ? gameLeagueLabel(game)
+                      : game.league}{' '}
+                    · {dayjs(game.startTime).format('ddd, MMM D')}
                   </span>
                   <GameWhen game={game} />
                 </div>
@@ -545,7 +551,9 @@ export function GameRow(props: {
           <SportsMarketBadge market={game} />
           {showLeague && (
             <span className="text-ink-400 truncate text-[10px] font-semibold uppercase tracking-wide">
-              {game.league}
+              {isSportsBdlEnabled() && game.navigationLeagueKey
+                ? gameLeagueLabel(game)
+                : game.league}
             </span>
           )}
         </div>

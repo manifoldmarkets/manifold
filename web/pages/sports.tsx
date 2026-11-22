@@ -96,10 +96,8 @@ export default function SportsPage({
   }, [legacySport, router.query.league, router.query.tab])
 
   const ready = router.isReady && !legacySport
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    'all',
-    ready
-  )
+  const { schedule, rail, loading, loadMore, hasMore, freshSchedule, refresh } =
+    useSportsSchedule('all', ready)
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
   const topic = useSportTopicExtras(ALL)
@@ -133,6 +131,8 @@ export default function SportsPage({
   return (
     <SportsShell
       schedule={schedule}
+      freshSchedule={freshSchedule}
+      refreshSchedule={refresh}
       selected="all"
       rail={rail}
       heading="Sports"

@@ -38,6 +38,12 @@ export function toOfficialGame(
   const leagueKey = bdlEnabled ? officialBdlLeagueKey(c) : undefined
   const provider = providerOf(c)
   if (bdlEnabled && (d.sportsFixture || provider === 'fixture')) return null
+  if (
+    bdlEnabled &&
+    d.sportsMarketType != null &&
+    d.sportsMarketType !== 'moneyline'
+  )
+    return null
   const navigationKey = bdlEnabled ? marketLeagueKey(c) : undefined
   const league = leagueKey ? BDL_LEAGUES[leagueKey] : undefined
   if (
@@ -50,7 +56,11 @@ export function toOfficialGame(
     return null
   const isResolved = !!c.resolution
   const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
-  const label = league?.shortLabel || d.sportsLeague || ''
+  const label =
+    league?.shortLabel ||
+    (bdlEnabled && typeof d.sportsLeague !== 'string'
+      ? ''
+      : d.sportsLeague || '')
   const details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
     : league

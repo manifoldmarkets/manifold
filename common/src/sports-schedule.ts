@@ -1302,6 +1302,8 @@ export interface UpcomingMarketRef {
 }
 
 export interface SportsScheduleResponse {
+  /** Native race and title market ids verified in this page's scope. */
+  verifiedRaceMarketIds?: string[]
   /** Market-backed leagues in this sport/topic before pagination; first page only. */
   availableLeagues?: BdlLeagueKey[]
   /** Server time before snapshot reads; survives HTTP and client caching. */

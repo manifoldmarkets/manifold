@@ -97,11 +97,8 @@ export default function SportTopicPage() {
   ])
 
   const ready = router.isReady && !!topic
-  const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
-    topic?.sport ?? 'all',
-    ready,
-    topic?.id
-  )
+  const { schedule, rail, loading, loadMore, hasMore, freshSchedule, refresh } =
+    useSportsSchedule(topic?.sport ?? 'all', ready, topic?.id)
   const sportsByKey = useMemo(
     () => keyBy(index.index?.sports ?? [], 'key'),
     [index.index?.sports]
@@ -165,7 +162,12 @@ export default function SportTopicPage() {
   const hasGames = schedule
     ? shownCount(games, weekends) > 0 || lookingPastBlocked
     : undefined
-  const showLeague = uniq(games.map((g) => g.league)).length > 1
+  const showLeague =
+    uniq(
+      games.map((g) =>
+        isSportsBdlEnabled() ? g.navigationLeagueKey ?? g.league : g.league
+      )
+    ).length > 1
   const info = topic && topicInfo(topic, sport)
   const markets = info && (
     <SportMarkets
@@ -179,6 +181,8 @@ export default function SportTopicPage() {
   return (
     <SportsShell
       schedule={schedule}
+      freshSchedule={freshSchedule}
+      refreshSchedule={refresh}
       selected={topic?.sport ?? rawSport ?? 'all'}
       selectedTopic={topic?.slug}
       rail={rail}

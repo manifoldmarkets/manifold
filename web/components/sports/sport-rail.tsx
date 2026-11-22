@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
@@ -51,13 +52,31 @@ export function SportRail(props: {
     counts,
     navigation?.engagement.sports
   )
+  const railRef = useRef<HTMLDivElement>(null)
+  const order = [...withGames, ...withoutGames].map((s) => s.key).join(',')
+  const enabled = !!navigation
+  useEffect(() => {
+    if (!enabled || selected === 'all') return
+    const el = railRef.current?.querySelector<HTMLElement>(
+      'a[aria-current="page"]'
+    )
+    const scroller = el?.parentElement
+    if (!el || !scroller || scroller.scrollWidth <= scroller.clientWidth) return
+    const box = el.getBoundingClientRect(),
+      viewport = scroller.getBoundingClientRect()
+    const margin = 20
+    if (box.left < viewport.left + margin)
+      scroller.scrollLeft += box.left - viewport.left - margin
+    else if (box.right > viewport.right - margin)
+      scroller.scrollLeft += box.right - viewport.right + margin
+  }, [enabled, selected, order])
   const totalGames = Object.values(counts).reduce<number>(
     (a, b) => a + (b ?? 0),
     0
   )
 
   return (
-    <Row className={clsx('w-full items-center', className)}>
+    <Row ref={railRef} className={clsx('w-full items-center', className)}>
       {/* "All" stays pinned: it never scrolls away. */}
       <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
         <SportChip

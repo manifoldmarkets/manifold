@@ -1,3 +1,4 @@
+import { verifiedRaceWeekends } from 'common/bdl/league-navigation'
 import clsx from 'clsx'
 import {
   SearchIcon,
@@ -115,7 +116,11 @@ export function GameFeed(props: {
       (game.status === 'upcoming' || game.status === 'live') &&
       (!league || publishedGameLeagueKey(game) === league)
   )
-  const weekends = !league || league === 'f1' ? props.raceWeekends ?? [] : []
+  const weekends = !league
+    ? props.raceWeekends ?? []
+    : league === 'f1' && navigation
+    ? verifiedRaceWeekends(props.raceWeekends ?? [], navigation.verifiedRaceIds)
+    : []
   const sessions = raceSessionEvents(weekends)
   // Every market of the weekends, finished sessions too: the featured card's
   // pills reach them.
@@ -151,7 +156,9 @@ export function GameFeed(props: {
   const hasSearchFilters = filter !== 'all' || date !== 'all' || !!normalized
   const hasFilters = hasSearchFilters || !!league
   const showBelowFeatured =
-    !hasSearchFilters && (!league || league === 'f1') && belowFeatured
+    !hasSearchFilters &&
+    (!league || (league === 'f1' && navigation?.verifiedTitle)) &&
+    belowFeatured
   const everything: FeedItem[] = [...active, ...sessions]
   const selectedFeatured = selectFeaturedGame(
     everything,
@@ -165,17 +172,23 @@ export function GameFeed(props: {
     view === 'cards' && !hasSearchFilters ? selectedFeatured : undefined
   const onSelectedDay = (item: FeedItem) =>
     date === 'all' || scheduleDayKey(item) === date
+  const matchesGameSearch = (game: ScheduleGame) =>
+    !normalized ||
+    `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
+      .toLowerCase()
+      .includes(normalized) ||
+    (!!navigation && matchesLeagueLabel(game, normalized))
+  const matchesSessionSearch = (session: RaceSessionEvent) =>
+    !normalized ||
+    raceSessionSearchText(session).includes(normalized) ||
+    (!!navigation && BDL_LEAGUES.f1.label.toLowerCase().includes(normalized))
   const filteredGames = active.filter(
     (game) =>
       (filter !== 'live' || game.status === 'live') &&
       (filter !== 'liked' || likes.liked.has(game.id)) &&
       (filter !== 'mine' || !!stakes[game.id]) &&
       onSelectedDay(game) &&
-      (!normalized ||
-        `${game.home.name} ${game.home.shortName} ${game.away.name} ${game.away.shortName} ${game.league}`
-          .toLowerCase()
-          .includes(normalized) ||
-        (!!navigation && matchesLeagueLabel(game, normalized)))
+      matchesGameSearch(game)
   )
   // Sessions take the same filters as games, except My bets: positions don't
   // cover them yet. A session is liked when any of its markets is.
@@ -187,10 +200,7 @@ export function GameFeed(props: {
             (filter !== 'live' || s.status === 'live') &&
             (filter !== 'liked' || sessionLiked(s)) &&
             onSelectedDay(s) &&
-            (!normalized ||
-              raceSessionSearchText(s).includes(normalized) ||
-              (!!navigation &&
-                BDL_LEAGUES.f1.label.toLowerCase().includes(normalized)))
+            matchesSessionSearch(s)
         )
   const filtered: FeedItem[] = [...filteredGames, ...filteredSessions].sort(
     sort === 'volume' ? compareGameVolume : compareGameStartTime
@@ -215,8 +225,56 @@ export function GameFeed(props: {
   )
   const leagueNotLoaded =
     !!league && everything.length === 0 && hasMore && filter !== 'live'
-  const clearDate = !!league && date !== 'all'
-  const clearSearch = !!league && !!normalized && !clearDate
+  const canReveal = (includeDate: boolean, includeSearch: boolean) =>
+    active.some(
+      (g) =>
+        (filter !== 'live' || g.status === 'live') &&
+        (filter !== 'liked' || likes.liked.has(g.id)) &&
+        (filter !== 'mine' || !!stakes[g.id]) &&
+        (!includeDate || onSelectedDay(g)) &&
+        (!includeSearch || matchesGameSearch(g))
+    ) ||
+    (filter !== 'mine' &&
+      sessions.some(
+        (s) =>
+          (filter !== 'live' || s.status === 'live') &&
+          (filter !== 'liked' || sessionLiked(s)) &&
+          (!includeDate || onSelectedDay(s)) &&
+          (!includeSearch || matchesSessionSearch(s))
+      ))
+  const clearDate = !!league && date !== 'all' && canReveal(false, true)
+  const clearSearch = !!league && !!normalized && canReveal(true, false)
+  const verifyLeague =
+    !!league &&
+    !!navigation?.unverified &&
+    !active.length &&
+    !sessions.length &&
+    !navigation.verifiedTitle
+  const [verifying, setVerifying] = useState(false)
+  const retryVerification = async () => {
+    if (verifying || !navigation?.refresh) return
+    setVerifying(true)
+    try {
+      await navigation.refresh()
+    } finally {
+      setVerifying(false)
+    }
+  }
+  const hiddenLeague =
+    !!league &&
+    !hasMore &&
+    !active.length &&
+    navigation?.hiddenGames(league, new Set(games.map((g) => g.id)))
+  const narrowSingle =
+    navigation?.choices.length === 1 &&
+    (navigation.unverifiedTitles ||
+      games.some((g) => publishedGameLeagueKey(g) !== navigation.choices[0]) ||
+      (props.raceWeekends ?? []).some((w) =>
+        w.sessions.some((s) =>
+          s.markets.some((m) => !navigation.verifiedRaceIds.has(m.id))
+        )
+      ))
+
   // A section with a session in it counts events, not games.
   const unitFor = (items: FeedItem[]) =>
     items.some(isSession) ? 'event' : 'game'
@@ -270,7 +328,7 @@ export function GameFeed(props: {
   )
 
   const leagueSelector = navigation &&
-    (league || navigation.choices.length > 1) && (
+    (league || navigation.choices.length > 1 || narrowSingle) && (
       <select
         aria-label="League"
         className="border-ink-200 bg-canvas-0 text-ink-700 focus:ring-primary-500 min-h-[44px] max-w-[11rem] rounded-lg border py-1.5 pl-2 pr-7 text-xs font-medium"
@@ -485,7 +543,9 @@ export function GameFeed(props: {
                   key={day.key}
                   disabled={filter === 'live'}
                   aria-pressed={date === day.key}
-                  onClick={() => setDate(date === day.key ? 'all' : day.key)}
+                  onClick={() =>
+                    setDate(navigation && date === day.key ? 'all' : day.key)
+                  }
                   className={clsx(
                     'h-10 shrink-0 whitespace-nowrap rounded-lg border px-3 text-left text-xs',
                     date === day.key
@@ -569,6 +629,16 @@ export function GameFeed(props: {
               onPositionsChange={() => void positions.refreshGame(featured.id)}
             />
           ))}
+        {league && navigation?.unverified && !verifyLeague && (
+          <button
+            type="button"
+            disabled={verifying}
+            onClick={retryVerification}
+            className="text-primary-700 self-start py-2 text-sm"
+          >
+            {verifying ? 'Verifying leagues…' : 'Retry league verification'}
+          </button>
+        )}
         {showBelowFeatured}
         {waiting && <FeedSkeleton view={view} rows={4} />}
         {!waiting &&
@@ -596,6 +666,10 @@ export function GameFeed(props: {
                   ? sessions.length > 0
                     ? 'Nothing live right now'
                     : 'No games live right now'
+                  : verifyLeague
+                  ? 'League verification needed'
+                  : hiddenLeague
+                  ? 'Games hidden by your topic settings'
                   : leagueNotLoaded
                   ? 'No games in this league loaded yet'
                   : clearDate
@@ -609,12 +683,16 @@ export function GameFeed(props: {
                   ? 'Heart a game to add it to your Manifold likes.'
                   : filter === 'mine'
                   ? 'Tap a price to back a team. Your picks and open orders show up here.'
+                  : verifyLeague
+                  ? 'Refresh the loaded games to verify their leagues.'
+                  : hiddenLeague
+                  ? 'Games in this league have topics you chose to hide.'
+                  : leagueNotLoaded
+                  ? 'Load more games to see this league.'
                   : clearDate
                   ? 'Choose another date or clear the date filter.'
                   : clearSearch
                   ? 'Try a different team or league name.'
-                  : leagueNotLoaded
-                  ? 'Load more games to see this league.'
                   : league
                   ? hasMore && filter !== 'live'
                     ? 'Try another league or load more games.'
@@ -626,6 +704,10 @@ export function GameFeed(props: {
                 onClick={
                   needsSignIn
                     ? firebaseLogin
+                    : verifyLeague
+                    ? retryVerification
+                    : leagueNotLoaded
+                    ? () => void loadMore()
                     : clearDate
                     ? () => setDate('all')
                     : clearSearch
@@ -636,6 +718,12 @@ export function GameFeed(props: {
               >
                 {needsSignIn
                   ? 'Sign in'
+                  : verifyLeague
+                  ? verifying
+                    ? 'Verifying leagues…'
+                    : 'Retry league verification'
+                  : leagueNotLoaded
+                  ? 'Load more games'
                   : clearDate
                   ? 'Clear date'
                   : clearSearch
@@ -666,7 +754,7 @@ export function GameFeed(props: {
             {renderItems(day.items)}
           </Col>
         ))}
-        {waiting ? null : hasMore && filter !== 'live' ? (
+        {waiting ? null : hasMore && filter !== 'live' && !leagueNotLoaded ? (
           <>
             {hasFilters ? (
               <button

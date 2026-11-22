@@ -12,8 +12,15 @@ import {
   parseF1EventId,
   parseF1TitleEventId,
 } from '../f1-markets'
+import type { RaceWeekend } from '../race-weekends'
 import { providerOf, SportsProvider } from '../sports-provider'
-import { ScheduleGame, sportForMarket } from '../sports-schedule'
+import {
+  ScheduleGame,
+  SportInfo,
+  SportsSubtopic,
+  SPORTS_DEFAULT_GROUP_ID,
+  sportForMarket,
+} from '../sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from '../sports'
 
 const aliases = new Map<string, BdlLeagueKey>()
@@ -24,6 +31,10 @@ for (const key of BDL_LEAGUE_KEYS) {
 }
 for (const [name, key] of [
   [WORLD_CUP_2026.sportsLeague, 'fifa/worldcup'],
+  ['English Premier League', 'epl'],
+  ['UEFA Champions League', 'ucl'],
+  ['NCAA Football', 'ncaaf'],
+  ['NCAA Basketball', 'ncaab'],
   ['WC26', 'fifa/worldcup'],
   ['FIFA WC', 'fifa/worldcup'],
   ['WNCAAB', 'ncaaw'],
@@ -45,6 +56,7 @@ type MarketIdentity = {
   sportsLeagueKey?: string | null
   sportsLeague?: string | null
   sportsFixture?: boolean
+  sportsMarketType?: string | null
 }
 
 /** Only an unprefixed legacy event can fall back to its historical league label. */
@@ -52,7 +64,13 @@ export function marketLeagueKey(
   market: MarketIdentity
 ): BdlLeagueKey | undefined {
   const id = market.sportsEventId
-  if (!id || market.sportsFixture) return
+  if (
+    typeof id !== 'string' ||
+    !id ||
+    market.sportsFixture ||
+    (market.sportsLeague != null && typeof market.sportsLeague !== 'string')
+  )
+    return
   const inferred = providerOf({ sportsEventId: id })
   const provider = providerOf(market)
   if (
@@ -60,25 +78,57 @@ export function marketLeagueKey(
     (inferred !== 'legacy' && inferred !== provider)
   )
     return
-  const label = aliases.get(market.sportsLeague?.trim().toLowerCase() ?? '')
+  const rawLabel = market.sportsLeague?.trim().toLowerCase()
+  const label = aliases.get(rawLabel ?? '')
   const key =
     provider === 'bdl'
       ? parseBdlEventId(id)?.league ?? canonicalF1League(id)
       : provider === 'odds'
       ? aliases.get(legacyOddsLeagueLabel(id)?.toLowerCase() ?? '')
       : provider === 'football-data'
-      ? /^fd-[1-9]\d*$/.test(id) && label === 'fifa/worldcup'
+      ? /^fd-[1-9]\d*$/.test(id) &&
+        (label === 'fifa/worldcup' || label === 'epl' || label === 'ucl')
         ? label
         : undefined
-      : provider === 'legacy'
+      : provider === 'legacy' && /^[1-9]\d*$/.test(id)
       ? label
       : undefined
   if (
     (market.sportsLeagueKey != null && market.sportsLeagueKey !== key) ||
-    (label && label !== key)
+    (key &&
+      BDL_LEAGUES[key].archetype.startsWith('team-') &&
+      market.sportsMarketType != null &&
+      market.sportsMarketType !== 'moneyline') ||
+    (label && label !== key) ||
+    (key && rawLabel && !label && !compatibleFamily(rawLabel, key))
   )
     return
   return key
+}
+
+// The Sports feed has separate chips for NBA/college leagues and their generic family.
+function compatibleFamily(raw: string, key: BdlLeagueKey) {
+  const family =
+    (
+      {
+        baseball: 'baseball',
+        hockey: 'hockey',
+        esports: 'esports',
+        'american football': 'football',
+        motorsport: 'f1',
+        motorsports: 'f1',
+      } as Readonly<Record<string, string>>
+    )[raw] ?? sportForMarket({ sportsLeague: raw })
+  const league = BDL_LEAGUES[key]
+  if (family === 'other') return true
+  if (family === league.sportKey) return true
+  return (
+    (family === 'basketball' &&
+      ['nba', 'wnba', 'ncaab', 'wncaab'].includes(league.sportKey)) ||
+    (family === 'football' && ['nfl', 'ncaaf'].includes(league.sportKey)) ||
+    (family === 'hockey' && league.sportKey === 'nhl') ||
+    (family === 'baseball' && (key === 'mlb' || key === 'cbb'))
+  )
 }
 
 function canonicalF1League(id: string) {
@@ -123,12 +173,69 @@ export function availableGameLeagues(
   return BDL_LEAGUE_KEYS.filter((key) => keys.has(key))
 }
 
+export function verifiedRaceWeekends(
+  weekends: readonly RaceWeekend[],
+  ids: ReadonlySet<string>
+): RaceWeekend[] {
+  return weekends.flatMap((weekend) => {
+    const sessions = weekend.sessions.flatMap((session) => {
+      const markets = session.markets.filter((m) => ids.has(m.id))
+      if (!markets.length) return []
+      return [
+        markets.length === session.markets.length
+          ? session
+          : { ...session, markets, related: [], relatedCount: 0 },
+      ]
+    })
+    return sessions.length
+      ? [
+          {
+            ...weekend,
+            sessions,
+            startTime: sessions[0].startTime,
+            status: sessions.some((s) => s.status === 'live')
+              ? 'live'
+              : sessions[0].status,
+          },
+        ]
+      : []
+  })
+}
+
+export function gameLeagueLabel(game: GameLeague) {
+  const league = publishedGameLeagueKey(game)
+  return league ? BDL_LEAGUES[league].label : game.league
+}
+
 type Engagement = MarketIdentity & {
   creatorId: string
   id: string
   groupIds?: readonly string[]
+  groupSlugs?: readonly string[]
 }
-export function sportsEngagement(markets: readonly Engagement[]) {
+type EngagementTaxonomy = {
+  sports: readonly SportInfo[]
+  topics?: readonly SportsSubtopic[]
+}
+export function sportsEngagement(
+  markets: readonly Engagement[],
+  index?: EngagementTaxonomy
+) {
+  const topics = new Map<string, string>()
+  const slugs = new Map<string, string>()
+  // The common Sports topic is a cross-sport fallback in dev. Only a specific topic establishes a sport.
+  for (const sport of index?.sports ?? [])
+    for (const id of sport.groupIds)
+      if (id !== SPORTS_DEFAULT_GROUP_ID && !topics.has(id))
+        topics.set(id, sport.key)
+  for (const sport of index?.sports ?? [])
+    if (sport.slug) slugs.set(sport.slug, sport.key)
+  for (const topic of index?.topics ?? [])
+    if (topic.sport !== 'all') {
+      topics.set(topic.id, topic.sport)
+      slugs.set(topic.slug, topic.sport)
+    }
+
   const sports = new Map<string, number>()
   const leagues = new Map<string, number>()
   const seen = new Set<string>()
@@ -138,9 +245,16 @@ export function sportsEngagement(markets: readonly Engagement[]) {
     const key = MANIFOLD_SPORTS_USER_IDS.includes(market.creatorId)
       ? marketLeagueKey(market)
       : undefined
-    const sport = key
+    let sport = key
       ? BDL_LEAGUES[key].sportKey
       : sportForMarket({ groupIds: market.groupIds })
+    if (sport === 'other' && index) {
+      const candidates = new Set([
+        ...(market.groupIds?.map((id) => topics.get(id)) ?? []),
+        ...(market.groupSlugs?.map((slug) => slugs.get(slug)) ?? []),
+      ])
+      sport = index.sports.find((s) => candidates.has(s.key))?.key ?? sport
+    }
     if (sport !== 'other') sports.set(sport, (sports.get(sport) ?? 0) + 1)
     if (key) leagues.set(key, (leagues.get(key) ?? 0) + 1)
   }
@@ -194,7 +308,7 @@ export function sportsNavigationPath(
   if (
     typeof tab === 'string' &&
     [
-      sport === 'all' ? 'upcoming' : 'games',
+      path === '/sports' ? 'upcoming' : 'games',
       'markets',
       'leaderboards',
       'topic',
