@@ -1,4 +1,4 @@
-// "Getting started" trophy rewards: claiming a milestone pays its mana once,
+// Onboarding trophy rewards: claiming a milestone pays its mana once,
 // in the same transaction that records the claim.
 //
 // The real claim-trophy, get-user-trophies and unclaim-trophy handlers run
@@ -525,6 +525,66 @@ describe('claiming a starter milestone', () => {
     expect(
       (await claim('u', 'starter-trades', 'first-trade')).rewardAmount
     ).toBe(50)
+  })
+})
+
+describe('Newcomer rewards', () => {
+  beforeEach(() => {
+    jest
+      .mocked(loadUserAchievements)
+      .mockResolvedValue({ accountAgeYears: 2 } as never)
+  })
+
+  it.each([
+    [false, 25],
+    [true, 37.5],
+  ] as const)(
+    'pays Newcomer once at the quest multiplier (member %s)',
+    async (member, amount) => {
+      await addUser('u')
+      if (member) {
+        await rows(
+          `insert into user_entitlements (user_id, entitlement_id) values ('u', 'supporter-basic')`
+        )
+      }
+      const paid = await claim('u', 'account-age', 'newcomer')
+      expect(paid.rewardAmount).toBe(amount)
+      expect(paid.rewarded).toEqual([
+        { trophyId: 'account-age', milestoneId: 'newcomer' },
+      ])
+      expect((await trophiesOf('u')).rewarded).toEqual(paid.rewarded)
+      const again = await claim('u', 'account-age', 'newcomer')
+      expect(again.newlyClaimed).toEqual([])
+      expect(again.rewardAmount).toBe(0)
+      expect(await rewardRows('u')).toHaveLength(1)
+      expect(await rewardTxns('u')).toHaveLength(1)
+      expect((await balance('u')).balance).toBe(amount)
+    }
+  )
+
+  it.each(['newcomer', 'veteran'])(
+    'records Newcomer without payment for an older account claiming %s',
+    async (milestoneId) => {
+      await addUser('old', { createdTime: START - 1 })
+      const result = await claim('old', 'account-age', milestoneId)
+      expect(result.newlyClaimed.map((c) => c.milestoneId)).toContain(
+        'newcomer'
+      )
+      expect(result.rewardAmount).toBe(0)
+      expect(await rewardRows('old')).toEqual([])
+      expect(await rewardTxns('old')).toEqual([])
+      expect((await balance('old')).balance).toBe(0)
+    }
+  )
+
+  it('records Newcomer without payment for a starter bot', async () => {
+    await addUser('bot')
+    await rows(`update users set is_bot = true where id = 'bot'`)
+    const result = await claim('bot', 'account-age', 'newcomer')
+    expect(result.newlyClaimed).toHaveLength(1)
+    expect(result.rewardAmount).toBe(0)
+    expect(await rewardRows('bot')).toEqual([])
+    expect(await rewardTxns('bot')).toEqual([])
   })
 })
 

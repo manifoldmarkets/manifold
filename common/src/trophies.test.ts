@@ -1,12 +1,14 @@
 import {
   LEAGUE_SHOWCASE_PIN,
   MAX_SHOWCASE_PINS,
+  ONBOARDING_MILESTONES,
   STARTER_STAT_KEYS,
   TROPHY_DEFINITIONS,
   TROPHY_STAT_KEYS,
   TrophyClaim,
   countClaimedMilestones,
   getRewardManaTotal,
+  getTrophyClaimReward,
   getTrophyDefinitionsFor,
   isStarterTrophy,
   isStarterTrophyAccount,
@@ -16,6 +18,8 @@ import {
   countUnclaimedReachedMilestones,
   formatTrophyValue,
   getHighestClaimedMilestone,
+  getClaimableOnboardingMilestones,
+  getNextOnboardingMilestone,
   getHighestMilestone,
   getMaxShowcasePins,
   getMilestonesToClaim,
@@ -250,11 +254,20 @@ describe('formatTrophyValue', () => {
 describe('getting started trophies', () => {
   const starterDefs = TROPHY_DEFINITIONS.filter(isStarterTrophy)
 
-  it('pay a positive, finite reward on every milestone, and only they pay', () => {
+  it('pay a positive finite reward on every starter milestone and Newcomer', () => {
     expect(starterDefs.length).toBeGreaterThan(0)
     for (const def of TROPHY_DEFINITIONS) {
       for (const m of def.milestones) {
-        if (isStarterTrophy(def)) {
+        const onboarding =
+          isStarterTrophy(def) ||
+          (def.id === 'account-age' && m.id === 'newcomer')
+        expect(
+          ONBOARDING_MILESTONES.some(
+            ({ definition, milestone }) =>
+              definition.id === def.id && milestone.id === m.id
+          )
+        ).toBe(onboarding)
+        if (onboarding) {
           expect(Number.isFinite(m.rewardMana)).toBe(true)
           expect(m.rewardMana).toBeGreaterThan(0)
         } else {
@@ -308,5 +321,59 @@ describe('getting started trophies', () => {
       'getting-going',
     ])
     expect(getRewardManaTotal(toClaim ?? [])).toBe(200)
+    expect(
+      getTrophyClaimReward(
+        trades,
+        trades.milestones[2],
+        [claim(trades.id, 'first-trade')],
+        1.5
+      )
+    ).toBe(225)
+  })
+})
+
+describe('onboarding milestones', () => {
+  const zero = { starterTrades: 0, starterMarkets: 0, starterDays: 0 }
+  const all = { starterTrades: 25, starterMarkets: 10, starterDays: 7 }
+  const newcomer = claim('account-age', 'newcomer')
+
+  it('starts with Newcomer and lists only unclaimed reached milestones in definition order', () => {
+    const ids = (stats: typeof zero | null, claims: TrophyClaim[]) =>
+      getClaimableOnboardingMilestones(stats, claims).map((m) => m.milestone.id)
+    expect(ids(null, [])).toEqual([])
+    expect(ids(zero, [])).toEqual(['newcomer'])
+    const stats = { starterTrades: 3, starterMarkets: 3, starterDays: 2 }
+    expect(ids(stats, [])).toEqual([
+      'newcomer',
+      'first-trade',
+      'hat-trick',
+      'curious',
+      'back-again',
+    ])
+    expect(
+      ids(stats, [newcomer, claim('starter-trades', 'first-trade')])
+    ).toEqual(['hat-trick', 'curious', 'back-again'])
+  })
+
+  it('selects the smallest remaining gap, breaking ties in definition order', () => {
+    expect(getNextOnboardingMilestone(zero, [newcomer])?.milestone.id).toBe(
+      'first-trade'
+    )
+    const stats = { starterTrades: 1, starterMarkets: 2, starterDays: 1 }
+    expect(getNextOnboardingMilestone(stats, [])?.milestone.id).toBe('curious')
+    expect(
+      getNextOnboardingMilestone({ ...stats, starterMarkets: 1 }, [])?.milestone
+        .id
+    ).toBe('back-again')
+  })
+
+  it('skips earned milestones even after a stat drops, and finishes when all are reached', () => {
+    const claims = ONBOARDING_MILESTONES.map(({ definition, milestone }) =>
+      claim(definition.id, milestone.id)
+    )
+    expect(getClaimableOnboardingMilestones(all, claims)).toEqual([])
+    expect(getNextOnboardingMilestone(zero, claims)).toBeNull()
+    expect(getNextOnboardingMilestone(all, [])).toBeNull()
+    expect(getNextOnboardingMilestone(null, [])).toBeNull()
   })
 })

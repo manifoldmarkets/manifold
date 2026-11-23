@@ -37,6 +37,11 @@ module.exports = {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },
       keyframes: {
+        'trophy-pop': {
+          '0%': { opacity: 0, transform: 'scale(0.75)' },
+          '70%': { transform: 'scale(1.06)' },
+          '100%': { opacity: 1, transform: 'scale(1)' },
+        },
         progress: {
           from: {
             width: '0%',
@@ -375,6 +380,7 @@ module.exports = {
         },
       },
       animation: {
+        'trophy-pop': 'trophy-pop 240ms ease-out',
         progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-left-loop': 'bounce-left 0.8s infinite',

@@ -8,10 +8,12 @@
 // the authority on what can be claimed (claim-trophy recomputes the stat); the
 // helpers here are shared so the web shows the same answer.
 //
-// "Getting started" milestones pay mana once, when claimed. They exist only
-// for accounts created at or after STARTER_TROPHIES_START_TIME.
+// Starter accounts can collect a one-time reward for Newcomer and each
+// "Getting started" milestone. All accounts can claim Newcomer.
 
+import { minBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
+import { roundTierBonus } from 'common/supporter-config'
 
 export type TrophyTier =
   | 'green'
@@ -40,7 +42,7 @@ export type TrophyMilestone = {
   threshold: number
   tier: TrophyTier
   // Mana paid once when the milestone is claimed, before the claimant's tier
-  // multiplier. Only "Getting started" milestones have one.
+  // multiplier. Only onboarding milestones pay, and only to starter accounts.
   rewardMana?: number
 }
 
@@ -404,7 +406,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green'),
+      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green', 25),
       m('established', 'Established', '\u{1F333}', 1, 'blue'),
       m('veteran', 'Veteran', '\u{1F396}', 2, 'purple'),
       m('elder', 'Elder', '\u{1F474}', 3, 'gold'),
@@ -439,6 +441,21 @@ export function getRewardManaTotal(milestones: TrophyMilestone[]): number {
     const reward = m.rewardMana ?? 0
     return Number.isFinite(reward) && reward > 0 ? sum + reward : sum
   }, 0)
+}
+
+/** What claiming this milestone would collect, including unpaid lower ones. */
+export function getTrophyClaimReward(
+  definition: TrophyDefinition,
+  milestone: TrophyMilestone,
+  rewarded: TrophyMilestoneRef[],
+  multiplier: number
+) {
+  if (!Number.isFinite(multiplier) || multiplier <= 0) return 0
+  const paid = getClaimedMilestoneIds(rewarded, definition.id)
+  const unpaid = definition.milestones.filter(
+    (m) => m.threshold <= milestone.threshold && !paid.has(m.id)
+  )
+  return roundTierBonus(getRewardManaTotal(unpaid) * multiplier)
 }
 
 export function getTrophyDefinition(
@@ -547,13 +564,63 @@ export type TrophyClaim = {
 
 export type TrophyMilestoneRef = { trophyId: string; milestoneId: string }
 
+export type OnboardingMilestone = {
+  definition: TrophyDefinition
+  milestone: TrophyMilestone
+}
+
+const starterDefinitions = TROPHY_DEFINITIONS.filter(isStarterTrophy)
+const accountAge = DEFINITIONS_BY_ID.get('account-age')!
+export const ONBOARDING_MILESTONES: OnboardingMilestone[] = [
+  { definition: accountAge, milestone: getMilestone(accountAge, 'newcomer')! },
+  ...starterDefinitions.flatMap((definition) =>
+    definition.milestones.map((milestone) => ({ definition, milestone }))
+  ),
+]
+
+export function getClaimableOnboardingMilestones(
+  starterStats: StarterStats | null,
+  claims: TrophyClaim[]
+) {
+  if (!starterStats) return []
+  return ONBOARDING_MILESTONES.filter(
+    ({ definition, milestone }) =>
+      isMilestoneReached(
+        milestone,
+        getTrophyStatValue(definition, starterStats)
+      ) &&
+      !claims.some(
+        (c) => c.trophyId === definition.id && c.milestoneId === milestone.id
+      )
+  )
+}
+
+export function getNextOnboardingMilestone(
+  starterStats: StarterStats | null,
+  claims: TrophyClaim[]
+) {
+  if (!starterStats) return null
+  const candidates = starterDefinitions.flatMap((definition) => {
+    const value = getTrophyStatValue(definition, starterStats)
+    const claimed = getClaimedMilestoneIds(claims, definition.id)
+    const milestone = definition.milestones.find(
+      (m) => !isMilestoneReached(m, value) && !claimed.has(m.id)
+    )
+    return milestone ? [{ definition, milestone, value }] : []
+  })
+  return (
+    minBy(candidates, ({ milestone, value }) => milestone.threshold - value) ??
+    null
+  )
+}
+
 const isKnownClaim = (claim: TrophyClaim) => {
   const def = getTrophyDefinition(claim.trophyId)
   return !!def && !!getMilestone(def, claim.milestoneId)
 }
 
 export function getClaimedMilestoneIds(
-  claims: TrophyClaim[],
+  claims: TrophyMilestoneRef[],
   trophyId: string
 ): Set<string> {
   return new Set(

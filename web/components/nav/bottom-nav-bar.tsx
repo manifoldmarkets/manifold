@@ -27,6 +27,11 @@ import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
 import { FaSearch as SearchIconSolid } from 'react-icons/fa'
 import { NotificationsIcon } from 'web/components/notifications-icon'
+import {
+  TrophyCountBubble,
+  trophyCountLabel,
+} from 'web/components/trophies/trophy-count-bubble'
+import { useNavTrophyCount } from 'web/components/trophies/trophy-nudge-provider'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import {
   mergeEntitlements,
@@ -116,6 +121,7 @@ export function BottomNavBar() {
   const currentPage = usePathname() ?? ''
 
   const user = useUser()
+  const trophyCount = useNavTrophyCount()
 
   const isIframe = useIsIframe()
   if (isIframe) {
@@ -129,6 +135,8 @@ export function BottomNavBar() {
       aria-label="Bottom navigation"
       className="border-ink-100/30 dark:border-ink-300 text-ink-700 bg-canvas-0 fixed inset-x-0 bottom-0 z-50 flex select-none items-center justify-between border-t text-xs lg:hidden"
     >
+      {/* Safari drops list semantics from list-none lists unless the role is set. */}
+      {/* eslint-disable-next-line jsx-a11y/no-redundant-roles */}
       <ul
         role="list"
         className="m-0 flex w-full list-none items-center justify-between p-0"
@@ -139,6 +147,7 @@ export function BottomNavBar() {
               item={item}
               currentPage={currentPage}
               user={user}
+              trophyCount={item.name === 'Profile' ? trophyCount : 0}
               className={item.name === 'Politics' ? '-mt-1' : ''}
             />
           </li>
@@ -177,12 +186,16 @@ export function BottomNavBar() {
 function NavBarItem(props: {
   item: NavItem
   currentPage: string
-  children?: any
+  trophyCount: number
+  children?: React.ReactNode
   user?: User | null
   className?: string
 }) {
-  const { item, currentPage, children, user, className } = props
-  const track = trackCallback(`navbar: ${item.trackingEventName ?? item.name}`)
+  const { item, currentPage, children, user, className, trophyCount } = props
+  const track = trackCallback(
+    `navbar: ${item.trackingEventName ?? item.name}`,
+    item.name === 'Profile' ? { trophyCount } : undefined
+  )
   const [touched, setTouched] = useState(false)
   const optimisticContext = useOptimisticEntitlements()
 
@@ -198,9 +211,11 @@ function NavBarItem(props: {
     return (
       <Link
         prefetch={item?.prefetch ?? true}
-        href={item.href ?? '#'}
+        href={trophyCount ? `/${user.username}?tab=trophies` : item.href ?? '#'}
         aria-current={isOnUserProfile ? 'page' : undefined}
-        aria-label={item.name}
+        aria-label={
+          trophyCount ? `Profile, ${trophyCountLabel(trophyCount)}` : item.name
+        }
         className={clsx(
           itemClass,
           touched && touchItemClass,
@@ -214,7 +229,7 @@ function NavBarItem(props: {
         <Col className="relative mx-auto h-full w-full items-center">
           <div
             className={clsx(
-              'rounded-full',
+              'relative rounded-full',
               isOnUserProfile && 'ring-2 ring-violet-600'
             )}
           >
@@ -225,6 +240,7 @@ function NavBarItem(props: {
               entitlements={effectiveEntitlements}
               displayContext="profile_sidebar"
             />
+            <TrophyCountBubble count={trophyCount} onAvatar />
           </div>
           <Row className="mt-0.5 gap-1">
             <TokenNumber
