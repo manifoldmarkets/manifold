@@ -2,7 +2,11 @@ import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { BDL_REISSUED_EVENT_MATCH_WINDOW_MS } from 'common/bdl/constants'
-import { existingMajorGroups, majorCreationHold } from './major-creation-store'
+import {
+  canceledMajorContractIds,
+  existingMajorGroups,
+  majorCreationHold,
+} from './major-creation-store'
 
 jest.mock('../supabase/init', () => ({
   pgp: jest.requireActual('pg-promise')(),
@@ -157,4 +161,22 @@ it.each([
   expect(
     await majorCreationHold(db, { ...input, seenEventIds: ['bdl:mlb:101'] })
   ).toBeNull()
+})
+
+it('reads the whole canceled predecessor set by canonical event, including deleted copies, under the native event lock', async () => {
+  const parents = () => canceledMajorContractIds(db, bdl.sportsEventId, 'mlb')
+  await insert({ ...bdl, sportsEventId: 'bdl:mlb:99' }, { resolved: 'CANCEL' })
+  await insert(bdl, { creator: 'community', resolved: 'CANCEL' })
+  expect(await parents()).toEqual([])
+  await insert(bdl, { resolved: 'CANCEL' })
+  await postgres.exec(
+    "update contracts set id='a' where creator_id<>'community' and data->>'sportsEventId'='bdl:mlb:100'"
+  )
+  await insert(bdl, { resolved: 'CANCEL', deleted: true })
+  expect(await parents()).toEqual(['a', 'prior'])
+  await insert(bdl)
+  expect(await parents()).toBeNull()
+  await postgres.exec('delete from contracts where resolution is null')
+  await insert({ ...bdl, sportsProvider: 'odds' }, { resolved: 'CANCEL' })
+  expect(await parents()).toBeNull()
 })

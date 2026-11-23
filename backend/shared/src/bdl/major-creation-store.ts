@@ -4,7 +4,7 @@ import {
   majorOddsKeys,
   majorOddsMoneylineSql,
 } from './major-moneyline-identity'
-import { MajorLeague } from 'common/bdl/major-leagues'
+import { MAX_CREATION_GAME_KEYS, MajorLeague } from 'common/bdl/major-leagues'
 import { SPORT_LEAGUE_LABEL } from 'common/sports-calendar'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import type { SupabaseTransaction } from '../supabase/init'
@@ -12,19 +12,35 @@ import { sportsProviderSql } from '../supabase/sports-provider'
 
 type ReadDb = Pick<SupabaseTransaction, 'manyOrNone'>
 
-export async function existingMajorGroups(
+export { existingMajorGroups } from './major-settings'
+
+// Called under the native event lock by both forced preview and selected creation.
+export async function canceledMajorContractIds(
   pg: ReadDb,
-  slugs: readonly string[]
+  eventId: string,
+  league: MajorLeague
 ) {
-  const rows = await pg.manyOrNone<{ id: string; slug: string }>(
-    `select id, slug from groups where slug = any($1::text[])
-       and privacy_status in ('public','curated')`,
-    [slugs]
+  const rows = await pg.manyOrNone<{
+    id: string
+    resolution: string | null
+    verified: boolean
+  }>(
+    `select id, resolution, (data @> $3::jsonb and data->>'sportsFixture' is distinct from 'true') as verified
+     from contracts where data->>'sportsEventId'=$1 and creator_id=any($2) and token='MANA'
+       and data->>'sportsMarketType'='moneyline' order by id collate "C" limit $4 for share`,
+    [
+      eventId,
+      MANIFOLD_SPORTS_USER_IDS,
+      JSON.stringify({ sportsProvider: 'bdl', sportsLeagueKey: league }),
+      MAX_CREATION_GAME_KEYS + 1,
+    ]
   )
-  const ids = new Map(rows.map((row) => [row.slug, row.id]))
-  return slugs.every((slug) => ids.has(slug))
-    ? [...new Set(slugs.map((slug) => ids.get(slug)!))]
-    : null
+  if (
+    rows.length > MAX_CREATION_GAME_KEYS ||
+    rows.some((r) => !r.verified || r.resolution !== 'CANCEL')
+  )
+    return null
+  return rows.map((r) => r.id)
 }
 
 type StoredGame = { id: string; source: string; start: string | null }

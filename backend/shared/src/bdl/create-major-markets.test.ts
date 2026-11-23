@@ -22,7 +22,11 @@ import {
   requireBdlCreationBudget,
 } from './creation-budget'
 import { getMajorSettings } from './major-settings'
-import { majorCreationHold, existingMajorGroups } from './major-creation-store'
+import {
+  canceledMajorContractIds,
+  majorCreationHold,
+  existingMajorGroups,
+} from './major-creation-store'
 import { fetchMajorGames, fetchMajorOdds, MajorGame } from './major-games'
 import { runMajorCreation, MajorCreationOptions } from './create-major-markets'
 
@@ -64,6 +68,7 @@ jest.mock('./major-settings', () => ({
 jest.mock('./major-creation-store', () => ({
   majorCreationHold: jest.fn(),
   existingMajorGroups: jest.fn(),
+  canceledMajorContractIds: jest.fn(),
 }))
 jest.mock('./major-games', () => ({
   fetchMajorGames: jest.fn(),
@@ -281,7 +286,12 @@ it('does not fund a forced regular-season game when only a different NBA phase i
       competitionId: regular.competitionId,
       keys: ['bdl:nba:1'],
     })
-  ).toMatchObject({ created: 0, log: [] })
+  ).toMatchObject({
+    created: 0,
+    log: [
+      { eventId: 'bdl:nba:1', status: 'skipped', reason: 'phase disabled' },
+    ],
+  })
   expect(schedule).not.toHaveBeenCalled()
   expect(save).not.toHaveBeenCalled()
 })
@@ -573,4 +583,256 @@ it('caps accepted games per league and across a run in earliest-start order', as
   } finally {
     Object.defineProperty(settingsConstants, 'BDL_GLOBAL_RUN_CAP', original)
   }
+})
+
+it('holds higher transaction ante and accepts the exact confirmed maximum for that game', async () => {
+  schedule.mockResolvedValue([game(1), game(2)])
+  const result = await run({
+    keys: ['bdl:nba:1', 'bdl:nba:2'],
+    maxAntes: { 'bdl:nba:1': 174, 'bdl:nba:2': 175 },
+  })
+  expect(result).toMatchObject({
+    created: 1,
+    skipped: 1,
+    log: [
+      {
+        eventId: 'bdl:nba:1',
+        status: 'skipped',
+        reason: 'ante exceeds confirmed maximum; preview again',
+      },
+      {
+        eventId: 'bdl:nba:2',
+        status: 'created',
+        ante: 175,
+        answerLabels: ['Away', 'Home'],
+      },
+    ],
+  })
+  expect(requireBdlCreationBudget).toHaveBeenCalledTimes(2)
+})
+
+it('reconciles every explicit key with the fresh slate, without treating a failed list as a missing game', async () => {
+  const options = { keys: ['bdl:nba:1', 'bdl:nba:2'], dryRun: true }
+  expect(await run(options)).toMatchObject({
+    wouldCreate: 1,
+    skipped: 1,
+    log: [
+      {
+        eventId: 'bdl:nba:2',
+        reason: 'selected game missing from current slate',
+      },
+      { eventId: 'bdl:nba:1', answerLabels: ['Away', 'Home'] },
+    ],
+  })
+  schedule.mockRejectedValueOnce(Error('offline fixture read error'))
+  expect(await run(options)).toMatchObject({
+    errors: 2,
+    skipped: 0,
+    log: [
+      { eventId: 'bdl:nba:1', status: 'error', reason: 'league unavailable' },
+      { eventId: 'bdl:nba:2', status: 'error', reason: 'league unavailable' },
+    ],
+  })
+  switches.mockResolvedValue({})
+  expect((await run(options)).log).toEqual(
+    options.keys.map((eventId) =>
+      expect.objectContaining({
+        eventId,
+        status: 'skipped',
+        reason: 'phase disabled',
+      })
+    )
+  )
+})
+
+it('previews one game without funding and refuses changed entrants, kickoff or topics before a confirmed debit', async () => {
+  const key = 'bdl:nba:1'
+  const scope = {
+    operator: true as const,
+    keys: [key],
+    competitionId: firstPhase('nba').competitionId,
+  }
+  const preview = await run({ ...scope, dryRun: true })
+  const confirmation = preview.log[0].confirmation!
+  expect(confirmation).toEqual({
+    awayId: 20,
+    homeId: 10,
+    startTime: Date.parse(game(1).startTime!),
+  })
+  expect(save).not.toHaveBeenCalled()
+  expect(requireBdlCreationBudget).not.toHaveBeenCalled()
+  const execute = {
+    ...scope,
+    maxAntes: { [key]: 175 },
+    confirmations: { [key]: confirmation },
+  }
+  for (const updated of [
+    game(1, { away: { id: 30, name: 'Replacement' } }),
+    game(1, {
+      startTime: new Date(confirmation.startTime + 1_000).toISOString(),
+    }),
+  ]) {
+    schedule.mockResolvedValueOnce([updated])
+    odds.mockImplementationOnce(
+      async (_client, league, games) =>
+        new Map(
+          games.map((g) => [
+            g.id,
+            [
+              {
+                ...line(league, g),
+                outcomes: [
+                  {
+                    outcome: { entrantId: String(g.away.id) },
+                    americanOdds: -150,
+                  },
+                  {
+                    outcome: { entrantId: String(g.home.id) },
+                    americanOdds: 150,
+                  },
+                ],
+              },
+            ],
+          ])
+        )
+    )
+    expect(await run(execute)).toMatchObject({
+      created: 0,
+      skipped: 1,
+      log: [{ reason: 'game or canceled markets changed; preview again' }],
+    })
+  }
+  jest
+    .mocked(existingMajorGroups)
+    .mockResolvedValueOnce(['topic'])
+    .mockResolvedValueOnce(null)
+  expect(await run(execute)).toMatchObject({
+    created: 0,
+    log: [{ reason: 'configured topics changed; preview again' }],
+  })
+  expect(await run(execute)).toMatchObject({
+    created: 1,
+    log: [{ eventId: key, ante: 175 }],
+  })
+})
+it('only previews and executes the replacement in a mixed forced selection', async () => {
+  const fresh = 'bdl:nba:1'
+  const replacement = 'bdl:nba:2'
+  schedule.mockResolvedValue([game(1), game(2)])
+  jest
+    .mocked(canceledMajorContractIds)
+    .mockImplementation(async (_tx, id) =>
+      id === replacement ? ['original'] : []
+    )
+  const scope = {
+    operator: true as const,
+    force: true,
+    keys: [fresh, replacement],
+    competitionId: firstPhase('nba').competitionId,
+  }
+  const skipped = {
+    eventId: fresh,
+    status: 'skipped',
+    reason: 'no canceled market to replace',
+  }
+  const preview = await run({ ...scope, dryRun: true })
+  expect(preview).toMatchObject({
+    created: 0,
+    wouldCreate: 1,
+    skipped: 1,
+    log: [
+      skipped,
+      {
+        eventId: replacement,
+        status: 'dry-run',
+        confirmation: { canceledContractIds: ['original'] },
+      },
+    ],
+  })
+  expect(preview.log[0].confirmation).toBeUndefined()
+  expect(save).not.toHaveBeenCalled()
+
+  // An earlier approval for the first game no longer has a matching canceled market.
+  const execute = await run({
+    ...scope,
+    maxAntes: { [fresh]: 175, [replacement]: 175 },
+    confirmations: {
+      [fresh]: {
+        awayId: 20,
+        homeId: 10,
+        startTime: Date.parse(game(1).startTime!),
+        canceledContractIds: ['previously-seen'],
+      },
+      [replacement]: preview.log[1].confirmation!,
+    },
+  })
+  expect(execute).toMatchObject({
+    created: 1,
+    skipped: 1,
+    errors: 0,
+    log: [
+      skipped,
+      {
+        eventId: replacement,
+        status: 'created',
+        contractId: 'created-' + replacement,
+      },
+    ],
+  })
+})
+
+it('binds force to the canceled contracts seen at preview; a later N/A requires a fresh explicit approval', async () => {
+  const key = 'bdl:nba:1'
+  const scope = {
+    operator: true as const,
+    force: true,
+    keys: [key],
+    competitionId: firstPhase('nba').competitionId,
+  }
+  const history = jest
+    .mocked(canceledMajorContractIds)
+    .mockResolvedValue(['original'])
+  const preview = await run({ ...scope, dryRun: true })
+  expect(save).not.toHaveBeenCalled()
+  expect(preview.log[0].confirmation?.canceledContractIds).toEqual(['original'])
+  const execute = {
+    ...scope,
+    maxAntes: { [key]: 175 },
+    confirmations: { [key]: preview.log[0].confirmation! },
+  }
+  expect(await run(execute)).toMatchObject({ created: 1 })
+  history.mockResolvedValue(['original', 'replacement'])
+  expect(await run(execute)).toMatchObject({
+    created: 0,
+    skipped: 1,
+    log: [{ reason: 'game or canceled markets changed; preview again' }],
+  })
+  const second = await run({ ...scope, dryRun: true })
+  expect(second.log[0].confirmation?.canceledContractIds).toEqual([
+    'original',
+    'replacement',
+  ])
+  expect(
+    await run({
+      ...execute,
+      confirmations: { [key]: second.log[0].confirmation! },
+    })
+  ).toMatchObject({ created: 1 })
+})
+it('one missing selected game has one receipt even when an unrelated odds read fails', async () => {
+  odds.mockRejectedValueOnce(new Error('unavailable'))
+  expect(
+    await run({ operator: true, keys: ['bdl:nba:99'], dryRun: true })
+  ).toMatchObject({
+    skipped: 1,
+    errors: 0,
+    created: 0,
+    log: [
+      {
+        eventId: 'bdl:nba:99',
+        reason: 'selected game missing from current slate',
+      },
+    ],
+  })
+  expect(save).not.toHaveBeenCalled()
 })
