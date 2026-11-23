@@ -84,7 +84,7 @@ function TrophyExplainer(props: {
 }) {
   const { showManaRewards, onClose } = props
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-3 [text-wrap:pretty]">
       <ExplainerBadges />
       <h2 className="text-xl font-bold">How trophies work</h2>
       <p>
