@@ -2,6 +2,8 @@ import { BDL_KICKOFF_FUNDING } from 'common/bdl/constants'
 import { BdlLeagueKey } from 'common/bdl/leagues'
 import { MAJOR_LEAGUES, MajorLeague } from 'common/bdl/major-leagues'
 import { SPORT_LEAGUE_LABEL } from 'common/sports-calendar'
+import { SPORTS_GAME_EVENT_PATTERNS } from 'common/sports-discovery'
+import { majorOddsKeys } from './major-moneyline-identity'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import type {
   SupabaseDirectClient,
@@ -57,6 +59,11 @@ export class BdlCreationBudgetError extends Error {
 const legacyMajorLeagueKeys = Object.fromEntries(
   MAJOR_LEAGUES.map((key) => [SPORT_LEAGUE_LABEL[key], key])
 )
+const leagueByOddsKey = Object.fromEntries(
+  MAJOR_LEAGUES.flatMap((league) =>
+    majorOddsKeys(league).map((key) => [key, league])
+  )
+)
 const emptyPreview: BdlBudgetPreview = {
   dailyAnte: 0,
   waveAnte: 0,
@@ -86,11 +93,18 @@ function checkInput(input: BdlBudgetInput, preview: BdlBudgetPreview) {
 // The ledger records the actual initial ante. Later user liquidity, refunds and
 // fees are separate transaction types. Closed but unresolved markets still tie up
 // capital. The UTC periods use transaction time, the default on txns.created_time.
+// Attribute each posted ante to one league: explicit key, a compatible canonical
+// Odds event's calendar league, then the legacy display label.
 const budgetQuery = `with periods as (
   select date_trunc('day',now() at time zone 'UTC') as day,
          date_trunc('month',now() at time zone 'UTC') as month
 ), spent as (
-  select coalesce(c.data->>'sportsLeagueKey', $14::jsonb ->> (c.data->>'sportsLeague')) as league, c.resolution, t.amount,
+  select coalesce(c.data->>'sportsLeagueKey',
+           case when coalesce(c.data->>'sportsProvider', 'odds') = 'odds'
+                  and c.data->>'sportsFixture' is distinct from 'true'
+                  and (c.data->>'sportsEventId') collate "C" ~ $16
+                then $15::jsonb ->> split_part(c.data->>'sportsEventId', ':', 2) end,
+           $14::jsonb ->> (c.data->>'sportsLeague')) as league, c.resolution, t.amount,
          t.created_time at time zone 'UTC' as charged
   from txns t join contracts c on c.id=t.to_id and c.creator_id=t.from_id
   where t.from_id=any($1) and t.category='CREATE_CONTRACT_ANTE' and t.token='M$'
@@ -140,6 +154,8 @@ export async function inspectBdlCreationBudget(
     limits.globalOpenAnte,
     BDL_KICKOFF_FUNDING.anteReserve,
     legacyMajorLeagueKeys,
+    leagueByOddsKey,
+    SPORTS_GAME_EVENT_PATTERNS.odds,
   ])
   if (!result) throw new Error('BDL sports funding account is missing')
   if (
