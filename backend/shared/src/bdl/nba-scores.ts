@@ -147,7 +147,7 @@ export async function pollNbaScores(
   const abandoned = new Promise<null>((resolve) => {
     signal?.addEventListener('abort', () => resolve(null), { once: true })
   })
-  const due = markets.flatMap((market) => {
+  const eligible = markets.flatMap((market) => {
     const parsed = parseBdlEventId(market.event)
     const start = parseSportsKickoffMs(market.start)
     if (
@@ -164,7 +164,8 @@ export async function pollNbaScores(
     const liveDue = live > 0 && now - (last?.live ?? -Infinity) >= live * 1000
     const finalsDue =
       finals > 0 && now - (last?.finals ?? -Infinity) >= finals * 1000
-    if (!phase || (!liveDue && !finalsDue)) return []
+    if (!phase || (!live && !finals)) return []
+    const due = liveDue || finalsDue
     return [
       {
         ...market,
@@ -173,10 +174,14 @@ export async function pollNbaScores(
         phase,
         liveDue,
         finalsDue,
+        // A requesting market must keep its original due lane. A sibling may
+        // reuse a final only under a lane enabled before the request began.
+        allowLive: due ? liveDue : live > 0,
+        allowFinals: due ? finalsDue : finals > 0,
       },
     ]
   })
-  const enabled = async (candidates: typeof due, liveOnly = false) => {
+  const enabled = async (candidates: typeof eligible, liveOnly = false) => {
     if (!active()) return false
     const polling = await Promise.race([nbaPolling(pg, candidates), abandoned])
     return (
@@ -185,30 +190,35 @@ export async function pollNbaScores(
       candidates.some((m) => {
         const { live, finals } = polling(m)
         return (
-          (m.liveDue && live > 0) || (!liveOnly && m.finalsDue && finals > 0)
+          (m.allowLive && live > 0) ||
+          (!liveOnly && m.allowFinals && finals > 0)
         )
       })
     )
   }
   const broadcasts: {
-    market: (typeof due)[number]
+    market: (typeof eligible)[number]
     patch: NonNullable<ReturnType<typeof nbaScorePatch>>
   }[] = []
-  for (const [day, slate] of Object.entries(groupBy(due, (m) => m.slate))) {
+  for (const [day, slate] of Object.entries(
+    groupBy(eligible, (m) => m.slate)
+  )) {
     if (!active()) return
+    const due = slate.filter((m) => m.liveDue || m.finalsDue)
+    if (!due.length) continue
     const client = createBdlClient({
       role: isProd() ? 'scheduler' : 'dev',
       key: process.env.BALLDONTLIE_API_KEY,
       enabledLeagues: new Set(['nba']),
-      isLeagueEnabled: () => enabled(slate),
+      isLeagueEnabled: () => enabled(due),
     })
-    for (const market of slate) {
+    for (const market of due) {
       const last = lastAttempts.get(market.id) ?? {}
       if (market.liveDue) last.live = now
       if (market.finalsDue) last.finals = now
       lastAttempts.set(market.id, last)
     }
-    const ids = new Set(slate.map((m) => m.gameId))
+    const ids = new Set(due.map((m) => m.gameId))
     const readStartedAt = Date.now()
     let games: MajorGame[]
     try {
@@ -226,6 +236,7 @@ export async function pollNbaScores(
       const patch = nbaScorePatch(market, game, receivedAt)
       if (!patch) continue
       const final = patch.sportsLiveStatus === 'FINISHED'
+      if (!final && !market.liveDue) continue
       if (
         final &&
         Date.parse(game.startTime!) !== parseSportsKickoffMs(market.start)
