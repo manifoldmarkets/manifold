@@ -97,32 +97,36 @@ export function getOnboardingHint(
   next: NonNullable<ReturnType<typeof getNextOnboardingMilestone>>
 ) {
   const remaining = next.milestone.threshold - next.value
+  const minimum = `${formatMoney(STARTER_MIN_TRADE_AMOUNT)} or more`
   if (next.definition.statKey === 'starterDays') {
     return remaining === 1
-      ? 'Trade again on another day'
-      : `Trade on ${remaining} more days`
+      ? `Trade ${minimum} on another day`
+      : `Trade ${minimum} on ${remaining} more days`
   }
   if (next.definition.statKey === 'starterMarkets') {
     return remaining === 1
-      ? 'Trade in one more market'
-      : `Trade in ${remaining} more markets`
+      ? `Trade ${minimum} in one more market`
+      : `Trade ${minimum} in ${remaining} more markets`
   }
-  const minimum = formatMoney(STARTER_MIN_TRADE_AMOUNT)
   return next.milestone.threshold === 1
-    ? `Make a trade of ${minimum} or more`
+    ? `Make a trade of ${minimum}`
     : `Make ${remaining} more ${
         remaining === 1 ? 'trade' : 'trades'
-      } of ${minimum} or more, counting each market once per day`
+      } of ${minimum}, one per market per day`
 }
 
-export function FindMarketLink(props: { source: 'next trophy' | 'explainer' }) {
+export function FindMarketLink(props: {
+  source: 'next trophy' | 'explainer'
+  onClick?: () => void
+}) {
   return (
     <Link
       href="/home"
       className={buttonClass('sm', 'indigo')}
-      onClick={() =>
+      onClick={() => {
         track('trophies find a market clicked', { source: props.source })
-      }
+        props.onClick?.()
+      }}
     >
       Find a market
     </Link>

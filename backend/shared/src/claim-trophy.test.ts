@@ -562,6 +562,37 @@ describe('Newcomer rewards', () => {
     }
   )
 
+  it('collects an unpaid Newcomer reward once through a higher Account Age claim', async () => {
+    await addUser('flagged', {
+      data: { bonusEligibility: 'requires_verification' },
+    })
+    const unpaid = await claim('flagged', 'account-age', 'newcomer')
+    expect(unpaid.newlyClaimed.map((c) => c.milestoneId)).toEqual(['newcomer'])
+    expect(unpaid.rewardAmount).toBe(0)
+    expect(await rewardRows('flagged')).toEqual([])
+    expect(await rewardTxns('flagged')).toHaveLength(0)
+
+    await rows(
+      `update users set data = '{"bonusEligibility": "verified"}' where id = 'flagged'`
+    )
+    const paid = await claim('flagged', 'account-age', 'established')
+    expect(paid.newlyClaimed.map((c) => c.milestoneId)).toEqual(['established'])
+    expect(paid.rewardAmount).toBe(25)
+
+    const retry = await claim('flagged', 'account-age', 'newcomer')
+    expect(retry.rewardAmount).toBe(0)
+    const txns = await rewardTxns('flagged')
+    expect(txns).toHaveLength(1)
+    expect(txns[0].amount).toBe(25)
+    expect(await rewardRows('flagged')).toEqual([
+      { milestone_id: 'newcomer', txn_id: txns[0].id },
+    ])
+    expect(await balance('flagged')).toEqual({
+      balance: 25,
+      total_deposits: 25,
+    })
+  })
+
   it.each(['newcomer', 'veteran'])(
     'records Newcomer without payment for an older account claiming %s',
     async (milestoneId) => {

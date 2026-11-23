@@ -1,8 +1,10 @@
 import Link from 'next/link'
-import { createContext, ReactNode, useContext, useEffect } from 'react'
+import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react'
 import toast from 'react-hot-toast'
 
 import {
+  ONBOARDING_MILESTONES,
+  TrophyClaim,
   getClaimableOnboardingMilestones,
   getTrophyClaimReward,
   isStarterTrophyAccount,
@@ -23,74 +25,56 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
   const multiplier = useTrophyRewardMultiplier()
   const username = user?.username
   const lastBetTime = user?.lastBetTime ?? 0
+  const ready = useMemo(
+    () =>
+      trophies
+        ? getClaimableOnboardingMilestones(trophies.starter, trophies.claims)
+        : [],
+    [trophies]
+  )
 
   useEffect(() => {
     if (!userId || !username) {
-      lastObservedBet = undefined
+      session = undefined
       return
     }
-    if (lastObservedBet?.userId !== userId) {
-      lastObservedBet = { userId, time: lastBetTime }
-      return
-    }
-    if (lastBetTime > lastObservedBet.time) {
-      lastObservedBet = {
-        userId,
-        time: lastBetTime,
-        reload: refreshUserTrophies(userId),
+    if (session?.userId !== userId) {
+      session = { userId, lastBetTime, seen: new Set(), initialized: false }
+    } else if (lastBetTime > session.lastBetTime) {
+      session.lastBetTime = lastBetTime
+      if (!trophies || !hasClaimedAllOnboarding(trophies.claims)) {
+        void refreshUserTrophies(userId)
       }
     }
-    // A route change or updated tier can remount this observer mid-request.
-    const bet = lastObservedBet
-    if (!bet.reload) return
-    let active = true
-    bet.reload.then(({ before, after }) => {
-      if (!active) return
-      bet.reload = undefined
-      if (!before?.starter || !after?.starter) return
-      const prior = getClaimableOnboardingMilestones(
-        before.starter,
-        before.claims
+    // A maker's limit-order fill can first appear on focus or a stale navigation.
+    if (!trophies) return
+    for (const { definition, milestone } of ready) {
+      const key = `${definition.id}/${milestone.id}`
+      if (session.seen.has(key)) continue
+      session.seen.add(key)
+      if (!session.initialized || !recordToast(userId, key)) continue
+      const amount = getTrophyClaimReward(
+        definition,
+        milestone,
+        trophies.rewarded,
+        multiplier
       )
-      const ready = getClaimableOnboardingMilestones(
-        after.starter,
-        after.claims
-      )
-      for (const item of ready) {
-        const { definition, milestone } = item
-        const key = `${userId}/${definition.id}/${milestone.id}`
-        if (prior.includes(item) || announced.has(key)) continue
-        announced.add(key)
-        const amount = getTrophyClaimReward(
-          definition,
-          milestone,
-          after.rewarded,
-          multiplier
-        )
-        toast((t) => (
-          <Link
-            href={`/${username}?tab=trophies`}
-            onClick={() => toast.dismiss(t.id)}
-            className="font-medium hover:underline"
-          >
-            {milestone.emoji} Trophy unlocked: {milestone.name} ·{' '}
-            {amount > 0
-              ? `claim ${formatTrophyReward(amount)}`
-              : 'claim trophy'}
-          </Link>
-        ))
-      }
-    })
-    return () => {
-      active = false
+      toast((t) => (
+        <Link
+          href={`/${username}?tab=trophies`}
+          onClick={() => toast.dismiss(t.id)}
+          className="font-medium hover:underline"
+        >
+          {milestone.emoji} Trophy unlocked: {milestone.name} ·{' '}
+          {amount > 0 ? `claim ${formatTrophyReward(amount)}` : 'claim trophy'}
+        </Link>
+      ))
     }
-  }, [userId, username, lastBetTime, multiplier])
+    session.initialized = true
+  }, [userId, username, lastBetTime, trophies, ready, multiplier])
 
-  const count = trophies
-    ? getClaimableOnboardingMilestones(trophies.starter, trophies.claims).length
-    : 0
   return (
-    <TrophyCountContext.Provider value={count}>
+    <TrophyCountContext.Provider value={ready.length}>
       {props.children}
     </TrophyCountContext.Provider>
   )
@@ -99,13 +83,33 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
 const TrophyCountContext = createContext(0)
 export const useNavTrophyCount = () => useContext(TrophyCountContext)
 
-// Page remounts on navigation. Only an observed increase during this browser
-// session can announce a milestone, once per account.
-let lastObservedBet:
+// The provider remounts on navigation. Keep the account's first read silent
+// and remember each claimable milestone even after a claim or admin unclaim.
+let session:
   | {
       userId: string
-      time: number
-      reload?: ReturnType<typeof refreshUserTrophies>
+      lastBetTime: number
+      seen: Set<string>
+      initialized: boolean
     }
   | undefined
-const announced = new Set<string>()
+
+const hasClaimedAllOnboarding = (claims: TrophyClaim[]) =>
+  ONBOARDING_MILESTONES.every(({ definition, milestone }) =>
+    claims.some(
+      (c) => c.trophyId === definition.id && c.milestoneId === milestone.id
+    )
+  )
+
+function recordToast(userId: string, key: string) {
+  try {
+    const storageKey = `trophy-toasts-${userId}`
+    const stored: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
+    const keys = Array.isArray(stored) ? stored : []
+    if (keys.includes(key)) return false
+    localStorage.setItem(storageKey, JSON.stringify([...keys, key]))
+  } catch {
+    // If storage is unavailable, the session's seen set still deduplicates.
+  }
+  return true
+}

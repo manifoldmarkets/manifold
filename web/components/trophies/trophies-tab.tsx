@@ -76,9 +76,11 @@ export function TrophiesTab(props: {
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
   const [dialog, setDialog] = useState<TrophyDialog | null>(null)
 
-  const openExplainer = (source: 'tab' | 'first claim') => {
-    setDialog({ step: 'explainer' })
-    track('trophy explainer shown', { source })
+  const openExplainer = (trophyId?: string) => {
+    setDialog({ step: 'explainer', trophyId })
+    track('trophy explainer shown', {
+      source: trophyId ? 'first claim' : 'tab',
+    })
   }
   const pinTrophy = (trophyId: string) => {
     setDialog(null)
@@ -162,8 +164,13 @@ export function TrophiesTab(props: {
       dialog={dialog}
       trophies={trophies}
       multiplier={rewardMultiplier}
-      onClose={() => setDialog(null)}
-      onExplain={() => openExplainer('first claim')}
+      onClose={() => {
+        if (dialog.step === 'explainer' && dialog.trophyId) {
+          setJustClaimed(dialog.trophyId)
+        }
+        setDialog(null)
+      }}
+      onExplain={openExplainer}
       onPin={pinTrophy}
     />
   )
@@ -269,7 +276,7 @@ export function TrophiesTab(props: {
             them to pin them to your profile.{' '}
             <button
               className="text-primary-600 hover:underline"
-              onClick={() => openExplainer('tab')}
+              onClick={() => openExplainer()}
             >
               How trophies work
             </button>

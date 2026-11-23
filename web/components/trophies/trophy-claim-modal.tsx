@@ -21,14 +21,17 @@ export function TrophyClaimModal(props: {
   trophies: UserTrophies
   multiplier: number
   onClose: () => void
-  onExplain: () => void
+  onExplain: (trophyId: string) => void
   onPin: (trophyId: string) => void
 }) {
   const { dialog, trophies, multiplier, onClose, onExplain, onPin } = props
+  const firstClaim = dialog.step === 'celebration' && dialog.first
+  const onContinue = firstClaim ? () => onExplain(dialog.trophyId) : onClose
   return (
     <Modal
       open
-      setOpen={onClose}
+      setOpen={onContinue}
+      hideCloseButton={firstClaim}
       size="sm"
       closeButtonPosition="inside"
       ariaLabel={
@@ -55,14 +58,16 @@ export function TrophyClaimModal(props: {
             </span>
           )}
           <div className="mt-2 flex flex-wrap justify-center gap-2">
-            <Button
-              size="sm"
-              color="gray-outline"
-              onClick={() => onPin(dialog.trophyId)}
-            >
-              Pin to profile
-            </Button>
-            <Button size="sm" onClick={dialog.first ? onExplain : onClose}>
+            {!dialog.first && (
+              <Button
+                size="sm"
+                color="gray-outline"
+                onClick={() => onPin(dialog.trophyId)}
+              >
+                Pin to profile
+              </Button>
+            )}
+            <Button size="sm" onClick={onContinue}>
               Continue
             </Button>
           </div>
@@ -120,7 +125,7 @@ function TrophyExplainer(props: {
       )}
       <p>Claim each one here, then pin your favourites to your profile.</p>
       <div className="mt-2 flex flex-wrap justify-end gap-2">
-        {next && <FindMarketLink source="explainer" />}
+        {next && <FindMarketLink source="explainer" onClick={onClose} />}
         <Button
           size="sm"
           color={next ? 'gray-outline' : 'indigo'}
@@ -142,7 +147,7 @@ export type TrophyDialog =
       rewardAmount: number
       first: boolean
     }
-  | { step: 'explainer' }
+  | { step: 'explainer'; trophyId?: string }
 
 function CelebrationBadge(props: {
   trophyId: string

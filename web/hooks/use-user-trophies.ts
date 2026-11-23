@@ -170,12 +170,9 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
 }
 
 export async function refreshUserTrophies(userId: string) {
-  const before = getEntry(userId).data
-  // An in-flight read may predate the bet or league rollover.
+  // A read already in flight may have taken its snapshot before rollover.
   await getEntry(userId).loading
-  await loadUserTrophies(userId)
-  const { data, error } = getEntry(userId)
-  return { before, after: error ? undefined : data }
+  return loadUserTrophies(userId)
 }
 
 /** Adds claims returned by claim-trophy. */
@@ -196,7 +193,7 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
   })
 }
 
-/** Adds paid onboarding rewards returned by claim-trophy. Rewards are never
+/** Adds paid starter rewards returned by claim-trophy. Rewards are never
  * removed, so they merge. */
 export function addTrophyRewards(
   userId: string,
