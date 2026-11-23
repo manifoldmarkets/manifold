@@ -9,7 +9,7 @@ import {
 } from 'common/sports-calendar'
 import { parseBdlEventId } from 'common/sports-ids'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
-import { bdlLiveInterval } from 'common/sports-score-polling'
+import { bdlLiveInterval, pollingTarget } from 'common/sports-score-polling'
 import { createBdlClient } from '../balldontlie-client'
 import { publishSportsLiveScore } from '../publish-sports-live-score'
 import type { SupabaseDirectClient } from '../supabase/init'
@@ -37,10 +37,13 @@ type Market = {
   away: string
 }
 
-async function nbaPolling(pg: SupabaseDirectClient) {
+async function nbaPolling(pg: SupabaseDirectClient, markets: Market[]) {
   const [switches, settings] = await Promise.all([
     getCompetitionSwitches(pg),
-    getScorePollingSettings(pg),
+    getScorePollingSettings(pg, [
+      pollingTarget.league('nba'),
+      ...markets.map((m) => pollingTarget.game(m.id)),
+    ]),
   ])
   return (market: Market) => {
     const start = parseSportsKickoffMs(market.start)
@@ -88,10 +91,12 @@ export function nbaScorePatch(
 /** One NBA slate read supplies every due market on that Eastern game day. */
 export async function pollNbaScores(
   pg: SupabaseDirectClient,
-  lastAttempts: Map<string, number>
+  lastAttempts: Map<string, number>,
+  signal?: AbortSignal
 ) {
+  const active = () => !signal?.aborted && isSportsBdlEnabled()
   if (
-    !isSportsBdlEnabled() ||
+    !active() ||
     !(process.env.BALLDONTLIE_API_KEY || process.env.BDL_FIXTURE_DIR)
   )
     return
@@ -110,11 +115,23 @@ export async function pollNbaScores(
         and close_time between $3::timestamptz - interval '3 days' and $3::timestamptz + interval '8 hours'`,
     [MANIFOLD_SPORTS_USER_IDS, JSON.stringify(nbaMoneyline), new Date(now)]
   )
+  if (!active()) return
   const currentIds = new Set(markets.map((m) => m.id))
   for (const id of lastAttempts.keys())
     if (!currentIds.has(id)) lastAttempts.delete(id)
   if (!markets.length) return
-  const interval = await nbaPolling(pg)
+  const interval = await nbaPolling(pg, markets)
+  if (!active()) return
+  // A pending permission read inside the shared limiter must also release its
+  // place when this run expires, even if its database connection stays stuck.
+  const abandoned = new Promise<null>((resolve) => {
+    signal?.addEventListener('abort', () => resolve(null), { once: true })
+  })
+  const enabled = async (candidates: Market[]) => {
+    if (!active()) return false
+    const polling = await Promise.race([nbaPolling(pg, candidates), abandoned])
+    return active() && !!polling && candidates.some((m) => polling(m) > 0)
+  }
   const due = markets.flatMap((market) => {
     const parsed = parseBdlEventId(market.event)
     const start = parseSportsKickoffMs(market.start)
@@ -136,16 +153,12 @@ export async function pollNbaScores(
     return [{ ...market, gameId: parsed.id, slate: easternDay.format(start) }]
   })
   for (const [day, slate] of Object.entries(groupBy(due, (m) => m.slate))) {
-    const enabled = async () => {
-      if (!isSportsBdlEnabled()) return false
-      const polling = await nbaPolling(pg)
-      return slate.some((m) => polling(m) > 0)
-    }
+    if (!active()) return
     const client = createBdlClient({
       role: isProd() ? 'scheduler' : 'dev',
       key: process.env.BALLDONTLIE_API_KEY,
       enabledLeagues: new Set(['nba']),
-      isLeagueEnabled: enabled,
+      isLeagueEnabled: () => enabled(slate),
     })
     for (const market of slate) lastAttempts.set(market.id, now)
     const ids = new Set(slate.map((m) => m.gameId))
@@ -153,11 +166,9 @@ export async function pollNbaScores(
     const games = await fetchMajorGames(client, 'nba', day, day, ids)
     const receivedAt = Date.now()
     const byId = new Map(games.map((game) => [game.id, game]))
-    const stillEnabled = await nbaPolling(pg)
     for (const market of slate) {
-      const game = byId.get(market.gameId)
-      if (!isSportsBdlEnabled() || !stillEnabled(market)) continue
-      const patch = nbaScorePatch(market, game, receivedAt)
+      if (!active()) return
+      const patch = nbaScorePatch(market, byId.get(market.gameId), receivedAt)
       if (!patch) continue
       const identity = {
         ...nbaMoneyline,
@@ -168,12 +179,13 @@ export async function pollNbaScores(
         sportsAwayTeamId: market.away,
       }
       try {
-        if (
-          await updateSportsScore(pg, market.id, patch, {
-            identity,
-            readStartedAt,
-          })
-        )
+        if (!(await enabled([market]))) continue
+        if (!active()) return
+        const written = await updateSportsScore(pg, market.id, patch, {
+          identity,
+          readStartedAt,
+        })
+        if (written && (await enabled([market])) && active())
           await publishSportsLiveScore(market.id, patch)
       } catch (error) {
         log.error(

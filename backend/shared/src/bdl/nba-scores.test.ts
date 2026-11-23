@@ -10,6 +10,7 @@ import { publishSportsLiveScore } from '../publish-sports-live-score'
 import { createSupabaseDirectClient } from '../supabase/init'
 import { hasOddsApiKey } from '../the-odds-api-client'
 import { fetchMajorGames } from './major-games'
+import * as nbaScores from './nba-scores'
 import { nbaScorePatch } from './nba-scores'
 
 jest.mock('../balldontlie-client', () => ({
@@ -55,12 +56,23 @@ const pgp = pgPromise()
 let db: PGlite
 const rows = async (sql: string, params?: unknown[]) =>
   (await db.query<Row>(pgp.as.format(sql, params))).rows
+let beforeCandidates: (() => Promise<void>) | undefined
+let beforeSettings: (() => Promise<void>) | undefined
+let afterWrite: (() => Promise<unknown>) | undefined
 const pg = {
-  manyOrNone: rows,
-  oneOrNone: async (sql: string, params: unknown[]) =>
-    (await rows(sql, params))[0] ?? null,
-  map: async (sql: string, params: unknown[], map: (row: Row) => unknown) =>
-    (await rows(sql, params)).map(map),
+  manyOrNone: async (sql: string, params: unknown[]) => {
+    await beforeCandidates?.()
+    return rows(sql, params)
+  },
+  oneOrNone: async (sql: string, params: unknown[]) => {
+    const result = (await rows(sql, params))[0] ?? null
+    if (result) await afterWrite?.()
+    return result
+  },
+  map: async (sql: string, params: unknown[], map: (row: Row) => unknown) => {
+    if (sql.includes('from sports_score_polling')) await beforeSettings?.()
+    return (await rows(sql, params)).map(map)
+  },
 } as unknown as ReturnType<typeof createSupabaseDirectClient>
 let now: number
 let wire: Row[]
@@ -133,17 +145,21 @@ beforeEach(async () => {
   wire = [live]
   requests.length = 0
   beforeResponse = undefined
+  beforeCandidates = undefined
+  beforeSettings = undefined
+  afterWrite = undefined
+  const clock = {
+    now: () => now,
+    sleep: async (ms: number) => {
+      now += ms
+    },
+  }
   jest
     .mocked(createBdlClient)
     .mockImplementation((opts: BdlClientOptions = {}) =>
       makeClient({
         ...opts,
-        clock: {
-          now: () => now,
-          sleep: async (ms) => {
-            now += ms
-          },
-        },
+        clock,
         transport: async (url) => {
           requests.push(new URL(url))
           await beforeResponse?.()
@@ -309,6 +325,120 @@ it('keeps an authorized Odds tick independent of a slow NBA read and coalesces c
   await completed
   expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
 })
+
+it.each(['game', 'league', 'phase'])(
+  'rechecks the %s opt-out between two finals from one slate',
+  async (scope) => {
+    const first = await market()
+    const second = await market({ sportsEventId: 'bdl:nba:101' })
+    wire = [final, { ...final, id: 101 }]
+    now = Date.parse('2026-11-21T21:01:00Z')
+    let held = ''
+    jest
+      .mocked(publishSportsLiveScore)
+      .mockImplementationOnce(async (published) => {
+        held = published === first ? second : first
+        if (scope === 'phase')
+          await db.exec('update sports_competition_switches set enabled=false')
+        else if (scope === 'league')
+          await db.exec('update sports_score_polling set interval_seconds=0')
+        else
+          await db.query(
+            'insert into sports_score_polling values ($1,0,null,null)',
+            ['game:' + held]
+          )
+      })
+    await resolveOddsSportsMarkets()
+    expect(requests).toHaveLength(1)
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+    expect((await stored(held)).sportsLiveStatus).toBeUndefined()
+    expect(
+      (await stored(held === first ? second : first)).sportsLiveStatus
+    ).toBe('FINISHED')
+
+    await db.exec('update sports_competition_switches set enabled=true')
+    await db.exec('update sports_score_polling set interval_seconds=60')
+    now += 60_000
+    await resolveOddsSportsMarkets()
+    expect((await stored(held)).sportsLiveStatus).toBe('FINISHED')
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
+  }
+)
+
+it('suppresses a publish when the game is disabled during an issued score write', async () => {
+  const id = await market()
+  afterWrite = () =>
+    db.query('insert into sports_score_polling values ($1,0,null,null)', [
+      'game:' + id,
+    ])
+  await resolveOddsSportsMarkets()
+  expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
+  expect(publishSportsLiveScore).not.toHaveBeenCalled()
+})
+
+function deferred() {
+  let release!: () => void
+  const promise = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  return { promise, release }
+}
+
+it.each(['candidate scan', 'quota permission', 'provider response'])(
+  'starts a replacement tick after a stalled %s and discards the abandoned result',
+  async (stage) => {
+    const id = await market()
+    const entered = deferred()
+    const blocked = deferred()
+    const stall = () => {
+      entered.release()
+      return blocked.promise
+    }
+    let settingsReads = 0
+    if (stage === 'candidate scan') beforeCandidates = stall
+    // Due-market discovery, then client authorization, then the shared quota grant.
+    if (stage === 'quota permission')
+      beforeSettings = async () => {
+        if (++settingsReads === 3) await stall()
+      }
+    if (stage === 'provider response') beforeResponse = stall
+    const timers = jest.spyOn(global, 'setTimeout')
+    const polls = jest.spyOn(nbaScores, 'pollNbaScores')
+    const first = resolveOddsSportsMarkets()
+    await entered.promise
+    const coalesced = resolveOddsSportsMarkets()
+    expect(polls).toHaveBeenCalledTimes(1)
+    const timeout = timers.mock.calls.find(([, ms]) => ms === 180_000)
+    expect(timeout).toBeDefined()
+    now += 180_000
+    timeout![0]()
+    await Promise.all([first, coalesced])
+    expect((await stored(id)).sportsLiveStatus).toBeUndefined()
+
+    beforeCandidates = undefined
+    beforeSettings = undefined
+    const replacement = deferred()
+    const complete = deferred()
+    beforeResponse = () => {
+      replacement.release()
+      return complete.promise
+    }
+    const fresh = resolveOddsSportsMarkets()
+    // Even the abandoned quota check must give up its shared grant before it returns.
+    await replacement.promise
+    blocked.release()
+    await Promise.allSettled([polls.mock.results[0].value])
+    expect((await stored(id)).sportsLiveStatus).toBeUndefined()
+    expect(publishSportsLiveScore).not.toHaveBeenCalled()
+    const concurrent = resolveOddsSportsMarkets()
+    expect(polls).toHaveBeenCalledTimes(2)
+    complete.release()
+    await Promise.all([fresh, concurrent])
+    expect(requests).toHaveLength(stage === 'provider response' ? 2 : 1)
+    expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+  }
+)
 
 it('rechecks identity, visibility, phase and actual close after a slow fetch', async () => {
   const changed = await market(),

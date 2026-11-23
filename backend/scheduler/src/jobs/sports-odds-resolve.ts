@@ -48,11 +48,28 @@ export async function resolveOddsSportsMarkets() {
     (process.env.BALLDONTLIE_API_KEY || process.env.BDL_FIXTURE_DIR) &&
     !nbaWork
   ) {
-    nbaWork = pollNbaScores(createSupabaseDirectClient(), nbaLastAttempts)
+    const controller = new AbortController()
+    let timer: NodeJS.Timeout
+    const deadline = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        controller.abort()
+        log.error(
+          '[sports-bdl-nba] score poll exceeded its three-minute deadline'
+        )
+        resolve()
+      }, RUN_DEADLINE_MS)
+    })
+    const work = pollNbaScores(
+      createSupabaseDirectClient(),
+      nbaLastAttempts,
+      controller.signal
+    )
+    nbaWork = Promise.race([work, deadline])
       .catch((error) =>
         log.error(`[sports-bdl-nba] score poll failed: ${error}`)
       )
       .finally(() => {
+        clearTimeout(timer)
         nbaWork = undefined
       })
   }
