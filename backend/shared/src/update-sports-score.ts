@@ -20,7 +20,7 @@ export async function updateSportsScore(
        and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
        and coalesce(data->'sportsFixture', 'false'::jsonb) = 'false'::jsonb
        and (($1::jsonb)->>'sportsLiveStatus' <> 'FINISHED'
-            or close_time <= to_timestamp($3::double precision / 1000))
+            or close_time < to_timestamp($3::double precision / 1000))
        and (data->>'sportsLiveStatus' is distinct from 'FINISHED'
             or ($1::jsonb)->>'sportsLiveStatus' = 'FINISHED')`
     : ''

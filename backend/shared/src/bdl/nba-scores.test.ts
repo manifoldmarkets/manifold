@@ -204,7 +204,7 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   await resolveOddsSportsMarkets()
   expect((await stored(home)).sportsLiveStatus).toBe('IN_PLAY')
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
-  now = Date.parse('2026-11-21T21:00:00Z')
+  now = Date.parse('2026-11-21T21:00:00.001Z')
   await resolveOddsSportsMarkets()
   expect(await stored(home)).toMatchObject({
     sportsHomeScore: 132,
@@ -219,6 +219,16 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   await resolveOddsSportsMarkets()
   expect(requests).toHaveLength(3)
   expect(pollOddsScoresAndResolve).not.toHaveBeenCalled()
+})
+
+it('withholds the recorded final at the exact millisecond native bets still accept', async () => {
+  const id = await market()
+  wire = [final]
+  now = Date.parse('2026-11-21T21:00:00Z')
+  await resolveOddsSportsMarkets()
+  expect(requests).toHaveLength(1)
+  expect((await stored(id)).sportsLiveStatus).toBeUndefined()
+  expect(publishSportsLiveScore).not.toHaveBeenCalled()
 })
 
 it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of the healthy score', async () => {
