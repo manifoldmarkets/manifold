@@ -7,7 +7,7 @@
 
 import { MINUTE_MS } from 'common/util/time'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { pollNbaScores } from 'shared/bdl/nba-scores'
+import { NbaPollAttempts, pollNbaScores } from 'shared/bdl/nba-scores'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
@@ -19,7 +19,7 @@ import {
 // When each sport was last polled, for this process's lifetime.
 const state = newScorePollState()
 let warnedNoKey = false
-const nbaLastAttempts = new Map<string, number>()
+const nbaLastAttempts: NbaPollAttempts = new Map()
 let nbaWork: Promise<void> | undefined
 
 // A run still going after this long is abandoned: the cron's promise settles
@@ -75,7 +75,7 @@ export async function resolveOddsSportsMarkets() {
   }
   if (!hasOddsApiKey()) {
     if (!warnedNoKey) {
-      log('[sports-odds-resolve] THE_ODDS_API_KEY not set — skipping')
+      log('[sports-odds-resolve] THE_ODDS_API_KEY not set â€” skipping')
       warnedNoKey = true
     }
     return nbaWork
