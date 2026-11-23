@@ -75,7 +75,7 @@ export async function resolveOddsSportsMarkets() {
   }
   if (!hasOddsApiKey()) {
     if (!warnedNoKey) {
-      log('[sports-odds-resolve] THE_ODDS_API_KEY not set â€” skipping')
+      log('[sports-odds-resolve] THE_ODDS_API_KEY not set — skipping')
       warnedNoKey = true
     }
     return nbaWork
