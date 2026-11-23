@@ -31,6 +31,7 @@ import {
   PREMIER_LEAGUE_2526,
 } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
+import { AdminBdlCreation } from 'web/components/sports/admin-bdl-creation'
 import { AdminCompetitionSwitches } from 'web/components/sports/admin-competition-switches'
 import { AdminSportsAttention } from 'web/components/sports/admin-sports-attention'
 import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
@@ -207,6 +208,7 @@ function Section(props: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
+  keepMounted?: boolean
 }) {
   const [open, setOpen] = useState(props.defaultOpen ?? true)
   return (
@@ -218,7 +220,11 @@ function Section(props: {
         <span className="text-ink-800 font-semibold">{props.title}</span>
         <span className="text-ink-400 text-sm">{open ? '▲' : '▼'}</span>
       </button>
-      {open && <div className="p-4">{props.children}</div>}
+      {(open || props.keepMounted) && (
+        <div hidden={!open} className="p-4">
+          {props.children}
+        </div>
+      )}
     </div>
   )
 }
@@ -791,7 +797,7 @@ function SportsAdmin() {
   return (
     <Page trackPageView={'sports admin page'}>
       <NoSEO />
-      <div className="mx-auto max-w-5xl px-4 pb-16">
+      <div className="mx-auto w-full min-w-0 max-w-5xl px-4 pb-16">
         <Title>
           Sports Admin
           {admin && <ModActionTag admin className="ml-2 align-middle" />}
@@ -824,6 +830,12 @@ function SportsAdmin() {
         <Section title="Scheduler switches" defaultOpen>
           <AdminCompetitionSwitches />
         </Section>
+
+        {isSportsBdlEnabled() && admin && (
+          <Section title="Game creation budgets" keepMounted>
+            <AdminBdlCreation />
+          </Section>
+        )}
 
         <Section title="Live scores and credits" defaultOpen>
           <AdminScorePolling />
