@@ -9,6 +9,7 @@ import {
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { ShowcaseBadge, getTrophyShowcaseBadge } from './profile-showcase'
 import { TrophyBadgeImage } from './trophy-badge-image'
 import { formatTrophyReward } from './trophy-reward-chip'
 import { TROPHY_TIER_STYLES } from './trophy-styles'
@@ -89,10 +90,54 @@ function TrophyExplainer(props: {
         comments, streaks and more.
       </p>
       {showManaRewards && <p>Some trophies pay mana when you claim them.</p>}
-      <p>Claim each one here, then pin your favourites to your profile.</p>
+      <p>
+        Claim each one here, then pin your favourites to your profile, like
+        this:
+      </p>
+      <ExampleProfile />
       <Button size="sm" className="mt-2 self-end" onClick={onClose}>
         Got it
       </Button>
+    </div>
+  )
+}
+
+const EXAMPLE_PINS = [
+  ['trading-volume', 'whale'],
+  ['creator-traders', 'famous'],
+  ['masters-seasons', 'goat'],
+].flatMap(([trophyId, milestoneId]) => {
+  const def = getTrophyDefinition(trophyId)
+  const milestone = def && getMilestone(def, milestoneId)
+  return def && milestone
+    ? [getTrophyShowcaseBadge(def, milestone, milestone.threshold)]
+    : []
+})
+
+function ExampleProfile() {
+  return (
+    <div
+      aria-hidden
+      className="border-ink-200 bg-canvas-50 rounded-xl border p-3"
+    >
+      <div className="flex items-center gap-2">
+        <span className="bg-ink-200 h-8 w-8 rounded-full" />
+        <span className="text-ink-900 text-sm font-semibold">Your profile</span>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        {EXAMPLE_PINS.map((badge, index) => (
+          <div
+            key={badge.id}
+            className="motion-safe:animate-trophy-pop"
+            style={{
+              animationDelay: `${400 + index * 120}ms`,
+              animationFillMode: 'backwards',
+            }}
+          >
+            <ShowcaseBadge badge={badge} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
