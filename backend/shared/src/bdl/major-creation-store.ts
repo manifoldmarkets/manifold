@@ -7,6 +7,7 @@ import {
 import { MAX_CREATION_GAME_KEYS, MajorLeague } from 'common/bdl/major-leagues'
 import { SPORT_LEAGUE_LABEL } from 'common/sports-calendar'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
+import { OppositeMoneyline, sameNearbyMoneyline } from '../sports-market-dedupe'
 import type { SupabaseTransaction } from '../supabase/init'
 import { sportsProviderSql } from '../supabase/sports-provider'
 
@@ -43,7 +44,7 @@ export async function canceledMajorContractIds(
   return rows.map((r) => r.id)
 }
 
-type StoredGame = { id: string; source: string; start: string | null }
+type StoredGame = OppositeMoneyline & { source: string }
 
 /** A prior BDL ID only blocks a replacement once it has started and a complete
  * schedule scan covering its date cannot find it. The same teams can play again. */
@@ -53,6 +54,8 @@ export async function majorCreationHold(
     league: MajorLeague
     homeId: number
     awayId: number
+    home: string
+    away: string
     eventId: string
     start: number
     now: number
@@ -61,7 +64,9 @@ export async function majorCreationHold(
 ): Promise<string | null> {
   const { league, homeId, awayId, eventId, start, now, seenEventIds } = input
   const rows = await pg.manyOrNone<StoredGame>(
-    `select c.id, ${sportsProviderSql()} as source, c.data->>'sportsStartTimestamp' as start
+    `select c.id, ${sportsProviderSql()} as source, c.data->>'sportsStartTimestamp' as start,
+            c.data->>'sportsHomeTeam' as home, c.data->>'sportsAwayTeam' as away,
+            (c.close_time is null or c.close_time > $3) as trading
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA' and c.resolution is null
         and c.deleted is not true
@@ -69,8 +74,7 @@ export async function majorCreationHold(
           (${sportsProviderSql()} = 'odds' and ${majorOddsMoneylineSql(
       '$2',
       '$9'
-    )}
-           and (c.close_time is null or c.close_time > $3)) or
+    )}) or
           (c.data->>'sportsProvider' = 'bdl' and c.data->>'sportsMarketType' = 'moneyline' and c.data->>'sportsLeagueKey' = $4
            and c.data->>'sportsEventId' <> $5
            and not (c.data->>'sportsEventId' = any($6::text[]))
@@ -97,7 +101,11 @@ export async function majorCreationHold(
       start - other <= BDL_REISSUED_EVENT_MATCH_WINDOW_MS
     )
       return 'possible-reid: ' + row.id
-    if (row.source === 'odds' && start < other) beforeOpenOdds = true
+    if (row.source === 'odds') {
+      if (sameNearbyMoneyline(row, input.home, input.away, start))
+        return 'market already exists'
+      if (row.trading && start < other) beforeOpenOdds = true
+    }
   }
   return beforeOpenOdds ? 'before latest open Odds kickoff' : null
 }

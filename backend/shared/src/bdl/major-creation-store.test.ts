@@ -24,6 +24,8 @@ const input = {
   league: 'mlb' as const,
   homeId: 10,
   awayId: 20,
+  home: 'Home Club',
+  away: 'Away Club',
   eventId: 'bdl:mlb:200',
   now,
   start,
@@ -99,6 +101,24 @@ it('holds only an earlier kickoff than the latest open official legacy Odds mark
   )
   expect(await majorCreationHold(db, { ...input, start: start + 1 })).toBeNull()
 })
+it('reserves the nearby unresolved Odds pair after close without extending the league cutoff', async () => {
+  await insert(
+    {
+      ...odds,
+      sportsHomeTeam: input.away,
+      sportsAwayTeam: input.home,
+      sportsStartTimestamp: new Date(start + 18 * 3600000).toISOString(),
+    },
+    { close: now }
+  )
+  expect(await majorCreationHold(db, input)).toBe('market already exists')
+  expect(
+    await majorCreationHold(db, { ...input, away: 'Other Club' })
+  ).toBeNull()
+  await postgres.exec("update contracts set resolution='CANCEL'")
+  expect(await majorCreationHold(db, input)).toBeNull()
+})
+
 it('requires an earlier unstamped canonical Odds game to close before the league cutover', async () => {
   await insert({
     ...odds,

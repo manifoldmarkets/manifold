@@ -327,7 +327,7 @@ it('serializes admin saves with both creators and records the current operator o
       )
     ).rows
   ).toEqual([{ updated_by: 'bob' }])
-  const prior = stored[0]
+  const prior = { ...rows[0], cap: 60, startsOn: '2026-12-01' }
   delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
   await expect(
     saveCreationSetting(writePg, { ...prior, cap: 10000 }, 'operator', prior)

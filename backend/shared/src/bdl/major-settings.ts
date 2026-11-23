@@ -4,6 +4,7 @@ import {
   MAJOR_WAVES,
   MajorLeague,
   MajorSettingRow,
+  StoredMajorSettingRow,
   MajorSettings,
 } from 'common/bdl/major-leagues'
 import { APIError } from 'common/api/utils'
@@ -27,7 +28,7 @@ export async function creationSettings(
     )
   )
     throw new Error('Unknown sports creation scope')
-  return pg.manyOrNone<MajorSettingRow>(
+  return pg.manyOrNone<StoredMajorSettingRow>(
     `select scope, ante_cap as cap, base_ante as "baseAnte",
        to_char(starts_on,'YYYY-MM-DD') as "startsOn", group_slugs as "groupSlugs"
      from sports_creation_settings where scope = any($1::text[])
@@ -59,7 +60,7 @@ export async function saveCreationSetting(
   pg: Pick<SupabaseDirectClient, 'tx'>,
   row: MajorSettingRow,
   userId: string,
-  expected: MajorSettingRow | null = null
+  expected: StoredMajorSettingRow | null = null
 ) {
   if (!isBdlLeagueKey(row.scope) && !sharedScopes.includes(row.scope))
     throw new Error('Unknown sports creation scope')
@@ -109,8 +110,9 @@ export async function getMajorSettings(
     !local?.baseAnte ||
     !local.startsOn ||
     !local.groupSlugs?.length ||
-    !waveLimit ||
-    !global
+    local.cap == null ||
+    waveLimit?.cap == null ||
+    global?.cap == null
   )
     return null
   return {

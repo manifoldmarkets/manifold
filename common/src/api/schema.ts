@@ -88,7 +88,7 @@ import {
   MAX_SPORTS_CREATION_AMOUNT,
   MAX_CREATION_GAME_KEYS,
   AdminMajorCreationResult,
-  MajorSettingRow,
+  StoredMajorSettingRow,
 } from 'common/bdl/major-leagues'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import { parseBdlEventId } from 'common/sports-ids'
@@ -204,7 +204,7 @@ const creationConfirmation = z
 const expectedCreationSetting = z
   .object({
     scope: z.string().max(100),
-    cap: creationAmount,
+    cap: creationAmount.nullable(),
     baseAnte: z
       .number()
       .int()
@@ -5404,7 +5404,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     cache: 'private, no-store',
     props: z.object({}).strict(),
-    returns: {} as { settings: MajorSettingRow[] },
+    returns: {} as { settings: StoredMajorSettingRow[] },
   },
   'admin-sports-set-creation-budget': {
     method: 'POST',

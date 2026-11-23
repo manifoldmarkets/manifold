@@ -38,6 +38,10 @@ export type MajorSettingRow = {
   groupSlugs: string[] | null
 }
 
+export type StoredMajorSettingRow = Omit<MajorSettingRow, 'cap'> & {
+  cap: number | null
+}
+
 export type MajorCreationConfirmation = {
   awayId: number
   homeId: number
