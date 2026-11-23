@@ -38,7 +38,7 @@ export function FirstStreakModalManager() {
     <BettingStreakProgressModal
       open={open}
       setOpen={setOpen}
-      lockSeconds={5}
+      lockSeconds={2}
       currentStreak={user?.currentBettingStreak ?? 0}
       questMultiplier={streakMultiplier}
     />
