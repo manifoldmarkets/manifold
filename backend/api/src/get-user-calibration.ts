@@ -1,7 +1,10 @@
 import { APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
-import { sortBy } from 'lodash'
+import { chunk, groupBy, keyBy, orderBy, sortBy, sumBy } from 'lodash'
 import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { DAY_MS } from 'common/util/time'
 
@@ -15,6 +18,172 @@ for (const [topic, subtopics] of Object.entries(SEARCH_TOPICS_TO_SUBTOPICS)) {
   }
 }
 
+// The calibration chart uses the user's most recent buys on binary markets
+// that resolved YES or NO. Each bet is an independent prediction, weighted by
+// shares.
+export const CALIBRATION_SAMPLE_SIZE = 5000
+const CALIBRATION_MARKETS_PER_QUERY = 200
+
+export type CalibrationMarket = {
+  contract_id: string
+  resolution: string
+  // The user's latest bet of any kind on this market, in microseconds.
+  last_us: number
+}
+
+export type CalibrationBet = {
+  // Microseconds, so the newest-first order is exact. Milliseconds would
+  // merge distinct bets.
+  created_us: number
+  prob_bucket: number
+  outcome: string
+  shares: number
+  resolution: string
+}
+
+// The newest `size` qualifying bets across the given markets. Markets are read
+// newest last bet first. Once the sample is full, a market whose latest bet
+// is older than the sample's oldest bet can't change the sample, and neither
+// can any market after it. So heavy traders read about as many bets as the
+// sample needs, not their whole history.
+export async function selectCalibrationSample(
+  markets: CalibrationMarket[],
+  fetchBets: (markets: CalibrationMarket[]) => Promise<CalibrationBet[]>,
+  size = CALIBRATION_SAMPLE_SIZE,
+  marketsPerQuery = CALIBRATION_MARKETS_PER_QUERY
+): Promise<CalibrationBet[]> {
+  let sample: CalibrationBet[] = []
+  const newestFirst = orderBy(markets, (m) => m.last_us, 'desc')
+  for (const batch of chunk(newestFirst, marketsPerQuery)) {
+    const cutoff =
+      sample.length >= size ? sample[size - 1].created_us : -Infinity
+    const open = batch.filter((m) => m.last_us >= cutoff)
+    if (open.length === 0) break
+    const bets = await fetchBets(open)
+    sample = orderBy([...sample, ...bets], (b) => b.created_us, 'desc').slice(
+      0,
+      size
+    )
+  }
+  return sample
+}
+
+async function getCalibrationSample(
+  pg: SupabaseDirectClient,
+  userId: string,
+  markets: { id: string; resolution: string }[]
+): Promise<CalibrationBet[]> {
+  if (markets.length === 0) return []
+
+  // Latest bet per market. contract_bets_contract_user_id is
+  // (contract_id, user_id, created_time desc), so this reads the index only.
+  const lastBets = await pg.manyOrNone<{
+    contract_id: string
+    resolution: string
+    last_us: number | null
+  }>(
+    `
+    select
+      x.contract_id,
+      x.resolution,
+      (
+        select (extract(epoch from max(cb.created_time)) * 1000000)::bigint
+        from contract_bets cb
+        where cb.contract_id = x.contract_id
+          and cb.user_id = $1
+      ) as last_us
+    from unnest($2::text[], $3::text[]) as x(contract_id, resolution)
+    `,
+    [userId, markets.map((m) => m.id), markets.map((m) => m.resolution)]
+  )
+  const withBets = lastBets.flatMap((m) =>
+    m.last_us === null ? [] : [{ ...m, last_us: m.last_us }]
+  )
+
+  return selectCalibrationSample(withBets, (batch) =>
+    // One index walk per market, newest first. Never filter by user_id alone
+    // here: the user index walks every bet the user has made, which is what
+    // timed out for heavy traders.
+    pg.manyOrNone<CalibrationBet>(
+      `
+      select
+        (extract(epoch from b.created_time) * 1000000)::bigint as created_us,
+        case
+          when b.prob_after < 0.02 then 0.01
+          when b.prob_after < 0.04 then 0.03
+          when b.prob_after < 0.075 then 0.05
+          when b.prob_after < 0.15 then 0.10
+          when b.prob_after < 0.25 then 0.20
+          when b.prob_after < 0.35 then 0.30
+          when b.prob_after < 0.45 then 0.40
+          when b.prob_after < 0.55 then 0.50
+          when b.prob_after < 0.65 then 0.60
+          when b.prob_after < 0.75 then 0.70
+          when b.prob_after < 0.85 then 0.80
+          when b.prob_after < 0.925 then 0.90
+          when b.prob_after < 0.96 then 0.95
+          when b.prob_after < 0.98 then 0.97
+          else 0.99
+        end as prob_bucket,
+        b.outcome,
+        b.shares,
+        x.resolution
+      from unnest($2::text[], $3::text[]) as x(contract_id, resolution)
+      cross join lateral (
+        select cb.created_time, cb.prob_after, cb.outcome, cb.shares
+        from contract_bets cb
+        where cb.contract_id = x.contract_id
+          and cb.user_id = $1
+          and cb.amount > 0
+          and (cb.is_redemption is not true or cb.is_redemption is null)
+        order by cb.created_time desc
+        limit $4
+      ) b
+      order by b.created_time desc
+      limit $4
+      `,
+      [
+        userId,
+        batch.map((m) => m.contract_id),
+        batch.map((m) => m.resolution),
+        CALIBRATION_SAMPLE_SIZE,
+      ]
+    )
+  )
+}
+
+export function buildCalibrationPoints(sample: CalibrationBet[]) {
+  const yesPoints: { x: number; y: number }[] = []
+  const noPoints: { x: number; y: number }[] = []
+
+  const groups = groupBy(sample, (b) => `${b.prob_bucket}|${b.outcome}`)
+  for (const bets of Object.values(groups)) {
+    const { prob_bucket, outcome } = bets[0]
+    const totalShares = sumBy(bets, (b) => b.shares)
+    const yesShares = sumBy(bets, (b) =>
+      b.resolution === 'YES' ? b.shares : 0
+    )
+    const yesRate = totalShares > 0 ? yesShares / totalShares : 0
+    if (!Number.isFinite(yesRate)) continue
+
+    if (outcome === 'YES') {
+      // For YES bets: what % resolved YES?
+      yesPoints.push({ x: prob_bucket, y: yesRate })
+    } else {
+      // For NO bets: what % resolved YES? (should be on the diagonal if calibrated)
+      noPoints.push({ x: prob_bucket, y: yesRate })
+    }
+  }
+
+  return {
+    yesPoints: sortBy(yesPoints, (p) => p.x),
+    noPoints: sortBy(noPoints, (p) => p.x),
+    totalBets: sample.length,
+  }
+}
+
+const finiteOrZero = (n: number) => (Number.isFinite(n) ? n : 0)
+
 export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   props
 ) => {
@@ -22,106 +191,49 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   const pg = createSupabaseDirectClient()
 
   // Check if user exists
-  const user = await pg.oneOrNone(
-    `SELECT id, balance FROM users WHERE id = $1`,
-    [userId]
-  )
+  const user = await pg.oneOrNone(`SELECT id FROM users WHERE id = $1`, [
+    userId,
+  ])
   if (!user) {
     throw new APIError(404, 'User not found')
   }
 
-  // Run all independent queries in parallel for better performance
-  const [calibrationData, metrics, portfolioHistory, volumeResult] =
-    await Promise.all([
-      // Query 1: Calibration data - all aggregation done in SQL for performance
-      // Each bet is treated as an independent prediction, weighted by shares
-      // Limited to most recent 10k bets, aggregated in SQL (returns ~30 rows)
-      pg.manyOrNone<{
-        prob_bucket: number
-        outcome: string
-        total_shares: number
-        yes_shares: number
-        bet_count: number
-      }>(
-        `
-      WITH bets AS (
-        SELECT 
-          cb.outcome,
-          cb.shares,
-          cb.prob_after,
-          c.resolution
-        FROM contract_bets cb
-        JOIN contracts c ON cb.contract_id = c.id
-        WHERE cb.user_id = $1
-          AND c.outcome_type = 'BINARY'
-          AND c.resolution IN ('YES', 'NO')
-          AND cb.amount > 0
-          AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
-        ORDER BY cb.created_time DESC
-        LIMIT 5000
-      ),
-      bucketed AS (
-        SELECT 
-          CASE 
-            WHEN prob_after < 0.02 THEN 0.01
-            WHEN prob_after < 0.04 THEN 0.03
-            WHEN prob_after < 0.075 THEN 0.05
-            WHEN prob_after < 0.15 THEN 0.10
-            WHEN prob_after < 0.25 THEN 0.20
-            WHEN prob_after < 0.35 THEN 0.30
-            WHEN prob_after < 0.45 THEN 0.40
-            WHEN prob_after < 0.55 THEN 0.50
-            WHEN prob_after < 0.65 THEN 0.60
-            WHEN prob_after < 0.75 THEN 0.70
-            WHEN prob_after < 0.85 THEN 0.80
-            WHEN prob_after < 0.925 THEN 0.90
-            WHEN prob_after < 0.96 THEN 0.95
-            WHEN prob_after < 0.98 THEN 0.97
-            ELSE 0.99
-          END as prob_bucket,
-          outcome,
-          shares,
-          resolution
-        FROM bets
-      )
-      SELECT 
-        prob_bucket,
-        outcome,
-        SUM(shares)::float as total_shares,
-        SUM(CASE WHEN resolution = 'YES' THEN shares ELSE 0 END)::float as yes_shares,
-        COUNT(*)::int as bet_count
-      FROM bucketed
-      GROUP BY prob_bucket, outcome
-      ORDER BY prob_bucket, outcome
-      `,
-        [userId]
-      ),
-
-      // Query 2: Get contract metrics for performance stats
-      pg.manyOrNone<{
-        contract_id: string
-        profit: number
-      }>(
-        `
-      SELECT 
+  // Every query below is bounded by the markets the user has traded, never by
+  // their total bet count. Heavy traders have hundreds of thousands of bets,
+  // mostly redemptions, and a full read of them ran past the 60 s statement
+  // timeout.
+  const [metrics, portfolioHistory] = await Promise.all([
+    // One summary row per market. Volume per market is the money in plus the
+    // money out, the same definition as the profile's volume achievement
+    // (mv_ach_volume, get-user-achievements). Perp rows carry their own
+    // totals (shared/perps/user-contract-metrics).
+    pg.manyOrNone<{
+      contract_id: string
+      profit: number
+      volume: number
+    }>(
+      `
+      SELECT
         contract_id,
-        COALESCE(profit, 0) as profit
+        COALESCE(profit, 0) as profit,
+        COALESCE((data->>'totalAmountInvested')::numeric, 0)
+          + COALESCE((data->>'totalAmountSold')::numeric, 0) as volume
       FROM user_contract_metrics
       WHERE user_id = $1
         AND answer_id IS NULL
       `,
-        [userId]
-      ),
+      [userId]
+    ),
 
-      // Query 3: Get portfolio history (one point per day, last 365 daily snapshots)
-      pg.manyOrNone<{
-        timestamp: number
-        balance: number
-        investment_value: number
-        total_deposits: number
-        spice_balance: number
-      }>(
-        `
+    // Portfolio history (one point per day, last 365 daily snapshots)
+    pg.manyOrNone<{
+      timestamp: number
+      balance: number
+      investment_value: number
+      total_deposits: number
+      spice_balance: number
+    }>(
+      `
       WITH daily AS (
         SELECT DISTINCT ON (DATE(ts))
           EXTRACT(EPOCH FROM ts)::bigint * 1000 as timestamp,
@@ -138,114 +250,57 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       )
       SELECT * FROM recent ORDER BY timestamp ASC
       `,
-        [userId]
-      ),
+      [userId]
+    ),
+  ])
 
-      // Query 4: Get total volume. Perp trades live in contract_perp_events,
-      // not contract_bets; their volume is the margin the user moved
-      // (original cost basis), matching the engine's contract.volume
-      // convention — user opens/adds/closes count (a flip is two legs),
-      // forced settlement (liquidation/ADL/resolution) does not.
-      pg.oneOrNone<{ total_volume: number }>(
-        `
-      SELECT
-        COALESCE((
-          SELECT SUM(ABS(amount))
-          FROM contract_bets
-          WHERE user_id = $1
-            AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
-        ), 0) + COALESCE((
-          SELECT SUM(ABS(original_cost_basis_delta))
-          FROM contract_perp_events
-          WHERE user_id = $1
-            AND (event_type IN ('open', 'add')
-              OR (event_type = 'close'
-                AND data->>'reason' IS DISTINCT FROM 'resolve-market'))
-        ), 0) as total_volume
-      `,
-        [userId]
-      ),
-    ])
-
-  // Build calibration points from pre-aggregated SQL data
-  const yesPoints: { x: number; y: number }[] = []
-  const noPoints: { x: number; y: number }[] = []
-  let totalBets = 0
-
-  for (const row of calibrationData) {
-    totalBets += row.bet_count
-    const yesRate = row.total_shares > 0 ? row.yes_shares / row.total_shares : 0
-
-    if (row.outcome === 'YES') {
-      // For YES bets: what % resolved YES?
-      yesPoints.push({ x: row.prob_bucket, y: yesRate })
-    } else {
-      // For NO bets: what % resolved YES? (should be on the diagonal if calibrated)
-      noPoints.push({ x: row.prob_bucket, y: yesRate })
-    }
-  }
-
-  // Sort by x for consistent display
-  yesPoints.sort((a, b) => a.x - b.x)
-  noPoints.sort((a, b) => a.x - b.x)
-
-  // Calculate performance stats
   const contractIds = metrics.map((m) => m.contract_id)
   const totalMarkets = metrics.length
-  const totalVolume = volumeResult?.total_volume ?? 0
 
-  // Run second batch of queries that depend on first batch results
-  const [resolvedContractIds, contractGroups, contractVolumes] =
-    await Promise.all([
-      // Get resolved status for win rate calculation
-      contractIds.length > 0
-        ? pg.manyOrNone<{ id: string }>(
-            `SELECT id FROM contracts WHERE id = ANY($1) AND resolution IS NOT NULL`,
-            [contractIds]
-          )
-        : Promise.resolve([]),
+  const [contracts, contractGroups] = await Promise.all([
+    contractIds.length > 0
+      ? pg.manyOrNone<{
+          id: string
+          resolution: string | null
+          outcome_type: string
+          token: string
+        }>(
+          `SELECT id, resolution, outcome_type, token FROM contracts WHERE id = ANY($1)`,
+          [contractIds]
+        )
+      : Promise.resolve([]),
 
-      // Get contract groups for topic breakdown
-      contractIds.length > 0
-        ? pg.manyOrNone<{ contract_id: string; group_id: string }>(
-            `SELECT contract_id, group_id FROM group_contracts WHERE contract_id = ANY($1)`,
-            [contractIds]
-          )
-        : Promise.resolve([]),
+    // Get contract groups for topic breakdown
+    contractIds.length > 0
+      ? pg.manyOrNone<{ contract_id: string; group_id: string }>(
+          `SELECT contract_id, group_id FROM group_contracts WHERE contract_id = ANY($1)`,
+          [contractIds]
+        )
+      : Promise.resolve([]),
+  ])
+  const contractsById = keyBy(contracts, (c) => c.id)
 
-      // Get volume per contract for topic stats. Same perp treatment as the
-      // total-volume query: without it, a topic row can show perp profit
-      // (user_contract_metrics includes perps) against zero volume.
-      contractIds.length > 0
-        ? pg.manyOrNone<{ contract_id: string; volume: number }>(
-            `
-            SELECT contract_id, SUM(volume) as volume FROM (
-              SELECT contract_id, SUM(ABS(amount)) as volume
-              FROM contract_bets
-              WHERE user_id = $1
-                AND contract_id = ANY($2)
-                AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
-              GROUP BY contract_id
-              UNION ALL
-              SELECT contract_id, SUM(ABS(original_cost_basis_delta)) as volume
-              FROM contract_perp_events
-              WHERE user_id = $1
-                AND contract_id = ANY($2)
-                AND (event_type IN ('open', 'add')
-                  OR (event_type = 'close'
-                    AND data->>'reason' IS DISTINCT FROM 'resolve-market'))
-              GROUP BY contract_id
-            ) combined
-            GROUP BY contract_id
-            `,
-            [userId, contractIds]
-          )
-        : Promise.resolve([]),
-    ])
+  const sample = await getCalibrationSample(
+    pg,
+    userId,
+    contracts.flatMap((c) =>
+      c.outcome_type === 'BINARY' &&
+      (c.resolution === 'YES' || c.resolution === 'NO')
+        ? [{ id: c.id, resolution: c.resolution }]
+        : []
+    )
+  )
+  const { yesPoints, noPoints, totalBets } = buildCalibrationPoints(sample)
+
+  // Mana markets only, like the profile's volume achievement.
+  const totalVolume = sumBy(metrics, (m) =>
+    contractsById[m.contract_id]?.token === 'MANA' ? finiteOrZero(m.volume) : 0
+  )
 
   // Calculate win rate - only count resolved markets for both numerator and denominator
-  const resolvedSet = new Set(resolvedContractIds.map((r) => r.id))
-  const resolvedMetrics = metrics.filter((m) => resolvedSet.has(m.contract_id))
+  const resolvedMetrics = metrics.filter(
+    (m) => contractsById[m.contract_id]?.resolution != null
+  )
   const resolvedMarkets = resolvedMetrics.length
   const profitableMarkets = resolvedMetrics.filter((m) => m.profit > 0).length
   const winRate =
@@ -263,10 +318,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     }
   }
 
-  const volumeByContract = Object.fromEntries(
-    contractVolumes.map((v) => [v.contract_id, v.volume])
-  )
-
   const topicStats: Record<
     string,
     { profit: number; volume: number; marketCount: number }
@@ -279,7 +330,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
           topicStats[topic] = { profit: 0, volume: 0, marketCount: 0 }
         }
         topicStats[topic].profit += metric.profit
-        topicStats[topic].volume += volumeByContract[metric.contract_id] ?? 0
+        topicStats[topic].volume += finiteOrZero(metric.volume)
         topicStats[topic].marketCount += 1
       }
     }
