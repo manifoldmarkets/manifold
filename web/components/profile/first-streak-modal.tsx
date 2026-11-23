@@ -1,10 +1,10 @@
+import { useEffect, useState } from 'react'
+
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Title } from 'web/components/widgets/title'
 import { Button } from 'web/components/buttons/button'
-
-import { useEffect } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { StreakProgressBar } from './streak-progress-bar'
 import { updateUser } from 'web/lib/api/api'
@@ -38,6 +38,7 @@ export function FirstStreakModalManager() {
     <BettingStreakProgressModal
       open={open}
       setOpen={setOpen}
+      lockSeconds={5}
       currentStreak={user?.currentBettingStreak ?? 0}
       questMultiplier={streakMultiplier}
     />
@@ -48,12 +49,44 @@ export function BettingStreakProgressModal(props: {
   setOpen: (open: boolean) => void
   currentStreak: number
   questMultiplier?: number
+  lockSeconds?: number
 }) {
-  const { open, setOpen, currentStreak, questMultiplier = 1 } = props
+  const {
+    open,
+    setOpen,
+    currentStreak,
+    questMultiplier = 1,
+    lockSeconds = 0,
+  } = props
   const user = useUser()
   const freezes = user?.streakForgiveness ?? 0
+  const [secondsLeft, setSecondsLeft] = useState(lockSeconds)
+  const isLocked = open && secondsLeft > 0
+
+  useEffect(() => {
+    setSecondsLeft(lockSeconds)
+    if (!open || lockSeconds <= 0) return
+
+    const unlockAt = Date.now() + lockSeconds * 1000
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((unlockAt - Date.now()) / 1000))
+      setSecondsLeft(remaining)
+      if (remaining === 0) window.clearInterval(timer)
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [open, lockSeconds])
+
+  const handleSetOpen = (nextOpen: boolean) => {
+    if (nextOpen || !isLocked) setOpen(nextOpen)
+  }
+
   return (
-    <Modal open={open} setOpen={setOpen} size="md">
+    <Modal
+      open={open}
+      setOpen={handleSetOpen}
+      hideCloseButton={isLocked}
+      size="md"
+    >
       <Col className="bg-canvas-0 rounded-md px-8 py-6">
         <Title className="!mt-0">You've started a Prediction Streak! 🔥</Title>
         <p className="text-ink-700 mb-4">
@@ -79,7 +112,20 @@ export function BettingStreakProgressModal(props: {
                 : 'No streak freezes — buy more in the shop!'}
             </span>
           </Row>
-          <Button onClick={() => setOpen(false)}>Got it</Button>
+          <Button
+            className={lockSeconds > 0 ? 'min-w-[5rem]' : undefined}
+            disabled={isLocked}
+            aria-label={
+              isLocked
+                ? `Got it, available in ${secondsLeft} second${
+                    secondsLeft === 1 ? '' : 's'
+                  }`
+                : undefined
+            }
+            onClick={() => handleSetOpen(false)}
+          >
+            {isLocked ? secondsLeft : 'Got it'}
+          </Button>
         </Row>
       </Col>
     </Modal>
