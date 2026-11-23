@@ -2,10 +2,12 @@
 // is not resolved, ask for its sport's scores when /admin/sports says one is
 // due (live scores per sport or game, finals once a game is due to end), write
 // live scores onto the markets, and resolve when the provider marks a game
-// completed. Makes no call while nothing is due. No-op without
-// THE_ODDS_API_KEY.
+// completed. The same tick also refreshes opted-in NBA scores from BDL.
+// Each source uses its own credentials; only the Odds path resolves markets.
 
 import { MINUTE_MS } from 'common/util/time'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { pollNbaScores } from 'shared/bdl/nba-scores'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
@@ -17,6 +19,8 @@ import {
 // When each sport was last polled, for this process's lifetime.
 const state = newScorePollState()
 let warnedNoKey = false
+const nbaLastAttempts = new Map<string, number>()
+let nbaWork: Promise<void> | undefined
 
 // A run still going after this long is abandoned: the cron's promise settles
 // with an error (so the job-crash alert fires), the next 10-second tick starts
@@ -37,12 +41,27 @@ let current: { id: string } | undefined
 let nextRunId = 0
 
 export async function resolveOddsSportsMarkets() {
+  // The existing tick drives both sources. Waiting for a BDL quota slot must
+  // neither delay Odds resolution nor start a second NBA read on the next tick.
+  if (
+    isSportsBdlEnabled() &&
+    (process.env.BALLDONTLIE_API_KEY || process.env.BDL_FIXTURE_DIR) &&
+    !nbaWork
+  ) {
+    nbaWork = pollNbaScores(createSupabaseDirectClient(), nbaLastAttempts)
+      .catch((error) =>
+        log.error(`[sports-bdl-nba] score poll failed: ${error}`)
+      )
+      .finally(() => {
+        nbaWork = undefined
+      })
+  }
   if (!hasOddsApiKey()) {
     if (!warnedNoKey) {
       log('[sports-odds-resolve] THE_ODDS_API_KEY not set — skipping')
       warnedNoKey = true
     }
-    return
+    return nbaWork
   }
   const run = { id: `${Date.now()}-${++nextRunId}` }
   current = run

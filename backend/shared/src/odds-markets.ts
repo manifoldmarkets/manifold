@@ -17,6 +17,7 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { scoreUpdatedTime } from 'common/sports-score-freshness'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
+import { updateSportsScore } from './update-sports-score'
 import {
   createSportsContract,
   ensureOfficialGroup,
@@ -941,25 +942,12 @@ async function writeScorePatch(
   patch: Record<string, unknown>,
   run: ScoreGameRun
 ): Promise<boolean> {
-  const updatedTime = patch.sportsLiveUpdatedTime
-  if (typeof updatedTime !== 'number' || !Number.isFinite(updatedTime))
-    throw new Error('Score update time must be finite')
   run.setStage('score-connection')
   return run.mutate(() =>
     pg.task(async (task) => {
       if (!run.isCurrent()) return false
       run.setStage('score-write')
-      // PostgreSQL rechecks these predicates after a concurrent row update.
-      // An old statement that outlives its client cannot undo newer/final state.
-      const written = await task.oneOrNone<{ id: string }>(
-        `update contracts set data = data || $1::jsonb
-         where id = $2 and resolution is null
-           and not coalesce((data->>'isResolved')::boolean, false)
-           and coalesce((data->>'sportsLiveUpdatedTime')::numeric, 0) < $3::numeric
-         returning id`,
-        [JSON.stringify(patch), id, updatedTime]
-      )
-      return written !== null
+      return updateSportsScore(task, id, patch)
     })
   )
 }

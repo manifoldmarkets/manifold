@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": 21718156,
+      "date": "2026-11-21",
+      "datetime": "2026-11-21T18:00:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "status": "1st Qtr",
+      "status_state": "in_progress",
+      "period": 1,
+      "time": "Q1 6:24",
+      "home_team_score": 8,
+      "visitor_team_score": 15,
+      "home_team": {
+        "id": 23,
+        "full_name": "Philadelphia 76ers",
+        "abbreviation": "PHI"
+      },
+      "visitor_team": {
+        "id": 17,
+        "full_name": "Milwaukee Bucks",
+        "abbreviation": "MIL"
+      }
+    }
+  ]
+}

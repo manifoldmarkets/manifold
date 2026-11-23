@@ -236,13 +236,15 @@ export async function fetchMajorGames(
   client: Client,
   league: MajorLeague,
   fromDate: string,
-  toDate: string
+  toDate: string,
+  scoreIds?: ReadonlySet<number>
 ): Promise<MajorGame[]> {
   const from = dayMs(fromDate),
     to = dayMs(toDate)
   if (!Number.isFinite(from) || !Number.isFinite(to) || from > to)
     throw new Error('Invalid BDL schedule date range')
   const games = new Map<number, MajorGame>()
+  const invalid = new Set<number>()
   // Pad the provider filter by a day at each end. US-local and UTC slates can differ.
   for (let first = from - DAY_MS; first <= to + DAY_MS; first += 14 * DAY_MS) {
     const dates: string[] = []
@@ -266,6 +268,9 @@ export async function fetchMajorGames(
         {
           maxPages: 20,
           matches: (value) => {
+            // A score read is joined to exact market IDs and the slate below.
+            // An unrelated malformed row must not discard its healthy neighbours.
+            if (scoreIds) return true
             const row = asRow(value)
             if (!row) return false
             const { startTime, slateDate, sourceDate } = scheduleTime(
@@ -286,15 +291,32 @@ export async function fetchMajorGames(
         }
       )
       for (const raw of rows) {
-        const game = mapGame(league, raw as Row)
+        const id = asRow(raw)?.id
+        if (scoreIds && (!isId(id) || !scoreIds.has(id) || invalid.has(id)))
+          continue
+        let game: MajorGame
+        try {
+          game = mapGame(league, raw as Row)
+        } catch (error) {
+          if (!scoreIds || !isId(id)) throw error
+          invalid.add(id)
+          games.delete(id)
+          continue
+        }
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
-        if (prior && JSON.stringify(prior) !== JSON.stringify(game))
+        if (prior && JSON.stringify(prior) !== JSON.stringify(game)) {
+          if (scoreIds) {
+            invalid.add(game.id)
+            games.delete(game.id)
+            continue
+          }
           throw new Error(
             '[sports-bdl-' +
               league +
               '] Conflicting schedule rows for one game ID'
           )
+        }
         games.set(game.id, game)
       }
     }
