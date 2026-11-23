@@ -62,7 +62,17 @@ export function TrophyOnboardingSection(props: {
               />
             </div>
             {next ? (
-              <FindMarketLink source="next trophy" />
+              <Link
+                href="/home"
+                className={buttonClass('sm', 'indigo')}
+                onClick={() =>
+                  track('trophies find a market clicked', {
+                    source: 'next trophy',
+                  })
+                }
+              >
+                Find a market
+              </Link>
             ) : (
               <Button
                 size="sm"
@@ -93,7 +103,7 @@ export function TrophyOnboardingSection(props: {
   )
 }
 
-export function getOnboardingHint(
+function getOnboardingHint(
   next: NonNullable<ReturnType<typeof getNextOnboardingMilestone>>
 ) {
   const remaining = next.milestone.threshold - next.value
@@ -113,22 +123,4 @@ export function getOnboardingHint(
     : `Make ${remaining} more ${
         remaining === 1 ? 'trade' : 'trades'
       } of ${minimum}, one per market per day`
-}
-
-export function FindMarketLink(props: {
-  source: 'next trophy' | 'explainer'
-  onClick?: () => void
-}) {
-  return (
-    <Link
-      href="/home"
-      className={buttonClass('sm', 'indigo')}
-      onClick={() => {
-        track('trophies find a market clicked', { source: props.source })
-        props.onClick?.()
-      }}
-    >
-      Find a market
-    </Link>
-  )
 }

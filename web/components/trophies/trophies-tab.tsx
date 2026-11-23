@@ -162,8 +162,7 @@ export function TrophiesTab(props: {
   const modal = dialog && isOwnProfile && trophies && (
     <TrophyClaimModal
       dialog={dialog}
-      trophies={trophies}
-      multiplier={rewardMultiplier}
+      showManaRewards={!!starterStats && rewardMultiplier > 0}
       onClose={() => {
         if (dialog.step === 'explainer' && dialog.trophyId) {
           setJustClaimed(dialog.trophyId)

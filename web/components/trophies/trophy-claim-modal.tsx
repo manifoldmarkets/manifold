@@ -1,30 +1,26 @@
 import clsx from 'clsx'
-import { lowerFirst } from 'lodash'
 import { useEffect, useState } from 'react'
 
 import {
   TrophyMilestone,
-  getNextOnboardingMilestone,
-  getTrophyClaimReward,
+  getMilestone,
+  getTrophyDefinition,
 } from 'common/trophies'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
-import type { UserTrophies } from 'web/hooks/use-user-trophies'
 import { TrophyBadgeImage } from './trophy-badge-image'
-import { FindMarketLink, getOnboardingHint } from './trophy-onboarding-section'
 import { formatTrophyReward } from './trophy-reward-chip'
 import { TROPHY_TIER_STYLES } from './trophy-styles'
 
 export function TrophyClaimModal(props: {
   dialog: TrophyDialog
-  trophies: UserTrophies
-  multiplier: number
+  showManaRewards: boolean
   onClose: () => void
   onExplain: (trophyId: string) => void
   onPin: (trophyId: string) => void
 }) {
-  const { dialog, trophies, multiplier, onClose, onExplain, onPin } = props
+  const { dialog, showManaRewards, onClose, onExplain, onPin } = props
   const firstClaim = dialog.step === 'celebration' && dialog.first
   const onContinue = firstClaim ? () => onExplain(dialog.trophyId) : onClose
   return (
@@ -73,67 +69,72 @@ export function TrophyClaimModal(props: {
           </div>
         </div>
       ) : (
-        <TrophyExplainer
-          trophies={trophies}
-          multiplier={multiplier}
-          onClose={onClose}
-        />
+        <TrophyExplainer showManaRewards={showManaRewards} onClose={onClose} />
       )}
     </Modal>
   )
 }
 
 function TrophyExplainer(props: {
-  trophies: UserTrophies
-  multiplier: number
+  showManaRewards: boolean
   onClose: () => void
 }) {
-  const { trophies, multiplier, onClose } = props
-  const next = getNextOnboardingMilestone(trophies.starter, trophies.claims)
-  const nextReward = next
-    ? getTrophyClaimReward(
-        next.definition,
-        next.milestone,
-        trophies.rewarded,
-        multiplier
-      )
-    : 0
+  const { showManaRewards, onClose } = props
   return (
     <div className="flex flex-col gap-3">
-      <h2 className="pr-7 text-xl font-bold">How trophies work</h2>
+      <ExplainerBadges />
+      <h2 className="text-xl font-bold">How trophies work</h2>
       <p>
         Trophies mark what you do on Manifold: trades, markets you create,
         comments, streaks and more.
       </p>
-      {trophies.starter && (
-        <p>
-          {multiplier > 0
-            ? 'Getting started trophies pay mana when you claim them.'
-            : 'Getting started trophies mark your first trades.'}
-          {next && (
-            <>
-              {' '}
-              Next up: {next.milestone.name}.{' '}
-              {nextReward > 0
-                ? `To earn ${formatTrophyReward(nextReward)}, ${lowerFirst(
-                    getOnboardingHint(next)
-                  )}.`
-                : `${getOnboardingHint(next)}.`}
-            </>
-          )}
-        </p>
-      )}
+      {showManaRewards && <p>Some trophies pay mana when you claim them.</p>}
       <p>Claim each one here, then pin your favourites to your profile.</p>
-      <div className="mt-2 flex flex-wrap justify-end gap-2">
-        {next && <FindMarketLink source="explainer" onClick={onClose} />}
-        <Button
-          size="sm"
-          color={next ? 'gray-outline' : 'indigo'}
-          onClick={onClose}
-        >
-          Got it
-        </Button>
-      </div>
+      <Button size="sm" className="mt-2 self-end" onClick={onClose}>
+        Got it
+      </Button>
+    </div>
+  )
+}
+
+const EXPLAINER_BADGES = [
+  ['comments', 'chatterbox'],
+  ['prediction-streak', 'phoenix'],
+  ['markets-created', 'builder'],
+] as const
+
+function ExplainerBadges() {
+  return (
+    <div aria-hidden className="flex items-center justify-center gap-3">
+      {EXPLAINER_BADGES.map(([trophyId, milestoneId], index) => {
+        const definition = getTrophyDefinition(trophyId)
+        const milestone = definition && getMilestone(definition, milestoneId)
+        if (!milestone) return null
+        const style = TROPHY_TIER_STYLES[milestone.tier]
+        const popDelay = index * 120
+        return (
+          <div
+            key={trophyId}
+            className={clsx(
+              'motion-safe:animate-trophy-explainer rounded-full bg-gradient-to-br',
+              index === 1 ? 'h-14 w-14' : 'h-12 w-12',
+              style.gradient,
+              style.ringWidth,
+              style.glow
+            )}
+            style={{ animationDelay: `${popDelay}ms, ${popDelay + 240}ms` }}
+          >
+            <div className="bg-canvas-50 grid h-full place-items-center rounded-full">
+              <TrophyBadgeImage
+                trophyId={trophyId}
+                milestone={milestone}
+                className="h-full w-full p-1"
+                emojiClassName="text-2xl"
+              />
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
