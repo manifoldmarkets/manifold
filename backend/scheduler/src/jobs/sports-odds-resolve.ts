@@ -2,8 +2,8 @@
 // is not resolved, ask for its sport's scores when /admin/sports says one is
 // due (live scores per sport or game, finals once a game is due to end), write
 // live scores onto the markets, and resolve when the provider marks a game
-// completed. The same tick also refreshes opted-in NBA scores from BDL.
-// Each source uses its own credentials; only the Odds path resolves markets.
+// completed. The same tick polls and settles authorized BDL NBA moneylines.
+// Each source uses its own credentials and its own market identities.
 
 import { MINUTE_MS } from 'common/util/time'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'

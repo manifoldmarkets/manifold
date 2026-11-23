@@ -32,6 +32,7 @@ export type MajorGame = {
   postseason?: boolean
   gameNumber?: number
   eligible: boolean
+  ordinaryNbaFinal?: boolean
   season: number
 }
 
@@ -302,6 +303,14 @@ export async function fetchMajorGames(
           invalid.add(id)
           games.delete(id)
           continue
+        }
+        if (scoreIds && league === 'nba' && game.status === 'final') {
+          // status_state identifies a terminal game. Its original text distinguishes
+          // an ordinary result (including OT) from a forfeit or other adjudication.
+          const status = asRow(raw)?.status
+          game.ordinaryNbaFinal =
+            typeof status === 'string' &&
+            /^final(?:\s*\/\s*\d*ot)?$/i.test(status.trim())
         }
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)

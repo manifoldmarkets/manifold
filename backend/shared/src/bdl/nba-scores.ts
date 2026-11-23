@@ -9,7 +9,10 @@ import {
 } from 'common/sports-calendar'
 import { parseBdlEventId } from 'common/sports-ids'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
-import { bdlLiveInterval } from 'common/sports-score-polling'
+import {
+  bdlLiveInterval,
+  finalsPollInterval,
+} from 'common/sports-score-polling'
 import { createBdlClient } from '../balldontlie-client'
 import { publishSportsLiveScore } from '../publish-sports-live-score'
 import type { SupabaseDirectClient } from '../supabase/init'
@@ -18,6 +21,7 @@ import { getScorePollingSettings } from '../supabase/sports-score-polling'
 import { updateSportsScore } from '../update-sports-score'
 import { isProd, log } from '../utils'
 import { fetchMajorGames, MajorGame } from './major-games'
+import { settleNbaGame } from './settle-nba-game'
 
 const nbaMoneyline = {
   sportsProvider: 'bdl',
@@ -33,6 +37,8 @@ type Market = {
   event: string
   competition: string
   start: string
+  closeMs: number
+  finished: boolean
   home: string
   away: string
 }
@@ -47,11 +53,27 @@ async function nbaPolling(pg: SupabaseDirectClient) {
     const phase = calendarEntriesOverlapping(start, start).find(
       (p) => p.bdlLeagueKey === 'nba' && p.competitionId === market.competition
     )
-    return phase &&
-      autoCreates(phase, switches) &&
-      !competitionSwitchError(phase.competitionId, phase.phase, true, switches)
-      ? bdlLiveInterval('nba', market.id, settings)
-      : 0
+    if (
+      !phase ||
+      !autoCreates(phase, switches) ||
+      competitionSwitchError(phase.competitionId, phase.phase, true, switches)
+    )
+      return { live: 0, interval: 0 }
+    const now = Date.now()
+    const closeTime = market.closeMs
+    const live =
+      !market.finished && now < closeTime
+        ? bdlLiveInterval('nba', market.id, settings)
+        : 0
+    const finals = finalsPollInterval(
+      { sport: 'nba', startTime: start, closeTime, missing: market.finished },
+      now,
+      settings.finals
+    )
+    return {
+      live,
+      interval: live && finals ? Math.min(live, finals) : live || finals,
+    }
   }
 }
 
@@ -99,12 +121,13 @@ export async function pollNbaScores(
   const markets = await pg.manyOrNone<Market>(
     `select id, data->>'sportsEventId' as event,
             data->>'sportsCompetitionId' as competition, data->>'sportsStartTimestamp' as start,
-            data->>'sportsHomeTeamId' as home, data->>'sportsAwayTeamId' as away
+            data->>'sportsHomeTeamId' as home, data->>'sportsAwayTeamId' as away,
+            (extract(epoch from close_time)*1000)::double precision as "closeMs",
+            data->>'sportsLiveStatus' = 'FINISHED' as finished
        from contracts
       where creator_id = any($1) and data @> $2::jsonb and token = 'MANA'
         and visibility = 'public' and deleted is not true and resolution is null
         and data->>'isResolved' is distinct from 'true'
-        and data->>'sportsLiveStatus' is distinct from 'FINISHED'
         and coalesce(data->'sportsFixture', 'false'::jsonb) = 'false'::jsonb
         and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
         and close_time between $3::timestamptz - interval '3 days' and $3::timestamptz + interval '8 hours'`,
@@ -127,7 +150,7 @@ export async function pollNbaScores(
       market.home === market.away
     )
       return []
-    const seconds = interval(market)
+    const seconds = interval(market).interval
     if (
       !seconds ||
       now - (lastAttempts.get(market.id) ?? -Infinity) < seconds * 1000
@@ -139,7 +162,7 @@ export async function pollNbaScores(
     const enabled = async () => {
       if (!isSportsBdlEnabled()) return false
       const polling = await nbaPolling(pg)
-      return slate.some((m) => polling(m) > 0)
+      return slate.some((m) => polling(m).interval > 0)
     }
     const client = createBdlClient({
       role: isProd() ? 'scheduler' : 'dev',
@@ -156,9 +179,18 @@ export async function pollNbaScores(
     const stillEnabled = await nbaPolling(pg)
     for (const market of slate) {
       const game = byId.get(market.gameId)
-      if (!isSportsBdlEnabled() || !stillEnabled(market)) continue
+      const cadence = stillEnabled(market)
+      if (!isSportsBdlEnabled() || !cadence.interval || !game) continue
+      if (game.status === 'final' ? !game.ordinaryNbaFinal : !cadence.live)
+        continue
       const patch = nbaScorePatch(market, game, receivedAt)
       if (!patch) continue
+      const final = patch.sportsLiveStatus === 'FINISHED'
+      const same = market.home === String(game.home.id)
+      const teams = {
+        sportsHomeTeam: same ? game.home.name : game.away.name,
+        sportsAwayTeam: same ? game.away.name : game.home.name,
+      }
       const identity = {
         ...nbaMoneyline,
         sportsEventId: market.event,
@@ -168,13 +200,24 @@ export async function pollNbaScores(
         sportsAwayTeamId: market.away,
       }
       try {
-        if (
-          await updateSportsScore(pg, market.id, patch, {
-            identity,
-            readStartedAt,
-          })
-        )
-          await publishSportsLiveScore(market.id, patch)
+        const written = await updateSportsScore(pg, market.id, patch, {
+          identity: final ? { ...identity, ...teams } : identity,
+          readStartedAt,
+          closeOnFinal: final,
+        })
+        if (!written) continue
+        await publishSportsLiveScore(market.id, patch)
+        if (final) {
+          await settleNbaGame(
+            pg,
+            market.id,
+            { ...identity, ...teams },
+            patch,
+            async () =>
+              isSportsBdlEnabled() &&
+              (await nbaPolling(pg))(market).interval > 0
+          )
+        }
       } catch (error) {
         log.error(
           `[sports-bdl-nba] score update failed for ${market.id}: ${error}`

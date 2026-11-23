@@ -10,7 +10,10 @@ import { publishSportsLiveScore } from '../publish-sports-live-score'
 import { createSupabaseDirectClient } from '../supabase/init'
 import { hasOddsApiKey } from '../the-odds-api-client'
 import { fetchMajorGames } from './major-games'
-import { nbaScorePatch } from './nba-scores'
+import { nbaScorePatch, pollNbaScores } from './nba-scores'
+import { settleNbaGame } from './settle-nba-game'
+
+jest.mock('./settle-nba-game', () => ({ settleNbaGame: jest.fn() }))
 
 jest.mock('../balldontlie-client', () => ({
   ...jest.requireActual('../balldontlie-client'),
@@ -82,6 +85,9 @@ async function market(fields: Row = {}) {
     sportsMarketType: 'moneyline',
     sportsStartKnown: true,
     sportsEventId: 'bdl:nba:21718156',
+    closeTime: Date.parse(kickoff) + 3 * 3_600_000,
+    sportsHomeTeam: 'Philadelphia 76ers',
+    sportsAwayTeam: 'Milwaukee Bucks',
     sportsHomeTeamId: '23',
     sportsAwayTeamId: '17',
     sportsCompetitionId: competition,
@@ -114,6 +120,12 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   jest.clearAllMocks()
+  jest.mocked(settleNbaGame).mockImplementation(async (_pg, id) => {
+    await db.query('update contracts set resolution=$1 where id=$2', [
+      'named-answer',
+      id,
+    ])
+  })
   jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
   jest.mocked(hasOddsApiKey).mockReturnValue(false)
   process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
@@ -166,7 +178,12 @@ afterAll(async () => {
 
 it('runs the recorded NBA game on the native tick without an Odds credential; binds both orientations and the actual close', async () => {
   const home = await market(),
-    reversed = await market({ sportsHomeTeamId: '17', sportsAwayTeamId: '23' })
+    reversed = await market({
+      sportsHomeTeamId: '17',
+      sportsAwayTeamId: '23',
+      sportsHomeTeam: 'Milwaukee Bucks',
+      sportsAwayTeam: 'Philadelphia 76ers',
+    })
   await resolveOddsSportsMarkets()
   expect(requests.map((r) => r.pathname)).toEqual(['/nba/v1/games'])
   expect(await stored(home)).toMatchObject({
@@ -186,10 +203,9 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   wire = [final]
   now = Date.parse('2026-11-21T20:46:05.674Z')
   await resolveOddsSportsMarkets()
-  expect((await stored(home)).sportsLiveStatus).toBe('IN_PLAY')
-  expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
-  now = Date.parse('2026-11-21T21:00:00Z')
-  await resolveOddsSportsMarkets()
+  expect((await stored(home)).closeTime).toBe(now)
+  expect((await stored(reversed)).sportsHomeScore).toBe(129)
+  expect(settleNbaGame).toHaveBeenCalledTimes(2)
   expect(await stored(home)).toMatchObject({
     sportsHomeScore: 132,
     sportsAwayScore: 129,
@@ -197,11 +213,11 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   })
   expect(
     (await rows('select resolution from contracts')).map((r) => r.resolution)
-  ).toEqual([null, null])
+  ).toEqual(['named-answer', 'named-answer'])
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(4)
   now += 60_000
   await resolveOddsSportsMarkets()
-  expect(requests).toHaveLength(3)
+  expect(requests).toHaveLength(2)
   expect(pollOddsScoresAndResolve).not.toHaveBeenCalled()
 })
 
@@ -214,7 +230,8 @@ it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of
     { ...live, visitor_team_score: null },
     { ...live, visitor_team: null },
     { ...live, home_team: live.visitor_team },
-    { ...live, status_state: 'final', home_team_score: 15 },
+    { ...final, visitor_team_score: final.home_team_score },
+    { ...final, status: 'Final - Forfeit' },
   ]
   const siblings: string[] = []
   for (const [i, raw] of badRows.entries()) {
@@ -332,14 +349,47 @@ it('rechecks identity, visibility, phase and actual close after a slow fetch', a
   }
   await resolveOddsSportsMarkets()
   expect((await stored(healthy)).sportsLiveStatus).toBe('FINISHED')
-  for (const id of [changed, hidden, extended])
+  expect((await stored(extended)).sportsLiveStatus).toBe('FINISHED')
+  for (const id of [changed, hidden])
     expect((await stored(id)).sportsLiveStatus).toBeUndefined()
   beforeResponse = () =>
     db.exec('update sports_competition_switches set enabled=false')
   await market()
   now += 60_000
   await resolveOddsSportsMarkets()
-  expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+  expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
+})
+
+it('polls finals without live scores only on an enabled phase, then retries an unpaid closed final on restart', async () => {
+  const id = await market()
+  await db.exec('update sports_score_polling set interval_seconds=0')
+  now = Date.parse('2026-11-21T21:01:00Z')
+  await db.exec('update sports_competition_switches set enabled=false')
+  await pollNbaScores(pg, new Map())
+  expect(requests).toHaveLength(0)
+  await db.exec('update sports_competition_switches set enabled=true')
+  const attempts = new Map<string, number>()
+  await pollNbaScores(pg, attempts)
+  expect(requests).toHaveLength(1)
+  expect((await stored(id)).sportsLiveStatus).toBeUndefined()
+  wire = [final]
+  now += 299_999
+  await pollNbaScores(pg, attempts)
+  expect(requests).toHaveLength(1)
+  now++
+  jest.mocked(settleNbaGame).mockRejectedValueOnce(new Error('interrupted'))
+  await pollNbaScores(pg, attempts)
+  expect((await stored(id)).sportsLiveStatus).toBe('FINISHED')
+  expect((await stored(id)).closeTime).toBe(Date.parse('2026-11-21T21:00:00Z'))
+  expect(
+    (await rows('select resolution from contracts'))[0].resolution
+  ).toBeNull()
+  now += 1
+  await pollNbaScores(pg, new Map())
+  expect((await rows('select resolution from contracts'))[0].resolution).toBe(
+    'named-answer'
+  )
+  expect(settleNbaGame).toHaveBeenCalledTimes(2)
 })
 
 it('keeps a concurrently written score and rejects another copy of the same receipt', async () => {
