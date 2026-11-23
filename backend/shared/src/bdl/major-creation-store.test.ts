@@ -68,7 +68,7 @@ async function insert(
 }
 beforeAll(async () => {
   await postgres.exec(
-    'create table contracts(id text,creator_id text,token text,resolution text,deleted boolean,close_time timestamptz,data jsonb); create table groups(id text,slug text,privacy_status text);'
+    "create table contracts(id text,creator_id text,token text,resolution text,deleted boolean,close_time timestamptz,data jsonb,mechanism text default 'cpmm-multi-2'); create table groups(id text,slug text,privacy_status text);"
   )
 })
 beforeEach(async () => {
@@ -94,6 +94,20 @@ it('holds only an earlier kickoff than the latest open official legacy Odds mark
     'before latest open Odds kickoff'
   )
   expect(await majorCreationHold(db, { ...input, start: start + 1 })).toBeNull()
+})
+it('requires an earlier unstamped canonical Odds game to close before the league cutover', async () => {
+  await insert({
+    ...odds,
+    sportsLeague: undefined,
+    sportsMarketType: undefined,
+  })
+  expect(await majorCreationHold(db, input)).toBe(
+    'before latest open Odds kickoff'
+  )
+  await postgres.exec(
+    "update contracts set close_time = '2026-11-21T12:59:00Z'"
+  )
+  expect(await majorCreationHold(db, input)).toBeNull()
 })
 it('holds a missing old ID with either home/away orientation only within seven days', async () => {
   for (const [h, a] of [

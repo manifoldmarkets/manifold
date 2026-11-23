@@ -1,9 +1,17 @@
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_OPEN_ODDS_MATCH_WINDOW_MS } from 'common/bdl/constants'
 import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
+import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
+import { isMajorLeague } from 'common/bdl/major-leagues'
+import {
+  isMajorOddsEvent,
+  majorOddsKeys,
+  majorOddsMoneylineSql,
+} from './bdl/major-moneyline-identity'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { SPORT_LEAGUE_LABEL, SportId } from 'common/sports-calendar'
 import { providerOf, SportsProvider } from 'common/sports-provider'
+import { parseBdlEventId } from 'common/sports-ids'
 import { sportForLeague } from 'common/sports-score-polling'
 import { normalizeTeam } from 'common/sports-team-colors'
 
@@ -16,17 +24,32 @@ export const findSportsMarket = (
   eventId: string,
   marketType: string,
   includeCanceled = false
-) =>
-  pg.oneOrNone<{ id: string }>(
-    `select id from contracts
+) => {
+  const historicOdds =
+    isSportsBdlEnabled() &&
+    marketType === 'moneyline' &&
+    isMajorOddsEvent(eventId)
+  return pg.oneOrNone<{ id: string }>(
+    `select id from contracts c
      where data->>'sportsEventId' = $1
        and creator_id = any($2)
        and token = 'MANA'
        ${includeCanceled ? '' : "and resolution is distinct from 'CANCEL'"}
-       and data->>'sportsMarketType' = $3
+       ${
+         historicOdds
+           ? `and data->>'sportsFixture' is distinct from 'true' and ${sportsProviderSql()} = 'odds'`
+           : ''
+       }
+       and (data->>'sportsMarketType' = $3
+         ${
+           historicOdds
+             ? `or (data->>'sportsMarketType' is null and c.mechanism in ${MULTI_CPMM_MECHANISMS_SQL})`
+             : ''
+         })
      limit 1`,
     [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
   )
+}
 
 type Market = {
   sportsEventId: string
@@ -45,13 +68,22 @@ const easternDate = new Intl.DateTimeFormat('en-CA', {
   day: '2-digit',
 })
 
+function knownTeam(name: string | null | undefined) {
+  const normalized = normalizeTeam(name ?? '')
+  return /^(?:tbd|tba|to be determined|to be announced)$/.test(normalized)
+    ? ''
+    : normalized
+}
+
+export class UnidentifiedSportsMoneyline extends Error {}
+
 function teamPair(
   home: string | null | undefined,
   away: string | null | undefined
 ) {
   if (!home || !away) return
-  const a = normalizeTeam(home),
-    b = normalizeTeam(away)
+  const a = knownTeam(home),
+    b = knownTeam(away)
   if (!a || !b || a === b) return
   return [a, b].sort().join(':')
 }
@@ -95,11 +127,22 @@ export async function findLockedSportsMarket(
     ? candidate.sportsLeagueKey &&
       BDL_LEAGUES[candidate.sportsLeagueKey]?.sportId
     : sportForLeague(candidate.sportsLeague)
+  if (bdl && sport && isMajorLeague(sport) && isSportsBdlEnabled()) {
+    const event = parseBdlEventId(candidate.sportsEventId)
+    if (
+      event?.league !== candidate.sportsLeagueKey ||
+      !event ||
+      'suffix' in event
+    )
+      throw new UnidentifiedSportsMoneyline(
+        'Unverified BDL moneyline event identity'
+      )
+  }
   const teams = teamPair(candidate.sportsHomeTeam, candidate.sportsAwayTeam)
   const start = Date.parse(candidate.sportsStartTimestamp)
   if (!sport || !teams || !Number.isFinite(start)) {
     if (bdl || checkOpenBdl)
-      throw new Error(
+      throw new UnidentifiedSportsMoneyline(
         'BDL cutover moneyline needs a known sport, two identifiable teams and a kickoff for deduplication'
       )
     return null
@@ -119,6 +162,10 @@ export async function findLockedSportsMarket(
 
   // Read the kickoff recorded on the contract. Its close time can differ, e.g.
   // after a manual change. Normalize both sides in TS using the same team rules.
+  const historicOdds = bdl && isMajorLeague(sport) && isSportsBdlEnabled()
+  const classification = historicOdds
+    ? majorOddsMoneylineSql('$2', '$4')
+    : "c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline'"
   const open = await tx.manyOrNone<OpenMoneyline>(
     `select c.id, c.data->>'sportsHomeTeam' as home, c.data->>'sportsAwayTeam' as away,
             c.data->>'sportsStartTimestamp' as start
@@ -126,19 +173,39 @@ export async function findLockedSportsMarket(
       where c.creator_id = any($1) and c.token = 'MANA'
         and c.resolution is null and c.deleted is not true
         and (c.close_time is null or c.close_time > now())
-        and c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline'
+        and (${classification})
         and c.data->>'sportsFixture' is distinct from 'true'
         and ${sportsProviderSql()} = $3
       order by c.id`,
-    [MANIFOLD_SPORTS_USER_IDS, SPORT_LEAGUE_LABEL[sport], bdl ? 'odds' : 'bdl']
+    [
+      MANIFOLD_SPORTS_USER_IDS,
+      SPORT_LEAGUE_LABEL[sport],
+      bdl ? 'odds' : 'bdl',
+      majorOddsKeys(sport),
+    ]
   )
+  const cutover = historicOdds || checkOpenBdl
+  const candidates = [
+    normalizeTeam(candidate.sportsHomeTeam!),
+    normalizeTeam(candidate.sportsAwayTeam!),
+  ]
   return (
-    open.find(
-      (row) =>
-        row.start &&
-        Math.abs(start - Date.parse(row.start)) <=
-          BDL_OPEN_ODDS_MATCH_WINDOW_MS &&
-        teamPair(row.home, row.away) === teams
-    ) ?? null
+    open.find((row) => {
+      const otherStart = Date.parse(row.start ?? '')
+      if (Number.isFinite(otherStart)) {
+        if (Math.abs(start - otherStart) > BDL_OPEN_ODDS_MATCH_WINDOW_MS)
+          return false
+      } else if (!cutover) return false
+      const pair = teamPair(row.home, row.away)
+      if (pair) return pair === teams
+      // Without both opponents, allow funding only when a known side rules this game out.
+      return (
+        cutover &&
+        [row.home, row.away].every((name) => {
+          const known = knownTeam(name)
+          return !known || candidates.includes(known)
+        })
+      )
+    }) ?? null
   )
 }

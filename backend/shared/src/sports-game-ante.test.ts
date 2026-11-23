@@ -6,6 +6,7 @@ jest.mock('shared/utils', () => ({
 jest.mock('shared/supabase/init', () => ({
   pgp: jest.requireActual('pg-promise')(),
 }))
+jest.mock('shared/supabase/users', () => ({ broadcastUserUpdates: jest.fn() }))
 jest.mock('shared/sports-goal-annotations', () => ({}))
 jest.mock('shared/resolve-market-helpers', () => ({}))
 jest.mock('shared/tiptap', () => ({}))
@@ -45,6 +46,8 @@ import {
 import { User } from 'common/user'
 import * as random from 'common/util/random'
 import { pgp, SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
+import { BDL_MIN_CREATION_LEAD_MS } from 'common/bdl/constants'
+import { broadcastUserUpdates, UserUpdate } from './supabase/users'
 import { insertLiquidity } from './supabase/liquidity'
 import * as queries from './supabase/utils'
 import { runTxnOutsideBetQueue } from './txn/run-txn'
@@ -260,6 +263,129 @@ it('creates a TBD game with its immutable earliest possible start and only the c
       line,
     })
   ).resolves.toMatchObject({ ante: 100 })
+})
+
+describe('enabled major funding', () => {
+  const env = process.env
+  const balance: UserUpdate = {
+    id: creator.id,
+    balance: 500,
+    cash_balance: 0,
+    spice_balance: 0,
+    total_deposits: 500,
+    total_cash_deposits: 0,
+  }
+  beforeEach(() => {
+    process.env = { ...env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  })
+  afterEach(() => {
+    process.env = env
+    jest.mocked(runTxnOutsideBetQueue).mockReset()
+    jest.mocked(insertLiquidity).mockReset()
+  })
+
+  it.each(['settings', 'insert', 'debit', 'liquidity', 'commit', 'success'])(
+    'retains the five-minute lead and publishes only a committed debit after %s',
+    async (stage) => {
+      const { tx } = database()
+      let committed = false
+      const cutoff = start - BDL_MIN_CREATION_LEAD_MS
+      let now = cutoff - 1
+      const visit = (step: string) => {
+        if (step === stage) now = cutoff
+      }
+      const pg = {
+        oneOrNone: tx.oneOrNone,
+        tx: async (fn: (value: typeof tx) => Promise<unknown>) => {
+          const result = await fn(tx)
+          if (stage === 'commit') throw new Error('commit failed')
+          committed = true
+          return result
+        },
+      } as unknown as SupabaseDirectClient
+      tx.multi.mockImplementationOnce(async () => {
+        visit('insert')
+        return [[], []]
+      })
+      jest
+        .mocked(runTxnOutsideBetQueue)
+        .mockImplementation(async (_db, data, _affectsProfit, onUpdates) => {
+          onUpdates!([balance])
+          visit('debit')
+          return {
+            id: 'debit',
+            createdTime: now,
+            fromId: data.fromId,
+            toId: data.toId,
+            fromType: 'USER',
+            toType: 'CONTRACT',
+            category: 'CREATE_CONTRACT_ANTE',
+            token: 'M$',
+            amount: data.amount,
+          }
+        })
+      jest.mocked(insertLiquidity).mockImplementationOnce(async (_db, lp) => {
+        visit('liquidity')
+        return {
+          liquidity_id: 'lp',
+          contract_id: lp.contractId,
+          user_id: lp.userId,
+          created_time: new Date(now).toISOString(),
+          data: {},
+        }
+      })
+      const publishedAfterCommit: boolean[] = []
+      jest.mocked(broadcastUserUpdates).mockImplementation(() => {
+        publishedAfterCommit.push(committed)
+      })
+      const create = createSportsContract(pg, creator, bdl, {
+        now: () => now,
+        chooseAnte: async () => {
+          visit('settings')
+          return funded
+        },
+      })
+      if (stage === 'success') {
+        await expect(create).resolves.toMatchObject({
+          totalLiquidity: funded.ante,
+        })
+        expect(broadcastUserUpdates).toHaveBeenCalledWith([balance])
+        expect(publishedAfterCommit).toEqual([true])
+      } else {
+        await expect(create).rejects.toThrow(
+          stage === 'commit' ? 'commit failed' : 'kicked off'
+        )
+        expect(committed).toBe(false)
+        expect(broadcastUserUpdates).not.toHaveBeenCalled()
+      }
+      expect(tx.multi).toHaveBeenCalledTimes(stage === 'settings' ? 0 : 1)
+      expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(
+        ['settings', 'insert'].includes(stage) ? 0 : 1
+      )
+      expect(insertLiquidity).toHaveBeenCalledTimes(
+        ['settings', 'insert', 'debit'].includes(stage) ? 0 : 1
+      )
+    }
+  )
+
+  it.each([
+    { sportsStartKnown: false },
+    { sportsAwayTeamId: '10' },
+    { sportsHomeTeamId: undefined },
+    { sportsFixture: true },
+  ] as const)('keeps an unverified major unfunded: %p', async (overrides) => {
+    const { pg, tx } = database()
+    await expect(
+      createSportsContract(
+        pg,
+        creator,
+        { ...bdl, ...overrides },
+        { chooseAnte: async () => funded }
+      )
+    ).rejects.toThrow()
+    expect(tx.multi).not.toHaveBeenCalled()
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  })
 })
 
 it.each(['exact', 'cross-provider', 'lead time', 'missing market type'])(
