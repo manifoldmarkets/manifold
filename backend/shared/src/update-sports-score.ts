@@ -18,10 +18,11 @@ export async function updateSportsScore(
   if (typeof time !== 'number' || !Number.isFinite(time))
     throw new Error('Score update time must be finite')
   // The contracts trigger derives the native trading deadline from data.closeTime.
-  // Close and publish the final in one row update; an earlier close always wins.
+  // Bets are accepted at closeTime itself. Keep the last tradable millisecond
+  // strictly before this final, preserving any earlier close.
   const closing = binding?.closeOnFinal && patch.sportsLiveStatus === 'FINISHED'
   const closePatch = closing
-    ? " || jsonb_build_object('closeTime', least((extract(epoch from close_time)*1000)::bigint, $3::bigint))"
+    ? " || jsonb_build_object('closeTime', least((extract(epoch from close_time)*1000)::bigint, $3::bigint - 1))"
     : ''
   const bound = binding
     ? `and data @> $4::jsonb and creator_id = any($5)

@@ -43,7 +43,8 @@ export async function settleNbaGame(
   id: string,
   identity: FinalIdentity,
   score: SportsLiveScore,
-  enabled: () => Promise<boolean>
+  enabled: () => Promise<boolean>,
+  signal?: AbortSignal
 ) {
   const { sportsHomeScore: home, sportsAwayScore: away } = score
   if (
@@ -69,6 +70,7 @@ export async function settleNbaGame(
   function acceptedTeams(c: Contract) {
     const s = c as Contract & Partial<Sports & SportsLiveScore>
     if (
+      signal?.aborted ||
       !isSportsBdlEnabled() ||
       c.id !== id ||
       c.creatorId !== creator.id ||
@@ -81,7 +83,7 @@ export async function settleNbaGame(
       c.outcomeType !== 'MULTIPLE_CHOICE' ||
       !c.shouldAnswersSumToOne ||
       !Number.isFinite(c.closeTime) ||
-      c.closeTime! > score.sportsLiveUpdatedTime ||
+      c.closeTime! >= score.sportsLiveUpdatedTime ||
       s.sportsFixture ||
       s.sportsProvider !== 'bdl' ||
       s.sportsLeagueKey !== 'nba' ||
@@ -115,7 +117,7 @@ export async function settleNbaGame(
     identity.sportsHomeTeam,
     identity.sportsAwayTeam
   )
-  if (!args || !(await enabled())) return
+  if (!args || !(await enabled()) || signal?.aborted) return
   await resolveMarketHelper(
     contract,
     creator,

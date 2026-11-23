@@ -38,7 +38,7 @@ const original = {
   creatorId: 'sports-bot',
   token: 'MANA',
   visibility: 'public',
-  closeTime: score.sportsLiveUpdatedTime,
+  closeTime: score.sportsLiveUpdatedTime - 1,
   isResolved: false,
   sportsProvider: 'bdl',
   sportsLeagueKey: 'nba',
@@ -135,6 +135,10 @@ it.each([
   ['event rebound', { sportsEventId: 'bdl:nba:123' }],
   ['corrected final', { sportsHomeScore: 104 }],
   ['new receipt', { sportsLiveUpdatedTime: score.sportsLiveUpdatedTime + 1 }],
+  [
+    'still tradable at the receipt millisecond',
+    { closeTime: score.sportsLiveUpdatedTime },
+  ],
   ['trading reopened', { closeTime: score.sportsLiveUpdatedTime + 1000 }],
   ['hidden market', { visibility: 'private' }],
   ['already paid', { isResolved: true }],
@@ -147,6 +151,25 @@ it.each([
   )
   expect(payouts).toEqual([])
 })
+it('stops a queued native payout if the scheduler deadline expires before the transaction checks its fixture', async () => {
+  const controller = new AbortController()
+  const enabled = async () => true
+  jest
+    .mocked(resolveMarketHelper)
+    .mockImplementationOnce(
+      async (_before, _actor, _owner, _args, _stage, check) => {
+        controller.abort()
+        if (!check) throw new Error('Missing transaction guard')
+        check(inside)
+        throw new Error('Expired run accepted the payout')
+      }
+    )
+  await expect(
+    settleNbaGame(pg, id, identity, score, enabled, controller.signal)
+  ).rejects.toThrow(/before settlement/)
+  expect(payouts).toEqual([])
+})
+
 it('does not call settlement when the phase has just been disabled or a terminal score is missing, malformed, or level', async () => {
   await settleNbaGame(pg, id, identity, score, async () => false)
   for (const sportsHomeScore of [null, -1, 1.5, 129, Infinity])
