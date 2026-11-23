@@ -493,15 +493,50 @@ describe('claiming a starter milestone', () => {
     ).toBe(50)
   })
 
-  it('applies the member multiplier', async () => {
-    await addUser('member')
-    await rows(
-      `insert into user_entitlements (user_id, entitlement_id, expires_time, auto_renew)
-       values ('member', 'supporter-basic', now() + interval '10 days', true)`
-    )
-    await bet('member', 'm1', 10, 0)
-    const result = await claim('member', 'starter-trades', 'first-trade')
-    expect(result.rewardAmount).toBe(75) // 50 x 1.5 for Plus
+  it.each([
+    ['basic', 'eligible'],
+    ['premium', 'eligible'],
+    ['premium', 'requires_verification'],
+  ] as const)(
+    'pays a %s member M50 once for First Trade (%s)',
+    async (tier, bonusEligibility) => {
+      await addUser('member', { data: { bonusEligibility } })
+      await rows(
+        `insert into user_entitlements (user_id, entitlement_id, expires_time, auto_renew)
+       values ('member', $1, now() + interval '10 days', true)`,
+        [`supporter-${tier}`]
+      )
+      await bet('member', 'm1', 10, 0)
+      const firstTrade = () => claim('member', 'starter-trades', 'first-trade')
+      expect((await firstTrade()).rewardAmount).toBe(50)
+      expect((await firstTrade()).rewardAmount).toBe(0)
+      expect((await balance('member')).balance).toBe(50)
+      expect(await rewardTxns('member')).toMatchObject([
+        {
+          amount: 50,
+          data: {
+            data: { baseAmount: 50, effectiveTier: tier, multiplier: 1 },
+          },
+        },
+      ])
+    }
+  )
+
+  it('pays a bonus-blocked account M10 once for First Trade', async () => {
+    await addUser('blocked', { data: { bonusEligibility: 'ineligible' } })
+    await bet('blocked', 'm1', 10, 0)
+    const firstTrade = () => claim('blocked', 'starter-trades', 'first-trade')
+    expect((await firstTrade()).rewardAmount).toBe(10)
+    expect((await firstTrade()).rewardAmount).toBe(0)
+    expect((await balance('blocked')).balance).toBe(10)
+    expect(await rewardTxns('blocked')).toMatchObject([
+      {
+        amount: 10,
+        data: {
+          data: { baseAmount: 50, effectiveTier: 'reduced', multiplier: 0.2 },
+        },
+      },
+    ])
   })
 
   it('rolls back the claim when the payout fails', async () => {
@@ -535,12 +570,9 @@ describe('Newcomer rewards', () => {
       .mockResolvedValue({ accountAgeYears: 2 } as never)
   })
 
-  it.each([
-    [false, 25],
-    [true, 37.5],
-  ] as const)(
-    'pays Newcomer once at the quest multiplier (member %s)',
-    async (member, amount) => {
+  it.each([false, true])(
+    'pays M25 once for Newcomer (member %s)',
+    async (member) => {
       await addUser('u')
       if (member) {
         await rows(
@@ -548,7 +580,7 @@ describe('Newcomer rewards', () => {
         )
       }
       const paid = await claim('u', 'account-age', 'newcomer')
-      expect(paid.rewardAmount).toBe(amount)
+      expect(paid.rewardAmount).toBe(25)
       expect(paid.rewarded).toEqual([
         { trophyId: 'account-age', milestoneId: 'newcomer' },
       ])
@@ -558,7 +590,7 @@ describe('Newcomer rewards', () => {
       expect(again.rewardAmount).toBe(0)
       expect(await rewardRows('u')).toHaveLength(1)
       expect(await rewardTxns('u')).toHaveLength(1)
-      expect((await balance('u')).balance).toBe(amount)
+      expect((await balance('u')).balance).toBe(25)
     }
   )
 

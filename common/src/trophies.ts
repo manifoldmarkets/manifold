@@ -13,7 +13,11 @@
 
 import { minBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
-import { roundTierBonus } from 'common/supporter-config'
+import {
+  EffectiveTier,
+  getEffectiveBonusMultiplier,
+  roundTierBonus,
+} from 'common/supporter-config'
 
 export type TrophyTier =
   | 'green'
@@ -41,8 +45,8 @@ export type TrophyMilestone = {
   emoji: string
   threshold: number
   tier: TrophyTier
-  // Mana paid once when the milestone is claimed, before the claimant's tier
-  // multiplier. Only onboarding milestones pay, and only to starter accounts.
+  // One-time base reward before any reduction for account standing.
+  // Only onboarding milestones pay, and only to starter accounts.
   rewardMana?: number
 }
 
@@ -435,7 +439,16 @@ export function getTrophyDefinitionsFor(
     : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
 }
 
-/** Mana the given milestones pay, before the claimant's tier multiplier. */
+// One-time welcome rewards keep the quest reductions. Capping them at face
+// value lets future members claim now without missing out on mana.
+export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
+  const multiplier = getEffectiveBonusMultiplier(tier, 'quest')
+  return Number.isFinite(multiplier) && multiplier > 0
+    ? Math.min(multiplier, 1)
+    : 0
+}
+
+/** Total base mana for the given milestones, before any standing reduction. */
 export function getRewardManaTotal(milestones: TrophyMilestone[]): number {
   return milestones.reduce((sum, m) => {
     const reward = m.rewardMana ?? 0

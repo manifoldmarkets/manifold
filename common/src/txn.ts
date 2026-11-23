@@ -603,6 +603,7 @@ type TrophyReward = {
     // Sum of the milestones' rewardMana, before the multiplier.
     baseAmount: number
     effectiveTier: string
+    // Applied at claim time. New trophy payouts cap this at 1 for every tier.
     multiplier: number
   }
 }

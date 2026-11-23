@@ -9,6 +9,7 @@ import {
   countClaimedMilestones,
   getRewardManaTotal,
   getTrophyClaimReward,
+  getTrophyRewardMultiplier,
   getTrophyDefinitionsFor,
   isStarterTrophy,
   isStarterTrophyAccount,
@@ -254,6 +255,17 @@ describe('formatTrophyValue', () => {
 describe('getting started trophies', () => {
   const starterDefs = TROPHY_DEFINITIONS.filter(isStarterTrophy)
 
+  it.each([
+    ['restricted', 0],
+    ['reduced', 0.2],
+    ['free', 1],
+    ['basic', 1],
+    ['plus', 1],
+    ['premium', 1],
+  ] as const)('gives the %s tier a %s× trophy reward', (tier, multiplier) => {
+    expect(getTrophyRewardMultiplier(tier)).toBe(multiplier)
+  })
+
   it('pay a positive finite reward on every starter milestone and Newcomer', () => {
     expect(starterDefs.length).toBeGreaterThan(0)
     for (const def of TROPHY_DEFINITIONS) {
@@ -326,9 +338,9 @@ describe('getting started trophies', () => {
         trades,
         trades.milestones[2],
         [claim(trades.id, 'first-trade')],
-        1.5
+        getTrophyRewardMultiplier('reduced')
       )
-    ).toBe(225)
+    ).toBe(30)
   })
 })
 

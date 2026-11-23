@@ -9,6 +9,5 @@ export function TrophyRewardChip(props: { amount: number }) {
   )
 }
 
-// Newcomer pays a fractional amount at some membership tiers.
 export const formatTrophyReward = (amount: number) =>
   Number.isInteger(amount) ? formatMoney(amount) : formatMoneyPrecise(amount)
