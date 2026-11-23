@@ -303,6 +303,21 @@ export async function fetchMajorGames(
           games.delete(id)
           continue
         }
+        if (scoreIds && league === 'nba' && game.status === 'final') {
+          const row = raw as Row
+          const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
+          // A terminal enum can also cover an adjudication. Recorded ordinary
+          // NBA finals have completed regulation and have no running clock.
+          game.eligible &&=
+            typeof row.status === 'string' &&
+            finalLabel.test(row.status.trim()) &&
+            isId(row.period) &&
+            row.period >= 4 &&
+            (row.time == null ||
+              (typeof row.time === 'string' &&
+                (finalLabel.test(row.time.trim()) ||
+                  /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
+        }
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
         if (prior && JSON.stringify(prior) !== JSON.stringify(game)) {

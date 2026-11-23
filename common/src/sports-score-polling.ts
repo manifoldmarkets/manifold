@@ -196,7 +196,18 @@ export function finalsDue(
   return minutes !== null && now >= game.startTime + minutes * 60_000
 }
 
-const OVERDUE_AFTER_MS = 3 * 60 * 60 * 1000
+/** Finals-only cadence is independent of live polling, including its overdue backoff. */
+export function finalsPollInterval(
+  game: Pick<PollingGame, 'sport' | 'startTime' | 'closeTime' | 'missing'>,
+  now: number,
+  interval: number
+) {
+  if (!game.missing && !finalsDue(game, now)) return 0
+  return game.closeTime !== undefined &&
+    now - game.closeTime > 3 * 60 * 60 * 1000
+    ? Math.max(interval, OVERDUE_FINALS_INTERVAL)
+    : interval
+}
 // A tick that lands a moment early still counts as due.
 const SLACK_MS = 5_000
 
@@ -253,16 +264,8 @@ export function scorePollPlan(
       // live scores for either would only cost credits.
       const open = game.closeTime === undefined || now < game.closeTime
       if (live > 0 && open && !game.missing) liveIntervals.push(live)
-      if (game.missing || finalsDue(game, now)) {
-        const overdue =
-          game.closeTime !== undefined &&
-          now - game.closeTime > OVERDUE_AFTER_MS
-        finalsIntervals.push(
-          overdue
-            ? Math.max(settings.finals, OVERDUE_FINALS_INTERVAL)
-            : settings.finals
-        )
-      }
+      const finals = finalsPollInterval(game, now, settings.finals)
+      if (finals) finalsIntervals.push(finals)
     }
     const fails = failures[sportKey] ?? 0
     // After a failed call, nothing goes out on either clock until the
