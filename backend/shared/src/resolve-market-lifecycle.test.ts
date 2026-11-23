@@ -198,7 +198,40 @@ it("runs the caller's check on the transaction's read and writes nothing when it
       check
     )
   ).rejects.toBe(refusal)
-  expect(check).toHaveBeenCalledWith(fresh)
+  expect(check).toHaveBeenCalledWith(fresh, { multi })
+  expect(multi).not.toHaveBeenCalled()
+  expect(commit).not.toHaveBeenCalled()
+  expect(broadcastUpdatedContract).not.toHaveBeenCalled()
+})
+
+it('awaits an asynchronous refusal on the native transaction before any payout write', async () => {
+  let refuse!: (reason: Error) => void
+  let entered!: () => void
+  const ready = new Promise<void>((resolve) => {
+    entered = resolve
+  })
+  const decision = new Promise<void>((_, reject) => {
+    refuse = reject
+  })
+  const result = resolveMarketHelper(
+    contract,
+    user,
+    user,
+    { outcome: 'YES' },
+    undefined,
+    async (current, transaction) => {
+      expect(current).toBe(contract)
+      expect(transaction.multi).toBe(multi)
+      entered()
+      await decision
+    }
+  )
+  await ready
+  expect(multi).not.toHaveBeenCalled()
+  const error = new Error('phase disabled')
+  const rejected = expect(result).rejects.toBe(error)
+  refuse(error)
+  await rejected
   expect(multi).not.toHaveBeenCalled()
   expect(commit).not.toHaveBeenCalled()
   expect(broadcastUpdatedContract).not.toHaveBeenCalled()

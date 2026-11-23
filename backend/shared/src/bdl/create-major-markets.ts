@@ -176,6 +176,8 @@ function gameMarket(
     sportsAwayTeam: away,
     sportsHomeTeamId: String(game.home.id),
     sportsAwayTeamId: String(game.away.id),
+    sportsEntrantIds:
+      league === 'nba' ? [game.away.id, game.home.id] : undefined,
     sportsStartKnown: true,
     openingLineSource: line.source,
     openingProbs: line.probs,

@@ -192,6 +192,7 @@ it('creates a priced market with its stored line, fixed answers, notified budget
     sportsLeague: 'NBA',
     sportsHomeTeamId: '10',
     sportsAwayTeamId: '20',
+    sportsEntrantIds: [20, 10],
     answers: ['Away', 'Home'],
     answerProbs: [60, 40],
     openingProbs: [0.6, 0.4],

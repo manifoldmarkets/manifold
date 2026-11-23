@@ -1,3 +1,4 @@
+import { nbaAnswerIds } from './bdl/nba-answers'
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
@@ -1332,6 +1333,19 @@ export async function createSportsContract(
     )
       throw new Error('Ineligible kickoff funding')
     const multi = contract as CPMMMultiContract
+    if (
+      params.sportsProvider === 'bdl' &&
+      params.sportsLeagueKey === 'nba' &&
+      params.sportsMarketType === 'moneyline' &&
+      params.sportsEntrantIds
+    ) {
+      const binding = nbaAnswerIds(multi)
+      if (!binding || binding.away !== multi.answers[0].id)
+        throw new Error('Invalid NBA entrant or funded answer')
+      Object.assign(contract, {
+        sportsFundedAnswerIds: [binding.away, binding.home],
+      })
+    }
 
     // Insert with all native columns set (creator_id, slug, outcome_type,
     // mechanism, importance_score, freshness_score, etc.) so feed ranking,
