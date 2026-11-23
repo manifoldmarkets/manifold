@@ -8,6 +8,8 @@ import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { BDL_LEAGUES } from 'common/bdl/leagues'
 import {
   MAJOR_LEAGUES,
+  MAX_CREATION_GAME_KEYS,
+  MajorCreationConfirmation,
   MajorLeague,
   MajorCreationDecision,
   MajorCreationResult,
@@ -60,7 +62,11 @@ import {
   inspectBdlCreationBudget,
   requireBdlCreationBudget,
 } from './creation-budget'
-import { existingMajorGroups, majorCreationHold } from './major-creation-store'
+import {
+  canceledMajorContractIds,
+  existingMajorGroups,
+  majorCreationHold,
+} from './major-creation-store'
 import { fetchMajorGames, fetchMajorOdds, MajorGame } from './major-games'
 import { getMajorSettings } from './major-settings'
 
@@ -68,6 +74,9 @@ export type MajorCreationOptions = {
   league?: MajorLeague
   competitionId?: string
   keys?: readonly string[]
+  maxAntes?: Readonly<Record<string, number>>
+  confirmations?: Readonly<Record<string, MajorCreationConfirmation>>
+  operator?: true
   dryRun?: boolean
   force?: boolean
   role?: 'api' | 'scheduler' | 'dev' | 'codex'
@@ -188,7 +197,7 @@ export async function runMajorCreation(
 ): Promise<MajorCreationResult> {
   if (options.force && (!options.league || !options.competitionId))
     throw Error('A forced run requires a selected league and competition')
-  if (options.keys && options.keys.length > 200)
+  if (options.keys && options.keys.length > MAX_CREATION_GAME_KEYS)
     throw Error('Select at most 200 games')
   const result: MajorCreationResult = {
     created: 0,
@@ -215,6 +224,20 @@ export async function runMajorCreation(
     else if (decision.status === 'error') result.errors++
     else result[decision.status]++
   }
+  const reportLeague = (
+    league: MajorLeague,
+    status: 'skipped' | 'error',
+    reason: string
+  ) => {
+    const unreported =
+      selected && options.league === league
+        ? [...selected].filter(
+            (id) => !result.log.some((r) => r.eventId === id)
+          )
+        : [null]
+    for (const eventId of unreported)
+      push({ league, eventId, question: null, status, reason })
+  }
   const reportLow = (low: boolean) => {
     if (low && !warnedLow) {
       warnedLow = true
@@ -230,26 +253,20 @@ export async function runMajorCreation(
         if (
           !eligiblePhases(league, began, began + maxLead, switches, options)
             .length
-        )
+        ) {
+          if (selected) reportLeague(league, 'skipped', 'phase disabled')
           continue
+        }
         const settings = await getMajorSettings(pg, league)
-        const reportLeague = (reason: string) =>
-          push({
-            league,
-            eventId: null,
-            question: null,
-            status: 'skipped',
-            reason,
-          })
         if (!settings && !options.dryRun) {
-          reportLeague('budget-unconfigured')
+          reportLeague(league, 'skipped', 'budget-unconfigured')
           continue
         }
         if (
           settings &&
           easternDay.format(began + maxLead) < settings.startsOn
         ) {
-          reportLeague('game before starts_on')
+          reportLeague(league, 'skipped', 'game before starts_on')
           continue
         }
         const client =
@@ -276,6 +293,19 @@ export async function runMajorCreation(
           easternDay.format(began + maxLead)
         )
         const seen = games.map((g) => bdlEventId(league, g.id))
+        if (selected && league === options.league) {
+          const present = new Set(seen)
+          for (const eventId of selected) {
+            if (!present.has(eventId))
+              push({
+                league,
+                eventId,
+                question: null,
+                status: 'skipped',
+                reason: 'selected game missing from current slate',
+              })
+          }
+        }
         const slate = games.map((game) => ({
           game,
           eventId: bdlEventId(league, game.id),
@@ -357,6 +387,7 @@ export async function runMajorCreation(
             decision.line = line
             const params = gameMarket(league, game, start, phase, line, [])
             decision.question = params.question
+            decision.answerLabels = [game.away.name, game.home.name]
             if (line.source === 'none') hold('no eligible moneyline')
             decision.ante = settings?.baseAnte ?? BDL_DEFAULT_STARTING_LIQUIDITY
             if (!settings) hold('budget-unconfigured')
@@ -394,15 +425,41 @@ export async function runMajorCreation(
             }
             const allowCanceledEventId =
               options.force && selected?.has(eventId) ? eventId : undefined
+            const confirmation: MajorCreationConfirmation = {
+              awayId: game.away.id,
+              homeId: game.home.id,
+              startTime: start,
+            }
+            const confirmCurrent = async (
+              tx: Parameters<typeof canceledMajorContractIds>[0]
+            ) => {
+              if (allowCanceledEventId) {
+                const canceled = await canceledMajorContractIds(
+                  tx,
+                  eventId,
+                  league
+                )
+                if (!canceled)
+                  hold('canceled market identity unconfirmed; preview again')
+                confirmation.canceledContractIds = canceled
+              }
+              if (
+                !options.dryRun &&
+                !isEqual(confirmation, options.confirmations?.[eventId])
+              )
+                hold('game or canceled markets changed; preview again')
+            }
             if (options.dryRun) {
-              const prior = await pg.tx((tx) =>
-                findLockedSportsMarket(
+              const prior = await pg.tx(async (tx) => {
+                const existing = await findLockedSportsMarket(
                   tx,
                   params,
                   'moneyline',
                   allowCanceledEventId
                 )
-              )
+                if (!existing && options.operator) await confirmCurrent(tx)
+                return existing
+              })
               if (prior) throw new SportsMarketAlreadyExistsError(prior.id)
               const reason = await majorCreationHold(pg, {
                 ...holdInput,
@@ -431,6 +488,7 @@ export async function runMajorCreation(
               if (status.reason) hold(status.reason)
               planned.set(league, (planned.get(league) ?? 0) + ante)
               decision.status = 'dry-run'
+              if (options.operator) decision.confirmation = confirmation
               decision.ante = ante
             } else {
               creator ??= await sportsCreator()
@@ -445,6 +503,25 @@ export async function runMajorCreation(
                     ...budget,
                     ante: ante.ante,
                   })
+                  if (options.operator) {
+                    await confirmCurrent(tx)
+                    if (
+                      !isEqual(
+                        groupIds,
+                        await existingMajorGroups(tx, settings.groupSlugs, true)
+                      )
+                    )
+                      hold('configured topics changed; preview again')
+                  }
+                  if (options.maxAntes || options.operator) {
+                    const maximum = options.maxAntes?.[eventId]
+                    if (
+                      maximum == null ||
+                      !Number.isSafeInteger(maximum) ||
+                      ante.ante > maximum
+                    )
+                      hold('ante exceeds confirmed maximum; preview again')
+                  }
                   reportLow(status.lowBalance)
                   const [latest, current] = await Promise.all([
                     getCompetitionSwitches(tx),
@@ -484,6 +561,8 @@ export async function runMajorCreation(
                     !isEqual({ ...fresh, sampledTime: line.sampledTime }, line)
                   )
                     hold('opening line changed or expired')
+                  if (options.operator && !isSportsBdlEnabled())
+                    hold('sports creation disabled')
                   decision.ante = ante.ante
                   return ante
                 },
@@ -530,13 +609,7 @@ export async function runMajorCreation(
           league,
           error: String(e),
         })
-        push({
-          league,
-          eventId: null,
-          question: null,
-          status: 'error',
-          reason: 'league unavailable',
-        })
+        reportLeague(league, 'error', 'league unavailable')
       }
     }
   } finally {

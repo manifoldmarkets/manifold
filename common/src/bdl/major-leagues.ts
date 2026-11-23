@@ -1,5 +1,9 @@
 import type { SportsOpeningLine } from '../sports-kickoff-interface'
 
+/** PostgreSQL integer columns hold whole-mana funding settings. */
+export const MAX_SPORTS_CREATION_AMOUNT = 2_147_483_647
+export const MAX_CREATION_GAME_KEYS = 200
+
 export const MAJOR_LEAGUES = ['nba', 'nhl', 'wnba', 'mlb', 'nfl'] as const
 export type MajorLeague = (typeof MAJOR_LEAGUES)[number]
 export const isMajorLeague = (key: string): key is MajorLeague =>
@@ -34,6 +38,14 @@ export type MajorSettingRow = {
   groupSlugs: string[] | null
 }
 
+export type MajorCreationConfirmation = {
+  awayId: number
+  homeId: number
+  startTime: number
+  /** Only for a forced preview: every prior canceled official copy of this event. */
+  canceledContractIds?: string[]
+}
+
 export interface MajorCreationDecision {
   league: MajorLeague
   eventId: string | null
@@ -41,8 +53,14 @@ export interface MajorCreationDecision {
   status: 'created' | 'dry-run' | 'skipped' | 'error'
   reason: string | null
   contractId?: string
+  answerLabels?: string[]
+  confirmation?: MajorCreationConfirmation
   line?: SportsOpeningLine
   ante?: number
+}
+
+export type AdminMajorCreationResult = Omit<MajorCreationResult, 'log'> & {
+  log: Omit<MajorCreationDecision, 'line'>[]
 }
 
 export interface MajorCreationResult {
