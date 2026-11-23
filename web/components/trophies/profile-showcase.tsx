@@ -363,8 +363,9 @@ export function ShowcaseBadge(props: {
   onClick?: () => void
   selected?: boolean
   size?: 'sm' | 'lg'
+  hideStatBelowSm?: boolean
 }) {
-  const { badge, onClick, selected, size = 'sm' } = props
+  const { badge, onClick, selected, size = 'sm', hideStatBelowSm } = props
   const style = BADGE_STYLES[badge.tier]
   const isLarge = size === 'lg'
 
@@ -405,6 +406,7 @@ export function ShowcaseBadge(props: {
           <span
             className={clsx(
               'text-ink-500 font-normal',
+              hideStatBelowSm && 'hidden sm:inline',
               isLarge ? 'text-xs' : 'text-[10px]'
             )}
           >

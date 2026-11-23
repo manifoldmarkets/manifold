@@ -8,7 +8,9 @@ import {
 } from 'common/trophies'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
+import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
+import { useUser } from 'web/hooks/use-user'
 import { ShowcaseBadge, getTrophyShowcaseBadge } from './profile-showcase'
 import { TrophyBadgeImage } from './trophy-badge-image'
 import { formatTrophyReward } from './trophy-reward-chip'
@@ -29,7 +31,7 @@ export function TrophyClaimModal(props: {
       open
       setOpen={onContinue}
       hideCloseButton={firstClaim}
-      size="sm"
+      size={dialog.step === 'explainer' ? 'md' : 'sm'}
       closeButtonPosition="inside"
       ariaLabel={
         dialog.step === 'explainer' ? 'How trophies work' : 'Trophy unlocked'
@@ -115,29 +117,46 @@ const EXAMPLE_PINS = [
 })
 
 function ExampleProfile() {
+  const user = useUser()
   return (
     <div
       aria-hidden
-      className="border-ink-200 bg-canvas-50 rounded-xl border p-3"
+      className="border-primary-300/50 from-primary-100/60 to-canvas-50 pointer-events-none relative overflow-hidden rounded-xl border bg-gradient-to-br p-3 sm:p-4"
     >
-      <div className="flex items-center gap-2">
-        <span className="bg-ink-200 h-8 w-8 rounded-full" />
-        <span className="text-ink-900 text-sm font-semibold">Your profile</span>
+      <div className="flex items-center gap-2.5">
+        <Avatar
+          noLink
+          size="md"
+          avatarUrl={user?.avatarUrl}
+          username={user?.username}
+        />
+        <div className="min-w-0">
+          <div className="truncate font-bold">{user?.name ?? 'You'}</div>
+          {user && (
+            <div className="text-ink-600 truncate text-xs">
+              @{user.username}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <div className="mt-3 flex items-center gap-1.5">
         {EXAMPLE_PINS.map((badge, index) => (
           <div
             key={badge.id}
-            className="motion-safe:animate-trophy-pop"
+            className="motion-safe:animate-trophy-pop shrink-0"
             style={{
               animationDelay: `${400 + index * 120}ms`,
               animationFillMode: 'backwards',
             }}
           >
-            <ShowcaseBadge badge={badge} />
+            <ShowcaseBadge badge={badge} hideStatBelowSm />
           </div>
         ))}
       </div>
+      <p className="text-ink-600 mt-2 text-xs">
+        More pin slots unlock as you claim more trophies.
+      </p>
+      <span className="via-primary-400/20 motion-safe:animate-trophy-shine absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent to-transparent" />
     </div>
   )
 }

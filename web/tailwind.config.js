@@ -46,6 +46,10 @@ module.exports = {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-3px)' },
         },
+        'trophy-shine': {
+          from: { transform: 'translateX(-100%)' },
+          to: { transform: 'translateX(100%)' },
+        },
         progress: {
           from: {
             width: '0%',
@@ -385,6 +389,7 @@ module.exports = {
       },
       animation: {
         'trophy-pop': 'trophy-pop 240ms ease-out',
+        'trophy-shine': 'trophy-shine 900ms ease-in-out 1s',
         'trophy-explainer':
           'trophy-pop 240ms ease-out backwards, trophy-float 3s ease-in-out infinite',
         progress: 'progress linear forwards',
