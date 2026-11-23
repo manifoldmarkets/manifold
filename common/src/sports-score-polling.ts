@@ -8,7 +8,7 @@ import {
 } from './sports-calendar'
 import { FINALS_FROM_MINUTES } from './sports-finals-timing'
 
-// ─── How often the resolver asks for scores ───────────────────────────────────
+// â”€â”€â”€ How often the resolver asks for scores â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //
 // Two reasons to call /scores for a sport, set separately on /admin/sports:
 // live scores while its games are on (per sport, with a per-game override for
@@ -301,7 +301,7 @@ export function backedOff(intervalSeconds: number, failures: number): number {
   return Math.min(intervalSeconds * 2 ** Math.max(0, failures), cap)
 }
 
-// ─── The panel on /admin/sports ───────────────────────────────────────────────
+// â”€â”€â”€ The panel on /admin/sports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /** The Odds API's credits, from the headers of the calls we've recorded. */
 export interface OddsApiUsageSummary {

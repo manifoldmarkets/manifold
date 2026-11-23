@@ -11,10 +11,7 @@ import { createSupabaseDirectClient } from '../supabase/init'
 import { hasOddsApiKey } from '../the-odds-api-client'
 import { fetchMajorGames } from './major-games'
 import * as nbaScores from './nba-scores'
-import { nbaScorePatch, pollNbaScores } from './nba-scores'
-import { settleNbaGame } from './settle-nba-game'
-
-jest.mock('./settle-nba-game', () => ({ settleNbaGame: jest.fn() }))
+import { nbaScorePatch } from './nba-scores'
 
 jest.mock('../balldontlie-client', () => ({
   ...jest.requireActual('../balldontlie-client'),
@@ -61,7 +58,7 @@ const rows = async (sql: string, params?: unknown[]) =>
   (await db.query<Row>(pgp.as.format(sql, params))).rows
 let beforeCandidates: (() => Promise<void>) | undefined
 let beforeSettings: (() => Promise<void>) | undefined
-let afterWrite: (() => Promise<unknown>) | undefined
+let afterWrite: ((id: string) => Promise<unknown>) | undefined
 const pg = {
   manyOrNone: async (sql: string, params: unknown[]) => {
     await beforeCandidates?.()
@@ -69,7 +66,7 @@ const pg = {
   },
   oneOrNone: async (sql: string, params: unknown[]) => {
     const result = (await rows(sql, params))[0] ?? null
-    if (result) await afterWrite?.()
+    if (result) await afterWrite?.(String(params[1]))
     return result
   },
   map: async (sql: string, params: unknown[], map: (row: Row) => unknown) => {
@@ -97,10 +94,9 @@ async function market(fields: Row = {}) {
     sportsMarketType: 'moneyline',
     sportsStartKnown: true,
     sportsEventId: 'bdl:nba:21718156',
-    closeTime: Date.parse(kickoff) + 3 * 3_600_000,
+    sportsHomeTeamId: '23',
     sportsHomeTeam: 'Philadelphia 76ers',
     sportsAwayTeam: 'Milwaukee Bucks',
-    sportsHomeTeamId: '23',
     sportsAwayTeamId: '17',
     sportsCompetitionId: competition,
     sportsStartTimestamp: kickoff,
@@ -132,15 +128,6 @@ beforeAll(async () => {
 })
 beforeEach(async () => {
   jest.clearAllMocks()
-  jest
-    .mocked(settleNbaGame)
-    .mockImplementation(async (_pg, id, _identity, _score, enabled, signal) => {
-      if (!(await enabled()) || signal?.aborted) return
-      await db.query('update contracts set resolution=$1 where id=$2', [
-        'named-answer',
-        id,
-      ])
-    })
   jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
   jest.mocked(hasOddsApiKey).mockReturnValue(false)
   process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
@@ -222,17 +209,15 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   wire = [final]
   now = Date.parse('2026-11-21T20:46:05.674Z')
   await resolveOddsSportsMarkets()
-  expect((await stored(home)).closeTime).toBe(now - 1)
-  expect((await stored(reversed)).sportsHomeScore).toBe(129)
-  expect(settleNbaGame).toHaveBeenCalledTimes(2)
   expect(await stored(home)).toMatchObject({
+    closeTime: now - 1,
     sportsHomeScore: 132,
     sportsAwayScore: 129,
     sportsLiveStatus: 'FINISHED',
   })
   expect(
     (await rows('select resolution from contracts')).map((r) => r.resolution)
-  ).toEqual(['named-answer', 'named-answer'])
+  ).toEqual([null, null])
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(4)
   now += 60_000
   await resolveOddsSportsMarkets()
@@ -240,17 +225,17 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   expect(pollOddsScoresAndResolve).not.toHaveBeenCalled()
 })
 
-it('closes an ordinary final before publishing at the scheduled betting cutoff', async () => {
+it('shortens the exact equality millisecond when closing a recorded final', async () => {
   const id = await market()
   wire = [final]
   now = Date.parse('2026-11-21T21:00:00Z')
   await resolveOddsSportsMarkets()
   expect(requests).toHaveLength(1)
   expect(await stored(id)).toMatchObject({
-    closeTime: now - 1,
     sportsLiveStatus: 'FINISHED',
+    closeTime: now - 1,
   })
-  expect(settleNbaGame).toHaveBeenCalledTimes(1)
+  expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
 })
 
 it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of the healthy score', async () => {
@@ -262,8 +247,7 @@ it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of
     { ...live, visitor_team_score: null },
     { ...live, visitor_team: null },
     { ...live, home_team: live.visitor_team },
-    { ...final, visitor_team_score: final.home_team_score },
-    { ...final, status: 'Final - Forfeit' },
+    { ...live, status_state: 'final', home_team_score: 15 },
   ]
   const siblings: string[] = []
   for (const [i, raw] of badRows.entries()) {
@@ -364,52 +348,41 @@ it.each(['game', 'league', 'phase'])(
   async (scope) => {
     const first = await market()
     const second = await market({ sportsEventId: 'bdl:nba:101' })
-    // A normal live poll one minute earlier paid for the first look. Only its
-    // 60-second live cadence is due on this read, not the five-minute final.
-    wire = [live, { ...live, id: 101 }]
-    now = Date.parse('2026-11-21T20:45:05.674Z')
-    await resolveOddsSportsMarkets()
-    requests.length = 0
-    jest.mocked(publishSportsLiveScore).mockClear()
     wire = [final, { ...final, id: 101 }]
-    now += 60_000
+    // Before finals-only cadence starts, a live read may report an early final.
+    now = Date.parse('2026-11-21T20:09:00Z')
     let held = ''
-    jest
-      .mocked(publishSportsLiveScore)
-      .mockImplementationOnce(async (published) => {
-        held = published === first ? second : first
-        if (scope === 'phase')
-          await db.exec('update sports_competition_switches set enabled=false')
-        else if (scope === 'league')
-          await db.exec('update sports_score_polling set interval_seconds=0')
-        else
-          await db.query(
-            'insert into sports_score_polling values ($1,0,null,null)',
-            ['game:' + held]
-          )
-      })
+    afterWrite = async (written) => {
+      afterWrite = undefined
+      held = written === first ? second : first
+      if (scope === 'phase')
+        await db.exec('update sports_competition_switches set enabled=false')
+      else if (scope === 'league')
+        await db.exec('update sports_score_polling set interval_seconds=0')
+      else
+        await db.query(
+          'insert into sports_score_polling values ($1,0,null,null)',
+          ['game:' + held]
+        )
+    }
     await resolveOddsSportsMarkets()
     expect(requests).toHaveLength(1)
-    expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
-    expect((await stored(held)).sportsLiveStatus).toBe('IN_PLAY')
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(
+      scope === 'game' ? 1 : 0
+    )
+    expect((await stored(held)).sportsLiveStatus).toBeUndefined()
     expect(
       (await stored(held === first ? second : first)).sportsLiveStatus
     ).toBe('FINISHED')
 
     await db.exec('update sports_competition_switches set enabled=true')
-    const paid = (
-      await rows('select id from contracts where resolution is not null')
-    ).map((r) => r.id)
-    expect(paid).toEqual(
-      scope === 'game' ? [held === first ? second : first] : []
-    )
     await db.exec('update sports_score_polling set interval_seconds=60')
-    now += 300_000
+    now += 60_000
     await resolveOddsSportsMarkets()
     expect((await stored(held)).sportsLiveStatus).toBe('FINISHED')
-    expect(
-      await rows('select id from contracts where resolution is not null')
-    ).toHaveLength(2)
+    expect(publishSportsLiveScore).toHaveBeenCalledTimes(
+      scope === 'game' ? 2 : 1
+    )
   }
 )
 
@@ -422,27 +395,6 @@ it('suppresses a publish when the game is disabled during an issued score write'
   await resolveOddsSportsMarkets()
   expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
   expect(publishSportsLiveScore).not.toHaveBeenCalled()
-})
-
-it('aborts a run during final publication, then pays its closed fixture only on a fresh authorized read', async () => {
-  const id = await market()
-  wire = [final]
-  now = Date.parse('2026-11-21T20:46:05.674Z')
-  const controller = new AbortController()
-  jest
-    .mocked(publishSportsLiveScore)
-    .mockImplementationOnce(async () => controller.abort())
-  await pollNbaScores(pg, new Map(), controller.signal)
-  expect((await stored(id)).closeTime).toBe(now - 1)
-  expect(settleNbaGame).not.toHaveBeenCalled()
-  expect(
-    (await rows('select resolution from contracts'))[0].resolution
-  ).toBeNull()
-  now++
-  await pollNbaScores(pg, new Map())
-  expect((await rows('select resolution from contracts'))[0].resolution).toBe(
-    'named-answer'
-  )
 })
 
 function deferred() {
@@ -531,49 +483,98 @@ it('rechecks identity, visibility, phase and actual close after a slow fetch', a
   }
   await resolveOddsSportsMarkets()
   expect((await stored(healthy)).sportsLiveStatus).toBe('FINISHED')
-  expect((await stored(extended)).sportsLiveStatus).toBe('FINISHED')
-  for (const id of [changed, hidden])
+  for (const id of [changed, hidden, extended])
     expect((await stored(id)).sportsLiveStatus).toBeUndefined()
   beforeResponse = () =>
     db.exec('update sports_competition_switches set enabled=false')
   await market()
   now += 60_000
   await resolveOddsSportsMarkets()
+  expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
+})
+
+it('commits both verified finals before the first broadcast and preserves an earlier close', async () => {
+  const first = await market()
+  const second = await market({ sportsEventId: 'bdl:nba:101' })
+  const earlier = Date.parse(kickoff) + 90 * 60_000
+  await db.query('update contracts set close_time=$1 where id=$2', [
+    new Date(earlier),
+    second,
+  ])
+  wire = [final, { ...final, id: 101 }]
+  now = Date.parse('2026-11-21T20:46:05.674Z')
+  let atFirstBroadcast: Row[] = []
+  jest.mocked(publishSportsLiveScore).mockImplementationOnce(async () => {
+    atFirstBroadcast = await Promise.all([stored(first), stored(second)])
+    throw new Error('isolated delivery failure')
+  })
+  await resolveOddsSportsMarkets()
+  expect(atFirstBroadcast).toEqual([
+    expect.objectContaining({
+      sportsLiveStatus: 'FINISHED',
+      closeTime: now - 1,
+    }),
+    expect.objectContaining({
+      sportsLiveStatus: 'FINISHED',
+      closeTime: earlier,
+    }),
+  ])
+  expect(requests).toHaveLength(1)
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
 })
 
-it('polls finals without live scores only on an enabled phase, then retries an unpaid closed final on restart', async () => {
+it('retains the 300-second live cadence under 60-second finals checks', async () => {
   const id = await market()
   await db.exec(
-    "update sports_score_polling set interval_seconds=0; insert into sports_score_polling values ('finals',600,null,null)"
+    "update sports_score_polling set interval_seconds=300; insert into sports_score_polling values ('finals',60,null,null)"
   )
-  now = Date.parse('2026-11-21T21:01:00Z')
-  await db.exec('update sports_competition_switches set enabled=false')
-  await pollNbaScores(pg, new Map())
+  now = Date.parse('2026-11-21T20:10:00Z')
+  for (let minute = 0; minute <= 5; minute++) {
+    wire = [{ ...live, home_team_score: 80 + minute }]
+    await resolveOddsSportsMarkets()
+    expect((await stored(id)).sportsHomeScore).toBe(minute === 5 ? 85 : 80)
+    now += 60_000
+  }
+  expect(requests).toHaveLength(6)
+  expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
+})
+
+it('checks finals with live polling off and holds contradictory or incomplete evidence independently', async () => {
+  await db.exec('update sports_score_polling set interval_seconds=0')
+  now = Date.parse('2026-11-21T20:09:59.999Z')
+  const good = await market()
+  const variants = [
+    { status: 'Forfeit' },
+    { status: 'Postponed' },
+    { time: 'Q4 1:31' },
+    { period: 2 },
+    { status_state: 'canceled' },
+    { visitor_team_score: null },
+    { visitor_team_score: 132 },
+    { datetime: '2026-11-21T18:15:00Z' },
+  ]
+  wire = [{ ...final, status: 'Final/OT', period: 5 }]
+  const held: string[] = []
+  for (const [i, fields] of variants.entries()) {
+    held.push(await market({ sportsEventId: 'bdl:nba:' + (100 + i) }))
+    wire.push({ ...final, ...fields, id: 100 + i })
+  }
+  const named = await market({ sportsAwayTeam: 'Unconfirmed team' })
+  const attention = await market({ sportsAttentionReason: 'Check fixture' })
+  await resolveOddsSportsMarkets()
   expect(requests).toHaveLength(0)
-  await db.exec('update sports_competition_switches set enabled=true')
-  const attempts = new Map<string, number>()
-  await pollNbaScores(pg, attempts)
-  expect(requests).toHaveLength(1)
-  expect((await stored(id)).sportsLiveStatus).toBeUndefined()
-  wire = [final]
-  now += 599_999
-  await pollNbaScores(pg, attempts)
-  expect(requests).toHaveLength(1)
   now++
-  jest.mocked(settleNbaGame).mockRejectedValueOnce(new Error('interrupted'))
-  await pollNbaScores(pg, attempts)
-  expect((await stored(id)).sportsLiveStatus).toBe('FINISHED')
-  expect((await stored(id)).closeTime).toBe(Date.parse('2026-11-21T21:00:00Z'))
-  expect(
-    (await rows('select resolution from contracts'))[0].resolution
-  ).toBeNull()
-  now += 1
-  await pollNbaScores(pg, new Map())
-  expect((await rows('select resolution from contracts'))[0].resolution).toBe(
-    'named-answer'
-  )
-  expect(settleNbaGame).toHaveBeenCalledTimes(2)
+  await resolveOddsSportsMarkets()
+  expect(requests).toHaveLength(1)
+  expect(await stored(good)).toMatchObject({
+    sportsLiveStatus: 'FINISHED',
+    closeTime: now - 1,
+  })
+  for (const id of [...held, named, attention]) {
+    expect((await stored(id)).sportsLiveStatus).toBeUndefined()
+    expect((await stored(id)).closeTime).toBeUndefined()
+  }
+  expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
 })
 
 it('keeps a concurrently written score and rejects another copy of the same receipt', async () => {

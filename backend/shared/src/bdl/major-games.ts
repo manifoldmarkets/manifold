@@ -32,7 +32,6 @@ export type MajorGame = {
   postseason?: boolean
   gameNumber?: number
   eligible: boolean
-  ordinaryNbaFinal?: boolean
   season: number
 }
 
@@ -305,12 +304,19 @@ export async function fetchMajorGames(
           continue
         }
         if (scoreIds && league === 'nba' && game.status === 'final') {
-          // status_state identifies a terminal game. Its original text distinguishes
-          // an ordinary result (including OT) from a forfeit or other adjudication.
-          const status = asRow(raw)?.status
-          game.ordinaryNbaFinal =
-            typeof status === 'string' &&
-            /^final(?:\s*\/\s*\d*ot)?$/i.test(status.trim())
+          const row = raw as Row
+          const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
+          // A terminal enum can also cover an adjudication. Recorded ordinary
+          // NBA finals have completed regulation and have no running clock.
+          game.eligible &&=
+            typeof row.status === 'string' &&
+            finalLabel.test(row.status.trim()) &&
+            isId(row.period) &&
+            row.period >= 4 &&
+            (row.time == null ||
+              (typeof row.time === 'string' &&
+                (finalLabel.test(row.time.trim()) ||
+                  /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
         }
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
