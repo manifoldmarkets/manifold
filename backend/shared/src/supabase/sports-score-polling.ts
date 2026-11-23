@@ -21,12 +21,13 @@ export interface ScorePollingRow {
 }
 
 export function getScorePollingRows(
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  targets?: string[]
 ): Promise<ScorePollingRow[]> {
   return pg.map(
     `select target, interval_seconds, updated_by, updated_time
-       from sports_score_polling`,
-    [],
+       from sports_score_polling${targets ? ' where target = any($1)' : ''}`,
+    targets ? [targets] : [],
     (r) => ({
       target: r.target,
       intervalSeconds: r.interval_seconds,
@@ -37,9 +38,10 @@ export function getScorePollingRows(
 }
 
 export async function getScorePollingSettings(
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  targets?: string[]
 ): Promise<ScorePollingSettings> {
-  return parsePollingRows(await getScorePollingRows(pg))
+  return parsePollingRows(await getScorePollingRows(pg, targets))
 }
 
 /** Sets a target's interval, or with null goes back to the default. */
