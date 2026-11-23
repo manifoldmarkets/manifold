@@ -211,13 +211,11 @@ it('applies each UTC cap to an ID-only posted Odds ante at its exact boundary, i
       await expect(
         inspectBdlCreationBudget(tx, request)
       ).resolves.toMatchObject(expected)
-      jest
-        .mocked(getMajorSettings)
-        .mockResolvedValueOnce({
-          ...fresh,
-          waveLeagueKeys: [...fresh.waveLeagueKeys],
-          limits: capped,
-        })
+      jest.mocked(getMajorSettings).mockResolvedValueOnce({
+        ...fresh,
+        waveLeagueKeys: [...fresh.waveLeagueKeys],
+        limits: capped,
+      })
       if (cap === 175)
         await expect(
           requireBdlCreationBudget(tx, request)
