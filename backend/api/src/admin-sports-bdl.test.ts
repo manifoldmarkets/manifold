@@ -183,6 +183,36 @@ it.each([
     }).success
   ).toBe(false)
 })
+it('round-trips a stored null cap as the expected value while requiring a numeric new cap', async () => {
+  const stored = {
+    scope: 'global',
+    cap: null,
+    baseAnte: null,
+    startsOn: null,
+    groupSlugs: null,
+  }
+  jest.mocked(creationSettings).mockResolvedValueOnce([stored])
+  await expect(read({}, admin)).resolves.toEqual({ settings: [stored] })
+  const schema = API['admin-sports-set-creation-budget'].props
+  for (const next of [leagueSettings, { scope: 'global', cap: 0 }]) {
+    const expected = {
+      ...stored,
+      scope: 'league' in next ? next.league : next.scope,
+    }
+    const input = schema.parse({ ...next, expected })
+    await save(input, admin)
+    expect(saveCreationSetting).toHaveBeenLastCalledWith(
+      'pg',
+      expect.objectContaining({ cap: next.cap }),
+      'admin',
+      expected
+    )
+    expect(schema.safeParse({ ...next, cap: null, expected }).success).toBe(
+      false
+    )
+  }
+})
+
 it('accepts a zero spending cap and rejects more than 200 event selections', () => {
   expect(
     API['admin-sports-set-creation-budget'].props.safeParse({

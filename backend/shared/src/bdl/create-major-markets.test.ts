@@ -211,6 +211,32 @@ it('creates a priced market with its stored line, fixed answers, notified budget
   const opts = jest.mocked(createBdlClient).mock.calls[0][0]!
   expect(opts.enabledLeagues?.has('nba')).toBe(true)
 })
+it('returns committed market receipts when the final group embedding refresh fails', async () => {
+  schedule.mockResolvedValue([game(1), game(2)])
+  jest
+    .mocked(flushSportsGroupEmbeddings)
+    .mockRejectedValueOnce(new Error('unavailable'))
+  const result = await run()
+  expect(result).toMatchObject({
+    created: 2,
+    errors: 0,
+    skipped: 0,
+    log: [1, 2].map((id) => ({
+      eventId: 'bdl:nba:' + id,
+      contractId: 'created-bdl:nba:' + id,
+      status: 'created',
+      ante: 175,
+    })),
+  })
+  expect(log.error).toHaveBeenCalledWith(
+    '[sports-bdl-create] group embedding refresh failed',
+    {
+      groupsRemaining: 1,
+      error: 'Error: unavailable',
+    }
+  )
+})
+
 const originalEnv = process.env
 afterEach(() => {
   process.env = originalEnv

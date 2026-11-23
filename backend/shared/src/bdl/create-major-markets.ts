@@ -412,6 +412,8 @@ export async function runMajorCreation(
               eventId,
               homeId: game.home.id,
               awayId: game.away.id,
+              home: game.home.name,
+              away: game.away.name,
               start,
               seenEventIds: seen,
             }
@@ -614,7 +616,16 @@ export async function runMajorCreation(
       }
     }
   } finally {
-    if (batch.size) await flushSportsGroupEmbeddings(pg, batch)
+    if (batch.size) {
+      try {
+        await flushSportsGroupEmbeddings(pg, batch)
+      } catch (error) {
+        log.error('[sports-bdl-create] group embedding refresh failed', {
+          groupsRemaining: batch.size,
+          error: String(error),
+        })
+      }
+    }
   }
   return result
 }

@@ -13,6 +13,8 @@ import { SPORT_LEAGUE_LABEL, SportId } from 'common/sports-calendar'
 import { providerOf, SportsProvider } from 'common/sports-provider'
 import { parseBdlEventId } from 'common/sports-ids'
 import { sportForLeague } from 'common/sports-score-polling'
+import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
+import { DAY_MS } from 'common/util/time'
 import { normalizeTeam } from 'common/sports-team-colors'
 
 import type { SupabaseDirectClient, SupabaseTransaction } from './supabase/init'
@@ -88,16 +90,33 @@ function teamPair(
   return [a, b].sort().join(':')
 }
 
-type OpenMoneyline = {
+export type OppositeMoneyline = {
+  trading: boolean
   id: string
   home: string | null
   away: string | null
   start: string | null
 }
 
+/** An unresolved postponement can cross midnight after native trading closes. */
+export function sameNearbyMoneyline(
+  row: OppositeMoneyline,
+  home: string | undefined,
+  away: string | undefined,
+  start: number
+) {
+  const otherStart = parseSportsKickoffMs(row.start ?? undefined)
+  const pair = teamPair(row.home, row.away)
+  return (
+    !!pair &&
+    pair === teamPair(home, away) &&
+    Math.abs(start - otherStart) <= DAY_MS
+  )
+}
+
 /** Call inside the same transaction as the insert and the ante. The Odds pipeline
  * participates in the matchup lock but may still create its distinct event IDs.
- * During a BDL phase, each provider also checks for open games from the other. */
+ * During a BDL phase, both providers also check the other's unresolved games. */
 export async function findLockedSportsMarket(
   tx: Pick<SupabaseTransaction, 'one' | 'oneOrNone' | 'manyOrNone'>,
   candidate: Market,
@@ -166,13 +185,15 @@ export async function findLockedSportsMarket(
   const classification = historicOdds
     ? majorOddsMoneylineSql('$2', '$4')
     : "c.data->>'sportsLeague' = $2 and c.data->>'sportsMarketType' = 'moneyline'"
-  const open = await tx.manyOrNone<OpenMoneyline>(
+  const cutover = historicOdds || checkOpenBdl
+  const trading = '(c.close_time is null or c.close_time > now())'
+  const rows = await tx.manyOrNone<OppositeMoneyline>(
     `select c.id, c.data->>'sportsHomeTeam' as home, c.data->>'sportsAwayTeam' as away,
-            c.data->>'sportsStartTimestamp' as start
+            c.data->>'sportsStartTimestamp' as start, ${trading} as trading
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA'
         and c.resolution is null and c.deleted is not true
-        and (c.close_time is null or c.close_time > now())
+        ${cutover ? '' : `and ${trading}`}
         and (${classification})
         and c.data->>'sportsFixture' is distinct from 'true'
         and ${sportsProviderSql()} = $3
@@ -184,13 +205,19 @@ export async function findLockedSportsMarket(
       majorOddsKeys(sport),
     ]
   )
-  const cutover = historicOdds || checkOpenBdl
   const candidates = [
     normalizeTeam(candidate.sportsHomeTeam!),
     normalizeTeam(candidate.sportsAwayTeam!),
   ]
   return (
-    open.find((row) => {
+    rows.find((row) => {
+      if (!row.trading)
+        return sameNearbyMoneyline(
+          row,
+          candidate.sportsHomeTeam,
+          candidate.sportsAwayTeam,
+          start
+        )
       // A shifted kickoff cannot distinguish a second game across providers.
       // Keep the open market reserved until its opponents rule out this matchup.
       if (!cutover) {

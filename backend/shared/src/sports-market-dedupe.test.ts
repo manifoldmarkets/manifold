@@ -2,6 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import * as pgPromise from 'pg-promise'
 
 import { BDL_OPEN_ODDS_MATCH_WINDOW_MS } from 'common/bdl/constants'
+import { DAY_MS } from 'common/util/time'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 
 import {
@@ -282,7 +283,45 @@ it.each(['BDL first', 'Odds resync first'] as const)(
       )
     ).toBeNull()
     await pg.exec("update contracts set close_time='2000-01-01'")
+    expect(await findLockedSportsMarket(tx, game, 'moneyline')).toMatchObject({
+      id: 'open-odds',
+    })
+    await pg.exec("update contracts set resolution='YES'")
     expect(await findLockedSportsMarket(tx, game, 'moneyline')).toBeNull()
+  }
+)
+
+it.each(['bdl', 'odds'] as const)(
+  'blocks only a nearby closed, unresolved opposite-provider pair when creating with %s',
+  async (provider) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const game = provider === 'bdl' ? candidate : odds
+    const opposite =
+      provider === 'bdl'
+        ? odds
+        : { ...candidate, sportsMarketType: 'moneyline' }
+    await insert('closed', opposite, { close: '2000-01-01' })
+    const check = (delta: number, away = game.sportsAwayTeam) =>
+      findLockedSportsMarket(
+        tx,
+        {
+          ...game,
+          sportsAwayTeam: away,
+          sportsStartTimestamp: new Date(
+            Date.parse(game.sportsStartTimestamp) + delta
+          ).toISOString(),
+        },
+        'moneyline',
+        undefined,
+        provider === 'odds'
+      )
+    for (const delta of [-DAY_MS, DAY_MS])
+      expect(await check(delta)).toMatchObject({ id: 'closed' })
+    for (const delta of [-DAY_MS - 1, DAY_MS + 1])
+      expect(await check(delta)).toBeNull()
+    expect(await check(0, 'Another opponent')).toBeNull()
+    await pg.exec("update contracts set resolution='YES'")
+    expect(await check(0)).toBeNull()
   }
 )
 
