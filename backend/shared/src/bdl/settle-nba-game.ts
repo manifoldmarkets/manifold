@@ -1,140 +1,163 @@
-import type { Answer } from 'common/answer'
-import { Contract, isMultiCpmm, Sports } from 'common/contract'
-import { gameResolution } from 'common/odds-markets'
+import { isEqual, isMatch } from 'lodash'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { Contract, isMultiCpmm, Sports } from 'common/contract'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
+import {
+  calendarEntriesOverlapping,
+  calendarPhaseKey,
+  competitionSwitchError,
+} from 'common/sports-calendar'
+import { parseBdlEventId } from 'common/sports-ids'
+import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
 import type { SportsLiveScore } from 'common/sports-schedule'
 import { sportsCreator } from '../odds-markets'
 import { resolveMarketHelper } from '../resolve-market-helpers'
 import type { SupabaseDirectClient } from '../supabase/init'
-import { getContract } from '../utils'
+import { getCompetitionSwitches } from '../supabase/sports-competition-switches'
+import { getContract, log } from '../utils'
+import { nbaAnswerIds } from './nba-answers'
 
-type FinalIdentity = Required<
-  Pick<
-    Sports,
-    | 'sportsEventId'
-    | 'sportsCompetitionId'
-    | 'sportsStartTimestamp'
-    | 'sportsHomeTeamId'
-    | 'sportsAwayTeamId'
-    | 'sportsHomeTeam'
-    | 'sportsAwayTeam'
-  >
->
+const finishedNba = {
+  sportsProvider: 'bdl',
+  sportsLeagueKey: 'nba',
+  sportsMarketType: 'moneyline',
+  sportsStartKnown: true,
+  sportsLiveStatus: 'FINISHED',
+} as const
+const scoreIsValid = (value: number | null | undefined): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 
-function namedTeams(answers: Answer[], homeName: string, awayName: string) {
+function payout(c: Contract) {
+  const market = c as Contract &
+    Partial<Sports> & {
+      sportsFinalObservation?: Partial<Sports & SportsLiveScore>
+    }
+  // Read the certified fixture and score, then check they still match the
+  // public row. A historical FINISHED badge or a later edit cannot certify a payout.
+  const observation = market.sportsFinalObservation
   if (
-    answers.length !== 2 ||
-    answers.some((a) => a.isOther || a.resolution || a.resolutionTime)
-  )
-    return null
-  const named = (name: string) =>
-    answers.find(
-      (a) => a.text.trim().toLowerCase() === name.trim().toLowerCase()
-    )
-  const home = named(homeName)
-  const away = named(awayName)
-  return home?.id && away?.id && home.id !== away.id ? { home, away } : null
-}
-
-/** The native resolver reads the scored fixture and its answers again inside the
- * payout transaction. A correction, rebind or answer edit must cancel this payout. */
-export async function settleNbaGame(
-  pg: SupabaseDirectClient,
-  id: string,
-  identity: FinalIdentity,
-  score: SportsLiveScore,
-  enabled: () => Promise<boolean>,
-  signal?: AbortSignal
-) {
-  const { sportsHomeScore: home, sportsAwayScore: away } = score
-  if (
-    score.sportsLiveStatus !== 'FINISHED' ||
-    home === null ||
-    away === null ||
-    !Number.isSafeInteger(home) ||
-    !Number.isSafeInteger(away) ||
-    home < 0 ||
-    away < 0 ||
-    home === away
+    !observation ||
+    !isMatch(observation, finishedNba) ||
+    !isMatch(c, observation)
   )
     return
-  const contract = await getContract(pg, id)
+  const event =
+    typeof observation.sportsEventId === 'string' &&
+    parseBdlEventId(observation.sportsEventId)
+  const start = parseSportsKickoffMs(observation.sportsStartTimestamp)
+  const {
+    sportsLiveUpdatedTime: received,
+    sportsHomeScore: home,
+    sportsAwayScore: away,
+  } = observation
   if (
-    !contract ||
-    !isMultiCpmm(contract) ||
-    contract.outcomeType !== 'MULTIPLE_CHOICE'
+    !event ||
+    event.league !== 'nba' ||
+    event.suffix ||
+    market.sportsFixture ||
+    market.sportsAttentionReason ||
+    c.visibility !== 'public' ||
+    c.token !== 'MANA' ||
+    c.deleted ||
+    c.isResolved ||
+    c.resolution != null ||
+    !isMultiCpmm(c) ||
+    c.outcomeType !== 'MULTIPLE_CHOICE' ||
+    c.shouldAnswersSumToOne !== true ||
+    c.addAnswersMode !== 'DISABLED' ||
+    c.answers.length !== 2 ||
+    typeof received !== 'number' ||
+    !Number.isSafeInteger(received) ||
+    received > Date.now() ||
+    !(start <= received) ||
+    typeof c.closeTime !== 'number' ||
+    !Number.isSafeInteger(c.closeTime) ||
+    c.closeTime >= received ||
+    !scoreIsValid(home) ||
+    !scoreIsValid(away) ||
+    home === away ||
+    !isEqual(
+      market.sportsFundedAnswerIds,
+      c.answers.map((a) => a.id)
+    )
+  )
+    return
+  const phase = calendarEntriesOverlapping(start, start).find(
+    (p) =>
+      p.bdlLeagueKey === 'nba' &&
+      p.competitionId === observation.sportsCompetitionId &&
+      p.autoResolve &&
+      !p.locked
+  )
+  if (!phase) return
+  const answers = nbaAnswerIds(c, observation)
+  if (!answers) return
+  const winner = home > away ? answers.home : answers.away
+  return { winner, phase, closeTime: c.closeTime, observation, answers }
+}
+
+/** Restart-safe: the only inputs are the committed final and the funded native answers. */
+export async function settleNbaGame(pg: SupabaseDirectClient, id: string) {
+  if (!isSportsBdlEnabled()) return
+  const contract = await getContract(pg, id)
+  if (!contract || !isMultiCpmm(contract) || contract.id !== id) return
+  const proposal = payout(contract)
+  if (!proposal) return
+  const { winner, phase } = proposal
+  const switches = await getCompetitionSwitches(pg)
+  if (
+    switches[calendarPhaseKey(phase)] !== true ||
+    competitionSwitchError(phase.competitionId, phase.phase, true, switches)
   )
     return
   const creator = await sportsCreator()
-
-  function acceptedTeams(c: Contract) {
-    const s = c as Contract & Partial<Sports & SportsLiveScore>
-    if (
-      signal?.aborted ||
-      !isSportsBdlEnabled() ||
-      c.id !== id ||
-      c.creatorId !== creator.id ||
-      c.token !== 'MANA' ||
-      c.visibility !== 'public' ||
-      c.deleted ||
-      c.isResolved ||
-      c.resolution != null ||
-      !isMultiCpmm(c) ||
-      c.outcomeType !== 'MULTIPLE_CHOICE' ||
-      !c.shouldAnswersSumToOne ||
-      !Number.isFinite(c.closeTime) ||
-      c.closeTime! >= score.sportsLiveUpdatedTime ||
-      s.sportsFixture ||
-      s.sportsProvider !== 'bdl' ||
-      s.sportsLeagueKey !== 'nba' ||
-      s.sportsMarketType !== 'moneyline' ||
-      s.sportsStartKnown !== true ||
-      s.sportsAttentionReason ||
-      s.sportsLiveStatus !== 'FINISHED' ||
-      s.sportsLiveUpdatedTime !== score.sportsLiveUpdatedTime ||
-      s.sportsHomeScore !== home ||
-      s.sportsAwayScore !== away ||
-      !Object.entries(identity).every(
-        ([key, value]) => Reflect.get(s, key) === value
-      )
-    )
-      return null
-    return namedTeams(
-      c.answers,
-      identity.sportsHomeTeam,
-      identity.sportsAwayTeam
-    )
-  }
-
-  const expected = acceptedTeams(contract)
-  if (!expected)
-    throw new Error('Final or native team answers no longer match the NBA game')
-  // gameResolution supports historical positional fallbacks. Both team names
-  // must independently identify different funded answers for this producer.
-  const args = gameResolution(
-    contract.answers,
-    home > away ? 'home' : 'away',
-    identity.sportsHomeTeam,
-    identity.sportsAwayTeam
-  )
-  if (!args || !(await enabled()) || signal?.aborted) return
+  if (contract.creatorId !== creator.id || !isSportsBdlEnabled()) return
   await resolveMarketHelper(
     contract,
     creator,
     creator,
-    args,
+    { outcome: winner, resolutions: { [winner]: 100 } },
     undefined,
-    (current) => {
-      const teams = acceptedTeams(current)
+    async (current, tx) => {
       if (
-        !teams ||
-        teams.home.id !== expected.home.id ||
-        teams.away.id !== expected.away.id ||
-        current.closeTime !== contract.closeTime
+        !isSportsBdlEnabled() ||
+        current.id !== id ||
+        current.creatorId !== creator.id ||
+        !isEqual(proposal, payout(current))
       )
-        throw new Error(
-          'NBA game, final or funded answers changed before settlement'
-        )
+        throw new Error('NBA final or funded answers changed')
+      const enabled = await tx.oneOrNone(
+        'select 1 from sports_competition_switches where competition_id=$1 and phase=$2 and enabled for share',
+        [phase.competitionId, phase.phase]
+      )
+      if (!enabled || !isSportsBdlEnabled())
+        throw new Error('NBA settlement disabled')
     }
   )
+}
+
+// Rotate through the unresolved candidates so a manual hold cannot starve the next page.
+export async function settlePendingNbaGames(
+  pg: SupabaseDirectClient,
+  afterId = ''
+) {
+  if (!isSportsBdlEnabled()) return ''
+  const rows = await pg.manyOrNone<{ id: string }>(
+    `select id from contracts where creator_id = any($1) and id > $2
+      and token = 'MANA' and visibility = 'public' and deleted is not true
+      and resolution is null and close_time < now()
+      and data @> $3::jsonb
+      and data ? 'sportsFinalObservation' and data ? 'sportsFundedAnswerIds'
+      order by id limit 20`,
+    [MANIFOLD_SPORTS_USER_IDS, afterId, JSON.stringify(finishedNba)]
+  )
+  for (const { id } of rows) {
+    if (!isSportsBdlEnabled()) break
+    try {
+      await settleNbaGame(pg, id)
+    } catch (error) {
+      log.error('[sports-bdl-nba] settlement failed for ' + id + ': ' + error)
+    }
+  }
+  return rows.length === 20 ? rows[rows.length - 1].id : ''
 }

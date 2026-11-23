@@ -12,6 +12,10 @@ import { hasOddsApiKey } from '../the-odds-api-client'
 import { fetchMajorGames } from './major-games'
 import * as nbaScores from './nba-scores'
 import { nbaScorePatch } from './nba-scores'
+import { settlePendingNbaGames } from './settle-nba-game'
+jest.mock('./settle-nba-game', () => ({
+  settlePendingNbaGames: jest.fn().mockResolvedValue(''),
+}))
 
 jest.mock('../balldontlie-client', () => ({
   ...jest.requireActual('../balldontlie-client'),
@@ -214,6 +218,13 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
     sportsHomeScore: 132,
     sportsAwayScore: 129,
     sportsLiveStatus: 'FINISHED',
+    sportsFinalObservation: expect.objectContaining({
+      sportsEventId: 'bdl:nba:21718156',
+      sportsAwayScore: 129,
+      sportsHomeScore: 132,
+      sportsHomeTeamId: '23',
+      sportsLiveUpdatedTime: now,
+    }),
   })
   expect(
     (await rows('select resolution from contracts')).map((r) => r.resolution)
@@ -633,4 +644,30 @@ it('orients the recorded Detroit final by provider IDs independently of answer o
     sportsAwayScore: 113,
     sportsLiveStatus: 'FINISHED',
   })
+})
+
+it('continues the next native score tick while a previous settlement is still delivering notifications', async () => {
+  now = Date.parse('2026-11-23T18:19:40Z')
+  wire = [{ ...live, date: '2026-11-23', datetime: '2026-11-23T18:00:00Z' }]
+  const id = await market({ sportsStartTimestamp: '2026-11-23T18:00:00.000Z' })
+  await db.query('update contracts set close_time=$1 where id=$2', [
+    new Date(now + 3 * 3_600_000),
+    id,
+  ])
+  let complete!: (cursor: string) => void
+  const pending = new Promise<string>((resolve) => {
+    complete = resolve
+  })
+  jest.mocked(settlePendingNbaGames).mockReturnValueOnce(pending)
+  try {
+    await resolveOddsSportsMarkets()
+    expect(settlePendingNbaGames).toHaveBeenCalledTimes(1)
+    now += 61_000
+    wire = [{ ...wire[0], home_team_score: 42 }]
+    await resolveOddsSportsMarkets()
+    expect((await stored(id)).sportsHomeScore).toBe(42)
+    expect(settlePendingNbaGames).toHaveBeenCalledTimes(1)
+  } finally {
+    complete('')
+  }
 })

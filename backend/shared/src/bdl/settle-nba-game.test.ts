@@ -1,66 +1,102 @@
-import { CPMMMultiContract, Sports } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
+import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { sportsCreator } from '../odds-markets'
 import { resolveMarketHelper } from '../resolve-market-helpers'
+import { getCompetitionSwitches } from '../supabase/sports-competition-switches'
+import type {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from '../supabase/init'
 import { getContract } from '../utils'
-import type { SupabaseDirectClient } from '../supabase/init'
-import { settleNbaGame } from './settle-nba-game'
+import { settleNbaGame, settlePendingNbaGames } from './settle-nba-game'
 
 jest.mock('../odds-markets', () => ({ sportsCreator: jest.fn() }))
 jest.mock('../resolve-market-helpers', () => ({
   resolveMarketHelper: jest.fn(),
 }))
-jest.mock('../utils', () => ({ getContract: jest.fn() }))
-const pg = {} as SupabaseDirectClient
+jest.mock('../supabase/sports-competition-switches', () => ({
+  getCompetitionSwitches: jest.fn(),
+}))
+jest.mock('../utils', () => ({
+  getContract: jest.fn(),
+  log: { error: jest.fn() },
+}))
 const id = 'sixers-bucks'
-const identity = {
+const competition = 'nba-regular-2026-27'
+const phase = 'Regular Season (BDL)'
+const receipt = Date.parse('2026-11-21T20:46:05.674Z')
+const facts = {
+  sportsProvider: 'bdl',
+  sportsLeagueKey: 'nba',
+  sportsMarketType: 'moneyline',
+  sportsStartKnown: true,
+  sportsLiveStatus: 'FINISHED',
   sportsEventId: 'bdl:nba:21718156',
-  sportsCompetitionId: 'nba-regular-2026-27',
+  sportsCompetitionId: competition,
   sportsStartTimestamp: '2026-11-21T18:00:00.000Z',
   sportsHomeTeamId: '23',
   sportsAwayTeamId: '17',
   sportsHomeTeam: 'Philadelphia 76ers',
   sportsAwayTeam: 'Milwaukee Bucks',
-}
-const score = {
-  sportsLiveStatus: 'FINISHED',
   sportsHomeScore: 132,
   sportsAwayScore: 129,
-  sportsLiveUpdatedTime: Date.parse('2026-11-21T20:46:05.674Z'),
-  sportsLiveMinute: null,
+  sportsLiveUpdatedTime: receipt,
 }
-const yes = async () => true
-const away = { id: 'answer-bucks', text: identity.sportsAwayTeam, index: 0 },
-  home = { id: 'answer-sixers', text: identity.sportsHomeTeam, index: 1 }
+const away = {
+  id: 'bucks-share',
+  index: 0,
+  text: facts.sportsAwayTeam,
+  contractId: id,
+}
+const home = {
+  id: 'sixers-share',
+  index: 1,
+  text: facts.sportsHomeTeam,
+  contractId: id,
+}
 const original = {
-  ...identity,
-  ...score,
+  ...facts,
+  sportsFinalObservation: facts,
+  sportsFundedAnswerIds: [away.id, home.id],
+  sportsEntrantIds: [17, 23],
   id,
-  creatorId: 'sports-bot',
-  token: 'MANA',
-  visibility: 'public',
-  closeTime: score.sportsLiveUpdatedTime - 1,
-  isResolved: false,
+  creatorId: MANIFOLD_SPORTS_USER_IDS[0],
   sportsProvider: 'bdl',
   sportsLeagueKey: 'nba',
   sportsStartKnown: true,
   sportsMarketType: 'moneyline',
+  token: 'MANA',
+  visibility: 'public',
+  isResolved: false,
+  closeTime: receipt - 1,
+  sportsLiveStatus: 'FINISHED',
   mechanism: 'cpmm-multi-2',
   outcomeType: 'MULTIPLE_CHOICE',
   shouldAnswersSumToOne: true,
+  addAnswersMode: 'DISABLED',
   answers: [away, home],
 }
-type Native = CPMMMultiContract & Sports & typeof score
 const fixture = (fields: Record<string, unknown> = {}) =>
-  ({ ...original, ...fields } as unknown as Native)
-let inside: Native
-let payouts: string[]
+  ({ ...original, ...fields } as unknown as CPMMMultiContract)
+const oneOrNone = jest.fn()
+const manyOrNone = jest.fn()
+const pg = { manyOrNone } as unknown as SupabaseDirectClient
+const tx = { oneOrNone } as unknown as SupabaseTransaction
 const master = process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+let current: CPMMMultiContract
+let paid: string[]
 beforeEach(() => {
+  jest.resetAllMocks()
   process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = 'true'
-  jest.clearAllMocks()
-  inside = fixture()
-  payouts = []
-  jest.mocked(getContract).mockResolvedValue(fixture())
+  jest.spyOn(Date, 'now').mockReturnValue(receipt + 60_000)
+  paid = []
+  current = fixture()
+  jest.mocked(getContract).mockResolvedValue(current)
+  oneOrNone.mockResolvedValue({ enabled: true })
+  jest.mocked(getCompetitionSwitches).mockResolvedValue({
+    [competition + ':' + phase]: true,
+    [competition + ':Regular Season']: false,
+  })
   jest
     .mocked(sportsCreator)
     .mockResolvedValue({ id: original.creatorId } as Awaited<
@@ -69,110 +105,133 @@ beforeEach(() => {
   jest
     .mocked(resolveMarketHelper)
     .mockImplementation(
-      async (_before, _actor, _owner, args, _stage, assertResolvable) => {
-        if (!assertResolvable)
-          throw new Error('Missing final-transaction guard')
-        assertResolvable(inside)
-        payouts.push(args.outcome)
-        return { contract: inside, userUpdates: [] }
+      async (_market, _user, _creator, args, _stage, guard) => {
+        if (!guard) throw new Error('no transaction guard')
+        await guard(current, tx)
+        expect(args.resolutions).toEqual({ [args.outcome]: 100 })
+        paid.push(args.outcome)
+        return { contract: current, userUpdates: [] }
       }
     )
 })
-afterAll(() => {
+afterEach(() => {
+  jest.restoreAllMocks()
   if (master === undefined) delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
   else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = master
 })
-it('selects the actual named native answer with the away entrant first', async () => {
-  await settleNbaGame(pg, id, identity, score, yes)
-  expect(payouts).toEqual([home.id])
-  expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
-    outcome: home.id,
-    resolutions: { [home.id]: 100 },
-  })
-})
-it('pays the away answer by name when it wins even with a reordered native list', async () => {
-  const awayWin = { ...score, sportsAwayScore: 135 }
-  inside = fixture({ ...awayWin, answers: [home, away] })
-  jest.mocked(getContract).mockResolvedValue(inside)
-  await settleNbaGame(pg, id, identity, awayWin, yes)
-  expect(payouts).toEqual([away.id])
-})
-it.each([
-  ['renamed native answer', { answers: [away, { ...home, text: 'Renamed' }] }],
-  [
-    'both native answers name the winner',
-    { answers: [{ ...away, text: home.text }, home] },
-  ],
-  [
-    'additional answer',
-    { answers: [away, home, { id: 'draw', text: 'Draw', index: 2 }] },
-  ],
-  [
-    'prior manual decision',
-    { sportsAttentionReason: 'Team identity disputed' },
-  ],
-  ['resolved answer', { answers: [away, { ...home, resolution: 'NO' }] }],
-])('holds a %s before calling resolution', async (_label, fields) => {
-  jest
-    .mocked(getContract)
-    .mockResolvedValue(fixture(fields as Record<string, unknown>))
-  await expect(settleNbaGame(pg, id, identity, score, yes)).rejects.toThrow(
-    /no longer match/
+it('pays the funded Philadelphia answer from the stored final after restart', async () => {
+  await settleNbaGame(pg, id)
+  expect(paid).toEqual([home.id])
+  expect(oneOrNone).toHaveBeenCalledWith(
+    expect.stringMatching(/^select .*enabled for share$/i),
+    [competition, phase]
   )
-  expect(resolveMarketHelper).not.toHaveBeenCalled()
 })
-it.each([
+it('keeps the funded winner if the verified scoreboard listed the teams in reverse', async () => {
+  const swapped = {
+    ...facts,
+    sportsHomeTeamId: '17',
+    sportsAwayTeamId: '23',
+    sportsHomeTeam: away.text,
+    sportsAwayTeam: home.text,
+    sportsHomeScore: 129,
+    sportsAwayScore: 132,
+  }
+  current = fixture({ ...swapped, sportsFinalObservation: swapped })
+  jest.mocked(getContract).mockResolvedValue(current)
+  await settleNbaGame(pg, id)
+  expect(paid).toEqual([home.id])
+})
+const invalid = [
   [
-    'opposing funded answer IDs switched',
+    'old FINISHED without an ordinary final',
+    { sportsFinalObservation: undefined },
+  ],
+  ['missing funded answer IDs', { sportsFundedAnswerIds: undefined }],
+  ['incomplete provider IDs', { sportsEntrantIds: [17, null] }],
+  ['wrong native order', { sportsEntrantIds: [23, 17] }],
+  [
+    'replacement answer with the same label',
+    { answers: [away, { ...home, id: 'new-id' }] },
+  ],
+  [
+    'swapped answer labels',
     {
       answers: [
-        { ...home, id: away.id },
-        { ...away, id: home.id },
+        { ...away, text: home.text },
+        { ...home, text: away.text },
       ],
     },
   ],
-  ['participant replaced', { sportsHomeTeamId: '99' }],
-  ['event rebound', { sportsEventId: 'bdl:nba:123' }],
-  ['corrected final', { sportsHomeScore: 104 }],
-  ['new receipt', { sportsLiveUpdatedTime: score.sportsLiveUpdatedTime + 1 }],
+  ['renamed answer', { answers: [away, { ...home, text: 'New name' }] }],
+  ['duplicate labels', { answers: [away, { ...home, text: away.text }] }],
+  ['unresolved source disagreement', { sportsHomeScore: 127 }],
+  ['different game', { sportsEventId: 'bdl:nba:2' }],
   [
-    'still tradable at the receipt millisecond',
-    { closeTime: score.sportsLiveUpdatedTime },
+    'earlier date from another phase',
+    { sportsStartTimestamp: '2025-11-21T18:00:00Z' },
   ],
-  ['trading reopened', { closeTime: score.sportsLiveUpdatedTime + 1000 }],
-  ['hidden market', { visibility: 'private' }],
-  ['already paid', { isResolved: true }],
-  ['other provider', { sportsProvider: 'odds' }],
+  ['native close exactly at receipt', { closeTime: receipt }],
+  ['prior manual decision', { sportsAttentionReason: 'Check fixture' }],
+  ['another creator', { creatorId: 'another' }],
   ['fixture', { sportsFixture: true }],
-])('checks %s inside the payout transaction', async (_label, fields) => {
-  inside = fixture(fields as Record<string, unknown>)
-  await expect(settleNbaGame(pg, id, identity, score, yes)).rejects.toThrow(
-    /before settlement/
-  )
-  expect(payouts).toEqual([])
+  ['paid market', { isResolved: true }],
+  ['resolved answer', { answers: [away, { ...home, resolution: 'NO' }] }],
+  ['independent choices', { shouldAnswersSumToOne: false }],
+  [
+    'tie',
+    {
+      sportsHomeScore: 129,
+      sportsFinalObservation: { ...facts, sportsHomeScore: 129 },
+    },
+  ],
+] as const
+it.each(invalid)(
+  'holds %s at the precheck and on the transaction read',
+  async (_name, fields) => {
+    current = fixture(fields)
+    jest.mocked(getContract).mockResolvedValueOnce(current)
+    await settleNbaGame(pg, id)
+    expect(resolveMarketHelper).not.toHaveBeenCalled()
+    await expect(settleNbaGame(pg, id)).rejects.toThrow(/changed/)
+    expect(paid).toEqual([])
+  }
+)
+it('holds when the admin disables after the enabled precheck but before the payout transaction', async () => {
+  oneOrNone.mockResolvedValueOnce(null)
+  await expect(settleNbaGame(pg, id)).rejects.toThrow(/disabled/)
+  expect(oneOrNone).toHaveBeenCalledWith(expect.stringContaining('for share'), [
+    competition,
+    phase,
+  ])
+  expect(paid).toEqual([])
+  await settleNbaGame(pg, id)
+  expect(paid).toEqual([home.id])
 })
-it('stops a queued native payout if the scheduler deadline expires before the transaction checks its fixture', async () => {
-  const controller = new AbortController()
-  const enabled = async () => true
-  jest
-    .mocked(resolveMarketHelper)
-    .mockImplementationOnce(
-      async (_before, _actor, _owner, _args, _stage, check) => {
-        controller.abort()
-        if (!check) throw new Error('Missing transaction guard')
-        check(inside)
-        throw new Error('Expired run accepted the payout')
-      }
-    )
-  await expect(
-    settleNbaGame(pg, id, identity, score, enabled, controller.signal)
-  ).rejects.toThrow(/before settlement/)
-  expect(payouts).toEqual([])
-})
-
-it('does not call settlement when the phase has just been disabled or a terminal score is missing, malformed, or level', async () => {
-  await settleNbaGame(pg, id, identity, score, async () => false)
-  for (const sportsHomeScore of [null, -1, 1.5, 129, Infinity])
-    await settleNbaGame(pg, id, identity, { ...score, sportsHomeScore }, yes)
+it('requires an explicit phase and honors a master shutdown while the guard awaits its read', async () => {
+  jest.mocked(getCompetitionSwitches).mockResolvedValueOnce({})
+  await settleNbaGame(pg, id)
   expect(resolveMarketHelper).not.toHaveBeenCalled()
+  oneOrNone.mockImplementationOnce(async () => {
+    delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+    return { enabled: true }
+  })
+  await expect(settleNbaGame(pg, id)).rejects.toThrow(/disabled/)
+  expect(paid).toEqual([])
+  await settlePendingNbaGames(pg)
+  expect(manyOrNone).not.toHaveBeenCalled()
+})
+it('rotates a bounded page of holds and lets an unrelated funded market proceed on the next page', async () => {
+  const held = Array.from({ length: 20 }, (_, i) => ({ id: 'hold-' + i }))
+  manyOrNone.mockResolvedValueOnce(held).mockResolvedValueOnce([{ id }])
+  const cursor = await settlePendingNbaGames(pg)
+  expect(cursor).toBe('hold-19')
+  expect(paid).toEqual([])
+  expect(await settlePendingNbaGames(pg, cursor)).toBe('')
+  expect(manyOrNone.mock.calls[1][1]).toEqual([
+    MANIFOLD_SPORTS_USER_IDS,
+    cursor,
+    expect.any(String),
+  ])
+  expect(paid).toEqual([home.id])
 })
