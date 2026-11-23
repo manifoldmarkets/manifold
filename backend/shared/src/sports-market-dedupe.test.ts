@@ -72,7 +72,7 @@ async function insert(
 beforeAll(async () => {
   pg = new PGlite()
   await pg.exec(
-    'create table contracts(id text primary key,creator_id text,token text,resolution text,close_time timestamptz,deleted boolean,data jsonb)'
+    "create table contracts(id text primary key,creator_id text,token text,resolution text,close_time timestamptz,deleted boolean,data jsonb, mechanism text default 'cpmm-multi-2')"
   )
 })
 beforeEach(async () => {
@@ -253,6 +253,122 @@ const originalEnv = process.env
 afterEach(() => {
   process.env = originalEnv
 })
+it.each(['BDL first', 'Odds resync first'] as const)(
+  'holds the open opposite moneyline across an 18-hour postponement, %s',
+  async (ordering) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const oldStart = '2099-07-17T23:00:00Z'
+    const movedStart = '2099-07-18T17:00:00Z'
+    const game = { ...candidate, sportsStartTimestamp: movedStart }
+    await insert('open-odds', { ...odds, sportsStartTimestamp: oldStart })
+    const resync = () =>
+      pg.query(
+        "update contracts set data=jsonb_set(data,'{sportsStartTimestamp}',to_jsonb($1::text)) where id='open-odds'",
+        [movedStart]
+      )
+    if (ordering === 'Odds resync first') await resync()
+    expect(await findLockedSportsMarket(tx, game, 'moneyline')).toMatchObject({
+      id: 'open-odds',
+    })
+    if (ordering === 'BDL first') await resync()
+    expect(await findLockedSportsMarket(tx, game, 'moneyline')).toMatchObject({
+      id: 'open-odds',
+    })
+    expect(
+      await findLockedSportsMarket(
+        tx,
+        { ...game, sportsAwayTeam: 'Other club' },
+        'moneyline'
+      )
+    ).toBeNull()
+    await pg.exec("update contracts set close_time='2000-01-01'")
+    expect(await findLockedSportsMarket(tx, game, 'moneyline')).toBeNull()
+  }
+)
+
+it('holds the reverse cutover on different kickoff dates while allowing distinct native Odds events', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  const game = { ...odds, sportsStartTimestamp: '2099-11-21T23:00:00Z' }
+  await insert('another-odds-game', {
+    ...odds,
+    sportsEventId: 'odds:baseball_mlb:other',
+  })
+  expect(
+    await findLockedSportsMarket(tx, game, 'moneyline', undefined, true)
+  ).toBeNull()
+  await insert('open-bdl', { ...candidate, sportsMarketType: 'moneyline' })
+  expect(
+    await findLockedSportsMarket(tx, game, 'moneyline', undefined, true)
+  ).toMatchObject({ id: 'open-bdl' })
+})
+
+it('reserves a roleless canonical major game for both an exact Odds retry and an opposite BDL retry', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  await insert('historic', {
+    ...odds,
+    sportsLeague: undefined,
+    sportsMarketType: undefined,
+  })
+  expect(await findSportsMarket(tx, odds.sportsEventId, 'moneyline')).toEqual({
+    id: 'historic',
+  })
+  expect(await findLockedSportsMarket(tx, odds, 'moneyline')).toEqual({
+    id: 'historic',
+  })
+  expect(
+    await findLockedSportsMarket(tx, candidate, 'moneyline')
+  ).toMatchObject({ id: 'historic' })
+  await pg.exec("update contracts set mechanism = 'cpmm-1'")
+  expect(await findLockedSportsMarket(tx, candidate, 'moneyline')).toBeNull()
+  expect(await findSportsMarket(tx, odds.sportsEventId, 'moneyline')).toBeNull()
+})
+
+it.each([
+  ['one matching side', { sportsAwayTeam: undefined }, true],
+  ['a placeholder', { sportsAwayTeam: 'TBD' }, true],
+  ['missing kickoff', { sportsStartTimestamp: null }, true],
+  [
+    'unrelated known side',
+    { sportsHomeTeam: 'Other', sportsAwayTeam: null },
+    false,
+  ],
+  [
+    'a known matching side and a changed date',
+    { sportsAwayTeam: null, sportsStartTimestamp: '2099-11-23T00:00:00Z' },
+    true,
+  ],
+  [
+    'wrong league prefix',
+    { sportsEventId: 'odds:basketball_nba:other' },
+    false,
+  ],
+  ['noncanonical key', { sportsEventId: 'odds:baseball_mlb:' }, false],
+] as const)(
+  'checks an unstamped opposite market with %s',
+  async (_, extra, blocks) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    await insert('historical', {
+      ...odds,
+      sportsLeague: undefined,
+      sportsMarketType: undefined,
+      ...extra,
+    })
+    expect(!!(await findLockedSportsMarket(tx, candidate, 'moneyline'))).toBe(
+      blocks
+    )
+  }
+)
+
+it.each(['bdl:nfl:410', 'bdl:mlb:410:prop', 'bdl:mlb:unknown'])(
+  'holds a major moneyline with mismatched or noncanonical event %s',
+  async (sportsEventId) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    await expect(
+      findLockedSportsMarket(tx, { ...candidate, sportsEventId }, 'moneyline')
+    ).rejects.toThrow('identity')
+  }
+)
+
 it('uses only the original event lock for a legacy Odds moneyline with rollout off', async () => {
   process.env = { ...process.env }
   delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED

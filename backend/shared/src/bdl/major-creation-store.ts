@@ -1,5 +1,9 @@
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { BDL_REISSUED_EVENT_MATCH_WINDOW_MS } from 'common/bdl/constants'
+import {
+  majorOddsKeys,
+  majorOddsMoneylineSql,
+} from './major-moneyline-identity'
 import { MajorLeague } from 'common/bdl/major-leagues'
 import { SPORT_LEAGUE_LABEL } from 'common/sports-calendar'
 import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
@@ -44,11 +48,14 @@ export async function majorCreationHold(
     `select c.id, ${sportsProviderSql()} as source, c.data->>'sportsStartTimestamp' as start
        from contracts c
       where c.creator_id = any($1) and c.token = 'MANA' and c.resolution is null
-        and c.deleted is not true and c.data->>'sportsMarketType' = 'moneyline'
+        and c.deleted is not true
         and c.data->>'sportsFixture' is distinct from 'true' and (
-          (${sportsProviderSql()} = 'odds' and c.data->>'sportsLeague' = $2
+          (${sportsProviderSql()} = 'odds' and ${majorOddsMoneylineSql(
+      '$2',
+      '$9'
+    )}
            and (c.close_time is null or c.close_time > $3)) or
-          (c.data->>'sportsProvider' = 'bdl' and c.data->>'sportsLeagueKey' = $4
+          (c.data->>'sportsProvider' = 'bdl' and c.data->>'sportsMarketType' = 'moneyline' and c.data->>'sportsLeagueKey' = $4
            and c.data->>'sportsEventId' <> $5
            and not (c.data->>'sportsEventId' = any($6::text[]))
            and ((c.data->>'sportsHomeTeamId' = $7 and c.data->>'sportsAwayTeamId' = $8)
@@ -62,6 +69,7 @@ export async function majorCreationHold(
       seenEventIds,
       String(homeId),
       String(awayId),
+      majorOddsKeys(league),
     ]
   )
   let beforeOpenOdds = false

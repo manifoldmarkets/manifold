@@ -18,7 +18,6 @@ import {
 } from 'common/bdl/opening-line'
 import {
   autoCreates,
-  getSportsCalendar,
   calendarEntriesOverlapping,
   CompetitionSwitches,
   competitionSwitchError,
@@ -38,11 +37,15 @@ import { groupBy, isEqual } from 'lodash'
 import { bdlClock, BdlClock, createBdlClient } from '../balldontlie-client'
 import { sportsCreator } from '../odds-markets'
 import { resolveSportsGameAnte } from '../sports-game-ante'
-import { findLockedSportsMarket } from '../sports-market-dedupe'
+import {
+  findLockedSportsMarket,
+  UnidentifiedSportsMoneyline,
+} from '../sports-market-dedupe'
 import {
   createSportsContract,
   flushSportsGroupEmbeddings,
   SportsContractParams,
+  SportsGameStartedError,
   SportsMarketAlreadyExistsError,
 } from '../sports-markets'
 import {
@@ -95,14 +98,6 @@ function eligiblePhases(
   options: MajorCreationOptions,
   game?: MajorGame
 ) {
-  // Force can correct a named game, but it cannot start a disabled league.
-  if (
-    options.force &&
-    !getSportsCalendar().some(
-      (p) => p.bdlLeagueKey === league && autoCreates(p, switches)
-    )
-  )
-    return []
   const applicable = calendarEntriesOverlapping(from, to).filter(
     (phase) =>
       phase.bdlLeagueKey === league &&
@@ -113,7 +108,7 @@ function eligiblePhases(
     (phase) =>
       (!options.competitionId ||
         phase.competitionId === options.competitionId) &&
-      (options.force || autoCreates(phase, switches)) &&
+      autoCreates(phase, switches) &&
       !competitionSwitchError(phase.competitionId, phase.phase, true, switches)
   )
   // A schedule window can span several phases. For a particular game, every
@@ -443,6 +438,8 @@ export async function runMajorCreation(
               creator ??= await sportsCreator()
               const contract = await createSportsContract(pg, creator, params, {
                 groupEmbeddingBatch: batch,
+                minLeadMs: BDL_MIN_CREATION_LEAD_MS,
+                now: () => clock.now(),
                 allowCanceledEventId,
                 chooseAnte: async (tx) => {
                   const ante = await resolveSportsGameAnte(tx, funding)
@@ -502,10 +499,15 @@ export async function runMajorCreation(
             if (e instanceof SportsMarketAlreadyExistsError) {
               decision.reason = 'market already exists'
               decision.contractId = e.contractId
+            } else if (e instanceof SportsGameStartedError) {
+              decision.reason = 'kicks off too soon'
             } else if (e instanceof BdlCreationBudgetError) {
               reportLow(e.status.lowBalance)
               decision.reason = e.status.reason
-            } else if (e instanceof CreationHold) {
+            } else if (
+              e instanceof CreationHold ||
+              e instanceof UnidentifiedSportsMoneyline
+            ) {
               decision.reason = e.message
               if (e.message.startsWith('possible-reid:'))
                 log.error('[sports-bdl-create] possible-reid', {

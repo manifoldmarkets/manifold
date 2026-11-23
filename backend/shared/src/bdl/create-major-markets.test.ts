@@ -31,6 +31,7 @@ jest.mock('../supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
 jest.mock('../sports-markets', () => ({
   createSportsContract: jest.fn(),
   flushSportsGroupEmbeddings: jest.fn(),
+  SportsGameStartedError: class extends Error {},
   SportsMarketAlreadyExistsError: class extends Error {
     constructor(readonly contractId: string) {
       super()
@@ -39,6 +40,7 @@ jest.mock('../sports-markets', () => ({
 }))
 jest.mock('../sports-market-dedupe', () => ({
   findLockedSportsMarket: jest.fn(),
+  UnidentifiedSportsMoneyline: class extends Error {},
 }))
 jest.mock('../odds-markets', () => ({
   sportsCreator: async () => ({ id: 'bot' }),
@@ -199,6 +201,8 @@ it('creates a priced market with its stored line, fixed answers, notified budget
     expect.anything(),
     expect.objectContaining({ ante: 175, expectedBaseAnte: 175 })
   )
+  expect(save.mock.calls[0][3]?.minLeadMs).toBe(BDL_MIN_CREATION_LEAD_MS)
+  expect(save.mock.calls[0][3]?.now?.()).toBe(initial)
   expect(flushSportsGroupEmbeddings).toHaveBeenCalledTimes(1)
   const opts = jest.mocked(createBdlClient).mock.calls[0][0]!
   expect(opts.enabledLeagues?.has('nba')).toBe(true)
@@ -254,6 +258,34 @@ it('checks the enable state for the requested league even when another league is
   expect((await run({ league: 'mlb' })).log).toEqual([])
   expect(schedule).not.toHaveBeenCalled()
 })
+it('does not fund a forced regular-season game when only a different NBA phase is enabled', async () => {
+  const regular = firstPhase('nba')
+  const playoff = SPORTS_CALENDAR.find(
+    (entry) =>
+      entry.bdlLeagueKey === 'nba' &&
+      entry.competitionId === 'nba-playoffs-2027'
+  )!
+  const allOddsOff = Object.fromEntries(
+    SPORTS_CALENDAR.filter((entry) => entry.oddsKey).map((entry) => [
+      calendarPhaseKey(entry),
+      false,
+    ])
+  )
+  switches.mockResolvedValue({
+    ...allOddsOff,
+    [calendarPhaseKey(playoff)]: true,
+  })
+  expect(
+    await run({
+      force: true,
+      competitionId: regular.competitionId,
+      keys: ['bdl:nba:1'],
+    })
+  ).toMatchObject({ created: 0, log: [] })
+  expect(schedule).not.toHaveBeenCalled()
+  expect(save).not.toHaveBeenCalled()
+})
+
 it('never overrides an enabled overlapping Odds phase, even when forced', async () => {
   const p = firstPhase('nba'),
     legacy = SPORTS_CALENDAR.find(

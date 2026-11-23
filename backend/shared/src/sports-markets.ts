@@ -6,6 +6,7 @@ import { annotateScoreChanges } from 'shared/sports-goal-annotations'
 import {
   findLockedSportsMarket,
   findSportsMarket,
+  UnidentifiedSportsMoneyline,
 } from './sports-market-dedupe'
 import {
   createSupabaseDirectClient,
@@ -35,6 +36,12 @@ import {
   SPORTS_KICKOFF_BUDGET,
   SportsAnteDecision,
 } from 'common/sports-kickoff-interface'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { isMajorLeague } from 'common/bdl/major-leagues'
+import { BDL_MIN_CREATION_LEAD_MS } from 'common/bdl/constants'
+import { isMajorOddsEvent } from './bdl/major-moneyline-identity'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from './bdl/major-settings'
+import { broadcastUserUpdates, UserUpdate } from './supabase/users'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
@@ -1227,6 +1234,7 @@ export async function createSportsContract(
      * the last check before the ante moves.
      */
     minLeadMs?: number
+    now?: () => number
   } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
@@ -1377,7 +1385,45 @@ export async function createSportsContract(
       : opts.deduplicateMarketType
   if (params.sportsProvider === 'bdl' && !dedupeType)
     throw new Error('BDL creation requires a market type for deduplication')
+  const majorBdl =
+    params.sportsProvider === 'bdl' &&
+    isMajorLeague(params.sportsLeagueKey ?? '')
+  const guardFunding =
+    isSportsBdlEnabled() &&
+    dedupeType === 'moneyline' &&
+    (majorBdl || isMajorOddsEvent(params.sportsEventId))
+  const start = Date.parse(params.sportsStartTimestamp ?? '')
+  const minLead = guardFunding
+    ? Math.max(opts.minLeadMs ?? 0, BDL_MIN_CREATION_LEAD_MS)
+    : opts.minLeadMs
+  const checkLead = () => {
+    if (minLead !== undefined && !(start > (opts.now ?? Date.now)() + minLead))
+      throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
+  }
+  let pendingBalance: UserUpdate[] = []
   const result = await pg.tx(async (tx) => {
+    if (guardFunding) {
+      if (majorBdl) {
+        if (params.sportsStartKnown !== true)
+          throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
+        const ids = [params.sportsHomeTeamId, params.sportsAwayTeamId]
+        if (
+          params.sportsFixture ||
+          ids[0] === ids[1] ||
+          ids.some(
+            (id) =>
+              !id ||
+              !Number.isSafeInteger(+id) ||
+              +id <= 0 ||
+              String(+id) !== id
+          )
+        )
+          throw new UnidentifiedSportsMoneyline(
+            'Unverified BDL participants or fixture'
+          )
+      }
+      await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+    }
     if (dedupeType) {
       const existing = await findLockedSportsMarket(
         tx,
@@ -1388,11 +1434,7 @@ export async function createSportsContract(
       )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
-    if (opts.minLeadMs != null) {
-      const start = Date.parse(params.sportsStartTimestamp ?? '')
-      if (!(start > Date.now() + opts.minLeadMs))
-        throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
-    }
+    checkLead()
     if (opts.checkOddsCutover) await opts.checkOddsCutover(tx)
     const decision = await opts.chooseAnte?.(tx)
     if (
@@ -1400,6 +1442,7 @@ export async function createSportsContract(
       (!decision || !Number.isFinite(decision.ante) || decision.ante <= 0)
     )
       throw new Error('Invalid sports ante decision')
+    if (guardFunding) checkLead()
     const { contract, multi, contractQuery, insertAnswersQuery, ante } =
       legacyRows ?? buildRows(decision)
     if (insertAnswersQuery) {
@@ -1408,7 +1451,8 @@ export async function createSportsContract(
     } else {
       await tx.none(contractQuery)
     }
-    await runTxnOutsideBetQueue(tx, {
+    if (guardFunding) checkLead()
+    const debit = {
       fromId: providerId,
       fromType: 'USER',
       toId: contract.id,
@@ -1416,10 +1460,29 @@ export async function createSportsContract(
       amount: ante,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
-    })
+    } as const
+    if (guardFunding) {
+      await runTxnOutsideBetQueue(tx, debit, false, (updates) => {
+        pendingBalance = updates
+      })
+      checkLead()
+    } else {
+      await runTxnOutsideBetQueue(tx, debit)
+    }
     await generateAntes(tx, providerId, contract, ante, ante)
+    if (guardFunding) checkLead()
     return contract
   })
+  if (pendingBalance.length) {
+    try {
+      broadcastUserUpdates(pendingBalance)
+    } catch (error) {
+      logger.error('Could not publish the committed sports ante balance', {
+        contractId: result.id,
+        error,
+      })
+    }
+  }
 
   await Promise.allSettled(
     params.groupIds.map((gId) =>
