@@ -26,7 +26,6 @@ const CALIBRATION_MARKETS_PER_QUERY = 200
 
 export type CalibrationMarket = {
   contract_id: string
-  resolution: string
   // The user's latest bet of any kind on this market, in microseconds.
   last_us: number
 }
@@ -52,6 +51,7 @@ export async function selectCalibrationSample(
   size = CALIBRATION_SAMPLE_SIZE,
   marketsPerQuery = CALIBRATION_MARKETS_PER_QUERY
 ): Promise<CalibrationBet[]> {
+  if (size <= 0) return []
   let sample: CalibrationBet[] = []
   const newestFirst = orderBy(markets, (m) => m.last_us, 'desc')
   for (const batch of chunk(newestFirst, marketsPerQuery)) {
@@ -71,30 +71,28 @@ export async function selectCalibrationSample(
 async function getCalibrationSample(
   pg: SupabaseDirectClient,
   userId: string,
-  markets: { id: string; resolution: string }[]
+  contractIds: string[]
 ): Promise<CalibrationBet[]> {
-  if (markets.length === 0) return []
+  if (contractIds.length === 0) return []
 
   // Latest bet per market. contract_bets_contract_user_id is
   // (contract_id, user_id, created_time desc), so this reads the index only.
   const lastBets = await pg.manyOrNone<{
     contract_id: string
-    resolution: string
     last_us: number | null
   }>(
     `
     select
       x.contract_id,
-      x.resolution,
       (
         select (extract(epoch from max(cb.created_time)) * 1000000)::bigint
         from contract_bets cb
         where cb.contract_id = x.contract_id
           and cb.user_id = $1
       ) as last_us
-    from unnest($2::text[], $3::text[]) as x(contract_id, resolution)
+    from unnest($2::text[]) as x(contract_id)
     `,
-    [userId, markets.map((m) => m.id), markets.map((m) => m.resolution)]
+    [userId, contractIds]
   )
   const withBets = lastBets.flatMap((m) =>
     m.last_us === null ? [] : [{ ...m, last_us: m.last_us }]
@@ -103,7 +101,8 @@ async function getCalibrationSample(
   return selectCalibrationSample(withBets, (batch) =>
     // One index walk per market, newest first. Never filter by user_id alone
     // here: the user index walks every bet the user has made, which is what
-    // timed out for heavy traders.
+    // timed out for heavy traders. The resolution is read again here, with
+    // the bets, so a market reopened since the first lookup drops out.
     pg.manyOrNone<CalibrationBet>(
       `
       select
@@ -127,8 +126,11 @@ async function getCalibrationSample(
         end as prob_bucket,
         b.outcome,
         b.shares,
-        x.resolution
-      from unnest($2::text[], $3::text[]) as x(contract_id, resolution)
+        c.resolution
+      from unnest($2::text[]) as x(contract_id)
+      join contracts c on c.id = x.contract_id
+        and c.outcome_type = 'BINARY'
+        and c.resolution in ('YES', 'NO')
       cross join lateral (
         select cb.created_time, cb.prob_after, cb.outcome, cb.shares
         from contract_bets cb
@@ -137,17 +139,12 @@ async function getCalibrationSample(
           and cb.amount > 0
           and (cb.is_redemption is not true or cb.is_redemption is null)
         order by cb.created_time desc
-        limit $4
+        limit $3
       ) b
       order by b.created_time desc
-      limit $4
+      limit $3
       `,
-      [
-        userId,
-        batch.map((m) => m.contract_id),
-        batch.map((m) => m.resolution),
-        CALIBRATION_SAMPLE_SIZE,
-      ]
+      [userId, batch.map((m) => m.contract_id), CALIBRATION_SAMPLE_SIZE]
     )
   )
 }
@@ -207,6 +204,10 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     // money out, the same definition as the profile's volume achievement
     // (mv_ach_volume, get-user-achievements). Perp rows carry their own
     // totals (shared/perps/user-contract-metrics).
+    // The coalesce condition matches unique_user_contract_answer's third key,
+    // so answer rows are skipped in the index instead of being read from the
+    // table: a heavy multiple-choice trader has about three answer rows per
+    // summary row. answer_id IS NULL keeps the meaning exact.
     pg.manyOrNone<{
       contract_id: string
       profit: number
@@ -220,6 +221,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
           + COALESCE((data->>'totalAmountSold')::numeric, 0) as volume
       FROM user_contract_metrics
       WHERE user_id = $1
+        AND COALESCE(answer_id, '') = ''
         AND answer_id IS NULL
       `,
       [userId]
@@ -283,19 +285,21 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   const sample = await getCalibrationSample(
     pg,
     userId,
-    contracts.flatMap((c) =>
-      c.outcome_type === 'BINARY' &&
-      (c.resolution === 'YES' || c.resolution === 'NO')
-        ? [{ id: c.id, resolution: c.resolution }]
-        : []
-    )
+    contracts
+      .filter(
+        (c) =>
+          c.outcome_type === 'BINARY' &&
+          (c.resolution === 'YES' || c.resolution === 'NO')
+      )
+      .map((c) => c.id)
   )
   const { yesPoints, noPoints, totalBets } = buildCalibrationPoints(sample)
 
-  // Mana markets only, like the profile's volume achievement.
-  const totalVolume = sumBy(metrics, (m) =>
+  // Mana markets only, like the profile's volume achievement. Other tokens
+  // would mix units into a mana figure.
+  const manaVolume = (m: { contract_id: string; volume: number }) =>
     contractsById[m.contract_id]?.token === 'MANA' ? finiteOrZero(m.volume) : 0
-  )
+  const totalVolume = sumBy(metrics, manaVolume)
 
   // Calculate win rate - only count resolved markets for both numerator and denominator
   const resolvedMetrics = metrics.filter(
@@ -330,7 +334,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
           topicStats[topic] = { profit: 0, volume: 0, marketCount: 0 }
         }
         topicStats[topic].profit += metric.profit
-        topicStats[topic].volume += finiteOrZero(metric.volume)
+        topicStats[topic].volume += manaVolume(metric)
         topicStats[topic].marketCount += 1
       }
     }

@@ -10,6 +10,7 @@ import {
   getUserCalibration,
   selectCalibrationSample,
 } from 'api/get-user-calibration'
+import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 type Bet = CalibrationBet & { contract_id: string }
@@ -48,7 +49,7 @@ function makeMarkets(seed: number, marketCount: number) {
     const last_us =
       rand() < 0.3 ? lastBuy + 1 + Math.floor(rand() * 1e6) : lastBuy
     if (marketBets.length > 0 || last_us > 0) {
-      markets.push({ contract_id, resolution, last_us })
+      markets.push({ contract_id, last_us })
     }
     bets.push(...marketBets)
   }
@@ -123,11 +124,11 @@ describe('selectCalibrationSample', () => {
       bet('older', 40),
     ]
     const markets: CalibrationMarket[] = [
-      { contract_id: 'older', resolution: 'YES', last_us: 40 },
-      { contract_id: 'new', resolution: 'YES', last_us: 100 },
+      { contract_id: 'older', last_us: 40 },
+      { contract_id: 'new', last_us: 100 },
       // A sale at 95 is newer than this market's buys.
-      { contract_id: 'mid', resolution: 'YES', last_us: 95 },
-      { contract_id: 'old', resolution: 'YES', last_us: 50 },
+      { contract_id: 'mid', last_us: 95 },
+      { contract_id: 'old', last_us: 50 },
     ]
     const { fetchBets, calls } = fakeFetch(bets, 3)
 
@@ -147,8 +148,8 @@ describe('selectCalibrationSample', () => {
       resolution: 'NO',
     }))
     const markets: CalibrationMarket[] = [
-      { contract_id: 'quiet', resolution: 'NO', last_us: 10 },
-      { contract_id: 'busy', resolution: 'NO', last_us: 1000 },
+      { contract_id: 'quiet', last_us: 10 },
+      { contract_id: 'busy', last_us: 1000 },
     ]
     const { fetchBets, calls } = fakeFetch(bets, 5)
 
@@ -158,9 +159,52 @@ describe('selectCalibrationSample', () => {
     expect(calls).toEqual([['busy']])
   })
 
+  it('reads only the still-eligible prefix of a batch, keeping a market tied at the cutoff', async () => {
+    const bet = (contract_id: string, created_us: number): Bet => ({
+      contract_id,
+      created_us,
+      prob_bucket: 0.5,
+      outcome: 'YES',
+      shares: 1,
+      resolution: 'YES',
+    })
+    const bets = [
+      bet('a', 100),
+      bet('a', 90),
+      bet('b', 80),
+      // Ties the sample's oldest bet, so it could belong in the sample.
+      bet('tie', 80),
+      bet('late', 70),
+      bet('later', 60),
+    ]
+    const markets: CalibrationMarket[] = [
+      { contract_id: 'a', last_us: 100 },
+      { contract_id: 'b', last_us: 80 },
+      { contract_id: 'tie', last_us: 80 },
+      { contract_id: 'late', last_us: 75 },
+      { contract_id: 'later', last_us: 60 },
+    ]
+    const { fetchBets, calls } = fakeFetch(bets, 3)
+
+    const sample = await selectCalibrationSample(markets, fetchBets, 3, 2)
+
+    expect(sample.map((b) => b.created_us)).toEqual([100, 90, 80])
+    // [a, b] fills the sample at 80. In the next batch, tie (80) is still
+    // eligible and late (75) is not, so only tie is read, then the loop stops.
+    expect(calls).toEqual([['a', 'b'], ['tie']])
+  })
+
   it('returns an empty sample for no markets without querying', async () => {
     const fetchBets = jest.fn()
     await expect(selectCalibrationSample([], fetchBets)).resolves.toEqual([])
+    expect(fetchBets).not.toHaveBeenCalled()
+  })
+
+  it('returns an empty sample for size 0 without querying', async () => {
+    const fetchBets = jest.fn()
+    await expect(
+      selectCalibrationSample([{ contract_id: 'a', last_us: 1 }], fetchBets, 0)
+    ).resolves.toEqual([])
     expect(fetchBets).not.toHaveBeenCalled()
   })
 })
@@ -206,6 +250,8 @@ describe('getUserCalibration', () => {
   const handler = getUserCalibration as unknown as Handler
 
   it('reads bets one market at a time and takes volume from the market metrics', async () => {
+    const [topic, subtopics] = Object.entries(SEARCH_TOPICS_TO_SUBTOPICS)[0]
+    const groupId = subtopics[0].groupIds[0]
     const queries: string[] = []
     const route = (query: string, values: unknown[]) => {
       queries.push(query)
@@ -245,12 +291,16 @@ describe('getUserCalibration', () => {
             token: 'MANA',
           },
         ]
-      if (query.includes('FROM group_contracts')) return []
+      if (query.includes('FROM group_contracts'))
+        return [
+          { contract_id: 'bin', group_id: groupId },
+          { contract_id: 'cash', group_id: groupId },
+        ]
       if (query.includes('as last_us')) {
         expect(values[1]).toEqual(['bin', 'cash'])
         return [
-          { contract_id: 'bin', resolution: 'YES', last_us: 2000 },
-          { contract_id: 'cash', resolution: 'NO', last_us: 1000 },
+          { contract_id: 'bin', last_us: 2000 },
+          { contract_id: 'cash', last_us: 1000 },
         ]
       }
       if (query.includes('as created_us'))
@@ -285,6 +335,8 @@ describe('getUserCalibration', () => {
       expect(q).toContain('cb.contract_id = x.contract_id')
     }
     expect(queries.some((q) => q.includes('contract_perp_events'))).toBe(false)
+    // The bet read checks the resolution in the same statement.
+    expect(betReads[1]).toContain("c.resolution in ('YES', 'NO')")
 
     expect(result.calibration).toEqual({
       yesPoints: [{ x: 0.4, y: 1 }],
@@ -296,5 +348,9 @@ describe('getUserCalibration', () => {
     expect(result.performanceStats.totalMarkets).toBe(4)
     expect(result.performanceStats.resolvedMarkets).toBe(3)
     expect(result.performanceStats.winRate).toBeCloseTo((2 / 3) * 100)
+    // Topic profit counts every market; topic volume counts mana markets only.
+    expect(result.profitByTopic).toEqual([
+      { topic, profit: 55, volume: 300, marketCount: 2 },
+    ])
   })
 })
