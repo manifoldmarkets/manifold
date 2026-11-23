@@ -534,6 +534,73 @@ it('commits both verified finals before the first broadcast and preserves an ear
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(2)
 })
 
+it('shares a verified final with slower siblings without advancing their poll clocks', async () => {
+  const fast = await market()
+  const slow = await market()
+  const disabled = await market()
+  const revoked = await market()
+  const other = await market({ sportsEventId: 'bdl:nba:101' })
+  await db.exec('update sports_score_polling set interval_seconds=300')
+  await db.query(
+    'insert into sports_score_polling values ($1,60,null,null),($2,0,null,null)',
+    ['game:' + fast, 'game:' + disabled]
+  )
+  const attempts: nbaScores.NbaPollAttempts = new Map()
+  const poll = () => nbaScores.pollNbaScores(pg, attempts)
+  const firstAt = now
+  await poll()
+  now += 60_000
+  wire = [{ ...live, home_team_score: 9 }]
+  await poll()
+  expect((await stored(fast)).sportsHomeScore).toBe(9)
+  expect((await stored(slow)).sportsHomeScore).toBe(8)
+  expect(attempts.get(slow)).toEqual({ live: firstAt })
+
+  now += 60_000
+  wire = [final, { ...final, id: 101 }]
+  beforeResponse = () =>
+    db.query('insert into sports_score_polling values ($1,0,null,null)', [
+      'game:' + revoked,
+    ])
+  let visible: Row[] = []
+  jest.mocked(publishSportsLiveScore).mockImplementationOnce(async () => {
+    visible = await Promise.all([stored(fast), stored(slow)])
+  })
+  await poll()
+  expect(visible).toEqual(
+    [fast, slow].map(() =>
+      expect.objectContaining({
+        sportsLiveStatus: 'FINISHED',
+        sportsHomeScore: 132,
+        sportsAwayScore: 129,
+        closeTime: now - 1,
+      })
+    )
+  )
+  expect(attempts.get(slow)).toEqual({ live: firstAt })
+  expect(attempts.get(fast)).toEqual({ live: now })
+  expect((await stored(disabled)).sportsLiveStatus).toBeUndefined()
+  expect((await stored(revoked)).sportsLiveStatus).toBe('IN_PLAY')
+  expect((await stored(other)).sportsLiveStatus).toBeUndefined()
+  await poll()
+  expect(requests).toHaveLength(3)
+})
+
+it('does not switch a requesting market to a finals check that was not due after live is disabled', async () => {
+  const id = await market()
+  now = Date.parse('2026-11-21T20:10:00Z')
+  const attempts: nbaScores.NbaPollAttempts = new Map()
+  await nbaScores.pollNbaScores(pg, attempts)
+  now += 60_000
+  wire = [final]
+  beforeResponse = () =>
+    db.exec('update sports_score_polling set interval_seconds=0')
+  await nbaScores.pollNbaScores(pg, attempts)
+  expect(requests).toHaveLength(2)
+  expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
+  expect((await stored(id)).closeTime).toBeUndefined()
+})
+
 it('retains the 300-second live cadence under 60-second finals checks', async () => {
   const id = await market()
   await db.exec(
