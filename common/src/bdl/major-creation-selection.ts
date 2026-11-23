@@ -47,5 +47,5 @@ export function confirmedCreationSelection(
     confirmations[id] = row.confirmation
   }
   const request = { ...scope, keys, dryRun: false, maxAntes, confirmations }
-  if (requestSchema.safeParse(request).success) return request
+  return requestSchema.safeParse(request).success ? request : undefined
 }
