@@ -290,15 +290,13 @@ it('keeps an authorized Odds tick independent of a slow NBA read and coalesces c
     return pending
   }
   jest.mocked(hasOddsApiKey).mockReturnValue(true)
-  jest
-    .mocked(pollOddsScoresAndResolve)
-    .mockResolvedValue({
-      polled: 0,
-      live: 0,
-      resolved: 0,
-      pending: 0,
-      errors: 0,
-    })
+  jest.mocked(pollOddsScoresAndResolve).mockResolvedValue({
+    polled: 0,
+    live: 0,
+    resolved: 0,
+    pending: 0,
+    errors: 0,
+  })
   await resolveOddsSportsMarkets()
   await reading
   await resolveOddsSportsMarkets()
