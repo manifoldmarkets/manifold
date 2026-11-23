@@ -195,10 +195,12 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     throw new APIError(404, 'User not found')
   }
 
-  // Every query below is bounded by the markets the user has traded, never by
-  // their total bet count. Heavy traders have hundreds of thousands of bets,
-  // mostly redemptions, and a full read of them ran past the 60 s statement
-  // timeout.
+  // No query below reads the user's whole bet history. Heavy traders have
+  // hundreds of thousands of bets, mostly redemptions, and reading them all
+  // ran past the 60 s statement timeout. Bets are read one market at a time
+  // through the (contract_id, user_id) index, so each walk covers only this
+  // user's rows on that market; LIMIT caps the qualifying rows returned, not
+  // the rows a market's walk may have to skip.
   const [metrics, portfolioHistory] = await Promise.all([
     // One summary row per market. Volume per market is the money in plus the
     // money out, the same definition as the profile's volume achievement

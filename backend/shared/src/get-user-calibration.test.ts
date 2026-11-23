@@ -303,7 +303,8 @@ describe('getUserCalibration', () => {
           { contract_id: 'cash', last_us: 1000 },
         ]
       }
-      if (query.includes('as created_us'))
+      if (query.includes('as created_us')) {
+        expect(values).toEqual(['u', ['bin', 'cash'], 5000])
         return [
           {
             created_us: 1500,
@@ -313,6 +314,7 @@ describe('getUserCalibration', () => {
             resolution: 'YES',
           },
         ]
+      }
       throw new Error(`Unexpected query: ${query}`)
     }
     const pg = {
@@ -336,6 +338,7 @@ describe('getUserCalibration', () => {
     }
     expect(queries.some((q) => q.includes('contract_perp_events'))).toBe(false)
     // The bet read checks the resolution in the same statement.
+    expect(betReads[1]).toContain("c.outcome_type = 'BINARY'")
     expect(betReads[1]).toContain("c.resolution in ('YES', 'NO')")
 
     expect(result.calibration).toEqual({
