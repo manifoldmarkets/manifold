@@ -714,6 +714,72 @@ it('previews one game without funding and refuses changed entrants, kickoff or t
     log: [{ eventId: key, ante: 175 }],
   })
 })
+it('only previews and executes the replacement in a mixed forced selection', async () => {
+  const fresh = 'bdl:nba:1'
+  const replacement = 'bdl:nba:2'
+  schedule.mockResolvedValue([game(1), game(2)])
+  jest
+    .mocked(canceledMajorContractIds)
+    .mockImplementation(async (_tx, id) =>
+      id === replacement ? ['original'] : []
+    )
+  const scope = {
+    operator: true as const,
+    force: true,
+    keys: [fresh, replacement],
+    competitionId: firstPhase('nba').competitionId,
+  }
+  const skipped = {
+    eventId: fresh,
+    status: 'skipped',
+    reason: 'no canceled market to replace',
+  }
+  const preview = await run({ ...scope, dryRun: true })
+  expect(preview).toMatchObject({
+    created: 0,
+    wouldCreate: 1,
+    skipped: 1,
+    log: [
+      skipped,
+      {
+        eventId: replacement,
+        status: 'dry-run',
+        confirmation: { canceledContractIds: ['original'] },
+      },
+    ],
+  })
+  expect(preview.log[0].confirmation).toBeUndefined()
+  expect(save).not.toHaveBeenCalled()
+
+  // An earlier approval for the first game no longer has a matching canceled market.
+  const execute = await run({
+    ...scope,
+    maxAntes: { [fresh]: 175, [replacement]: 175 },
+    confirmations: {
+      [fresh]: {
+        awayId: 20,
+        homeId: 10,
+        startTime: Date.parse(game(1).startTime!),
+        canceledContractIds: ['previously-seen'],
+      },
+      [replacement]: preview.log[1].confirmation!,
+    },
+  })
+  expect(execute).toMatchObject({
+    created: 1,
+    skipped: 1,
+    errors: 0,
+    log: [
+      skipped,
+      {
+        eventId: replacement,
+        status: 'created',
+        contractId: 'created-' + replacement,
+      },
+    ],
+  })
+})
+
 it('binds force to the canceled contracts seen at preview; a later N/A requires a fresh explicit approval', async () => {
   const key = 'bdl:nba:1'
   const scope = {

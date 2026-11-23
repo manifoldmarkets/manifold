@@ -285,10 +285,27 @@ it('requires confirmation of a maximum for every selected game before it can be 
   expect(schema.safeParse({ ...props, maxAntes, confirmations }).success).toBe(
     true
   )
+  expect(
+    schema.safeParse({
+      ...props,
+      maxAntes,
+      force: true,
+      confirmations: {
+        'bdl:nba:7': {
+          ...approved,
+          canceledContractIds: ['canceled-original'],
+        },
+      },
+    }).success
+  ).toBe(true)
   for (const fields of [
     { confirmations: {} },
     { confirmations: { 'bdl:nba:7': { ...approved, awayId: 10 } } },
     { force: true, confirmations },
+    {
+      force: true,
+      confirmations: { 'bdl:nba:7': { ...approved, canceledContractIds: [] } },
+    },
     {
       confirmations: { 'bdl:nba:7': { ...approved, canceledContractIds: [] } },
     },

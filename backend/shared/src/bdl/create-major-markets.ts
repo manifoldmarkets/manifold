@@ -441,6 +441,7 @@ export async function runMajorCreation(
                 )
                 if (!canceled)
                   hold('canceled market identity unconfirmed; preview again')
+                if (canceled.length === 0) hold('no canceled market to replace')
                 confirmation.canceledContractIds = canceled
               }
               if (

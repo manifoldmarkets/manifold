@@ -195,6 +195,7 @@ const creationConfirmation = z
     startTime: positiveId,
     canceledContractIds: z
       .array(z.string().min(1).max(128))
+      .min(1)
       .max(MAX_CREATION_GAME_KEYS)
       .optional(),
   })
