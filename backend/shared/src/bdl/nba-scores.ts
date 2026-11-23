@@ -260,7 +260,14 @@ export async function pollNbaScores(
         // after an operator disables live updates. The next due final can retry.
         const permitted = () => enabled([market], !final)
         if (!(await permitted()) || !active()) continue
-        const written = await updateSportsScore(pg, market.id, patch, {
+        // A historical FINISHED badge alone is insufficient evidence for payout.
+        const stored = final
+          ? {
+              ...patch,
+              sportsFinalObservation: { ...identity, ...teams, ...patch },
+            }
+          : patch
+        const written = await updateSportsScore(pg, market.id, stored, {
           identity: final ? { ...identity, ...teams } : identity,
           readStartedAt,
           closeOnFinal: final

@@ -3,11 +3,12 @@
 // due (live scores per sport or game, finals once a game is due to end), write
 // live scores onto the markets, and resolve when the provider marks a game
 // completed. The same tick also refreshes opted-in NBA scores from BDL.
-// Each source uses its own credentials; only the Odds path resolves markets.
+// NBA payout reads committed finals independently of either provider.
 
 import { MINUTE_MS } from 'common/util/time'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { NbaPollAttempts, pollNbaScores } from 'shared/bdl/nba-scores'
+import { settlePendingNbaGames } from 'shared/bdl/settle-nba-game'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
@@ -21,6 +22,9 @@ const state = newScorePollState()
 let warnedNoKey = false
 const nbaLastAttempts: NbaPollAttempts = new Map()
 let nbaWork: Promise<void> | undefined
+let settlingNba = false
+let nextSettlementScan = 0
+let afterSettlementId = ''
 
 // A run still going after this long is abandoned: the cron's promise settles
 // with an error (so the job-crash alert fires), the next 10-second tick starts
@@ -71,6 +75,28 @@ export async function resolveOddsSportsMarkets() {
       .finally(() => {
         clearTimeout(timer)
         nbaWork = undefined
+      })
+  }
+  // Native post-commit notifications may take time. They never hold the score poll.
+  if (
+    isSportsBdlEnabled() &&
+    !settlingNba &&
+    Date.now() >= nextSettlementScan
+  ) {
+    settlingNba = true
+    nextSettlementScan = Date.now() + MINUTE_MS
+    void Promise.resolve(nbaWork)
+      .then(() =>
+        settlePendingNbaGames(createSupabaseDirectClient(), afterSettlementId)
+      )
+      .then((next) => {
+        afterSettlementId = next
+      })
+      .catch((error) =>
+        log.error('[sports-bdl-nba] settlement scan failed: ' + error)
+      )
+      .finally(() => {
+        settlingNba = false
       })
   }
   if (!hasOddsApiKey()) {
