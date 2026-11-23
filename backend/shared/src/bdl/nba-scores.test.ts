@@ -240,6 +240,19 @@ it('runs the recorded NBA game on the native tick without an Odds credential; bi
   expect(pollOddsScoresAndResolve).not.toHaveBeenCalled()
 })
 
+it('closes an ordinary final before publishing at the scheduled betting cutoff', async () => {
+  const id = await market()
+  wire = [final]
+  now = Date.parse('2026-11-21T21:00:00Z')
+  await resolveOddsSportsMarkets()
+  expect(requests).toHaveLength(1)
+  expect(await stored(id)).toMatchObject({
+    closeTime: now - 1,
+    sportsLiveStatus: 'FINISHED',
+  })
+  expect(settleNbaGame).toHaveBeenCalledTimes(1)
+})
+
 it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of the healthy score', async () => {
   const healthy = await market()
   const badRows: Row[] = [

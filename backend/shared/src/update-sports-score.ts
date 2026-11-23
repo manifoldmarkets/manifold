@@ -38,7 +38,7 @@ export async function updateSportsScore(
                  or (data->'sportsHomeScore' = $1::jsonb->'sportsHomeScore'
                      and data->'sportsAwayScore' = $1::jsonb->'sportsAwayScore'))`
            : `and (($1::jsonb)->>'sportsLiveStatus' <> 'FINISHED'
-              or close_time <= to_timestamp($3::double precision / 1000))`
+              or close_time < to_timestamp($3::double precision / 1000))`
        }
        and (data->>'sportsLiveStatus' is distinct from 'FINISHED'
             or ($1::jsonb)->>'sportsLiveStatus' = 'FINISHED')`
