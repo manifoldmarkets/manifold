@@ -1,5 +1,12 @@
 import Link from 'next/link'
-import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react'
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -25,6 +32,7 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
   const multiplier = useTrophyRewardMultiplier()
   const username = user?.username
   const lastBetTime = user?.lastBetTime ?? 0
+  const [visibilityVersion, setVisibilityVersion] = useState(0)
   const ready = useMemo(
     () =>
       trophies
@@ -32,6 +40,17 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
         : [],
     [trophies]
   )
+
+  useEffect(() => {
+    if (!userId) return
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible')
+        setVisibilityVersion((v) => v + 1)
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () =>
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [userId])
 
   useEffect(() => {
     if (!userId || !username) {
@@ -48,6 +67,11 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
     }
     // A maker's limit-order fill can first appear on focus or a stale navigation.
     if (!trophies) return
+    if (!session.initialized) {
+      for (const { trophyId, milestoneId } of trophies.claims) {
+        session.seen.add(`${trophyId}/${milestoneId}`)
+      }
+    } else if (document.visibilityState !== 'visible') return
     for (const { definition, milestone } of ready) {
       const key = `${definition.id}/${milestone.id}`
       if (session.seen.has(key)) continue
@@ -71,7 +95,15 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
       ))
     }
     session.initialized = true
-  }, [userId, username, lastBetTime, trophies, ready, multiplier])
+  }, [
+    userId,
+    username,
+    lastBetTime,
+    trophies,
+    ready,
+    multiplier,
+    visibilityVersion,
+  ])
 
   return (
     <TrophyCountContext.Provider value={ready.length}>
