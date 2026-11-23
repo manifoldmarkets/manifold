@@ -191,11 +191,13 @@ export async function findLockedSportsMarket(
   ]
   return (
     open.find((row) => {
-      const otherStart = Date.parse(row.start ?? '')
-      if (Number.isFinite(otherStart)) {
-        if (Math.abs(start - otherStart) > BDL_OPEN_ODDS_MATCH_WINDOW_MS)
+      // A shifted kickoff cannot distinguish a second game across providers.
+      // Keep the open market reserved until its opponents rule out this matchup.
+      if (!cutover) {
+        const otherStart = Date.parse(row.start ?? '')
+        if (!(Math.abs(start - otherStart) <= BDL_OPEN_ODDS_MATCH_WINDOW_MS))
           return false
-      } else if (!cutover) return false
+      }
       const pair = teamPair(row.home, row.away)
       if (pair) return pair === teams
       // Without both opponents, allow funding only when a known side rules this game out.
