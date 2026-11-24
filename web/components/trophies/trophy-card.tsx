@@ -13,8 +13,11 @@ import {
   type TrophyMilestone,
   formatTrophyValue,
   getAccountAnniversaryTime,
+  getRewardManaTotal,
   isMilestoneReached,
 } from 'common/trophies'
+import { roundTierBonus } from 'common/supporter-config'
+import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -24,7 +27,12 @@ export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
   definitions: TrophyDefinition[]
   claimedIdsByTrophy: Map<string, Set<string>>
+  // Milestones whose reward has been paid, by trophy.
+  rewardedIdsByTrophy?: Map<string, Set<string>>
   isOwnProfile?: boolean
+  // The viewer's reward multiplier, to show what a milestone pays them. Set
+  // only for the owner of a new account.
+  rewardMultiplier?: number
   onClaim?: (trophyId: string, milestoneId: string) => void
   claimingId?: string | null
   justClaimedId?: string | null
@@ -36,7 +44,9 @@ export function TrophyGrid(props: {
     progressList,
     definitions,
     claimedIdsByTrophy,
+    rewardedIdsByTrophy,
     isOwnProfile,
+    rewardMultiplier,
     onClaim,
     claimingId,
     justClaimedId,
@@ -56,7 +66,9 @@ export function TrophyGrid(props: {
             definition={def}
             progress={progress}
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
+            rewardedIds={rewardedIdsByTrophy?.get(def.id) ?? EMPTY_SET}
             isOwnProfile={isOwnProfile}
+            rewardMultiplier={rewardMultiplier}
             onClaim={onClaim}
             claiming={claimingId === def.id}
             justClaimed={justClaimedId === def.id}
@@ -75,7 +87,9 @@ export function TrophyCard(props: {
   definition: TrophyDefinition
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
+  rewardedIds: Set<string>
   isOwnProfile?: boolean
+  rewardMultiplier?: number
   onClaim?: (trophyId: string, milestoneId: string) => void
   claiming?: boolean
   justClaimed?: boolean
@@ -86,7 +100,9 @@ export function TrophyCard(props: {
     definition,
     progress,
     claimedIds,
+    rewardedIds,
     isOwnProfile,
+    rewardMultiplier,
     onClaim,
     claiming,
     justClaimed,
@@ -122,6 +138,22 @@ export function TrophyCard(props: {
   const isReached = isMilestoneReached(viewing, currentValue)
   const isClaimed = claimedIds.has(viewing.id)
   const earned = isEarned(viewing)
+  // What claiming (or collecting) this milestone pays this viewer, as
+  // claim-trophy works it out: this milestone and every lower one not paid
+  // yet, at the viewer's tier multiplier, rounded once. Unpaid ones were
+  // claimed while the multiplier was zero; claiming again pays them. Zero,
+  // so hidden, when nothing would be paid.
+  const unpaidUpToViewing =
+    rewardMultiplier === undefined
+      ? []
+      : milestones
+          .slice(0, milestones.findIndex((m) => m.id === viewing.id) + 1)
+          .filter((m) => (m.rewardMana ?? 0) > 0 && !rewardedIds.has(m.id))
+  const rewardAmount =
+    rewardMultiplier !== undefined && unpaidUpToViewing.length > 0
+      ? roundTierBonus(getRewardManaTotal(unpaidUpToViewing) * rewardMultiplier)
+      : 0
+  const unpaidReward = rewardAmount > 0
   const style = TROPHY_TIER_STYLES[viewing.tier]
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < shown.length - 1
@@ -189,6 +221,12 @@ export function TrophyCard(props: {
           {formatStat(definition, currentValue, accountCreatedTime)}
         </span>
 
+        {unpaidReward && !isClaimed && (
+          <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">
+            Pays {formatMoney(rewardAmount)}
+          </span>
+        )}
+
         <MilestoneDots
           milestones={shown}
           isEarned={isEarned}
@@ -223,7 +261,23 @@ export function TrophyCard(props: {
             {claiming ? 'Claiming...' : `Claim ${viewing.name}`}
           </button>
         ) : isClaimed ? (
-          justClaimed && onPinToProfile ? (
+          // An unpaid reward comes first, even right after a claim.
+          isOwnProfile && unpaidReward && onClaim ? (
+            <button
+              className={clsx(
+                'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
+                claiming ? 'cursor-wait opacity-75' : 'hover:brightness-110',
+                style.gradient,
+                style.buttonText
+              )}
+              onClick={() => onClaim(definition.id, viewing.id)}
+              disabled={claiming}
+            >
+              {claiming
+                ? 'Collecting...'
+                : `Collect ${formatMoney(rewardAmount)}`}
+            </button>
+          ) : justClaimed && onPinToProfile ? (
             <button
               className={clsx(
                 'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all hover:brightness-110',

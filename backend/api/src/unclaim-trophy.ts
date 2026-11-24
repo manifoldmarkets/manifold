@@ -5,9 +5,8 @@ import { getTrophyPinId } from 'common/trophies'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 // Admin testing tool: removes every claimed milestone of one trophy for a
-// user, and the trophy's profile pin. A milestone claimed again afterwards is
-// newly claimed, so anything paid for a claim must be recorded somewhere this
-// never deletes (stage 2's user_trophy_rewards), not keyed to the claim row.
+// user, and the trophy's profile pin. Paid rewards are recorded separately in
+// user_trophy_rewards and stay, so claiming again cannot pay twice.
 export const unclaimTrophy: APIHandler<'unclaim-trophy'> = async (
   { trophyId, userId },
   auth

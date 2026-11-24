@@ -7,18 +7,24 @@ import { RanksType } from 'common/achievements'
 import { APIResponse } from 'common/api/schema'
 import { isAdminId } from 'common/envs/constants'
 import {
+  getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
+} from 'common/supporter-config'
+import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   SHOWCASE_SLOT_UNLOCKS,
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
+  TrophyStats,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countEarnedMilestones,
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getTotalPossibleMilestones,
+  getTrophyDefinitionsFor,
   getTrophyPinId,
 } from 'common/trophies'
 import {
@@ -34,6 +40,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   addTrophyClaims,
+  addTrophyRewards,
   replaceTrophyClaims,
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
@@ -59,6 +66,19 @@ export function TrophiesTab(props: {
 
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
+  // The multiplier claim-trophy pays starter rewards at (as for quests).
+  // Bot accounts are never paid.
+  const rewardMultiplier = !currentUser
+    ? undefined
+    : currentUser.isBot
+    ? 0
+    : getEffectiveBonusMultiplier(
+        resolveEffectiveTier({
+          entitlements: currentUser.entitlements,
+          bonusEligibility: currentUser.bonusEligibility,
+        }),
+        'quest'
+      )
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
@@ -66,13 +86,17 @@ export function TrophiesTab(props: {
   const handleClaim = async (trophyId: string, milestoneId: string) => {
     setClaimingId(trophyId)
     try {
-      const { claims } = await api('claim-trophy', {
+      const { claims, rewardAmount, rewarded } = await api('claim-trophy', {
         userId,
         trophyId,
         milestoneId,
       })
       addTrophyClaims(userId, claims)
+      addTrophyRewards(userId, rewarded)
       setJustClaimed(trophyId)
+      if (rewardAmount > 0) {
+        toast.success(`+${formatMoney(rewardAmount)} trophy reward`)
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
@@ -124,20 +148,37 @@ export function TrophiesTab(props: {
     )
   }
 
-  const { claims } = trophies
-  const progressList = computeAllTrophyProgress(achievements)
+  const { claims, starter } = trophies
+  // "Getting started" trophies, and their live counts, are for new accounts.
+  const earnableDefs = getTrophyDefinitionsFor(!!starter)
+  const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
+  const progressList = computeAllTrophyProgress(stats, earnableDefs)
   // Reached or claimed: a claim stays even if the stat drops back.
-  const reached = countEarnedMilestones(achievements, claims)
-  const total = getTotalPossibleMilestones()
+  const reached = countEarnedMilestones(stats, claims, earnableDefs)
+  const total = getTotalPossibleMilestones(earnableDefs)
   const claimedCount = countClaimedMilestones(claims)
-  const unclaimedCount = countUnclaimedReachedMilestones(achievements, claims)
+  const unclaimedCount = countUnclaimedReachedMilestones(
+    stats,
+    claims,
+    earnableDefs
+  )
 
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
   )
+  const rewardedIdsByTrophy = new Map(
+    TROPHY_DEFINITIONS.map((d) => [
+      d.id,
+      new Set(
+        trophies.rewarded
+          .filter((r) => r.trophyId === d.id)
+          .map((r) => r.milestoneId)
+      ),
+    ])
+  )
   // Other people's profiles show only trophies they have claimed.
   const visibleDefs = isOwnProfile
-    ? TROPHY_DEFINITIONS
+    ? earnableDefs
     : TROPHY_DEFINITIONS.filter((d) => claimedIdsByTrophy.get(d.id)?.size)
 
   const byCategory = new Map<TrophyCategory, TrophyDefinition[]>(
@@ -201,7 +242,11 @@ export function TrophiesTab(props: {
               progressList={progressList}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
+              rewardedIdsByTrophy={rewardedIdsByTrophy}
               isOwnProfile={isOwnProfile}
+              rewardMultiplier={
+                isOwnProfile && starter ? rewardMultiplier : undefined
+              }
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}

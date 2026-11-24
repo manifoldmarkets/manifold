@@ -46,6 +46,8 @@ type Entry = {
   savePending: boolean
   lastUsed: number
   loadedAt?: number
+  // Rewards a claim reported while there was no data, for the next read.
+  localRewarded?: UserTrophies['rewarded']
 }
 
 const MAX_IDLE = 20
@@ -71,6 +73,16 @@ const setEntry = (userId: string, patch: Partial<Entry>) => {
 }
 
 const claimKey = (c: TrophyClaim) => `${c.trophyId}/${c.milestoneId}`
+
+type MilestoneRef = { trophyId: string; milestoneId: string }
+const mergeRefs = (a: MilestoneRef[], b: MilestoneRef[]) => {
+  const byKey = new Map(a.map((r) => [claimKey({ ...r, claimedTime: 0 }), r]))
+  for (const r of b) {
+    const key = claimKey({ ...r, claimedTime: 0 })
+    if (!byKey.has(key)) byKey.set(key, r)
+  }
+  return [...byKey.values()]
+}
 
 const mergeClaims = (a: TrophyClaim[], b: TrophyClaim[]) => {
   const byKey = new Map(a.map((c) => [claimKey(c), c]))
@@ -98,7 +110,14 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
   const startPinsVersion = entry.pinsVersion
   const startPinsSaves = entry.pinsSaves
   const loading = api('get-user-trophies', { userId })
-    .then((fresh) => {
+    .then((response) => {
+      // An API from before starter rewards (stage 1, e.g. mid-deploy) sends
+      // neither field.
+      const fresh: UserTrophies = {
+        ...response,
+        starter: response.starter ?? null,
+        rewarded: response.rewarded ?? [],
+      }
       const current = getEntry(userId)
       const newerLocalClaims = current.localClaims.filter(
         (l) => l.version > startClaimsVersion
@@ -122,11 +141,17 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
                 newerLocalClaims.map((l) => l.claim)
               ),
           pins: pinsBusy && current.data ? current.data.pins : fresh.pins,
+          // Paid rewards are never removed; keep any this page added.
+          rewarded: mergeRefs(fresh.rewarded, [
+            ...(current.data?.rewarded ?? []),
+            ...(current.localRewarded ?? []),
+          ]),
         },
         localClaims: newerLocalClaims,
         confirmedPins: pinsBusy ? current.confirmedPins : fresh.pins,
         error: undefined,
         loadedAt: Date.now(),
+        localRewarded: undefined,
       })
     })
     .catch((e) => {
@@ -165,6 +190,30 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
       ...entry.localClaims,
       ...claims.map((claim) => ({ claim, version })),
     ],
+  })
+}
+
+/** Adds paid starter rewards returned by claim-trophy. Rewards are never
+ * removed, so they merge. */
+export function addTrophyRewards(
+  userId: string,
+  // Missing from a stage 1 API's response (mid-deploy).
+  rewardedOrMissing: UserTrophies['rewarded'] | undefined
+) {
+  const rewarded = rewardedOrMissing ?? []
+  const entry = getEntry(userId)
+  if (!entry.data) {
+    // The profile was forgotten while the claim was in flight.
+    setEntry(userId, {
+      localRewarded: mergeRefs(entry.localRewarded ?? [], rewarded),
+    })
+    return
+  }
+  setEntry(userId, {
+    data: {
+      ...entry.data,
+      rewarded: mergeRefs(entry.data.rewarded, rewarded),
+    },
   })
 }
 

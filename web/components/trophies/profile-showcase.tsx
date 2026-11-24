@@ -79,7 +79,10 @@ export function ProfileShowcase(props: {
     ? [LEAGUE_PLACEHOLDER_BADGE]
     : []
   const badges = sortBadges([
-    ...getTrophyBadges(achievements, claims),
+    ...getTrophyBadges(
+      achievements && { ...achievements, ...(trophies?.starter ?? {}) },
+      claims
+    ),
     ...leagueBadges,
   ])
   const badgeById = new Map(badges.map((b) => [b.id, b]))

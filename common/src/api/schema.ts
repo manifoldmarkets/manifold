@@ -52,7 +52,12 @@ import {
   JobSeekerInterest,
 } from 'common/job-seeker'
 import { League } from 'common/leagues'
-import { MAX_SHOWCASE_PINS, type TrophyClaim } from 'common/trophies'
+import {
+  MAX_SHOWCASE_PINS,
+  type StarterStats,
+  type TrophyClaim,
+  type TrophyMilestoneRef,
+} from 'common/trophies'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
@@ -3302,6 +3307,12 @@ export const API = (_apiTypeCheck = {
       league: Pick<League, 'season' | 'division'> | null
       // Effective season used for the league lookup, even when league is null.
       season: number
+      // Counts for the "Getting started" trophies, or null for accounts that
+      // don't get them (see isStarterTrophyAccount).
+      starter: StarterStats | null
+      // Milestones whose reward has been paid, for accounts that get the
+      // starter trophies.
+      rewarded: TrophyMilestoneRef[]
     },
     props: z
       .object({
@@ -3323,7 +3334,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Claims a reached milestone and every lower one.
+  // Claims a reached milestone and every lower one, paying any reward once.
   'claim-trophy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3331,6 +3342,9 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       newlyClaimed: TrophyClaim[]
       claims: TrophyClaim[]
+      // Mana paid for the newly claimed milestones, after the tier multiplier.
+      rewardAmount: number
+      rewarded: TrophyMilestoneRef[]
     },
     props: z
       .object({

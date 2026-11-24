@@ -1,5 +1,11 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { getShowcasePins, getTrophyClaims } from 'api/helpers/trophies'
+import {
+  getIsStarterTrophyAccount,
+  getRewardedMilestones,
+  getShowcasePins,
+  getStarterStats,
+  getTrophyClaims,
+} from 'api/helpers/trophies'
 import type { League } from 'common/leagues'
 import {
   createSupabaseDirectClient,
@@ -21,6 +27,13 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
       `select season, division from leagues where user_id = $1 and season = $2`,
       [userId, season]
     )
-    return { claims, pins, league, season }
+    // Only new accounts get the starter trophies, so only they pay for the
+    // live count.
+    const isStarterAccount = await getIsStarterTrophyAccount(tx, userId)
+    const starter = isStarterAccount ? await getStarterStats(tx, userId) : null
+    const rewarded = isStarterAccount
+      ? await getRewardedMilestones(tx, userId)
+      : []
+    return { claims, pins, league, season, starter, rewarded }
   })
 }
