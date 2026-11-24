@@ -16,6 +16,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { OPEN_SHOWCASE_PICKER_EVENT } from 'web/components/trophies/open-showcase-picker'
 import { ProfileShowcase } from 'web/components/trophies/profile-showcase'
 import { TrophiesTab } from 'web/components/trophies/trophies-tab'
+import { TrophiesTabTitle } from 'web/components/trophies/trophies-tab-title'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -502,6 +503,7 @@ function UserProfile(props: {
               },
               {
                 title: 'Trophies',
+                titleElement: isCurrentUser ? <TrophiesTabTitle /> : undefined,
                 // Links from before the rename say ?tab=achievements.
                 queryAliases: ['achievements'],
                 prerender: true,

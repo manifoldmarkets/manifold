@@ -7,17 +7,14 @@ import {
   getStarterStats,
   getTrophyClaims,
 } from 'api/helpers/trophies'
-import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-  roundTierBonus,
-} from 'common/supporter-config'
+import { resolveEffectiveTier, roundTierBonus } from 'common/supporter-config'
 import {
   TrophyDefinition,
   getMilestone,
   getMilestonesToClaim,
   getRewardManaTotal,
   getTrophyDefinition,
+  getTrophyRewardMultiplier,
   getTrophyStatValue,
   isStarterTrophy,
   isStarterTrophyAccount,
@@ -119,15 +116,14 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           return { inserted, rewardAmount: 0 }
         }
 
-        // Same tier multiplier as quests: zero for flagged accounts, reduced
-        // for bonus-blocked ones, more for members. Membership takes
-        // precedence over a flag, as it does for quests.
+        // Membership takes precedence over a flag and pays the base reward.
+        // Without membership, restricted accounts get zero and reduced get 0.2x.
         const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
         const effectiveTier = resolveEffectiveTier({
           entitlements,
           bonusEligibility: toBonusEligibility(locked.bonus_eligibility),
         })
-        const multiplier = getEffectiveBonusMultiplier(effectiveTier, 'quest')
+        const multiplier = getTrophyRewardMultiplier(effectiveTier)
         // Nothing to pay: leave the rewards unpaid rather than used up, so
         // claiming again (directly, or via a higher milestone) pays them if
         // the account's standing changes.

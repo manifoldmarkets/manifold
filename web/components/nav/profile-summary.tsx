@@ -9,6 +9,8 @@ import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
 import { TokenNumber } from '../widgets/token-number'
+import { TrophyCountBubble } from '../trophies/trophy-count-bubble'
+import { useNavTrophyCount } from '../trophies/trophy-nudge-provider'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -22,10 +24,11 @@ export function ProfileSummary(props: { user: User; className?: string }) {
 
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
+  const count = useNavTrophyCount()
   return (
     <Link
-      href={url}
-      onClick={trackCallback('sidebar: profile')}
+      href={count ? `${url}?tab=trophies` : url}
+      onClick={trackCallback('sidebar: profile', { trophyCount: count })}
       className={clsx(
         'text-ink-700 hover:bg-primary-100 hover:text-ink-900 group flex w-full shrink-0 flex-row items-center truncate rounded-md py-3',
         className,
@@ -33,14 +36,17 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       )}
     >
       <div className="w-2 shrink" />
-      <Avatar
-        avatarUrl={user.avatarUrl}
-        username={user.username}
-        noLink
-        size="md"
-        entitlements={effectiveEntitlements}
-        displayContext="profile_sidebar"
-      />
+      <span className="relative shrink-0">
+        <Avatar
+          avatarUrl={user.avatarUrl}
+          username={user.username}
+          noLink
+          size="md"
+          entitlements={effectiveEntitlements}
+          displayContext="profile_sidebar"
+        />
+        <TrophyCountBubble count={count} onAvatar />
+      </span>
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         {user.cashBalance < 1 && <div className="text-sm">{user.name}</div>}

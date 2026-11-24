@@ -5,11 +5,9 @@ import { api } from 'web/lib/api/api'
 
 export type UserAchievements = APIResponse<'get-user-achievements'>
 
-// One user's profile stats, shared by every component showing them (the
-// Trophies tab and the profile showcase), so they always agree.
+// One user's stats, shared by navigation and the profile.
 //
-// - Read again on each visit to the profile, and when the page regains focus,
-//   once the last read is FRESH_MS old: a trophy reached while away shows up.
+// - On mount and focus, reuse the last read within the caller's freshness window.
 // - A failed read keeps the last good stats and reports the error.
 // - Profiles nobody is showing are kept for a quick return, up to MAX_IDLE.
 
@@ -55,13 +53,6 @@ function loadUserAchievements(userId: string) {
   return loading
 }
 
-const loadIfStale = (userId: string) => {
-  const { loadedAt } = getEntry(userId)
-  if (loadedAt === undefined || Date.now() - loadedAt >= FRESH_MS) {
-    loadUserAchievements(userId)
-  }
-}
-
 // Forget the least recently shown profiles beyond MAX_IDLE.
 const pruneIdle = () => {
   const idle = [...entries.entries()]
@@ -72,9 +63,13 @@ const pruneIdle = () => {
   }
 }
 
-export function useUserAchievements(userId: string) {
+export function useUserAchievements(
+  userId: string | undefined,
+  freshMs = FRESH_MS
+) {
   const subscribe = useCallback(
     (listener: () => void) => {
+      if (!userId) return () => {}
       let set = listeners.get(userId)
       if (!set) {
         set = new Set()
@@ -94,13 +89,23 @@ export function useUserAchievements(userId: string) {
     },
     [userId]
   )
-  const getSnapshot = useCallback(() => entries.get(userId), [userId])
+  const getSnapshot = useCallback(
+    () => (userId ? entries.get(userId) : undefined),
+    [userId]
+  )
   const entry = useSyncExternalStore(subscribe, getSnapshot, () => undefined)
 
   useEffect(() => {
-    loadIfStale(userId)
+    if (!userId) return
+    const loadIfStale = () => {
+      const { loadedAt } = getEntry(userId)
+      if (loadedAt === undefined || Date.now() - loadedAt >= freshMs) {
+        loadUserAchievements(userId)
+      }
+    }
+    loadIfStale()
     const onFocus = () => {
-      if (document.visibilityState === 'visible') loadIfStale(userId)
+      if (document.visibilityState === 'visible') loadIfStale()
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
@@ -108,10 +113,10 @@ export function useUserAchievements(userId: string) {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
     }
-  }, [userId])
+  }, [userId, freshMs])
 
   const retry = useCallback(() => {
-    loadUserAchievements(userId)
+    if (userId) loadUserAchievements(userId)
   }, [userId])
 
   return {

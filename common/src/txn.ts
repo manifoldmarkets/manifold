@@ -590,8 +590,8 @@ type PushNotificationBonus = {
   token: 'M$'
 }
 
-// Paid by claim-trophy for "Getting started" milestones, once per milestone:
-// the user_trophy_milestones rows it pays for record this txn's id.
+// Paid once per onboarding milestone. The user_trophy_rewards rows record
+// the transaction ID, including for Newcomer.
 type TrophyReward = {
   category: 'TROPHY_REWARD'
   fromType: 'BANK'
@@ -603,6 +603,7 @@ type TrophyReward = {
     // Sum of the milestones' rewardMana, before the multiplier.
     baseAmount: number
     effectiveTier: string
+    // Applied at claim time. New trophy payouts cap this at 1 for every tier.
     multiplier: number
   }
 }

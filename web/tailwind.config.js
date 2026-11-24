@@ -37,6 +37,19 @@ module.exports = {
         bouncy: 'cubic-bezier(0.8, 0, 1, 1)',
       },
       keyframes: {
+        'trophy-pop': {
+          '0%': { opacity: 0, transform: 'scale(0.75)' },
+          '70%': { transform: 'scale(1.06)' },
+          '100%': { opacity: 1, transform: 'scale(1)' },
+        },
+        'trophy-float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-3px)' },
+        },
+        'trophy-shine': {
+          from: { transform: 'translateX(-100%)' },
+          to: { transform: 'translateX(100%)' },
+        },
         progress: {
           from: {
             width: '0%',
@@ -375,6 +388,10 @@ module.exports = {
         },
       },
       animation: {
+        'trophy-pop': 'trophy-pop 240ms ease-out',
+        'trophy-shine': 'trophy-shine 900ms ease-in-out 1s',
+        'trophy-explainer':
+          'trophy-pop 240ms ease-out backwards, trophy-float 3s ease-in-out infinite',
         progress: 'progress linear forwards',
         'bounce-left': 'bounce-left 0.8s',
         'bounce-left-loop': 'bounce-left 0.8s infinite',

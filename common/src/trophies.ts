@@ -8,10 +8,16 @@
 // the authority on what can be claimed (claim-trophy recomputes the stat); the
 // helpers here are shared so the web shows the same answer.
 //
-// "Getting started" milestones pay mana once, when claimed. They exist only
-// for accounts created at or after STARTER_TROPHIES_START_TIME.
+// Starter accounts can collect a one-time reward for Newcomer and each
+// "Getting started" milestone. All accounts can claim Newcomer.
 
+import { minBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
+import {
+  EffectiveTier,
+  getEffectiveBonusMultiplier,
+  roundTierBonus,
+} from 'common/supporter-config'
 
 export type TrophyTier =
   | 'green'
@@ -39,8 +45,8 @@ export type TrophyMilestone = {
   emoji: string
   threshold: number
   tier: TrophyTier
-  // Mana paid once when the milestone is claimed, before the claimant's tier
-  // multiplier. Only "Getting started" milestones have one.
+  // One-time base reward before any reduction for account standing.
+  // Only onboarding milestones pay, and only to starter accounts.
   rewardMana?: number
 }
 
@@ -406,7 +412,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green'),
+      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green', 25),
       m('established', 'Established', '\u{1F333}', 1, 'blue'),
       m('veteran', 'Veteran', '\u{1F396}', 2, 'purple'),
       m('elder', 'Elder', '\u{1F474}', 3, 'gold'),
@@ -435,12 +441,36 @@ export function getTrophyDefinitionsFor(
     : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
 }
 
-/** Mana the given milestones pay, before the claimant's tier multiplier. */
+// One-time welcome rewards keep the quest reductions. Capping them at face
+// value lets future members claim now without missing out on mana.
+export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
+  const multiplier = getEffectiveBonusMultiplier(tier, 'quest')
+  return Number.isFinite(multiplier) && multiplier > 0
+    ? Math.min(multiplier, 1)
+    : 0
+}
+
+/** Total base mana for the given milestones, before any standing reduction. */
 export function getRewardManaTotal(milestones: TrophyMilestone[]): number {
   return milestones.reduce((sum, m) => {
     const reward = m.rewardMana ?? 0
     return Number.isFinite(reward) && reward > 0 ? sum + reward : sum
   }, 0)
+}
+
+/** What claiming this milestone would collect, including unpaid lower ones. */
+export function getTrophyClaimReward(
+  definition: TrophyDefinition,
+  milestone: TrophyMilestone,
+  rewarded: TrophyMilestoneRef[],
+  multiplier: number
+) {
+  if (!Number.isFinite(multiplier) || multiplier <= 0) return 0
+  const paid = getClaimedMilestoneIds(rewarded, definition.id)
+  const unpaid = definition.milestones.filter(
+    (m) => m.threshold <= milestone.threshold && !paid.has(m.id)
+  )
+  return roundTierBonus(getRewardManaTotal(unpaid) * multiplier)
 }
 
 export function getTrophyDefinition(
@@ -549,13 +579,65 @@ export type TrophyClaim = {
 
 export type TrophyMilestoneRef = { trophyId: string; milestoneId: string }
 
+type TrophyMilestonePair = {
+  definition: TrophyDefinition
+  milestone: TrophyMilestone
+}
+
+export type OnboardingMilestone = TrophyMilestonePair
+
+const starterDefinitions = TROPHY_DEFINITIONS.filter(isStarterTrophy)
+const accountAge = DEFINITIONS_BY_ID.get('account-age')!
+export const ONBOARDING_MILESTONES: OnboardingMilestone[] = [
+  { definition: accountAge, milestone: getMilestone(accountAge, 'newcomer')! },
+  ...starterDefinitions.flatMap((definition) =>
+    definition.milestones.map((milestone) => ({ definition, milestone }))
+  ),
+]
+
+export function getClaimableOnboardingMilestones(
+  starterStats: StarterStats | null,
+  claims: TrophyClaim[]
+) {
+  if (!starterStats) return []
+  return ONBOARDING_MILESTONES.filter(
+    ({ definition, milestone }) =>
+      isMilestoneReached(
+        milestone,
+        getTrophyStatValue(definition, starterStats)
+      ) &&
+      !claims.some(
+        (c) => c.trophyId === definition.id && c.milestoneId === milestone.id
+      )
+  )
+}
+
+export function getNextOnboardingMilestone(
+  starterStats: StarterStats | null,
+  claims: TrophyClaim[]
+) {
+  if (!starterStats) return null
+  const candidates = starterDefinitions.flatMap((definition) => {
+    const value = getTrophyStatValue(definition, starterStats)
+    const claimed = getClaimedMilestoneIds(claims, definition.id)
+    const milestone = definition.milestones.find(
+      (m) => !isMilestoneReached(m, value) && !claimed.has(m.id)
+    )
+    return milestone ? [{ definition, milestone, value }] : []
+  })
+  return (
+    minBy(candidates, ({ milestone, value }) => milestone.threshold - value) ??
+    null
+  )
+}
+
 const isKnownClaim = (claim: TrophyClaim) => {
   const def = getTrophyDefinition(claim.trophyId)
   return !!def && !!getMilestone(def, claim.milestoneId)
 }
 
 export function getClaimedMilestoneIds(
-  claims: TrophyClaim[],
+  claims: TrophyMilestoneRef[],
   trophyId: string
 ): Set<string> {
   return new Set(
@@ -601,20 +683,48 @@ export function getMilestonesToClaim(
 }
 
 /** Reached milestones not yet claimed, across the given trophies. */
+export function getClaimableMilestones(
+  stats: TrophyStats,
+  claims: TrophyClaim[],
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
+): TrophyMilestonePair[] {
+  return defs.flatMap((definition) => {
+    const value = getTrophyStatValue(definition, stats)
+    const claimed = getClaimedMilestoneIds(claims, definition.id)
+    return definition.milestones
+      .filter((m) => isMilestoneReached(m, value) && !claimed.has(m.id))
+      .map((milestone) => ({ definition, milestone }))
+  })
+}
+
 export function countUnclaimedReachedMilestones(
   stats: TrophyStats,
   claims: TrophyClaim[],
   defs: TrophyDefinition[] = TROPHY_DEFINITIONS
 ): number {
-  let count = 0
-  for (const def of defs) {
-    const value = getTrophyStatValue(def, stats)
-    const claimed = getClaimedMilestoneIds(claims, def.id)
-    count += def.milestones.filter(
-      (m) => isMilestoneReached(m, value) && !claimed.has(m.id)
-    ).length
+  return getClaimableMilestones(stats, claims, defs).length
+}
+
+/** Show the highest new milestone per trophy. Record every new key, including
+ * lower milestones and trophies represented by the summary. */
+export function selectTrophyUnlockToasts(
+  ready: TrophyMilestonePair[],
+  seen: ReadonlySet<string>
+) {
+  const highest = new Map<string, TrophyMilestonePair>()
+  const newKeys: string[] = []
+  for (const pair of ready) {
+    const { definition, milestone } = pair
+    const key = `${definition.id}/${milestone.id}`
+    if (seen.has(key)) continue
+    newKeys.push(key)
+    const previous = highest.get(definition.id)
+    if (!previous || milestone.threshold > previous.milestone.threshold) {
+      highest.set(definition.id, pair)
+    }
   }
-  return count
+  const milestones = [...highest.values()].slice(0, 3)
+  return { milestones, moreCount: highest.size - milestones.length, newKeys }
 }
 
 /** The moment an account created at createdTime is `years` years old, in

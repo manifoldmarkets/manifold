@@ -21,6 +21,10 @@ select
   using (true);
 
 -- Indexes
+drop index if exists old_post_comments_user_id;
+
+create index old_post_comments_user_id on public.old_post_comments using btree (user_id);
+
 drop index if exists post_comments_pkey;
 
 create unique index post_comments_pkey on public.old_post_comments using btree (post_id, comment_id);

@@ -1,4 +1,4 @@
-// "Getting started" trophy rewards: claiming a milestone pays its mana once,
+// Onboarding trophy rewards: claiming a milestone pays its mana once,
 // in the same transaction that records the claim.
 //
 // The real claim-trophy, get-user-trophies and unclaim-trophy handlers run
@@ -493,15 +493,50 @@ describe('claiming a starter milestone', () => {
     ).toBe(50)
   })
 
-  it('applies the member multiplier', async () => {
-    await addUser('member')
-    await rows(
-      `insert into user_entitlements (user_id, entitlement_id, expires_time, auto_renew)
-       values ('member', 'supporter-basic', now() + interval '10 days', true)`
-    )
-    await bet('member', 'm1', 10, 0)
-    const result = await claim('member', 'starter-trades', 'first-trade')
-    expect(result.rewardAmount).toBe(75) // 50 x 1.5 for Plus
+  it.each([
+    ['basic', 'eligible'],
+    ['premium', 'eligible'],
+    ['premium', 'requires_verification'],
+  ] as const)(
+    'pays a %s member M50 once for First Trade (%s)',
+    async (tier, bonusEligibility) => {
+      await addUser('member', { data: { bonusEligibility } })
+      await rows(
+        `insert into user_entitlements (user_id, entitlement_id, expires_time, auto_renew)
+       values ('member', $1, now() + interval '10 days', true)`,
+        [`supporter-${tier}`]
+      )
+      await bet('member', 'm1', 10, 0)
+      const firstTrade = () => claim('member', 'starter-trades', 'first-trade')
+      expect((await firstTrade()).rewardAmount).toBe(50)
+      expect((await firstTrade()).rewardAmount).toBe(0)
+      expect((await balance('member')).balance).toBe(50)
+      expect(await rewardTxns('member')).toMatchObject([
+        {
+          amount: 50,
+          data: {
+            data: { baseAmount: 50, effectiveTier: tier, multiplier: 1 },
+          },
+        },
+      ])
+    }
+  )
+
+  it('pays a bonus-blocked account M10 once for First Trade', async () => {
+    await addUser('blocked', { data: { bonusEligibility: 'ineligible' } })
+    await bet('blocked', 'm1', 10, 0)
+    const firstTrade = () => claim('blocked', 'starter-trades', 'first-trade')
+    expect((await firstTrade()).rewardAmount).toBe(10)
+    expect((await firstTrade()).rewardAmount).toBe(0)
+    expect((await balance('blocked')).balance).toBe(10)
+    expect(await rewardTxns('blocked')).toMatchObject([
+      {
+        amount: 10,
+        data: {
+          data: { baseAmount: 50, effectiveTier: 'reduced', multiplier: 0.2 },
+        },
+      },
+    ])
   })
 
   it('rolls back the claim when the payout fails', async () => {
@@ -525,6 +560,94 @@ describe('claiming a starter milestone', () => {
     expect(
       (await claim('u', 'starter-trades', 'first-trade')).rewardAmount
     ).toBe(50)
+  })
+})
+
+describe('Newcomer rewards', () => {
+  beforeEach(() => {
+    jest
+      .mocked(loadUserAchievements)
+      .mockResolvedValue({ accountAgeYears: 2 } as never)
+  })
+
+  it.each([false, true])(
+    'pays M25 once for Newcomer (member %s)',
+    async (member) => {
+      await addUser('u')
+      if (member) {
+        await rows(
+          `insert into user_entitlements (user_id, entitlement_id) values ('u', 'supporter-basic')`
+        )
+      }
+      const paid = await claim('u', 'account-age', 'newcomer')
+      expect(paid.rewardAmount).toBe(25)
+      expect(paid.rewarded).toEqual([
+        { trophyId: 'account-age', milestoneId: 'newcomer' },
+      ])
+      expect((await trophiesOf('u')).rewarded).toEqual(paid.rewarded)
+      const again = await claim('u', 'account-age', 'newcomer')
+      expect(again.newlyClaimed).toEqual([])
+      expect(again.rewardAmount).toBe(0)
+      expect(await rewardRows('u')).toHaveLength(1)
+      expect(await rewardTxns('u')).toHaveLength(1)
+      expect((await balance('u')).balance).toBe(25)
+    }
+  )
+
+  it('collects an unpaid Newcomer reward once through a higher Account Age claim', async () => {
+    await addUser('flagged', {
+      data: { bonusEligibility: 'requires_verification' },
+    })
+    const unpaid = await claim('flagged', 'account-age', 'newcomer')
+    expect(unpaid.newlyClaimed.map((c) => c.milestoneId)).toEqual(['newcomer'])
+    expect(unpaid.rewardAmount).toBe(0)
+    expect(await rewardRows('flagged')).toEqual([])
+    expect(await rewardTxns('flagged')).toHaveLength(0)
+
+    await rows(
+      `update users set data = '{"bonusEligibility": "verified"}' where id = 'flagged'`
+    )
+    const paid = await claim('flagged', 'account-age', 'established')
+    expect(paid.newlyClaimed.map((c) => c.milestoneId)).toEqual(['established'])
+    expect(paid.rewardAmount).toBe(25)
+
+    const retry = await claim('flagged', 'account-age', 'newcomer')
+    expect(retry.rewardAmount).toBe(0)
+    const txns = await rewardTxns('flagged')
+    expect(txns).toHaveLength(1)
+    expect(txns[0].amount).toBe(25)
+    expect(await rewardRows('flagged')).toEqual([
+      { milestone_id: 'newcomer', txn_id: txns[0].id },
+    ])
+    expect(await balance('flagged')).toEqual({
+      balance: 25,
+      total_deposits: 25,
+    })
+  })
+
+  it.each(['newcomer', 'veteran'])(
+    'records Newcomer without payment for an older account claiming %s',
+    async (milestoneId) => {
+      await addUser('old', { createdTime: START - 1 })
+      const result = await claim('old', 'account-age', milestoneId)
+      expect(result.newlyClaimed.map((c) => c.milestoneId)).toContain(
+        'newcomer'
+      )
+      expect(result.rewardAmount).toBe(0)
+      expect(await rewardRows('old')).toEqual([])
+      expect(await rewardTxns('old')).toEqual([])
+      expect((await balance('old')).balance).toBe(0)
+    }
+  )
+
+  it('records Newcomer without payment for a starter bot', async () => {
+    await addUser('bot')
+    await rows(`update users set is_bot = true where id = 'bot'`)
+    const result = await claim('bot', 'account-age', 'newcomer')
+    expect(result.newlyClaimed).toHaveLength(1)
+    expect(result.rewardAmount).toBe(0)
+    expect(await rewardRows('bot')).toEqual([])
+    expect(await rewardTxns('bot')).toEqual([])
   })
 })
 

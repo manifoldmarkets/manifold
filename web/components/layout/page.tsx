@@ -16,6 +16,7 @@ import { api } from 'web/lib/api/api'
 import { ResumePendingBet } from '../bet/resume-pending-bet'
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
+import { TrophyNudgeProvider } from '../trophies/trophy-nudge-provider'
 export function Page(props: {
   trackPageView: string | false
   trackPageProps?: Record<string, any>
@@ -71,7 +72,7 @@ export function Page(props: {
   }, [])
 
   return (
-    <>
+    <TrophyNudgeProvider>
       <ConfettiOnDemand />
       {!hideGoogleOneTap && (
         <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
@@ -116,6 +117,6 @@ export function Page(props: {
         )}
       </Col>
       {!hideBottomBar && <BottomNavBar />}
-    </>
+    </TrophyNudgeProvider>
   )
 }

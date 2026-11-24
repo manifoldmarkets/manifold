@@ -13,7 +13,7 @@ import { auth } from 'web/lib/firebase/users'
 export type UserTrophies = APIResponse<'get-user-trophies'>
 
 // One user's claimed milestones and profile pins, shared live by every
-// component showing them (the Trophies tab and the profile showcase).
+// component showing them in navigation or on the profile.
 //
 // - A load replaces the claims with the server's, plus any this page added
 //   after the load started, so a slow load cannot hide a new claim and an
@@ -26,8 +26,8 @@ export type UserTrophies = APIResponse<'get-user-trophies'>
 // - Profiles nobody is showing are forgotten beyond MAX_IDLE, once nothing is
 //   loading or saving for them; a later visit reads them again. A claim that
 //   returns after its profile was forgotten waits for that read.
-// - Read again on each visit, and when the page regains focus once the last
-//   read is FRESH_MS old, so changes made in another tab show up.
+// - Mounts that request cached data and focus events use the caller's
+//   freshness window. Profile views can still request a read on every mount.
 
 type Entry = {
   data?: UserTrophies
@@ -313,9 +313,14 @@ const pruneIdle = () => {
   }
 }
 
-export function useUserTrophies(userId: string) {
+export function useUserTrophies(
+  userId: string | undefined,
+  onMount: 'always' | 'if-stale' = 'always',
+  freshMs = FRESH_MS
+) {
   const subscribe = useCallback(
     (listener: () => void) => {
+      if (!userId) return () => {}
       let set = listeners.get(userId)
       if (!set) {
         set = new Set()
@@ -335,21 +340,24 @@ export function useUserTrophies(userId: string) {
     },
     [userId]
   )
-  const getSnapshot = useCallback(() => entries.get(userId), [userId])
+  const getSnapshot = useCallback(
+    () => (userId ? entries.get(userId) : undefined),
+    [userId]
+  )
   const entry = useSyncExternalStore(subscribe, getSnapshot, () => undefined)
 
-  // Refetch on each mount, so the profile is fresh when revisited, and on
-  // focus once FRESH_MS old.
   useEffect(() => {
-    loadUserTrophies(userId)
-    const onFocus = () => {
+    if (!userId) return
+    const loadIfStale = () => {
       const { loadedAt } = getEntry(userId)
-      if (
-        document.visibilityState === 'visible' &&
-        (loadedAt === undefined || Date.now() - loadedAt >= FRESH_MS)
-      ) {
+      if (loadedAt === undefined || Date.now() - loadedAt >= freshMs) {
         loadUserTrophies(userId)
       }
+    }
+    if (onMount === 'always') loadUserTrophies(userId)
+    else loadIfStale()
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') loadIfStale()
     }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
@@ -357,7 +365,11 @@ export function useUserTrophies(userId: string) {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
     }
-  }, [userId])
+  }, [userId, onMount, freshMs])
 
-  return { trophies: entry?.data, error: entry?.error }
+  return {
+    trophies: entry?.data,
+    error: entry?.error,
+    loading: !!entry?.loading,
+  }
 }

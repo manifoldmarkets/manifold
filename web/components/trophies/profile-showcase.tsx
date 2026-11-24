@@ -11,6 +11,7 @@ import {
   TROPHY_DEFINITIONS,
   TROPHY_TIER_ORDER,
   TrophyClaim,
+  TrophyDefinition,
   TrophyMilestone,
   TrophyStats,
   TrophyTier,
@@ -283,24 +284,29 @@ function getTrophyBadges(
   return TROPHY_DEFINITIONS.flatMap((def) => {
     const milestone = getHighestClaimedMilestone(def, claims)
     if (!milestone) return []
-    const value = stats
-      ? formatTrophyValue(def, getTrophyStatValue(def, stats))
-      : undefined
-    return [
-      {
-        id: getTrophyPinId(def.id),
-        label: milestone.name,
-        stat: value,
-        detail:
-          value === undefined
-            ? def.label
-            : `${def.label}: ${value}${def.formatPrefix ? '' : ` ${def.unit}`}`,
-        emoji: milestone.emoji,
-        art: { trophyId: def.id, milestone },
-        tier: milestone.tier,
-      },
-    ]
+    const stat = stats ? getTrophyStatValue(def, stats) : undefined
+    return [getTrophyShowcaseBadge(def, milestone, stat)]
   })
+}
+
+export function getTrophyShowcaseBadge(
+  def: TrophyDefinition,
+  milestone: TrophyMilestone,
+  stat: number | undefined
+): ShowcaseBadgeData {
+  const value = stat === undefined ? undefined : formatTrophyValue(def, stat)
+  return {
+    id: getTrophyPinId(def.id),
+    label: milestone.name,
+    stat: value,
+    detail:
+      value === undefined
+        ? def.label
+        : `${def.label}: ${value}${def.formatPrefix ? '' : ` ${def.unit}`}`,
+    emoji: milestone.emoji,
+    art: { trophyId: def.id, milestone },
+    tier: milestone.tier,
+  }
 }
 
 const LEAGUE_EMOJI: Record<number, string> = {
@@ -352,13 +358,14 @@ function getLeagueBadges(
   ]
 }
 
-function ShowcaseBadge(props: {
+export function ShowcaseBadge(props: {
   badge: ShowcaseBadgeData
   onClick?: () => void
   selected?: boolean
   size?: 'sm' | 'lg'
+  hideStatBelowSm?: boolean
 }) {
-  const { badge, onClick, selected, size = 'sm' } = props
+  const { badge, onClick, selected, size = 'sm', hideStatBelowSm } = props
   const style = BADGE_STYLES[badge.tier]
   const isLarge = size === 'lg'
 
@@ -399,6 +406,7 @@ function ShowcaseBadge(props: {
           <span
             className={clsx(
               'text-ink-500 font-normal',
+              hideStatBelowSm && 'hidden sm:inline',
               isLarge ? 'text-xs' : 'text-[10px]'
             )}
           >

@@ -7,10 +7,6 @@ import { RanksType } from 'common/achievements'
 import { APIResponse } from 'common/api/schema'
 import { isAdminId } from 'common/envs/constants'
 import {
-  getEffectiveBonusMultiplier,
-  resolveEffectiveTier,
-} from 'common/supporter-config'
-import {
   CATEGORY_LABELS,
   CATEGORY_ORDER,
   SHOWCASE_SLOT_UNLOCKS,
@@ -23,6 +19,9 @@ import {
   countEarnedMilestones,
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
+  getHighestClaimedMilestone,
+  getMilestone,
+  getTrophyDefinition,
   getTotalPossibleMilestones,
   getTrophyDefinitionsFor,
   getTrophyPinId,
@@ -36,6 +35,10 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { openShowcasePicker } from 'web/components/trophies/open-showcase-picker'
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
+import { TrophyClaimModal, TrophyDialog } from './trophy-claim-modal'
+import { TrophyOnboardingSection } from './trophy-onboarding-section'
+import { formatTrophyReward } from './trophy-reward-chip'
+import { useTrophyRewardMultiplier } from 'web/hooks/use-trophy-reward-multiplier'
 import { useUser } from 'web/hooks/use-user'
 import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
@@ -45,6 +48,7 @@ import {
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 
 export function TrophiesTab(props: {
   userId: string
@@ -66,36 +70,67 @@ export function TrophiesTab(props: {
 
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
-  // The multiplier claim-trophy pays starter rewards at (as for quests).
-  // Bot accounts are never paid.
-  const rewardMultiplier = !currentUser
-    ? undefined
-    : currentUser.isBot
-    ? 0
-    : getEffectiveBonusMultiplier(
-        resolveEffectiveTier({
-          entitlements: currentUser.entitlements,
-          bonusEligibility: currentUser.bonusEligibility,
-        }),
-        'quest'
-      )
+  const rewardMultiplier = useTrophyRewardMultiplier()
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
+  const [dialog, setDialog] = useState<TrophyDialog | null>(null)
+
+  const openExplainer = (trophyId?: string) => {
+    setDialog({ step: 'explainer', trophyId })
+    track('trophy explainer shown', {
+      source: trophyId ? 'first claim' : 'tab',
+    })
+  }
+  const pinTrophy = (trophyId: string) => {
+    setDialog(null)
+    setJustClaimed(null)
+    openShowcasePicker(userId, { pinId: getTrophyPinId(trophyId) })
+  }
 
   const handleClaim = async (trophyId: string, milestoneId: string) => {
+    if (claimingId || !trophies || !isOwnProfile) return
     setClaimingId(trophyId)
     try {
-      const { claims, rewardAmount, rewarded } = await api('claim-trophy', {
-        userId,
-        trophyId,
-        milestoneId,
-      })
+      const { claims, newlyClaimed, rewardAmount, rewarded } = await api(
+        'claim-trophy',
+        {
+          userId,
+          trophyId,
+          milestoneId,
+        }
+      )
       addTrophyClaims(userId, claims)
       addTrophyRewards(userId, rewarded)
-      setJustClaimed(trophyId)
-      if (rewardAmount > 0) {
-        toast.success(`+${formatMoney(rewardAmount)} trophy reward`)
+      const first =
+        trophies.claims.length === 0 &&
+        newlyClaimed.length > 0 &&
+        claims.length === newlyClaimed.length
+      const definition = getTrophyDefinition(trophyId)
+      const milestone =
+        definition &&
+        (getHighestClaimedMilestone(definition, newlyClaimed) ??
+          getMilestone(definition, milestoneId))
+      if (milestone && (first || rewardAmount > 0)) {
+        setJustClaimed(null)
+        setDialog({
+          step: 'celebration',
+          trophyId,
+          milestone,
+          more: Math.max(0, newlyClaimed.length - 1),
+          rewardAmount: rewardAmount ?? 0,
+          first,
+        })
+        track('trophy claim modal shown', {
+          trophyId,
+          milestoneId: milestone.id,
+          first,
+          rewardAmount,
+        })
+      } else {
+        setJustClaimed(trophyId)
+        if (rewardAmount > 0)
+          toast.success(`+${formatTrophyReward(rewardAmount)} trophy reward`)
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -113,22 +148,52 @@ export function TrophiesTab(props: {
     }
   }
 
+  const starterStats = isOwnProfile ? trophies?.starter ?? null : null
+  const onboarding = starterStats && trophies && (
+    <TrophyOnboardingSection
+      starter={starterStats}
+      claims={trophies.claims}
+      rewarded={trophies.rewarded}
+      multiplier={rewardMultiplier}
+      claimingId={claimingId}
+      onClaim={handleClaim}
+    />
+  )
+  const modal = dialog && isOwnProfile && trophies && (
+    <TrophyClaimModal
+      dialog={dialog}
+      showManaRewards={!!starterStats && rewardMultiplier > 0}
+      onClose={() => {
+        if (dialog.step === 'explainer' && dialog.trophyId) {
+          setJustClaimed(dialog.trophyId)
+        }
+        setDialog(null)
+      }}
+      onExplain={openExplainer}
+      onPin={pinTrophy}
+    />
+  )
+
   if (!achievements) {
     return (
-      <Col className="items-center gap-2 py-8">
-        {achievementsError && !achievementsLoading ? (
-          <>
-            <div className="text-ink-500 text-sm">Stats couldn't load.</div>
-            <button
-              className="text-primary-600 text-sm font-medium hover:underline"
-              onClick={retryAchievements}
-            >
-              Try again
-            </button>
-          </>
-        ) : (
-          <div className="text-ink-400 text-sm">Loading trophies...</div>
-        )}
+      <Col className="gap-6 pt-4">
+        {onboarding}
+        {modal}
+        <Col className="items-center gap-2 py-8">
+          {achievementsError && !achievementsLoading ? (
+            <>
+              <div className="text-ink-500 text-sm">Stats couldn't load.</div>
+              <button
+                className="text-primary-600 text-sm font-medium hover:underline"
+                onClick={retryAchievements}
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <div className="text-ink-400 text-sm">Loading trophies...</div>
+          )}
+        </Col>
       </Col>
     )
   }
@@ -166,16 +231,6 @@ export function TrophiesTab(props: {
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
   )
-  const rewardedIdsByTrophy = new Map(
-    TROPHY_DEFINITIONS.map((d) => [
-      d.id,
-      new Set(
-        trophies.rewarded
-          .filter((r) => r.trophyId === d.id)
-          .map((r) => r.milestoneId)
-      ),
-    ])
-  )
   // Other people's profiles show only trophies they have claimed.
   const visibleDefs = isOwnProfile
     ? earnableDefs
@@ -192,6 +247,8 @@ export function TrophiesTab(props: {
 
   return (
     <Col className="gap-6 pt-4">
+      {onboarding}
+      {modal}
       <Col className="gap-1">
         <Row className="items-center gap-2">
           <span className="text-2xl" aria-hidden>
@@ -213,10 +270,16 @@ export function TrophiesTab(props: {
           </Col>
         </Row>
         {isOwnProfile && (
-          <span className="text-ink-500 text-sm">
+          <div className="text-ink-500 text-sm">
             Earn trophies by trading, creating markets and being active. Claim
-            them to pin them to your profile.
-          </span>
+            them to pin them to your profile.{' '}
+            <button
+              className="text-primary-600 hover:underline"
+              onClick={() => openExplainer()}
+            >
+              How trophies work
+            </button>
+          </div>
         )}
       </Col>
 
@@ -242,7 +305,7 @@ export function TrophiesTab(props: {
               progressList={progressList}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
-              rewardedIdsByTrophy={rewardedIdsByTrophy}
+              rewarded={trophies.rewarded}
               isOwnProfile={isOwnProfile}
               rewardMultiplier={
                 isOwnProfile && starter ? rewardMultiplier : undefined
@@ -251,10 +314,7 @@ export function TrophiesTab(props: {
               claimingId={claimingId}
               justClaimedId={justClaimed}
               accountCreatedTime={accountCreatedTime}
-              onPinToProfile={(trophyId) => {
-                setJustClaimed(null)
-                openShowcasePicker(userId, { pinId: getTrophyPinId(trophyId) })
-              }}
+              onPinToProfile={pinTrophy}
             />
           </Col>
         )
@@ -331,7 +391,7 @@ function ShowcaseSlotTracker(props: {
             </span>
           ) : (
             <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-              All pins unlocked!
+              All pins unlocked
             </span>
           )}
         </Col>

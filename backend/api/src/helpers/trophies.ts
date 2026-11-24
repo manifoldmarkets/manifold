@@ -58,9 +58,7 @@ export async function getShowcasePins(
   return row ? row.pins : null
 }
 
-// Whether the account gets the "Getting started" trophies, or null if there is
-// no such user.
-// Milestones whose reward has been paid (see user_trophy_rewards).
+// Paid onboarding milestones, including Newcomer in the Account Age trophy.
 export async function getRewardedMilestones(
   pg: Pg,
   userId: string
@@ -75,6 +73,7 @@ export async function getRewardedMilestones(
   }))
 }
 
+// Whether the account gets onboarding rewards, or null if there is no such user.
 export async function getIsStarterTrophyAccount(
   pg: Pg,
   userId: string
