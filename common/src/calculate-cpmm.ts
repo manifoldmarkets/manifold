@@ -301,11 +301,19 @@ export function calculateCpmmAmountToBuySharesFixedP(
   const price = (pOwn * other) / ((1 - pOwn) * own + pOwn * other)
   let cost = shares * price
   if (!(cost > lo && cost < hi)) cost = lo + (hi - lo) / 2
+  // h at a cost, or -Infinity where it would take more than the side holds:
+  // when the side the shares come from is below one ulp of them, the bracket's
+  // low end can round to such a cost, where log1p's argument passes -1.
+  const residual = (a: number) => (a - shares <= -own ? -Infinity : h(a))
+  // How far from 0 rounding alone leaves h at the root, where its two terms
+  // cancel: a few ulps of either.
+  const noise = (a: number) =>
+    8 *
+    Number.EPSILON *
+    (Math.abs(pOwn * Math.log1p((a - shares) / own)) +
+      Math.abs((1 - pOwn) * Math.log1p(a / other)))
+  let value = residual(cost)
   for (let i = 0; i < 100; i++) {
-    // When the side the shares come from is below one ulp of them, the bracket's
-    // low end can round to a cost that would take more than the side holds,
-    // where log1p's argument passes -1: that cost is too low.
-    const value = cost - shares <= -own ? -Infinity : h(cost)
     // Only a degenerate pool gets here; fail the way the bisection this
     // replaced did, which the sell diagnostics recognize.
     if (isNaN(value))
@@ -316,11 +324,28 @@ export function calculateCpmmAmountToBuySharesFixedP(
     if (value < 0) lo = cost
     else hi = cost
     let next = value === -Infinity ? NaN : cost - value / slope(cost)
+    // A step below half an ulp leaves the root within rounding of the cost:
+    // the next float toward it, or two, settles which side.
+    if (next === cost)
+      next = cost + (value < 0 ? 1 : -1) * Math.abs(cost) * Number.EPSILON
     if (!(next > lo && next < hi)) next = lo + (hi - lo) / 2
     // Down to adjacent floats: the high end is the least cost known to cover it.
     if (!(next > lo && next < hi)) return hi
-    if (Math.abs(next - cost) <= 1e-15 * Math.abs(next)) return next
+    const nextValue = residual(next)
+    // A step down to a few ulps means Newton has converged, where h(next) is
+    // within rounding of 0. Not where h is so steep that the step is small
+    // only because the slope is huge: a sale from a side below an ulp of the
+    // shares starts within an ulp of the bracket's low end, where the slope is
+    // pOwn over that ulp, and its first step is below the tolerance while h is
+    // still -0.04, a few hundred ulps short of the root. There the iteration
+    // goes on, and the bracket closes on the root where the steps can't.
+    if (
+      Math.abs(next - cost) <= 1e-15 * Math.abs(next) &&
+      Math.abs(nextValue) <= noise(next)
+    )
+      return next
     cost = next
+    value = nextValue
   }
   return cost
 }
@@ -1195,34 +1220,19 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
   const probs = answerIds.map((id) =>
     getCpmmProbability(poolsByAnswer[id].pool, poolsByAnswer[id].p)
   )
-  // Allocate the ADDED mana exactly as creation would, at the current probs (√variance shape).
-  const delta = cpmmMulti2SumToOneCreationPools(probs, amount)
-  const result: {
+  type Result = {
     [answerId: string]: {
       pool: { YES: number; NO: number }
       p: number
       liquidity: number
     }
-  } = {}
-  answerIds.forEach((id, i) => {
-    const { pool } = poolsByAnswer[id]
-    const prob = probs[i]
-    const newPool = {
-      YES: pool.YES + delta[i].poolYes,
-      NO: pool.NO + delta[i].poolNo,
-    }
-    // Re-price p so prob(newPool, newP) == prob (unique; same form as creation's p).
-    const newP = pForProbability(newPool, prob)
-    const liquidity =
-      getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
-    result[id] = { pool: newPool, p: newP, liquidity }
-  })
+  }
 
   // GP19c guard: a sane TRADED market can sit at creation-infeasible probs, where the
   // √variance closed form's delta has dY_i < 0 on some answers, and a large enough add (or
   // drizzle, which accumulates to the same bound) drives a merged poolYes < 0. The delta
-  // now comes from creation's rule, which solves the shape exactly wherever the closed
-  // form fails, so it's positive everywhere; the sanity check stays as a backstop. Rather
+  // comes from creation's rule, which solves the shape exactly wherever the closed form
+  // fails, so it's positive everywhere; the sanity check stays as a backstop. Rather
   // than cap or reject (drizzle must never brick), the fallback is per-answer lossless
   // adds (GP19e: floated p is the GP6a weight — sane and prob-preserving for ANY positive
   // reserves; the same op as a per-answer addLiquidity, so conservation is inherited),
@@ -1237,38 +1247,66 @@ export function addCpmmMultiLiquidityAnswersSumToOneV2(
   // resolve. Only answers inside the band take the per-answer adds, which keeps their p
   // inside too; the rest keep their pools and p. Callers leave the subsidy pending if no
   // answer can take it (canDeployCpmmMulti2Liquidity).
-  const keepsPInBand = (id: string) => {
-    const p = result[id].p
-    return (
-      (p >= MIN_CPMM_PROB && p <= MAX_CPMM_PROB) ||
-      Math.abs(p - 0.5) <= Math.abs(poolsByAnswer[id].p - 0.5)
-    )
-  }
-  const deepenable = deepenableAnswerIds(poolsByAnswer)
-  if (
-    deepenable.length < answerIds.length ||
-    !answerIds.every(
-      (id) => isSanePoolYesNo(result[id].pool, result[id].p) && keepsPInBand(id)
-    )
-  ) {
-    const depth = (id: string) => {
-      const q = probs[answerIds.indexOf(id)]
-      return Math.sqrt(q * (1 - q))
-    }
-    const totalDepth = sumBy(deepenable, depth)
-    answerIds.forEach((id) => {
-      const { pool, p } = poolsByAnswer[id]
-      if (!deepenable.includes(id)) {
-        result[id] = { pool, p, liquidity: 0 }
-        return
+  // An answer outside the band settles it before the solve: creation's exact shape
+  // (cpmmMulti2SumToOneCreationPools) takes some 75ms at 50 answers and 150ms at 100, on
+  // every drizzle tick, and once a market has traded an answer outside the band is the
+  // common case.
+
+  // The merge, where it leaves every answer sane and its p in band.
+  const mergeCreationShape = (): Result | undefined => {
+    // Allocate the ADDED mana exactly as creation would, at the current probs (√variance shape).
+    const delta = cpmmMulti2SumToOneCreationPools(probs, amount)
+    const result: Result = {}
+    answerIds.forEach((id, i) => {
+      const { pool } = poolsByAnswer[id]
+      const prob = probs[i]
+      const newPool = {
+        YES: pool.YES + delta[i].poolYes,
+        NO: pool.NO + delta[i].poolNo,
       }
-      const share = (amount * depth(id)) / totalDepth
-      const { newPool, newP } = addCpmmLiquidity(pool, p, share)
+      // Re-price p so prob(newPool, newP) == prob (unique; same form as creation's p).
+      const newP = pForProbability(newPool, prob)
       const liquidity =
         getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
       result[id] = { pool: newPool, p: newP, liquidity }
     })
+    const keepsPInBand = (id: string) => {
+      const p = result[id].p
+      return (
+        (p >= MIN_CPMM_PROB && p <= MAX_CPMM_PROB) ||
+        Math.abs(p - 0.5) <= Math.abs(poolsByAnswer[id].p - 0.5)
+      )
+    }
+    return answerIds.every(
+      (id) => isSanePoolYesNo(result[id].pool, result[id].p) && keepsPInBand(id)
+    )
+      ? result
+      : undefined
   }
+
+  const deepenable = deepenableAnswerIds(poolsByAnswer)
+  const merged =
+    deepenable.length === answerIds.length ? mergeCreationShape() : undefined
+  if (merged) return merged
+
+  const result: Result = {}
+  const depth = (id: string) => {
+    const q = probs[answerIds.indexOf(id)]
+    return Math.sqrt(q * (1 - q))
+  }
+  const totalDepth = sumBy(deepenable, depth)
+  answerIds.forEach((id) => {
+    const { pool, p } = poolsByAnswer[id]
+    if (!deepenable.includes(id)) {
+      result[id] = { pool, p, liquidity: 0 }
+      return
+    }
+    const share = (amount * depth(id)) / totalDepth
+    const { newPool, newP } = addCpmmLiquidity(pool, p, share)
+    const liquidity =
+      getCpmmLiquidity(newPool, newP) - getCpmmLiquidity(pool, newP)
+    result[id] = { pool: newPool, p: newP, liquidity }
+  })
   return result
 }
 
@@ -1373,7 +1411,11 @@ const clampP = (p: number, [lo, hi] = [MIN_CPMM_PROB, MAX_CPMM_PROB]) =>
 //   The new answer's NO side takes the fee's worth, or half if there's less,
 //   and the new Other's the rest. The fee is tiered by the market's liquidity
 //   per answer, so the new answer gets a pool of its own about as deep as the
-//   others', not a sliver of Other's.
+//   others', not a sliver of Other's. Where Other's YES beyond its NO dwarfs
+//   the fee, so that no p in band would price the new answer at its opening
+//   price on it, the new answer's side takes what that price needs out of the
+//   new Other's share, as far as the new Other can hold its own price without
+//   it (extraAt).
 // Every outcome then pays the fee more than it did, and nothing else changes.
 // A pool's p sets its prices without moving any value, so the prices come
 // last. The new answer opens at newAnswerOpeningProb(what Other has), which
@@ -1448,20 +1490,74 @@ export function addAnswerToCpmmMulti2Pools(
   // new Other open at 50% each.
   const openAt = newAnswerOpeningProb(room)
 
+  // The least NO a pool holding `yes` more YES than NO needs to be priced at
+  // q with p no higher than 0.99: at that p a pool is priced by a sliver of
+  // its NO, so q takes NO in proportion to the YES.
+  const noFor = (yes: number, q: number) => {
+    const r = odds(q) / odds(MAX_CPMM_PROB)
+    return (r * yes) / (1 - r)
+  }
+  // The new answer's and the new Other's pools with `sets` YES added to every
+  // pool, out of the new Other's NO, and `extra` mana moved from the new
+  // Other's share to the new answer's. Both parts hold Other's YES beyond its
+  // NO, so the pools pay the same whichever answer wins.
+  const newPoolAt = (sets: number, extra: number) => ({
+    YES: yesOver + sets + newNo + extra,
+    NO: newNo + extra,
+  })
+  const otherPoolAt = (sets: number, extra: number) => ({
+    YES: yesOver + otherNo - extra,
+    NO: otherNo - sets - extra,
+  })
+  const newProbAt = (sets: number, extra: number) => {
+    const pool = newPoolAt(sets, extra)
+    return getCpmmProbability(
+      pool,
+      clampP(pForProbability(pool, openAt))
+    )
+  }
+  // The new Other gives what it can toward the new answer, down to 1%.
+  const otherTargetFor = (newProb: number) =>
+    room < MIN_CPMM_PROB ? room : Math.max(MIN_CPMM_PROB, room - newProb)
+  // The mana the new answer's pool takes beyond the fee's worth. Where Other's
+  // YES beyond its NO is far above newNo (for a 2% opening, about 4,850 times
+  // it), no p in band prices the new answer at openAt on newNo alone: it opens
+  // below that, even below the 1% bets are held to. It takes what openAt needs
+  // from the new Other's share, as far as the new Other can spare it and still
+  // hold its own price at a p no higher than 0.99; where it can't spare it
+  // all, as much as it can, which leaves the new answer as near openAt as the
+  // mana allows. The new Other keeps a sliver at the least.
+  const extraAt = (sets: number) => {
+    const needed = noFor(yesOver + sets, openAt) - newNo
+    if (!(needed > 0)) return 0
+    const most = Math.min(needed, (otherNo - sets) * (1 - 1e-4))
+    if (!(most > 0)) return 0
+    const otherHoldsAt = (extra: number) =>
+      pForProbability(
+        otherPoolAt(sets, extra),
+        otherTargetFor(newProbAt(sets, extra))
+      ) <= MAX_CPMM_PROB
+    if (otherHoldsAt(most)) return most
+    if (!otherHoldsAt(0)) return 0
+    let [lo, hi] = [0, most]
+    for (let i = 0; i < 100; i++) {
+      const mid = lo + (hi - lo) / 2
+      if (!(mid > lo && mid < hi)) break
+      if (otherHoldsAt(mid)) lo = mid
+      else hi = mid
+    }
+    return lo
+  }
+
   // The new answer's and the new Other's pools and prices with `sets` YES
   // added to every pool, out of the new Other's NO, and what that leaves the
   // listed answers to keep between them.
   const partsAt = (sets: number) => {
-    const newPool = { YES: yesOver + sets + newNo, NO: newNo }
-    const otherPool = { YES: yesOver + otherNo, NO: otherNo - sets }
-    const newProb = getCpmmProbability(
-      newPool,
-      clampP(pForProbability(newPool, openAt))
-    )
-    // The new Other gives what it can toward the new answer, down to 1%.
-    const otherTarget =
-      room < MIN_CPMM_PROB ? room : Math.max(MIN_CPMM_PROB, room - newProb)
-    const otherP = clampP(pForProbability(otherPool, otherTarget))
+    const extra = extraAt(sets)
+    const newPool = newPoolAt(sets, extra)
+    const otherPool = otherPoolAt(sets, extra)
+    const newProb = newProbAt(sets, extra)
+    const otherP = clampP(pForProbability(otherPool, otherTargetFor(newProb)))
     const keep = 1 - newProb - getCpmmProbability(otherPool, otherP)
     return { newPool, otherPool, otherP, keep }
   }
@@ -1519,7 +1615,8 @@ export function addAnswerToCpmmMulti2Pools(
   // An answer's p falls with its price, so one near the bottom of its bounds
   // can't give its share. YES added to its pool raises the p any price needs,
   // so every pool takes the same YES, the fewest that let each give its share,
-  // out of the new Other's NO, which keeps at least half.
+  // out of the new Other's NO, which keeps at least half of it for its own
+  // share and the new answer's.
   const setsNeeded = (id: string) => {
     const target = share * probs[id]
     const { YES, NO } = listed[id].pool

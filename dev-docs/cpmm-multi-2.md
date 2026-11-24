@@ -47,7 +47,13 @@ wins, plus the fee for adding the answer. It splits the shares as
   price give a little.
 - The rest of Other's pool, as many YES as NO, is mana, and so is the fee. The
   new answer's NO side takes the fee's worth, or half if there's less, and the
-  new Other's the rest.
+  new Other's the rest. Where Other's YES beyond its NO is above about 4,850
+  times that (an Other near 0% that holds a heavy position against it), no p
+  in [0.01, 0.99] prices the new answer at 2% on it, and its NO side takes what
+  2% needs out of the new Other's share instead, as far as the new Other can
+  spare it and still hold its own price at a p no higher than 0.99. Both parts
+  hold the same YES beyond the mana, so the split still pays the same whichever
+  wins.
 
 So the new answer gets a pool of its own, paid for by the fee. The fee is
 tiered by the market's liquidity per answer (Ṁ25, Ṁ100, Ṁ1,000 or Ṁ10,000),
@@ -88,6 +94,15 @@ pool's p sets its prices without moving any value, so the prices come last:
   took one from 90% to 99.96% in 25 rounds, with every pool and payout still
   conserved. An add there still
   goes through as long as some YES the new Other can spare makes room.
+- An Other near 0% can hold too little mana beside its YES to price both parts
+  at a p in band: 2% takes NO worth about 1/4,850 of the YES, and the new
+  Other needs a sliver of its own. Then the new Other keeps what holds its
+  price, its p at 0.99, and the new answer opens on the rest, as near 2% as
+  that allows, with its p at 0.99 too. With a fee it falls just short of 2%
+  (Other at 0.01% holding Ṁ1,000,000 of YES to Ṁ100 of NO, split for Ṁ100,
+  opens the new answer at 1.9%); with none it can open below 1% (the same
+  Other split for nothing opens it at 0.97%), where the first buyer moves it
+  into the band. This is the one way a new answer opens below 2%.
 - A market opened with no listed answers holds Other alone at 99%, the top of
   the band, on the pool `cpmm-multi-1` builds, which prices it at 50%. Its
   answers sum to one from the first answer added, which opens at 50% beside
