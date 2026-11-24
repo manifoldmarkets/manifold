@@ -31,9 +31,20 @@ export type ClaudeOptions = {
 // level without truncating the answer.
 const MAX_TOKENS = 8192
 // This single-turn helper serves interactive requests. Leave time for the
-// alternate provider instead of spending the SDK's ten-minute timeout plus
-// retries on Claude. Bound the whole stream, including a stalled response body.
+// alternate provider instead of spending the SDK's ten-minute timeout on
+// Claude. Bound the whole stream, including the retry below and a stalled
+// response body.
 const REQUEST_TIMEOUT_MS = 30_000
+// Retry once before promptAI falls back to Gemini. Most of prod's ~25
+// fallbacks a day in late Oct 2026 were "Connection error" (fetch failed,
+// no response at all), and these calls have no side effects, so a second
+// attempt is safe. The SDK also retries what the API marks retryable
+// (408/409/429/5xx, honoring retry-after); REQUEST_TIMEOUT_MS still caps
+// the total.
+// The retry is worth it because the fallback, Gemini 3.5 Flash-Lite, costs
+// ~3x Haiku 5.5 per call. If a future pair of models is close in cost, set
+// this back to 0 and fall back straight away.
+const MAX_RETRIES = 1
 
 export const promptClaudeStream = async function* (
   prompt: string,
@@ -50,7 +61,7 @@ export const promptClaudeStream = async function* (
   const anthropic = new Anthropic({
     apiKey,
     timeout: REQUEST_TIMEOUT_MS,
-    maxRetries: 0,
+    maxRetries: MAX_RETRIES,
   })
 
   // No temperature / top_p / top_k: every 5-series Claude model rejects a
