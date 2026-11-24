@@ -1186,3 +1186,39 @@ export async function notifySocial(
     }
   }
 }
+
+// Takes back the Yap alerts that point at a post being taken off Yap. Each is
+// found by the person it went to or by its id, so no statement reads the
+// whole notifications table: the first reads the alerts of one person, the
+// post's author (a nightly job keeps each person's newest 1,000), and the
+// others look alerts up by id. Matched on their content alone, they were
+// looked for in the whole table, which on production took longer than a
+// statement may run, and every removal failed (21 Nov 2026).
+//
+// Who gets which alert about a post (notifySocial, repostSocialPost):
+//   - a like or a re-Yap of it, and, as Yap wrote them before 21 Nov 2026, a
+//     reply to it: its author;
+//   - it as a reply, as Yap wrote it before then: the author of the post it
+//     replies to, under the id `social-reply-<post>`;
+//   - a reply in its thread, since then: everyone following the thread, under
+//     one alert per thread, `social-thread-<thread>`, which names the thread
+//     and the latest reply.
+export async function deleteSocialPostAlerts(
+  pg: DB,
+  post: Pick<SocialRow, 'id' | 'user_id' | 'root_id'>
+) {
+  const aboutPost = `(data->>'sourceId'=$1 or data->>'sourceSlug'='/yap/' || $1)`
+  await pg.none(
+    `delete from user_notifications where user_id=$2 and ${aboutPost}
+       and data->>'sourceType' in ('social_reply','social_post_like','social_repost')`,
+    [post.id, post.user_id]
+  )
+  await pg.none(
+    `delete from user_notifications where notification_id=any($2::text[]) and ${aboutPost}
+       and data->>'sourceType'='social_reply'`,
+    [post.id, [`social-thread-${post.root_id}`, `social-reply-${post.id}`]]
+  )
+  await pg.none('delete from user_notifications where notification_id=$1', [
+    `social-mention-${post.id}`,
+  ])
+}
