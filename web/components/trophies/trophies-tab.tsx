@@ -635,7 +635,7 @@ function AchievementsSection(props: {
     {
       id: 'totalMarketsCreated',
       title: 'Doing The Hard Part',
-      desc: 'Markets you\u2019ve created.',
+      desc: 'Public markets you\u2019ve created (not unlisted or deleted).',
       fmt: () => formatWithCommas(data.totalMarketsCreated),
     },
     {
@@ -643,7 +643,8 @@ function AchievementsSection(props: {
       title: 'Age Is Just A Number',
       desc: 'Account age in years.',
       fmt: () => {
-        const totalMonths = Math.round(data.accountAgeYears * 12)
+        // Rounded down, like the Account Age trophy: 0.99 years is 11 months.
+        const totalMonths = Math.floor(data.accountAgeYears * 12)
         const years = Math.floor(totalMonths / 12)
         const months = totalMonths % 12
         return `${years} ${years === 1 ? 'year' : 'years'} ${months} ${
