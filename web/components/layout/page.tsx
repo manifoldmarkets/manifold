@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { ReactNode, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
+
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
@@ -10,9 +11,9 @@ import Sidebar from '../nav/sidebar'
 import { Col } from './col'
 import { useUser } from 'web/hooks/use-user'
 import { BanBanner } from '../moderation/ban-banner'
-import { UserBan } from 'common/user'
+import type { UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
-
+import { Welcome } from '../onboarding/welcome'
 import { ResumePendingBet } from '../bet/resume-pending-bet'
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
@@ -23,6 +24,7 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
+  hideWelcome?: boolean
   hideFooter?: boolean
   banner?: ReactNode
   // Desktop only: a column in the right margin, beside the content, that
@@ -39,6 +41,7 @@ export function Page(props: {
     className,
     hideSidebar,
     hideBottomBar,
+    hideWelcome,
     banner,
     rightSidebar,
     hideGoogleOneTap,
@@ -76,8 +79,9 @@ export function Page(props: {
       {!hideGoogleOneTap && (
         <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       )}
-      <FirstStreakModalManager />
+      <Welcome hideSteps={hideWelcome} />
       <ResumePendingBet />
+      <FirstStreakModalManager />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding

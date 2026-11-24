@@ -4,11 +4,9 @@ import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
 import { DowntimeBanner, HolidaySaleBanner } from 'web/components/nav/banner'
-import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
 import { FlaggedAccountBanner } from 'web/components/user/flagged-account-banner'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent, BrowseViewToggle } from '../browse'
@@ -16,13 +14,11 @@ import { useBrowseView } from 'web/components/browse-v2/use-browse-view'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 export default function Home() {
   const user = useUser()
-  useSaveReferral(user)
   useRedirectIfSignedOut()
   const browseView = useBrowseView({ enabled: !!user })
 
   return (
     <Page trackPageView={'home'} className="min-w-0 lg:px-4">
-      <Welcome />
       <VerificationResultModal />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <HolidaySaleBanner />

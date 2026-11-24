@@ -276,9 +276,8 @@ export const readPendingBet = (
   }
 }
 
-// The welcome steps only run on pages that mount them (Browse, Home, Feed).
-// There, a reopened bet waits for them. Elsewhere nothing would ever finish
-// them, so the bet opens straight away.
+// Page registers the welcome steps unless it opts out. A reopened ticket waits
+// for a registered flow to finish, and can open immediately without one.
 export const shouldWaitForWelcome = (args: {
   shouldShowWelcome: boolean | undefined
   welcomeMounted: boolean

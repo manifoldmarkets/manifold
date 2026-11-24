@@ -6,7 +6,6 @@ import { Col } from 'web/components/layout/col'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { LoadingCards } from 'web/components/contract/feed-contract-card'
-import { Welcome } from 'web/components/onboarding/welcome'
 
 export default function Explore() {
   useRedirectIfSignedOut()
@@ -15,7 +14,6 @@ export default function Explore() {
 
   return (
     <Page trackPageView={'explore'} className=" !mt-0" banner={null}>
-      <Welcome />
       {user && (
         <DailyStats
           className="bg-canvas-0 z-50 mb-1 w-full px-2 py-2"

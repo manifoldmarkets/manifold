@@ -1,5 +1,3 @@
-import { Contract } from 'common/contract'
-import { MINUTES_ALLOWED_TO_REFER, PrivateUser, User } from 'common/user'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
@@ -7,83 +5,120 @@ import {
   OAuthProvider,
   signInWithPopup,
 } from 'firebase/auth'
+
+import { Contract } from 'common/contract'
+import { MINUTES_ALLOWED_TO_REFER, PrivateUser, User } from 'common/user'
+import { sleep } from 'common/util/time'
+import {
+  isPermanentReferralError,
+  shouldSendCachedReferral,
+} from 'common/welcome-flow'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { getFirebaseAuth } from './auth'
-dayjs.extend(utc)
-import { safeLocalStorage } from '../util/local'
-import { api } from '../api/api'
 import { clearPushToken } from 'web/lib/supabase/notifications'
-import { removeUndefinedProps } from 'common/util/object'
-import { sleep } from 'common/util/time'
+import { api, APIError } from '../api/api'
+import { safeLocalStorage } from '../util/local'
+import { getFirebaseAuth } from './auth'
+
+dayjs.extend(utc)
 
 export type { User }
 
 export const auth = getFirebaseAuth()
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
+const CACHED_REFERRAL_EXPLICIT_KEY = 'CACHED_REFERRAL_EXPLICIT'
+const REFERRAL_COMPLETE_KEY = 'referral-complete'
 
-// Scenarios:
-// 1. User is referred by another user to homepage, group page, market page etc. explicitly via referrer= query param
-// 2. User lands on a market or group without a referrer, we attribute the market/group creator
-// Explicit referrers take priority over the implicit ones, (e.g. they're overwritten)
-export function writeReferralInfo(
-  defaultReferrerUsername: string,
-  otherOptions?: {
-    contractId?: string
-    explicitReferrer?: string
-  }
-) {
-  const local = safeLocalStorage
-  const cachedReferralUser = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
-  const { contractId, explicitReferrer } = otherOptions || {}
-
-  // Write the first referral username we see.
-  if (!cachedReferralUser) {
-    local?.setItem(
-      CACHED_REFERRAL_USERNAME_KEY,
-      explicitReferrer || defaultReferrerUsername
-    )
-    if (contractId) local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
-  }
-
-  // Overwrite all referral info if we see an explicit referrer.
-  if (explicitReferrer) {
-    local?.setItem(CACHED_REFERRAL_USERNAME_KEY, explicitReferrer)
-    if (!contractId) local?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
-    else local?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+export function getCachedReferralInfo() {
+  if (safeLocalStorage?.getItem(REFERRAL_COMPLETE_KEY) === 'true') return
+  const username = safeLocalStorage?.getItem(CACHED_REFERRAL_USERNAME_KEY)
+  if (!username) return
+  return {
+    username,
+    contractId:
+      safeLocalStorage?.getItem(CACHED_REFERRAL_CONTRACT_ID_KEY) ?? undefined,
+    // Older caches have no flag and keep the original payout rules.
+    explicit:
+      safeLocalStorage?.getItem(CACHED_REFERRAL_EXPLICIT_KEY) === 'true',
   }
 }
 
-export async function setCachedReferralInfoForUser(user: User) {
-  if (!canSetReferrer(user)) return
+// Keep the first implicit referrer. An explicit invitation replaces it.
+export function writeReferralInfo(
+  defaultReferrerUsername: string,
+  options?: { contractId?: string; explicitReferrer?: string }
+) {
+  const { contractId, explicitReferrer } = options ?? {}
+  if (
+    !explicitReferrer &&
+    safeLocalStorage?.getItem(CACHED_REFERRAL_USERNAME_KEY)
+  )
+    return
+  safeLocalStorage?.setItem(
+    CACHED_REFERRAL_USERNAME_KEY,
+    explicitReferrer || defaultReferrerUsername
+  )
+  safeLocalStorage?.setItem(
+    CACHED_REFERRAL_EXPLICIT_KEY,
+    String(!!explicitReferrer)
+  )
+  if (contractId)
+    safeLocalStorage?.setItem(CACHED_REFERRAL_CONTRACT_ID_KEY, contractId)
+  else safeLocalStorage?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+}
 
-  const local = safeLocalStorage
-  const cachedReferralUsername = local?.getItem(CACHED_REFERRAL_USERNAME_KEY)
-  const cachedReferralContractId = local?.getItem(
-    CACHED_REFERRAL_CONTRACT_ID_KEY
-  )
-  const referralComplete = local?.getItem('referral-complete') == 'true'
-  if (!cachedReferralUsername || referralComplete) return
-  console.log(
-    `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, trying to set referral`
-  )
-  // get user via username
-  api(
-    'refer-user',
-    removeUndefinedProps({
-      referredByUsername: cachedReferralUsername,
-      contractId: cachedReferralContractId ?? undefined,
+// The new user removed the invitation we prefilled: send nothing for it.
+export function clearCachedReferralInfo() {
+  safeLocalStorage?.removeItem(CACHED_REFERRAL_USERNAME_KEY)
+  safeLocalStorage?.removeItem(CACHED_REFERRAL_CONTRACT_ID_KEY)
+  safeLocalStorage?.removeItem(CACHED_REFERRAL_EXPLICIT_KEY)
+}
+
+export async function sendReferral(
+  referredByUsername: string,
+  contractId?: string
+) {
+  await api('refer-user', {
+    referredByUsername,
+    ...(contractId && { contractId }),
+  })
+  safeLocalStorage?.setItem(REFERRAL_COMPLETE_KEY, 'true')
+}
+
+const pendingCachedReferrals = new Map<string, Promise<void>>()
+
+export async function setCachedReferralInfoForUser(
+  user: User,
+  { allowImplicit }: { allowImplicit: boolean }
+) {
+  if (!canSetReferrer(user)) return
+  const cached = getCachedReferralInfo()
+  if (
+    !cached ||
+    !shouldSendCachedReferral({
+      explicit: cached.explicit,
+      onImplicitReferralPage: allowImplicit,
+      pastOnboarding: !user.shouldShowWelcome,
     })
   )
-    .then((resp) => {
-      console.log('referral resp', resp)
-      local?.setItem('referral-complete', 'true')
+    return
+
+  const pending = pendingCachedReferrals.get(user.id)
+  if (pending) return pending
+  const request = sendReferral(cached.username, cached.contractId)
+    .catch((error) => {
+      // Welcome runs on every page, so a referral the server will never
+      // accept (unknown referrer, already referred, too old) must not be
+      // retried on each page load. Network and server errors still retry.
+      if (error instanceof APIError && isPermanentReferralError(error.code))
+        safeLocalStorage?.setItem(REFERRAL_COMPLETE_KEY, 'true')
+      console.error('Error setting cached referral', error)
     })
-    .catch((err) => {
-      console.log('error setting referral details', err)
-    })
+    .finally(() => pendingCachedReferrals.delete(user.id))
+  pendingCachedReferrals.set(user.id, request)
+  return request
 }
 
 // Best-effort, time-bounded clear of the current account's push token before an

@@ -1,4 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+
+import { shouldWaitForWelcome } from 'common/signed-out-bet'
+import {
+  getSignedOutBetVersion,
+  getWelcomeState,
+  subscribeSignedOutBet,
+} from 'web/lib/util/signed-out-bet'
 
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -16,9 +23,20 @@ const START = 1744135118428 // 2025-04-08
 export function FirstStreakModalManager() {
   const [open, setOpen] = usePersistentInMemoryState(false, 'seen-streak-modal')
   const user = useUser()
+  const version = useSyncExternalStore(
+    subscribeSignedOutBet,
+    getSignedOutBetVersion,
+    () => 0
+  )
+  const welcomePending = () =>
+    shouldWaitForWelcome({
+      shouldShowWelcome: user?.shouldShowWelcome,
+      ...getWelcomeState(user?.id),
+    })
 
   useEffect(() => {
     if (
+      !welcomePending() &&
       user?.currentBettingStreak === 1 &&
       !user?.seenStreakModal &&
       user?.createdTime > START
@@ -28,7 +46,14 @@ export function FirstStreakModalManager() {
         seenStreakModal: true,
       })
     }
-  }, [user?.currentBettingStreak])
+  }, [
+    version,
+    user?.id,
+    user?.currentBettingStreak,
+    user?.seenStreakModal,
+    user?.createdTime,
+    user?.shouldShowWelcome,
+  ])
 
   const streakMultiplier = user
     ? getEffectiveBonusMultiplier(getEffectiveTier(user), 'streak')
@@ -36,7 +61,7 @@ export function FirstStreakModalManager() {
 
   return (
     <BettingStreakProgressModal
-      open={open}
+      open={open && !welcomePending()}
       setOpen={setOpen}
       lockSeconds={2}
       currentStreak={user?.currentBettingStreak ?? 0}

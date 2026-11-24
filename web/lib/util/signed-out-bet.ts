@@ -11,6 +11,7 @@ import {
   readPendingBet,
   readSignedOutBetMode,
   readUnsentExposures,
+  SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS,
   SIGNED_OUT_BET_FIRST_PRESS_KEY,
   SIGNED_OUT_BET_FORCE_KEY,
   SIGNED_OUT_BET_PROMPTED_KEY,
@@ -100,6 +101,20 @@ const getFirstPress = () =>
   readFirstPress(
     safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
   )
+
+// Whether this device's account signup counts in the running test: its first
+// signed-out press came within the enrollment window of the account's
+// creation. The press time is the browser's clock and the creation time the
+// server's, so a press that seems to come after signup is clock skew (a
+// signed-out press can't follow signup) and is counted the same way.
+export const isInSignedOutBetTest = (userCreatedTime: number) => {
+  if (getMode() !== 'experiment' || !Number.isFinite(userCreatedTime))
+    return false
+  const press = getFirstPress()
+  if (!press) return false
+  const gap = Math.abs(userCreatedTime - press.time)
+  return Number.isFinite(gap) && gap < SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
+}
 
 const setFirstPress = (press: FirstPress) =>
   safeLocalStorage?.setItem(
@@ -199,22 +214,27 @@ const setPendingBet = (bet: PendingBet) => {
   changed()
 }
 
-// The bet to reopen, if there is a fresh one. Taking it forgets it, so a
-// ticket reopens once. A bet remembered just before a switch was thrown
-// follows the switch: 'off' drops it, and 'on' reopens it without reporting.
-export const takePendingBet = (): PendingBet | undefined => {
+// Peeking and taking use the same freshness and experiment-switch checks.
+const peekPendingBet = (): PendingBet | undefined => {
   if (!pendingBetLoaded) {
     pendingBetLoaded = true
     pendingBet = safeJsonParse(safeSessionStorage?.getItem(PENDING_BET_KEY))
   }
   const bet = readPendingBet(pendingBet, Date.now())
-  pendingBet = undefined
-  safeSessionStorage?.removeItem(PENDING_BET_KEY)
   const mode = getMode()
   if (!bet || mode === 'off') return undefined
   if (mode === 'experiment') return bet
   const { contractId, location, createdTime, outcome } = bet
   return { contractId, location, createdTime, ...(outcome ? { outcome } : {}) }
+}
+
+export const hasPendingBet = () => !!peekPendingBet()
+
+export const takePendingBet = (): PendingBet | undefined => {
+  const bet = peekPendingBet()
+  pendingBet = undefined
+  safeSessionStorage?.removeItem(PENDING_BET_KEY)
+  return bet
 }
 
 // The welcome steps report in, so a reopened bet can wait its turn.
