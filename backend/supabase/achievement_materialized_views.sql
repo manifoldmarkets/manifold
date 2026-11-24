@@ -424,7 +424,7 @@ from
 
 create unique index if not exists mv_ach_txns_achievements_user_id_idx on public.mv_ach_txns_achievements (user_id);
 
--- Combined: Creator-contract achievements (every mana market created + liquidity; migration 2026112221)
+-- Combined: Creator-contract achievements (every public mana market created + liquidity; unlisted and deleted markets don't count; migration 2026112221)
 create materialized view if not exists
   mv_ach_creator_contracts as
 with
@@ -435,6 +435,8 @@ with
       coalesce(sum((data ->> 'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts
     where token = 'MANA'
+      and visibility = 'public'
+      and not coalesce(deleted, false)
     group by creator_id
   ),
   all_users as (

@@ -2,8 +2,13 @@
 -- profile (get-user-achievements):
 --   Comments: every comment the user has posted (contract and post comments),
 --     not only ones that got a like.
---   Markets created: every mana market the user created, not only ones with
---     at least two traders.
+--   Markets created: every public mana market the user created, not only ones
+--     with at least two traders. Unlisted and deleted markets don't count, and
+--     liquidity is summed over the same markets.
+--
+-- Changed on 24 Nov 2026, before it ran on prod, to leave out unlisted and
+-- deleted markets. If an earlier version already ran somewhere, run this one
+-- there too: it rebuilds and swaps both views again.
 --
 -- Run after the API deploy, the contract guards (2026112219), the user_stats
 -- install (2026112220) and its completed backfill. Deploy web after the swap.
@@ -26,6 +31,8 @@ with
       coalesce(sum((data ->> 'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts
     where token = 'MANA'
+      and visibility = 'public'
+      and not coalesce(deleted, false)
     group by creator_id
   ),
   all_users as (

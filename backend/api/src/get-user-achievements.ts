@@ -229,12 +229,15 @@ const STATS_QUERY = `with
       (select count(*) from contract_comments where user_id = $1) +
       (select count(*) from old_post_comments where user_id = $1) as number_of_comments
   ),
+  -- Public mana markets: unlisted and deleted ones don't count (same rule as
+  -- mv_ach_creator_contracts, migration 2026112221).
   created as (
     select
       count(*) as total_markets_created,
       coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts c
     where c.creator_id = $1 and c.token = 'MANA'
+      and c.visibility = 'public' and not coalesce(c.deleted, false)
   ),
   account_age as (
     select round(
