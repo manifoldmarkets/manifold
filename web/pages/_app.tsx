@@ -1,7 +1,7 @@
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import type { AppProps } from 'next/app'
-import { Figtree } from 'next/font/google'
+import localFont from 'next/font/local'
 import Head from 'next/head'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
@@ -20,13 +20,20 @@ import { getIsNative } from 'web/lib/native/is-native'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
 import '../styles/globals.css'
-// See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
-// and if you add a font, you must add it to tailwind config as well for it to work.
+// If you add a font, you must add it to tailwind config as well for it to work.
 
-const mainFont = Figtree({
-  weight: ['300', '400', '500', '600', '700'],
+// Figtree, served from the site rather than Google Fonts: next/font/google
+// fetches it from Google at build time, and Turbopack in Next 16.0 fails the
+// build whenever Google answers with its /l/font?kit=...&skey=... URLs
+// (vercel/next.js#99114). The variable font (weights 300-900, Latin and Latin
+// Extended) is from github.com/erikdkennedy/figtree at 032dfa7, under the SIL
+// Open Font License (web/fonts/Figtree-OFL.txt).
+const mainFont = localFont({
+  src: '../fonts/figtree-variable.woff2',
+  weight: '300 900',
+  style: 'normal',
+  display: 'swap',
   variable: '--font-main',
-  subsets: ['latin'],
 })
 
 function firstLine(msg: string) {
