@@ -374,6 +374,12 @@ export const computeFills = (
   let cpmmState = { ...state }
   let totalFees = noFees
   const currentBalanceByUserId = { ...balanceByUserId }
+  // What each maker has left counting only the fills that are made. The
+  // working balance above also loses the amount of a fill too small to count,
+  // which is dropped below and costs the maker nothing. That sizes a later
+  // fill of theirs a sliver low, and is left as it is so that no fill changes
+  // here. Whether a maker is out of balance is judged on this one.
+  const unspentByUserId = { ...balanceByUserId }
 
   let i = 0
   // Each fill takes the next resting order or moves the pool up to one, so a bet
@@ -389,6 +395,7 @@ export const computeFills = (
       cpmmState,
       matchedBet,
       currentBalanceByUserId[matchedBet?.userId ?? ''],
+      unspentByUserId[matchedBet?.userId ?? ''],
       freeFees
     )
 
@@ -410,13 +417,24 @@ export const computeFills = (
           currentBalanceByUserId[userId] = makerBalance - maker.amount
         }
         const adjustedMakerBalance = currentBalanceByUserId[userId]
-        if (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0) {
+        // They are out of balance too when what they have left stopped this
+        // fill and can't make another of this order that counts, whatever
+        // the subtraction above leaves. A balance that runs out mid-fill
+        // seldom lands on exactly 0: it keeps a sliver like 6e-15 (the fill is
+        // worked out from it as a double).
+        if (
+          fill.makerOutOfBalance ||
+          (adjustedMakerBalance !== undefined && adjustedMakerBalance <= 0)
+        ) {
           // Now they've insufficient balance. Cancel maker bet.
           ordersToCancel.push(maker.bet)
         }
       }
       if (floatingEqual(maker.amount, 0)) continue
 
+      const unspent = unspentByUserId[userId]
+      if (unspent !== undefined)
+        unspentByUserId[userId] = unspent - maker.amount
       takers.push(taker)
       makers.push(maker)
     }
@@ -437,6 +455,8 @@ const computeFill = (
   cpmmState: CpmmState,
   matchedBet: LimitBet | undefined,
   matchedBetUserBalance: number | undefined,
+  // What the maker has left counting only the fills made (see computeFills).
+  matchedBetUserUnspent: number | undefined,
   freeFees?: boolean
 ) => {
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -509,6 +529,7 @@ const computeFill = (
         timestamp,
         fees,
       },
+      makerOutOfBalance: false,
     }
   }
 
@@ -543,6 +564,25 @@ const computeFill = (
     shares,
     timestamp,
   }
+
+  // Whether what the maker has left is what stops the fill here (and not the
+  // order's size or what the taker has left), and after it is too little to
+  // fill any more of the order by an amount that counts.
+  const unspent =
+    matchedBetUserUnspent === undefined
+      ? undefined
+      : Math.max(matchedBetUserUnspent, 0)
+  const stopsAtMakerBalance =
+    unspent !== undefined &&
+    unspent < amountRemaining &&
+    unspent / makerPrice <= maxTakerShares
+  let makerOutOfBalance = false
+  if (stopsAtMakerBalance) {
+    // A fill too small to count is dropped, and nothing is spent on it.
+    const spent = floatingEqual(maker.amount, 0) ? 0 : maker.amount
+    const most = Math.min(amountRemaining - spent, Math.max(unspent - spent, 0))
+    makerOutOfBalance = floatingEqual((most / makerPrice) * makerPrice, 0)
+  }
   const taker = {
     matchedBetId: matchedBet.id,
     amount: shares * takerPrice + takerFee,
@@ -550,7 +590,7 @@ const computeFill = (
     timestamp,
     fees,
   }
-  return { maker, taker }
+  return { maker, taker, makerOutOfBalance }
 }
 
 // Faster version assuming p = 0.5
