@@ -24,7 +24,6 @@ type TradeTicketProps = {
   multiProps: MultiBetProps
   trackingLocation: string
   onBuySuccess: () => void
-  onBetPlaced?: ComponentProps<typeof BuyPanel>['onBetPlaced']
   initialOutcome?: BinaryOutcomes
   title?: string
   /** For an answer's ticket: the market question, shown small above it. */
@@ -88,7 +87,6 @@ export function TradeTicket(props: TradeTicketProps) {
     multiProps,
     trackingLocation,
     onBuySuccess,
-    onBetPlaced,
     initialOutcome,
     title = contract.question,
     question,
@@ -143,7 +141,6 @@ export function TradeTicket(props: TradeTicketProps) {
       contract={contract}
       multiProps={multiProps}
       onBuySuccess={onBuySuccess}
-      onBetPlaced={onBetPlaced}
       location={trackingLocation}
       feedReason={feedReason}
       inModal={true}

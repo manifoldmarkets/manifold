@@ -41,7 +41,6 @@ import { ContractDescription } from 'web/components/contract/contract-descriptio
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
-import { NextMarketPrompt } from 'web/components/bet/next-market-prompt'
 import { AnswerBetTrackingLocationContext } from 'web/hooks/use-answer-bet-tracking-location'
 import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
@@ -468,11 +467,6 @@ export function ContractPageContent(props: ContractParams) {
                     setHideGraph={setHideGraph}
                     graphUser={graphUser}
                     setGraphUser={setGraphUser}
-                  />
-                  <NextMarketPrompt
-                    contract={liveContract}
-                    placement="page"
-                    className="mb-2"
                   />
                 </AnswerBetTrackingLocationContext.Provider>
 

@@ -54,7 +54,6 @@ export default function LimitOrderPanel(props: {
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
   onBuySuccess?: () => void
-  onBetPlaced?: (bet: Bet) => void
   location?: string
   className?: string
   betAmount?: number
@@ -82,7 +81,6 @@ export default function LimitOrderPanel(props: {
     user,
     outcome,
     onBuySuccess,
-    onBetPlaced,
     location = 'bet panel',
     pseudonym,
     expiration,
@@ -320,7 +318,6 @@ export default function LimitOrderPanel(props: {
         id: bet.betId,
         userId: user.id,
       }
-      onBetPlaced?.(fullBet)
       track('bet', {
         location,
         outcomeType: contract.outcomeType,
