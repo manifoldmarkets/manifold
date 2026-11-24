@@ -102,17 +102,18 @@ const getFirstPress = () =>
     safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
   )
 
+// Whether this device's account signup counts in the running test: its first
+// signed-out press came within the enrollment window of the account's
+// creation. The press time is the browser's clock and the creation time the
+// server's, so a press that seems to come after signup is clock skew (a
+// signed-out press can't follow signup) and is counted the same way.
 export const isInSignedOutBetTest = (userCreatedTime: number) => {
   if (getMode() !== 'experiment' || !Number.isFinite(userCreatedTime))
     return false
-  const { sinceFirstPressMs } = getEnrollmentFields(
-    getFirstPress(),
-    userCreatedTime
-  )
-  return (
-    sinceFirstPressMs !== undefined &&
-    sinceFirstPressMs < SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
-  )
+  const press = getFirstPress()
+  if (!press) return false
+  const gap = Math.abs(userCreatedTime - press.time)
+  return Number.isFinite(gap) && gap < SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
 }
 
 const setFirstPress = (press: FirstPress) =>

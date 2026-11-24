@@ -298,7 +298,15 @@ test('welcome uses the signup time to recognize either arm after a reload', () =
     const reloaded = fixture({ variant, local, session })
     reloaded.clock.now = userCreatedTime + 2 * 3_600_000
     assert.equal(reloaded.lib.isInSignedOutBetTest(userCreatedTime), true)
-    assert.equal(reloaded.lib.isInSignedOutBetTest(START - 1), false)
+    // The account was "created" before the press: the browser clock runs
+    // fast. Within the window that is still the same signup.
+    assert.equal(reloaded.lib.isInSignedOutBetTest(START - 2 * 60_000), true)
+    assert.equal(
+      reloaded.lib.isInSignedOutBetTest(
+        START - rules.SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
+      ),
+      false
+    )
     assert.equal(
       reloaded.lib.isInSignedOutBetTest(
         START + rules.SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
