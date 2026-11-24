@@ -14,10 +14,10 @@ import {
   StonkContract,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
-import { useLiveContract } from 'web/hooks/use-contract'
+import { useLiveContractWithStatus } from 'web/hooks/use-contract'
 import { useUser } from 'web/hooks/use-user'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
 import { MultiBetDialog } from '../bet/bet-dialog'
 import { BetButton } from '../bet/feed-bet-button'
 import { Button } from '../buttons/button'
@@ -26,8 +26,9 @@ import { SocialAvatar } from './social-avatar'
 
 export function SocialMarketCard(props: { market: Contract }) {
   const { market } = props
-  // Only markets a reader can act on need live prices and answers.
-  return getSocialMarketAction(market, Date.now()) ? (
+  // The live close time can extend past the one in the post's snapshot.
+  const [live] = useState(() => !!getSocialMarketAction(market, Date.now()))
+  return live ? (
     <LiveSocialMarketCard market={market} />
   ) : (
     <SocialMarketFrame market={market} />
@@ -57,12 +58,24 @@ export const getSocialMarketAction = (
 
 function LiveSocialMarketCard(props: { market: Contract }) {
   // The post's copy can be up to 30 seconds old and has no answers for
-  // multiple choice markets; the live one is refetched with its answers.
-  const market = useLiveContract(props.market)
+  // multiple choice markets. The live fetch includes their answers.
+  const { contract: market, hasLoaded } = useLiveContractWithStatus(
+    props.market
+  )
+  // Yap reads hide attachments that stop being public; the live fetch doesn't.
+  if (market.visibility !== 'public' || market.deleted)
+    return <SocialMarketFrame market={props.market} />
+
   const action = getSocialMarketAction(market, Date.now())
   return (
     <SocialMarketFrame market={market}>
-      {action && <SocialMarketActions market={market} action={action} />}
+      {action && (
+        <SocialMarketActions
+          market={market}
+          action={action}
+          hasLoaded={hasLoaded}
+        />
+      )}
     </SocialMarketFrame>
   )
 }
@@ -136,13 +149,19 @@ function SocialMarketSummary(props: { market: Contract }) {
 function SocialMarketActions(props: {
   market: Contract
   action: SocialMarketAction
+  hasLoaded: boolean
 }) {
-  const { market, action } = props
+  const { market, action, hasLoaded } = props
   const user = useUser()
   if (action === 'poll')
     return <PollPanel contract={market as PollContract} maxOptions={4} />
   if (action === 'multi')
-    return <SocialMultiBetButton contract={market as CPMMMultiContract} />
+    return (
+      <SocialMultiBetButton
+        contract={market as CPMMMultiContract}
+        hasLoaded={hasLoaded}
+      />
+    )
   return (
     <BetButton
       contract={market as BinaryContract | StonkContract}
@@ -154,12 +173,15 @@ function SocialMarketActions(props: {
   )
 }
 
-function SocialMultiBetButton(props: { contract: CPMMMultiContract }) {
-  const { contract } = props
+function SocialMultiBetButton(props: {
+  contract: CPMMMultiContract
+  hasLoaded: boolean
+}) {
+  const { contract, hasLoaded } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
-  // The trade dialog needs the answers, which arrive with the live contract.
-  const loaded = Array.isArray(contract.answers)
+  // Live updates can supply a partial answer list before the fetch finishes.
+  const loaded = hasLoaded && Array.isArray(contract.answers)
   return (
     <>
       <Button
@@ -169,20 +191,15 @@ function SocialMultiBetButton(props: { contract: CPMMMultiContract }) {
         aria-label={`${capitalize(TRADE_TERM)} on ${contract.question}`}
         aria-haspopup="dialog"
         onClick={() => {
+          if (!user) {
+            void firebaseLogin()
+            return
+          }
           track('bet intent', {
             location: YAP_BET_LOCATION,
             token: contract.token,
             contractId: contract.id,
-            signedOut: !user,
           })
-          if (!user) {
-            onSignedOutBetPress({
-              contractId: contract.id,
-              location: YAP_BET_LOCATION,
-              surface: 'button',
-            })
-            return
-          }
           setOpen(true)
         }}
       >
