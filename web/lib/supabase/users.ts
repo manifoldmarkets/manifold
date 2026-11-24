@@ -111,12 +111,16 @@ export async function getCreatorRank(userId: string) {
   return data
 }
 
+// Same markets as the markets-created stat (get-user-achievements): public,
+// not deleted, mana only (a sweepstakes market's cash twin isn't counted).
 export const getTotalPublicContractsCreated = async (userId: string) => {
   const { count } = await run(
     db
       .from('contracts')
       .select('*', { head: true, count: 'exact' })
       .eq('visibility', 'public')
+      .eq('deleted', false)
+      .eq('token', 'MANA')
       .eq('creator_id', userId)
   )
   return count

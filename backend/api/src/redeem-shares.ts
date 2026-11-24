@@ -73,7 +73,8 @@ export const redeemShares = async (
             'answerId'
           ),
           // Include both free loans and margin loans
-          (metrics) => sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
+          (metrics) =>
+            sumBy(metrics, (m) => (m.loan ?? 0) + (m.marginLoan ?? 0))
         )
 
         const saleBets = getSellAllRedemptionPreliminaryBets(
@@ -113,6 +114,7 @@ export const redeemShares = async (
             userId,
             ...b.newBet,
             betGroupId,
+            isAutoRedemption: true,
           }))
         )
 
