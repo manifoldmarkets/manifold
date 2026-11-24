@@ -100,6 +100,9 @@ export type notification_source_types =
   | 'charity_champion'
   | 'merch_order_update'
   | 'personalized_mana_offer'
+  // One per follower per creator per Pacific day, past the daily limit of
+  // new-question notifications (common/src/new-question-notifications.ts).
+  | 'new_questions_digest'
 
 export type love_notification_source_types =
   | 'love_contract'
