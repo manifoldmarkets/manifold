@@ -577,10 +577,12 @@ export type TrophyClaim = {
 
 export type TrophyMilestoneRef = { trophyId: string; milestoneId: string }
 
-export type OnboardingMilestone = {
+type TrophyMilestonePair = {
   definition: TrophyDefinition
   milestone: TrophyMilestone
 }
+
+export type OnboardingMilestone = TrophyMilestonePair
 
 const starterDefinitions = TROPHY_DEFINITIONS.filter(isStarterTrophy)
 const accountAge = DEFINITIONS_BY_ID.get('account-age')!
@@ -679,20 +681,48 @@ export function getMilestonesToClaim(
 }
 
 /** Reached milestones not yet claimed, across the given trophies. */
+export function getClaimableMilestones(
+  stats: TrophyStats,
+  claims: TrophyClaim[],
+  defs: TrophyDefinition[] = TROPHY_DEFINITIONS
+): TrophyMilestonePair[] {
+  return defs.flatMap((definition) => {
+    const value = getTrophyStatValue(definition, stats)
+    const claimed = getClaimedMilestoneIds(claims, definition.id)
+    return definition.milestones
+      .filter((m) => isMilestoneReached(m, value) && !claimed.has(m.id))
+      .map((milestone) => ({ definition, milestone }))
+  })
+}
+
 export function countUnclaimedReachedMilestones(
   stats: TrophyStats,
   claims: TrophyClaim[],
   defs: TrophyDefinition[] = TROPHY_DEFINITIONS
 ): number {
-  let count = 0
-  for (const def of defs) {
-    const value = getTrophyStatValue(def, stats)
-    const claimed = getClaimedMilestoneIds(claims, def.id)
-    count += def.milestones.filter(
-      (m) => isMilestoneReached(m, value) && !claimed.has(m.id)
-    ).length
+  return getClaimableMilestones(stats, claims, defs).length
+}
+
+/** Show the highest new milestone per trophy. Record every new key, including
+ * lower milestones and trophies represented by the summary. */
+export function selectTrophyUnlockToasts(
+  ready: TrophyMilestonePair[],
+  seen: ReadonlySet<string>
+) {
+  const highest = new Map<string, TrophyMilestonePair>()
+  const newKeys: string[] = []
+  for (const pair of ready) {
+    const { definition, milestone } = pair
+    const key = `${definition.id}/${milestone.id}`
+    if (seen.has(key)) continue
+    newKeys.push(key)
+    const previous = highest.get(definition.id)
+    if (!previous || milestone.threshold > previous.milestone.threshold) {
+      highest.set(definition.id, pair)
+    }
   }
-  return count
+  const milestones = [...highest.values()].slice(0, 3)
+  return { milestones, moreCount: highest.size - milestones.length, newKeys }
 }
 
 /** The moment an account created at createdTime is `years` years old, in

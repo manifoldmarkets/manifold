@@ -13,7 +13,7 @@ export function TrophyCountBubble(props: {
         onAvatar && 'absolute -right-1 -top-1 z-10'
       )}
     >
-      <span aria-hidden>{count}</span>
+      <span aria-hidden>{count > 99 ? '99+' : count}</span>
       <span className="sr-only">{trophyCountLabel(count)}</span>
     </span>
   )

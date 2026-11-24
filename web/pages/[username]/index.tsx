@@ -503,9 +503,7 @@ function UserProfile(props: {
               },
               {
                 title: 'Trophies',
-                titleElement: isCurrentUser ? (
-                  <TrophiesTabTitle userId={user.id} />
-                ) : undefined,
+                titleElement: isCurrentUser ? <TrophiesTabTitle /> : undefined,
                 // Links from before the rename say ?tab=achievements.
                 queryAliases: ['achievements'],
                 prerender: true,

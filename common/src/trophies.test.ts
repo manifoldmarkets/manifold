@@ -19,6 +19,7 @@ import {
   countUnclaimedReachedMilestones,
   formatTrophyValue,
   getHighestClaimedMilestone,
+  getClaimableMilestones,
   getClaimableOnboardingMilestones,
   getNextOnboardingMilestone,
   getHighestMilestone,
@@ -30,6 +31,7 @@ import {
   getTrophyIdFromPin,
   getTrophyPinId,
   getTrophyStatValue,
+  selectTrophyUnlockToasts,
 } from './trophies'
 
 const claim = (trophyId: string, milestoneId: string): TrophyClaim => ({
@@ -153,6 +155,117 @@ describe('claims', () => {
     expect(
       countEarnedMilestones(stats, [claim('trading-volume', 'goldfish')])
     ).toBe(4)
+  })
+})
+
+describe('claimable milestones', () => {
+  it('returns no pairs when no threshold has been reached', () => {
+    expect(
+      getClaimableMilestones({ totalVolumeMana: 9_999 }, [], [volume])
+    ).toEqual([])
+  })
+
+  it('returns the reached, unclaimed pairs even with retired claim ids', () => {
+    const stats = { totalVolumeMana: 600_000 }
+    const claims = [
+      claim(volume.id, 'goldfish'),
+      claim(volume.id, 'retired-milestone'),
+      claim('retired-trophy', 'minnow'),
+    ]
+    const ready = getClaimableMilestones(stats, claims, [volume])
+    expect(ready).toEqual([
+      { definition: volume, milestone: volume.milestones[1] },
+      { definition: volume, milestone: volume.milestones[2] },
+    ])
+    expect(ready).toHaveLength(
+      countUnclaimedReachedMilestones(stats, claims, [volume])
+    )
+  })
+
+  it.each([false, true])(
+    'matches the badge count with starter eligibility %s',
+    (starter) => {
+      const stats = { starterTrades: 3, totalVolumeMana: 10_000 }
+      const claims = [claim('starter-trades', 'first-trade')]
+      const defs = getTrophyDefinitionsFor(starter)
+      const ready = getClaimableMilestones(stats, claims, defs)
+      expect(ready.map(({ milestone }) => milestone.id)).toEqual([
+        ...(starter ? ['hat-trick'] : []),
+        'goldfish',
+        'newcomer',
+      ])
+      expect(ready).toHaveLength(
+        countUnclaimedReachedMilestones(stats, claims, defs)
+      )
+    }
+  )
+})
+
+describe('trophy unlock toasts', () => {
+  const stats = { totalVolumeMana: 600_000, totalTradesCount: 50 }
+  const ready = getClaimableMilestones(
+    stats,
+    [],
+    getTrophyDefinitionsFor(false)
+  )
+
+  it('selects the highest new milestone per trophy regardless of input order', () => {
+    const { milestones, moreCount } = selectTrophyUnlockToasts(
+      [...ready].reverse(),
+      new Set()
+    )
+    expect(milestones.map(({ milestone }) => milestone.id)).toEqual([
+      'newcomer',
+      'dabbler',
+      'swordfish',
+    ])
+    expect(moreCount).toBe(0)
+  })
+
+  it('skips seen keys before choosing the highest milestone', () => {
+    const seen = new Set([
+      'trading-volume/swordfish',
+      'total-trades/rookie',
+      'total-trades/dabbler',
+    ])
+    const { milestones, newKeys, moreCount } = selectTrophyUnlockToasts(
+      ready,
+      seen
+    )
+    expect(milestones.map(({ milestone }) => milestone.id)).toEqual([
+      'minnow',
+      'newcomer',
+    ])
+    expect(newKeys).toEqual([
+      'trading-volume/goldfish',
+      'trading-volume/minnow',
+      'account-age/newcomer',
+    ])
+    expect(moreCount).toBe(0)
+  })
+
+  it('caps individual toasts at three and counts remaining trophies once each', () => {
+    const many = getClaimableMilestones(
+      { ...stats, starterTrades: 3, starterMarkets: 10 },
+      [],
+      getTrophyDefinitionsFor(true)
+    )
+    const { milestones, moreCount, newKeys } = selectTrophyUnlockToasts(
+      many,
+      new Set()
+    )
+    expect(milestones.map(({ milestone }) => milestone.id)).toEqual([
+      'hat-trick',
+      'explorer',
+      'swordfish',
+    ])
+    expect(moreCount).toBe(2)
+    expect(newKeys).toHaveLength(many.length)
+    expect(selectTrophyUnlockToasts(many, new Set(newKeys))).toEqual({
+      milestones: [],
+      moreCount: 0,
+      newKeys: [],
+    })
   })
 })
 

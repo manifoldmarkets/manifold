@@ -1,109 +1,126 @@
 import Link from 'next/link'
-import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { createContext, ReactNode, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
-import {
-  ONBOARDING_MILESTONES,
-  TrophyClaim,
-  getClaimableOnboardingMilestones,
-  getTrophyClaimReward,
-  isStarterTrophyAccount,
-} from 'common/trophies'
+import { getTrophyClaimReward, selectTrophyUnlockToasts } from 'common/trophies'
+import { useClaimableTrophies } from 'web/hooks/use-claimable-trophies'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useTrophyRewardMultiplier } from 'web/hooks/use-trophy-reward-multiplier'
-import { useUser } from 'web/hooks/use-user'
-import {
-  refreshUserTrophies,
-  useUserTrophies,
-} from 'web/hooks/use-user-trophies'
+import { refreshUserTrophies } from 'web/hooks/use-user-trophies'
 import { formatTrophyReward } from './trophy-reward-chip'
 
+const NAV_FRESH_MS = 5 * 60_000
+const BET_REFRESH_MS = 30_000
+
 export function TrophyNudgeProvider(props: { children: ReactNode }) {
-  const user = useUser()
-  const userId =
-    user && isStarterTrophyAccount(user.createdTime) ? user.id : undefined
-  const { trophies } = useUserTrophies(userId, 'if-stale')
-  const multiplier = useTrophyRewardMultiplier()
+  const { user, achievements, trophies, ready, loading, refreshAchievements } =
+    useClaimableTrophies(NAV_FRESH_MS)
+  const userId = user?.id
   const username = user?.username
   const lastBetTime = user?.lastBetTime ?? 0
-  const [visibilityVersion, setVisibilityVersion] = useState(0)
-  const ready = useMemo(
-    () =>
-      trophies
-        ? getClaimableOnboardingMilestones(trophies.starter, trophies.claims)
-        : [],
-    [trophies]
-  )
+  const hasStarterStats = !!trophies?.starter
+  const multiplier = useTrophyRewardMultiplier()
+  const visible = useIsPageVisible()
 
   useEffect(() => {
-    if (!userId) return
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible')
-        setVisibilityVersion((v) => v + 1)
-    }
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    return () =>
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-  }, [userId])
-
-  useEffect(() => {
-    if (!userId || !username) {
+    if (!userId) {
       session = undefined
       return
     }
     if (session?.userId !== userId) {
-      session = { userId, lastBetTime, seen: new Set(), initialized: false }
-    } else if (lastBetTime > session.lastBetTime) {
-      session.lastBetTime = lastBetTime
-      if (!trophies || !hasClaimedAllOnboarding(trophies.claims)) {
-        void refreshUserTrophies(userId)
-      }
+      session = { userId, lastBetTime, nextRefreshAt: 0 }
+      return
     }
-    // A maker's limit-order fill can first appear on focus or a stale navigation.
-    if (!trophies) return
-    if (!session.initialized) {
-      for (const { trophyId, milestoneId } of trophies.claims) {
-        session.seen.add(`${trophyId}/${milestoneId}`)
+    const current = session
+    // An in-flight read can predate this bet. Wait for it to settle before
+    // taking a new snapshot, including when starter eligibility is still loading.
+    if (lastBetTime <= current.lastBetTime || loading) return
+    const refresh = () => {
+      current.lastBetTime = lastBetTime
+      current.nextRefreshAt = Date.now() + BET_REFRESH_MS
+      refreshAchievements()
+      if (hasStarterStats) void refreshUserTrophies(userId)
+    }
+    const delay = current.nextRefreshAt - Date.now()
+    if (delay <= 0) {
+      refresh()
+      return
+    }
+    // Only advance lastBetTime when the refresh runs, so a newer bet or a
+    // navigation can reschedule the trailing read at the same deadline.
+    const timer = setTimeout(refresh, delay)
+    return () => clearTimeout(timer)
+  }, [userId, lastBetTime, loading, refreshAchievements, hasStarterStats])
+
+  useEffect(() => {
+    if (
+      !userId ||
+      !username ||
+      !trophies ||
+      !achievements ||
+      session?.userId !== userId
+    )
+      return
+    const seen = session.seen ?? new Set<string>()
+    for (const { trophyId, milestoneId } of trophies.claims) {
+      seen.add(`${trophyId}/${milestoneId}`)
+    }
+    if (!session.seen) {
+      // Both stores have loaded. Historical unlocks only establish the baseline.
+      for (const { definition, milestone } of ready) {
+        seen.add(`${definition.id}/${milestone.id}`)
       }
-    } else if (document.visibilityState !== 'visible') return
-    for (const { definition, milestone } of ready) {
-      const key = `${definition.id}/${milestone.id}`
-      if (session.seen.has(key)) continue
-      session.seen.add(key)
-      if (!session.initialized || !recordToast(userId, key)) continue
-      const amount = getTrophyClaimReward(
-        definition,
-        milestone,
-        trophies.rewarded,
-        multiplier
-      )
+      session.seen = seen
+      return
+    }
+    if (!visible || document.visibilityState !== 'visible') return
+
+    const storageKey = `trophy-toasts-${userId}`
+    const stored = readToastKeys(storageKey)
+    for (const key of stored) seen.add(key)
+    const { milestones, moreCount, newKeys } = selectTrophyUnlockToasts(
+      ready,
+      seen
+    )
+    if (!newKeys.length) return
+    for (const key of newKeys) seen.add(key)
+    try {
+      localStorage.setItem(storageKey, JSON.stringify([...stored, ...newKeys]))
+    } catch {
+      // The session still remembers these milestones if storage is unavailable.
+    }
+
+    const showToast = (message: string) =>
       toast((t) => (
         <Link
           href={`/${username}?tab=trophies`}
           onClick={() => toast.dismiss(t.id)}
           className="font-medium hover:underline"
         >
-          {milestone.emoji} Trophy unlocked: {milestone.name} ·{' '}
-          {amount > 0 ? `claim ${formatTrophyReward(amount)}` : 'claim trophy'}
+          {message}
         </Link>
       ))
+    for (const { definition, milestone } of milestones) {
+      const amount = getTrophyClaimReward(
+        definition,
+        milestone,
+        trophies.rewarded,
+        multiplier
+      )
+      const claim =
+        amount > 0 ? `claim ${formatTrophyReward(amount)}` : 'claim trophy'
+      showToast(
+        `${milestone.emoji} Trophy unlocked: ${milestone.name} · ${claim}`
+      )
     }
-    session.initialized = true
-  }, [
-    userId,
-    username,
-    lastBetTime,
-    trophies,
-    ready,
-    multiplier,
-    visibilityVersion,
-  ])
+    if (moreCount) {
+      showToast(
+        `${moreCount} more ${
+          moreCount === 1 ? 'trophy' : 'trophies'
+        } ready to claim`
+      )
+    }
+  }, [userId, username, trophies, achievements, ready, multiplier, visible])
 
   return (
     <TrophyCountContext.Provider value={ready.length}>
@@ -115,33 +132,24 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
 const TrophyCountContext = createContext(0)
 export const useNavTrophyCount = () => useContext(TrophyCountContext)
 
-// The provider remounts on navigation. Keep the account's first read silent
-// and remember each claimable milestone even after a claim or admin unclaim.
+// Page remounts on navigation. Keep the toast baseline and bet refresh window
+// for the current account across those remounts.
 let session:
   | {
       userId: string
       lastBetTime: number
-      seen: Set<string>
-      initialized: boolean
+      nextRefreshAt: number
+      seen?: Set<string>
     }
   | undefined
 
-const hasClaimedAllOnboarding = (claims: TrophyClaim[]) =>
-  ONBOARDING_MILESTONES.every(({ definition, milestone }) =>
-    claims.some(
-      (c) => c.trophyId === definition.id && c.milestoneId === milestone.id
-    )
-  )
-
-function recordToast(userId: string, key: string) {
+function readToastKeys(storageKey: string): string[] {
   try {
-    const storageKey = `trophy-toasts-${userId}`
-    const stored: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
-    const keys = Array.isArray(stored) ? stored : []
-    if (keys.includes(key)) return false
-    localStorage.setItem(storageKey, JSON.stringify([...keys, key]))
+    const keys: unknown = JSON.parse(localStorage.getItem(storageKey) ?? '[]')
+    if (Array.isArray(keys))
+      return keys.filter((key) => typeof key === 'string')
   } catch {
-    // If storage is unavailable, the session's seen set still deduplicates.
+    // Use the session's seen set when the stored list cannot be read.
   }
-  return true
+  return []
 }
