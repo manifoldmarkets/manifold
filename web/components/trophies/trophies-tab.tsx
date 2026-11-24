@@ -644,7 +644,12 @@ function AchievementsSection(props: {
       desc: 'Account age in years.',
       fmt: () => {
         // Rounded down, like the Account Age trophy: 0.99 years is 11 months.
-        const totalMonths = Math.floor(data.accountAgeYears * 12)
+        // Never below zero (a signup time a moment ahead of the database
+        // clock gives a tiny negative age).
+        const ageYears = data.accountAgeYears
+        const totalMonths = Number.isFinite(ageYears)
+          ? Math.max(0, Math.floor(ageYears * 12))
+          : 0
         const years = Math.floor(totalMonths / 12)
         const months = totalMonths % 12
         return `${years} ${years === 1 ? 'year' : 'years'} ${months} ${
