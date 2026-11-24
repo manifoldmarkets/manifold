@@ -26,8 +26,11 @@ import { SocialAvatar } from './social-avatar'
 
 export function SocialMarketCard(props: { market: Contract }) {
   const { market } = props
-  // The live close time can extend past the one in the post's snapshot.
-  const [live] = useState(() => !!getSocialMarketAction(market, Date.now()))
+  // Once live, a card stays live: the live close time can extend past the
+  // one in the post's snapshot. A refreshed post can still make it live.
+  const actionable = !!getSocialMarketAction(market, Date.now())
+  const [live, setLive] = useState(actionable)
+  if (actionable && !live) setLive(true)
   return live ? (
     <LiveSocialMarketCard market={market} />
   ) : (
@@ -192,7 +195,9 @@ function SocialMultiBetButton(props: {
         aria-haspopup="dialog"
         onClick={() => {
           if (!user) {
-            void firebaseLogin()
+            // A closed or blocked sign-in window rejects. That is an
+            // ordinary outcome here, not an error to surface.
+            firebaseLogin().catch(() => undefined)
             return
           }
           track('bet intent', {
