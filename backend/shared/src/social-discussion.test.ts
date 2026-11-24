@@ -47,6 +47,7 @@ import {
   hydrateSocialPosts,
   socialReplyCounts,
   socialReplyMentionAuthors,
+  deleteSocialPostAlerts,
 } from './social-posts'
 import { SupabaseDirectClient } from './supabase/init'
 import { log } from './utils'
@@ -1521,5 +1522,219 @@ describe('the reaction part of 2026111201_social_discussions.sql', () => {
     )
     await db.exec(migration(DISCUSSIONS))
     expect(await counters('c-untouched')).toEqual({ likes: 9, dislikes: 0 })
+  })
+})
+
+describe('the alerts taken back when a post is taken off Yap', () => {
+  beforeEach(async () => {
+    // As in backend/supabase/user_notifications.sql: the key and the index on
+    // the alert's id.
+    await db.exec(`
+      create table user_notifications (
+        data jsonb not null,
+        notification_id text not null,
+        user_id text not null,
+        primary key (user_id, notification_id)
+      );
+      create index user_notifications_notification_id on user_notifications (notification_id, user_id);
+    `)
+  })
+
+  // The alerts as Yap writes them (notifySocial, repostSocialPost,
+  // notifySocialMentions), and as it wrote them before 21 Nov 2026.
+  type Alert = {
+    to: string
+    id: string
+    sourceId: string
+    slug: string
+    type: string
+  }
+  const like = (post: string, author: string, by: string): Alert => ({
+    to: author,
+    id: `social-like-${post}-${by}`,
+    sourceId: post,
+    slug: `/yap/${post}`,
+    type: 'social_post_like',
+  })
+  const reYap = (post: string, author: string): Alert => ({
+    to: author,
+    id: `social-repost-${post}`,
+    sourceId: post,
+    slug: `/yap/${post}`,
+    type: 'social_repost',
+  })
+  // One alert per thread for each person following it, naming the thread and
+  // its latest reply.
+  const threadAlert = (thread: string, reply: string, to: string): Alert => ({
+    to,
+    id: `social-thread-${thread}`,
+    sourceId: thread,
+    slug: `/yap/${reply}`,
+    type: 'social_reply',
+  })
+  // Before 21 Nov 2026: one alert per reply, to the author of the post replied to.
+  const oldReply = (parent: string, to: string, reply: string): Alert => ({
+    to,
+    id: `social-reply-${reply}`,
+    sourceId: parent,
+    slug: `/yap/${reply}`,
+    type: 'social_reply',
+  })
+  const mention = (post: string, to: string): Alert => ({
+    to,
+    id: `social-mention-${post}`,
+    sourceId: post,
+    slug: `/yap/${post}`,
+    type: 'social_mention',
+  })
+  const insertAlerts = (alerts: Alert[]) =>
+    rows(
+      `insert into user_notifications (user_id, notification_id, data)
+       select a->>'to', a->>'id', jsonb_build_object('sourceId', a->>'sourceId',
+         'sourceSlug', a->>'slug', 'sourceType', a->>'type')
+       from jsonb_array_elements($1::jsonb) a`,
+      [JSON.stringify(alerts)]
+    )
+  const alertKeys = async () =>
+    (
+      await rows(
+        `select user_id || ' ' || notification_id as k from user_notifications order by 1`
+      )
+    ).map((r) => r.k as string)
+
+  // A thread started by alice: bob replies to her, carol replies to bob, and
+  // dave replies to her last. Another thread by erin.
+  const posts = {
+    root: { id: 'root', user_id: 'alice', root_id: 'root' },
+    reply: { id: 'reply', user_id: 'bob', root_id: 'root' },
+    nested: { id: 'nested', user_id: 'carol', root_id: 'root' },
+    later: { id: 'later', user_id: 'dave', root_id: 'root' },
+    other: { id: 'other', user_id: 'erin', root_id: 'other' },
+  }
+  const thread: Alert[] = [
+    like('root', 'alice', 'bob'),
+    like('root', 'alice', 'carol'),
+    like('reply', 'bob', 'alice'),
+    like('reply', 'bob', 'dave'),
+    like('nested', 'carol', 'bob'),
+    reYap('root', 'alice'),
+    reYap('reply', 'bob'),
+    // Followers who last heard of bob's reply, and followers who last heard of
+    // dave's.
+    threadAlert('root', 'reply', 'alice'),
+    threadAlert('root', 'reply', 'frank'),
+    threadAlert('root', 'later', 'gina'),
+    threadAlert('root', 'later', 'bob'),
+    threadAlert('other', 'other-reply', 'bob'),
+    oldReply('root', 'alice', 'reply'),
+    oldReply('reply', 'bob', 'nested'),
+    oldReply('root', 'alice', 'later'),
+    oldReply('other', 'erin', 'other-reply'),
+    mention('reply', 'carol'),
+    mention('root', 'dave'),
+    // Not a Yap alert, though it names the post.
+    {
+      to: 'bob',
+      id: 'comment-1',
+      sourceId: 'reply',
+      slug: '/yap/reply',
+      type: 'comment',
+    },
+  ]
+
+  test('are the ones it used to take back, no more and no fewer', async () => {
+    for (const post of Object.values(posts)) {
+      await rows('delete from user_notifications')
+      await insertAlerts(thread)
+      // What the statement this replaces took back, reading every alert: the
+      // one #4287 added, without a condition on whom an alert went to.
+      const expected = (
+        await rows(
+          `select user_id || ' ' || notification_id as k from user_notifications
+           where (data->>'sourceId'=$1 or data->>'sourceSlug'='/yap/' || $1)
+             and data->>'sourceType' in ('social_reply','social_post_like','social_repost')
+             or notification_id='social-mention-' || $1
+           order by 1`,
+          [post.id]
+        )
+      ).map((r) => r.k as string)
+      const before = await alertKeys()
+      await deleteSocialPostAlerts(pg, post)
+      const after = await alertKeys()
+      expect({
+        post: post.id,
+        gone: before.filter((k) => !after.includes(k)),
+      }).toEqual({ post: post.id, gone: expected })
+    }
+    // What that comes to for bob's reply, written out.
+    await rows('delete from user_notifications')
+    await insertAlerts(thread)
+    await deleteSocialPostAlerts(pg, posts.reply)
+    expect(await alertKeys()).toEqual([
+      'alice social-like-root-bob',
+      'alice social-like-root-carol',
+      'alice social-reply-later',
+      'alice social-repost-root',
+      'bob comment-1',
+      'bob social-thread-other',
+      'bob social-thread-root',
+      'carol social-like-nested-bob',
+      'dave social-mention-root',
+      'erin social-reply-other-reply',
+      'gina social-thread-root',
+    ])
+  })
+
+  test('are found by whom they went to or by their ids, never by reading every alert', async () => {
+    // Enough alerts for PostgreSQL to choose a plan as it would on a large
+    // table: 20,000 across 400 people. This in-memory PostgreSQL compares text
+    // in the C collation, which lets an index serve a LIKE prefix that a
+    // production database would read the table for; the statements here
+    // compare with equality only.
+    await rows(
+      `insert into user_notifications (user_id, notification_id, data)
+       select 'u' || (i % 400), 'n' || i, jsonb_build_object('sourceId', 'p' || (i % 997),
+         'sourceSlug', '/yap/p' || (i % 991),
+         'sourceType', (array['social_reply','social_post_like','social_repost','comment'])[1 + i % 4])
+       from generate_series(1, 20000) i`
+    )
+    await insertAlerts(thread)
+    await rows('analyze user_notifications')
+    const sent: [string, unknown][] = []
+    const recorder = {
+      ...client,
+      none: async (sql: string, params?: unknown) => {
+        sent.push([sql, params])
+      },
+    } as unknown as SupabaseDirectClient
+    await deleteSocialPostAlerts(recorder, posts.reply)
+    expect(sent).toHaveLength(3)
+    type PlanNode = {
+      'Node Type': string
+      'Relation Name'?: string
+      'Index Name'?: string
+      Plans?: PlanNode[]
+    }
+    const nodes = (node: PlanNode): PlanNode[] => [
+      node,
+      ...(node.Plans ?? []).flatMap(nodes),
+    ]
+    for (const [sql, params] of sent) {
+      const result = (
+        await rows(`explain (format json) ${pgp.as.format(sql, params)}`)
+      )[0]['QUERY PLAN']
+      const plan = (typeof result === 'string' ? JSON.parse(result) : result)[0]
+        .Plan as PlanNode
+      const read = nodes(plan).filter(
+        (n) =>
+          n['Relation Name'] === 'user_notifications' ||
+          n['Index Name']?.startsWith('user_notifications')
+      )
+      expect({ sql, scans: read.map((n) => n['Node Type']) }).toEqual({
+        sql,
+        scans: expect.not.arrayContaining(['Seq Scan']),
+      })
+      expect(read.some((n) => n['Index Name'])).toBe(true)
+    }
   })
 })

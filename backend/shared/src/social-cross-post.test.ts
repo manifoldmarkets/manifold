@@ -37,6 +37,9 @@ jest.mock('./social-posts', () => ({
   writeSocialMarkets: jest.fn(),
   hydrateSocialPosts: jest.fn(),
   notifySocial: jest.fn(),
+  // The real statements, so the removal's writes are the ones it sends.
+  deleteSocialPostAlerts:
+    jest.requireActual('./social-posts').deleteSocialPostAlerts,
 }))
 jest.mock('./social-discussion', () => ({
   // No id in these cases is a comment's own, so nothing is looked up first.

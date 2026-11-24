@@ -81,8 +81,30 @@ export const getBetsWithFilter = async (
         beforeTime: millisToTs(beforeTime),
       }),
 
-    commentRepliesOnly &&
+    commentRepliesOnly && [
+      // Kept as its own condition: it is the predicate of the partial index
+      // contract_bets_comment_replies.
       where(`contract_bets.data->>'replyToCommentId' is not null`),
+      // The id comes from the bet request, so it can name a comment anywhere.
+      // A bet replies to a comment only on its own market, or on the sibling:
+      // comments are kept on the mana market, and a bet on the cash market
+      // beside it replies to one there. on-create-bet counts a reply by the
+      // same rule.
+      where(
+        `exists (
+          select 1 from contract_comments reply_comment
+          where reply_comment.comment_id = contract_bets.data->>'replyToCommentId'
+          and (
+            reply_comment.contract_id = contract_bets.contract_id
+            or reply_comment.contract_id = (
+              select bet_market.data->>'siblingContractId'
+              from contracts bet_market
+              where bet_market.id = contract_bets.contract_id
+            )
+          )
+        )`
+      ),
+    ],
 
     answerId !== undefined && where('answer_id = ${answerId}', { answerId }),
 
