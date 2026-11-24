@@ -805,3 +805,113 @@ for (const nextUser of [null, 'bob']) {
     assert.equal(f.probe.value.props.value?.user.id ?? null, nextUser)
   })
 }
+
+// The real sidebar, with every icon and widget a stand-in: which links it
+// shows, in which order.
+async function sidebarLinks({ user = null, isMobile = false } = {}) {
+  const Stub = () => null
+  const stubs = new Proxy(
+    {},
+    { get: (_, key) => (key === '__esModule' ? false : Stub) }
+  )
+  const Sidebar = load('web/components/nav/sidebar.tsx', {
+    react: React,
+    'react/jsx-runtime': require('react/jsx-runtime'),
+    '@heroicons/react/outline': stubs,
+    clsx: { default: (...names) => names.filter(Boolean).join(' ') },
+    'web/lib/icons/trophy-icon.svg': { default: Stub },
+    'common/util/array': load('common/src/util/array.ts', {
+      lodash: require('lodash'),
+    }),
+    'common/shop/items': { SHOP_ITEMS: [] },
+    'common/sweepstakes': { getTotalPrizePool: () => 0 },
+    'common/util/time': { DAY_MS: 86400000, isAprilFools: () => false },
+    'next/dist/shared/lib/app-router-context.shared-runtime': {},
+    'next/navigation': {
+      usePathname: () => '/home',
+      useRouter: () => ({ push: () => {} }),
+    },
+    'react-icons/lu': stubs,
+    'react-icons/io5': stubs,
+    'react-icons/tb': stubs,
+    'web/components/buttons/app-badges-or-get-app-button': stubs,
+    'web/components/buttons/create-question-button': stubs,
+    'web/components/notifications-icon': stubs,
+    'web/hooks/use-admin': { useAdminOrMod: () => false },
+    'web/hooks/use-api-getter': { useAPIGetter: () => ({ data: undefined }) },
+    'web/hooks/use-theme': {
+      useTheme: () => ({ theme: 'auto', setTheme: Stub }),
+    },
+    'web/hooks/use-user': { useUser: () => user },
+    'web/lib/firebase/users': stubs,
+    'web/lib/service/analytics': { withTracking: (f) => f },
+    '../buttons/mobile-apps-qr-code-button': stubs,
+    '../buttons/sign-up-button': stubs,
+    '../layout/col': { Col: ({ children }) => children },
+    '../widgets/dropdown-menu': { default: Stub },
+    '../profile/add-funds-button': stubs,
+    '../reports-icon': stubs,
+    '../tv-icon': stubs,
+    '../tv/tv-schedule': { useTVIsLive: () => false },
+    './manifold-logo': stubs,
+    './profile-summary': stubs,
+    './sidebar-item': {
+      SidebarItem: ({ item }) =>
+        React.createElement('a', {
+          'data-nav': item.name,
+          'data-href': item.href ?? '',
+        }),
+    },
+  }).default
+  await mount(() => React.createElement(Sidebar, { isMobile }), true)
+  const links = [...document.querySelectorAll('[data-nav]')].map((a) => ({
+    name: a.getAttribute('data-nav'),
+    href: a.getAttribute('data-href'),
+  }))
+  // The list the links sit in: on desktop it scrolls on its own, so the
+  // controls below it stay on a short screen.
+  const listScrolls = document
+    .querySelector('[data-nav]')
+    .closest('ul')
+    .className.split(' ')
+    .includes('overflow-y-auto')
+  await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
+  document.body.innerHTML = ''
+  return Object.assign(links, { listScrolls })
+}
+
+test('the sidebar links Sports and Perps right after Browse, signed in or out, and first in the phone menu; not Elections', async () => {
+  const hubs = [
+    { name: 'Sports', href: '/sports' },
+    { name: 'Perps', href: '/perps' },
+  ]
+  const signedOut = await sidebarLinks()
+  assert.deepEqual(signedOut.slice(0, 3), [
+    { name: 'Browse', href: '/' },
+    ...hubs,
+  ])
+  const user = { id: 'u1', createdTime: 0 }
+  const signedIn = await sidebarLinks({ user })
+  assert.deepEqual(signedIn.slice(0, 3), [
+    { name: 'Browse', href: '/home' },
+    ...hubs,
+  ])
+  const phone = await sidebarLinks({ user, isMobile: true })
+  assert.deepEqual(phone.slice(0, 2), hubs)
+  // Each hub once in each list, including the lower links on the phone, and
+  // no election link in any of them.
+  for (const links of [signedOut, signedIn, phone]) {
+    for (const hub of hubs)
+      assert.equal(links.filter((link) => link.href === hub.href).length, 1)
+    assert.deepEqual(
+      links.filter((link) => /^\/election/.test(link.href)),
+      []
+    )
+  }
+  // With more links, the desktop list scrolls on a short screen rather
+  // than pushing "More" (theme, sign out) below it. The phone drawer scrolls
+  // as a whole.
+  assert.equal(signedOut.listScrolls, true)
+  assert.equal(signedIn.listScrolls, true)
+  assert.equal(phone.listScrolls, false)
+})
