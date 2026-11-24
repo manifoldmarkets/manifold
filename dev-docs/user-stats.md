@@ -11,7 +11,7 @@ Per-user counters kept by the database, in the same transaction as the write tha
 
 **What counts:** a `contract_bets` row in a mana market whose filled `amount` is not zero, not via the API, and not a redemption, as decided by `user_stats_bet_trades`.
 
-- A limit order counts once, when it first fills. A partly filled order that is later cancelled still counts.
+- A limit order counts once, when it first fills. A partly filled order counts, including one that is later cancelled (confirmed 24 Nov 2026: partly filled orders are still trades).
 - A market buy or sell counts at once.
 - The sell legs that automatically redeem a full set of a multiple-choice market are excluded. They are flagged `isAutoRedemption` in `data` (set in `redeem-shares.ts`), because `redeem-shares` itself needs them stored as ordinary sells to work out holdings.
 - Perp trades are not bets and don't count, as before.
@@ -109,7 +109,7 @@ Removing the insert marker's existence check fails the backdated upsert tests; r
     On prod its plan has no full scan of a large table. A user with no `users` row still gets the stats that need only the id.
 - Migration `2026112221_achievement_rank_definitions.sql` makes two ranks measure the number shown next to them:
   - comments: all comments, not only liked ones;
-  - markets created: all mana markets, not only ones with 2+ traders.
+  - markets created: every public mana market, not only ones with 2+ traders. Unlisted and deleted markets don't count, in the rank, the number or the Questions tab total (decided 24 Nov 2026, before the migration ran on prod). Liquidity still sums every mana market the user created.
 
 ## Not changed
 

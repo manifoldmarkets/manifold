@@ -758,7 +758,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'totalMarketsCreated',
       title: 'Doing The Hard Part',
-      desc: 'Number of markets you’ve created.',
+      desc: 'Public markets you’ve created (not unlisted or deleted).',
       fmt: () => formatWithCommas(data.totalMarketsCreated),
     },
     {
