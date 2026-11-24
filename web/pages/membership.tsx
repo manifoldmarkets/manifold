@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import clsx from 'clsx'
+import { sumBy } from 'lodash'
 import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
 import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { REFERRAL_AMOUNT } from 'common/economy'
+import { MARKET_CREATION_QUESTS, QUEST_DETAILS } from 'common/quest'
 import { shortFormatNumber } from 'common/util/format'
 import {
   SUPPORTER_TIERS,
@@ -496,7 +498,11 @@ const FREE_COMPARATOR_TIERS: EffectiveTier[] = ['free']
 // Used to derive deltas for subscriber tiers.
 const FREE_BASELINE_STREAK = 750
 const FREE_BASELINE_SHARES = 150
-const FREE_BASELINE_MARKETS = 400
+// Every weekly question-creation quest (1 question, then 3), 4 weeks a month.
+const QUEST_WEEKS_PER_MONTH = 4
+const FREE_BASELINE_MARKETS =
+  sumBy(MARKET_CREATION_QUESTS, (q) => QUEST_DETAILS[q].rewardAmount) *
+  QUEST_WEEKS_PER_MONTH
 const FREE_BASELINE_TOTAL =
   FREE_BASELINE_STREAK + FREE_BASELINE_SHARES + FREE_BASELINE_MARKETS
 
@@ -546,6 +552,12 @@ function MonthlyValueBreakdown({
   const sharesWithMult = Math.round(FREE_BASELINE_SHARES * mult)
   const marketsWithMult = Math.round(FREE_BASELINE_MARKETS * mult)
   const totalQuestMana = streakWithMult + sharesWithMult + marketsWithMult
+  const firstQuestionReward = Math.round(
+    QUEST_DETAILS.MARKETS_CREATED.rewardAmount * mult
+  )
+  const thirdQuestionReward = Math.round(
+    QUEST_DETAILS.MARKETS_CREATED_3.rewardAmount * mult
+  )
 
   // Delta vs the free baseline (1x). Positive for subscribers, zero for free.
   const bonusMana = totalQuestMana - FREE_BASELINE_TOTAL
@@ -633,7 +645,7 @@ function MonthlyValueBreakdown({
       <p className="text-ink-500 mb-2 text-xs">
         {comparatorTier === 'free'
           ? `1x rewards — full free-tier earnings`
-          : `${mult}x rewards if you predict daily, share, create questions`}
+          : `${mult}x rewards if you predict and share daily, and create 3 questions a week`}
       </p>
 
       <Col className="gap-1 text-xs sm:text-sm">
@@ -646,7 +658,17 @@ function MonthlyValueBreakdown({
           <span className="font-medium tabular-nums">{sharesWithMult}</span>
         </Row>
         <Row className="justify-between">
-          <span className="text-ink-600">📝 Markets</span>
+          <Row className="items-center gap-1">
+            <span className="text-ink-600">📝 Markets</span>
+            <InfoTooltip
+              size="sm"
+              text={`${
+                ENV_CONFIG.moneyMoniker
+              }${firstQuestionReward.toLocaleString()} for your first question each week, plus ${
+                ENV_CONFIG.moneyMoniker
+              }${thirdQuestionReward.toLocaleString()} more for your third. Polls don't count.`}
+            />
+          </Row>
           <span className="font-medium tabular-nums">{marketsWithMult}</span>
         </Row>
         <Row className="items-center justify-between">

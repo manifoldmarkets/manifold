@@ -20,6 +20,9 @@ jest.mock('./social-posts', () => ({
   validateSocialSource: jest.fn(),
   writeSocialMarkets: jest.fn(),
   hydrateSocialPosts: jest.fn(),
+  // The real statements, so the removal's writes are the ones it sends.
+  deleteSocialPostAlerts:
+    jest.requireActual('./social-posts').deleteSocialPostAlerts,
 }))
 jest.mock('./social-mentions', () => ({ notifySocialMentions: jest.fn() }))
 
@@ -161,6 +164,18 @@ test('deletion clears rich content and mentions across every recipient', async (
     'delete from user_notifications where notification_id=$1',
     ['social-mention-post']
   )
+  // The other alerts about the post are looked for by whom they went to or by
+  // their ids, never across the whole table.
+  const alertDeletes = pg.none.mock.calls.filter(([sql]) =>
+    /delete from user_notifications/.test(sql)
+  )
+  expect(alertDeletes.map(([, params]) => params)).toEqual([
+    ['post', 'author'],
+    ['post', ['social-thread-post', 'social-reply-post']],
+    ['social-mention-post'],
+  ])
+  for (const [sql] of alertDeletes)
+    expect(sql).toMatch(/where (user_id=\$2|notification_id=)/)
 })
 
 describe.each(['root', 'reply'] as const)('%s edit window', (kind) => {

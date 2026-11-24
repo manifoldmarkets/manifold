@@ -66,6 +66,7 @@ import { updateData } from 'shared/supabase/utils'
 import { getContract, log, revalidateContractStaticProps } from 'shared/utils'
 import {
   assertSocialInteraction,
+  deleteSocialPostAlerts,
   visibleMarketComment,
   getSocialEditContent,
   getSocialViewer,
@@ -624,15 +625,7 @@ export async function withdrawLockedPost(
     "delete from user_reactions where content_type='social_post' and content_id=$1",
     [id]
   )
-  await tx.none(
-    `delete from user_notifications
-      where (data->>'sourceId'=$1 or data->>'sourceSlug'='/yap/' || $1)
-      and data->>'sourceType' in ('social_reply','social_post_like','social_repost')`,
-    [id]
-  )
-  await tx.none('delete from user_notifications where notification_id=$1', [
-    `social-mention-${id}`,
-  ])
+  await deleteSocialPostAlerts(tx, post)
   // Deleting a Yap withdraws its repost from followers' feeds.
   await tx.none('delete from posts where social_post_id=$1', [id])
   await tx.none('update social_reposts set active=false where post_id=$1', [id])

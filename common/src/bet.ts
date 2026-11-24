@@ -40,6 +40,11 @@ export type Bet = {
   isApi?: boolean // true if bet was placed via API
 
   isRedemption: boolean // true when automatically redeeming shares
+  // True on the sell legs that automatically redeem a full set of a
+  // multiple-choice market's answers. They are stored as sells
+  // (isRedemption false: redeem-shares works out holdings from non-redemption
+  // bets), but aren't trades the user made, so user_stats doesn't count them.
+  isAutoRedemption?: boolean
   isRebalance?: boolean // true when rebalancing sums-to-one cpmm shares
 
   /** @deprecated */
