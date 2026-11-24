@@ -9,6 +9,7 @@ import {
   isCompositeSlug,
   isValidPermaslug,
 } from 'common/perps/open-weight-models'
+import { sortByLastChecked } from 'shared/perps/classification-recheck'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 
 // Database-backed maintenance layer for the Chinese-lab OpenRouter index.
@@ -37,6 +38,15 @@ export type LabClassificationRow = {
   classified_at: string | null
   classified_by: string | null
   updated_time: string
+  /**
+   * Non-Chinese applied as the DEFAULT, not established: the subject is an
+   * anonymous model or a publisher nobody could place, and the operator chose
+   * the denominator-only treatment the seed already gives OpenRouter's own
+   * cloaked slugs rather than invent evidence. Counts as non-Chinese to the
+   * oracle like any other `is_chinese = false` row; re-checked by the watcher
+   * until a human firms it. See getLabResearchCandidates.
+   */
+  provisional: boolean
 }
 
 export type LabClassificationSubject = {
@@ -263,7 +273,7 @@ export const resolveLabClassifications = async (
   const rows = await pg.manyOrNone<LabClassificationRow>(
     `select subject_type, subject_slug, is_chinese, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by,
-            updated_time
+            updated_time, provisional
      from openrouter_lab_classifications
      where is_chinese is not null`
   )
@@ -492,6 +502,13 @@ export const upsertLabClassification = async (
     isChinese: boolean
     evidence: Record<string, unknown>
     classifiedBy: string
+    /**
+     * Non-Chinese as the default rather than as a finding — see
+     * LabClassificationRow. Never valid with `isChinese`: a Chinese placement
+     * is a positive claim that needs its evidence, and the table's check
+     * constraint says the same.
+     */
+    provisional?: boolean
   }
 ): Promise<void> => {
   const validation = validateLabClassificationWrite(
@@ -500,6 +517,12 @@ export const upsertLabClassification = async (
   )
   if (!validation.ok) throw new Error(validation.reason)
   const subjectSlug = validation.subjectSlug
+  const provisional = params.provisional ?? false
+  if (provisional && params.isChinese)
+    throw new Error(
+      `refusing to classify ${params.subjectType} ${subjectSlug} Chinese AND ` +
+        `provisional — provisional is the default for not being able to place a subject`
+    )
   if (!params.classifiedBy.trim())
     throw new Error('classifiedBy is required for a human lab classification')
   const evidenceSummary = params.evidence?.['evidence']
@@ -514,11 +537,12 @@ export const upsertLabClassification = async (
   await pg.none(
     `insert into openrouter_lab_classifications
        (subject_type, subject_slug, is_chinese, source, evidence,
-        classified_at, classified_by, updated_time)
-     values ($1, $2, $3, 'admin', $4::jsonb, now(), $5, now())
+        classified_at, classified_by, provisional, updated_time)
+     values ($1, $2, $3, 'admin', $4::jsonb, now(), $5, $6, now())
      on conflict (subject_type, subject_slug) do update set
        is_chinese = excluded.is_chinese,
        source = excluded.source,
+       provisional = excluded.provisional,
        evidence = excluded.evidence || jsonb_build_object(
          'history',
          coalesce(
@@ -526,6 +550,7 @@ export const upsertLabClassification = async (
          ) || jsonb_build_array(jsonb_build_object(
            'isChinese', openrouter_lab_classifications.is_chinese,
            'source', openrouter_lab_classifications.source,
+           'provisional', openrouter_lab_classifications.provisional,
            'classifiedAt', openrouter_lab_classifications.classified_at,
            'classifiedBy', openrouter_lab_classifications.classified_by,
            'supersededAt', now(),
@@ -541,7 +566,113 @@ export const upsertLabClassification = async (
       params.isChinese,
       JSON.stringify(evidence),
       params.classifiedBy.trim(),
+      provisional,
     ]
+  )
+}
+
+/**
+ * The canned evidence line for a provisional non-Chinese placement.
+ *
+ * Honest about what it is: not a headquarters finding but the denominator-only
+ * treatment the audited seed already gives OpenRouter's own cloaked slugs
+ * ("publisher unknown by design; denominator only, never numerator,
+ * forward-only if unmasked"), applied to a subject nobody can place yet. It
+ * reaches the resolved classification map as the row's evidence string, so it
+ * must read correctly to anyone auditing the index.
+ */
+export const provisionalLabEvidence = (
+  subjectType: LabClassificationSubjectType,
+  subjectSlug: string
+): string =>
+  subjectType === 'model'
+    ? `Provisional: ${subjectSlug} is an anonymous model with no public ` +
+      `attribution yet; denominator only, never numerator, re-checked for a ` +
+      `reveal until an operator firms the verdict (the seed's treatment of ` +
+      `OpenRouter cloaked slugs)`
+    : `Provisional: ${subjectSlug} has no publicly documented headquarters ` +
+      `yet; denominator only, never numerator, re-checked until an operator ` +
+      `firms the verdict`
+
+/** The one public page every OpenRouter subject has. */
+export const provisionalLabSourceUrl = (
+  subjectType: LabClassificationSubjectType,
+  subjectSlug: string
+): string => `https://openrouter.ai/${subjectSlug}`
+
+/** Every timestamp that counts as "someone looked" at a row. */
+export const labCheckedAt = (
+  row: Pick<LabClassificationRow, 'evidence' | 'classified_at'>
+): unknown[] => [row.evidence?.['agentRanAt'], row.classified_at]
+
+/**
+ * Attach the research agent's findings to a PENDING or PROVISIONAL row
+ * without adjudicating it — the lab-side twin of recordAgentRecommendation.
+ *
+ * The verdict column is untouched, so nothing about the published number
+ * changes. The `where` clause means a firm human verdict can never be
+ * overwritten by a later agent run; a provisional row is one the operator
+ * explicitly asked to keep under review.
+ *
+ * `startCooldown` is false for a transient failure (no key, API unreachable):
+ * the evidence is still attached so the queue shows what happened, but the
+ * clock does not start, so the next sweep retries.
+ */
+export const recordLabAgentRecommendation = async (
+  pg: SupabaseDirectClient,
+  subjectType: LabClassificationSubjectType,
+  subjectSlug: string,
+  evidence: Record<string, unknown>,
+  startCooldown = true
+): Promise<void> => {
+  const slug = normalizeLabClassificationSubject(subjectType, subjectSlug)
+  await pg.none(
+    `update openrouter_lab_classifications
+     set evidence = evidence || $3::jsonb, updated_time = now()
+     where subject_type = $1 and subject_slug = $2
+       and (is_chinese is null or provisional)`,
+    [
+      subjectType,
+      slug,
+      JSON.stringify({
+        ...evidence,
+        ...(startCooldown ? { agentRanAt: new Date().toISOString() } : {}),
+      }),
+    ]
+  )
+}
+
+/**
+ * Rows worth a research call.
+ *
+ * Two populations. PENDING subjects that have actually ranked — the same
+ * spend-follows-the-index rule the open-weight watcher applies: a subject that
+ * has never ranked cannot move the index, so researching the catalog backlog
+ * is spend with no reachable effect. And every PROVISIONAL subject, ranked or
+ * not: the human asked for it to be watched, and the set is bounded by human
+ * clicks rather than by the catalog.
+ *
+ * Filtered by the write rules so a malformed or out-of-scope row is never
+ * researched for a verdict the setter would refuse. Never-checked first; the
+ * caller applies the cooldown and the per-sweep cap.
+ */
+export const getLabResearchCandidates = async (
+  pg: SupabaseDirectClient
+): Promise<LabClassificationRow[]> => {
+  const rows = await pg.manyOrNone<LabClassificationRow>(
+    `select subject_type, subject_slug, is_chinese, source, evidence,
+            first_seen, first_ranked_at, classified_at, classified_by,
+            updated_time, provisional
+     from openrouter_lab_classifications
+     where (is_chinese is null and first_ranked_at is not null) or provisional
+     order by first_ranked_at asc nulls last, first_seen asc`
+  )
+  return sortByLastChecked(
+    rows.filter(
+      (row) =>
+        validateLabClassificationWrite(row.subject_type, row.subject_slug).ok
+    ),
+    labCheckedAt
   )
 }
 
@@ -551,7 +682,7 @@ export const getLabClassificationRows = async (
   pg.manyOrNone<LabClassificationRow>(
     `select subject_type, subject_slug, is_chinese, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by,
-            updated_time
+            updated_time, provisional
      from openrouter_lab_classifications
      order by first_ranked_at asc nulls last, first_seen asc`
   )
@@ -562,7 +693,7 @@ export const getPendingLabClassifications = async (
   const rows = await pg.manyOrNone<LabClassificationRow>(
     `select subject_type, subject_slug, is_chinese, source, evidence,
             first_seen, first_ranked_at, classified_at, classified_by,
-            updated_time
+            updated_time, provisional
      from openrouter_lab_classifications
      where is_chinese is null
      order by first_ranked_at asc nulls last, first_seen asc`

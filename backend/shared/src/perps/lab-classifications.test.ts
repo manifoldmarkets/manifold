@@ -27,6 +27,8 @@ import {
   mergeLabClassificationRows,
   normalizeLabClassificationSubject,
   pendingLabSubjectsFromCatalog,
+  provisionalLabEvidence,
+  provisionalLabSourceUrl,
   validateLabClassificationWrite,
 } from './lab-classifications'
 
@@ -44,6 +46,7 @@ const row = (
     overrides.is_chinese === null ? null : '2026-09-02T00:00:00.000Z',
   classified_by: overrides.is_chinese === null ? null : 'operator-id',
   updated_time: '2026-09-02T00:00:00.000Z',
+  provisional: false,
   ...overrides,
 })
 
@@ -159,6 +162,41 @@ describe('lab classification resolution', () => {
       Object.prototype.hasOwnProperty.call(merged.chinese, '__proto__')
     ).toBe(true)
     expect(merged.chinese['__proto__']).toEqual(evidence('database decision'))
+  })
+
+  test('a provisional row is an ordinary non-Chinese placement to the oracle', () => {
+    // The flag changes who re-examines the row, not what the index reads.
+    const merged = mergeLabClassificationRows(
+      [
+        row({
+          subject_type: 'model',
+          subject_slug: 'stealth/anon',
+          is_chinese: false,
+          provisional: true,
+          evidence: evidence(provisionalLabEvidence('model', 'stealth/anon')),
+        }),
+      ],
+      seed
+    )
+    expect(merged.nonChineseModels['stealth/anon']).toEqual(
+      evidence(provisionalLabEvidence('model', 'stealth/anon'))
+    )
+    expect(merged.chineseModels['stealth/anon']).toBeUndefined()
+  })
+
+  test('provisional evidence says what it is and points at a real public page', () => {
+    expect(provisionalLabEvidence('model', 'stealth/anon')).toMatch(
+      /^Provisional: stealth\/anon is an anonymous model/
+    )
+    expect(provisionalLabEvidence('author', 'nex-agi')).toMatch(
+      /^Provisional: nex-agi has no publicly documented headquarters/
+    )
+    expect(provisionalLabSourceUrl('model', 'stealth/anon')).toBe(
+      'https://openrouter.ai/stealth/anon'
+    )
+    expect(provisionalLabSourceUrl('author', 'nex-agi')).toBe(
+      'https://openrouter.ai/nex-agi'
+    )
   })
 
   test('catalog discovery queues exact models for model-scoped authors', () => {
