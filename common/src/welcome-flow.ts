@@ -7,11 +7,18 @@ import { HOUR_MS } from './util/time'
 export const getWelcomeSteps = ({
   onContractPage,
   hasPendingBet,
+  inSignedOutBetTest,
 }: {
   onContractPage: boolean
   hasPendingBet: boolean
+  inSignedOutBetTest: boolean
 }): ('intro' | 'first-bet')[] =>
-  onContractPage || hasPendingBet ? ['intro'] : ['intro', 'first-bet']
+  onContractPage || hasPendingBet || inSignedOutBetTest
+    ? ['intro']
+    : ['intro', 'first-bet']
+
+export const isPermanentReferralError = (code: number) =>
+  code === 400 || code === 403 || code === 404
 
 // A 25-character username can have a five-character nanoid suffix.
 export const normalizeReferrerInput = (raw: string) =>

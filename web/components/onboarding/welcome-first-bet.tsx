@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { keyBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { type ComponentProps, useEffect, useState } from 'react'
 
 import { getDisplayProbability } from 'common/calculate'
 import type { BinaryContract } from 'common/contract'
@@ -11,6 +11,7 @@ import { formatMoney, formatPercent } from 'common/util/format'
 import { pickFirstBetMarkets } from 'common/welcome-flow'
 import { BuyPanel } from 'web/components/bet/bet-panel'
 import { MarketRowSkeleton } from 'web/components/browse-v2/market-card'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { api, followTopic, followUser } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 
@@ -193,7 +194,7 @@ export default function WelcomeFirstBet({
                 // The ticket pulls itself out by -mx-2 below sm; pad it back
                 // so the list doesn't scroll sideways.
                 <div className="px-2 sm:px-0">
-                  <BuyPanel
+                  <LiveBuyPanel
                     contract={contract}
                     inModal
                     compact
@@ -216,4 +217,9 @@ export default function WelcomeFirstBet({
       </div>
     </>
   )
+}
+
+function LiveBuyPanel({ contract, ...props }: ComponentProps<typeof BuyPanel>) {
+  const liveContract = useLiveContract(contract)
+  return <BuyPanel contract={liveContract} {...props} />
 }

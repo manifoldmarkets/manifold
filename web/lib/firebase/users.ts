@@ -9,7 +9,10 @@ import {
 import { Contract } from 'common/contract'
 import { MINUTES_ALLOWED_TO_REFER, PrivateUser, User } from 'common/user'
 import { sleep } from 'common/util/time'
-import { shouldSendCachedReferral } from 'common/welcome-flow'
+import {
+  isPermanentReferralError,
+  shouldSendCachedReferral,
+} from 'common/welcome-flow'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
 import { postMessageToNative } from 'web/lib/native/post-message'
@@ -109,7 +112,7 @@ export async function setCachedReferralInfoForUser(
       // Welcome runs on every page, so a referral the server will never
       // accept (unknown referrer, already referred, too old) must not be
       // retried on each page load. Network and server errors still retry.
-      if (error instanceof APIError && error.code >= 400 && error.code < 500)
+      if (error instanceof APIError && isPermanentReferralError(error.code))
         safeLocalStorage?.setItem(REFERRAL_COMPLETE_KEY, 'true')
       console.error('Error setting cached referral', error)
     })

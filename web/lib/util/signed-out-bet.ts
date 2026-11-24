@@ -11,6 +11,7 @@ import {
   readPendingBet,
   readSignedOutBetMode,
   readUnsentExposures,
+  SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS,
   SIGNED_OUT_BET_FIRST_PRESS_KEY,
   SIGNED_OUT_BET_FORCE_KEY,
   SIGNED_OUT_BET_PROMPTED_KEY,
@@ -100,6 +101,15 @@ const getFirstPress = () =>
   readFirstPress(
     safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
   )
+
+export const isInSignedOutBetTest = () => {
+  if (getMode() !== 'experiment') return false
+  const { sinceFirstPressMs } = getEnrollmentFields(getFirstPress(), Date.now())
+  return (
+    sinceFirstPressMs !== undefined &&
+    sinceFirstPressMs < SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
+  )
+}
 
 const setFirstPress = (press: FirstPress) =>
   safeLocalStorage?.setItem(

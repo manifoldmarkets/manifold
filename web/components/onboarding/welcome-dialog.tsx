@@ -8,7 +8,11 @@ import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
-import { hasPendingBet, markWelcomeFinished } from 'web/lib/util/signed-out-bet'
+import {
+  hasPendingBet,
+  isInSignedOutBetTest,
+  markWelcomeFinished,
+} from 'web/lib/util/signed-out-bet'
 import { WelcomeIntro } from './welcome-intro'
 
 const loadFirstBet = () => import('./welcome-first-bet')
@@ -30,9 +34,11 @@ export default function WelcomeDialog({
   const [open, setOpen] = useState(true)
   const [step, setStep] = useState<'intro' | 'first-bet'>('intro')
   const [pendingBet] = useState(hasPendingBet)
+  const [inSignedOutBetTest] = useState(isInSignedOutBetTest)
   const firstBetStep = getWelcomeSteps({
     onContractPage,
     hasPendingBet: pendingBet,
+    inSignedOutBetTest,
   }).includes('first-bet')
   const followedTopics = useRef(new Set<string>())
   const [marketsByTopic, setMarketsByTopic] = useState<
@@ -138,14 +144,7 @@ export default function WelcomeDialog({
                   followedTopics={followedTopics.current}
                   finish={finish}
                 />
-                <div className="border-ink-200 flex shrink-0 justify-between border-t pt-3">
-                  <Button
-                    color="gray-white"
-                    disabled={saving}
-                    onClick={() => setStep('intro')}
-                  >
-                    Previous
-                  </Button>
+                <div className="border-ink-200 flex shrink-0 justify-end border-t pt-3">
                   <Button
                     color="gray-outline"
                     disabled={saving}

@@ -5,7 +5,10 @@ import { TRADE_TERM } from 'common/envs/constants'
 import type { User } from 'common/user'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { randomString } from 'common/util/random'
-import { normalizeReferrerInput } from 'common/welcome-flow'
+import {
+  isPermanentReferralError,
+  normalizeReferrerInput,
+} from 'common/welcome-flow'
 import { Button } from 'web/components/buttons/button'
 import { Input } from 'web/components/widgets/input'
 import { APIError, updateUser } from 'web/lib/api/api'
@@ -14,7 +17,6 @@ import {
   clearCachedReferralInfo,
   getCachedReferralInfo,
   sendReferral,
-  setCachedReferralInfoForUser,
   writeReferralInfo,
 } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
@@ -61,8 +63,9 @@ export function WelcomeIntro({
       username = (await updateUser({ username: cleaned })).username
     } catch (error) {
       console.error(error)
-      username = (await updateUser({ username: cleaned + randomString(5) }))
-        .username
+      username = (
+        await updateUser({ username: cleaned.slice(0, 20) + randomString(5) })
+      ).username
     }
     savedIdentity.current = { name: newName, username }
     return username
@@ -84,14 +87,12 @@ export function WelcomeIntro({
     const report = (
       result: 'ok' | 'self' | 'not-found' | 'error' | 'cleared'
     ) => track('onboarding referral entered', { result, prefilled })
+    const currentReferral = getCachedReferralInfo()
     if (!username) {
-      // They removed the invitation we filled in from their link.
-      if (prefilled) {
+      if (currentReferral?.explicit) {
         clearCachedReferralInfo()
         report('cleared')
-        return true
       }
-      await setCachedReferralInfoForUser(user, { allowImplicit: false })
       return true
     }
 
@@ -102,21 +103,27 @@ export function WelcomeIntro({
     }
 
     const contractId =
-      username === cached?.username ? cached.contractId : undefined
+      currentReferral?.explicit && currentReferral.username === username
+        ? currentReferral.contractId
+        : undefined
     try {
       await sendReferral(username, contractId)
       setReferralSent(true)
       report('ok')
     } catch (error) {
-      if (error instanceof APIError && error.code === 404) {
-        setReferralError(
-          `We couldn't find @${username}. Check the spelling, or leave it blank.`
-        )
-        report('not-found')
-        return false
+      if (error instanceof APIError && isPermanentReferralError(error.code)) {
+        if (error.code === 404) {
+          setReferralError(
+            `We couldn't find @${username}. Check the spelling, or leave it blank.`
+          )
+          report('not-found')
+          return false
+        }
+        if (getCachedReferralInfo()?.username === username)
+          clearCachedReferralInfo()
+      } else {
+        writeReferralInfo(username, { explicitReferrer: username, contractId })
       }
-      // A retry after onboarding must honor the invitation they entered.
-      writeReferralInfo(username, { explicitReferrer: username, contractId })
       console.error('Could not send onboarding referral', error)
       report('error')
     }

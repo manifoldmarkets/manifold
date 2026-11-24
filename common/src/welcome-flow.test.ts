@@ -2,6 +2,7 @@ import type { BinaryContract, MultiContract } from './contract'
 import { HOUR_MS } from './util/time'
 import {
   getWelcomeSteps,
+  isPermanentReferralError,
   normalizeReferrerInput,
   pickFirstBetMarkets,
   shouldSendCachedReferral,
@@ -9,16 +10,32 @@ import {
 
 describe('getWelcomeSteps', () => {
   it.each([
-    [false, false, ['intro', 'first-bet']],
-    [false, true, ['intro']],
-    [true, false, ['intro']],
-    [true, true, ['intro']],
+    [false, false, false, ['intro', 'first-bet']],
+    [false, false, true, ['intro']],
+    [false, true, false, ['intro']],
+    [false, true, true, ['intro']],
+    [true, false, false, ['intro']],
+    [true, false, true, ['intro']],
+    [true, true, false, ['intro']],
+    [true, true, true, ['intro']],
   ] as const)(
-    'contract page %s, pending bet %s',
-    (onContractPage, hasPendingBet, steps) => {
-      expect(getWelcomeSteps({ onContractPage, hasPendingBet })).toEqual(steps)
+    'contract page %s, pending bet %s, in signed-out bet test %s',
+    (onContractPage, hasPendingBet, inSignedOutBetTest, steps) => {
+      expect(
+        getWelcomeSteps({ onContractPage, hasPendingBet, inSignedOutBetTest })
+      ).toEqual(steps)
     }
   )
+})
+
+describe('isPermanentReferralError', () => {
+  it.each([400, 403, 404])('stops retries for %i', (code) => {
+    expect(isPermanentReferralError(code)).toBe(true)
+  })
+
+  it.each([401, 408, 429, 500, 503])('allows retries for %i', (code) => {
+    expect(isPermanentReferralError(code)).toBe(false)
+  })
 })
 
 describe('normalizeReferrerInput', () => {
