@@ -105,6 +105,23 @@ export function getBanTypesForAction(action: string): BanType[] {
   return actionMap[action] || []
 }
 
+export type LeaderboardKind = 'profit' | 'loss' | 'volume' | 'creator' | 'referral'
+
+// The bans that take a user off a leaderboard: the bans that block what it
+// ranks. A betting ban takes them off the trading boards, a market-control ban
+// off the creator boards. Deleted accounts are off every board, bans or not.
+export function getBanTypesForLeaderboard(kind: LeaderboardKind): BanType[] {
+  const rankedAction: Record<LeaderboardKind, string | undefined> = {
+    profit: 'bet',
+    loss: 'bet',
+    volume: 'bet',
+    creator: 'createMarket',
+    referral: undefined,
+  }
+  const action = rankedAction[kind]
+  return action ? getBanTypesForAction(action) : []
+}
+
 export function formatBanTimeRemaining(ms: number): string {
   const DAY_MS = 24 * 60 * 60 * 1000
   const HOUR_MS = 60 * 60 * 1000
