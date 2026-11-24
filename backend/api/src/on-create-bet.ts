@@ -281,6 +281,20 @@ const handleBetReplyToComment = async (
 
   if (!comment) return
 
+  // The id comes from the bet request, and the comment is looked up by that id
+  // alone. Count the reply only where the comment is: on the bet's market, or
+  // on its sibling, since comments are kept on the mana market and a bet on the
+  // cash market replies to one there. A bet anywhere else would replace the
+  // comment's totals with its own market's bets and notify the comment's
+  // author.
+  const betMarketIds = filterDefined([contract.id, contract.siblingContractId])
+  if (!betMarketIds.includes(comment.contractId)) {
+    log(
+      `Bet ${bet.id} on ${contract.id} names comment ${comment.id}, which is on ${comment.contractId}. Not counted as a reply.`
+    )
+    return
+  }
+
   const manaContract =
     contract.token === 'CASH'
       ? await getContract(pg, contract.siblingContractId!)
