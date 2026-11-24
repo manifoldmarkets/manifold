@@ -14,6 +14,7 @@ import {
   SparklesIcon,
   StarIcon,
   SunIcon,
+  TrendingUpIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
@@ -28,6 +29,7 @@ import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.share
 import { usePathname, useRouter } from 'next/navigation'
 import { LuGem } from 'react-icons/lu'
 import { IoCompassOutline } from 'react-icons/io5'
+import { TbBallBasketball } from 'react-icons/tb'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -225,7 +227,14 @@ export default function Sidebar(props: {
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
-      <ul className="m-0 mb-4 flex list-none flex-col gap-1 p-0">
+      <ul
+        className={clsx(
+          'm-0 mb-4 flex list-none flex-col gap-1 p-0',
+          // On a short desktop screen the links scroll, so "More" (theme,
+          // sign out) stays on screen. The phone drawer scrolls as a whole.
+          !isMobile && 'min-h-0 overflow-y-auto overflow-x-hidden'
+        )}
+      >
         {navOptions.map((item) => (
           <li key={item.name}>
             {item.name === 'Shop' && isAprilFools() ? (
@@ -316,6 +325,14 @@ export default function Sidebar(props: {
   )
 }
 
+// The hub pages, beside Browse in every nav. Sports, which the sidebar never
+// linked, is where new visitors go on to bet most often. Elections stays out
+// of the sidebar for now.
+const HUB_NAV_ITEMS: NavItem[] = [
+  { name: 'Sports', href: '/sports', icon: TbBallBasketball },
+  { name: 'Perps', href: '/perps', icon: TrendingUpIcon },
+]
+
 const getDesktopNav = (
   loggedIn: boolean,
   openDownloadApp: () => void,
@@ -330,6 +347,7 @@ const getDesktopNav = (
   if (loggedIn)
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
+      ...HUB_NAV_ITEMS,
       {
         name: 'Yap',
         href: '/yap',
@@ -372,6 +390,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    ...HUB_NAV_ITEMS,
     { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
@@ -391,6 +410,7 @@ const getMobileNav = (
   const { isAdminOrMod, isLiveTV, showShopNewBadge, prizePoolLabel } = options
 
   return buildArray<NavItem>(
+    ...HUB_NAV_ITEMS,
     loggedIn && {
       name: 'Prize Drawing',
       href: '/prize',
