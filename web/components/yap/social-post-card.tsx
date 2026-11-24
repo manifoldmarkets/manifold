@@ -15,7 +15,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ChatAltIcon, HeartIcon } from '@heroicons/react/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/solid'
-import { contractPath, getBinaryProbPercent } from 'common/contract'
 import {
   SocialPost,
   SocialLikerPage,
@@ -30,6 +29,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { useUser } from 'web/hooks/use-user'
 import { useAdmin, useAdminOrMod } from 'web/hooks/use-admin'
 import { SocialAvatar } from './social-avatar'
+import { SocialMarketCard } from './social-market-card'
 import { SocialUserLink } from './social-user-link'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { Button } from '../buttons/button'
@@ -257,8 +257,11 @@ function SocialPostCardContent({
         }}
         onClick={(e) => {
           if (
+            // Dialogs opened from the post, such as a market's bet dialog,
+            // render in portals, but their clicks still bubble here.
+            e.currentTarget.contains(e.target as Node) &&
             !(e.target as HTMLElement).closest(
-              'a,button,input,textarea,select,[data-social-composer],[data-social-images]'
+              'a,button,input,textarea,select,[data-social-composer],[data-social-images],[data-social-market]'
             ) &&
             !window.getSelection()?.toString()
           )
@@ -418,43 +421,7 @@ function SocialPostCardContent({
                 {markets
                   .slice(0, allMarkets ? SOCIAL_POST_MAX_MARKETS : 3)
                   .map((market) => (
-                    <Link
-                      key={market.id}
-                      href={contractPath(market)}
-                      className="border-ink-200 dark:border-ink-300 hover:border-primary-400 hover:bg-canvas-50 flex items-center justify-between gap-3 rounded-xl border px-3 py-3 transition-colors"
-                    >
-                      <span className="min-w-0 flex-1">
-                        <span className="text-ink-900 block break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
-                          {market.question}
-                        </span>
-                        <span className="text-ink-600 mt-1.5 flex min-w-0 items-center gap-1.5 text-xs">
-                          <SocialAvatar
-                            user={{
-                              id: market.creatorId,
-                              username: market.creatorUsername,
-                              avatarUrl: market.creatorAvatarUrl,
-                            }}
-                            size="2xs"
-                            noLink
-                          />
-                          <span className="truncate">{market.creatorName}</span>
-                        </span>
-                      </span>
-                      <span className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
-                        {market.isResolved && market.resolution && (
-                          <span className="sr-only">Resolved: </span>
-                        )}
-                        {market.isResolved
-                          ? market.resolution ?? 'Resolved'
-                          : market.outcomeType === 'BINARY'
-                          ? getBinaryProbPercent(market)
-                          : 'View market'}
-                        {market.outcomeType === 'BINARY' &&
-                          !market.isResolved && (
-                            <span className="sr-only"> chance</span>
-                          )}
-                      </span>
-                    </Link>
+                    <SocialMarketCard key={market.id} market={market} />
                   ))}
               </div>
               {markets.length > 3 && (
