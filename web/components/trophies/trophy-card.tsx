@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { findLastIndex } from 'lodash'
 import {
@@ -13,6 +13,7 @@ import {
   type TrophyMilestone,
   formatTrophyValue,
   getAccountAnniversaryTime,
+  getTrophyBadgeImagePath,
   getRewardManaTotal,
   isMilestoneReached,
 } from 'common/trophies'
@@ -21,7 +22,9 @@ import { formatMoney } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
+import { useIsVisible } from 'web/hooks/use-is-visible'
 
 export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
@@ -133,6 +136,24 @@ export function TrophyCard(props: {
   const viewingIdx = Math.min(selectedIdx, shown.length - 1)
 
   const viewing = shown[viewingIdx]
+  const [hasBeenVisible, setHasBeenVisible] = useState(false)
+  const { ref } = useIsVisible(
+    () => setHasBeenVisible(true),
+    true,
+    !!viewing && typeof IntersectionObserver !== 'undefined'
+  )
+  const previousId = shown[viewingIdx - 1]?.id
+  const nextId = shown[viewingIdx + 1]?.id
+  // Warm the neighboring badges so stepping through milestones doesn't show
+  // an empty circle while the next badge loads.
+  useEffect(() => {
+    if (!hasBeenVisible) return
+    for (const id of [previousId, nextId]) {
+      if (id !== undefined)
+        new Image().src = getTrophyBadgeImagePath(definition.id, id)
+    }
+  }, [hasBeenVisible, definition.id, previousId, nextId])
+
   if (!viewing) return null
 
   const isReached = isMilestoneReached(viewing, currentValue)
@@ -161,7 +182,7 @@ export function TrophyCard(props: {
     viewing.threshold > 0 ? Math.min(currentValue / viewing.threshold, 1) : 1
 
   return (
-    <Col className="bg-canvas-0 relative overflow-hidden rounded-2xl">
+    <Col ref={ref} className="bg-canvas-0 relative overflow-hidden rounded-2xl">
       <div className="relative">
         <div className="flex items-center justify-center px-6 pb-2 pt-5">
           <div
@@ -171,9 +192,12 @@ export function TrophyCard(props: {
               earned ? style.glow : 'opacity-40 grayscale'
             )}
           >
-            <span className="text-5xl" aria-hidden>
-              {viewing.emoji}
-            </span>
+            <TrophyBadgeImage
+              trophyId={definition.id}
+              milestone={viewing}
+              className="h-24 w-24"
+              emojiClassName="text-5xl"
+            />
           </div>
         </div>
 

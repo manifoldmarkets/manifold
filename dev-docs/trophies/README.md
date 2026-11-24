@@ -51,7 +51,7 @@ Each stage is its own PR.
 | 2     | "Getting started" milestones for new accounts that pay mana once each, off on prod                                                                                                    | Built                    |
 | 3     | A notification when a trophy is ready to claim, a celebration on claim, a "next trophy" card                                                                                          | Planned                  |
 | 4     | Days of Plus membership as rewards, never auto-renewing                                                                                                                               | Needs a product decision |
-| 5     | Badge art (`art-guide.md`, `badge-prompts.txt`, `composite-badge.ts`)                                                                                                                 | Needs a product decision |
+| 5     | Badge art: one image per milestone, made by GPT image generation, 256 px WebP in `web/public/trophy-badges/`, emoji fallback (`art-guide.md`)                                         | Built                    |
 
 Ideas from the March plan kept for later: streak freezes as rewards (they already exist as a shop item, so a reward adds one to the user's count), leaderboard and subscription trophies, gifted titles that only other users can buy you, and animations that scale with tier.
 

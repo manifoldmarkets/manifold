@@ -11,6 +11,7 @@ import {
   TROPHY_DEFINITIONS,
   TROPHY_TIER_ORDER,
   TrophyClaim,
+  TrophyMilestone,
   TrophyStats,
   TrophyTier,
   countClaimedMilestones,
@@ -27,6 +28,7 @@ import {
   ShowcasePickerRequest,
   takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
+import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   useCurrentSeason,
@@ -226,6 +228,8 @@ type ShowcaseBadgeData = {
   stat?: string // shown after the label, e.g. "2.3M"
   detail: string // tooltip
   emoji: string
+  // A trophy's art, shown instead of the emoji.
+  art?: { trophyId: string; milestone: TrophyMilestone }
   tier: BadgeTier
 }
 
@@ -292,6 +296,7 @@ function getTrophyBadges(
             ? def.label
             : `${def.label}: ${value}${def.formatPrefix ? '' : ` ${def.unit}`}`,
         emoji: milestone.emoji,
+        art: { trophyId: def.id, milestone },
         tier: milestone.tier,
       },
     ]
@@ -369,9 +374,18 @@ function ShowcaseBadge(props: {
             'linear-gradient(135deg, rgb(var(--color-canvas-0) / 0.88), rgb(var(--color-canvas-0) / 0.94))',
         }}
       >
-        <span className={isLarge ? 'text-lg' : 'text-sm'} aria-hidden>
-          {badge.emoji}
-        </span>
+        {badge.art ? (
+          <TrophyBadgeImage
+            trophyId={badge.art.trophyId}
+            milestone={badge.art.milestone}
+            className={isLarge ? 'h-7 w-7' : 'h-5 w-5'}
+            emojiClassName={isLarge ? 'text-lg' : 'text-sm'}
+          />
+        ) : (
+          <span className={isLarge ? 'text-lg' : 'text-sm'} aria-hidden>
+            {badge.emoji}
+          </span>
+        )}
         <span
           className={clsx(
             'font-semibold',
