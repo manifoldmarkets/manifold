@@ -60,7 +60,10 @@ from
 
 create unique index if not exists mv_ach_volume_user_id_idx on public.mv_ach_volume (user_id);
 
--- Trades
+-- Trades: no longer refreshed (its job has been off since Sep 2025).
+-- get-user-achievements reads live counts from user_stats once its backfill
+-- is complete (migration 2026112220_user_stats.sql, dev-docs/user-stats.md),
+-- and this table until then.
 create table if not exists
   ach_trades (
     user_id text primary key,
@@ -71,46 +74,37 @@ create table if not exists
 
 create unique index if not exists ach_trades_user_id_idx on public.ach_trades (user_id);
 
--- Comments (liked-only)
+-- Comments (every comment posted; migration 2026112221)
 create materialized view if not exists
   mv_ach_comments as
 with
-  liked_comments as (
-    select
-      content_owner_id as user_id,
-      count(distinct content_id) as liked_comments
-    from
-      user_reactions
-    where
-      content_type = 'comment'
-      and reaction_type = 'like'
-    group by
-      content_owner_id
+  comment_counts as (
+    select user_id, count(*) as number_of_comments
+    from (
+      select user_id from contract_comments
+      union all
+      select user_id from old_post_comments
+    ) c
+    group by user_id
   ),
   all_users as (
-    select
-      id as user_id
-    from
-      users
+    select id as user_id from users
   )
 select
   u.user_id,
-  coalesce(lc.liked_comments, 0) as number_of_comments,
+  coalesce(cc.number_of_comments, 0) as number_of_comments,
   rank() over (
-    order by
-      coalesce(lc.liked_comments, 0) desc
+    order by coalesce(cc.number_of_comments, 0) desc
   ) as comments_rank,
   (
     (
       (count(*) over ()) - rank() over (
-        order by
-          coalesce(lc.liked_comments, 0) desc
+        order by coalesce(cc.number_of_comments, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as comments_percentile
-from
-  all_users u
-  left join liked_comments lc on lc.user_id = u.user_id;
+from all_users u
+left join comment_counts cc on cc.user_id = u.user_id;
 
 create unique index if not exists mv_ach_comments_user_id_idx on public.mv_ach_comments (user_id);
 
@@ -436,71 +430,50 @@ from
 
 create unique index if not exists mv_ach_txns_achievements_user_id_idx on public.mv_ach_txns_achievements (user_id);
 
--- Combined: Creator-contract achievements (markets created + liquidity)
+-- Combined: Creator-contract achievements (public mana markets created, not unlisted or deleted; liquidity over every mana market created; migration 2026112221)
 create materialized view if not exists
   mv_ach_creator_contracts as
 with
-  mana_contracts as (
-    select
-      id,
-      creator_id,
-      (data ->> 'uniqueBettorCount')::int as unique_bettors,
-      (data ->> 'totalLiquidity')::numeric as total_liq
-    from
-      contracts
-    where
-      token = 'MANA'
-  ),
   creator_agg as (
     select
       creator_id as user_id,
       count(*) filter (
-        where
-          unique_bettors >= 2
+        where visibility = 'public' and not coalesce(deleted, false)
       ) as total_markets_created,
-      coalesce(sum(total_liq), 0) as total_liquidity_created_markets
-    from
-      mana_contracts
-    group by
-      creator_id
+      coalesce(sum((data ->> 'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
+    from contracts
+    where token = 'MANA'
+    group by creator_id
   ),
   all_users as (
-    select
-      id as user_id
-    from
-      users
+    select id as user_id from users
   )
 select
   u.user_id,
   coalesce(ca.total_markets_created, 0) as total_markets_created,
   coalesce(ca.total_liquidity_created_markets, 0) as total_liquidity_created_markets,
   rank() over (
-    order by
-      coalesce(ca.total_markets_created, 0) desc
+    order by coalesce(ca.total_markets_created, 0) desc
   ) as markets_created_rank,
   (
     (
       (count(*) over ()) - rank() over (
-        order by
-          coalesce(ca.total_markets_created, 0) desc
+        order by coalesce(ca.total_markets_created, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as markets_created_percentile,
   rank() over (
-    order by
-      coalesce(ca.total_liquidity_created_markets, 0) desc
+    order by coalesce(ca.total_liquidity_created_markets, 0) desc
   ) as liquidity_rank,
   (
     (
       (count(*) over ()) - rank() over (
-        order by
-          coalesce(ca.total_liquidity_created_markets, 0) desc
+        order by coalesce(ca.total_liquidity_created_markets, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as liquidity_percentile
-from
-  all_users u
-  left join creator_agg ca on ca.user_id = u.user_id;
+from all_users u
+left join creator_agg ca on ca.user_id = u.user_id;
 
 create unique index if not exists mv_ach_creator_contracts_user_id_idx on public.mv_ach_creator_contracts (user_id);
 

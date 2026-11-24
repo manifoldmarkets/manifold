@@ -52,6 +52,7 @@ import {
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
 import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
+import { resumeAnnouncementDeliveries } from './resume-announcement-deliveries'
 import { scoreContracts } from './score-contracts'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
@@ -238,6 +239,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'apply-pending-clarifications',
       '0 */5 * * * *', // every 5 minutes
       applyPendingClarifications
+    ),
+    createJob(
+      'resume-announcement-deliveries',
+      '30 */5 * * * *', // every 5 minutes
+      resumeAnnouncementDeliveries
     ),
     createJob(
       'update-perps',
