@@ -112,7 +112,8 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'total-trades',
     label: 'Trades Placed',
-    description: "Number of individual trades you've made",
+    description:
+      "Trades you've placed. A limit order counts once, when it first fills; API trades don't count",
     category: 'trading',
     statKey: 'totalTradesCount',
     unit: 'trades',
@@ -168,7 +169,8 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'markets-created',
     label: 'Markets Created',
-    description: "Questions you've created for the community to trade on",
+    description:
+      "Public questions you've created for the community to trade on (unlisted and deleted ones don't count)",
     category: 'creating',
     statKey: 'totalMarketsCreated',
     unit: 'markets',
