@@ -1,0 +1,201 @@
+import clsx from 'clsx'
+import { capitalize } from 'lodash'
+import Link from 'next/link'
+import { ReactNode, useState } from 'react'
+
+import {
+  BinaryContract,
+  Contract,
+  contractPath,
+  CPMMMultiContract,
+  getBinaryProbPercent,
+  isMultiCpmm,
+  PollContract,
+  StonkContract,
+} from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
+import { useLiveContract } from 'web/hooks/use-contract'
+import { useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
+import { onSignedOutBetPress } from 'web/lib/util/signed-out-bet'
+import { MultiBetDialog } from '../bet/bet-dialog'
+import { BetButton } from '../bet/feed-bet-button'
+import { Button } from '../buttons/button'
+import { PollPanel } from '../poll/poll-panel'
+import { SocialAvatar } from './social-avatar'
+
+export function SocialMarketCard(props: { market: Contract }) {
+  const { market } = props
+  // Only markets a reader can act on need live prices and answers.
+  return getSocialMarketAction(market, Date.now()) ? (
+    <LiveSocialMarketCard market={market} />
+  ) : (
+    <SocialMarketFrame market={market} />
+  )
+}
+
+// The analytics location of bets placed from a market on a Yap post.
+export const YAP_BET_LOCATION = 'yap'
+
+export type SocialMarketAction = 'binary' | 'stonk' | 'multi' | 'poll'
+
+// What a reader can do with a market on a Yap post without leaving the feed.
+// Other market types, and markets that are closed or resolved, only link out.
+export const getSocialMarketAction = (
+  market: Contract,
+  now: number
+): SocialMarketAction | undefined => {
+  if (market.isResolved) return undefined
+  if (market.closeTime && market.closeTime <= now) return undefined
+  if (market.outcomeType === 'POLL') return 'poll'
+  if (market.outcomeType === 'BINARY' && market.mechanism === 'cpmm-1')
+    return 'binary'
+  if (market.outcomeType === 'STONK') return 'stonk'
+  if (isMultiCpmm(market)) return 'multi'
+  return undefined
+}
+
+function LiveSocialMarketCard(props: { market: Contract }) {
+  // The post's copy can be up to 30 seconds old and has no answers for
+  // multiple choice markets; the live one is refetched with its answers.
+  const market = useLiveContract(props.market)
+  const action = getSocialMarketAction(market, Date.now())
+  return (
+    <SocialMarketFrame market={market}>
+      {action && <SocialMarketActions market={market} action={action} />}
+    </SocialMarketFrame>
+  )
+}
+
+function SocialMarketFrame(props: { market: Contract; children?: ReactNode }) {
+  const { market, children } = props
+  const linkClass =
+    'hover:bg-canvas-50 flex items-center justify-between gap-3 px-3 py-3 transition-colors'
+  const border = 'border-ink-200 dark:border-ink-300 rounded-xl border'
+  const link = (
+    <Link
+      href={contractPath(market)}
+      className={
+        children
+          ? linkClass
+          : clsx(linkClass, border, 'hover:border-primary-400')
+      }
+    >
+      <SocialMarketSummary market={market} />
+    </Link>
+  )
+  if (!children) return link
+  // data-social-market keeps clicks between the buttons from opening the
+  // post's discussion, as the post card does for clicks outside links.
+  return (
+    <div className={clsx(border, 'overflow-hidden')} data-social-market>
+      {link}
+      <div className="px-3 pb-3">{children}</div>
+    </div>
+  )
+}
+
+function SocialMarketSummary(props: { market: Contract }) {
+  const { market } = props
+  return (
+    <>
+      <span className="min-w-0 flex-1">
+        <span className="text-ink-900 block break-words text-sm font-medium leading-snug [overflow-wrap:anywhere]">
+          {market.question}
+        </span>
+        <span className="text-ink-600 mt-1.5 flex min-w-0 items-center gap-1.5 text-xs">
+          <SocialAvatar
+            user={{
+              id: market.creatorId,
+              username: market.creatorUsername,
+              avatarUrl: market.creatorAvatarUrl,
+            }}
+            size="2xs"
+            noLink
+          />
+          <span className="truncate">{market.creatorName}</span>
+        </span>
+      </span>
+      <span className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
+        {market.isResolved && market.resolution && (
+          <span className="sr-only">Resolved: </span>
+        )}
+        {market.isResolved
+          ? market.resolution ?? 'Resolved'
+          : market.outcomeType === 'BINARY'
+          ? getBinaryProbPercent(market)
+          : 'View market'}
+        {market.outcomeType === 'BINARY' && !market.isResolved && (
+          <span className="sr-only"> chance</span>
+        )}
+      </span>
+    </>
+  )
+}
+
+function SocialMarketActions(props: {
+  market: Contract
+  action: SocialMarketAction
+}) {
+  const { market, action } = props
+  const user = useUser()
+  if (action === 'poll')
+    return <PollPanel contract={market as PollContract} maxOptions={4} />
+  if (action === 'multi')
+    return <SocialMultiBetButton contract={market as CPMMMultiContract} />
+  return (
+    <BetButton
+      contract={market as BinaryContract | StonkContract}
+      user={user}
+      location={YAP_BET_LOCATION}
+      questionTitle={market.question}
+      labels={action === 'stonk' ? { yes: 'Buy', no: 'Short' } : undefined}
+    />
+  )
+}
+
+function SocialMultiBetButton(props: { contract: CPMMMultiContract }) {
+  const { contract } = props
+  const user = useUser()
+  const [open, setOpen] = useState(false)
+  // The trade dialog needs the answers, which arrive with the live contract.
+  const loaded = Array.isArray(contract.answers)
+  return (
+    <>
+      <Button
+        size="xs"
+        color="indigo-outline"
+        disabled={!loaded}
+        aria-label={`${capitalize(TRADE_TERM)} on ${contract.question}`}
+        aria-haspopup="dialog"
+        onClick={() => {
+          track('bet intent', {
+            location: YAP_BET_LOCATION,
+            token: contract.token,
+            contractId: contract.id,
+            signedOut: !user,
+          })
+          if (!user) {
+            onSignedOutBetPress({
+              contractId: contract.id,
+              location: YAP_BET_LOCATION,
+              surface: 'button',
+            })
+            return
+          }
+          setOpen(true)
+        }}
+      >
+        {capitalize(TRADE_TERM)}
+      </Button>
+      {open && loaded && (
+        <MultiBetDialog
+          contract={contract}
+          open={open}
+          setOpen={setOpen}
+          trackingLocation={YAP_BET_LOCATION}
+        />
+      )}
+    </>
+  )
+}
