@@ -102,9 +102,13 @@ const getFirstPress = () =>
     safeJsonParse(safeLocalStorage?.getItem(SIGNED_OUT_BET_FIRST_PRESS_KEY))
   )
 
-export const isInSignedOutBetTest = () => {
-  if (getMode() !== 'experiment') return false
-  const { sinceFirstPressMs } = getEnrollmentFields(getFirstPress(), Date.now())
+export const isInSignedOutBetTest = (userCreatedTime: number) => {
+  if (getMode() !== 'experiment' || !Number.isFinite(userCreatedTime))
+    return false
+  const { sinceFirstPressMs } = getEnrollmentFields(
+    getFirstPress(),
+    userCreatedTime
+  )
   return (
     sinceFirstPressMs !== undefined &&
     sinceFirstPressMs < SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS

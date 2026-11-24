@@ -10,7 +10,7 @@ import { getWelcomeState, registerWelcome } from 'web/lib/util/signed-out-bet'
 const WelcomeDialog = dynamic(() => import('./welcome-dialog'), { ssr: false })
 const implicitReferralPages = ['/', '/home', '/browse', '/feed']
 
-export function Welcome() {
+export function Welcome({ hideSteps }: { hideSteps?: boolean }) {
   const user = useUser()
   const { pathname } = useRouter()
   const onContractPage = pathname === '/[username]/[contractSlug]'
@@ -19,7 +19,9 @@ export function Welcome() {
   const allowImplicit = implicitReferralPages.includes(pathname)
 
   // Report in on Page's first commit, before either bet modal can open.
-  useEffect(() => registerWelcome(), [])
+  useEffect(() => {
+    if (!hideSteps) return registerWelcome()
+  }, [hideSteps])
 
   useEffect(() => {
     if (user && !user.shouldShowWelcome) {
@@ -27,7 +29,11 @@ export function Welcome() {
     }
   }, [user?.id, user?.shouldShowWelcome, allowImplicit])
 
-  if (!user?.shouldShowWelcome || getWelcomeState(user.id).welcomeFinished)
+  if (
+    hideSteps ||
+    !user?.shouldShowWelcome ||
+    getWelcomeState(user.id).welcomeFinished
+  )
     return null
   return (
     <WelcomeDialog

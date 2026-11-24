@@ -41,6 +41,7 @@ export function WelcomeIntro({
   const [cached] = useState(getCachedReferralInfo)
   const prefilled = !!cached?.explicit
   const [referrer, setReferrer] = useState(prefilled ? cached.username : '')
+  const [touched, setTouched] = useState(false)
   const [expanded, setExpanded] = useState(prefilled)
   const [referralSent, setReferralSent] = useState(false)
   const [referralError, setReferralError] = useState('')
@@ -89,7 +90,7 @@ export function WelcomeIntro({
     ) => track('onboarding referral entered', { result, prefilled })
     const currentReferral = getCachedReferralInfo()
     if (!username) {
-      if (currentReferral?.explicit) {
+      if (currentReferral?.explicit && (prefilled || touched)) {
         clearCachedReferralInfo()
         report('cleared')
       }
@@ -209,6 +210,7 @@ export function WelcomeIntro({
                   }
                   onChange={(event) => {
                     setReferrer(event.target.value)
+                    setTouched(true)
                     setReferralError('')
                   }}
                 />

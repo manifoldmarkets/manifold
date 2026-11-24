@@ -34,7 +34,9 @@ export default function WelcomeDialog({
   const [open, setOpen] = useState(true)
   const [step, setStep] = useState<'intro' | 'first-bet'>('intro')
   const [pendingBet] = useState(hasPendingBet)
-  const [inSignedOutBetTest] = useState(isInSignedOutBetTest)
+  const [inSignedOutBetTest] = useState(() =>
+    isInSignedOutBetTest(user.createdTime)
+  )
   const firstBetStep = getWelcomeSteps({
     onContractPage,
     hasPendingBet: pendingBet,

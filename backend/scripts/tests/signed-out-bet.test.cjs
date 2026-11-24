@@ -284,20 +284,31 @@ const firstPressOf = (local) =>
 const unsentOf = (local) =>
   JSON.parse(local.getItem(rules.SIGNED_OUT_BET_UNSENT_KEY) ?? '[]')
 
-test('welcome recognizes either arm for the enrollment window without consuming the press or bet', () => {
+test('welcome uses the signup time to recognize either arm after a reload', () => {
+  const userCreatedTime = START + 59 * 60_000
   for (const variant of ['control', 'treatment']) {
-    const { lib, clock, local } = fixture({ variant })
-    assert.equal(lib.isInSignedOutBetTest(), false)
+    const { lib, clock, local, session } = fixture({ variant })
+    assert.equal(lib.isInSignedOutBetTest(userCreatedTime), false)
     lib.onSignedOutBetPress(button())
-    assert.equal(lib.isInSignedOutBetTest(), true)
+    assert.equal(lib.isInSignedOutBetTest(START), true)
     assert.equal(lib.hasPendingBet(), variant === 'treatment')
 
-    clock.now = START + rules.SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS - 1
-    assert.equal(lib.isInSignedOutBetTest(), true)
-    clock.now++
-    assert.equal(lib.isInSignedOutBetTest(), false)
-    clock.now = START - 1
-    assert.equal(lib.isInSignedOutBetTest(), false)
+    clock.now = userCreatedTime
+    assert.equal(lib.isInSignedOutBetTest(userCreatedTime), true)
+    const reloaded = fixture({ variant, local, session })
+    reloaded.clock.now = userCreatedTime + 2 * 3_600_000
+    assert.equal(reloaded.lib.isInSignedOutBetTest(userCreatedTime), true)
+    assert.equal(reloaded.lib.isInSignedOutBetTest(START - 1), false)
+    assert.equal(
+      reloaded.lib.isInSignedOutBetTest(
+        START + rules.SIGNED_OUT_BET_ENROLLMENT_WINDOW_MS
+      ),
+      false
+    )
+    assert.equal(reloaded.lib.isInSignedOutBetTest(START + 61 * 60_000), false)
+    for (const invalidTime of [NaN, Infinity, -Infinity]) {
+      assert.equal(reloaded.lib.isInSignedOutBetTest(invalidTime), false)
+    }
     assert.deepEqual(firstPressOf(local), { time: START, surface: 'button' })
   }
 })
@@ -306,7 +317,10 @@ test('welcome ignores a fresh first press when the experiment is off or rolled o
   const { lib, local } = fixture()
   lib.onSignedOutBetPress(button())
   for (const mode of ['off', 'on']) {
-    assert.equal(fixture({ mode, local }).lib.isInSignedOutBetTest(), false)
+    assert.equal(
+      fixture({ mode, local }).lib.isInSignedOutBetTest(START),
+      false
+    )
   }
 })
 
@@ -386,7 +400,7 @@ test('a first-press record that cannot be read is left alone, and the device say
     local.setItem(rules.SIGNED_OUT_BET_FIRST_PRESS_KEY, stored)
     const f = fixture({ local, force: 'treatment' })
     f.lib.onSignedOutBetPress(ticket())
-    assert.equal(f.lib.isInSignedOutBetTest(), false, stored)
+    assert.equal(f.lib.isInSignedOutBetTest(START), false, stored)
     assert.equal(f.events[0].name, rules.SIGNED_OUT_BET_TEST, stored)
     assert.equal('sinceFirstPressMs' in f.events[0], false, stored)
     assert.equal('firstSurface' in f.events[0], false, stored)

@@ -3,7 +3,6 @@ import { ReactNode, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useTracking } from 'web/hooks/use-tracking'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
@@ -12,7 +11,7 @@ import Sidebar from '../nav/sidebar'
 import { Col } from './col'
 import { useUser } from 'web/hooks/use-user'
 import { BanBanner } from '../moderation/ban-banner'
-import type { User, UserBan } from 'common/user'
+import type { UserBan } from 'common/user'
 import { api } from 'web/lib/api/api'
 import { Welcome } from '../onboarding/welcome'
 import { ResumePendingBet } from '../bet/resume-pending-bet'
@@ -42,6 +41,7 @@ export function Page(props: {
     className,
     hideSidebar,
     hideBottomBar,
+    hideWelcome,
     banner,
     rightSidebar,
     hideGoogleOneTap,
@@ -79,7 +79,7 @@ export function Page(props: {
       {!hideGoogleOneTap && (
         <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
       )}
-      {props.hideWelcome ? <ReferralCapture user={user} /> : <Welcome />}
+      <Welcome hideSteps={hideWelcome} />
       <ResumePendingBet />
       <FirstStreakModalManager />
       <Col
@@ -122,9 +122,4 @@ export function Page(props: {
       {!hideBottomBar && <BottomNavBar />}
     </>
   )
-}
-
-function ReferralCapture({ user }: { user: User | null | undefined }) {
-  useSaveReferral(user)
-  return null
 }
