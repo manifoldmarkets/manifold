@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { capitalize } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useState } from 'react'
+import { ReactNode, useId, useState } from 'react'
 
 import {
   BinaryContract,
@@ -93,6 +93,7 @@ function SocialMarketFrame(props: {
   below?: ReactNode
 }) {
   const { market, side, below } = props
+  const chipId = useId()
   const rowClass =
     'hover:bg-canvas-50 flex items-center justify-between gap-3 px-3 py-3 transition-colors'
   const border = 'border-ink-200 dark:border-ink-300 rounded-xl border'
@@ -117,11 +118,14 @@ function SocialMarketFrame(props: {
         <Link
           href={contractPath(market)}
           className="min-w-0 flex-1 after:absolute after:inset-0"
+          // The chip sits outside the link, so name it as the link's
+          // description for screen readers.
+          aria-describedby={chipId}
         >
           <SocialMarketTitle market={market} />
         </Link>
         <Col className="shrink-0 items-end gap-2">
-          <SocialMarketChip market={market} />
+          <SocialMarketChip market={market} id={chipId} />
           {side && <div className="relative">{side}</div>}
         </Col>
       </div>
@@ -153,10 +157,13 @@ function SocialMarketTitle(props: { market: Contract }) {
   )
 }
 
-function SocialMarketChip(props: { market: Contract }) {
-  const { market } = props
+function SocialMarketChip(props: { market: Contract; id?: string }) {
+  const { market, id } = props
   return (
-    <span className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
+    <span
+      id={id}
+      className="bg-primary-500/10 text-primary-700 shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums"
+    >
       {market.isResolved && market.resolution && (
         <span className="sr-only">Resolved: </span>
       )}
