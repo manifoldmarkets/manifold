@@ -1,4 +1,4 @@
-import { getUser, isProd } from 'shared/utils'
+import { getUser, isProd, log } from 'shared/utils'
 import { type PrivateUser, type User } from 'common/user'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { type JSONContent } from '@tiptap/core'
@@ -7,12 +7,16 @@ import { sendWelcomeEmail } from 'shared/emails'
 import { NEW_USER_HERLPER_IDS, isAdminId } from 'common/envs/constants'
 import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
 import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-message-channels'
+import { createNewsletterNotification } from 'shared/create-notification'
 
 export const onCreateUser = async (user: User, privateUser: PrivateUser) => {
   const pg = createSupabaseDirectClient()
   await addNewUserToLeague(pg, user.id)
   // await createReferralsProgramNotification(user.id, pg)
   // await createIntroHelpMessage(user)
+  await createNewsletterNotification(privateUser, pg).catch((e) =>
+    log('error creating newsletter notification:', e)
+  )
   await sendWelcomeEmail(user, privateUser)
 }
 

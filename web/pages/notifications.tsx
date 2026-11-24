@@ -349,8 +349,13 @@ export function NotificationsList(props: {
           >
             <span>
               {pinnedNotifications.length}{' '}
-              {maybePluralize('comment', pinnedNotifications.length)} that may
-              need your attention
+              {maybePluralize(
+                pinnedNotifications.every((n) => n.sourceType === 'comment')
+                  ? 'comment'
+                  : 'notification',
+                pinnedNotifications.length
+              )}{' '}
+              that may need your attention
             </span>
             <Row className="items-center gap-2">
               <button

@@ -1,6 +1,7 @@
 import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
+import { getNewsletterSubscribeUrl, NEWSLETTER_NAME } from 'common/newsletter'
 import {
   AirdropData,
   BetFillData,
@@ -65,7 +66,9 @@ import {
 } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
@@ -113,6 +116,15 @@ export function NotificationItem(props: {
   } else if (reason === 'admin' && sourceType === 'contract') {
     return (
       <AIDescriptionUpdateNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
+  } else if (sourceType === 'newsletter') {
+    return (
+      <NewsletterNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
@@ -609,6 +621,73 @@ export function NotificationItem(props: {
       <div className={'ml-1 mt-1 md:text-base'}>
         <NotificationTextLabel notification={notification} />
       </div>
+    </NotificationFrame>
+  )
+}
+
+// Stays pinned until the user clicks Subscribe or dismisses it. Subscribe opens
+// Substack's subscribe page with their email filled in (the in-app browser in
+// the mobile app, a new tab on the web).
+function NewsletterNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const privateUser = usePrivateUser()
+  const isPinned = notification.markedAsRead === false
+
+  const unpin = async () => {
+    try {
+      await api('mark-notification-read', { notificationId: notification.id })
+    } catch (error) {
+      console.error(error)
+      toast.error("Couldn't update this notification. Please try again.")
+    }
+  }
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={'📰'}
+          symbolBackgroundClass="bg-primary-100"
+        />
+      }
+      isPinned={isPinned}
+      onDismiss={isPinned ? unpin : undefined}
+    >
+      <Col className="gap-1">
+        <span>
+          Get our newsletter,{' '}
+          <span className="font-semibold">{NEWSLETTER_NAME}</span>
+        </span>
+        <span className="text-ink-600 text-xs md:text-sm">
+          The best of what's new on Manifold, in your inbox.
+        </span>
+        <Button
+          size="2xs"
+          color="indigo"
+          className="mt-1 self-start"
+          onClick={(e) => {
+            e.preventDefault()
+            track('newsletter notification subscribe click')
+            window.open(
+              getNewsletterSubscribeUrl(privateUser?.email),
+              '_blank',
+              'noopener'
+            )
+            if (isPinned) unpin()
+          }}
+        >
+          Subscribe
+        </Button>
+      </Col>
     </NotificationFrame>
   )
 }
