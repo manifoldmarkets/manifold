@@ -109,7 +109,7 @@ Removing the insert marker's existence check fails the backdated upsert tests; r
     On prod its plan has no full scan of a large table. A user with no `users` row still gets the stats that need only the id.
 - Migration `2026112221_achievement_rank_definitions.sql` makes two ranks measure the number shown next to them:
   - comments: all comments, not only liked ones;
-  - markets created: every public mana market, not only ones with 2+ traders. Unlisted and deleted markets don't count, in the rank or the number (decided 24 Nov 2026, before the migration ran on prod).
+  - markets created: every public mana market, not only ones with 2+ traders. Unlisted and deleted markets don't count, in the rank, the number or the Questions tab total (decided 24 Nov 2026, before the migration ran on prod). Liquidity still sums every mana market the user created.
 
 ## Not changed
 

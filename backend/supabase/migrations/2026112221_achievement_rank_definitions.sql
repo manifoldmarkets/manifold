@@ -3,8 +3,8 @@
 --   Comments: every comment the user has posted (contract and post comments),
 --     not only ones that got a like.
 --   Markets created: every public mana market the user created, not only ones
---     with at least two traders. Unlisted and deleted markets don't count, and
---     liquidity is summed over the same markets.
+--     with at least two traders. Unlisted and deleted markets don't count.
+--     Liquidity still sums every mana market the user created.
 --
 -- Changed on 24 Nov 2026, before it ran on prod, to leave out unlisted and
 -- deleted markets. If an earlier version already ran somewhere, run this one
@@ -27,12 +27,12 @@ with
   creator_agg as (
     select
       creator_id as user_id,
-      count(*) as total_markets_created,
+      count(*) filter (
+        where visibility = 'public' and not coalesce(deleted, false)
+      ) as total_markets_created,
       coalesce(sum((data ->> 'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts
     where token = 'MANA'
-      and visibility = 'public'
-      and not coalesce(deleted, false)
     group by creator_id
   ),
   all_users as (
