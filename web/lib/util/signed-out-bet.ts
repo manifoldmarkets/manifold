@@ -199,22 +199,27 @@ const setPendingBet = (bet: PendingBet) => {
   changed()
 }
 
-// The bet to reopen, if there is a fresh one. Taking it forgets it, so a
-// ticket reopens once. A bet remembered just before a switch was thrown
-// follows the switch: 'off' drops it, and 'on' reopens it without reporting.
-export const takePendingBet = (): PendingBet | undefined => {
+// Peeking and taking use the same freshness and experiment-switch checks.
+const peekPendingBet = (): PendingBet | undefined => {
   if (!pendingBetLoaded) {
     pendingBetLoaded = true
     pendingBet = safeJsonParse(safeSessionStorage?.getItem(PENDING_BET_KEY))
   }
   const bet = readPendingBet(pendingBet, Date.now())
-  pendingBet = undefined
-  safeSessionStorage?.removeItem(PENDING_BET_KEY)
   const mode = getMode()
   if (!bet || mode === 'off') return undefined
   if (mode === 'experiment') return bet
   const { contractId, location, createdTime, outcome } = bet
   return { contractId, location, createdTime, ...(outcome ? { outcome } : {}) }
+}
+
+export const hasPendingBet = () => !!peekPendingBet()
+
+export const takePendingBet = (): PendingBet | undefined => {
+  const bet = peekPendingBet()
+  pendingBet = undefined
+  safeSessionStorage?.removeItem(PENDING_BET_KEY)
+  return bet
 }
 
 // The welcome steps report in, so a reopened bet can wait its turn.

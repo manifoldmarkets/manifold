@@ -15,22 +15,17 @@ import { useBrowseDefault } from 'web/hooks/use-browse-default'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { Welcome } from 'web/components/onboarding/welcome'
 import { VerificationResultModal } from 'web/components/onboarding/verification-result-modal'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { BrowseV2 } from 'web/components/browse-v2/browse-v2'
 import {
   BrowseViewState,
   useBrowseView,
 } from 'web/components/browse-v2/use-browse-view'
 export default function BrowsePage() {
-  const user = useUser()
-  useSaveReferral(user)
   const browseView = useBrowseView()
 
   return (
     <Page trackPageView={'questions page'} className="min-w-0 lg:px-4">
-      <Welcome />
       <VerificationResultModal />
       <BrowsePageContent browseView={browseView} />
     </Page>
@@ -124,6 +119,8 @@ function LegacyBrowseContent() {
         persistPrefix={browseDefault.persistPrefix}
         discoverySourceComponent="search"
         onBrowseModeChange={browseDefault.rememberMode}
+        // Search's own prop: desktop only, and only with no query in the URL.
+        // eslint-disable-next-line jsx-a11y/no-autofocus
         autoFocus={autoFocus}
         additionalFilter={{
           excludeContractIds: privateUser?.blockedContractIds,

@@ -142,6 +142,11 @@ export default function ReferralsPage() {
               <QRCode url={url} width={180} height={180} className="rounded" />
             </div>
           </div>
+          {user && (
+            <p className="text-ink-600 mt-3 text-center text-sm">
+              Friends can also enter @{user.username} when they sign up.
+            </p>
+          )}
         </div>
 
         {/* How It Works Section */}

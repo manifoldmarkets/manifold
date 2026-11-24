@@ -36,7 +36,7 @@ export default function TwitchLandingPage() {
   const privateUser = usePrivateUser()
 
   return (
-    <Page trackPageView={'twitch landing page'}>
+    <Page trackPageView={'twitch landing page'} hideWelcome>
       <SEO
         title="Manifold on Twitch"
         description={`Get more out of Twitch with play-money ${TRADING_TERM} questions.`}
