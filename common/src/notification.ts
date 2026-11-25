@@ -2,6 +2,7 @@ import { Bet } from 'common/bet'
 import { ContractToken, OutcomeType } from 'common/contract'
 import { groupBy } from 'lodash'
 import { groupPath } from './group'
+import { getMoneyNumber } from './util/format'
 import { league_user_info } from './leagues'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
@@ -471,14 +472,55 @@ export type BetFillData = {
 
 export type ContractResolutionData = {
   outcome: string
+  // What the user's trades paid. Notifications written before the API split
+  // it from the liquidity's return (#4371) also counted that here; they have
+  // no userLiquidityPayout.
   userPayout: number
   userInvestment: number
+  // What the liquidity (subsidy) the user added paid back. It isn't trading
+  // profit, so it's kept out of userPayout.
+  userLiquidityPayout?: number
   profitRank?: number
   totalShareholders?: number
   profit?: number
   answerId?: string
   token?: ContractToken
 }
+
+// Whether formatMoney shows an amount as other than 0: it rounds mana toward 0
+// to whole units (allowing for float error), and sweepcash to cents.
+export const isShownAmount = (amount: number, token?: ContractToken) =>
+  Number.isFinite(amount) &&
+  (token === 'CASH'
+    ? Math.round(Math.abs(amount) * 100) >= 1
+    : getMoneyNumber(amount) !== 0)
+
+// The return on the user's liquidity when it's worth a line of its own, else
+// 0. Negative when cancelling the market took back liquidity the user had
+// withdrawn.
+export const getShownLiquidityPayout = (
+  data: Pick<ContractResolutionData, 'userLiquidityPayout' | 'token'>
+) => {
+  const amount = data.userLiquidityPayout ?? 0
+  return isShownAmount(amount, data.token) ? amount : 0
+}
+
+// formattedAmount: the absolute amount, formatted.
+export const getLiquidityPayoutText = (
+  amount: number,
+  formattedAmount: string
+) =>
+  amount > 0
+    ? `You got ${formattedAmount} back from the liquidity you added`
+    : `${formattedAmount} of the liquidity you withdrew was taken back`
+
+// A cancellation's trading payout: what was spent less what was sold for, so
+// negative after selling at a profit. formattedAmount: the absolute amount,
+// formatted.
+export const getCancelPayoutText = (amount: number, formattedAmount: string) =>
+  amount > 0
+    ? `${formattedAmount} was refunded to you`
+    : `${formattedAmount} was taken back`
 
 export type UniqueBettorData = {
   bet: Bet

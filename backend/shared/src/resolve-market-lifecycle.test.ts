@@ -40,6 +40,8 @@ jest.mock('./websockets/helpers', () => ({
 
 import { APIError } from 'common/api/utils'
 import { MarketContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { LiquidityProvision } from 'common/liquidity-provision'
 import { User } from 'common/user'
 import {
   createSupabaseDirectClient,
@@ -50,6 +52,7 @@ import {
   revalidateStaticProps,
 } from './utils'
 import { broadcastUpdatedContract } from './websockets/helpers'
+import { createContractResolvedNotifications } from './create-notification'
 import { resolveMarketHelper } from './resolve-market-helpers'
 
 const contract = {
@@ -202,4 +205,50 @@ it("runs the caller's check on the transaction's read and writes nothing when it
   expect(multi).not.toHaveBeenCalled()
   expect(commit).not.toHaveBeenCalled()
   expect(broadcastUpdatedContract).not.toHaveBeenCalled()
+})
+
+it("reports a liquidity provider's return apart from what their trades paid", async () => {
+  // Someone who both trades on a market and subsidizes it: the notification's
+  // trading payout must not include what their liquidity paid back.
+  const metric = {
+    id: 1,
+    userId: 'lp',
+    contractId: contract.id,
+    answerId: null,
+    lastBetTime: 0,
+    lastProb: 0.5,
+    hasNoShares: false,
+    hasShares: true,
+    hasYesShares: true,
+    invested: 5,
+    loan: 0,
+    marginLoan: 0,
+    maxSharesOutcome: 'YES',
+    totalShares: { YES: 10, NO: 0 },
+    totalSpent: { YES: 5, NO: 0 },
+    payout: 5,
+    totalAmountSold: 0,
+    totalAmountInvested: 5,
+    profit: 0,
+    profitPercent: 0,
+    from: undefined,
+  } as ContractMetric
+  const liquidity = {
+    id: 'l1',
+    userId: 'lp',
+    contractId: contract.id,
+    createdTime: 0,
+    amount: 100,
+  } as LiquidityProvision
+  jest.mocked(getContractAndMetricsAndLiquidities).mockResolvedValueOnce({
+    contract,
+    liquidities: [liquidity],
+    contractMetrics: [metric],
+  })
+  await resolveMarketHelper(contract, user, user, { outcome: 'YES' })
+  const resolutionData = jest.mocked(createContractResolvedNotifications).mock
+    .calls[0][7]
+  // 10 YES shares pay 10; the provider's whole pool (100 YES) pays 100.
+  expect(resolutionData.userPayouts).toEqual({ lp: 10 })
+  expect(resolutionData.userLiquidityPayouts).toEqual({ lp: 100 })
 })

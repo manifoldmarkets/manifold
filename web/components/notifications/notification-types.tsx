@@ -8,7 +8,11 @@ import {
   CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
+  getCancelPayoutText,
+  getLiquidityPayoutText,
+  getShownLiquidityPayout,
   getSourceUrl,
+  isShownAmount,
   MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
@@ -1018,36 +1022,72 @@ export function MarketResolvedNotification(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
   } = notification
-  const { userInvestment, userPayout, profitRank, totalShareholders, token } =
-    (data as ContractResolutionData) ?? {}
+  const {
+    outcome,
+    userInvestment,
+    userPayout,
+    userLiquidityPayout,
+    profitRank,
+    totalShareholders,
+    token,
+  } = (data as ContractResolutionData) ?? {}
+  // sourceText is the displayed resolution: 'N/A' for a cancellation, and a
+  // winning answer's text on a multiple choice market
+  const isCancel =
+    outcome !== undefined ? outcome === 'CANCEL' : sourceText === 'CANCEL'
   const profit = userPayout - userInvestment
+  const liquidityPayout = getShownLiquidityPayout({
+    userLiquidityPayout,
+    token,
+  })
   const profitable = profit > 0 && !floatingEqual(userInvestment, 0)
   const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
   const comparison =
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  const secondaryTitle =
-    sourceText === 'CANCEL' && userInvestment > 0 ? (
+  // Notifications written before the API split out the liquidity's return
+  // (#4371) count its refund in userPayout too, so the cancellation wording
+  // doesn't say what the amount was for.
+  const tradeTitle = isCancel ? (
+    isShownAmount(userPayout, token) ? (
       <>
-        Your {formatMoney(userInvestment, token)} invested has been returned to
-        you
-      </>
-    ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
-      <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
-    ) : profitable ? (
-      <>
-        Your {formatMoney(userInvestment, token)} won{' '}
-        <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
-        profit
-        {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
-      </>
-    ) : userInvestment > 0 ? (
-      <>
-        You lost {formatMoney(Math.abs(profit), token)}
-        {comparison ? `, but ${comparison}` : ``}
+        {getCancelPayoutText(
+          userPayout,
+          formatMoney(Math.abs(userPayout), token)
+        )}
       </>
     ) : null
+  ) : profitable ? (
+    <>
+      Your {formatMoney(userInvestment, token)} won{' '}
+      <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
+      profit
+      {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
+    </>
+  ) : userInvestment > 0 ? (
+    <>
+      You lost {formatMoney(Math.abs(profit), token)}
+      {comparison ? `, but ${comparison}` : ``}
+    </>
+  ) : null
+  const liquidityTitle = liquidityPayout ? (
+    <>
+      {getLiquidityPayoutText(
+        liquidityPayout,
+        formatMoney(Math.abs(liquidityPayout), token)
+      )}
+    </>
+  ) : null
+  const secondaryTitle =
+    tradeTitle && liquidityTitle ? (
+      <Col>
+        <span>{tradeTitle}</span>
+        <span>{liquidityTitle}</span>
+      </Col>
+    ) : (
+      tradeTitle ?? liquidityTitle
+    )
 
   const [openRateModal, setOpenRateModal] = useState(false)
 
