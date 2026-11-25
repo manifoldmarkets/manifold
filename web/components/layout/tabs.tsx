@@ -22,6 +22,8 @@ export type Tab = {
   prerender?: boolean
   className?: string
   queryString?: string
+  // Other URL values that also select this tab, e.g. its name before a rename.
+  queryAliases?: string[]
 }
 
 type TabProps = {
@@ -309,7 +311,9 @@ const isTabSelected = (
   const selected = params.get(queryParam)
   if (typeof selected === 'string') {
     return (
-      (tab.queryString?.toLowerCase() ?? tab.title.toLowerCase()) === selected
+      (tab.queryString?.toLowerCase() ?? tab.title.toLowerCase()) ===
+        selected ||
+      !!tab.queryAliases?.some((alias) => alias.toLowerCase() === selected)
     )
   } else {
     return false

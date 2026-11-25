@@ -52,6 +52,7 @@ import {
   JobSeekerInterest,
 } from 'common/job-seeker'
 import { League } from 'common/leagues'
+import { MAX_SHOWCASE_PINS, type TrophyClaim } from 'common/trophies'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { CandidateBet } from 'common/new-bet'
@@ -3284,6 +3285,72 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         userId: z.string(),
+      })
+      .strict(),
+  },
+  // Claimed milestones, showcase pins, and current-season league membership.
+  // Keep this uncached so a profile can see a new claim or pin immediately.
+  'get-user-trophies': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    returns: {} as {
+      claims: TrophyClaim[]
+      // null: never set, so the profile shows the best trophies by default.
+      // []: the user removed every pin.
+      pins: string[] | null
+      league: Pick<League, 'season' | 'division'> | null
+      // Effective season used for the league lookup, even when league is null.
+      season: number
+    },
+    props: z
+      .object({
+        userId: z.string().max(100),
+      })
+      .strict(),
+  },
+  'set-showcase-pins': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { pins: string[] },
+    props: z
+      .object({
+        // The profile the pins are for. Must be the signed-in user, so a save
+        // made while the session switches accounts is refused.
+        userId: z.string().max(100),
+        pins: z.array(z.string().max(100)).max(MAX_SHOWCASE_PINS),
+      })
+      .strict(),
+  },
+  // Claims a reached milestone and every lower one.
+  'claim-trophy': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as {
+      newlyClaimed: TrophyClaim[]
+      claims: TrophyClaim[]
+    },
+    props: z
+      .object({
+        // The profile the claim is for. Must be the signed-in user.
+        userId: z.string().max(100),
+        trophyId: z.string().max(100),
+        milestoneId: z.string().max(100),
+      })
+      .strict(),
+  },
+  // Admin only: removes a user's claims of one trophy (for testing).
+  'unclaim-trophy': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { claims: TrophyClaim[] },
+    props: z
+      .object({
+        trophyId: z.string().max(100),
+        userId: z.string().max(100),
       })
       .strict(),
   },

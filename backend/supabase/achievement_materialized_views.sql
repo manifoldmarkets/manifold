@@ -321,7 +321,7 @@ from
 
 create unique index if not exists mv_ach_pnl_user_id_idx on public.mv_ach_pnl (user_id);
 
--- Combined: Txns-based achievements (mod tickets resolved + charity donated + longest streak)
+-- Combined: Txns-based achievements (mod tickets resolved + charity donated + longest streak; streak from migration 2026112212)
 create materialized view if not exists
   mv_ach_txns_achievements as
 with
@@ -369,9 +369,15 @@ with
     group by
       to_id
   ),
+  -- The longest ended streak (kept by reset-betting-streaks) and the
+  -- current one: accounts that get no streak bonus have no bonus txns.
   all_users as (
     select
-      id as user_id
+      id as user_id,
+      greatest(
+        coalesce((data ->> 'longestBettingStreak')::int, 0),
+        coalesce((data ->> 'currentBettingStreak')::int, 0)
+      ) as user_streak
     from
       users
   )
@@ -379,7 +385,7 @@ select
   u.user_id,
   coalesce(m.mod_tickets_resolved, 0) as mod_tickets_resolved,
   coalesce(c.charity_donated_mana, 0) as charity_donated_mana,
-  coalesce(s.longest_betting_streak, 0) as longest_betting_streak,
+  greatest(coalesce(s.longest_betting_streak, 0), u.user_streak) as longest_betting_streak,
   rank() over (
     order by
       coalesce(m.mod_tickets_resolved, 0) desc
@@ -406,13 +412,13 @@ select
   ) * 100 as charity_donated_percentile,
   rank() over (
     order by
-      coalesce(s.longest_betting_streak, 0) desc
+      greatest(coalesce(s.longest_betting_streak, 0), u.user_streak) desc
   ) as longest_betting_streak_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(s.longest_betting_streak, 0) desc
+          greatest(coalesce(s.longest_betting_streak, 0), u.user_streak) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as longest_betting_streak_percentile

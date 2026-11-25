@@ -24,6 +24,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
   userId,
 }) => loadUserAchievements(userId)
 
+// Also used by claim-trophy, so a claim is checked against the same numbers
+// the profile shows.
 export async function loadUserAchievements(
   userId: string
 ): Promise<APIResponse<'get-user-achievements'>> {
@@ -242,17 +244,57 @@ const STATS_QUERY = `with
     where c.creator_id = $1 and c.token = 'MANA'
   ),
   account_age as (
-    select round(
-      (
-        extract(epoch from (now() - u.created_time)) / (365.25*24*60*60)
-      )::numeric,
-      2
-    ) as account_age_years
-    from users u
-    where u.id = $1
+    -- Whole years since signup, plus the share of the current year,
+    -- rounded down to four places (under an hour), all in UTC. A year is complete when
+    -- created_time plus that many calendar years has passed (so a
+    -- Feb 29 signup completes one on Feb 28), and the whole part and the
+    -- share come from the same anniversaries, so the Account Age trophy
+    -- is never reached early.
+    select a.whole + floor(
+        10000 * extract(epoch from (a.now_utc - a.last_anniversary))
+        / extract(epoch from (a.next_anniversary - a.last_anniversary))
+      ) / 10000 as account_age_years
+    from (
+      select
+        y.now_utc,
+        y.whole,
+        y.created + make_interval(years => y.whole) as last_anniversary,
+        y.created + make_interval(years => y.whole + 1) as next_anniversary
+      from (
+        select
+          x.now_utc,
+          x.created,
+          x.k
+            + (x.created + make_interval(years => x.k + 1) <= x.now_utc)::int
+            - (x.created + make_interval(years => x.k) > x.now_utc)::int
+            as whole
+        from (
+          select
+            now() at time zone 'UTC' as now_utc,
+            u.created_time at time zone 'UTC' as created,
+            extract(year from age(
+              now() at time zone 'UTC', u.created_time at time zone 'UTC'
+            ))::int as k
+          from users u
+          where u.id = $1
+        ) x
+      ) y
+    ) a
   ),
+  -- The longest of: any streak a bonus was paid for, the longest ended
+  -- streak (kept by reset-betting-streaks) and the current one. Accounts
+  -- that can't receive bonuses get no bonus txns.
   longest_streak as (
-    select coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0) as longest_betting_streak
+    select greatest(
+      coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0),
+      coalesce((
+        select greatest(
+          coalesce((u.data->>'longestBettingStreak')::int, 0),
+          coalesce((u.data->>'currentBettingStreak')::int, 0)
+        )
+        from users u where u.id = $1
+      ), 0)
+    ) as longest_betting_streak
     from txns tx
     where tx.to_id = $1
       and tx.category = 'BETTING_STREAK_BONUS'
