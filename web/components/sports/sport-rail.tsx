@@ -2,6 +2,9 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
+import { sportsFamilies, sportsFamily } from 'common/sports-navigation-family'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import {
   AnySportKey,
   SportInfo,
@@ -12,6 +15,12 @@ import { Carousel } from 'web/components/widgets/carousel'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
+import {
+  leagueRailChoices,
+  sportsLeague,
+  sportsView,
+  sportsViewHref,
+} from './sports-navigation'
 
 // Tabs every sports page has. The first tab differs (Upcoming on /sports,
 // Games on a sport), so switching sports from it opens the other one.
@@ -23,7 +32,52 @@ export function useSportHref() {
   const tab = router.query.tab
   const keep = typeof tab === 'string' && SHARED_TABS.includes(tab)
   return (sport: SportSelection) =>
-    sportPath(sport) + (keep ? `?tab=${tab}` : '')
+    isSportsBdlEnabled()
+      ? sportsViewHref(sport, sportsView(tab, router.query.sport))
+      : sportPath(sport) + (keep ? `?tab=${tab}` : '')
+}
+
+export function LeagueRail(props: {
+  sport: SportSelection
+  leagues: BdlLeagueKey[]
+}) {
+  const { sport, leagues } = props
+  const { query } = useRouter()
+  const family = sportsFamily(sport)
+  const implicit =
+    sport !== family && leagues.length === 1 ? leagues[0] : undefined
+  const active =
+    query.league === undefined ? implicit : sportsLeague(query.league)
+  const view = sportsView(query.tab, query.sport)
+  const choices = leagueRailChoices(sport, leagues, active)
+  return (
+    <nav aria-label="Leagues" className="min-w-0">
+      <Carousel
+        revealActiveKey={active === null ? undefined : active ?? 'all'}
+        labelsParentClassName="gap-1.5 pb-2"
+        fadeEdges
+        showArrowsOnHover
+      >
+        {[undefined, ...choices].map((key) => (
+          <Link
+            key={key ?? 'all'}
+            href={sportsViewHref(family, view, key)}
+            shallow={family === sport}
+            scroll={false}
+            aria-current={active === key ? 'page' : undefined}
+            className={clsx(
+              'flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm font-medium',
+              active === key
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-ink-600 hover:bg-canvas-50'
+            )}
+          >
+            {key ? BDL_LEAGUES[key].shortLabel : 'All leagues'}
+          </Link>
+        ))}
+      </Carousel>
+    </nav>
+  )
 }
 
 /**
@@ -36,8 +90,21 @@ export function SportRail(props: {
   counts: Partial<Record<AnySportKey, number>>
   className?: string
 }) {
-  const { sports, selected, counts, className } = props
+  const { className } = props
   const hrefFor = useSportHref()
+  const grouped = isSportsBdlEnabled()
+  const sports = grouped ? sportsFamilies(props.sports) : props.sports
+  const selected = grouped ? sportsFamily(props.selected) : props.selected
+  const counts: Partial<Record<AnySportKey, number>> = grouped
+    ? Object.entries(props.counts).reduce<Record<string, number>>(
+        (byFamily, [key, count]) => {
+          const family = sportsFamily(key)
+          byFamily[family] = (byFamily[family] ?? 0) + (count ?? 0)
+          return byFamily
+        },
+        {}
+      )
+    : props.counts
 
   const visibleSports = sports.filter(
     (s) =>
@@ -68,6 +135,7 @@ export function SportRail(props: {
       </Row>
       <Carousel
         className="min-w-0 flex-1"
+        revealActiveKey={grouped ? selected : undefined}
         labelsParentClassName="gap-1.5 py-2"
         fadeEdges
         showArrowsOnHover
@@ -143,6 +211,7 @@ function SportChip(props: {
       aria-current={active ? 'page' : undefined}
       onClick={() => track('sports rail select', { sport })}
       className={clsx(
+        isSportsBdlEnabled() && 'min-h-[44px]',
         'flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
         active
           ? 'border-ink-900 bg-ink-900 text-ink-0'

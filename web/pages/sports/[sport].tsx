@@ -5,9 +5,15 @@ import { useEffect, useMemo } from 'react'
 import { withoutRaceMarkets } from 'common/race-weekends'
 import { CURATED_SPORTS, SPORT_KEY_RE, sportPath } from 'common/sports-schedule'
 import { Col } from 'web/components/layout/col'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { sportsFamilies } from 'common/sports-navigation-family'
+import { SportsPageTabs } from 'web/components/sports/sports-page-tabs'
+import {
+  sportsLeague,
+  sportsView,
+  sportsViewHref,
+} from 'web/components/sports/sports-navigation'
 import { RaceChampionships } from 'web/components/sports/race-championships'
-import { GameFeed } from 'web/components/sports/schedule-list'
 import {
   NoGames,
   SportMarkets,
@@ -43,18 +49,35 @@ export default function SportPage() {
   useSaveScroll(`sports-${key ?? ''}`, true)
   // One URL per sport, and All is /sports.
   useEffect(() => {
-    if (key === 'all') router.replace(sportPath('all'))
-    else if (raw && key && raw !== key) router.replace(sportPath(key))
+    if (key && (key === 'all' || raw !== key))
+      void router.replace(
+        isSportsBdlEnabled()
+          ? sportsViewHref(
+              key,
+              sportsView(router.query.tab),
+              router.query.league
+            )
+          : sportPath(key)
+      )
   }, [raw, key])
 
   const ready = router.isReady && !!key && key !== 'all'
+  const selectedLeague = isSportsBdlEnabled()
+    ? sportsLeague(router.query.league)
+    : undefined
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
     key ?? 'all',
-    ready
+    ready,
+    undefined,
+    selectedLeague ?? undefined
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
-  const sport = key ? sportsByKey[key] : undefined
+  const families = useMemo(
+    () => (isSportsBdlEnabled() ? keyBy(sportsFamilies(sports), 'key') : {}),
+    [sports]
+  )
+  const sport = key ? families[key] ?? sportsByKey[key] : undefined
   const scope = useMemo(() => sport && { sport }, [sport])
   const topic = useSportTopicExtras(scope)
   const { index } = useSportsIndex()
@@ -83,7 +106,7 @@ export default function SportPage() {
   const showLeague = uniq(games.map((g) => g.league)).length > 1
   // F1's weekends (the API sends them only for F1): each session in the feed,
   // the next one featured, and the title fight under it.
-  const isF1 = key === 'f1'
+  const isF1 = key === 'f1' || (isSportsBdlEnabled() && key === 'racing')
   const championships = schedule?.raceChampionships ?? []
   const titleFight = championships.length > 0 && (
     <RaceChampionships championships={championships} />
@@ -111,14 +134,12 @@ export default function SportPage() {
     )
   }
 
-  const markets = (
-    <SportMarkets
-      sport={sport ?? 'all'}
-      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
-      sportsByKey={sportsByKey}
-      enabled={ready && !!sport}
-    />
-  )
+  const markets = {
+    sport: sport ?? ('all' as const),
+    upcoming: withoutRaceMarkets(schedule?.upcoming ?? [], weekends),
+    sportsByKey,
+    enabled: ready && !!sport,
+  }
 
   return (
     <SportsShell
@@ -143,6 +164,9 @@ export default function SportPage() {
           : undefined)
       }
       actions={topic.follow}
+      leagues={
+        isSportsBdlEnabled() ? schedule?.availableLeagues ?? [] : undefined
+      }
       hides={hides}
       seo={{
         title: sport ? `${sport.longLabel} games and markets` : 'Sports',
@@ -153,53 +177,40 @@ export default function SportPage() {
       }}
       trackPageView={`/sports/${key ?? ''}`}
     >
-      <QueryUncontrolledTabs
+      <SportsPageTabs
+        sportKey={key ?? ''}
         trackingName="sport tabs"
-        tabs={[
-          {
-            title: 'Games',
-            queryString: 'games',
-            content: (
-              <div className="pt-3">
-                <GameFeed
-                  key={key}
-                  games={games}
-                  raceWeekends={weekends}
-                  featureNext={isF1}
-                  fullRaceHero={isF1}
-                  belowFeatured={titleFight}
-                  loading={loading || !schedule || lookingPastBlocked}
-                  hasMore={hasMore}
-                  loadMore={loadMore}
-                  showLeague={showLeague}
-                  empty={
-                    <div className="flex flex-col gap-6">
-                      {titleFight}
-                      <NoGames
-                        sport={sport}
-                        sports={sports}
-                        counts={rail?.counts ?? {}}
-                        allBlocked={
-                          shownCount(
-                            schedule?.games ?? [],
-                            schedule?.raceWeekends ?? []
-                          ) > 0
-                        }
-                      />
-                      {markets}
-                    </div>
-                  }
-                />
-              </div>
-            ),
-          },
-          {
-            title: 'Markets',
-            queryString: 'markets',
-            content: <div className="pt-3">{markets}</div>,
-          },
-          ...topic.tabs,
-        ]}
+        topicTabs={topic.tabs}
+        markets={markets}
+        results={schedule?.results}
+        feed={{
+          games,
+          raceWeekends: weekends,
+          loading: loading || !schedule || lookingPastBlocked,
+          hasMore,
+          loadMore,
+          showLeague,
+          featureNext: isF1,
+          fullRaceHero: isF1,
+          belowFeatured: titleFight,
+          empty: (
+            <div className="flex flex-col gap-6">
+              {titleFight}
+              <NoGames
+                sport={sport}
+                sports={sports}
+                counts={rail?.counts ?? {}}
+                allBlocked={
+                  shownCount(
+                    schedule?.games ?? [],
+                    schedule?.raceWeekends ?? []
+                  ) > 0
+                }
+              />
+              <SportMarkets {...markets} />
+            </div>
+          ),
+        }}
       />
     </SportsShell>
   )

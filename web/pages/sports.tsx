@@ -10,8 +10,13 @@ import {
   SPORT_KEY_RE,
   sportPath,
 } from 'common/sports-schedule'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { GameFeed } from 'web/components/sports/schedule-list'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { SportsPageTabs } from 'web/components/sports/sports-page-tabs'
+import {
+  sportsLeague,
+  sportsView,
+  sportsViewHref,
+} from 'web/components/sports/sports-navigation'
 import {
   NoGames,
   SportMarkets,
@@ -79,13 +84,27 @@ export default function SportsPage({
       : undefined
   }, [router.isReady, router.query.sport, router.query.tab])
   useEffect(() => {
-    if (legacySport) router.replace(sportPath(legacySport))
+    if (legacySport)
+      void router.replace(
+        isSportsBdlEnabled()
+          ? sportsViewHref(
+              legacySport,
+              sportsView(router.query.tab),
+              router.query.league
+            )
+          : sportPath(legacySport)
+      )
   }, [legacySport])
 
   const ready = router.isReady && !legacySport
+  const selectedLeague = isSportsBdlEnabled()
+    ? sportsLeague(router.query.league)
+    : undefined
   const { schedule, rail, loading, loadMore, hasMore } = useSportsSchedule(
     'all',
-    ready
+    ready,
+    undefined,
+    selectedLeague ?? undefined
   )
   const sports = rail?.sports ?? CURATED_SPORTS
   const sportsByKey = useMemo(() => keyBy(sports, 'key'), [sports])
@@ -108,14 +127,12 @@ export default function SportsPage({
     hasMore,
     loadMore,
   })
-  const markets = (
-    <SportMarkets
-      sport="all"
-      upcoming={withoutRaceMarkets(schedule?.upcoming ?? [], weekends)}
-      sportsByKey={sportsByKey}
-      enabled={ready}
-    />
-  )
+  const markets = {
+    sport: 'all' as const,
+    upcoming: withoutRaceMarkets(schedule?.upcoming ?? [], weekends),
+    sportsByKey,
+    enabled: ready,
+  }
 
   return (
     <SportsShell
@@ -126,6 +143,9 @@ export default function SportsPage({
         topic.notice || 'Pick a game. Make a call. Trade with the crowd.'
       }
       actions={topic.follow}
+      leagues={
+        isSportsBdlEnabled() ? schedule?.availableLeagues ?? [] : undefined
+      }
       hides={hides}
       seo={{
         title: 'Sports',
@@ -143,47 +163,35 @@ export default function SportsPage({
       }}
       trackPageView="/sports"
     >
-      <QueryUncontrolledTabs
+      <SportsPageTabs
+        sportKey="all"
         trackingName="sports tabs"
-        tabs={[
-          {
-            title: 'Upcoming',
-            queryString: 'upcoming',
-            content: (
-              <div className="pt-3">
-                <GameFeed
-                  games={games}
-                  raceWeekends={weekends}
-                  loading={loading || !schedule || lookingPastBlocked}
-                  hasMore={hasMore}
-                  loadMore={loadMore}
-                  showLeague
-                  empty={
-                    <div className="flex flex-col gap-6">
-                      <NoGames
-                        sports={sports}
-                        counts={rail?.counts ?? {}}
-                        allBlocked={
-                          shownCount(
-                            schedule?.games ?? [],
-                            schedule?.raceWeekends ?? []
-                          ) > 0
-                        }
-                      />
-                      {markets}
-                    </div>
-                  }
-                />
-              </div>
-            ),
-          },
-          {
-            title: 'Markets',
-            queryString: 'markets',
-            content: <div className="pt-3">{markets}</div>,
-          },
-          ...topic.tabs,
-        ]}
+        topicTabs={topic.tabs}
+        markets={markets}
+        results={schedule?.results}
+        feed={{
+          games,
+          raceWeekends: weekends,
+          loading: loading || !schedule || lookingPastBlocked,
+          hasMore,
+          loadMore,
+          showLeague: true,
+          empty: (
+            <div className="flex flex-col gap-6">
+              <NoGames
+                sports={sports}
+                counts={rail?.counts ?? {}}
+                allBlocked={
+                  shownCount(
+                    schedule?.games ?? [],
+                    schedule?.raceWeekends ?? []
+                  ) > 0
+                }
+              />
+              <SportMarkets {...markets} />
+            </div>
+          ),
+        }}
       />
     </SportsShell>
   )

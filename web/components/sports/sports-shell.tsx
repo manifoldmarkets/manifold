@@ -18,7 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
 import { HideBlockedTopics, HidesBlocked } from './blocked-topics'
-import { SportRail } from './sport-rail'
+import { LeagueRail, SportRail } from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -33,6 +33,7 @@ export function SportsShell(props: {
   /** The open topic's slug, on a topic's page. */
   selectedTopic?: string
   rail: SportsRailData | undefined
+  leagues?: BdlLeagueKey[]
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
@@ -104,6 +105,9 @@ export function SportsShell(props: {
             selected={selected}
             counts={rail?.counts ?? {}}
           />
+          {props.leagues && (
+            <LeagueRail sport={selected} leagues={props.leagues} />
+          )}
         </div>
 
         {hides ? (
