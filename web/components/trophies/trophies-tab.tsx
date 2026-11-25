@@ -13,7 +13,6 @@ import {
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
-  TrophyStats,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countEarnedMilestones,
@@ -24,6 +23,7 @@ import {
   getTrophyDefinition,
   getTotalPossibleMilestones,
   getTrophyDefinitionsFor,
+  getTrophyDisplayStats,
   getTrophyPinId,
 } from 'common/trophies'
 import {
@@ -216,7 +216,7 @@ export function TrophiesTab(props: {
   const { claims, starter, ranks, rankPeaks, ranksComputedTime } = trophies
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
-  const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
+  const stats = getTrophyDisplayStats(achievements, trophies)
   const progressList = computeAllTrophyProgress(stats, earnableDefs)
   // Reached or claimed: a claim stays even if the stat drops back.
   const reached = countEarnedMilestones(stats, claims, earnableDefs)

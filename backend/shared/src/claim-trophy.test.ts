@@ -48,6 +48,10 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { updateTrophyRanks } from 'scheduler/jobs/update-trophy-ranks'
 
+const { loadUserAchievements: loadLive } = jest.requireActual<
+  typeof import('api/get-user-achievements')
+>('api/get-user-achievements')
+
 const pgp = pgPromise()
 let db: PGlite
 const parsers = {
@@ -700,6 +704,15 @@ describe('Newcomer rewards', () => {
 })
 
 describe('other trophies', () => {
+  it('refuses Networker for a legacy self-referral with ten trades', async () => {
+    await addUser('u', { data: { referredByUserId: 'u' } })
+    await rows("insert into user_stats values ('u', 10)")
+    jest.mocked(loadUserAchievements).mockImplementationOnce(loadLive)
+    await expect(claim('u', 'referrals', 'networker')).rejects.toMatchObject({
+      code: 403,
+    })
+  })
+
   it('claims Net Worth from a stored peak without a current snapshot or reward', async () => {
     await addUser('u')
     await rows("insert into user_net_worth_peaks values ('u', 20000, now())")
@@ -790,10 +803,6 @@ describe('admin unclaim', () => {
 })
 
 describe('nightly trophy ranks', () => {
-  const { loadUserAchievements: loadLive } = jest.requireActual<
-    typeof import('api/get-user-achievements')
-  >('api/get-user-achievements')
-
   it('publishes an empty ranking when an active user has no portfolio snapshot', async () => {
     await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
     await rows("update users set balance = 600000 where id = 'u'")

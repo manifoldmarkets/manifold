@@ -82,7 +82,7 @@ const valueQueries: Record<string, string> = {
     from users person
     left join user_stats s on s.user_id = person.id
     left join user_stats_baseline baseline on baseline.user_id = person.id
-    where person.data->>'referredByUserId' is not null and ${TROPHY_PERSON_FILTER}
+    where person.id <> (person.data->>'referredByUserId') and ${TROPHY_PERSON_FILTER}
       and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $[minReferralTrades]
     group by person.data->>'referredByUserId'`,
   // Keep this mapping identical to getLeagueLevel in common/trophies.

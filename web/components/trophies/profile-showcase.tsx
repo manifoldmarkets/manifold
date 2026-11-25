@@ -22,6 +22,7 @@ import {
   formatTrophyValue,
   getHighestClaimedMilestone,
   getMaxShowcasePins,
+  getTrophyDisplayStats,
   getTrophyPinId,
   getTrophyStatValue,
 } from 'common/trophies'
@@ -88,7 +89,7 @@ export function ProfileShowcase(props: {
     : []
   const badges = sortBadges([
     ...getTrophyBadges(
-      achievements && { ...achievements, ...(trophies?.starter ?? {}) },
+      achievements && getTrophyDisplayStats(achievements, trophies),
       claims,
       held
     ),

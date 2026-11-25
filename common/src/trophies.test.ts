@@ -19,6 +19,7 @@ import {
   getTrophyClaimReward,
   getTrophyRewardMultiplier,
   getTrophyDefinitionsFor,
+  getTrophyDisplayStats,
   isStarterTrophy,
   isStarterTrophyAccount,
   countEarnedMilestones,
@@ -204,6 +205,38 @@ describe('league level', () => {
 })
 
 describe('progress', () => {
+  it('uses the higher Net Worth peak as trophies and achievements refresh independently', () => {
+    const achievements = { peakNetWorth: 499_999, totalTradesCount: 12 }
+    const starter = { starterTrades: 3, starterMarkets: 2, starterDays: 1 }
+    const trophies = {
+      starter,
+      ranks: [{ trophyId: 'liked-comments', rank: 1, value: 900_000 }],
+    }
+    expect(getTrophyDisplayStats(achievements, trophies)).toEqual({
+      ...achievements,
+      ...starter,
+    })
+
+    const refreshedTrophies = {
+      ...trophies,
+      ranks: [
+        ...trophies.ranks,
+        { trophyId: 'net-worth', rank: 1, value: 500_000 },
+      ],
+    }
+    const stats = getTrophyDisplayStats(achievements, refreshedTrophies)
+    expect(stats.peakNetWorth).toBe(500_000)
+    expect(
+      getClaimableMilestones(stats, [], [netWorth]).map((m) => m.milestone.id)
+    ).toContain('whale')
+
+    const refreshedAchievements = { ...achievements, peakNetWorth: 510_000 }
+    expect(
+      getTrophyDisplayStats(refreshedAchievements, refreshedTrophies)
+        .peakNetWorth
+    ).toBe(510_000)
+  })
+
   it('treats missing and non-finite stats as zero', () => {
     expect(getTrophyStatValue(netWorth, {})).toBe(0)
     expect(getTrophyStatValue(netWorth, { peakNetWorth: NaN })).toBe(0)

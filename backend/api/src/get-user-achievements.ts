@@ -220,7 +220,7 @@ const STATS_QUERY = `with
   referrals as (
     select
       count(uphl.user_id) as total_referrals,
-      count(*) filter (where ${TROPHY_PERSON_FILTER}
+      count(*) filter (where person.id <> $[userId] and ${TROPHY_PERSON_FILTER}
         and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $[minReferralTrades]) as referred_traders,
       sum(uphl.balance + uphl.spice_balance + uphl.investment_value - uphl.total_deposits)
         as total_referred_profit_mana
