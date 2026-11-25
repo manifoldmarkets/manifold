@@ -2720,6 +2720,46 @@ export type Database = {
           }
         ]
       }
+      membership_notice_deliveries: {
+        Row: {
+          created_time: string
+          notice_key: string
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          notice_key: string
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          notice_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'membership_notice_deliveries_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'mv_user_achievement_stats'
+            referencedColumns: ['user_id']
+          },
+          {
+            foreignKeyName: 'membership_notice_deliveries_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'membership_notice_deliveries_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       mod_reports: {
         Row: {
           comment_id: string

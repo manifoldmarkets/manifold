@@ -6,11 +6,13 @@ A banked grant can start when its tier equals or exceeds the current paid tier, 
 
 The supporter row is the source of access for every benefit, including margin loans and referral boosts. Starting a grant changes the existing row in place or inserts one if needed. Its expiry is the free end date, its public metadata contains only the grant ID, and automatic renewal is off. Paid tier, signed milliseconds to expiry, original grant time and renewal choice live in private `paused_paid`. A renewal beyond grace still pauses at its paid tier. Its lapsed access allows any free tier to start.
 
-The main scheduler checks every ten minutes. Each user's transition runs in a retried SERIALIZABLE transaction. It ends a due grant and hands the paid snapshot directly to the next eligible grant. Otherwise it restores paid expiry relative to processing time, or removes the supporter row when nothing was paused. Overdue renewals resume with the same time already overdue. The next mana renewal scan can charge them, and the 25-hour grace keeps its original remainder. Access can lapse between the free expiry and the scheduler run. The lock lasts until the ledger transition commits.
+The main scheduler checks every ten minutes. Each user's transition runs in a retried SERIALIZABLE transaction. It ends a due grant and hands the paid snapshot directly to the next eligible grant. Otherwise it restores paid expiry relative to processing time, or removes the supporter row when nothing was paused. If the restored paid row is due for renewal, the same transaction runs the daily scan?s renewal check. It charges the tier price and extends access for 30 days, or turns off renewal if the balance is insufficient. Access can lapse between the free expiry and the scheduler run. The lock lasts until the ledger transition commits.
 
 Membership purchases check the ledger before charging. Free time earns zero upgrade credit. Members can turn off renewal of a paused subscription. The daily expiry notice and membership panel preview the transition at the free end time, including eligible banked grants. When access will end, the notice quotes the mana price to continue. Ordinary shop discounts and freeze limits read the active tier as usual.
 
-Current shop stats count a paused subscriber at their paid tier and saved renewal choice. The free-day count includes members currently using free access, including those with paid time paused. The historical chart reconstructs past dates from today's entitlement rows, so an in-place tier swap can attribute earlier days to the free tier.
+Membership notices are best effort. The expiry job records each event in the private `membership_notice_deliveries` table before delivery. A crash or push failure after that commit can leave a notice undelivered. Reruns skip events with a receipt. Only browser notifications occupy inbox space.
+
+Current shop stats count a paused subscriber at their paid tier when paid time remains or automatic renewal is on. The free-day count includes members currently using free access, including those with paid time paused. The historical chart reconstructs past dates from today's entitlement rows, so an in-place tier swap can attribute earlier days to the free tier.
 
 ## Future Stripe billing
 
@@ -27,6 +29,6 @@ yarn --cwd=backend/scripts ts-node end-active-membership-grants.ts
 yarn --cwd=backend/scripts ts-node end-active-membership-grants.ts --apply
 ```
 
-The script uses the normal restoration transaction and leaves banked grants waiting. After it verifies zero active grants, roll back the API. Keep issuance and the grant scheduler stopped until every API instance supports grants again.
+The preview prints the unserved milliseconds for each active grant. Apply restores the paid row and re-banks any unserved time on the original receipt in one transaction. After it verifies zero active grants, roll back the API. Keep issuance and the grant scheduler stopped until every API instance supports grants again.
 
 A fully capped award persists a zero-duration used receipt, so replaying its source returns the same award. A grant behind a permanent paid membership stays banked until the paid membership ends.

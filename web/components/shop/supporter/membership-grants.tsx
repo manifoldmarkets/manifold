@@ -62,7 +62,7 @@ export function useMembershipGrants(user: User | null | undefined) {
   }, [poll, refreshView, refreshEntitlements])
 
   const lockMessage = active
-    ? membershipGrantLockMessage(active.tier, active.endsTime)
+    ? membershipGrantLockMessage(active.tier, active.endsTime, view?.next)
     : undefined
   return { view, active, lockMessage, refresh: refreshView }
 }

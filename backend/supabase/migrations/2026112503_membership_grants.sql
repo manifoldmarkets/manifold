@@ -38,6 +38,15 @@ where
 
 create index if not exists membership_grants_status_ends on membership_grants (status, ends_time);
 
+create table if not exists
+  membership_notice_deliveries (
+    notice_key text primary key,
+    user_id text not null references users (id) on delete cascade,
+    created_time timestamptz not null default now()
+  );
+
+alter table membership_notice_deliveries enable row level security;
+
 do $$
 declare
   r text;
@@ -47,7 +56,7 @@ begin
   end if;
   foreach r in array array['anon', 'authenticated'] loop
     if exists (select 1 from pg_roles where rolname = r) then
-      execute format('revoke all on membership_grants from %I', r);
+      execute format('revoke all on membership_grants, membership_notice_deliveries from %I', r);
     end if;
   end loop;
 end

@@ -8,6 +8,11 @@ import {
   PausedPaid,
   planGrantTransition,
 } from 'common/membership-grants'
+import {
+  MembershipRenewal,
+  publishMembershipRenewal,
+  renewDueMembership,
+} from './membership-renewal'
 import { SupporterTier } from 'common/supporter-config'
 import {
   SupabaseDirectClient,
@@ -142,15 +147,24 @@ export interface MembershipBillingRail {
     userId: string,
     swap: Swap
   ): Promise<PausedPaid | null>
-  resume(tx: SupabaseTransaction, userId: string, swap: Swap): Promise<void>
+  resume(
+    tx: SupabaseTransaction,
+    userId: string,
+    swap: Swap
+  ): Promise<MembershipRenewal | null>
 }
 const mana: MembershipBillingRail = {
   async pause(tx, userId, { previous, next, paid }) {
     await writeSupporterRow(tx, userId, previous, next)
     return paid
   },
-  async resume(tx, userId, { previous, next }) {
+  async resume(tx, userId, { previous, next, now }) {
     await writeSupporterRow(tx, userId, previous, next)
+    return next?.autoRenew &&
+      next.expiresTime !== undefined &&
+      next.expiresTime <= now
+      ? renewDueMembership(tx, userId, next.entitlementId, now)
+      : null
   },
 }
 
@@ -164,7 +178,10 @@ async function advanceGrants(
   const row = await getSupporterRow(tx, userId, true)
   const grants = await heldGrants(tx, userId)
   const { ended, start, restored } = planGrantTransition(row, grants, now, mode)
-  if (ended)
+  let renewal: MembershipRenewal | null = null
+  const unservedMs =
+    ended && mode === 'end-active' ? Math.max(0, ended.endsTime! - now) : 0
+  if (ended && !unservedMs)
     await tx.one(
       `update membership_grants set status = 'used', ended_time = $2
     where id = $1 and status = 'active' returning id`,
@@ -183,14 +200,28 @@ async function advanceGrants(
       [start.grant.id, new Date(now), new Date(start.newRow.expiresTime!), paid]
     )
   } else if (ended) {
-    await mana.resume(tx, userId, {
+    renewal = await mana.resume(tx, userId, {
       previous: row,
       next: restored,
       paid: ended.pausedPaid,
       now,
     })
+    if (unservedMs > 0)
+      await tx.one(
+        `update membership_grants set status = 'banked', duration_ms = $2,
+        started_time = null, ends_time = null, ended_time = null, paused_paid = null,
+        note = concat_ws(' ', note, $3)
+        where id = $1 and status = 'active' returning id`,
+        [
+          ended.id,
+          unservedMs,
+          `Ended early at ${new Date(
+            now
+          ).toISOString()}. Re-banked ${unservedMs} ms.`,
+        ]
+      )
   }
-  return { started: start?.grant.id ?? null, ended: ended?.id ?? null }
+  return { started: start?.grant.id ?? null, ended: ended?.id ?? null, renewal }
 }
 
 export async function processUserMembershipGrants(
@@ -198,20 +229,26 @@ export async function processUserMembershipGrants(
   userId: string,
   mode: GrantTransitionMode = 'advance'
 ) {
-  const { change, entitlements } = await transactWithRetries(
+  const { change, entitlements, renewal } = await transactWithRetries(
     pg,
     5,
     async (tx) => {
-      const change = await advanceGrants(tx, userId, Date.now(), mode)
+      const { renewal, ...change } = await advanceGrants(
+        tx,
+        userId,
+        Date.now(),
+        mode
+      )
       const entitlements =
         change.started || change.ended
           ? await getUserEntitlements(tx, userId)
           : null
-      return { change, entitlements }
+      return { change, entitlements, renewal }
     },
     grantRetryOptions
   )
   if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
+  if (renewal) await publishMembershipRenewal(renewal)
   return change
 }
 
@@ -227,7 +264,7 @@ export async function grantMembershipDays(
   }
 ): Promise<MembershipGrantResult> {
   const { userId, tier, source, sourceId } = input
-  const { result, entitlements } = await transactWithRetries(
+  const { result, entitlements, renewal } = await transactWithRetries(
     pg,
     5,
     async (tx) => {
@@ -246,6 +283,7 @@ export async function grantMembershipDays(
             outcome: 'duplicate' as const,
           },
           entitlements: null,
+          renewal: null,
         }
       const { durationMs, reductionNote } = capGrantDuration(
         input.durationMs,
@@ -266,6 +304,7 @@ export async function grantMembershipDays(
         return {
           result: { grant: convertGrant(record), outcome: 'capped' as const },
           entitlements: null,
+          renewal: null,
         }
       }
       const inserted = await tx.oneOrNone(
@@ -273,7 +312,7 @@ export async function grantMembershipDays(
       values ($1,$2,$3,$4,$5,'banked',$6) on conflict (user_id,source,source_id) do nothing returning id`,
         [userId, tier, durationMs, source, sourceId, note]
       )
-      if (inserted) await advanceGrants(tx, userId, now)
+      const change = inserted ? await advanceGrants(tx, userId, now) : null
       const record = await lookup()
       if (!record) throw new Error('Membership grant receipt missing')
       const grant = convertGrant(record)
@@ -290,11 +329,13 @@ export async function grantMembershipDays(
           : undefined
       return {
         result: { grant, outcome, reason },
+        renewal: change?.renewal,
         entitlements: inserted ? await getUserEntitlements(tx, userId) : null,
       }
     },
     grantRetryOptions
   )
   if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
+  if (renewal) await publishMembershipRenewal(renewal)
   return result
 }

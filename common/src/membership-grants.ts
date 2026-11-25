@@ -109,9 +109,13 @@ export function planGrantStart(
     return null
   if (row?.expiresTime !== undefined) milliseconds(row.expiresTime)
   const current = row && getSupporterEntitlement([row], now)
-  const outstanding =
-    row?.autoRenew && row.expiresTime !== undefined && row.expiresTime <= now
-  const paid = current ?? (outstanding ? row : null)
+  // Benefit eligibility sets the tier floor. Preserve paid time and renewal
+  // obligations even when the supporter row is disabled.
+  const paid =
+    row &&
+    (row.autoRenew || row.expiresTime === undefined || row.expiresTime > now)
+      ? row
+      : null
   const paidTier = TIER_ORDER.find(
     (tier) => SUPPORTER_TIERS[tier].id === paid?.entitlementId
   )
@@ -254,8 +258,7 @@ export function getMembershipGrantView(
           ? 'Waiting for the current free days to end.'
           : planGrantStart(row, [g], now)
           ? 'Ready to start.'
-          : row?.expiresTime === undefined &&
-            getSupporterEntitlement(row ? [row] : [], now)
+          : row && row.expiresTime === undefined
           ? 'Starts when your current membership ends.'
           : `Starts when your membership is ${
               SUPPORTER_TIERS[g.tier].name
@@ -279,11 +282,16 @@ export function nextMembershipMessage(
 
 export function membershipGrantLockMessage(
   tier: SupporterTier,
-  endsTime: number
+  endsTime: number,
+  next?: MembershipGrantView['next']
 ) {
+  const chain =
+    next?.kind === 'free'
+      ? `, then free ${SUPPORTER_TIERS[next.tier].name} days start`
+      : ''
   return `You're using free ${SUPPORTER_TIERS[tier].name} days until ${new Date(
     endsTime
-  ).toLocaleDateString()}. You can change your membership after they end.`
+  ).toLocaleDateString()}${chain}. You can change your membership once your free days end.`
 }
 
 // Both checkout surfaces and the charging transaction use the same credit calculation.

@@ -5,24 +5,19 @@ import { broadcast } from 'shared/websockets/server'
 
 export const insertNotificationToSupabase = async (
   notification: Notification,
-  pg: SupabaseDirectClient,
-  showInBrowser = true
+  pg: SupabaseDirectClient
 ) => {
   const inserted = await pg.oneOrNone(
-    `insert into public.user_notifications (user_id, notification_id, data)
+    `insert into postgres.public.user_notifications (user_id, notification_id, data)
      values ($1, $2, $3)
      on conflict do nothing
      returning 1 as inserted`,
-    [
-      notification.userId,
-      notification.id,
-      showInBrowser ? notification : { ...notification, deliveryOnly: true },
-    ]
+    [notification.userId, notification.id, notification],
+    (r) => r?.inserted as 1 | undefined
   )
-  if (inserted && showInBrowser) {
+  if (inserted) {
     broadcast(`user-notifications/${notification.userId}`, { notification })
   }
-  return !!inserted
 }
 
 export const bulkInsertNotifications = async (

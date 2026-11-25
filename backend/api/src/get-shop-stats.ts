@@ -179,11 +179,12 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
       select substr(entitlement_id, length('supporter-') + 1) as tier, auto_renew
       from user_entitlements
       where entitlement_id = any($1) and metadata->>'membershipGrantId' is null
-        and enabled and (expires_time is null or expires_time > now())
+        and (auto_renew or expires_time is null or expires_time > now())
       union all
       select paused_paid->>'tier', (paused_paid->>'autoRenew')::boolean
       from membership_grants
-      where status = 'active' and paused_paid is not null
+      where status = 'active' and ((paused_paid->>'remainingMs')::bigint > 0
+        or (paused_paid->>'autoRenew')::boolean)
     ) paid
     group by tier order by tier
     `,

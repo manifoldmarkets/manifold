@@ -169,21 +169,23 @@ describe('membership grant transitions', () => {
     }
   })
 
-  it('retains the enabled state of a disabled row with an outstanding renewal', () => {
-    const paid = { ...row('premium', -HOUR_MS), enabled: false }
-    const start = planGrantStart(paid, [grant({ tier: 'basic' })], now)!
-    const active = activate(start)
-    expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
-      ...paid,
-      expiresTime: active.endsTime! - HOUR_MS,
-    })
-  })
+  it.each([-HOUR_MS, DAY_MS])(
+    'preserves a disabled renewing row with %i ms remaining',
+    (remaining) => {
+      const paid = { ...row('premium', remaining), enabled: false }
+      const start = planGrantStart(paid, [grant({ tier: 'basic' })], now)!
+      const active = activate(start)
+      expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
+        ...paid,
+        expiresTime: active.endsTime! + remaining,
+      })
+    }
+  )
 
   it('discards lapsed rows with no outstanding renewal', () => {
     for (const lapsed of [
       row('premium', -25 * HOUR_MS, false),
       row('premium', 0, false),
-      { ...row('premium', DAY_MS), enabled: false },
       null,
     ]) {
       const start = planGrantStart(lapsed, [grant()], now)!

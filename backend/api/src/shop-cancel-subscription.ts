@@ -1,5 +1,6 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getActiveMembershipGrant } from 'shared/membership-grants'
+import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 import {
   getActiveSupporterEntitlements,
   getUserEntitlements,
@@ -26,13 +27,19 @@ export const shopCancelSubscription: APIHandler<
           [active.id]
         )
     } else {
-      const [paid] = await getActiveSupporterEntitlements(tx, userId)
-      if (!paid)
-        throw new APIError(404, 'No active membership subscription found')
-      await tx.none(
-        'update user_entitlements set auto_renew = false where user_id = $1 and entitlement_id = $2',
-        [userId, paid.entitlementId]
+      const cancelled = await tx.manyOrNone(
+        `update user_entitlements set auto_renew = false
+         where user_id = $1 and entitlement_id = any($2)
+           and metadata->>'membershipGrantId' is null and auto_renew
+         returning entitlement_id`,
+        [userId, SUPPORTER_ENTITLEMENT_IDS]
       )
+      // A repeat cancellation of a still-active paid subscription also succeeds.
+      if (!cancelled.length) {
+        const activePaid = await getActiveSupporterEntitlements(tx, userId)
+        if (!activePaid.some((row) => row.metadata?.membershipGrantId == null))
+          throw new APIError(404, 'No active membership subscription found')
+      }
     }
     return getUserEntitlements(tx, userId)
   })

@@ -17,7 +17,10 @@ import {
   getSeasonalAvailabilityText,
   AchievementRequirement,
 } from 'common/shop/items'
-import { getActiveMembershipGrant } from 'shared/membership-grants'
+import {
+  getActiveMembershipGrant,
+  readMembershipGrantView,
+} from 'shared/membership-grants'
 import {
   membershipChangeCredit,
   membershipGrantLockMessage,
@@ -284,12 +287,14 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const grant = await getActiveMembershipGrant(tx, auth.uid)
-      if (grant)
+      const active = await getActiveMembershipGrant(tx, auth.uid)
+      if (active) {
+        const { next } = await readMembershipGrantView(tx, auth.uid, Date.now())
         throw new APIError(
           403,
-          membershipGrantLockMessage(grant.tier, grant.endsTime!)
+          membershipGrantLockMessage(active.tier, active.endsTime!, next)
         )
+      }
       const supporterEntitlements = await getActiveSupporterEntitlements(
         tx,
         auth.uid
