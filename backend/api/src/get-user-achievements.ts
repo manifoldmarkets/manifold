@@ -2,11 +2,17 @@ import { APIHandler } from 'api/helpers/endpoint'
 // NOTE: Duplication warning
 // The ranks below (apart from trades) come from the materialized views in
 // backend/supabase/achievement_materialized_views.sql, refreshed nightly.
-// If you add/remove/rename achievement fields here, ALSO update that SQL file
-// and the API return type in common/src/api/schema.ts ('get-user-achievements').
+// Changes to a ranked achievement must match that SQL file. Trophy-only
+// fields are live here and use separate nightly ranks in update-trophy-ranks.
 // Trades and their rank are live, from user_stats (dev-docs/user-stats.md).
 import { APIResponse } from 'common/api/schema'
+import {
+  MARKET_CREATED_MIN_TRADERS,
+  REFERRAL_MIN_TRADES,
+  getLeagueLevel,
+} from 'common/trophies'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
+import { TROPHY_PERSON_FILTER } from 'shared/supabase/trophy-eligibility'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -31,7 +37,11 @@ export async function loadUserAchievements(
 ): Promise<APIResponse<'get-user-achievements'>> {
   const pg = createSupabaseDirectClient()
   const [result, trades, N] = await Promise.all([
-    pg.oneOrNone<StatsRow>(STATS_QUERY, [userId]),
+    pg.oneOrNone<StatsRow>(STATS_QUERY, [
+      userId,
+      MARKET_CREATED_MIN_TRADERS,
+      REFERRAL_MIN_TRADES,
+    ]),
     loadTrades(pg, userId),
     getRankPopulation(pg),
   ])
@@ -48,15 +58,28 @@ export async function loadUserAchievements(
     ])
   ) as Record<RankKey, Rank>
 
+  const seasons = {
+    seasonsGoldOrHigher: Number(result?.seasons_gold_or_higher ?? 0),
+    seasonsPlatinumOrHigher: Number(result?.seasons_platinum_or_higher ?? 0),
+    seasonsDiamondOrHigher: Number(result?.seasons_diamond_or_higher ?? 0),
+    seasonsMasters: Number(result?.seasons_masters ?? 0),
+  }
   return {
     userId,
+    ...seasons,
+    leagueLevel: getLeagueLevel(seasons),
+    netWorth: Number(result?.net_worth ?? 0),
+    peakNetWorth: Number(result?.peak_net_worth ?? 0),
+    likedComments: Number(result?.liked_comments ?? 0),
+    marketsCreatedWithTraders: Number(
+      result?.markets_created_with_traders ?? 0
+    ),
+    referredTraders: Number(result?.referred_traders ?? 0),
+    resolvedProfitableMarkets: Number(result?.resolved_profitable_markets ?? 0),
     creatorTraders: Number(result?.creator_traders ?? 0),
     totalReferrals: Number(result?.total_referrals ?? 0),
     totalReferredProfitMana: Number(result?.total_referred_profit_mana ?? 0),
     totalVolumeMana: Number(result?.total_volume_mana ?? 0),
-    seasonsPlatinumOrHigher: Number(result?.seasons_platinum_or_higher ?? 0),
-    seasonsDiamondOrHigher: Number(result?.seasons_diamond_or_higher ?? 0),
-    seasonsMasters: Number(result?.seasons_masters ?? 0),
     largestLeagueSeasonEarnings: Number(
       result?.largest_league_season_earnings ?? 0
     ),
@@ -146,6 +169,13 @@ const RANK_KEYS: RankKey[] = [
 ]
 
 type StatsRow = {
+  net_worth: number | null
+  peak_net_worth: number | null
+  liked_comments: number | null
+  markets_created_with_traders: number | null
+  referred_traders: number | null
+  resolved_profitable_markets: number | null
+  seasons_gold_or_higher: number | null
   creator_traders: number | null
   total_referrals: number | null
   total_referred_profit_mana: number | null
@@ -180,13 +210,28 @@ const STATS_QUERY = `with
   -- (user_referrals_idx).
   referrals as (
     select
-      count(*) as total_referrals,
+      count(uphl.user_id) as total_referrals,
+      count(*) filter (where ${TROPHY_PERSON_FILTER}
+        and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $3) as referred_traders,
       sum(uphl.balance + uphl.spice_balance + uphl.investment_value - uphl.total_deposits)
         as total_referred_profit_mana
-    from users referred
-    join user_portfolio_history_latest uphl on uphl.user_id = referred.id
-    where referred.data->>'referredByUserId' = $1
+    from users person
+    left join user_portfolio_history_latest uphl on uphl.user_id = person.id
+    left join user_stats s on s.user_id = person.id
+    left join user_stats_baseline baseline on baseline.user_id = person.id
+    where person.data->>'referredByUserId' = $1
       and exists (select 1 from users referrer where referrer.id = $1)
+  ),
+  portfolio as (
+    select balance + investment_value as net_worth
+    from user_portfolio_history_latest where user_id = $1
+  ),
+  liked as (
+    select count(distinct r.content_id) as liked_comments
+    from user_reactions r
+    join users person on person.id = r.user_id
+    where r.content_owner_id = $1 and r.content_type = 'comment' and r.reaction_type = 'like'
+      and r.user_id <> $1 and ${TROPHY_PERSON_FILTER}
   ),
   mod_tickets as (
     select count(*) as mod_tickets_resolved
@@ -207,6 +252,8 @@ const STATS_QUERY = `with
       sum(coalesce((ucm.data->>'totalAmountSold')::numeric, 0)
         + coalesce((ucm.data->>'totalAmountInvested')::numeric, 0)) as total_volume_mana,
       count(*) filter (where coalesce(ucm.profit, 0) > 0) as profitable_markets_count,
+      count(*) filter (where coalesce(ucm.profit, 0) > 0 and c.resolution is not null
+        and c.resolution <> 'CANCEL') as resolved_profitable_markets,
       count(*) filter (where coalesce(ucm.profit, 0) < 0) as unprofitable_markets_count,
       max(ucm.profit) filter (where coalesce(ucm.profit, 0) > 0) as largest_profitable_trade_value,
       min(ucm.profit) filter (where coalesce(ucm.profit, 0) < 0) as largest_unprofitable_trade_value
@@ -219,6 +266,7 @@ const STATS_QUERY = `with
   -- From leagues directly: the user_league_info view ranks every cohort.
   leagues_cte as (
     select
+      count(*) filter (where division >= 3) as seasons_gold_or_higher,
       count(*) filter (where division >= 4) as seasons_platinum_or_higher,
       count(*) filter (where division >= 5) as seasons_diamond_or_higher,
       count(*) filter (where division = 6) as seasons_masters,
@@ -239,6 +287,8 @@ const STATS_QUERY = `with
       count(*) filter (
         where c.visibility = 'public' and not coalesce(c.deleted, false)
       ) as total_markets_created,
+      count(*) filter (where c.visibility = 'public' and not coalesce(c.deleted, false)
+        and c.unique_bettor_count >= $2) as markets_created_with_traders,
       coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts c
     where c.creator_id = $1 and c.token = 'MANA'
@@ -300,6 +350,13 @@ const STATS_QUERY = `with
       and tx.category = 'BETTING_STREAK_BONUS'
   )
   select
+    coalesce(portfolio.net_worth, 0) as net_worth,
+    greatest(coalesce(portfolio.net_worth, 0), coalesce(peaks.peak_net_worth, 0)) as peak_net_worth,
+    liked.liked_comments,
+    created.markets_created_with_traders,
+    referrals.referred_traders,
+    metrics.resolved_profitable_markets,
+    leagues_cte.seasons_gold_or_higher,
     creators.creator_traders,
     referrals.total_referrals,
     referrals.total_referred_profit_mana,
@@ -343,6 +400,9 @@ const STATS_QUERY = `with
   -- One row even when there is no users row (e.g. an imported comment's
   -- author): the parts that only need the id still count.
   from (select 1) base
+  left join portfolio on true
+  left join user_net_worth_peaks peaks on peaks.user_id = $1
+  left join liked on true
   left join metrics on true
   left join creators on true
   left join referrals on true

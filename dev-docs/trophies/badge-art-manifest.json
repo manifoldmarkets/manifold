@@ -63,60 +63,46 @@
     "subject": "A small round wreath of seven glowing beads, all lit"
   },
   {
-    "trophyId": "trading-volume",
-    "milestoneId": "goldfish",
-    "name": "Goldfish",
-    "tier": "green",
-    "subject": "A tiny cute goldfish"
-  },
-  {
-    "trophyId": "trading-volume",
+    "trophyId": "net-worth",
     "milestoneId": "minnow",
     "name": "Minnow",
     "tier": "green",
     "subject": "A small determined minnow fish swimming upward"
   },
   {
-    "trophyId": "trading-volume",
+    "trophyId": "net-worth",
+    "milestoneId": "goldfish",
+    "name": "Goldfish",
+    "tier": "blue",
+    "subject": "A tiny cute goldfish"
+  },
+  {
+    "trophyId": "net-worth",
     "milestoneId": "swordfish",
     "name": "Swordfish",
-    "tier": "blue",
+    "tier": "purple",
     "subject": "A sleek powerful swordfish cutting through water"
   },
   {
-    "trophyId": "trading-volume",
+    "trophyId": "net-worth",
     "milestoneId": "shark",
     "name": "Shark",
-    "tier": "purple",
+    "tier": "crimson",
     "subject": "A fierce grinning shark with sharp teeth"
   },
   {
-    "trophyId": "trading-volume",
+    "trophyId": "net-worth",
     "milestoneId": "orca",
     "name": "Orca",
-    "tier": "crimson",
+    "tier": "gold",
     "subject": "A powerful orca breaching through a wave"
   },
   {
-    "trophyId": "trading-volume",
+    "trophyId": "net-worth",
     "milestoneId": "whale",
     "name": "Whale",
-    "tier": "gold",
+    "tier": "prismatic",
     "subject": "A massive blue whale diving gracefully with its tail flukes raised, steel blue skin"
-  },
-  {
-    "trophyId": "trading-volume",
-    "milestoneId": "leviathan",
-    "name": "Leviathan",
-    "tier": "prismatic",
-    "subject": "A colossal sea serpent leviathan emerging from a whirlpool"
-  },
-  {
-    "trophyId": "trading-volume",
-    "milestoneId": "kraken",
-    "name": "Kraken",
-    "tier": "prismatic",
-    "subject": "A massive kraken with glowing tentacles"
   },
   {
     "trophyId": "total-trades",
@@ -124,13 +110,6 @@
     "name": "Rookie",
     "tier": "green",
     "subject": "A single dartboard with one dart in the bullseye"
-  },
-  {
-    "trophyId": "total-trades",
-    "milestoneId": "dabbler",
-    "name": "Dabbler",
-    "tier": "green",
-    "subject": "A pair of dice mid-roll"
   },
   {
     "trophyId": "total-trades",
@@ -148,24 +127,24 @@
   },
   {
     "trophyId": "total-trades",
+    "milestoneId": "grinder",
+    "name": "Grinder",
+    "tier": "crimson",
+    "subject": "A hand-cranked grindstone wheel throwing a few bright sparks"
+  },
+  {
+    "trophyId": "total-trades",
     "milestoneId": "machine",
     "name": "Machine",
-    "tier": "crimson",
+    "tier": "gold",
     "subject": "A complex gear mechanism with interlocking cogs"
   },
   {
     "trophyId": "total-trades",
     "milestoneId": "terminator",
     "name": "Terminator",
-    "tier": "gold",
-    "subject": "A glowing red-eyed robot head"
-  },
-  {
-    "trophyId": "total-trades",
-    "milestoneId": "singularity",
-    "name": "Singularity",
     "tier": "prismatic",
-    "subject": "A swirling galaxy vortex"
+    "subject": "A glowing red-eyed robot head"
   },
   {
     "trophyId": "prediction-streak",
@@ -197,13 +176,6 @@
   },
   {
     "trophyId": "prediction-streak",
-    "milestoneId": "phoenix",
-    "name": "Phoenix",
-    "tier": "gold",
-    "subject": "A majestic phoenix bird rising from flames with spread wings"
-  },
-  {
-    "trophyId": "prediction-streak",
     "milestoneId": "eternal-flame",
     "name": "Eternal Flame",
     "tier": "gold",
@@ -211,24 +183,10 @@
   },
   {
     "trophyId": "prediction-streak",
-    "milestoneId": "undying",
-    "name": "Undying",
+    "milestoneId": "phoenix",
+    "name": "Phoenix",
     "tier": "prismatic",
-    "subject": "An undying spirit flame floating in a cosmic void"
-  },
-  {
-    "trophyId": "prediction-streak",
-    "milestoneId": "timeless",
-    "name": "Timeless",
-    "tier": "prismatic",
-    "subject": "An ancient hourglass frozen mid-flow with glowing sand"
-  },
-  {
-    "trophyId": "prediction-streak",
-    "milestoneId": "immortal",
-    "name": "Immortal",
-    "tier": "prismatic",
-    "subject": "A cosmic flame with a starfield visible inside it"
+    "subject": "A majestic phoenix bird rising from flames with spread wings"
   },
   {
     "trophyId": "profitable-markets",
@@ -241,29 +199,15 @@
     "trophyId": "profitable-markets",
     "milestoneId": "savvy",
     "name": "Savvy",
-    "tier": "green",
+    "tier": "blue",
     "subject": "A glowing brain"
   },
   {
     "trophyId": "profitable-markets",
     "milestoneId": "sharp",
     "name": "Sharp",
-    "tier": "blue",
-    "subject": "A sharp gleaming blade"
-  },
-  {
-    "trophyId": "profitable-markets",
-    "milestoneId": "tactician",
-    "name": "Tactician",
-    "tier": "blue",
-    "subject": "A chess knight piece"
-  },
-  {
-    "trophyId": "profitable-markets",
-    "milestoneId": "oracle",
-    "name": "Oracle",
     "tier": "purple",
-    "subject": "A glowing crystal ball with swirling mist inside"
+    "subject": "A sharp gleaming blade"
   },
   {
     "trophyId": "profitable-markets",
@@ -281,10 +225,10 @@
   },
   {
     "trophyId": "profitable-markets",
-    "milestoneId": "omniscient",
-    "name": "Omniscient",
+    "milestoneId": "oracle",
+    "name": "Oracle",
     "tier": "prismatic",
-    "subject": "A radiant cosmic star"
+    "subject": "A glowing crystal ball with swirling mist inside"
   },
   {
     "trophyId": "markets-created",
@@ -297,197 +241,162 @@
     "trophyId": "markets-created",
     "milestoneId": "journeyman",
     "name": "Journeyman",
-    "tier": "green",
+    "tier": "blue",
     "subject": "A wrench and toolbelt"
   },
   {
     "trophyId": "markets-created",
     "milestoneId": "builder",
     "name": "Builder",
-    "tier": "blue",
+    "tier": "purple",
     "subject": "A construction crane"
   },
   {
     "trophyId": "markets-created",
     "milestoneId": "architect",
     "name": "Architect",
-    "tier": "blue",
+    "tier": "crimson",
     "subject": "A drafting compass and blueprint"
   },
   {
     "trophyId": "markets-created",
     "milestoneId": "city-planner",
     "name": "City Planner",
-    "tier": "purple",
+    "tier": "gold",
     "subject": "A miniature city skyline"
   },
   {
     "trophyId": "markets-created",
-    "milestoneId": "visionary",
-    "name": "Visionary",
-    "tier": "crimson",
-    "subject": "A telescope pointed at stars"
-  },
-  {
-    "trophyId": "markets-created",
-    "milestoneId": "world-builder",
-    "name": "World Builder",
-    "tier": "gold",
-    "subject": "A glowing globe with continents lit up"
-  },
-  {
-    "trophyId": "markets-created",
-    "milestoneId": "titan-of-questions",
-    "name": "Titan of Questions",
-    "tier": "gold",
+    "milestoneId": "titan",
+    "name": "Titan",
+    "tier": "prismatic",
     "subject": "A towering mountain peak piercing through clouds"
   },
   {
-    "trophyId": "markets-created",
-    "milestoneId": "infinite-curiosity",
-    "name": "Infinite Curiosity",
-    "tier": "prismatic",
-    "subject": "A glowing infinity symbol"
-  },
-  {
     "trophyId": "creator-traders",
-    "milestoneId": "invisible",
-    "name": "Invisible",
+    "milestoneId": "noticed",
+    "name": "Noticed",
     "tier": "green",
-    "subject": "A cute friendly ghost fading into mist"
-  },
-  {
-    "trophyId": "creator-traders",
-    "milestoneId": "unknown",
-    "name": "Unknown",
-    "tier": "green",
-    "subject": "A shadowy silhouette figure"
+    "subject": "A small spotlight shining a beam"
   },
   {
     "trophyId": "creator-traders",
     "milestoneId": "recognized",
     "name": "Recognized",
-    "tier": "green",
+    "tier": "blue",
     "subject": "A friendly waving hand"
   },
   {
     "trophyId": "creator-traders",
     "milestoneId": "notable",
     "name": "Notable",
-    "tier": "blue",
+    "tier": "purple",
     "subject": "A group of small cartoon figures looking upward"
   },
   {
     "trophyId": "creator-traders",
     "milestoneId": "popular",
     "name": "Popular",
-    "tier": "purple",
+    "tier": "crimson",
     "subject": "A megaphone broadcasting sound waves"
   },
   {
     "trophyId": "creator-traders",
     "milestoneId": "famous",
     "name": "Famous",
-    "tier": "crimson",
-    "subject": "A golden star on a stage"
-  },
-  {
-    "trophyId": "creator-traders",
-    "milestoneId": "legendary",
-    "name": "Legendary",
     "tier": "gold",
-    "subject": "A gold medal on a ribbon"
+    "subject": "A golden star on a stage"
   },
   {
     "trophyId": "creator-traders",
     "milestoneId": "icon",
     "name": "Icon",
-    "tier": "gold",
+    "tier": "prismatic",
     "subject": "A film clapperboard"
   },
   {
-    "trophyId": "creator-traders",
-    "milestoneId": "celebrity",
-    "name": "Celebrity",
-    "tier": "gold",
-    "subject": "A royal crown with jewels"
-  },
-  {
-    "trophyId": "creator-traders",
-    "milestoneId": "superstar",
-    "name": "Superstar",
-    "tier": "prismatic",
-    "subject": "A shooting comet with a dazzling trail"
-  },
-  {
-    "trophyId": "creator-traders",
-    "milestoneId": "phenomenon",
-    "name": "Phenomenon",
-    "tier": "prismatic",
-    "subject": "A meteor shower across a night sky"
-  },
-  {
-    "trophyId": "creator-traders",
-    "milestoneId": "transcendent",
-    "name": "Transcendent",
-    "tier": "prismatic",
-    "subject": "A spiral galaxy with a glowing center"
-  },
-  {
-    "trophyId": "comments",
-    "milestoneId": "chatterbox",
-    "name": "Chatterbox",
+    "trophyId": "liked-comments",
+    "milestoneId": "well-said",
+    "name": "Well Said",
     "tier": "green",
     "subject": "A speech bubble"
   },
   {
-    "trophyId": "comments",
+    "trophyId": "liked-comments",
     "milestoneId": "conversationalist",
     "name": "Conversationalist",
-    "tier": "green",
+    "tier": "blue",
     "subject": "A thought cloud bubble with a lightbulb inside"
   },
   {
-    "trophyId": "comments",
+    "trophyId": "liked-comments",
     "milestoneId": "debater",
     "name": "Debater",
-    "tier": "blue",
+    "tier": "purple",
     "subject": "A shouting face silhouette with sound waves"
   },
   {
-    "trophyId": "comments",
+    "trophyId": "liked-comments",
     "milestoneId": "commentator",
     "name": "Commentator",
-    "tier": "purple",
+    "tier": "crimson",
     "subject": "A notepad with a pen"
   },
   {
-    "trophyId": "comments",
-    "milestoneId": "pundit",
-    "name": "Pundit",
-    "tier": "crimson",
-    "subject": "A bullhorn megaphone"
-  },
-  {
-    "trophyId": "comments",
+    "trophyId": "liked-comments",
     "milestoneId": "influencer",
     "name": "Influencer",
     "tier": "gold",
     "subject": "A newspaper front page"
   },
   {
-    "trophyId": "comments",
-    "milestoneId": "thought-leader",
-    "name": "Thought Leader",
-    "tier": "gold",
-    "subject": "A glowing lightbulb"
-  },
-  {
-    "trophyId": "comments",
-    "milestoneId": "voice-of-the-people",
-    "name": "Voice of the People",
+    "trophyId": "liked-comments",
+    "milestoneId": "pundit",
+    "name": "Pundit",
     "tier": "prismatic",
     "subject": "A vintage microphone on a stage"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "gold-season",
+    "name": "Gold Season",
+    "tier": "green",
+    "subject": "A shiny gold medal on a short ribbon"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "platinum-season",
+    "name": "Platinum Season",
+    "tier": "blue",
+    "subject": "A silvery-white platinum medal on a short ribbon"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "diamond-season",
+    "name": "Diamond Season",
+    "tier": "purple",
+    "subject": "A sparkling cut diamond gem"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "contender",
+    "name": "Contender",
+    "tier": "crimson",
+    "subject": "A boxing glove"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "champion",
+    "name": "Champion",
+    "tier": "gold",
+    "subject": "A golden trophy cup"
+  },
+  {
+    "trophyId": "leagues",
+    "milestoneId": "goat",
+    "name": "GOAT",
+    "tier": "prismatic",
+    "subject": "A cute cartoon goat standing on a mountain peak"
   },
   {
     "trophyId": "referrals",
@@ -512,16 +421,9 @@
   },
   {
     "trophyId": "referrals",
-    "milestoneId": "ambassador",
-    "name": "Ambassador",
-    "tier": "crimson",
-    "subject": "A knight on horseback"
-  },
-  {
-    "trophyId": "referrals",
     "milestoneId": "evangelist",
     "name": "Evangelist",
-    "tier": "gold",
+    "tier": "crimson",
     "subject": "A satellite dish broadcasting signal beams"
   },
   {
@@ -533,87 +435,10 @@
   },
   {
     "trophyId": "referrals",
-    "milestoneId": "kingmaker",
-    "name": "Kingmaker",
+    "milestoneId": "ambassador",
+    "name": "Ambassador",
     "tier": "prismatic",
-    "subject": "A magic wand with sparkles"
-  },
-  {
-    "trophyId": "referrals",
-    "milestoneId": "movement-leader",
-    "name": "Movement Leader",
-    "tier": "prismatic",
-    "subject": "A checkered racing flag waving"
-  },
-  {
-    "trophyId": "referrals",
-    "milestoneId": "founding-force",
-    "name": "Founding Force",
-    "tier": "prismatic",
-    "subject": "A lightning bolt striking"
-  },
-  {
-    "trophyId": "charity-donated",
-    "milestoneId": "donor",
-    "name": "Donor",
-    "tier": "green",
-    "subject": "A green heart with a gentle glow"
-  },
-  {
-    "trophyId": "charity-donated",
-    "milestoneId": "patron",
-    "name": "Patron",
-    "tier": "blue",
-    "subject": "A purple heart"
-  },
-  {
-    "trophyId": "charity-donated",
-    "milestoneId": "philanthropist",
-    "name": "Philanthropist",
-    "tier": "purple",
-    "subject": "A red heart with radiating warmth"
-  },
-  {
-    "trophyId": "charity-donated",
-    "milestoneId": "benefactor",
-    "name": "Benefactor",
-    "tier": "gold",
-    "subject": "A sparkling golden heart"
-  },
-  {
-    "trophyId": "charity-donated",
-    "milestoneId": "saint",
-    "name": "Saint",
-    "tier": "prismatic",
-    "subject": "An angelic heart with a halo and tiny wings"
-  },
-  {
-    "trophyId": "masters-seasons",
-    "milestoneId": "contender",
-    "name": "Contender",
-    "tier": "blue",
-    "subject": "A boxing glove"
-  },
-  {
-    "trophyId": "masters-seasons",
-    "milestoneId": "champion",
-    "name": "Champion",
-    "tier": "purple",
-    "subject": "A golden trophy cup"
-  },
-  {
-    "trophyId": "masters-seasons",
-    "milestoneId": "dynasty",
-    "name": "Dynasty",
-    "tier": "gold",
-    "subject": "A grand castle fortress with banners"
-  },
-  {
-    "trophyId": "masters-seasons",
-    "milestoneId": "goat",
-    "name": "GOAT",
-    "tier": "prismatic",
-    "subject": "A cute cartoon goat standing on a mountain peak"
+    "subject": "A knight on horseback"
   },
   {
     "trophyId": "account-age",
@@ -640,8 +465,15 @@
     "trophyId": "account-age",
     "milestoneId": "elder",
     "name": "Elder",
-    "tier": "gold",
+    "tier": "crimson",
     "subject": "A wise elder figure with a long white beard"
+  },
+  {
+    "trophyId": "account-age",
+    "milestoneId": "old-guard",
+    "name": "Old Guard",
+    "tier": "gold",
+    "subject": "A sturdy stone watchtower"
   },
   {
     "trophyId": "account-age",
@@ -649,5 +481,47 @@
     "name": "Founding Member",
     "tier": "prismatic",
     "subject": "A grand classical temple with marble pillars"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "donor",
+    "name": "Donor",
+    "tier": "green",
+    "subject": "A green heart with a gentle glow"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "supporter",
+    "name": "Supporter",
+    "tier": "blue",
+    "subject": "A blue heart with a soft glow"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "patron",
+    "name": "Patron",
+    "tier": "purple",
+    "subject": "A purple heart"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "philanthropist",
+    "name": "Philanthropist",
+    "tier": "crimson",
+    "subject": "A red heart with radiating warmth"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "humanitarian",
+    "name": "Humanitarian",
+    "tier": "gold",
+    "subject": "A sparkling golden heart"
+  },
+  {
+    "trophyId": "charity-donated",
+    "milestoneId": "benefactor",
+    "name": "Benefactor",
+    "tier": "prismatic",
+    "subject": "An angelic heart with a halo and tiny wings"
   }
 ]

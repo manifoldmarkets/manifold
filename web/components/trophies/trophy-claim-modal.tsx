@@ -105,9 +105,9 @@ function TrophyExplainer(props: {
 }
 
 const EXAMPLE_PINS = [
-  ['trading-volume', 'whale'],
+  ['net-worth', 'whale'],
   ['creator-traders', 'famous'],
-  ['masters-seasons', 'goat'],
+  ['leagues', 'goat'],
 ].flatMap(([trophyId, milestoneId]) => {
   const def = getTrophyDefinition(trophyId)
   const milestone = def && getMilestone(def, milestoneId)
@@ -162,7 +162,7 @@ function ExampleProfile() {
 }
 
 const EXPLAINER_BADGES = [
-  ['comments', 'chatterbox'],
+  ['liked-comments', 'well-said'],
   ['prediction-streak', 'phoenix'],
   ['markets-created', 'builder'],
 ] as const

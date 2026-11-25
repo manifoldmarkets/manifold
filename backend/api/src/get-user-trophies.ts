@@ -6,6 +6,11 @@ import {
   getStarterStats,
   getTrophyClaims,
 } from 'api/helpers/trophies'
+import {
+  RANKED_TROPHY_DEFINITIONS,
+  type TrophyRank,
+  type TrophyRankPeak,
+} from 'common/trophies'
 import type { League } from 'common/leagues'
 import {
   createSupabaseDirectClient,
@@ -34,6 +39,31 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
     const rewarded = isStarterAccount
       ? await getRewardedMilestones(tx, userId)
       : []
-    return { claims, pins, league, season, starter, rewarded }
+    const rankedIds = RANKED_TROPHY_DEFINITIONS.map((def) => def.id)
+    const ranks = await tx.manyOrNone<TrophyRank>(
+      `select trophy_id as "trophyId", rank, value from trophy_ranks
+       where user_id = $1 and trophy_id in ($2:csv)`,
+      [userId, rankedIds]
+    )
+    const rankPeaks = await tx.manyOrNone<TrophyRankPeak>(
+      `select trophy_id as "trophyId", best_rank as "bestRank" from user_trophy_rank_peaks
+       where user_id = $1 and trophy_id in ($2:csv)`,
+      [userId, rankedIds]
+    )
+    const { computed } = await tx.one<{ computed: string | null }>(
+      'select max(computed_time) as computed from trophy_ranks'
+    )
+    return {
+      claims,
+      pins,
+      league,
+      season,
+      starter,
+      rewarded,
+      ranks,
+      rankPeaks,
+      ranksComputedTime:
+        computed === null ? null : new Date(computed).valueOf(),
+    }
   })
 }

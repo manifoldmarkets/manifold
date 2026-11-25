@@ -4,7 +4,7 @@
 // The real claim-trophy, get-user-trophies and unclaim-trophy handlers run
 // here, with the real starter count, tier multiplier and payout
 // (runTxnOutsideBetQueue). Their SQL runs, as pg-promise formats it, in an
-// in-memory PostgreSQL built from the two trophy migrations plus minimal
+// in-memory PostgreSQL built from the trophy migrations plus minimal
 // users, contracts, contract_bets, txns, user_entitlements, leagues and
 // leagues_season_end_times tables. A
 // transaction that fails is rolled back. No live database or network is used.
@@ -50,6 +50,7 @@ import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
+import { updateTrophyRanks } from 'scheduler/jobs/update-trophy-ranks'
 
 const pgp = pgPromise()
 let db: PGlite
@@ -99,6 +100,8 @@ const client = {
 const MIGRATIONS = [
   '2026112210_trophy_milestones.sql',
   '2026112211_trophy_milestone_rewards.sql',
+  '2026112501_user_reactions_comment_likes_idx.sql',
+  '2026112502_trophy_ladders_v2.sql',
 ]
 
 beforeAll(async () => {
@@ -106,6 +109,7 @@ beforeAll(async () => {
   await db.exec(`
     create table users (
       id text primary key,
+      username text,
       created_time timestamptz not null default now(),
       data jsonb not null default '{}',
       balance numeric not null default 0,
@@ -114,6 +118,7 @@ beforeAll(async () => {
       total_cash_deposits numeric not null default 0,
       is_bot boolean not null default false
     );
+    create table user_reactions (content_owner_id text, content_id text, content_type text, reaction_type text, user_id text);
     create table user_bans (
       id serial primary key,
       user_id text not null,
@@ -125,7 +130,15 @@ beforeAll(async () => {
       ended_at timestamptz,
       ended_by text
     );
-    create table contracts (id text primary key, token text not null);
+    create table user_portfolio_history_latest (
+      user_id text primary key, balance numeric not null, investment_value numeric not null
+    );
+    create table mv_ach_txns_achievements (user_id text, longest_betting_streak int);
+    create table user_contract_metrics (user_id text, contract_id text, answer_id text, profit numeric);
+    create table contracts (
+      id text primary key, token text not null, creator_id text, resolution text,
+      visibility text, deleted boolean, unique_bettor_count int
+    );
     create table contract_bets (
       bet_id text primary key,
       user_id text not null,
@@ -168,13 +181,15 @@ beforeAll(async () => {
       user_id text not null,
       primary key (user_id, season)
     );
-    insert into contracts values
+    insert into contracts (id, token) values
       ('m1', 'MANA'), ('m2', 'MANA'), ('m3', 'MANA'), ('cash1', 'CASH');
     insert into leagues_season_end_times values (11, 'complete'), (12, 'active');
   `)
   const dir = path.resolve(__dirname, '../../supabase/migrations')
   for (const file of MIGRATIONS) {
-    await db.exec(fs.readFileSync(path.join(dir, file), 'utf8'))
+    const sql = fs.readFileSync(path.join(dir, file), 'utf8')
+    // Single-connection PGlite can build the same partial index only offline.
+    await db.exec(sql.replace('create index concurrently', 'create index'))
   }
   jest
     .mocked(createSupabaseDirectClient)
@@ -190,6 +205,7 @@ afterAll(async () => {
 let betId = 0
 beforeEach(async () => {
   await db.exec(`
+    delete from user_portfolio_history_latest;
     delete from user_trophy_milestones;
     delete from user_trophy_rewards;
     delete from user_showcase;
@@ -656,9 +672,12 @@ describe('other trophies', () => {
     await addUser('u')
     jest
       .mocked(loadUserAchievements)
-      .mockResolvedValue({ totalVolumeMana: 20_000 } as never)
-    const result = await claim('u', 'trading-volume', 'goldfish')
-    expect(result.newlyClaimed.map((c) => c.milestoneId)).toEqual(['goldfish'])
+      .mockResolvedValue({ peakNetWorth: 20_000 } as never)
+    const result = await claim('u', 'net-worth', 'goldfish')
+    expect(result.newlyClaimed.map((c) => c.milestoneId)).toEqual([
+      'minnow',
+      'goldfish',
+    ])
     expect(result.rewardAmount).toBe(0)
     expect(await rewardTxns('u')).toHaveLength(0)
   })
@@ -737,5 +756,56 @@ describe('admin unclaim', () => {
     expect(again.rewardAmount).toBe(0)
     expect(await rewardTxns('u')).toHaveLength(1)
     expect((await balance('u')).balance).toBe(50)
+  })
+})
+
+describe('nightly trophy ranks', () => {
+  it('replaces held ranks, preserving ties, best ranks and net worth peaks', async () => {
+    const active = { data: { lastBetTime: Date.now() - DAY } }
+    for (const id of ['a', 'b', 'house', 'bot', 'banned'])
+      await addUser(id, active)
+    await addUser('inactive', { data: { lastBetTime: Date.now() - 91 * DAY } })
+    await addUser('deleted', { data: { ...active.data, userDeleted: true } })
+    await db.exec(`
+      insert into user_portfolio_history_latest
+        select id, 450000, 50000 from users;
+      update users set is_bot = true where id = 'bot';
+      insert into user_bans (user_id, ban_type) values ('banned', 'trading'), ('a', 'modAlert');
+      insert into trophy_rank_exclusions (user_id, reason) values ('house', 'Organisation');
+    `)
+    await updateTrophyRanks()
+    const first = await trophiesOf('a')
+    expect(first.ranks).toEqual([
+      { trophyId: 'net-worth', value: 500000, rank: 1 },
+    ])
+    expect(first.rankPeaks).toEqual([{ trophyId: 'net-worth', bestRank: 1 }])
+    expect(Number.isFinite(first.ranksComputedTime)).toBe(true)
+    expect(
+      await rows('select user_id, rank from trophy_ranks order by user_id')
+    ).toEqual([
+      { user_id: 'a', rank: 1 },
+      { user_id: 'b', rank: 1 },
+    ])
+    await db.exec(
+      "update user_portfolio_history_latest set balance = 400000 where user_id = 'a'"
+    )
+    await updateTrophyRanks()
+    const next = await trophiesOf('a')
+    expect(next.ranks).toEqual([])
+    expect(next.rankPeaks).toEqual(first.rankPeaks)
+    expect(
+      await rows(
+        "select peak_net_worth from user_net_worth_peaks where user_id = 'a'"
+      )
+    ).toEqual([{ peak_net_worth: 500000 }])
+    const bestTimes = await rows(
+      "select first_ranked_time, best_rank_time from user_trophy_rank_peaks where user_id = 'b'"
+    )
+    expect(new Date(bestTimes[0].first_ranked_time).valueOf()).toBe(
+      first.ranksComputedTime
+    )
+    expect(new Date(bestTimes[0].best_rank_time).valueOf()).toBe(
+      first.ranksComputedTime
+    )
   })
 })

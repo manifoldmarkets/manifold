@@ -213,7 +213,7 @@ export function TrophiesTab(props: {
     )
   }
 
-  const { claims, starter } = trophies
+  const { claims, starter, ranks, rankPeaks, ranksComputedTime } = trophies
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
   const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
@@ -231,10 +231,16 @@ export function TrophiesTab(props: {
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
   )
-  // Other people's profiles show only trophies they have claimed.
+  // Nightly titles and peaks are public, even when the trophy has no claims.
   const visibleDefs = isOwnProfile
     ? earnableDefs
-    : TROPHY_DEFINITIONS.filter((d) => claimedIdsByTrophy.get(d.id)?.size)
+    : TROPHY_DEFINITIONS.filter(
+        (d) =>
+          claimedIdsByTrophy.get(d.id)?.size ||
+          (d.ranked &&
+            (ranks.some((r) => r.trophyId === d.id) ||
+              rankPeaks.some((p) => p.trophyId === d.id)))
+      )
 
   const byCategory = new Map<TrophyCategory, TrophyDefinition[]>(
     CATEGORY_ORDER.map((c) => [c, []])
@@ -303,6 +309,9 @@ export function TrophiesTab(props: {
             </div>
             <TrophyGrid
               progressList={progressList}
+              ranks={ranks}
+              rankPeaks={rankPeaks}
+              ranksComputedTime={ranksComputedTime}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
               rewarded={trophies.rewarded}

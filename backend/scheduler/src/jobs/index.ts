@@ -59,6 +59,7 @@ import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notif
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
+import { updateTrophyRanks } from './update-trophy-ranks'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { checkStatsFreshness } from './check-stats-freshness'
@@ -390,6 +391,7 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 50 3 * * *', // daily at 3:50 AM LA
       refreshAchAccountAge
     ),
+    createJob('update-trophy-ranks', '0 10 4 * * *', updateTrophyRanks),
     createJob(
       'update-user-metric-periods',
       '0 0 2 * * *', // daily at 2:00 AM LA

@@ -1,4 +1,4 @@
-// Trophies: named milestones on a user's long-running stats (volume, trades,
+// Trophies: named milestones on a user's long-running stats (net worth, trades,
 // streaks, markets created...). Users claim a milestone once they reach it,
 // keep it forever, and can pin trophies to their profile.
 //
@@ -11,7 +11,7 @@
 // Starter accounts can collect a one-time reward for Newcomer and each
 // "Getting started" milestone. All accounts can claim Newcomer.
 
-import { minBy } from 'lodash'
+import { minBy, sortBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import {
   EffectiveTier,
@@ -111,20 +111,23 @@ export function isStarterTrophyAccount(
   )
 }
 
-// Numeric fields of the get-user-achievements response that trophies use,
-// plus the starter stats.
+export const MARKET_CREATED_MIN_TRADERS = 10
+export const REFERRAL_MIN_TRADES = 10
+export const NET_WORTH_RANK_ACTIVE_DAYS = 90
+
+// Live achievement fields and starter stats used by the trophy ladders.
 export const TROPHY_STAT_KEYS = [
   ...STARTER_STAT_KEYS,
-  'totalVolumeMana',
+  'peakNetWorth',
   'totalTradesCount',
   'longestBettingStreak',
-  'profitableMarketsCount',
-  'totalMarketsCreated',
+  'resolvedProfitableMarkets',
+  'marketsCreatedWithTraders',
   'creatorTraders',
-  'numberOfComments',
-  'totalReferrals',
+  'likedComments',
+  'referredTraders',
   'charityDonatedMana',
-  'seasonsMasters',
+  'leagueLevel',
   'accountAgeYears',
 ] as const
 export type TrophyStatKey = (typeof TROPHY_STAT_KEYS)[number]
@@ -140,7 +143,7 @@ export type TrophyDefinition = {
   unit: string
   formatPrefix?: string // e.g. "$", shown before the value instead of the unit
   milestones: TrophyMilestone[] // ascending thresholds
-}
+} & ({ ranked: true; rankNote: string } | { ranked?: false; rankNote?: string })
 
 // Compact milestone constructor so each milestone fits on one line.
 const m = (
@@ -200,23 +203,24 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     ],
   },
 
-  // --- Trading ---
   {
-    id: 'trading-volume',
-    label: 'Trading Volume',
-    description: 'Total mana traded across all your trades',
+    id: 'net-worth',
+    label: 'Net Worth',
+    description:
+      'Your highest net worth (balance plus the value of your open positions), checked nightly',
     category: 'trading',
-    statKey: 'totalVolumeMana',
+    statKey: 'peakNetWorth',
     unit: 'mana',
+    ranked: true,
+    rankNote:
+      'Ranked nightly by current net worth, among people who traded in the last 90 days',
     milestones: [
-      m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'green'),
-      m('minnow', 'Minnow', '\u{1F41F}', 100_000, 'green'),
-      m('swordfish', 'Swordfish', '\u{1F420}', 500_000, 'blue'),
-      m('shark', 'Shark', '\u{1F988}', 2_000_000, 'purple'),
-      m('orca', 'Orca', '\u{1F42C}', 5_000_000, 'crimson'),
-      m('whale', 'Whale', '\u{1F433}', 10_000_000, 'gold'),
-      m('leviathan', 'Leviathan', '\u{1F30A}', 50_000_000, 'prismatic'),
-      m('kraken', 'Kraken', '\u{1F991}', 100_000_000, 'prismatic'),
+      m('minnow', 'Minnow', '\u{1F41F}', 2_500, 'green'),
+      m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'blue'),
+      m('swordfish', 'Swordfish', '\u{1F420}', 25_000, 'purple'),
+      m('shark', 'Shark', '\u{1F988}', 100_000, 'crimson'),
+      m('orca', 'Orca', '\u{1F42C}', 250_000, 'gold'),
+      m('whale', 'Whale', '\u{1F433}', 500_000, 'prismatic'),
     ],
   },
   {
@@ -229,12 +233,11 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'trades',
     milestones: [
       m('rookie', 'Rookie', '\u{1F3AF}', 10, 'green'),
-      m('dabbler', 'Dabbler', '\u{1F3B2}', 50, 'green'),
-      m('regular', 'Regular', '\u{1F4CA}', 250, 'blue'),
-      m('hustler', 'Hustler', '\u{1F4B9}', 1_000, 'purple'),
-      m('machine', 'Machine', '\u{2699}', 5_000, 'crimson'),
-      m('terminator', 'Terminator', '\u{1F916}', 25_000, 'gold'),
-      m('singularity', 'Singularity', '\u{1F300}', 100_000, 'prismatic'),
+      m('regular', 'Regular', '\u{1F4CA}', 100, 'blue'),
+      m('hustler', 'Hustler', '\u{1F4B9}', 500, 'purple'),
+      m('grinder', 'Grinder', '\u{26CF}', 2_500, 'crimson'),
+      m('machine', 'Machine', '\u{2699}', 10_000, 'gold'),
+      m('terminator', 'Terminator', '\u{1F916}', 25_000, 'prismatic'),
     ],
   },
   {
@@ -244,62 +247,54 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     category: 'trading',
     statKey: 'longestBettingStreak',
     unit: 'days',
+    ranked: true,
+    rankNote: 'Ranked nightly by longest prediction streak',
     milestones: [
-      m('spark', 'Spark', '\u{2728}', 14, 'green'),
+      m('spark', 'Spark', '\u{2728}', 7, 'green'),
       m('ember', 'Ember', '\u{1F525}', 30, 'blue'),
-      m('blaze', 'Blaze', '\u{1F4A5}', 60, 'purple'),
-      m('inferno', 'Inferno', '\u{1F30B}', 100, 'crimson'),
-      m('phoenix', 'Phoenix', '\u{1F426}\u{200D}\u{1F525}', 200, 'gold'),
-      m('eternal-flame', 'Eternal Flame', '\u{2600}', 365, 'gold'),
-      m('undying', 'Undying', '\u{1F9BF}', 700, 'prismatic'),
-      m('timeless', 'Timeless', '\u{231B}', 1_065, 'prismatic'),
-      m('immortal', 'Immortal', '\u{23F3}', 1_500, 'prismatic'),
+      m('blaze', 'Blaze', '\u{1F4A5}', 100, 'purple'),
+      m('inferno', 'Inferno', '\u{1F30B}', 365, 'crimson'),
+      m('eternal-flame', 'Eternal Flame', '\u{2600}', 730, 'gold'),
+      m('phoenix', 'Phoenix', '\u{1F426}\u{200D}\u{1F525}', 1_000, 'prismatic'),
     ],
   },
   {
     id: 'profitable-markets',
     label: 'Profitable Markets',
-    description: 'Markets where you walked away with a profit',
+    description:
+      "Resolved markets where you made a profit. Cancelled markets don't count",
     category: 'trading',
-    statKey: 'profitableMarketsCount',
+    statKey: 'resolvedProfitableMarkets',
     unit: 'markets',
+    ranked: true,
+    rankNote:
+      'Ranked nightly by profitable resolved markets, excluding cancellations',
     milestones: [
       m('lucky', 'Lucky', '\u{1F340}', 10, 'green'),
-      m('savvy', 'Savvy', '\u{1F9E0}', 25, 'green'),
-      m('sharp', 'Sharp', '\u{1F52A}', 75, 'blue'),
-      m('tactician', 'Tactician', '\u{265F}', 150, 'blue'),
-      m('oracle', 'Oracle', '\u{1F52E}', 300, 'purple'),
+      m('savvy', 'Savvy', '\u{1F9E0}', 50, 'blue'),
+      m('sharp', 'Sharp', '\u{1F52A}', 250, 'purple'),
       m('sage', 'Sage', '\u{1F9D9}', 500, 'crimson'),
-      m('clairvoyant', 'Clairvoyant', '\u{1F441}', 800, 'gold'),
-      m('omniscient', 'Omniscient', '\u{1F31F}', 1_500, 'prismatic'),
+      m('clairvoyant', 'Clairvoyant', '\u{1F441}', 1_000, 'gold'),
+      m('oracle', 'Oracle', '\u{1F52E}', 2_000, 'prismatic'),
     ],
   },
-
-  // --- Creating ---
   {
     id: 'markets-created',
     label: 'Markets Created',
-    description:
-      "Public questions you've created for the community to trade on (unlisted and deleted ones don't count)",
+    description: 'Public markets you created that 10 or more people traded',
     category: 'creating',
-    statKey: 'totalMarketsCreated',
+    statKey: 'marketsCreatedWithTraders',
     unit: 'markets',
+    ranked: true,
+    rankNote:
+      'Ranked nightly by public mana markets created with at least 10 traders',
     milestones: [
-      m('apprentice', 'Apprentice', '\u{1F528}', 5, 'green'),
-      m('journeyman', 'Journeyman', '\u{1F6E0}', 15, 'green'),
-      m('builder', 'Builder', '\u{1F3D7}', 50, 'blue'),
-      m('architect', 'Architect', '\u{1F4D0}', 150, 'blue'),
-      m('city-planner', 'City Planner', '\u{1F306}', 400, 'purple'),
-      m('visionary', 'Visionary', '\u{1F52D}', 800, 'crimson'),
-      m('world-builder', 'World Builder', '\u{1F30D}', 1_500, 'gold'),
-      m('titan-of-questions', 'Titan of Questions', '\u{1F3D4}', 3_000, 'gold'),
-      m(
-        'infinite-curiosity',
-        'Infinite Curiosity',
-        '\u{267E}',
-        5_000,
-        'prismatic'
-      ),
+      m('apprentice', 'Apprentice', '\u{1F528}', 1, 'green'),
+      m('journeyman', 'Journeyman', '\u{1F6E0}', 3, 'blue'),
+      m('builder', 'Builder', '\u{1F3D7}', 10, 'purple'),
+      m('architect', 'Architect', '\u{1F4D0}', 25, 'crimson'),
+      m('city-planner', 'City Planner', '\u{1F306}', 100, 'gold'),
+      m('titan', 'Titan', '\u{1F3D4}', 250, 'prismatic'),
     ],
   },
   {
@@ -311,97 +306,71 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     category: 'creating',
     statKey: 'creatorTraders',
     unit: 'traders',
+    ranked: true,
+    rankNote:
+      'Ranked nightly by traders on your markets, counted once per market',
     milestones: [
-      m('invisible', 'Invisible', '\u{1F47B}', 10, 'green'),
-      m('unknown', 'Unknown', '\u{1F464}', 50, 'green'),
-      m('recognized', 'Recognized', '\u{1F44B}', 150, 'green'),
-      m('notable', 'Notable', '\u{1F465}', 500, 'blue'),
-      m('popular', 'Popular', '\u{1F4E2}', 1_500, 'purple'),
-      m('famous', 'Famous', '\u{2B50}', 3_000, 'crimson'),
-      m('legendary', 'Legendary', '\u{1F3C5}', 6_000, 'gold'),
-      m('icon', 'Icon', '\u{1F3AC}', 12_000, 'gold'),
-      m('celebrity', 'Celebrity', '\u{1F451}', 25_000, 'gold'),
-      m('superstar', 'Superstar', '\u{1F4AB}', 50_000, 'prismatic'),
-      m('phenomenon', 'Phenomenon', '\u{1F320}', 75_000, 'prismatic'),
-      m('transcendent', 'Transcendent', '\u{1F30C}', 100_000, 'prismatic'),
+      m('noticed', 'Noticed', '\u{1F440}', 10, 'green'),
+      m('recognized', 'Recognized', '\u{1F44B}', 150, 'blue'),
+      m('notable', 'Notable', '\u{1F465}', 500, 'purple'),
+      m('popular', 'Popular', '\u{1F4E2}', 1_500, 'crimson'),
+      m('famous', 'Famous', '\u{2B50}', 3_000, 'gold'),
+      m('icon', 'Icon', '\u{1F3AC}', 12_000, 'prismatic'),
     ],
   },
-
-  // --- Social ---
   {
-    id: 'comments',
-    label: 'Comments',
-    description: "Comments you've posted",
+    id: 'liked-comments',
+    label: 'Liked Comments',
+    description: 'Your comments that someone else liked',
     category: 'social',
-    statKey: 'numberOfComments',
+    statKey: 'likedComments',
     unit: 'comments',
+    ranked: true,
+    rankNote: 'Ranked nightly by distinct comments liked by other people',
     milestones: [
-      m('chatterbox', 'Chatterbox', '\u{1F4AC}', 50, 'green'),
-      m('conversationalist', 'Conversationalist', '\u{1F4AD}', 150, 'green'),
-      m('debater', 'Debater', '\u{1F5E3}', 400, 'blue'),
-      m('commentator', 'Commentator', '\u{1F4DD}', 1_000, 'purple'),
-      m('pundit', 'Pundit', '\u{1F4E3}', 2_500, 'crimson'),
-      m('influencer', 'Influencer', '\u{1F4F0}', 5_000, 'gold'),
-      m('thought-leader', 'Thought Leader', '\u{1F4A1}', 10_000, 'gold'),
-      m(
-        'voice-of-the-people',
-        'Voice of the People',
-        '\u{1F3A4}',
-        20_000,
-        'prismatic'
-      ),
+      m('well-said', 'Well Said', '\u{1F44D}', 1, 'green'),
+      m('conversationalist', 'Conversationalist', '\u{1F4AD}', 10, 'blue'),
+      m('debater', 'Debater', '\u{1F5E3}', 50, 'purple'),
+      m('commentator', 'Commentator', '\u{1F4DD}', 150, 'crimson'),
+      m('influencer', 'Influencer', '\u{1F4F0}', 400, 'gold'),
+      m('pundit', 'Pundit', '\u{1F4E3}', 1_000, 'prismatic'),
+    ],
+  },
+  {
+    id: 'leagues',
+    label: 'Leagues',
+    description:
+      'Your best league seasons: Gold, Platinum and Diamond, then seasons in Masters',
+    category: 'prestige',
+    statKey: 'leagueLevel',
+    unit: 'league',
+    ranked: true,
+    rankNote: 'Ranked nightly by best division and number of Masters seasons',
+    milestones: [
+      m('gold-season', 'Gold Season', '\u{1F947}', 1, 'green'),
+      m('platinum-season', 'Platinum Season', '\u{2B50}', 2, 'blue'),
+      m('diamond-season', 'Diamond Season', '\u{1F48E}', 3, 'purple'),
+      m('contender', 'Contender', '\u{1F94A}', 4, 'crimson'),
+      m('champion', 'Champion', '\u{1F3C6}', 6, 'gold'),
+      m('goat', 'GOAT', '\u{1F410}', 11, 'prismatic'),
     ],
   },
   {
     id: 'referrals',
     label: 'Referrals',
-    description: 'People who joined Manifold through your invite',
+    description: 'People you invited who went on to make 10 or more trades',
     category: 'social',
-    statKey: 'totalReferrals',
+    statKey: 'referredTraders',
     unit: 'referrals',
+    ranked: false,
+    rankNote: 'Ranked nightly by invited people who made at least 10 trades',
     milestones: [
-      m('networker', 'Networker', '\u{1F91D}', 5, 'green'),
-      m('connector', 'Connector', '\u{1F517}', 15, 'blue'),
-      m('recruiter', 'Recruiter', '\u{1F4E8}', 40, 'purple'),
-      m('ambassador', 'Ambassador', '\u{1F3C7}', 100, 'crimson'),
-      m('evangelist', 'Evangelist', '\u{1F4E1}', 250, 'gold'),
-      m('pied-piper', 'Pied Piper', '\u{1F3B5}', 500, 'gold'),
-      m('kingmaker', 'Kingmaker', '\u{1FA84}', 1_000, 'prismatic'),
-      m('movement-leader', 'Movement Leader', '\u{1F3C1}', 2_500, 'prismatic'),
-      m('founding-force', 'Founding Force', '\u{26A1}', 5_000, 'prismatic'),
-    ],
-  },
-  {
-    id: 'charity-donated',
-    label: 'Legacy Charity',
-    description:
-      'Dollars donated through the original Manifold for Charity program',
-    category: 'social',
-    statKey: 'charityDonatedMana',
-    unit: 'donated',
-    formatPrefix: '$',
-    milestones: [
-      m('donor', 'Donor', '\u{1F49A}', 10, 'green'),
-      m('patron', 'Patron', '\u{1F49C}', 50, 'blue'),
-      m('philanthropist', 'Philanthropist', '\u{2764}', 100, 'purple'),
-      m('benefactor', 'Benefactor', '\u{1F496}', 1_000, 'gold'),
-      m('saint', 'Saint', '\u{1F607}', 2_500, 'prismatic'),
-    ],
-  },
-
-  // --- Prestige ---
-  {
-    id: 'masters-seasons',
-    label: 'Masters Seasons',
-    description: 'League seasons where you reached the Masters division',
-    category: 'prestige',
-    statKey: 'seasonsMasters',
-    unit: 'seasons',
-    milestones: [
-      m('contender', 'Contender', '\u{1F94A}', 1, 'blue'),
-      m('champion', 'Champion', '\u{1F3C6}', 3, 'purple'),
-      m('dynasty', 'Dynasty', '\u{1F3F0}', 5, 'gold'),
-      m('goat', 'GOAT', '\u{1F410}', 8, 'prismatic'),
+      m('networker', 'Networker', '\u{1F91D}', 1, 'green'),
+      m('connector', 'Connector', '\u{1F517}', 3, 'blue'),
+      m('recruiter', 'Recruiter', '\u{1F4E8}', 5, 'purple'),
+      m('evangelist', 'Evangelist', '\u{1F4E1}', 10, 'crimson'),
+      m('pied-piper', 'Pied Piper', '\u{1F3B5}', 25, 'gold'),
+      m('ambassador', 'Ambassador', '\u{1F3C7}', 50, 'prismatic'),
     ],
   },
   {
@@ -415,19 +384,117 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green', 25),
       m('established', 'Established', '\u{1F333}', 1, 'blue'),
       m('veteran', 'Veteran', '\u{1F396}', 2, 'purple'),
-      m('elder', 'Elder', '\u{1F474}', 3, 'gold'),
+      m('elder', 'Elder', '\u{1F474}', 3, 'crimson'),
+      m('old-guard', 'Old Guard', '\u{1F6E1}', 4, 'gold'),
       m(
         'founding-member',
         'Founding Member',
         '\u{1F3DB}\u{FE0F}',
-        4,
+        5,
         'prismatic'
       ),
+    ],
+  },
+  {
+    id: 'charity-donated',
+    label: 'Legacy Charity',
+    description:
+      'Dollars donated through the original Manifold for Charity program',
+    category: 'social',
+    statKey: 'charityDonatedMana',
+    unit: 'donated',
+    formatPrefix: '$',
+    milestones: [
+      m('donor', 'Donor', '\u{1F49A}', 10, 'green'),
+      m('supporter', 'Supporter', '\u{1F499}', 50, 'blue'),
+      m('patron', 'Patron', '\u{1F49C}', 100, 'purple'),
+      m('philanthropist', 'Philanthropist', '\u{2764}', 250, 'crimson'),
+      m('humanitarian', 'Humanitarian', '\u{1F49B}', 500, 'gold'),
+      m('benefactor', 'Benefactor', '\u{1F496}', 1_000, 'prismatic'),
     ],
   },
 ]
 
 const DEFINITIONS_BY_ID = new Map(TROPHY_DEFINITIONS.map((d) => [d.id, d]))
+
+export const RANKED_TROPHY_DEFINITIONS = TROPHY_DEFINITIONS.filter(
+  (def) => def.ranked
+)
+
+export type TrophyRankTier = 'super' | 'mega' | 'crown'
+export const MAX_TROPHY_RANK = 25
+export const TROPHY_RANK_TIERS = [
+  { tier: 'crown', maxRank: 1, prefix: '#1' },
+  { tier: 'mega', maxRank: 5, prefix: 'Mega' },
+  { tier: 'super', maxRank: MAX_TROPHY_RANK, prefix: 'Super' },
+] as const
+
+export type TrophyRank = { trophyId: string; rank: number; value: number }
+export type TrophyRankPeak = { trophyId: string; bestRank: number }
+
+export function getTrophyRankTier(
+  rank: number | null | undefined
+): TrophyRankTier | null {
+  if (rank == null || !Number.isInteger(rank) || rank < 1) return null
+  return TROPHY_RANK_TIERS.find((tier) => rank <= tier.maxRank)?.tier ?? null
+}
+
+export const getTopMilestone = (def: TrophyDefinition) =>
+  def.milestones[def.milestones.length - 1]
+
+export function getTrophyRankTitle(
+  def: TrophyDefinition,
+  tier: TrophyRankTier
+) {
+  const { prefix } = TROPHY_RANK_TIERS.find((t) => t.tier === tier)!
+  return `${prefix} ${getTopMilestone(def).name}`
+}
+
+export function getHeldTrophyTitles(ranks: TrophyRank[]) {
+  // Start in trophy order. A stable sort by rank groups the tiers and retains ties.
+  const titles = RANKED_TROPHY_DEFINITIONS.flatMap((definition) => {
+    const held = ranks.find((r) => r.trophyId === definition.id)
+    const tier = getTrophyRankTier(held?.rank)
+    return held && tier
+      ? [
+          {
+            definition,
+            tier,
+            rank: held.rank,
+            title: getTrophyRankTitle(definition, tier),
+          },
+        ]
+      : []
+  })
+  return sortBy(titles, 'rank')
+}
+
+export const getPeakRankTier = (peaks: TrophyRankPeak[], trophyId: string) =>
+  getTrophyRankTier(peaks.find((p) => p.trophyId === trophyId)?.bestRank)
+
+// Keep this mapping identical to the leagues query in update-trophy-ranks.ts.
+export function getLeagueLevel(counts: {
+  seasonsGoldOrHigher: number
+  seasonsPlatinumOrHigher: number
+  seasonsDiamondOrHigher: number
+  seasonsMasters: number
+}) {
+  const hasSeason = (n: number) => Number.isFinite(n) && n >= 1
+  if (hasSeason(counts.seasonsMasters))
+    return 3 + Math.floor(counts.seasonsMasters)
+  if (hasSeason(counts.seasonsDiamondOrHigher)) return 3
+  if (hasSeason(counts.seasonsPlatinumOrHigher)) return 2
+  return hasSeason(counts.seasonsGoldOrHigher) ? 1 : 0
+}
+
+const leagueNames = ['No Gold season yet', 'Gold', 'Platinum', 'Diamond']
+const mastersUnit = (n: number) => `Masters season${n === 1 ? '' : 's'}`
+
+export function formatLeagueRemaining(current: number, target: number) {
+  if (target <= 3) return `a ${leagueNames[target]} season`
+  const remaining = Math.max(0, target - Math.max(3, current))
+  return `${remaining} more ${mastersUnit(remaining)}`
+}
 
 export const isStarterTrophy = (def: TrophyDefinition) =>
   def.category === 'starter'
@@ -769,7 +836,7 @@ export function countEarnedMilestones(
 // ---------------------------------------------------------------------------
 
 // Claimed milestones needed to unlock each showcase pin slot.
-export const SHOWCASE_SLOT_UNLOCKS = [0, 25, 50] as const
+export const SHOWCASE_SLOT_UNLOCKS = [0, 10, 25] as const
 export const MAX_SHOWCASE_PINS = SHOWCASE_SLOT_UNLOCKS.length
 
 export function getMaxShowcasePins(claimedCount: number): number {
@@ -831,6 +898,10 @@ export function formatTrophyValue(
   rounding: 'down' | 'up' = 'down'
 ): string {
   const round = rounding === 'up' ? Math.ceil : Math.floor
+  if (def.unit === 'league') {
+    const level = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
+    return leagueNames[level] ?? `${level - 3} ${mastersUnit(level - 3)}`
+  }
   if (def.unit === 'years') return `${(round(value * 10) / 10).toFixed(1)}yr`
   // Whole numbers: volume and dollar stats come with decimals.
   const whole = round(value).toLocaleString('en-US')

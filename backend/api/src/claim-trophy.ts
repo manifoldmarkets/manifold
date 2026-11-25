@@ -10,6 +10,7 @@ import {
 import { resolveEffectiveTier, roundTierBonus } from 'common/supporter-config'
 import {
   TrophyDefinition,
+  formatTrophyValue,
   getMilestone,
   getMilestonesToClaim,
   getRewardManaTotal,
@@ -56,11 +57,13 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
       const value = await getStatValue(def, auth.uid)
       const toClaim = getMilestonesToClaim(def, milestoneId, value)
       if (!toClaim) {
+        const needed =
+          def.unit === 'league'
+            ? formatTrophyValue(def, milestone.threshold)
+            : `${milestone.threshold.toLocaleString()} ${def.unit}`
         throw new APIError(
           403,
-          `You haven't reached ${
-            milestone.name
-          } yet: it needs ${milestone.threshold.toLocaleString()} ${def.unit}`
+          `You haven't reached ${milestone.name} yet: it needs ${needed}`
         )
       }
 
