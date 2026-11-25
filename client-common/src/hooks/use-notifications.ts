@@ -6,13 +6,26 @@ import {
   NotificationReason,
 } from 'common/notification'
 import { User } from 'common/user'
-import { Dictionary, first, groupBy, sortBy } from 'lodash'
+import { Dictionary, first, groupBy, maxBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { APIParams, APIResponse } from 'common/api/schema'
 
 export const NOTIFICATIONS_PER_PAGE = 30
+// How many notifications the local cache keeps, besides pinned ones. Without
+// a cap it grows with every notification ever received, until it no longer
+// fits in localStorage.
+const MAX_CACHED_NOTIFICATIONS = 15 * NOTIFICATIONS_PER_PAGE
+
+// Newest first, keeping every pinned notification (the server sends all of
+// them on every fetch) and the newest `max` of the rest.
+function trimCachedNotifications(notifications: Notification[], max: number) {
+  let regular = 0
+  return sortBy(notifications, (n) => -n.createdTime).filter(
+    (n) => n.markedAsRead === false || ++regular <= max
+  )
+}
 
 export function useNotifications(
   userId: string,
@@ -23,15 +36,20 @@ export function useNotifications(
     initialValue: T,
     key: string
   ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean],
-  count = 15 * NOTIFICATIONS_PER_PAGE,
+  count = MAX_CACHED_NOTIFICATIONS,
   newOnly?: boolean
 ) {
+  // Never trim below what a fetch returns.
+  const maxCached = Math.max(count, MAX_CACHED_NOTIFICATIONS)
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
-  const [latestCreatedTime, setLatestCreatedTime] = usePersistentLocalState<
-    number | undefined
-  >(undefined, 'latest-notification-time-' + userId)
+  // Taken from the cached list, not saved on its own, so it can't get ahead
+  // of notifications that failed to save.
+  const latestCreatedTime = maxBy(
+    notifications,
+    (n) => n.createdTime
+  )?.createdTime
 
   const markAllAsSeen = () => {
     if (!notifications) return
@@ -80,13 +98,7 @@ export function useNotifications(
             }
           }
 
-          const updatedNotifications = Array.from(byId.values())
-          const newLatestCreatedTime = Math.max(
-            ...updatedNotifications.map((n) => n.createdTime),
-            latestCreatedTime ?? 0
-          )
-          setLatestCreatedTime(newLatestCreatedTime)
-          return updatedNotifications
+          return trimCachedNotifications(Array.from(byId.values()), maxCached)
         })
       })
     }
@@ -96,13 +108,16 @@ export function useNotifications(
     topics: [`user-notifications/${userId}`],
     onBroadcast: ({ data }) => {
       console.log('new notification', data)
-      setNotifications((notifs) => {
-        const newNotification = data.notification as Notification
-        setLatestCreatedTime((prevTime) =>
-          Math.max(prevTime ?? 0, newNotification.createdTime)
-        )
-        return [newNotification, ...(notifs ?? [])]
-      })
+      const newNotification = data.notification as Notification
+      setNotifications((notifs) =>
+        // The fetch may have returned it already.
+        notifs?.some((n) => n.id === newNotification.id)
+          ? notifs
+          : trimCachedNotifications(
+              [newNotification, ...(notifs ?? [])],
+              maxCached
+            )
+      )
     },
   })
   useApiSubscription({

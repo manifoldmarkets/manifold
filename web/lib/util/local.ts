@@ -6,9 +6,9 @@ export interface Store {
 
 function getStorageProxy(store: Storage): Store | undefined {
   try {
-    store.setItem('test', '')
+    // Check reads only. A test write fails whenever storage is full, which
+    // would leave the site unable to read it too, or to shrink what filled it.
     store.getItem('test')
-    store.removeItem('test')
   } catch (e) {
     console.warn(e)
     return undefined
@@ -19,9 +19,12 @@ function getStorageProxy(store: Storage): Store | undefined {
       try {
         store.setItem(key, value)
       } catch (e) {
-        store.clear()
-        // try again
-        store.setItem(key, value)
+        // Usually over quota. Saving is best-effort, so skip it. Don't throw:
+        // callers often save from inside a React state update, where a throw
+        // takes down the whole page. And don't make room by clearing storage:
+        // that wipes drafts, settings, and the native app and experiment flags
+        // kept here.
+        console.warn(`Could not save ${key} to storage`, e)
       }
     },
     removeItem: (key: string) => store.removeItem(key),
