@@ -17,7 +17,8 @@ import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_PERSON_FILTER,
-  TROPHY_VISIBLE_COMMENT_FILTER,
+  TROPHY_SNAPSHOT_NET_WORTH,
+  trophyLikedCommentsQuery,
 } from 'shared/supabase/trophy-eligibility'
 import {
   SupabaseDirectClient,
@@ -219,7 +220,7 @@ const STATS_QUERY = `with
   referrals as (
     select
       count(uphl.user_id) as total_referrals,
-      count(*) filter (where ${TROPHY_PERSON_FILTER}
+      count(*) filter (where person.id <> $[userId] and ${TROPHY_PERSON_FILTER}
         and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $[minReferralTrades]) as referred_traders,
       sum(uphl.balance + uphl.spice_balance + uphl.investment_value - uphl.total_deposits)
         as total_referred_profit_mana
@@ -231,18 +232,11 @@ const STATS_QUERY = `with
       and exists (select 1 from users referrer where referrer.id = $[userId])
   ),
   portfolio as (
-    select uphl.balance + uphl.investment_value as net_worth,
+    select ${TROPHY_SNAPSHOT_NET_WORTH} as net_worth,
       ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
     from user_portfolio_history_latest uphl where uphl.user_id = $[userId]
   ),
-  liked as (
-    select count(distinct r.content_id) as liked_comments
-    from user_reactions r
-    join users person on person.id = r.user_id
-    where r.content_owner_id = $[userId] and r.content_type = 'comment' and r.reaction_type = 'like'
-      and r.user_id <> $[userId] and ${TROPHY_PERSON_FILTER}
-      and ${TROPHY_VISIBLE_COMMENT_FILTER}
-  ),
+  liked as (${trophyLikedCommentsQuery('user')}),
   mod_tickets as (
     select count(*) as mod_tickets_resolved
     from txns
@@ -362,9 +356,9 @@ const STATS_QUERY = `with
   )
   select
     coalesce(portfolio.net_worth, 0) as net_worth,
-    greatest(coalesce(peaks.peak_net_worth, 0),
+    greatest(coalesce(floor(peaks.peak_net_worth), 0),
       case when portfolio.is_fresh then portfolio.net_worth end) as peak_net_worth,
-    liked.liked_comments,
+    coalesce(liked.value, 0) as liked_comments,
     created.markets_created_with_traders,
     referrals.referred_traders,
     metrics.resolved_profitable_markets,

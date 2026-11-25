@@ -1,8 +1,11 @@
 -- Trophy ladders v2: net worth peaks, nightly rank snapshots, rank peaks and
 -- the accounts kept out of ranks.
 -- Run after 2026112501_user_reactions_comment_likes_idx.sql, then deploy the
--- API and main scheduler, then web.
+-- API and main scheduler, then web. If a lock times out, rerun this migration.
 begin;
+
+set
+  local lock_timeout = '5s';
 
 create table if not exists
   trophy_rank_exclusions (
@@ -23,7 +26,8 @@ from
       ('IPTOzEqrpkWmEzh6hwvAyY9PqFb2'), -- Manifold
       ('NnVY8olowYMYQGr346dfmHXBSpx2'), -- ManifoldSports
       ('vuI5upWB8yU00rP7yxj95J2zd952'), -- ManifoldPolitics
-      ('0YOMCbJas0UqJdlrqKe1MrQewrF2') -- MNX
+      ('0YOMCbJas0UqJdlrqKe1MrQewrF2'), -- MNX
+      ('byEds8x9SMYgX0BuPMufdcpbSIH2') -- predyx_markets
   ) as excluded (id)
   join users u on u.id = excluded.id
 on conflict do nothing;

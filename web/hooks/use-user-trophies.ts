@@ -117,6 +117,7 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
         ranks: response.ranks ?? [],
         rankPeaks: response.rankPeaks ?? [],
         ranksComputedTime: response.ranksComputedTime ?? null,
+        storedPeakNetWorth: response.storedPeakNetWorth ?? null,
         starter: response.starter ?? null,
         rewarded: response.rewarded ?? [],
       }

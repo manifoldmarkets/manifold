@@ -3313,6 +3313,7 @@ export const API = (_apiTypeCheck = {
       ranks: TrophyRank[]
       rankPeaks: TrophyRankPeak[]
       ranksComputedTime: number | null
+      storedPeakNetWorth: number | null
       claims: TrophyClaim[]
       // null: never set, so the profile shows the best trophies by default.
       // []: the user removed every pin.

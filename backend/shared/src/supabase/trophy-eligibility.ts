@@ -1,5 +1,8 @@
 import { NET_WORTH_SNAPSHOT_MAX_AGE_HOURS } from 'common/trophies'
 
+// Floor the sum in Postgres before a numeric can round up in JavaScript.
+export const TROPHY_SNAPSHOT_NET_WORTH = `floor(uphl.balance + uphl.investment_value)`
+
 export const TROPHY_FRESH_PORTFOLIO_FILTER = `uphl.last_calculated between
   now() - make_interval(hours => ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS}) and now()`
 
@@ -14,7 +17,19 @@ export const TROPHY_PERSON_FILTER = `not person.is_bot
       and (b.end_time is null or b.end_time > now()) and b.ban_type <> 'modAlert'
   )`
 
-export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
+// Check visibility once per (author, comment), even for heavily liked comments.
+export const trophyLikedCommentsQuery = (scope: 'user' | 'all') => `
+  with liked_ids as materialized (
+    select distinct r.content_owner_id, r.content_id
+    from user_reactions r
+    join users person on person.id = r.user_id
+    where r.content_type = 'comment' and r.reaction_type = 'like'
+      ${scope === 'user' ? 'and r.content_owner_id = $[userId]' : ''}
+      and r.user_id <> r.content_owner_id and ${TROPHY_PERSON_FILTER}
+  )
+  select r.content_owner_id as user_id, count(*) as value
+  from liked_ids r
+  where exists (
     select 1 from contract_comments cc
     join contracts c on c.id = cc.contract_id
     where cc.comment_id = r.content_id and cc.user_id = r.content_owner_id
@@ -27,7 +42,8 @@ export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
     where pc.user_id = r.content_owner_id and pc.comment_id = r.content_id
       and not coalesce((pc.data->>'deleted')::boolean, false)
       and not coalesce((pc.data->>'hidden')::boolean, false)
-  ))`
+  )
+  group by r.content_owner_id`
 
 export const TROPHY_NET_WORTH_PEAK_CONFLICT = `on conflict (user_id) do update set
   peak_net_worth = excluded.peak_net_worth, peak_time = excluded.peak_time

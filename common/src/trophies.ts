@@ -433,6 +433,36 @@ export const TROPHY_RANK_TIERS = [
 export type TrophyRank = { trophyId: string; rank: number; value: number }
 export type TrophyRankPeak = { trophyId: string; bestRank: number }
 
+// The achievements response can predate a claim or a nightly publication.
+export function getTrophyDisplayStats(
+  achievements: TrophyStats | undefined,
+  trophies:
+    | {
+        ranks: TrophyRank[]
+        starter: StarterStats | null
+        storedPeakNetWorth: number | null
+      }
+    | undefined
+): TrophyStats {
+  const held = trophies?.ranks.find((rank) => rank.trophyId === 'net-worth')
+  return {
+    ...achievements,
+    ...trophies?.starter,
+    peakNetWorth: getNetWorthPeak(
+      achievements?.peakNetWorth,
+      trophies?.storedPeakNetWorth,
+      held?.value
+    ),
+  }
+}
+
+function getNetWorthPeak(...peaks: (number | null | undefined)[]) {
+  const values = peaks.filter(
+    (value): value is number => value != null && Number.isFinite(value)
+  )
+  return values.length ? Math.max(...values) : undefined
+}
+
 export function getTrophyRankTier(
   rank: number | null | undefined
 ): TrophyRankTier | null {
@@ -897,6 +927,18 @@ export function getShowcasePinsError(
 // ---------------------------------------------------------------------------
 // Display
 // ---------------------------------------------------------------------------
+
+export function formatNetWorthPeak(
+  def: TrophyDefinition,
+  achievementsPeak: number | undefined,
+  heldValue?: number
+) {
+  if (def.id !== 'net-worth') return undefined
+  const peak = getNetWorthPeak(achievementsPeak, heldValue)
+  return peak === undefined
+    ? undefined
+    : `Peak M${formatTrophyValue(def, peak)}`
+}
 
 // Rounded down by default, so a stat never shows a threshold it hasn't
 // reached (9,999.75 is 9.9K, not 10K); 'up' for an amount still to go, so a

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import {
   getClaimableMilestones,
   getTrophyDefinitionsFor,
+  getTrophyDisplayStats,
 } from 'common/trophies'
 import { useUser } from './use-user'
 import { useUserAchievements } from './use-user-achievements'
@@ -26,7 +27,7 @@ export function useClaimableTrophies(freshMs?: number) {
     () =>
       trophies && (achievements || trophies.starter)
         ? getClaimableMilestones(
-            { ...achievements, ...trophies.starter },
+            getTrophyDisplayStats(achievements, trophies),
             trophies.claims,
             getTrophyDefinitionsFor(!!trophies.starter)
           )

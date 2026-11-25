@@ -18,9 +18,11 @@ import {
   TrophyRankTier,
   getHeldTrophyTitles,
   countClaimedMilestones,
+  formatNetWorthPeak,
   formatTrophyValue,
   getHighestClaimedMilestone,
   getMaxShowcasePins,
+  getTrophyDisplayStats,
   getTrophyPinId,
   getTrophyStatValue,
 } from 'common/trophies'
@@ -87,7 +89,7 @@ export function ProfileShowcase(props: {
     : []
   const badges = sortBadges([
     ...getTrophyBadges(
-      achievements && { ...achievements, ...(trophies?.starter ?? {}) },
+      achievements && getTrophyDisplayStats(achievements, trophies),
       claims,
       held
     ),
@@ -296,8 +298,7 @@ const sortBadges = (badges: ShowcaseBadgeData[]) =>
         BADGE_TIER_ORDER.indexOf(a.tier) - BADGE_TIER_ORDER.indexOf(b.tier)
     )
 
-// One badge per trophy: its highest claimed milestone. Without stats (still
-// loading, or failed) a badge shows no value rather than a wrong one.
+// Each badge shows the trophy's highest claimed milestone.
 function getTrophyBadges(
   stats: TrophyStats | undefined,
   claims: TrophyClaim[],
@@ -325,8 +326,7 @@ export function getTrophyShowcaseBadge(
   held?: ReturnType<typeof getHeldTrophyTitles>[number]
 ): ShowcaseBadgeData {
   const value = stat === undefined ? undefined : formatTrophyValue(def, stat)
-  const peak =
-    def.id === 'net-worth' && value !== undefined ? `Peak M${value}` : undefined
+  const peak = formatNetWorthPeak(def, stat, held?.value)
   return {
     id: getTrophyPinId(def.id),
     label: held

@@ -13,7 +13,6 @@ import {
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
-  TrophyStats,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countEarnedMilestones,
@@ -24,6 +23,7 @@ import {
   getTrophyDefinition,
   getTotalPossibleMilestones,
   getTrophyDefinitionsFor,
+  getTrophyDisplayStats,
   getTrophyPinId,
 } from 'common/trophies'
 import {
@@ -44,6 +44,7 @@ import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   addTrophyClaims,
   addTrophyRewards,
+  refreshUserTrophies,
   replaceTrophyClaims,
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
@@ -102,6 +103,7 @@ export function TrophiesTab(props: {
       )
       addTrophyClaims(userId, claims)
       addTrophyRewards(userId, rewarded)
+      if (trophyId === 'net-worth') void refreshUserTrophies(userId)
       const first =
         trophies.claims.length === 0 &&
         newlyClaimed.length > 0 &&
@@ -216,7 +218,7 @@ export function TrophiesTab(props: {
   const { claims, starter, ranks, rankPeaks, ranksComputedTime } = trophies
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
-  const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
+  const stats = getTrophyDisplayStats(achievements, trophies)
   const progressList = computeAllTrophyProgress(stats, earnableDefs)
   // Reached or claimed: a claim stays even if the stat drops back.
   const reached = countEarnedMilestones(stats, claims, earnableDefs)
