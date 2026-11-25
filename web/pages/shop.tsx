@@ -2572,6 +2572,7 @@ function SupporterModal(props: {
 }) {
   const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
   const user = useUser()
+  const grants = useMembershipGrants(user)
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
@@ -2933,6 +2934,8 @@ function SupporterModal(props: {
             daysRemaining={daysRemaining}
             currentEntitlement={currentEntitlement}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
+            grantView={grants.view}
+            lockMessage={grants.lockMessage}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
               setConfirmingPurchase(null)

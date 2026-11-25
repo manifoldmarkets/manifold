@@ -63,7 +63,7 @@ async function advanceGrants(
     grants,
     now,
     mode,
-    membershipGrantStartsDisabled()
+    await membershipGrantStartsDisabled(tx)
   )
   let renewal: MembershipRenewal | null = null
   let notice: ExpiryNoticeDelivery = null
@@ -121,11 +121,37 @@ async function advanceGrants(
       )
   }
   return {
-    started: start?.grant.id ?? null,
+    started: start?.grant.id ?? renewal?.grant?.id ?? null,
     ended: ended?.id ?? null,
+    entitlements:
+      (start || ended) && !renewal?.grant
+        ? await getUserEntitlements(tx, userId)
+        : null,
     renewal,
     notice,
   }
+}
+
+// A read or checkout only needs to advance the ledger if free access just ended.
+export async function endDueMembershipGrant(
+  tx: SupabaseTransaction,
+  userId: string,
+  now: number
+) {
+  const due = await tx.oneOrNone(
+    `select 1 from membership_grants where user_id = $1 and status = 'active' and ends_time <= $2`,
+    [userId, new Date(now)]
+  )
+  return due ? advanceGrants(tx, userId, now) : null
+}
+
+export async function publishGrantTransition(
+  userId: string,
+  { entitlements, renewal, notice }: Awaited<ReturnType<typeof advanceGrants>>
+) {
+  if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
+  if (renewal) await publishMembershipRenewal(renewal)
+  if (notice) await publishExpiryNotice(notice)
 }
 
 export async function processUserMembershipGrants(
@@ -133,28 +159,14 @@ export async function processUserMembershipGrants(
   userId: string,
   mode: GrantTransitionMode = 'advance'
 ) {
-  const { change, entitlements, renewal, notice } = await transactWithRetries(
+  const change = await transactWithRetries(
     pg,
     5,
-    async (tx) => {
-      const { renewal, notice, ...change } = await advanceGrants(
-        tx,
-        userId,
-        Date.now(),
-        mode
-      )
-      const entitlements =
-        change.started || change.ended
-          ? await getUserEntitlements(tx, userId)
-          : null
-      return { change, entitlements, renewal, notice }
-    },
+    (tx) => advanceGrants(tx, userId, Date.now(), mode),
     grantRetryOptions
   )
-  if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
-  if (renewal) await publishMembershipRenewal(renewal)
-  if (notice) await publishExpiryNotice(notice)
-  return change
+  await publishGrantTransition(userId, change)
+  return { started: change.started, ended: change.ended }
 }
 
 export async function grantMembershipDays(
@@ -233,7 +245,10 @@ export async function grantMembershipDays(
         result: { grant, outcome, reason },
         renewal: change?.renewal,
         notice: change?.notice,
-        entitlements: inserted ? await getUserEntitlements(tx, userId) : null,
+        entitlements:
+          inserted && !change?.renewal?.grant
+            ? change?.entitlements ?? (await getUserEntitlements(tx, userId))
+            : null,
       }
     },
     grantRetryOptions

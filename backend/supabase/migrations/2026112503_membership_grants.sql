@@ -1,5 +1,14 @@
 begin;
 
+set
+  local lock_timeout = '5s';
+
+insert into
+  system_trading_status (token, status)
+values
+  ('MEMBERSHIP_GRANTS', true)
+on conflict (token) do nothing;
+
 create table if not exists
   membership_grants (
     id bigint generated always as identity primary key,
@@ -37,6 +46,58 @@ where
   status = 'active';
 
 create index if not exists membership_grants_status_ends on membership_grants (status, ends_time);
+
+-- Older renewing snapshots only kept signed milliseconds. If the grant was
+-- already chained, walk its consecutive handoffs back to the original pause.
+with recursive
+  pauses (active_id, user_id, started_time, paid) as (
+    select
+      id,
+      user_id,
+      started_time,
+      paused_paid - 'autoRenew'
+    from
+      membership_grants
+    where
+      status = 'active'
+      and (paused_paid ->> 'remainingMs')::bigint <= 0
+      and paused_paid ->> 'originalExpiresTime' is null
+      and paused_paid ->> 'lapsedExpiresTime' is null
+    union all
+    select
+      p.active_id,
+      p.user_id,
+      g.started_time,
+      p.paid
+    from
+      pauses p
+      join membership_grants g on g.user_id = p.user_id
+      and g.ended_time = p.started_time
+      and g.status = 'used'
+      and g.started_time < p.started_time
+      and g.paused_paid - 'autoRenew' = p.paid
+  )
+update membership_grants g
+set
+  paused_paid = jsonb_set(
+    g.paused_paid,
+    '{originalExpiresTime}',
+    to_jsonb(
+      first_pause.started_time + (g.paused_paid ->> 'remainingMs')::bigint * interval '1 millisecond'
+    )
+  )
+from
+  (
+    select
+      active_id,
+      min(started_time) as started_time
+    from
+      pauses
+    group by
+      active_id
+  ) first_pause
+where
+  g.id = first_pause.active_id;
 
 create table if not exists
   membership_notice_deliveries (

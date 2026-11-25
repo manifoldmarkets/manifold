@@ -13,8 +13,7 @@ async function writeSupporterRow(
   tx: SupabaseTransaction,
   userId: string,
   previous: GrantSupporterRow | null,
-  next: GrantSupporterRow | null,
-  exactExpiry?: string
+  next: GrantSupporterRow | null
 ) {
   if (!next) {
     if (previous)
@@ -28,7 +27,7 @@ async function writeSupporterRow(
     userId,
     next.entitlementId,
     new Date(next.grantedTime),
-    exactExpiry ?? new Date(next.expiresTime!),
+    next.expiresTimeText ?? new Date(next.expiresTime!),
     next.autoRenew,
     next.metadata ?? null,
     next.enabled,
@@ -72,8 +71,8 @@ export const mana: MembershipBillingRail = {
     await writeSupporterRow(tx, userId, previous, next)
     return paid
   },
-  async resume(tx, userId, { previous, next, paid }) {
-    await writeSupporterRow(tx, userId, previous, next, paid?.lapsedExpiresTime)
+  async resume(tx, userId, { previous, next }) {
+    await writeSupporterRow(tx, userId, previous, next)
   },
 }
 
@@ -104,7 +103,7 @@ export async function startMembershipGrant(
     grant.id,
     now
   )
-  return { tier: grant.tier, endsTime, notice }
+  return { id: grant.id, tier: grant.tier, endsTime, notice }
 }
 
 export async function getOrStartMembershipGrant(
@@ -117,17 +116,17 @@ export async function getOrStartMembershipGrant(
   const active = grants.find((grant) => grant.status === 'active')
   if (active)
     return {
-      started: false,
+      started: false as const,
       tier: active.tier,
       endsTime: active.endsTime!,
       notice: null,
     }
-  if (membershipGrantStartsDisabled()) return null
+  if (await membershipGrantStartsDisabled(tx)) return null
   const row = await getSupporterRow(tx, userId, true)
   const start = planGrantStart(row, grants, now)
   if (!start) return null
   return {
-    started: true,
+    started: true as const,
     ...(await startMembershipGrant(tx, userId, row, start, now)),
   }
 }

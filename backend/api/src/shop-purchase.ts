@@ -18,7 +18,9 @@ import {
   AchievementRequirement,
 } from 'common/shop/items'
 import {
+  endDueMembershipGrant,
   grantRetryOptions,
+  publishGrantTransition,
   readMembershipGrantView,
 } from 'shared/membership-grants'
 import { getOrStartMembershipGrant } from 'shared/membership-grant-start'
@@ -237,6 +239,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   }
 
   const purchase = async (tx: SupabaseTransaction) => {
+    const now = Date.now()
+    const transition = await endDueMembershipGrant(tx, auth.uid, now)
+    if (transition) return { transition }
+
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -286,7 +292,6 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const now = Date.now()
       const active = await getOrStartMembershipGrant(tx, auth.uid, now)
       if (active) {
         const { next } = await readMembershipGrantView(tx, auth.uid, now)
@@ -332,7 +337,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       upgradeCredit = membershipChangeCredit(
         existingSupporter,
         entitlementId,
-        Date.now()
+        now
       )
     }
 
@@ -481,14 +486,11 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
           if (isSameTierRenewal && existingSupporter?.expiresTime) {
             // Same tier renewal - stack time on existing expiration
-            const baseTime =
-              existingSupporter.expiresTime > Date.now()
-                ? existingSupporter.expiresTime
-                : Date.now()
+            const baseTime = Math.max(existingSupporter.expiresTime, now)
             expiresTime = new Date(baseTime + item.duration)
           } else {
             // Different tier (upgrade) or no existing - fresh 30 days
-            expiresTime = new Date(Date.now() + item.duration)
+            expiresTime = new Date(now + item.duration)
           }
         } else {
           // Check for existing entitlement to stack time
@@ -532,12 +534,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
     }
 
-    // Fetch all entitlements after the transaction to return updated state
+    // A tier change can unlock banked days. Pause the purchase at its start instant.
+    const grant = isSupporterTierPurchase
+      ? await getOrStartMembershipGrant(tx, auth.uid, now)
+      : null
     const entitlements = await getUserEntitlements(tx, auth.uid)
 
     // Find the one we just created/updated for backwards compatibility
     if (item.type !== 'instant') {
-      entitlement = entitlements.find((e) => e.entitlementId === entitlementId)
+      entitlement = entitlements.find((e) =>
+        grant?.started
+          ? e.metadata?.membershipGrantId === grant.id
+          : e.entitlementId === entitlementId
+      )
     }
 
     // Item-specific effects
@@ -556,6 +565,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
     return {
       balanceUpdates,
+      notice: grant?.notice ?? null,
       success: true as const,
       entitlement,
       entitlements,
@@ -563,11 +573,14 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
   }
   const result = await betsQueue.enqueueFn(async () => {
-    const attempt = await runTransactionWithRetries(
-      purchase,
-      3,
-      isSupporterTierPurchase ? grantRetryOptions : undefined
-    )
+    const checkout = () =>
+      runTransactionWithRetries(purchase, 3, grantRetryOptions)
+    let attempt = await checkout()
+    // Commit restoration (including any renewal) even if the purchase is declined.
+    while (attempt.transition) {
+      await publishGrantTransition(auth.uid, attempt.transition)
+      attempt = await checkout()
+    }
     if (!attempt.success) return attempt
     const { balanceUpdates, ...result } = attempt
     if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
@@ -577,9 +590,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   // Entitlements live outside the users row, so nothing else tells the
   // user's open pages (e.g. Yap's member check) that they changed.
   broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
+  await publishExpiryNotice(result.notice)
   if (!result.success) {
-    await publishExpiryNotice(result.notice)
     throw new APIError(403, result.message)
   }
-  return result
+  const { notice: _notice, ...response } = result
+  return response
 }

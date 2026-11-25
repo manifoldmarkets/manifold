@@ -8,6 +8,7 @@ import {
   planGrantEnd,
   planGrantStart,
   planGrantTransition,
+  purchaseGrantMessage,
 } from './membership-grants'
 import { SUPPORTER_TIERS, SupporterTier, TIER_ORDER } from './supporter-config'
 import { DAY_MS, HOUR_MS } from './util/time'
@@ -96,14 +97,20 @@ describe('membership grant transitions', () => {
           ).toBeNull()
           expect(planGrantEnd(active, active.endsTime! - 1)).toBeNull()
           const end = active.endsTime! + random()
+          const cancelledWhilePaused = i % 5 === 0
+          if (cancelledWhilePaused) active.pausedPaid!.autoRenew = false
+          const autoRenew = paid.autoRenew && !cancelledWhilePaused
           const restored = planGrantEnd(active, end)!.newRow
           expect(start.pausedPaid?.remainingMs).toBe(remaining)
           expect(restored).toEqual({
             ...paid,
+            autoRenew,
+            ...(remaining <= 0 &&
+              !autoRenew && {
+                expiresTimeText: new Date(now + remaining).toISOString(),
+              }),
             expiresTime:
-              remaining > 0 || paid.autoRenew
-                ? end + remaining
-                : paid.expiresTime,
+              remaining > 0 || autoRenew ? end + remaining : paid.expiresTime,
           })
           for (const target of TIER_ORDER) {
             const id = SUPPORTER_TIERS[target].id
@@ -208,7 +215,10 @@ describe('membership grant transitions', () => {
       expect(
         getMembershipGrantView(start.newRow, [active], now).next
       ).toBeNull()
-      expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual(lapsed)
+      expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
+        ...lapsed,
+        expiresTimeText: new Date(now + remaining).toISOString(),
+      })
     }
   )
 
@@ -287,6 +297,32 @@ describe('membership grant transitions', () => {
       getMembershipGrantView(permanent, [grant({ tier: 'premium' })], now)
         .banked[0].reason
     ).toBe('Starts when your current membership ends.')
+  })
+
+  it('previews only free days unlocked by the purchase, highest tier first', () => {
+    const premium = row('premium', DAY_MS)
+    const banked = [
+      grant({ tier: 'basic' }),
+      grant({ id: '2', durationMs: 1.5 * DAY_MS }),
+      grant({ id: '3', durationMs: DAY_MS }),
+    ]
+    const view = getMembershipGrantView(premium, banked, now)
+    expect(purchaseGrantMessage(view, 'basic')).toBe(
+      "You have 2.5 free Pro days waiting; they'll start first and this purchase will wait behind them."
+    )
+    expect(purchaseGrantMessage(view, 'plus')).toBe(
+      purchaseGrantMessage(view, 'basic')
+    )
+    expect(purchaseGrantMessage(view, 'premium')).toBeUndefined()
+    expect(
+      purchaseGrantMessage(getMembershipGrantView(null, banked, now), 'basic')
+    ).toBeUndefined()
+    expect(
+      purchaseGrantMessage(
+        getMembershipGrantView(premium, banked, now, true),
+        'basic'
+      )
+    ).toBeUndefined()
   })
 
   it('rejects a ledger/row ownership mismatch before writing', () => {

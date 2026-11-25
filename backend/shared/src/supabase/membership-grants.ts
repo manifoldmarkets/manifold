@@ -69,10 +69,12 @@ export async function readMembershipGrantView(
   userId: string,
   now: number
 ) {
+  const grants = await heldGrants(tx, userId)
   return getMembershipGrantView(
     await getSupporterRow(tx, userId),
-    await heldGrants(tx, userId),
+    grants,
     now,
-    membershipGrantStartsDisabled()
+    grants.some((g) => g.status === 'banked') &&
+      (await membershipGrantStartsDisabled(tx))
   )
 }

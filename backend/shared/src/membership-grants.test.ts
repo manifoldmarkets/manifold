@@ -12,6 +12,7 @@ import { processMembershipGrants } from 'scheduler/jobs/process-membership-grant
 import { checkSubscriptionExpiry } from 'scheduler/jobs/check-subscription-expiry'
 import { createPushNotifications } from './create-push-notifications'
 import { getNotifications } from 'api/get-notifications'
+import { endActiveMembershipGrants } from '../../scripts/end-active-membership-grants'
 import { getShopStats } from 'api/get-shop-stats'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import {
@@ -39,6 +40,7 @@ import {
 import { broadcastUpdatedUser } from './websockets/helpers'
 import { broadcast } from './websockets/server'
 
+jest.mock('../../scripts/run-script', () => ({ runScript: jest.fn() }))
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
   pgp: jest.requireActual('pg-promise')(),
@@ -137,32 +139,47 @@ const purchase = shopPurchase as Handler
 const cancel = shopCancelSubscription as Handler
 const supporter = () =>
   getSupporterRow(tx as unknown as SupabaseTransaction, userId)
-const originalStartsDisabled = process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
+const setStartsEnabled = (enabled: boolean) =>
+  rows(
+    `insert into system_trading_status (token, status) values ('MEMBERSHIP_GRANTS', $1)
+     on conflict (token) do update set status = excluded.status`,
+    [enabled]
+  )
+
+const migration = readFileSync(
+  join(__dirname, '../../supabase/migrations/2026112503_membership_grants.sql'),
+  'utf8'
+)
 
 beforeAll(async () => {
   db = new PGlite({
     parsers: { 1184: (v: string) => v, 20: Number },
   })
   await db.exec(`create table users(id text primary key, balance integer default 100000, cash_balance integer default 0, total_deposits integer default 100000, total_cash_deposits integer default 0);
+ create table system_trading_status(token text primary key, status boolean not null);
  create table txns(id bigint generated always as identity primary key, created_time timestamptz default now(), amount integer, from_id text, from_type text, to_id text, to_type text, token text, category text, data jsonb);
  create table shop_orders(user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now());
  create table user_notifications(user_id text, notification_id text, data jsonb, primary key(user_id,notification_id));
  create table user_entitlements(user_id text, entitlement_id text, granted_time timestamptz not null default now(), expires_time timestamptz, enabled boolean default true, auto_renew boolean default false, metadata jsonb, primary key(user_id,entitlement_id));
  insert into users values ('member');`)
-  const migration = readFileSync(
-    join(
-      __dirname,
-      '../../supabase/migrations/2026112503_membership_grants.sql'
-    ),
-    'utf8'
-  )
   await db.exec(migration)
+  expect(
+    await rows(
+      "select status from system_trading_status where token = 'MEMBERSHIP_GRANTS'"
+    )
+  ).toEqual([{ status: true }])
+  await setStartsEnabled(false)
   await db.exec(
     `create role anon; create role authenticated;
      grant all on membership_grants, membership_notice_deliveries to anon, authenticated;
      grant all on sequence membership_grants_id_seq to anon, authenticated`
   )
   await db.exec(migration)
+  expect(
+    await rows(
+      "select status from system_trading_status where token = 'MEMBERSHIP_GRANTS'"
+    )
+  ).toEqual([{ status: false }])
   expect(
     await rows(`select grantee from information_schema.role_table_grants where
     table_name in ('membership_grants','membership_notice_deliveries') and grantee in ('anon','authenticated')`)
@@ -179,16 +196,13 @@ beforeAll(async () => {
   jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
 }, 30000)
 beforeEach(async () => {
-  delete process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
+  await setStartsEnabled(true)
   jest.clearAllMocks()
   await db.exec(
     'truncate membership_grants, membership_notice_deliveries, user_entitlements, txns, shop_orders, user_notifications; update users set balance = 100000, total_deposits = 100000'
   )
 })
 afterEach(() => {
-  if (originalStartsDisabled === undefined)
-    delete process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
-  else process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = originalStartsDisabled
   jest.useRealTimers()
   jest.restoreAllMocks()
 })
@@ -259,6 +273,29 @@ it('locks checkout, cancels only the waiting renewal, chains grants and preserve
   expect(await rows('select id from membership_grants')).toHaveLength(2)
 })
 
+it('restores the exact overdue expiry after the paused renewal is cancelled across chained grants', async () => {
+  const now = Date.UTC(2026, 10, 25)
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-basic','2026-11-24 23:59:59.654321+00',true)`,
+    [userId]
+  )
+  const original = await rows('select expires_time from user_entitlements')
+  const first = await grantMembershipDays(pg, input)
+  await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+  clock.mockReturnValue(first.grant.endsTime!)
+  await processUserMembershipGrants(pg, userId)
+  await cancel({}, { uid: userId })
+  clock.mockReturnValue(Date.now() + input.durationMs + HOUR_MS)
+  await processUserMembershipGrants(pg, userId)
+  expect(await rows('select expires_time from user_entitlements')).toEqual(
+    original
+  )
+  expect((await supporter())?.autoRenew).toBe(false)
+  expect(await rows('select * from txns')).toEqual([])
+})
+
 it('restores a former member’s lapsed row exactly after chained grants', async () => {
   const now = Date.UTC(2026, 10, 25)
   const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
@@ -282,6 +319,31 @@ it('restores a former member’s lapsed row exactly after chained grants', async
   expect(wasEverSupporter(restored ? [restored] : [])).toBe(true)
   expect(getSupporterEntitlement(restored ? [restored] : [])).toBeNull()
   expect(await rows('select * from txns')).toEqual([])
+})
+
+it('recovers the first pause for an already chained overdue legacy snapshot', async () => {
+  const now = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-basic',$2,true)`,
+    [userId, new Date(now - HOUR_MS)]
+  )
+  const original = await rows('select expires_time from user_entitlements')
+  const { grant } = await grantMembershipDays(pg, input)
+  await grantMembershipDays(pg, { ...input, sourceId: 'chain' })
+  clock.mockReturnValue(grant.endsTime!)
+  await processUserMembershipGrants(pg, userId)
+  await rows(
+    "update membership_grants set paused_paid = paused_paid - 'originalExpiresTime'"
+  )
+  await cancel({}, { uid: userId })
+  await db.exec(migration)
+  clock.mockReturnValue(Date.now() + input.durationMs)
+  await processUserMembershipGrants(pg, userId)
+  expect(await rows('select expires_time from user_entitlements')).toEqual(
+    original
+  )
 })
 
 it('removes a free-only row without offering a paid cancellation', async () => {
@@ -381,6 +443,109 @@ it.each(['renewal first', 'grant first'])(
       autoRenew: true,
       expiresTime: Date.now() + 30 * DAY_MS,
     })
+  }
+)
+
+it.each([true, false])(
+  'sets aside the entire new Plus purchase for banked Pro when enabled (%p)',
+  async (enabled) => {
+    const now = Date.now()
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+       values ($1,'supporter-premium',$2,true)`,
+      [userId, new Date(now + HOUR_MS)]
+    )
+    const { grant, outcome } = await grantMembershipDays(pg, input)
+    expect(outcome).toBe('banked')
+    await setStartsEnabled(enabled)
+    let instant = now
+    clock.mockImplementation(() => instant++)
+    const result = await purchase(
+      { itemId: 'supporter-basic' },
+      { uid: userId }
+    )
+    const entitlement = enabled
+      ? {
+          entitlementId: 'supporter-plus',
+          metadata: { membershipGrantId: grant.id },
+        }
+      : { entitlementId: 'supporter-basic', autoRenew: true }
+    expect(result).toMatchObject({
+      success: true,
+      entitlement,
+      entitlements: [entitlement],
+    })
+    expect(await supporter()).toMatchObject(entitlement)
+    expect(
+      await rows('select status, paused_paid from membership_grants')
+    ).toEqual([
+      enabled
+        ? {
+            status: 'active',
+            paused_paid: expect.objectContaining({
+              tier: 'basic',
+              remainingMs: 30 * DAY_MS,
+              autoRenew: true,
+            }),
+          }
+        : { status: 'banked', paused_paid: null },
+    ])
+    expect(await rows('select category from txns')).toEqual([
+      { category: 'MEMBERSHIP_PAYMENT' },
+    ])
+    expect(createPushNotifications).toHaveBeenCalledTimes(enabled ? 1 : 0)
+  }
+)
+
+it.each([true, false])(
+  'keeps the cancellation notice and starts newly eligible Pro after an unfunded renewal when enabled (%p)',
+  async (enabled) => {
+    const now = Date.now()
+    jest.spyOn(Date, 'now').mockReturnValue(now)
+    await rows('update users set balance = 0 where id = $1', [userId])
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+       values ($1,'supporter-premium',$2,true)`,
+      [userId, new Date(now - HOUR_MS)]
+    )
+    const { grant, outcome } = await grantMembershipDays(pg, input)
+    expect(outcome).toBe('banked')
+    await setStartsEnabled(enabled)
+    await processMembershipRenewals()
+    expect(await supporter()).toMatchObject(
+      enabled
+        ? {
+            entitlementId: 'supporter-plus',
+            metadata: { membershipGrantId: grant.id },
+          }
+        : { entitlementId: 'supporter-premium', autoRenew: false }
+    )
+    expect(
+      await rows('select status, paused_paid from membership_grants')
+    ).toEqual([
+      enabled
+        ? {
+            status: 'active',
+            paused_paid: expect.objectContaining({
+              tier: 'premium',
+              remainingMs: -HOUR_MS,
+              autoRenew: false,
+            }),
+          }
+        : { status: 'banked', paused_paid: null },
+    ])
+    await processMembershipRenewals()
+    expect(
+      await rows(
+        "select data->'data'->>'type' as type from user_notifications order by type"
+      )
+    ).toEqual([
+      { type: 'cancelled' },
+      ...(enabled ? [{ type: 'expiring_soon' }] : []),
+    ])
+    expect(createPushNotifications).toHaveBeenCalledTimes(enabled ? 2 : 1)
+    expect(await rows('select * from txns')).toEqual([])
   }
 )
 
@@ -542,6 +707,30 @@ it('broadcasts the membership debit only for the committed checkout attempt', as
   expect(debits[0][0].balance).toBe(100000 - SUPPORTER_TIERS.basic.price)
 })
 
+it('allows starts by default and requires an explicit false switch for rollback apply', async () => {
+  jest.spyOn(console, 'log').mockImplementation(() => {})
+  await rows(
+    "delete from system_trading_status where token = 'MEMBERSHIP_GRANTS'"
+  )
+  const { grant, outcome } = await grantMembershipDays(pg, input)
+  expect(outcome).toBe('started')
+  await endActiveMembershipGrants(pg, false)
+  await expect(endActiveMembershipGrants(pg, true)).rejects.toThrow(
+    '--apply requires'
+  )
+  await setStartsEnabled(true)
+  await expect(endActiveMembershipGrants(pg, true)).rejects.toThrow(
+    '--apply requires'
+  )
+  expect((await supporter())?.metadata).toEqual({ membershipGrantId: grant.id })
+  await setStartsEnabled(false)
+  await endActiveMembershipGrants(pg, true)
+  expect(await supporter()).toBeNull()
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'banked' },
+  ])
+})
+
 it('ends early for rollback, restores paid time, and leaves banked grants untouched on retries', async () => {
   const now = Date.now()
   const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
@@ -552,7 +741,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   )
   const active = await grantMembershipDays(pg, input)
   await grantMembershipDays(pg, { ...input, sourceId: 'next' })
-  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  await setStartsEnabled(false)
   clock.mockReturnValue(now + DAY_MS)
   expect(await processUserMembershipGrants(pg, userId, 'end-active')).toEqual({
     ended: active.grant.id,
@@ -590,8 +779,8 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   ])
 })
 
-it('keeps an eligible award banked through issuance, the ten-minute job and checkout while starts are disabled', async () => {
-  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+it('keeps an eligible award banked through issuance, the grant job and checkout while starts are disabled', async () => {
+  await setStartsEnabled(false)
   expect(await grantMembershipDays(pg, input)).toMatchObject({
     outcome: 'banked',
   })
@@ -614,7 +803,7 @@ it('keeps an eligible award banked through issuance, the ten-minute job and chec
 it('renews paid time with an eligible banked grant while starts are disabled', async () => {
   const now = Date.now()
   await bankPlusBehindPremium(now, true)
-  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  await setStartsEnabled(false)
   await processMembershipRenewals()
   expect(await rows('select amount from txns')).toEqual([
     { amount: SUPPORTER_TIERS.premium.price },
@@ -637,7 +826,7 @@ it('locks active free time and restores paid time without chaining when starts a
     [userId, new Date(start + DAY_MS)]
   )
   await grantMembershipDays(pg, input)
-  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  await setStartsEnabled(false)
   await grantMembershipDays(pg, { ...input, sourceId: 'next' })
   await expect(
     purchase({ itemId: 'supporter-premium' }, { uid: userId })
@@ -655,6 +844,116 @@ it('locks active free time and restores paid time without chaining when starts a
   expect(
     await rows('select status from membership_grants order by id')
   ).toEqual([{ status: 'used' }, { status: 'banked' }])
+})
+
+it.each([
+  { path: 'owner view', enabled: true },
+  { path: 'owner view', enabled: false },
+  { path: 'checkout', enabled: true },
+  { path: 'checkout', enabled: false },
+])(
+  'ends due free access in $path with starts enabled = $enabled',
+  async ({ path, enabled }) => {
+    const now = Date.now()
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-basic',$2,true)`,
+      [userId, new Date(now + 5 * DAY_MS)]
+    )
+    const first = await grantMembershipDays(pg, { ...input, tier: 'premium' })
+    const second = await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+    const end = first.grant.endsTime!
+    clock.mockReturnValue(end)
+    await setStartsEnabled(enabled)
+    if (path === 'owner view') {
+      expect(
+        await (getMembershipGrants as Handler)({}, { uid: userId })
+      ).toMatchObject({
+        active: enabled ? { id: second.grant.id, tier: 'plus' } : null,
+      })
+    } else {
+      // Both refusals must leave the transition committed.
+      await expect(
+        purchase({ itemId: 'supporter-basic' }, { uid: userId })
+      ).rejects.toMatchObject({
+        code: enabled ? 403 : 409,
+      })
+    }
+    expect(await supporter()).toMatchObject(
+      enabled
+        ? {
+            entitlementId: 'supporter-plus',
+            expiresTime: end + second.grant.durationMs,
+            metadata: { membershipGrantId: second.grant.id },
+          }
+        : {
+            entitlementId: 'supporter-basic',
+            expiresTime: end + 5 * DAY_MS,
+            autoRenew: true,
+            metadata: undefined,
+          }
+    )
+    expect(
+      await rows('select status from membership_grants order by id')
+    ).toEqual([{ status: 'used' }, { status: enabled ? 'active' : 'banked' }])
+    expect(await rows('select * from shop_orders')).toEqual([])
+  }
+)
+
+it('uses the restored paid credit for a purchase made at the free expiry', async () => {
+  const now = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-basic',$2,false)`,
+    [userId, new Date(now + 15 * DAY_MS)]
+  )
+  const { grant } = await grantMembershipDays(pg, input)
+  clock.mockReturnValue(grant.endsTime!)
+  const credit = SUPPORTER_TIERS.basic.price / 2
+  expect(
+    await purchase({ itemId: 'supporter-plus' }, { uid: userId })
+  ).toMatchObject({
+    success: true,
+    upgradeCredit: credit,
+    entitlement: { entitlementId: 'supporter-plus', autoRenew: true },
+  })
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.plus.price - credit },
+  ])
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'used' },
+  ])
+})
+
+it('scans only startable banked grants, including a lower tier after grace ends', async () => {
+  await setStartsEnabled(false)
+  const { grant } = await grantMembershipDays(pg, input)
+  const transactions = jest.spyOn(testClient, 'tx')
+  await processMembershipGrants()
+  await setStartsEnabled(true)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-premium',now() + interval '1 day',true)`,
+    [userId]
+  )
+  await processMembershipGrants()
+  await rows(
+    "update user_entitlements set expires_time = now() - interval '24 hours'"
+  )
+  await processMembershipGrants()
+  await rows(
+    "update user_entitlements set entitlement_id = 'supporter-basic', expires_time = null"
+  )
+  await processMembershipGrants()
+  expect(transactions).not.toHaveBeenCalled()
+  await rows(
+    "update user_entitlements set entitlement_id = 'supporter-premium', expires_time = now() - interval '26 hours'"
+  )
+  await processMembershipGrants()
+  expect(transactions).toHaveBeenCalledTimes(1)
+  expect((await supporter())?.metadata).toEqual({ membershipGrantId: grant.id })
 })
 
 it('shows the next banked Pro grant before paused paid Plus in the notice and owner view', async () => {

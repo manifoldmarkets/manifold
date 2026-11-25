@@ -36,14 +36,15 @@ type PaidRenewal = {
   balanceUpdates: UserUpdate[]
 }
 
+type StartedGrant = {
+  id: string
+  entitlements: UserEntitlement[]
+  notice: ExpiryNoticeDelivery
+}
+
 export type MembershipRenewal =
-  | PaidRenewal
-  | {
-      type: 'grant-started'
-      userId: string
-      entitlements: UserEntitlement[]
-      notice: ExpiryNoticeDelivery
-    }
+  | (PaidRenewal & { grant?: StartedGrant })
+  | { type: 'grant-started'; userId: string; grant: StartedGrant }
 
 // The scan and grant restoration both own a retried SERIALIZABLE transaction.
 // Re-check the live row at the transition instant before charging it.
@@ -67,19 +68,20 @@ export async function renewDueMembership(
   )
   if (!due) return null
   // An explicit end-active rollback must leave all banked grants untouched.
-  if (mode === 'advance') {
+  const startBankedGrant = async (): Promise<StartedGrant | undefined> => {
+    if (mode !== 'advance') return
     const grant = await getOrStartMembershipGrant(tx, userId, now)
-    if (grant) {
-      if (!grant.started)
-        throw new Error('Paid renewal row has an active membership grant')
-      return {
-        type: 'grant-started',
-        userId,
-        entitlements: await getUserEntitlements(tx, userId),
-        notice: grant.notice,
-      }
+    if (!grant) return
+    if (!grant.started)
+      throw new Error('Paid renewal row has an active membership grant')
+    return {
+      id: grant.id,
+      entitlements: await getUserEntitlements(tx, userId),
+      notice: grant.notice,
     }
   }
+  const grant = await startBankedGrant()
+  if (grant) return { type: 'grant-started', userId, grant }
   if (!Number.isFinite(due.balance))
     throw new Error(`Invalid balance for ${userId}`)
   const balanceUpdates: UserUpdate[] = []
@@ -94,7 +96,7 @@ export async function renewDueMembership(
       'update user_entitlements set auto_renew = false where user_id = $1 and entitlement_id = $2',
       [userId, entitlementId]
     )
-    return { ...result, type: 'cancelled' }
+    return { ...result, type: 'cancelled', grant: await startBankedGrant() }
   }
 
   await runTxnOutsideBetQueue(
@@ -122,14 +124,14 @@ export async function renewDueMembership(
 }
 
 export async function publishMembershipRenewal(renewal: MembershipRenewal) {
-  if (renewal.type === 'grant-started') {
+  if (renewal.grant) {
     broadcastUpdatedUser({
       id: renewal.userId,
-      entitlements: renewal.entitlements,
+      entitlements: renewal.grant.entitlements,
     })
-    await publishExpiryNotice(renewal.notice)
-    return
+    await publishExpiryNotice(renewal.grant.notice)
   }
+  if (renewal.type === 'grant-started') return
   if (renewal.balanceUpdates.length)
     broadcastUserUpdates(renewal.balanceUpdates)
   try {

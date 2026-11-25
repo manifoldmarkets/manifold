@@ -9,13 +9,16 @@ import {
 import { DAY_MS } from './util/time'
 
 export const MAX_FREE_MEMBERSHIP_HELD_MS = 30 * DAY_MS
+const startsPausedReason = 'Free membership starts are temporarily paused.'
+const readyReason = 'Ready to start.'
 
 export type PausedPaid = {
   rail: 'mana'
   tier: SupporterTier
   // Signed time to expiry. A negative value preserves time already overdue.
   remainingMs: number
-  // An already lapsed, non-renewing membership keeps its historical expiry.
+  originalExpiresTime?: string
+  // Older snapshots only saved the exact expiry of a non-renewing lapsed row.
   lapsedExpiresTime?: string
   autoRenew: boolean
   enabled?: boolean
@@ -143,10 +146,8 @@ export function planGrantStart(
           rail: 'mana',
           tier: paidTier,
           remainingMs: row.expiresTime - now,
-          lapsedExpiresTime:
-            !row.autoRenew && row.expiresTime <= now
-              ? row.expiresTimeText ?? new Date(row.expiresTime).toISOString()
-              : undefined,
+          originalExpiresTime:
+            row.expiresTimeText ?? new Date(row.expiresTime).toISOString(),
           autoRenew: row.autoRenew,
           enabled: row.enabled,
           grantedTime: row.grantedTime,
@@ -164,6 +165,14 @@ export function planGrantStart(
   return { grant, newRow, pausedPaid }
 }
 
+function originalPaidExpiry(paid: PausedPaid, startedTime: number) {
+  return (
+    paid.originalExpiresTime ??
+    paid.lapsedExpiresTime ??
+    new Date(startedTime + paid.remainingMs).toISOString()
+  )
+}
+
 export function planGrantEnd(
   grant: MembershipGrant,
   now: number,
@@ -175,6 +184,10 @@ export function planGrantEnd(
   )
     return null
   const paid = grant.pausedPaid
+  const historicalExpiry =
+    paid && !paid.autoRenew && paid.remainingMs <= 0
+      ? originalPaidExpiry(paid, grant.startedTime!)
+      : undefined
   return {
     newRow: paid
       ? {
@@ -184,10 +197,11 @@ export function planGrantEnd(
           grantedTime: paid.grantedTime,
           metadata: paid.metadata,
           expiresTime: milliseconds(
-            paid.lapsedExpiresTime === undefined
+            historicalExpiry === undefined
               ? now + milliseconds(paid.remainingMs, Number.MIN_SAFE_INTEGER)
-              : Date.parse(paid.lapsedExpiresTime)
+              : Date.parse(historicalExpiry)
           ),
+          ...(historicalExpiry && { expiresTimeText: historicalExpiry }),
         }
       : null,
   }
@@ -219,6 +233,15 @@ export function planGrantTransition(
   )
   if (start && active) {
     start.pausedPaid = active.pausedPaid
+    // Carry the first pause instant across chains for pre-upgrade snapshots.
+    if (start.pausedPaid && !start.pausedPaid.originalExpiresTime)
+      start.pausedPaid = {
+        ...start.pausedPaid,
+        originalExpiresTime: originalPaidExpiry(
+          start.pausedPaid,
+          active.startedTime!
+        ),
+      }
     start.newRow.grantedTime = row?.grantedTime ?? now
   }
   return { ended: active ?? null, start, restored }
@@ -271,11 +294,11 @@ export function getMembershipGrantView(
         tier: g.tier,
         days: milliseconds(g.durationMs, 1) / DAY_MS,
         reason: startsDisabled
-          ? 'Free membership starts are temporarily paused.'
+          ? startsPausedReason
           : active
           ? 'Waiting for the current free days to end.'
           : planGrantStart(row, [g], now)
-          ? 'Ready to start.'
+          ? readyReason
           : row && row.expiresTime === undefined
           ? 'Starts when your current membership ends.'
           : `Starts when your membership is ${
@@ -287,6 +310,39 @@ export function getMembershipGrantView(
 }
 
 export type MembershipGrantView = ReturnType<typeof getMembershipGrantView>
+
+export function purchaseGrantMessage(
+  view: MembershipGrantView | undefined,
+  target: SupporterTier
+) {
+  // A ready grant locks checkout before the purchase. Only preview one unlocked by the purchase.
+  if (
+    !view ||
+    view.active ||
+    view.banked.some(
+      (g) => g.reason === readyReason || g.reason === startsPausedReason
+    )
+  )
+    return
+  const tier = TIER_ORDER.slice()
+    .reverse()
+    .find(
+      (t) =>
+        SUPPORTER_TIERS[t].order >= SUPPORTER_TIERS[target].order &&
+        view.banked.some((g) => g.tier === t)
+    )
+  if (!tier) return
+  const days = view.banked
+    .filter((g) => g.tier === tier)
+    .reduce((sum, g) => sum + g.days, 0)
+  const amount =
+    days < 0.001
+      ? 'less than 0.001'
+      : days.toLocaleString(undefined, { maximumFractionDigits: 3 })
+  return days === 1
+    ? `You have 1 free ${SUPPORTER_TIERS[tier].name} day waiting; it'll start first and this purchase will wait behind it.`
+    : `You have ${amount} free ${SUPPORTER_TIERS[tier].name} days waiting; they'll start first and this purchase will wait behind them.`
+}
 
 export function nextMembershipMessage(
   next: NonNullable<MembershipGrantView['next']>

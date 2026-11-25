@@ -5,6 +5,10 @@ import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 
 type EntitlementReader = Pick<SupabaseTransaction, 'manyOrNone'>
 
+export const activeSupporterAccessSql = `enabled = true
+  and (expires_time is null or expires_time > now()
+       or (auto_renew and expires_time > now() - interval '25 hours'))`
+
 /**
  * Fetch active supporter entitlements for a user.
  *
@@ -31,10 +35,7 @@ export async function getActiveSupporterEntitlements(
      FROM user_entitlements
      WHERE user_id = $1
        AND entitlement_id = ANY($2)
-       AND enabled = true
-       AND (expires_time IS NULL
-            OR expires_time > NOW()
-            OR (auto_renew = true AND expires_time > NOW() - interval '25 hours'))`,
+       AND ${activeSupporterAccessSql}`,
     [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
   )
   return rows.map(convertEntitlement)

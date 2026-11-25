@@ -49,7 +49,7 @@ export function useMembershipGrants(user: User | null | undefined) {
     if (mismatch) refreshEntitlements()
   }, [userId, mismatch, refreshEntitlements])
 
-  // Keep checking even past the advertised end until the scheduler releases the row.
+  // Refreshing the owner view also settles an expired grant.
   const poll = !!active || !!view?.banked.length || mismatch
   useEffect(() => {
     if (!poll) return
@@ -79,6 +79,12 @@ export function MembershipGrantsPanel({
 }) {
   if (!view || (!view.active && !view.banked.length)) return null
   const { active, paid } = view
+  const source =
+    active?.source === 'trophy'
+      ? 'a trophy reward'
+      : active?.source === 'admin'
+      ? 'the Manifold team'
+      : null
   return (
     <section className="border-ink-200 bg-canvas-0 text-ink-700 space-y-2 rounded-xl border p-4 text-sm">
       {active && (
@@ -86,8 +92,8 @@ export function MembershipGrantsPanel({
           <strong>
             You're using free {SUPPORTER_TIERS[active.tier].name} days until{' '}
             {formatMembershipDate(active.endsTime)}.
-          </strong>{' '}
-          From {active.source}.
+          </strong>
+          {source && ` From ${source}.`}
         </p>
       )}
       {view.next && <p>{nextMembershipMessage(view.next)}</p>}

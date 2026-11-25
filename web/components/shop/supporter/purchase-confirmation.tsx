@@ -8,7 +8,11 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { TIER_ITEMS } from './tier-items'
-import { membershipChangeCredit } from 'common/membership-grants'
+import {
+  membershipChangeCredit,
+  MembershipGrantView,
+  purchaseGrantMessage,
+} from 'common/membership-grants'
 import { UserEntitlement } from 'common/shop/types'
 
 export function PurchaseConfirmation({
@@ -16,6 +20,7 @@ export function PurchaseConfirmation({
   currentTier,
   daysRemaining,
   currentEntitlement,
+  grantView,
   lockMessage,
   loading,
   onConfirm,
@@ -25,6 +30,7 @@ export function PurchaseConfirmation({
   currentTier: SupporterTier | null
   daysRemaining: number // for display only
   currentEntitlement: UserEntitlement | null
+  grantView?: MembershipGrantView
   lockMessage?: string
   loading: boolean
   onConfirm: () => void
@@ -54,6 +60,7 @@ export function PurchaseConfirmation({
     Date.now()
   )
   const finalPrice = Math.max(0, item.price - tierChangeCredit)
+  const waitingDays = purchaseGrantMessage(grantView, tier)
 
   return (
     <Col className="bg-canvas-0 max-w-md rounded-xl p-6">
@@ -104,11 +111,14 @@ export function PurchaseConfirmation({
               </Row>
             </div>
           </div>
-          <p className="text-ink-500 mb-4 text-sm">
-            Your subscription will switch to {tierConfig.name} immediately.
-            {finalPrice > 0 &&
-              " Unused time reduces what's due today but isn't refunded."}
-          </p>
+          {(!waitingDays || finalPrice > 0) && (
+            <p className="text-ink-500 mb-4 text-sm">
+              {!waitingDays &&
+                `Your subscription will switch to ${tierConfig.name} immediately.`}
+              {finalPrice > 0 &&
+                " Unused time reduces what's due today but isn't refunded."}
+            </p>
+          )}
         </>
       ) : isUpgrade && tierChangeCredit > 0 ? (
         /* Upgrade with credit */
@@ -153,6 +163,9 @@ export function PurchaseConfirmation({
         </p>
       )}
 
+      {waitingDays && (
+        <p className="text-ink-700 mb-4 text-sm">{waitingDays}</p>
+      )}
       <Row className="justify-end gap-2">
         <Button color="gray-outline" onClick={onCancel}>
           Cancel

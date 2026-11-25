@@ -305,7 +305,7 @@ export function createJobs(jobSet: SchedulerJobSet) {
     ),
     createJob(
       'process-membership-grants',
-      '0 */10 * * * *',
+      '0 */2 * * * *',
       processMembershipGrants
     ),
     createJob(

@@ -379,6 +379,7 @@ export default function SupporterPage() {
             daysRemaining={daysRemaining}
             currentEntitlement={currentEntitlement}
             lockMessage={grants.lockMessage}
+            grantView={grants.view}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
