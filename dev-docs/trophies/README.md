@@ -1,6 +1,6 @@
 # Trophies
 
-Each of the 11 lifetime trophies has six milestones, in ascending order: green, blue, purple, crimson, gold and prismatic. Whale is the prismatic Net Worth milestone at M500,000. Net worth adds the mana balance and investment value from the same portfolio snapshot. Investment value already accounts for position loans. The achievements API reports the latest snapshot at any age, or zero before the first snapshot. Claims use the higher of the stored nightly peak and the latest snapshot if it is at most 72 hours old. The same age limit applies to snapshots used for nightly peaks and ranks.
+Each of the 11 lifetime trophies has six milestones, in ascending order: green, blue, purple, crimson, gold and prismatic. Whale is the prismatic Net Worth milestone at M500,000. Net worth adds the mana balance and investment value from the same portfolio snapshot. Investment value already accounts for position loans. The achievements API reports the latest snapshot at any age, or zero before the first snapshot. A Net Worth claim uses the stored peak and raises it in the claim transaction if a snapshot at most 72 hours old sets a new high. The same age limit applies to snapshots used for nightly peaks and ranks.
 
 `common/src/trophies.ts` defines the ladders and the shared progress, title, claim and pin rules. `get-user-achievements` reads lifetime stats. The achievements grid retains its own stat and rank definitions. `claim-trophy` rechecks the stat and records the requested milestone and all lower ones in `user_trophy_milestones`. Claims last even if the stat falls. Retired IDs are ignored. Keep IDs stable after launch.
 
@@ -20,9 +20,9 @@ The main scheduler runs `update-trophy-ranks` at 4:10 AM Los Angeles time after 
 | Liked Comments     | Distinct visible market or legacy post comments by the holder that another eligible person liked              |
 | Leagues            | Gold, Platinum and Diamond score 1, 2 and 3. Each Masters season adds one to 3                                |
 
-For Net Worth, an active trader has placed a trade in the last 90 days or has an open limit order on a market that is still trading. To qualify through an order, the holder needs at least M1 in spendable mana. The order must have remaining quantity, be uncancelled and unexpired, and be on an unresolved answer if it specifies one. Filling an older order does not restart the 90-day window.
+For Net Worth, an active trader has placed a trade or order in the last 90 days, or has an open order that can still fill. The 90-day window runs from placement, including for a maker whose order has since filled. To qualify through an older open order, the holder needs at least M1 in spendable mana and trading must be enabled for the market's token. The order must have remaining quantity, be uncancelled and unexpired, and be on a market that is still trading with an unresolved answer if it specifies one.
 
-Ranked accounts must be people. Bots, deleted accounts and users with active bans other than mod alerts are ineligible. SQL-managed entries in `trophy_rank_exclusions` also exclude holders. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
+Ranked accounts must be people. Bots, deleted accounts, accounts in `BANNED_TRADING_USER_IDS` and users with active bans other than mod alerts are ineligible. SQL-managed entries in `trophy_rank_exclusions` also exclude holders. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
 
 Markets Created uses `contracts.unique_bettor_count`, which includes bot traders. The streak rank reflects the last successful `mv_ach_txns_achievements` refresh.
 
@@ -31,7 +31,7 @@ Equal scores share a rank. First place holds #1, ranks 2–5 hold Mega and ranks
 | New table                | Contents                                                                    |
 | ------------------------ | --------------------------------------------------------------------------- |
 | `trophy_rank_exclusions` | Private holder exclusions, seeded by five production account IDs            |
-| `user_net_worth_peaks`   | Private positive nightly high and the time it was reached                   |
+| `user_net_worth_peaks`   | Private positive high recorded by a claim or nightly run, and its timestamp |
 | `trophy_ranks`           | Public current holders, values, ranks and a single publication timestamp    |
 | `trophy_rank_state`      | Public timestamp of the latest publication, including a run with no holders |
 | `user_trophy_rank_peaks` | Public best numeric rank, first ranked time and time of the best rank       |

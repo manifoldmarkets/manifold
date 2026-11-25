@@ -1,3 +1,4 @@
+import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import {
   MARKET_CREATED_MIN_TRADERS,
   MAX_TROPHY_RANK,
@@ -10,6 +11,7 @@ import { EPSILON } from 'common/util/math'
 import { pgp, SupabaseTransaction } from 'shared/supabase/init'
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
+  TROPHY_NET_WORTH_PEAK_CONFLICT,
   TROPHY_PERSON_FILTER,
   TROPHY_VISIBLE_COMMENT_FILTER,
 } from 'shared/supabase/trophy-eligibility'
@@ -18,7 +20,7 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
 
 const valueQueries: Record<string, string> = {
-  // Probe the user/order index only for Whale candidates without a recent trade.
+  // Restrict the indexed bet and order lookups to Whale candidates.
   'net-worth': `with candidates as materialized (
       select * from trophy_net_worth_sample
       where value >= $[threshold] and value < 'Infinity'::numeric
@@ -28,7 +30,12 @@ const valueQueries: Record<string, string> = {
       extract(epoch from (now() - make_interval(days => $[activeDays]))) * 1000
       and extract(epoch from now()) * 1000
       or (select true from contract_bets b
+        where b.user_id = n.user_id
+          and b.created_time between now() - make_interval(days => $[activeDays]) and now()
+        limit 1)
+      or (select true from contract_bets b
         join contracts c on c.id = b.contract_id
+        join system_trading_status s on s.token = c.token and s.status
         left join answers a on a.id = b.answer_id and a.contract_id = c.id
         where n.spendable_balance >= 1 and b.user_id = n.user_id
           and not b.is_filled and not b.is_cancelled
@@ -119,9 +126,7 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
     `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
      select user_id, value, $1 from trophy_net_worth_sample
      where value > 0 and ${finiteValue}
-     on conflict (user_id) do update set
-       peak_net_worth = excluded.peak_net_worth, peak_time = excluded.peak_time
-     where excluded.peak_net_worth > user_net_worth_peaks.peak_net_worth`,
+     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
     [computedTime]
   )
 
@@ -146,6 +151,7 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
         threshold: getTopMilestone(def).threshold,
         maxRank: MAX_TROPHY_RANK,
         activeDays: NET_WORTH_RANK_ACTIVE_DAYS,
+        bannedTradingIds: BANNED_TRADING_USER_IDS,
         epsilon: EPSILON,
         minTraders: MARKET_CREATED_MIN_TRADERS,
         minReferralTrades: REFERRAL_MIN_TRADES,
