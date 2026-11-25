@@ -10,6 +10,7 @@ import {
   broadcastGrantTransition,
   grantRetryOptions,
   notifyGrantTransition,
+  readDbNowMs,
 } from 'shared/membership-grants'
 import { log } from 'shared/monitoring/log'
 import type { SupabaseTransaction } from 'shared/supabase/init'
@@ -41,7 +42,7 @@ export async function runShopCheckout<T>(
   onAfterCommit?: (published: Promise<void>) => void
 ) {
   const settleCheckout = async (tx: SupabaseTransaction) => {
-    const now = Date.now()
+    const now = await readDbNowMs(tx)
     const transition = await advanceGrants(tx, userId, now, {
       allowRowMismatch: !isMembershipPurchase,
       deferExpiryNotices: true,

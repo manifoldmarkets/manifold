@@ -1,6 +1,6 @@
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { grantRetryOptions } from 'shared/membership-grants'
+import { grantRetryOptions, readDbNowMsExact } from 'shared/membership-grants'
 import {
   publishMembershipRenewal,
   renewDueMembership,
@@ -43,9 +43,7 @@ export async function processMembershipRenewals() {
         () =>
           runTransactionWithRetries(
             async (tx) => {
-              const { now } = await tx.one<{ now: number }>(
-                'select (extract(epoch from now()) * 1000)::float8 as now'
-              )
+              const now = await readDbNowMsExact(tx)
               return renewDueMembership(tx, user_id, entitlement_id, now)
             },
             3,

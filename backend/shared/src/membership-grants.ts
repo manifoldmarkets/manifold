@@ -42,6 +42,17 @@ export {
 } from './supabase/membership-grants'
 export type { MembershipBillingRail } from './membership-grant-start'
 
+export async function readDbNowMsExact(tx: SupabaseTransaction) {
+  const { now } = await tx.one<{ now: number }>(
+    'select (extract(epoch from now()) * 1000)::float8 as now'
+  )
+  return Number(now)
+}
+
+export async function readDbNowMs(tx: SupabaseTransaction) {
+  return Math.trunc(await readDbNowMsExact(tx))
+}
+
 // PostgreSQL may report a unique violation when concurrent SERIALIZABLE
 // transactions both see no row and insert the first entitlement/active grant.
 export const grantRetryOptions = {
@@ -233,10 +244,8 @@ export async function processUserMembershipGrants(
     pg,
     5,
     async (tx) => {
-      const { now } = await tx.one<{ now: number }>(
-        'select (extract(epoch from now()) * 1000)::float8 as now'
-      )
-      return advanceGrants(tx, userId, Math.trunc(now), { mode })
+      const now = await readDbNowMs(tx)
+      return advanceGrants(tx, userId, now, { mode })
     },
     grantRetryOptions
   )
@@ -276,7 +285,7 @@ function commitMembershipDays(
     pg,
     5,
     async (tx) => {
-      const now = Date.now()
+      const now = await readDbNowMs(tx)
       const lookup = () =>
         getMembershipGrantBySource(tx, userId, source, sourceId)
       const existing = await lookup()

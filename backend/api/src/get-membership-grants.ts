@@ -3,6 +3,7 @@ import {
   advanceGrants,
   grantRetryOptions,
   hasDueMembershipGrant,
+  readDbNowMs,
   readMembershipGrantView,
   runQueuedGrantTransition,
 } from 'shared/membership-grants'
@@ -15,7 +16,7 @@ export const getMembershipGrants: APIHandler<'get-membership-grants'> = async (
   if (userId && userId !== auth.uid)
     throw new APIError(403, 'You can only view your own membership grants')
   const view = await runTransactionWithRetries(async (tx) => {
-    const now = Date.now()
+    const now = await readDbNowMs(tx)
     return (await hasDueMembershipGrant(tx, auth.uid, now))
       ? null
       : readMembershipGrantView(tx, auth.uid, now)
@@ -25,7 +26,7 @@ export const getMembershipGrants: APIHandler<'get-membership-grants'> = async (
   return runQueuedGrantTransition(auth.uid, () =>
     runTransactionWithRetries(
       async (tx) => {
-        const now = Date.now()
+        const now = await readDbNowMs(tx)
         // Another checkout may have settled the grant while we waited.
         const change = (await hasDueMembershipGrant(tx, auth.uid, now))
           ? await advanceGrants(tx, auth.uid, now)

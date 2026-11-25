@@ -1322,6 +1322,65 @@ async function expireGrantOverPaidMembership(
   return end
 }
 
+function setApiClockSkew(dbNow: number, skewMs: number) {
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(dbNow + skewMs)
+  const transact = testClient.tx
+  jest.spyOn(testClient, 'tx').mockImplementation((options, fn) => {
+    // PGlite captures Date.now() at BEGIN. Move only the API clock afterward.
+    clock.mockReturnValue(dbNow)
+    return transact(options, (t) => {
+      clock.mockReturnValue(dbNow + skewMs)
+      return fn(t)
+    })
+  })
+}
+
+it.each(['owner view', 'checkout', 'grant issuance'])(
+  'keeps the last 30 seconds of a grant in %s when the API clock is a minute fast',
+  async (path) => {
+    const end = await expireGrantOverPaidMembership(0, true)
+    setApiClockSkew(end - 30_000, MINUTE_MS)
+
+    if (path === 'owner view') {
+      const queue = jest.spyOn(betsQueue, 'enqueueFn')
+      await expect(
+        (getMembershipGrants as Handler)({}, { uid: userId })
+      ).resolves.toMatchObject({ active: { endsTime: end }, isLocked: true })
+      expect(queue).not.toHaveBeenCalled()
+    } else if (path === 'checkout') {
+      await expect(
+        purchase({ itemId: 'supporter-premium' }, { uid: userId })
+      ).rejects.toMatchObject({ code: 403 })
+    } else {
+      await expect(
+        grantMembershipDays(pg, { ...input, sourceId: 'next' })
+      ).resolves.toMatchObject({ outcome: 'banked' })
+    }
+
+    expect(
+      await rows('select status from membership_grants where source_id = $1', [
+        input.sourceId,
+      ])
+    ).toEqual([{ status: 'active' }])
+    expect(await rows('select amount from txns')).toEqual([])
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 100000 }])
+  }
+)
+
+it('settles the queued owner view at database expiry when the API clock lags', async () => {
+  const end = await expireGrantOverPaidMembership(0, true)
+  setApiClockSkew(end, -MINUTE_MS)
+
+  await expect(
+    (getMembershipGrants as Handler)({}, { uid: userId })
+  ).resolves.toMatchObject({ active: null, isLocked: false })
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.basic.price },
+  ])
+})
+
 const ceilingCases = [
   {
     item: 'cosmetic',
