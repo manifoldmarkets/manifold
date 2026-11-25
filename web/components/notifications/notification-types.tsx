@@ -2804,9 +2804,7 @@ function MembershipSubscriptionNotification(props: {
 
   const subtitle = isRenewal
     ? newExpiresTime
-      ? `Your membership will renew again on ${formatMembershipDate(
-          newExpiresTime
-        )}`
+      ? `Paid through ${formatMembershipDate(newExpiresTime)}`
       : undefined
     : type === 'expiring_soon'
     ? undefined

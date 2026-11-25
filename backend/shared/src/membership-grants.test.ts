@@ -8,6 +8,7 @@ import { ENV_CONFIG } from 'common/envs/constants'
 import { shopPurchase } from 'api/shop-purchase'
 import { shopCancelSubscription } from 'api/shop-cancel-subscription'
 import { processMembershipRenewals } from 'scheduler/jobs/process-membership-renewals'
+import { processMembershipGrants } from 'scheduler/jobs/process-membership-grants'
 import { checkSubscriptionExpiry } from 'scheduler/jobs/check-subscription-expiry'
 import { createPushNotifications } from './create-push-notifications'
 import { getNotifications } from 'api/get-notifications'
@@ -298,6 +299,126 @@ it('excludes a grant-owned row from mana renewals even with auto_renew set', asy
   await processMembershipRenewals()
   expect(await rows('select * from txns')).toEqual([])
   expect((await supporter())?.autoRenew).toBe(true)
+})
+
+async function bankPlusBehindPremium(
+  now: number,
+  autoRenew: boolean,
+  durationMs = input.durationMs
+) {
+  const expiry = now - 26 * HOUR_MS
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(expiry - DAY_MS)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, granted_time, expires_time, auto_renew)
+     values ($1, 'supporter-premium', $2, $3, $4)`,
+    [userId, new Date(expiry - 30 * DAY_MS), new Date(expiry), autoRenew]
+  )
+  const { outcome, grant } = await grantMembershipDays(pg, {
+    ...input,
+    tier: 'basic',
+    durationMs,
+  })
+  expect(outcome).toBe('banked')
+  clock.mockReturnValue(now)
+  jest.mocked(broadcastUpdatedUser).mockClear()
+  return { clock, grant }
+}
+
+it.each(['renewal first', 'grant first'])(
+  'starts banked Plus before charging overdue Premium (%s)',
+  async (order) => {
+    const now = Date.now()
+    const { clock, grant } = await bankPlusBehindPremium(now, true)
+    const [first, second] =
+      order === 'renewal first'
+        ? [processMembershipRenewals, processMembershipGrants]
+        : [processMembershipGrants, processMembershipRenewals]
+    await first()
+    expect(await supporter()).toMatchObject({
+      entitlementId: 'supporter-basic',
+      expiresTime: now + input.durationMs,
+      metadata: { membershipGrantId: grant.id },
+      autoRenew: false,
+    })
+    await second()
+    expect(
+      await rows('select status, paused_paid from membership_grants')
+    ).toEqual([
+      {
+        status: 'active',
+        paused_paid: expect.objectContaining({
+          tier: 'premium',
+          remainingMs: -26 * HOUR_MS,
+          autoRenew: true,
+        }),
+      },
+    ])
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 100000 }])
+    expect(await rows('select * from txns')).toEqual([])
+    expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
+    expect(createPushNotifications).not.toHaveBeenCalled()
+
+    clock.mockReturnValue(now + input.durationMs)
+    await processUserMembershipGrants(pg, userId)
+    await processMembershipRenewals()
+    expect(await rows('select amount from txns')).toEqual([
+      { amount: SUPPORTER_TIERS.premium.price },
+    ])
+    expect(await supporter()).toMatchObject({
+      entitlementId: 'supporter-premium',
+      autoRenew: true,
+      expiresTime: Date.now() + 30 * DAY_MS,
+    })
+  }
+)
+
+it('commits banked Plus at checkout and returns the free-days lock without selling it', async () => {
+  const now = Date.UTC(2026, 10, 25, 19)
+  const { grant } = await bankPlusBehindPremium(now, false, 4 * HOUR_MS)
+  const entitlements = [
+    expect.objectContaining({
+      entitlementId: 'supporter-basic',
+      metadata: { membershipGrantId: grant.id },
+      autoRenew: false,
+      expiresTime: now + grant.durationMs,
+    }),
+  ]
+  const lock = {
+    code: 403,
+    message: membershipGrantLockMessage('basic', now + grant.durationMs),
+  }
+  await expect(
+    purchase({ itemId: 'supporter-basic' }, { uid: userId })
+  ).rejects.toMatchObject(lock)
+  await expect(
+    purchase({ itemId: 'supporter-basic' }, { uid: userId })
+  ).rejects.toMatchObject(lock)
+  expect(await supporter()).toEqual(entitlements[0])
+  expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
+  expect(broadcastUpdatedUser).toHaveBeenCalledWith({
+    id: userId,
+    entitlements,
+  })
+  expect(createPushNotifications).toHaveBeenCalledTimes(1)
+  expect(
+    await rows('select notice_key from membership_notice_deliveries')
+  ).toHaveLength(1)
+  expect(await rows('select * from shop_orders')).toEqual([])
+  expect(await rows('select * from txns')).toEqual([])
+  expect(
+    await rows('select balance from users where id = $1', [userId])
+  ).toEqual([{ balance: 100000 }])
+  expect(await rows('select paused_paid from membership_grants')).toEqual([
+    {
+      paused_paid: expect.objectContaining({
+        tier: 'premium',
+        remainingMs: -26 * HOUR_MS,
+        autoRenew: false,
+      }),
+    },
+  ])
 })
 
 it.each([
@@ -591,7 +712,7 @@ it.each([true, false])(
 it.each(['initially immediate', 'initially deferred'])(
   'retries the notice after a failed inbox write or commit (%s)',
   async (timing) => {
-    await grantMembershipDays(pg, { ...input, durationMs: DAY_MS })
+    await grantMembershipDays(pg, { ...input, durationMs: 2 * DAY_MS })
     // The notice ID has no matching user. Exercise both INSERT and COMMIT failure.
     await db.exec(`alter table user_notifications add constraint fail_notice
       foreign key (notification_id) references users(id) deferrable ${timing}`)
@@ -669,6 +790,86 @@ it('distinguishes separate paid expiry events for the same tier on the same day'
   ).toHaveLength(2)
   expect(createPushNotifications).toHaveBeenCalledTimes(2)
 })
+
+it('delivers a cap-reduced four-hour grant notice at start and deduplicates a later scan', async () => {
+  const now = Date.UTC(2026, 10, 25, 19) // 11:00 Pacific
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1, 'supporter-premium', $2, true)`,
+    [userId, new Date(now + 10 * DAY_MS)]
+  )
+  const held = await grantMembershipDays(pg, {
+    ...input,
+    durationMs: 30 * DAY_MS - 4 * HOUR_MS,
+  })
+  expect(held.outcome).toBe('banked')
+  const { grant } = await grantMembershipDays(pg, {
+    ...input,
+    sourceId: 'short',
+    tier: 'premium',
+  })
+  expect(grant).toMatchObject({
+    status: 'active',
+    durationMs: 4 * HOUR_MS,
+    endsTime: now + 4 * HOUR_MS,
+  })
+  const noticeKey = `sub-expiry-grant-${grant.id}-${
+    grant.endsTime! / 1000
+  }.000000-free_days`
+  expect(
+    await rows(`select notice_key, data->'data' as payload from membership_notice_deliveries
+    join user_notifications on notice_key = notification_id`)
+  ).toEqual([
+    {
+      notice_key: noticeKey,
+      payload: expect.objectContaining({
+        expiryReason: 'free_days',
+        grantEndsTime: grant.endsTime,
+        nextMembership: { kind: 'paid', tier: 'premium' },
+      }),
+    },
+  ])
+  expect(broadcast).toHaveBeenCalledTimes(1)
+  expect(createPushNotifications).toHaveBeenCalledTimes(1)
+  await checkSubscriptionExpiry()
+  clock.mockReturnValue(now + DAY_MS)
+  await checkSubscriptionExpiry()
+  expect(
+    await rows('select notice_key from membership_notice_deliveries')
+  ).toHaveLength(1)
+  expect(
+    await rows('select notification_id from user_notifications')
+  ).toHaveLength(1)
+  expect(broadcast).toHaveBeenCalledTimes(1)
+  expect(createPushNotifications).toHaveBeenCalledTimes(1)
+})
+
+it.each([
+  // Before 10:00 Pacific, the scan is still ahead today.
+  { start: '2026-11-25T17:00:00Z', duration: HOUR_MS, immediate: true },
+  { start: '2026-11-25T17:00:00Z', duration: HOUR_MS + 1, immediate: false },
+  // Starting at 10:00 Pacific, the next scan can be 23 or 25 hours away.
+  { start: '2026-03-07T18:00:00Z', duration: 23 * HOUR_MS, immediate: true },
+  {
+    start: '2026-03-07T18:00:00Z',
+    duration: 23 * HOUR_MS + 1,
+    immediate: false,
+  },
+  { start: '2026-10-31T17:00:00Z', duration: 25 * HOUR_MS, immediate: true },
+  {
+    start: '2026-10-31T17:00:00Z',
+    duration: 25 * HOUR_MS + 1,
+    immediate: false,
+  },
+])(
+  'uses the next Pacific scan for a grant starting at $start and lasting $duration ms',
+  async ({ start, duration, immediate }) => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse(start))
+    await grantMembershipDays(pg, { ...input, durationMs: duration })
+    expect(createPushNotifications).toHaveBeenCalledTimes(immediate ? 1 : 0)
+  }
+)
 
 it.each([
   { remaining: 3 * DAY_MS + 1, eligible: false },

@@ -18,9 +18,11 @@ import {
   AchievementRequirement,
 } from 'common/shop/items'
 import {
-  getActiveMembershipGrant,
+  grantRetryOptions,
   readMembershipGrantView,
 } from 'shared/membership-grants'
+import { getOrStartMembershipGrant } from 'shared/membership-grant-start'
+import { publishExpiryNotice } from 'shared/membership-expiry-notice'
 import {
   membershipChangeCredit,
   membershipGrantLockMessage,
@@ -221,6 +223,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
   // Get the entitlement ID (may differ from item ID for shared entitlements)
   const entitlementId = getEntitlementId(item)
+  const isSupporterTierPurchase = SUPPORTER_ENTITLEMENT_IDS.includes(
+    entitlementId as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+  )
 
   const pg = createSupabaseDirectClient()
 
@@ -276,24 +281,28 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       }
     }
 
-    // Check if user is a supporter for discount
-    // Note: Don't apply discount to supporter tier purchases themselves
-    const isSupporterTierPurchase = SUPPORTER_ENTITLEMENT_IDS.includes(
-      entitlementId as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-    )
-
     // For supporter tier purchases, check for existing supporter entitlement to calculate upgrade credit
     let existingSupporter: UserEntitlement | null = null
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const active = await getActiveMembershipGrant(tx, auth.uid)
+      const now = Date.now()
+      const active = await getOrStartMembershipGrant(tx, auth.uid, now)
       if (active) {
-        const { next } = await readMembershipGrantView(tx, auth.uid, Date.now())
-        throw new APIError(
-          403,
-          membershipGrantLockMessage(active.tier, active.endsTime!, next)
+        const { next } = await readMembershipGrantView(tx, auth.uid, now)
+        const message = membershipGrantLockMessage(
+          active.tier,
+          active.endsTime,
+          next
         )
+        if (!active.started) throw new APIError(403, message)
+        // Commit free access before returning the checkout lock.
+        return {
+          success: false as const,
+          message,
+          entitlements: await getUserEntitlements(tx, auth.uid),
+          notice: active.notice,
+        }
       }
       const supporterEntitlements = await getActiveSupporterEntitlements(
         tx,
@@ -554,9 +563,13 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
   }
   const result = await betsQueue.enqueueFn(async () => {
-    const { balanceUpdates, ...result } = await runTransactionWithRetries(
-      purchase
+    const attempt = await runTransactionWithRetries(
+      purchase,
+      3,
+      isSupporterTierPurchase ? grantRetryOptions : undefined
     )
+    if (!attempt.success) return attempt
+    const { balanceUpdates, ...result } = attempt
     if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
     return result
   }, [auth.uid])
@@ -564,6 +577,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
   // Entitlements live outside the users row, so nothing else tells the
   // user's open pages (e.g. Yap's member check) that they changed.
   broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
-
+  if (!result.success) {
+    await publishExpiryNotice(result.notice)
+    throw new APIError(403, result.message)
+  }
   return result
 }

@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
+import { formatMembershipDate } from 'common/membership-grants'
 import {
   SHOP_ITEMS,
   ShopItem,
@@ -2450,7 +2451,7 @@ function SupporterCard(props: {
           {active && (
             <p className="text-sm">
               Free {SUPPORTER_TIERS[active.tier].name} days until{' '}
-              {new Date(active.endsTime).toLocaleDateString()}.
+              {formatMembershipDate(active.endsTime)}.
               {view?.paid &&
                 ` Your paid ${
                   SUPPORTER_TIERS[view.paid.tier].name

@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { sumBy } from 'lodash'
 import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
+import { formatMembershipDate } from 'common/membership-grants'
 import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -97,10 +98,12 @@ export default function SupporterPage() {
       )
     : 0
   const renewalDate = currentEntitlement?.expiresTime
-    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      })
+    ? currentEntitlement.metadata?.membershipGrantId != null
+      ? formatMembershipDate(currentEntitlement.expiresTime)
+      : new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+        })
     : null
 
   const refreshMembership = async () => {

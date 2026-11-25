@@ -1,5 +1,6 @@
 import { SUPPORTER_ENTITLEMENT_IDS } from 'common/supporter-config'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { grantRetryOptions } from 'shared/membership-grants'
 import {
   publishMembershipRenewal,
   renewDueMembership,
@@ -39,8 +40,10 @@ export async function processMembershipRenewals() {
     try {
       const result = await betsQueue.enqueueFn(
         () =>
-          runTransactionWithRetries((tx) =>
-            renewDueMembership(tx, user_id, entitlement_id, Date.now())
+          runTransactionWithRetries(
+            (tx) => renewDueMembership(tx, user_id, entitlement_id, Date.now()),
+            3,
+            grantRetryOptions
           ),
         [user_id]
       )
@@ -50,9 +53,9 @@ export async function processMembershipRenewals() {
         )
         continue
       }
-      log(`Membership ${result.type} for user ${user_id} (${result.tierName})`)
+      log(`Membership ${result.type} for user ${user_id} (${entitlement_id})`)
       if (result.type === 'renewed') renewedCount++
-      else failedCount++
+      else if (result.type === 'cancelled') failedCount++
       await publishMembershipRenewal(result)
     } catch (error) {
       log(`Error processing renewal for user ${user_id}: ${error}`)

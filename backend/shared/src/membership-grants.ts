@@ -1,11 +1,7 @@
 import {
   capGrantDuration,
-  getMembershipGrantView,
-  GrantSupporterRow,
   GrantTransitionMode,
-  MembershipGrant,
   MembershipGrantResult,
-  PausedPaid,
   planGrantTransition,
 } from 'common/membership-grants'
 import {
@@ -15,41 +11,32 @@ import {
 } from './membership-renewal'
 import { SupporterTier } from 'common/supporter-config'
 import {
-  SupabaseDirectClient,
   SupabaseDirectClientTimeout,
   SupabaseTransaction,
 } from './supabase/init'
 import { getSupporterRow, getUserEntitlements } from './supabase/entitlements'
 import { transactWithRetries } from './transact-with-retries'
 import { broadcastUpdatedUser } from './websockets/helpers'
+import {
+  getMembershipGrantBySource,
+  heldGrants,
+  readMembershipGrantView,
+} from './supabase/membership-grants'
+import { startMembershipGrant, mana } from './membership-grant-start'
+import {
+  ExpiryNoticeDelivery,
+  publishExpiryNotice,
+} from './membership-expiry-notice'
 
-type GrantRecord = Omit<
-  MembershipGrant,
-  'createdTime' | 'startedTime' | 'endsTime' | 'endedTime'
-> & {
-  createdTime: string
-  startedTime: string | null
-  endsTime: string | null
-  endedTime: string | null
-}
-
-// int8 IDs must survive JSON and pg's lossy global int8 -> number parser.
-const columns = `id::text, user_id as "userId", tier, duration_ms as "durationMs", source, source_id as "sourceId", status,
-  created_time as "createdTime", started_time as "startedTime", ends_time as "endsTime",
-  ended_time as "endedTime", paused_paid as "pausedPaid", note`
-function convertGrant(g: GrantRecord): MembershipGrant {
-  return {
-    ...g,
-    createdTime: Date.parse(g.createdTime),
-    startedTime: g.startedTime === null ? null : Date.parse(g.startedTime),
-    endsTime: g.endsTime === null ? null : Date.parse(g.endsTime),
-    endedTime: g.endedTime === null ? null : Date.parse(g.endedTime),
-  }
-}
+export {
+  getActiveMembershipGrant,
+  readMembershipGrantView,
+} from './supabase/membership-grants'
+export type { MembershipBillingRail } from './membership-grant-start'
 
 // PostgreSQL may report a unique violation when concurrent SERIALIZABLE
 // transactions both see no row and insert the first entitlement/active grant.
-const grantRetryOptions = {
+export const grantRetryOptions = {
   isRetryableError: (err: unknown) =>
     typeof err === 'object' &&
     err !== null &&
@@ -58,115 +45,6 @@ const grantRetryOptions = {
     'constraint' in err &&
     (err.constraint === 'membership_grants_one_active' ||
       err.constraint === 'user_entitlements_pkey'),
-}
-
-async function heldGrants(pg: SupabaseDirectClient, userId: string) {
-  const rows = await pg.manyOrNone<GrantRecord>(
-    `select ${columns} from membership_grants
-    where user_id = $1 and status in ('active','banked') order by created_time, membership_grants.id`,
-    [userId]
-  )
-  return rows.map(convertGrant)
-}
-
-export async function getActiveMembershipGrant(
-  pg: SupabaseDirectClient,
-  userId: string
-) {
-  const row = await pg.oneOrNone<GrantRecord>(
-    `select ${columns} from membership_grants where user_id = $1 and status = 'active'`,
-    [userId]
-  )
-  return row && convertGrant(row)
-}
-
-export async function readMembershipGrantView(
-  tx: SupabaseTransaction,
-  userId: string,
-  now: number
-) {
-  return getMembershipGrantView(
-    await getSupporterRow(tx, userId),
-    await heldGrants(tx, userId),
-    now
-  )
-}
-
-async function writeSupporterRow(
-  tx: SupabaseTransaction,
-  userId: string,
-  previous: GrantSupporterRow | null,
-  next: GrantSupporterRow | null,
-  exactExpiry?: string
-) {
-  if (!next) {
-    if (previous)
-      await tx.none(
-        'delete from user_entitlements where user_id = $1 and entitlement_id = $2',
-        [userId, previous.entitlementId]
-      )
-    return
-  }
-  const values = [
-    userId,
-    next.entitlementId,
-    new Date(next.grantedTime),
-    exactExpiry ?? new Date(next.expiresTime!),
-    next.autoRenew,
-    next.metadata ?? null,
-    next.enabled,
-  ]
-  if (previous) {
-    // Keep the original database timestamp (including its sub-ms precision).
-    await tx.one(
-      `update user_entitlements set entitlement_id = $2, enabled = $7,
-      expires_time = $4, auto_renew = $5, metadata = $6 where user_id = $1 and entitlement_id = $8 returning entitlement_id`,
-      [...values, previous.entitlementId]
-    )
-  } else {
-    await tx.one(
-      `insert into user_entitlements (user_id, entitlement_id, granted_time, expires_time, auto_renew, metadata, enabled)
-      values ($1,$2,$3,$4,$5,$6,$7) returning entitlement_id`,
-      values
-    )
-  }
-}
-
-// A Stripe rail must defer the next invoice for each grant (e.g. extend trial_end
-// with proration_behavior: 'none'), keep Stripe IDs in private paused_paid, and sync
-// on resume. Use idempotent post-commit work for remote calls. A webhook must
-// update paused_paid while a grant owns the row, including during chained grants.
-type Swap = {
-  previous: GrantSupporterRow | null
-  next: GrantSupporterRow | null
-  paid: PausedPaid | null
-  now: number
-}
-export interface MembershipBillingRail {
-  pause(
-    tx: SupabaseTransaction,
-    userId: string,
-    swap: Swap
-  ): Promise<PausedPaid | null>
-  resume(
-    tx: SupabaseTransaction,
-    userId: string,
-    swap: Swap
-  ): Promise<MembershipRenewal | null>
-}
-const mana: MembershipBillingRail = {
-  async pause(tx, userId, { previous, next, paid }) {
-    await writeSupporterRow(tx, userId, previous, next)
-    return paid
-  },
-  async resume(tx, userId, { previous, next, paid, now }) {
-    await writeSupporterRow(tx, userId, previous, next, paid?.lapsedExpiresTime)
-    return next?.autoRenew &&
-      next.expiresTime !== undefined &&
-      next.expiresTime <= now
-      ? renewDueMembership(tx, userId, next.entitlementId, now)
-      : null
-  },
 }
 
 // Called only inside a retried SERIALIZABLE transaction.
@@ -180,6 +58,7 @@ async function advanceGrants(
   const grants = await heldGrants(tx, userId)
   const { ended, start, restored } = planGrantTransition(row, grants, now, mode)
   let renewal: MembershipRenewal | null = null
+  let notice: ExpiryNoticeDelivery = null
   const unservedMs =
     ended && mode === 'end-active' ? Math.max(0, ended.endsTime! - now) : 0
   if (ended && !unservedMs)
@@ -189,24 +68,27 @@ async function advanceGrants(
       [ended.id, new Date(now)]
     )
   if (start) {
-    const paid = await mana.pause(tx, userId, {
-      previous: row,
-      next: start.newRow,
-      paid: start.pausedPaid,
-      now,
-    })
-    await tx.one(
-      `update membership_grants set status = 'active', started_time = $2, ends_time = $3, paused_paid = $4
-      where id = $1 and status = 'banked' returning id`,
-      [start.grant.id, new Date(now), new Date(start.newRow.expiresTime!), paid]
-    )
+    const started = await startMembershipGrant(tx, userId, row, start, now)
+    notice = started.notice
   } else if (ended) {
-    renewal = await mana.resume(tx, userId, {
+    await mana.resume(tx, userId, {
       previous: row,
       next: restored,
       paid: ended.pausedPaid,
       now,
     })
+    if (
+      restored?.autoRenew &&
+      restored.expiresTime !== undefined &&
+      restored.expiresTime <= now
+    )
+      renewal = await renewDueMembership(
+        tx,
+        userId,
+        restored.entitlementId,
+        now,
+        mode
+      )
     if (unservedMs > 0)
       await tx.one(
         `update membership_grants set status = 'banked', duration_ms = $2,
@@ -222,7 +104,12 @@ async function advanceGrants(
         ]
       )
   }
-  return { started: start?.grant.id ?? null, ended: ended?.id ?? null, renewal }
+  return {
+    started: start?.grant.id ?? null,
+    ended: ended?.id ?? null,
+    renewal,
+    notice,
+  }
 }
 
 export async function processUserMembershipGrants(
@@ -230,11 +117,11 @@ export async function processUserMembershipGrants(
   userId: string,
   mode: GrantTransitionMode = 'advance'
 ) {
-  const { change, entitlements, renewal } = await transactWithRetries(
+  const { change, entitlements, renewal, notice } = await transactWithRetries(
     pg,
     5,
     async (tx) => {
-      const { renewal, ...change } = await advanceGrants(
+      const { renewal, notice, ...change } = await advanceGrants(
         tx,
         userId,
         Date.now(),
@@ -244,12 +131,13 @@ export async function processUserMembershipGrants(
         change.started || change.ended
           ? await getUserEntitlements(tx, userId)
           : null
-      return { change, entitlements, renewal }
+      return { change, entitlements, renewal, notice }
     },
     grantRetryOptions
   )
   if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
   if (renewal) await publishMembershipRenewal(renewal)
+  if (notice) await publishExpiryNotice(notice)
   return change
 }
 
@@ -265,26 +153,23 @@ export async function grantMembershipDays(
   }
 ): Promise<MembershipGrantResult> {
   const { userId, tier, source, sourceId } = input
-  const { result, entitlements, renewal } = await transactWithRetries(
+  const { result, entitlements, renewal, notice } = await transactWithRetries(
     pg,
     5,
     async (tx) => {
       const now = Date.now()
       const lookup = () =>
-        tx.oneOrNone<GrantRecord>(
-          `select ${columns} from membership_grants
-      where user_id = $1 and source = $2 and source_id = $3`,
-          [userId, source, sourceId]
-        )
+        getMembershipGrantBySource(tx, userId, source, sourceId)
       const existing = await lookup()
       if (existing)
         return {
           result: {
-            grant: convertGrant(existing),
+            grant: existing,
             outcome: 'duplicate' as const,
           },
           entitlements: null,
           renewal: null,
+          notice: null,
         }
       const { durationMs, reductionNote } = capGrantDuration(
         input.durationMs,
@@ -300,12 +185,13 @@ export async function grantMembershipDays(
         values ($1,$2,0,$3,$4,'used',$5,$6) on conflict (user_id,source,source_id) do nothing`,
           [userId, tier, source, sourceId, note, new Date(now)]
         )
-        const record = await lookup()
-        if (!record) throw new Error('Membership grant receipt missing')
+        const grant = await lookup()
+        if (!grant) throw new Error('Membership grant receipt missing')
         return {
-          result: { grant: convertGrant(record), outcome: 'capped' as const },
+          result: { grant, outcome: 'capped' as const },
           entitlements: null,
           renewal: null,
+          notice: null,
         }
       }
       const inserted = await tx.oneOrNone(
@@ -314,9 +200,8 @@ export async function grantMembershipDays(
         [userId, tier, durationMs, source, sourceId, note]
       )
       const change = inserted ? await advanceGrants(tx, userId, now) : null
-      const record = await lookup()
-      if (!record) throw new Error('Membership grant receipt missing')
-      const grant = convertGrant(record)
+      const grant = await lookup()
+      if (!grant) throw new Error('Membership grant receipt missing')
       const outcome: MembershipGrantResult['outcome'] = !inserted
         ? 'duplicate'
         : grant.status === 'active'
@@ -331,6 +216,7 @@ export async function grantMembershipDays(
       return {
         result: { grant, outcome, reason },
         renewal: change?.renewal,
+        notice: change?.notice,
         entitlements: inserted ? await getUserEntitlements(tx, userId) : null,
       }
     },
@@ -338,5 +224,6 @@ export async function grantMembershipDays(
   )
   if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
   if (renewal) await publishMembershipRenewal(renewal)
+  if (notice) await publishExpiryNotice(notice)
   return result
 }

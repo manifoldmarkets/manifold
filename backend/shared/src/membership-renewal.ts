@@ -1,4 +1,13 @@
 import { SUPPORTER_TIERS } from 'common/supporter-config'
+import { GrantTransitionMode } from 'common/membership-grants'
+import { UserEntitlement } from 'common/shop/types'
+import { getOrStartMembershipGrant } from './membership-grant-start'
+import {
+  ExpiryNoticeDelivery,
+  publishExpiryNotice,
+} from './membership-expiry-notice'
+import { getUserEntitlements } from './supabase/entitlements'
+import { broadcastUpdatedUser } from './websockets/helpers'
 import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
@@ -18,7 +27,7 @@ import {
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
 
-export type MembershipRenewal = {
+type PaidRenewal = {
   userId: string
   tierName: string
   amount: number
@@ -27,13 +36,23 @@ export type MembershipRenewal = {
   balanceUpdates: UserUpdate[]
 }
 
+export type MembershipRenewal =
+  | PaidRenewal
+  | {
+      type: 'grant-started'
+      userId: string
+      entitlements: UserEntitlement[]
+      notice: ExpiryNoticeDelivery
+    }
+
 // The scan and grant restoration both own a retried SERIALIZABLE transaction.
 // Re-check the live row at the transition instant before charging it.
 export async function renewDueMembership(
   tx: SupabaseTransaction,
   userId: string,
   entitlementId: string,
-  now: number
+  now: number,
+  mode: GrantTransitionMode = 'advance'
 ): Promise<MembershipRenewal | null> {
   const tier = Object.values(SUPPORTER_TIERS).find(
     (t) => t.id === entitlementId
@@ -47,6 +66,20 @@ export async function renewDueMembership(
     [userId, entitlementId, new Date(now)]
   )
   if (!due) return null
+  // An explicit end-active rollback must leave all banked grants untouched.
+  if (mode === 'advance') {
+    const grant = await getOrStartMembershipGrant(tx, userId, now)
+    if (grant) {
+      if (!grant.started)
+        throw new Error('Paid renewal row has an active membership grant')
+      return {
+        type: 'grant-started',
+        userId,
+        entitlements: await getUserEntitlements(tx, userId),
+        notice: grant.notice,
+      }
+    }
+  }
   if (!Number.isFinite(due.balance))
     throw new Error(`Invalid balance for ${userId}`)
   const balanceUpdates: UserUpdate[] = []
@@ -89,6 +122,14 @@ export async function renewDueMembership(
 }
 
 export async function publishMembershipRenewal(renewal: MembershipRenewal) {
+  if (renewal.type === 'grant-started') {
+    broadcastUpdatedUser({
+      id: renewal.userId,
+      entitlements: renewal.entitlements,
+    })
+    await publishExpiryNotice(renewal.notice)
+    return
+  }
   if (renewal.balanceUpdates.length)
     broadcastUserUpdates(renewal.balanceUpdates)
   try {
@@ -106,7 +147,7 @@ async function createMembershipNotification({
   amount,
   type,
   newExpiresTime,
-}: MembershipRenewal) {
+}: PaidRenewal) {
   const pg = createSupabaseDirectClient()
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
