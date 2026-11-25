@@ -13,13 +13,32 @@ import { nanoid } from 'common/util/random'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { createPushNotifications } from 'shared/create-push-notifications'
-import { MANIFOLD_AVATAR_URL, MANIFOLD_USER_NAME, MANIFOLD_USER_USERNAME } from 'common/user'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
 
 // Map entitlement IDs to their tier info
-const ENTITLEMENT_TO_TIER: Record<string, { tier: SupporterTier; price: number; name: string }> = {
-  'supporter-basic': { tier: 'basic', price: SUPPORTER_TIERS.basic.price, name: SUPPORTER_TIERS.basic.displayName },
-  'supporter-plus': { tier: 'plus', price: SUPPORTER_TIERS.plus.price, name: SUPPORTER_TIERS.plus.displayName },
-  'supporter-premium': { tier: 'premium', price: SUPPORTER_TIERS.premium.price, name: SUPPORTER_TIERS.premium.displayName },
+const ENTITLEMENT_TO_TIER: Record<
+  string,
+  { tier: SupporterTier; price: number; name: string }
+> = {
+  'supporter-basic': {
+    tier: 'basic',
+    price: SUPPORTER_TIERS.basic.price,
+    name: SUPPORTER_TIERS.basic.displayName,
+  },
+  'supporter-plus': {
+    tier: 'plus',
+    price: SUPPORTER_TIERS.plus.price,
+    name: SUPPORTER_TIERS.plus.displayName,
+  },
+  'supporter-premium': {
+    tier: 'premium',
+    price: SUPPORTER_TIERS.premium.price,
+    name: SUPPORTER_TIERS.premium.displayName,
+  },
 }
 
 async function createMembershipNotification(
@@ -97,6 +116,7 @@ export async function processMembershipRenewals() {
     `SELECT user_id, entitlement_id, expires_time
      FROM user_entitlements
      WHERE entitlement_id = ANY($1)
+     AND metadata->>'membershipGrantId' IS NULL
      AND auto_renew = true
      AND expires_time IS NOT NULL
      AND expires_time <= NOW()`,
@@ -133,13 +153,16 @@ export async function processMembershipRenewals() {
         const stillDue = await tx.oneOrNone(
           `SELECT 1 FROM user_entitlements
            WHERE user_id = $1 AND entitlement_id = $2
+           AND metadata->>'membershipGrantId' IS NULL
            AND auto_renew = true
            AND expires_time IS NOT NULL
            AND expires_time <= NOW()`,
           [user_id, entitlement_id]
         )
         if (!stillDue) {
-          log(`${entitlement_id} for user ${user_id} no longer due, skipping renewal`)
+          log(
+            `${entitlement_id} for user ${user_id} no longer due, skipping renewal`
+          )
           return null
         }
 
@@ -202,7 +225,9 @@ export async function processMembershipRenewals() {
         log(`Successfully renewed ${tierInfo.name} for user ${user_id}`)
         renewedCount++
       } else if (result?.type === 'cancelled') {
-        log(`Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance)`)
+        log(
+          `Cancelled ${tierInfo.name} auto-renewal for user ${user_id} (insufficient balance)`
+        )
         failedCount++
       }
 
@@ -220,7 +245,9 @@ export async function processMembershipRenewals() {
           )
         } catch (notifError) {
           // Log but don't fail the renewal if notification fails
-          log(`Failed to send ${notificationToSend.type} notification for user ${user_id}: ${notifError}`)
+          log(
+            `Failed to send ${notificationToSend.type} notification for user ${user_id}: ${notifError}`
+          )
         }
       }
     } catch (error) {
@@ -229,5 +256,7 @@ export async function processMembershipRenewals() {
     }
   }
 
-  log(`Membership renewals complete: ${renewedCount} renewed, ${failedCount} cancelled/failed`)
+  log(
+    `Membership renewals complete: ${renewedCount} renewed, ${failedCount} cancelled/failed`
+  )
 }

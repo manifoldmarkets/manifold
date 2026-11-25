@@ -8,13 +8,15 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { TIER_ITEMS } from './tier-items'
-import { DAY_MS } from 'common/util/time'
+import { membershipChangeCredit } from 'common/membership-grants'
+import { UserEntitlement } from 'common/shop/types'
 
 export function PurchaseConfirmation({
   tier,
   currentTier,
   daysRemaining,
-  currentExpiresTime,
+  currentEntitlement,
+  lockMessage,
   loading,
   onConfirm,
   onCancel,
@@ -22,7 +24,8 @@ export function PurchaseConfirmation({
   tier: SupporterTier
   currentTier: SupporterTier | null
   daysRemaining: number // for display only
-  currentExpiresTime?: number // for accurate credit calculation
+  currentEntitlement: UserEntitlement | null
+  lockMessage?: string
   loading: boolean
   onConfirm: () => void
   onCancel: () => void
@@ -34,17 +37,22 @@ export function PurchaseConfirmation({
     currentTier && !canUpgradeTo(currentTier, tier) && currentTier !== tier
   const isSameTierRenewal = currentTier === tier
 
+  if (lockMessage)
+    return (
+      <Col className="bg-canvas-0 max-w-md gap-4 rounded-xl p-6">
+        <p>{lockMessage}</p>
+        <Button color="gray-outline" onClick={onCancel}>
+          Close
+        </Button>
+      </Col>
+    )
+
   // Calculate credit from remaining time (matches backend - uses fractional days)
-  const msRemaining = currentExpiresTime
-    ? Math.max(0, currentExpiresTime - Date.now())
-    : 0
-  const fractionalDaysRemaining = msRemaining / DAY_MS
-  const tierChangeCredit =
-    (isUpgrade || isDowngrade) && fractionalDaysRemaining > 0
-      ? Math.floor(
-          fractionalDaysRemaining * (TIER_ITEMS[currentTier!].price / 30)
-        )
-      : 0
+  const tierChangeCredit = membershipChangeCredit(
+    currentEntitlement,
+    item.id,
+    Date.now()
+  )
   const finalPrice = Math.max(0, item.price - tierChangeCredit)
 
   return (

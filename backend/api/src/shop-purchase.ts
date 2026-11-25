@@ -3,6 +3,7 @@ import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
@@ -12,12 +13,16 @@ import {
   getEntitlementId,
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
-  SHOP_ITEMS,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
   AchievementRequirement,
 } from 'common/shop/items'
-import { convertEntitlement, UserEntitlement } from 'common/shop/types'
+import { getActiveMembershipGrant } from 'shared/membership-grants'
+import {
+  membershipChangeCredit,
+  membershipGrantLockMessage,
+} from 'common/membership-grants'
+import { UserEntitlement } from 'common/shop/types'
 import {
   applyShopDiscount,
   getActiveHolidaySale,
@@ -29,9 +34,11 @@ import {
   getBenefit,
   getMaxStreakFreezes,
 } from 'common/supporter-config'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import {
+  getActiveSupporterEntitlements,
+  getUserEntitlements,
+} from 'shared/supabase/entitlements'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
-import { DAY_MS } from 'common/util/time'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
 // holding locks open during expensive scans.
@@ -179,7 +186,9 @@ async function checkItemRequirement(
   if (userValue < threshold) {
     throw new APIError(
       403,
-      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
+      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(
+        userValue
+      )}/${threshold}`
     )
   }
 }
@@ -218,8 +227,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     await checkItemRequirement(pg, auth.uid, item.requirement)
   }
 
-  const result = await betsQueue.enqueueFn(
-    () => runTransactionWithRetries(async (tx) => {
+  const purchase = async (tx: SupabaseTransaction) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -240,17 +248,18 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
     // Check seasonal availability
     if (item.seasonalAvailability && !isSeasonalItemAvailable(item)) {
-      const availabilityText = getSeasonalAvailabilityText(item) ?? 'during its season'
-      throw new APIError(
-        403,
-        `This item is only available ${availabilityText}`
-      )
+      const availabilityText =
+        getSeasonalAvailabilityText(item) ?? 'during its season'
+      throw new APIError(403, `This item is only available ${availabilityText}`)
     }
 
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
       const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-      const maxFreezes = getMaxStreakFreezes(entitlements, user.bonusEligibility)
+      const maxFreezes = getMaxStreakFreezes(
+        entitlements,
+        user.bonusEligibility
+      )
 
       // Get current streak freeze count
       const currentFreezes = user.streakForgiveness ?? 0
@@ -274,8 +283,23 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const supporterEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+      const grant = await getActiveMembershipGrant(tx, auth.uid)
+      if (grant)
+        throw new APIError(
+          403,
+          membershipGrantLockMessage(grant.tier, grant.endsTime!)
+        )
+      const supporterEntitlements = await getActiveSupporterEntitlements(
+        tx,
+        auth.uid
+      )
       existingSupporter = supporterEntitlements[0] ?? null
+      if (existingSupporter?.metadata?.membershipGrantId != null) {
+        throw new APIError(
+          409,
+          'Your free membership is being updated. Refresh before changing tiers.'
+        )
+      }
 
       // Buying the tier you already have on auto-renew would charge for a
       // month the renewal covers anyway. Only a stale page offers it (e.g. a
@@ -290,22 +314,11 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         )
       }
 
-      // Calculate prorated credit from remaining time on existing tier
-      if (existingSupporter?.expiresTime) {
-        const msRemaining = existingSupporter.expiresTime - Date.now()
-        const daysRemaining = Math.max(0, msRemaining / DAY_MS)
-
-        // Get old tier price
-        const oldTierPrice =
-          SHOP_ITEMS.find((i) => i.id === existingSupporter!.entitlementId)
-            ?.price ?? 0
-
-        // Credit = remaining days * (oldPrice / 30 days)
-        // Only apply credit when switching to a different tier
-        if (existingSupporter.entitlementId !== entitlementId) {
-          upgradeCredit = Math.floor(daysRemaining * (oldTierPrice / 30))
-        }
-      }
+      upgradeCredit = membershipChangeCredit(
+        existingSupporter,
+        entitlementId,
+        Date.now()
+      )
     }
 
     // Get current supporter entitlements to check discount eligibility
@@ -319,11 +332,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // get neither: tier changes credit unused time at the full tier price.
     // The grace keeps a buy button opened just before a sale ended (or a fast
     // device clock just before it started) at the price it showed.
-    const supporterDiscount = getBenefit(
-      currentEntitlements,
-      'shopDiscount',
-      0
-    )
+    const supporterDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
     const { fraction: shopDiscount, sale } = getShopDiscount(
       supporterDiscount,
       isSupporterTierPurchase
@@ -381,7 +390,10 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
               // The discount actually applied, under the key it was named for.
               supporterDiscount: sale ? 0 : shopDiscount,
               ...(sale
-                ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
+                ? {
+                    holidaySaleId: sale.id,
+                    holidaySaleDiscount: shopDiscount,
+                  }
                 : {}),
             },
           }
@@ -457,7 +469,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
           }
         } else {
           // Check for existing entitlement to stack time
-          const existing = await tx.oneOrNone<{ expires_time: Date | null }>(
+          const existing = await tx.oneOrNone<{
+            expires_time: Date | null
+          }>(
             `SELECT expires_time FROM user_entitlements
              WHERE user_id = $1 AND entitlement_id = $2`,
             [auth.uid, entitlementId]
@@ -465,7 +479,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
           if (existing?.expires_time && existing.expires_time > new Date()) {
             // Add duration to existing expiration (stacking)
-            expiresTime = new Date(existing.expires_time.getTime() + item.duration)
+            expiresTime = new Date(
+              existing.expires_time.getTime() + item.duration
+            )
           } else {
             // No existing or expired - start fresh from now
             expiresTime = new Date(Date.now() + item.duration)
@@ -494,11 +510,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Fetch all entitlements after the transaction to return updated state
-    const allEntitlements = await tx.manyOrNone(
-      `SELECT * FROM user_entitlements WHERE user_id = $1`,
-      [auth.uid]
-    )
-    const entitlements = allEntitlements.map(convertEntitlement)
+    const entitlements = await getUserEntitlements(tx, auth.uid)
 
     // Find the one we just created/updated for backwards compatibility
     if (item.type !== 'instant') {
@@ -519,8 +531,15 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
     }
 
-    return { success: true as const, entitlement, entitlements, upgradeCredit }
-  }),
+    return {
+      success: true as const,
+      entitlement,
+      entitlements,
+      upgradeCredit,
+    }
+  }
+  const result = await betsQueue.enqueueFn(
+    () => runTransactionWithRetries(purchase),
     [auth.uid]
   )
 

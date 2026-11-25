@@ -1,3 +1,7 @@
+import type {
+  MembershipGrantResult,
+  MembershipGrantView,
+} from 'common/membership-grants'
 import {
   socialPostDraftSchema,
   socialPostEditSchema,
@@ -4672,6 +4676,27 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
+  'get-membership-grants': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ userId: z.string().optional() }).strict(),
+    returns: {} as MembershipGrantView & { userId: string },
+  },
+  'admin-grant-membership-days': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string().min(1),
+        tier: z.enum(['basic', 'plus', 'premium']),
+        days: z.number().int().min(1).max(90),
+        note: z.string().trim().min(1),
+      })
+      .strict(),
+    returns: {} as MembershipGrantResult,
   },
   'shop-cancel-subscription': {
     method: 'POST',

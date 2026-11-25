@@ -340,6 +340,8 @@ import { getMerchOrders } from './get-merch-orders'
 import { getMerchStockStatus } from './get-merch-stock-status'
 import { getUserMerchOrders } from './get-user-merch-orders'
 import { toggleMerchStock } from './toggle-merch-stock'
+import { getMembershipGrants } from './get-membership-grants'
+import { adminGrantMembershipDays } from './admin-grant-membership-days'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
@@ -687,6 +689,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
+  'get-membership-grants': getMembershipGrants,
+  'admin-grant-membership-days': adminGrantMembershipDays,
   'shop-cancel-subscription': shopCancelSubscription,
   'shop-update-metadata': shopUpdateMetadata,
   'claim-charity-champion': claimCharityChampion,

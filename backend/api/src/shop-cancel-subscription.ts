@@ -1,45 +1,41 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { convertEntitlement } from 'common/shop/types'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { getActiveMembershipGrant } from 'shared/membership-grants'
+import {
+  getActiveSupporterEntitlements,
+  getUserEntitlements,
+} from 'shared/supabase/entitlements'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 
 export const shopCancelSubscription: APIHandler<
   'shop-cancel-subscription'
 > = async (_, auth) => {
-  if (!auth) {
-    throw new APIError(401, 'Must be logged in')
-  }
-
-  const pg = createSupabaseDirectClient()
-
-  const result = await pg.tx(async (tx) => {
-    // Find user's active supporter entitlement (includes grace period)
-    const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-    const supporterEntitlement = entitlements[0]
-
-    if (!supporterEntitlement) {
-      throw new APIError(404, 'No active membership subscription found')
+  const userId = auth.uid
+  const entitlements = await runTransactionWithRetries(async (tx) => {
+    const active = await getActiveMembershipGrant(tx, userId)
+    if (active) {
+      if (!active.pausedPaid)
+        throw new APIError(
+          404,
+          'You have free days and no paid membership to cancel.'
+        )
+      if (active.pausedPaid.autoRenew)
+        await tx.one(
+          `update membership_grants set paused_paid = jsonb_set(paused_paid, '{autoRenew}', 'false')
+         where id = $1 and status = 'active' returning id`,
+          [active.id]
+        )
+    } else {
+      const [paid] = await getActiveSupporterEntitlements(tx, userId)
+      if (!paid)
+        throw new APIError(404, 'No active membership subscription found')
+      await tx.none(
+        'update user_entitlements set auto_renew = false where user_id = $1 and entitlement_id = $2',
+        [userId, paid.entitlementId]
+      )
     }
-
-    // Set auto_renew = false (subscription will run until expiration but not renew)
-    await tx.none(
-      `UPDATE user_entitlements
-       SET auto_renew = false
-       WHERE user_id = $1 AND entitlement_id = $2`,
-      [auth.uid, supporterEntitlement.entitlementId]
-    )
-
-    // Fetch all entitlements after the update to return current state
-    const allEntitlements = await tx.manyOrNone(
-      `SELECT * FROM user_entitlements WHERE user_id = $1`,
-      [auth.uid]
-    )
-
-    return { entitlements: allEntitlements.map(convertEntitlement) }
+    return getUserEntitlements(tx, userId)
   })
-
-  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
-
-  return { success: true, entitlements: result.entitlements }
+  broadcastUpdatedUser({ id: userId, entitlements })
+  return { success: true, entitlements }
 }

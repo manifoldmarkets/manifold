@@ -10,6 +10,7 @@ import {
   ExtraPurchasedManaData,
   getSourceUrl,
   MembershipSubscriptionData,
+  freeDaysExpiryMessage,
   Notification,
   PaymentCompletedData,
   PrizeDrawingNotificationData,
@@ -2790,6 +2791,15 @@ function MembershipSubscriptionNotification(props: {
   const newExpiresTime = data?.newExpiresTime
 
   const isRenewal = type === 'renewed'
+  const freeDays =
+    data?.expiryReason === 'free_days' && data.grantEndsTime != null
+      ? freeDaysExpiryMessage(
+          tierName,
+          data.grantEndsTime,
+          amount,
+          data.paidTierName
+        )
+      : undefined
 
   const subtitle = isRenewal
     ? newExpiresTime
@@ -2797,6 +2807,8 @@ function MembershipSubscriptionNotification(props: {
           newExpiresTime
         ).toLocaleDateString()}`
       : undefined
+    : type === 'expiring_soon'
+    ? undefined
     : `Add funds to resubscribe at the shop`
 
   return (
@@ -2805,7 +2817,7 @@ function MembershipSubscriptionNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      link="/shop"
+      link={freeDays ? '/membership' : '/shop'}
       icon={
         <NotificationIcon
           symbol={isRenewal ? '✨' : '⚠️'}
@@ -2818,7 +2830,18 @@ function MembershipSubscriptionNotification(props: {
       }
       subtitle={subtitle}
     >
-      {isRenewal ? (
+      {type === 'expiring_soon' ? (
+        <span>
+          {freeDays ??
+            `Your ${tierName} membership expires in ${
+              data?.daysUntilExpiry ?? 3
+            } days.${
+              data?.expiryReason === 'insufficient_balance'
+                ? ` You need ${formatMoney(amount)} to renew.`
+                : ''
+            }`}
+        </span>
+      ) : isRenewal ? (
         <span>
           Your <span className="font-semibold">{tierName}</span> membership was
           auto-renewed for{' '}

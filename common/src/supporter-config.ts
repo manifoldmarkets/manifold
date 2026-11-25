@@ -243,7 +243,7 @@ export function getUserSupporterTier(
       (e) => e.entitlementId === SUPPORTER_TIERS[tier].id
     )
     if (entitlement && entitlement.enabled) {
-      if (!entitlement.expiresTime || entitlement.expiresTime > now) {
+      if (entitlement.expiresTime == null || entitlement.expiresTime > now) {
         return tier
       }
       // Auto-renewing memberships get a grace period so they don't lapse
@@ -303,12 +303,13 @@ export function canUpgradeTo(
 }
 
 // Get the supporter entitlement for a user (if any)
-export function getSupporterEntitlement(
-  entitlements: UserEntitlement[] | undefined
-): UserEntitlement | null {
+export function getSupporterEntitlement<
+  T extends Pick<
+    UserEntitlement,
+    'entitlementId' | 'enabled' | 'expiresTime' | 'autoRenew'
+  >
+>(entitlements: T[] | undefined, now = Date.now()): T | null {
   if (!entitlements) return null
-
-  const now = Date.now()
 
   // Check tiers in reverse order to get highest active tier's entitlement
   for (const tier of ['premium', 'plus', 'basic'] as const) {
@@ -316,7 +317,7 @@ export function getSupporterEntitlement(
       (e) => e.entitlementId === SUPPORTER_TIERS[tier].id
     )
     if (entitlement && entitlement.enabled) {
-      if (!entitlement.expiresTime || entitlement.expiresTime > now) {
+      if (entitlement.expiresTime == null || entitlement.expiresTime > now) {
         return entitlement
       }
       if (

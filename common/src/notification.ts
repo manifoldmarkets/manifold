@@ -568,8 +568,26 @@ export type MembershipSubscriptionData = {
   tierName: string
   amount: number
   type: 'renewed' | 'cancelled' | 'expiring_soon'
+  expiryReason?: 'cancelled' | 'insufficient_balance' | 'free_days'
+  grantEndsTime?: number
+  paidTierName?: string
   daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
+}
+
+export function freeDaysExpiryMessage(
+  tierName: string,
+  endsTime: number,
+  amount: number,
+  paidTierName?: string
+) {
+  const until = new Date(endsTime).toLocaleDateString()
+  return (
+    `Your free ${tierName} days end on ${until}. ` +
+    (paidTierName
+      ? `Your ${paidTierName} membership picks up again then.`
+      : `Keep ${tierName} for M${amount.toLocaleString('en-US')}/month.`)
+  )
 }
 
 export type PrizeWinnerData = {

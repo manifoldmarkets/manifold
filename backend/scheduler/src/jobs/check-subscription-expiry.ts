@@ -6,7 +6,11 @@ import {
 } from 'common/supporter-config'
 import { DAY_MS } from 'common/util/time'
 import { getPrivateUser, log } from 'shared/utils'
-import { MembershipSubscriptionData, Notification } from 'common/notification'
+import {
+  freeDaysExpiryMessage,
+  MembershipSubscriptionData,
+  Notification,
+} from 'common/notification'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { createPushNotifications } from 'shared/create-push-notifications'
@@ -43,7 +47,8 @@ async function createSubscriptionExpiringNotification(
   tierName: string,
   amount: number,
   daysUntilExpiry: number,
-  reason: 'cancelled' | 'insufficient_balance'
+  reason: NonNullable<MembershipSubscriptionData['expiryReason']>,
+  grant?: { endsTime: number; paidTierName?: string }
 ) {
   const pg = createSupabaseDirectClient()
   const privateUser = await getPrivateUser(userId)
@@ -58,11 +63,16 @@ async function createSubscriptionExpiringNotification(
 
   // Deterministic ID prevents duplicate notifications if the job reruns on the same day
   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
-  const id = `sub-expiry-${userId}-${tierName.toLowerCase().replace(/\s+/g, '-')}-${today}-${reason}`
+  const id = `sub-expiry-${userId}-${tierName
+    .toLowerCase()
+    .replace(/\s+/g, '-')}-${today}-${reason}`
   const notificationData: MembershipSubscriptionData = {
     tierName,
     amount,
     type: 'expiring_soon',
+    expiryReason: reason,
+    grantEndsTime: grant?.endsTime,
+    paidTierName: grant?.paidTierName,
     daysUntilExpiry,
   }
 
@@ -79,7 +89,7 @@ async function createSubscriptionExpiringNotification(
     sourceUserUsername: MANIFOLD_USER_USERNAME,
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: daysUntilExpiry.toString(),
-    sourceSlug: '/shop',
+    sourceSlug: grant ? '/membership' : '/shop',
     data: notificationData,
   }
 
@@ -89,10 +99,20 @@ async function createSubscriptionExpiringNotification(
 
   if (sendToMobile) {
     const title = `${tierName} Membership Expiring Soon`
-    const body =
-      reason === 'cancelled'
-        ? `Your ${tierName} membership expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'}. Re-subscribe to keep your benefits!`
-        : `Your ${tierName} membership expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? '' : 's'} and you don't have enough mana to renew (need M$${amount}).`
+    const body = grant
+      ? freeDaysExpiryMessage(
+          tierName,
+          grant.endsTime,
+          amount,
+          grant.paidTierName
+        )
+      : reason === 'cancelled'
+      ? `Your ${tierName} membership expires in ${daysUntilExpiry} day${
+          daysUntilExpiry === 1 ? '' : 's'
+        }. Re-subscribe to keep your benefits!`
+      : `Your ${tierName} membership expires in ${daysUntilExpiry} day${
+          daysUntilExpiry === 1 ? '' : 's'
+        } and you don't have enough mana to renew (need M$${amount}).`
 
     await createPushNotifications([[privateUser, notification, title, body]])
   }
@@ -125,9 +145,14 @@ export async function checkSubscriptionExpiry() {
     entitlement_id: string
     expires_time: string
     auto_renew: boolean
+    grant_id: string | null
+    paid_tier: SupporterTier | null
   }>(
-    `SELECT user_id, entitlement_id, expires_time, auto_renew
-     FROM user_entitlements
+    `SELECT e.user_id, entitlement_id, expires_time, auto_renew, e.metadata->>'membershipGrantId' as grant_id,
+       g.paused_paid->>'tier' as paid_tier
+     FROM user_entitlements e
+     LEFT JOIN membership_grants g ON g.user_id = e.user_id AND g.status = 'active'
+       AND g.id::text = e.metadata->>'membershipGrantId'
      WHERE entitlement_id = ANY($1)
      AND expires_time IS NOT NULL
      AND expires_time > $2
@@ -135,7 +160,9 @@ export async function checkSubscriptionExpiry() {
     [[...SUPPORTER_ENTITLEMENT_IDS], minExpiry, maxExpiry]
   )
 
-  log(`Found ${expiringEntitlements.length} memberships expiring in ${expiringInDaysMin}-${expiringInDaysMax} days`)
+  log(
+    `Found ${expiringEntitlements.length} memberships expiring in ${expiringInDaysMin}-${expiringInDaysMax} days`
+  )
 
   let notifiedCount = 0
 
@@ -150,18 +177,32 @@ export async function checkSubscriptionExpiry() {
 
     const days = daysUntilExpiry(expires_time)
 
-    // Case 1: Auto-renew is off - user has cancelled
-    if (!auto_renew) {
+    // Free days and cancelled subscriptions both end without a renewal charge.
+    if (entitlement.grant_id || !auto_renew) {
       try {
         await createSubscriptionExpiringNotification(
           user_id,
-          tierInfo.name,
+          entitlement.grant_id
+            ? SUPPORTER_TIERS[tierInfo.tier].name
+            : tierInfo.name,
           tierInfo.price,
           days,
-          'cancelled'
+          entitlement.grant_id ? 'free_days' : 'cancelled',
+          entitlement.grant_id
+            ? {
+                endsTime: Date.parse(expires_time),
+                paidTierName: entitlement.paid_tier
+                  ? SUPPORTER_TIERS[entitlement.paid_tier].name
+                  : undefined,
+              }
+            : undefined
         )
         notifiedCount++
-        log(`Notified user ${user_id} about ${tierInfo.name} expiring (cancelled)`)
+        log(
+          `Notified user ${user_id} about ${tierInfo.name} expiring (${
+            entitlement.grant_id ? 'free days' : 'cancelled'
+          })`
+        )
       } catch (error) {
         log(`Failed to notify user ${user_id}: ${error}`)
       }

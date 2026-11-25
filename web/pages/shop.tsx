@@ -119,6 +119,10 @@ import {
   promoStatSizeClass,
 } from 'web/components/shop/giveaway-promo-card'
 import { NewBadge } from 'web/components/shop/new-badge'
+import {
+  MembershipGrantsPanel,
+  useMembershipGrants,
+} from 'web/components/shop/supporter/membership-grants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
@@ -2550,6 +2554,7 @@ function SupporterModal(props: {
 }) {
   const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
   const user = useUser()
+  const grants = useMembershipGrants(user, open)
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
@@ -2614,9 +2619,8 @@ function SupporterModal(props: {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      toast.success(
-        'Subscription cancelled. Your membership will remain active until the end of the current period.'
-      )
+      await grants.refresh()
+      toast.success('Automatic renewal is off.')
       setConfirmingCancel(false)
     } catch (e: any) {
       toast.error(e.message || 'Failed to cancel subscription')
@@ -2855,6 +2859,11 @@ function SupporterModal(props: {
             </div>
           </div>
 
+          <MembershipGrantsPanel
+            view={grants.view}
+            cancelling={cancelling}
+            turnOffRenewal={handleCancelSubscription}
+          />
           {/* Horizontal Tier Selector */}
           <TierSelector
             currentTier={currentTier}
@@ -2864,6 +2873,7 @@ function SupporterModal(props: {
             onHover={setHoveredTier}
             onHoverEnd={() => setHoveredTier(null)}
             effectiveBalance={effectiveBalance}
+            lockMessage={grants.lockMessage}
             variant="modal"
           />
 
@@ -2876,7 +2886,8 @@ function SupporterModal(props: {
               loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
               disabled={!user || !!purchasing || cancelling}
               entitlements={entitlements}
-              currentExpiresTime={currentEntitlement?.expiresTime}
+              currentEntitlement={currentEntitlement}
+              lockMessage={grants.lockMessage}
               isAutoRenewing={isAutoRenewing}
               onClick={() => setConfirmingPurchase(activeTier)}
               onCancelClick={() => setConfirmingCancel(true)}
@@ -2909,7 +2920,8 @@ function SupporterModal(props: {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
+            lockMessage={grants.lockMessage}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)

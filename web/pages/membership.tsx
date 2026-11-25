@@ -30,6 +30,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { refreshUserEntitlements } from 'client-common/hooks/use-websocket-user'
+import {
+  MembershipGrantsPanel,
+  useMembershipGrants,
+} from 'web/components/shop/supporter/membership-grants'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
@@ -48,6 +52,7 @@ import Custom404 from 'web/pages/404'
 
 export default function SupporterPage() {
   const user = useUser()
+  const grants = useMembershipGrants(user)
   const isAdminOrMod = useAdminOrMod()
 
   const [purchasing, setPurchasing] = useState<string | null>(null)
@@ -134,7 +139,8 @@ export default function SupporterPage() {
     } catch (e: any) {
       toast.error(e.message || 'Failed to purchase')
       // 409: the membership changed since this page loaded, so show it
-      if (e instanceof APIError && e.code === 409) {
+      if (e instanceof APIError && (e.code === 409 || e.code === 403)) {
+        await grants.refresh()
         await refreshMembership()
       }
     } finally {
@@ -147,9 +153,8 @@ export default function SupporterPage() {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      toast.success(
-        'Subscription cancelled. Your membership will remain active until the end of the current period.'
-      )
+      await grants.refresh()
+      toast.success('Automatic renewal is off.')
       setConfirmingCancel(false)
       await refreshMembership()
     } catch (e: any) {
@@ -290,6 +295,12 @@ export default function SupporterPage() {
           </Row>
         </div>
 
+        <MembershipGrantsPanel
+          view={grants.view}
+          cancelling={cancelling}
+          turnOffRenewal={handleCancelSubscription}
+        />
+
         {/* Horizontal Tier Selector */}
         <TierSelector
           currentTier={currentTier}
@@ -299,6 +310,7 @@ export default function SupporterPage() {
           onHover={setHoveredTier}
           onHoverEnd={() => setHoveredTier(null)}
           effectiveBalance={effectiveBalance}
+          lockMessage={grants.lockMessage}
           variant="page"
         />
 
@@ -334,7 +346,8 @@ export default function SupporterPage() {
             onClick={() => setConfirmingPurchase(activeTier)}
             onCancelClick={() => setConfirmingCancel(true)}
             entitlements={user?.entitlements}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
+            lockMessage={grants.lockMessage}
             isAutoRenewing={isAutoRenewing}
           />
         )}
@@ -361,7 +374,8 @@ export default function SupporterPage() {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
+            lockMessage={grants.lockMessage}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
