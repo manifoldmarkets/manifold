@@ -433,26 +433,32 @@ export const TROPHY_RANK_TIERS = [
 export type TrophyRank = { trophyId: string; rank: number; value: number }
 export type TrophyRankPeak = { trophyId: string; bestRank: number }
 
-// The two responses refresh independently. A held Net Worth rank is evidence
-// of a peak even when the achievements response predates the nightly snapshot.
+// The achievements response can predate a claim or a nightly publication.
 export function getTrophyDisplayStats(
   achievements: TrophyStats | undefined,
-  trophies: { ranks: TrophyRank[]; starter: StarterStats | null } | undefined
+  trophies:
+    | {
+        ranks: TrophyRank[]
+        starter: StarterStats | null
+        storedPeakNetWorth: number | null
+      }
+    | undefined
 ): TrophyStats {
   const held = trophies?.ranks.find((rank) => rank.trophyId === 'net-worth')
   return {
     ...achievements,
     ...trophies?.starter,
-    peakNetWorth: getNetWorthPeak(achievements?.peakNetWorth, held?.value),
+    peakNetWorth: getNetWorthPeak(
+      achievements?.peakNetWorth,
+      trophies?.storedPeakNetWorth,
+      held?.value
+    ),
   }
 }
 
-function getNetWorthPeak(
-  achievementsPeak: number | undefined,
-  heldValue: number | undefined
-) {
-  const values = [achievementsPeak, heldValue].filter(
-    (value): value is number => value !== undefined && Number.isFinite(value)
+function getNetWorthPeak(...peaks: (number | null | undefined)[]) {
+  const values = peaks.filter(
+    (value): value is number => value != null && Number.isFinite(value)
   )
   return values.length ? Math.max(...values) : undefined
 }

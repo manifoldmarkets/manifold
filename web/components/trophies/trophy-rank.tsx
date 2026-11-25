@@ -24,8 +24,9 @@ export function TrophyRankChip(props: {
   rank: number
   value: number
   computedTime: number | null
+  hideScore?: boolean
 }) {
-  const { definition, tier, rank, value, computedTime } = props
+  const { definition, tier, rank, value, computedTime, hideScore } = props
   const title = getTrophyRankTitle(definition, tier)
   const score = formatRankValue(definition, value)
   const updated =
@@ -40,6 +41,7 @@ export function TrophyRankChip(props: {
         aria-label={description}
         className={clsx(
           'bg-canvas-50 text-ink-800 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1',
+          hideScore && 'whitespace-nowrap',
           rankRing(tier)
         )}
       >
@@ -48,7 +50,8 @@ export function TrophyRankChip(props: {
             👑
           </span>
         )}
-        {title} · {score}
+        {title}
+        {!hideScore && ` · ${score}`}
         {tier !== 'crown' && ` · #${rank}`}
       </button>
     </Tooltip>

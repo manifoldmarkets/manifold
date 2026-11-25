@@ -1,8 +1,11 @@
 -- Trophy ladders v2: net worth peaks, nightly rank snapshots, rank peaks and
 -- the accounts kept out of ranks.
 -- Run after 2026112501_user_reactions_comment_likes_idx.sql, then deploy the
--- API and main scheduler, then web.
+-- API and main scheduler, then web. If a lock times out, rerun this migration.
 begin;
+
+set
+  local lock_timeout = '5s';
 
 create table if not exists
   trophy_rank_exclusions (

@@ -75,6 +75,9 @@ const client = {
   },
   many: async (sql: string, params?: unknown) => rows(sql, params),
   manyOrNone: async (sql: string, params?: unknown) => rows(sql, params),
+  result: async (sql: string, params?: unknown) => ({
+    rowCount: (await db.query(pgp.as.format(sql, params))).affectedRows,
+  }),
   // Like pg-promise: a statement run with none() must not return rows.
   none: async (sql: string, params?: unknown) => {
     if ((await rows(sql, params)).length) {
@@ -807,7 +810,10 @@ describe('nightly trophy ranks', () => {
     await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
     await rows("update users set balance = 600000 where id = 'u'")
     expect(await loadLive('u')).toMatchObject({ netWorth: 0, peakNetWorth: 0 })
-    expect((await trophiesOf('u')).ranksComputedTime).toBeNull()
+    expect(await trophiesOf('u')).toMatchObject({
+      ranksComputedTime: null,
+      storedPeakNetWorth: null,
+    })
     await updateTrophyRanks()
     expect(await rows('select * from trophy_ranks')).toEqual([])
     expect(await rows('select * from user_net_worth_peaks')).toEqual([])
@@ -866,6 +872,47 @@ describe('nightly trophy ranks', () => {
       netWorth: 320000,
       peakNetWorth: 600000,
     })
+    expect(await trophiesOf('whale')).toMatchObject({
+      ranks: [],
+      storedPeakNetWorth: 600000,
+    })
+  })
+
+  it('publishes the sampled rank and preserves a higher claim made before the nightly peak write', async () => {
+    await addUser('u', { data: { lastBetTime: Date.now() - DAY + 0.5 } })
+    await db.exec(`
+      insert into user_net_worth_peaks values ('u', 400000, now());
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        values ('u', 510000, 0);
+    `)
+    // PGlite has one connection. Run the claim immediately after the rank
+    // transaction commits, while the nightly peak candidate is still pending.
+    const tx = client.tx
+    const publication = jest
+      .spyOn(client, 'tx')
+      .mockImplementationOnce(async (...args) => {
+        const result = await tx(...args)
+        expect(await trophiesOf('u')).toMatchObject({
+          ranks: [{ trophyId: 'net-worth', rank: 1, value: 510000 }],
+          rankPeaks: [{ trophyId: 'net-worth', bestRank: 1 }],
+          ranksComputedTime: expect.any(Number),
+          storedPeakNetWorth: 400000,
+        })
+        await rows(
+          "update user_portfolio_history_latest set balance = 600000 where user_id = 'u'"
+        )
+        await claim('u', 'net-worth', 'whale')
+        return result
+      })
+    try {
+      await updateTrophyRanks()
+      expect(await trophiesOf('u')).toMatchObject({
+        ranks: [{ trophyId: 'net-worth', rank: 1, value: 510000 }],
+        storedPeakNetWorth: 600000,
+      })
+    } finally {
+      publication.mockRestore()
+    }
   })
 
   it('rolls back the peak when the snapshot falls short of the claimed tier', async () => {
@@ -917,6 +964,7 @@ describe('nightly trophy ranks', () => {
       `insert into user_net_worth_peaks values ('u', 499999.99999999999, now())`
     )
     expect((await loadLive('u')).peakNetWorth).toBe(499999)
+    expect((await trophiesOf('u')).storedPeakNetWorth).toBe(499999)
     await expect(claim('u', 'net-worth', 'whale')).rejects.toMatchObject({
       code: 403,
     })
@@ -1051,6 +1099,7 @@ describe('nightly trophy ranks', () => {
       data: { referredByUserId: 'maker', creatorTraders: { allTime: 15000 } },
     })
     await addUser('liker', { data: { referredByUserId: 'maker' } })
+    await addUser('second-liker')
     await addUser('invalid', { data: { lastBetTime: Date.now() - DAY } })
     await db.exec(`
       update users set balance = 1 where id in ('maker', 'liker');
@@ -1099,6 +1148,9 @@ describe('nightly trophy ranks', () => {
         union all
         select 'maker', 'orphan', 'comment', 'like', 'liker';
       insert into contract_comments values ('banned-like', 'm1', 'maker', '{}');
+      insert into user_reactions values
+        ('maker', 'comment-1', 'comment', 'like', 'second-liker'),
+        ('maker', 'banned-like', 'comment', 'like', 'maker');
 
       insert into leagues (season, division, cohort, user_id)
         select i, 6, 'c1', 'maker' from generate_series(1, 8) i;

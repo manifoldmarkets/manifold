@@ -44,6 +44,7 @@ import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   addTrophyClaims,
   addTrophyRewards,
+  refreshUserTrophies,
   replaceTrophyClaims,
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
@@ -102,6 +103,7 @@ export function TrophiesTab(props: {
       )
       addTrophyClaims(userId, claims)
       addTrophyRewards(userId, rewarded)
+      if (trophyId === 'net-worth') void refreshUserTrophies(userId)
       const first =
         trophies.claims.length === 0 &&
         newlyClaimed.length > 0 &&

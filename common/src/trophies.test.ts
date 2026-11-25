@@ -210,6 +210,7 @@ describe('progress', () => {
     const starter = { starterTrades: 3, starterMarkets: 2, starterDays: 1 }
     const trophies = {
       starter,
+      storedPeakNetWorth: null,
       ranks: [{ trophyId: 'liked-comments', rank: 1, value: 900_000 }],
     }
     expect(getTrophyDisplayStats(achievements, trophies)).toEqual({
@@ -224,6 +225,12 @@ describe('progress', () => {
         { trophyId: 'net-worth', rank: 1, value: 500_000 },
       ],
     }
+    expect(
+      getTrophyDisplayStats(achievements, {
+        ...trophies,
+        storedPeakNetWorth: 505_000,
+      }).peakNetWorth
+    ).toBe(505_000)
     const stats = getTrophyDisplayStats(achievements, refreshedTrophies)
     expect(stats.peakNetWorth).toBe(500_000)
     expect(

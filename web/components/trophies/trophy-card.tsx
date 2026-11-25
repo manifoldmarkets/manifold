@@ -221,6 +221,7 @@ export function TrophyCard(props: {
   const rankLabel =
     heldTier && rank ? (
       <TrophyRankChip
+        hideScore
         definition={definition}
         tier={heldTier}
         rank={rank.rank}

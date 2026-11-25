@@ -17,7 +17,19 @@ export const TROPHY_PERSON_FILTER = `not person.is_bot
       and (b.end_time is null or b.end_time > now()) and b.ban_type <> 'modAlert'
   )`
 
-export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
+// Check visibility once per (author, comment), even for heavily liked comments.
+export const trophyLikedCommentsQuery = (scope: 'user' | 'all') => `
+  with liked_ids as materialized (
+    select distinct r.content_owner_id, r.content_id
+    from user_reactions r
+    join users person on person.id = r.user_id
+    where r.content_type = 'comment' and r.reaction_type = 'like'
+      ${scope === 'user' ? 'and r.content_owner_id = $[userId]' : ''}
+      and r.user_id <> r.content_owner_id and ${TROPHY_PERSON_FILTER}
+  )
+  select r.content_owner_id as user_id, count(*) as value
+  from liked_ids r
+  where exists (
     select 1 from contract_comments cc
     join contracts c on c.id = cc.contract_id
     where cc.comment_id = r.content_id and cc.user_id = r.content_owner_id
@@ -30,8 +42,9 @@ export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
     where pc.user_id = r.content_owner_id and pc.comment_id = r.content_id
       and not coalesce((pc.data->>'deleted')::boolean, false)
       and not coalesce((pc.data->>'hidden')::boolean, false)
-  ))`
+  )
+  group by r.content_owner_id`
 
 export const TROPHY_NET_WORTH_PEAK_CONFLICT = `on conflict (user_id) do update set
   peak_net_worth = excluded.peak_net_worth, peak_time = excluded.peak_time
-  where excluded.peak_net_worth > floor(user_net_worth_peaks.peak_net_worth)`
+  where excluded.peak_net_worth > user_net_worth_peaks.peak_net_worth`

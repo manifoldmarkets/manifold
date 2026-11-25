@@ -18,7 +18,7 @@ import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_PERSON_FILTER,
   TROPHY_SNAPSHOT_NET_WORTH,
-  TROPHY_VISIBLE_COMMENT_FILTER,
+  trophyLikedCommentsQuery,
 } from 'shared/supabase/trophy-eligibility'
 import {
   SupabaseDirectClient,
@@ -236,14 +236,7 @@ const STATS_QUERY = `with
       ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
     from user_portfolio_history_latest uphl where uphl.user_id = $[userId]
   ),
-  liked as (
-    select count(distinct r.content_id) as liked_comments
-    from user_reactions r
-    join users person on person.id = r.user_id
-    where r.content_owner_id = $[userId] and r.content_type = 'comment' and r.reaction_type = 'like'
-      and r.user_id <> $[userId] and ${TROPHY_PERSON_FILTER}
-      and ${TROPHY_VISIBLE_COMMENT_FILTER}
-  ),
+  liked as (${trophyLikedCommentsQuery('user')}),
   mod_tickets as (
     select count(*) as mod_tickets_resolved
     from txns
@@ -365,7 +358,7 @@ const STATS_QUERY = `with
     coalesce(portfolio.net_worth, 0) as net_worth,
     greatest(coalesce(floor(peaks.peak_net_worth), 0),
       case when portfolio.is_fresh then portfolio.net_worth end) as peak_net_worth,
-    liked.liked_comments,
+    coalesce(liked.value, 0) as liked_comments,
     created.markets_created_with_traders,
     referrals.referred_traders,
     metrics.resolved_profitable_markets,

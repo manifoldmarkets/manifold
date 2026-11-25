@@ -36,7 +36,7 @@ Equal scores share a rank. First place holds #1, ranks 2–5 hold Mega and ranks
 | `trophy_rank_state`      | Public timestamp of the latest publication, including a run with no holders |
 | `user_trophy_rank_peaks` | Public best numeric rank, first ranked time and time of the best rank       |
 
-The job samples net worth once and publishes ranks, personal bests and the publication time in one repeatable-read transaction. `get-user-trophies` reads ranks, peaks, claims, starter progress and pins in one snapshot.
+The job samples net worth once and publishes ranks, best ranks and the publication time in one repeatable-read transaction. After commit, it records sampled net worth highs that still exceed the stored peaks. `get-user-trophies` reads ranks, peaks, claims, starter progress and pins in one snapshot.
 
 To exclude another holder, insert their user ID and a reason. Dev needs its own rows for any desired exclusions.
 
@@ -49,6 +49,8 @@ values
 
 ## Known limitations
 
+- A portfolio snapshot older than 72 hours drops out of Net Worth ranks. In the production review, 2 of 63 accounts at M500,000 or more had stale snapshots. Neither had traded in the preceding 90 days.
+- The Net Worth peak shown includes today's fresh snapshot. It becomes permanent when you claim a Net Worth milestone or the nightly run records it. A dip before then can lower the displayed peak.
 - The portfolio writer reads positions before it reads cash. A sale between those reads can put both the sold position and its proceeds in one snapshot, inflating Net Worth. During the manual review of the top 25, check each holder's sales against their snapshot time.
 - The writer updates its in-memory portfolio before the history insert succeeds. If the insert fails and the portfolio stays the same on the next run, the writer can advance `last_calculated` on the old row. Stale values can then pass the 72-hour freshness check for claims, peaks and ranks.
 - Two legacy multiple-choice markets in production have `isResolved` set in their data and a null contract `resolution`. Profitable Markets skips both, so profitable holders receive no credit for either market.
