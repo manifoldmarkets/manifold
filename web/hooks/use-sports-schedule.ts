@@ -1,5 +1,6 @@
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { BdlLeagueKey } from 'common/bdl/leagues'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -49,13 +50,15 @@ export function useSportsSchedule(
   sport: AnySportKey | 'all',
   enabled = true,
   /** A topic under Sports (SportsSubtopic.id): only its games and markets. */
-  topic?: string
+  topic?: string,
+  league?: BdlLeagueKey
 ) {
   // Everything loaded for this sport or topic (see ScheduleFeed), kept in
   // memory per page so switching back is instant. Tagged with what it's for:
   // the sport page stays mounted when the URL moves to another sport, and the
   // stored value for the new one only arrives after a render.
-  const view = topic ? `${sport}/${topic}` : sport
+  const scope = topic ? `${sport}/${topic}` : sport
+  const view = league ? `${scope}?league=${encodeURIComponent(league)}` : scope
   const [stored, setStored] = usePersistentInMemoryState<
     (ScheduleFeed & { sport: string }) | undefined
   >(undefined, `sports-feed-${view}`)
@@ -84,7 +87,7 @@ export function useSportsSchedule(
         SCHEDULE_PAGE_SIZE,
         MAX_SCHEDULE_LIMIT,
         (limit, cursor) =>
-          api('sports-schedule', { sport, topic, limit, cursor }),
+          api('sports-schedule', { sport, topic, limit, cursor, league }),
         () => gen === generation.current,
         isSportsBdlEnabled()
       )
@@ -126,6 +129,7 @@ export function useSportsSchedule(
       const page = await api('sports-schedule', {
         sport,
         topic,
+        league,
         limit: SCHEDULE_PAGE_SIZE,
         cursor,
       })

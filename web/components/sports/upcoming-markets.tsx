@@ -1,4 +1,10 @@
 import dayjs from 'dayjs'
+import { chunk } from 'lodash'
+import type { BdlLeagueKey } from 'common/bdl/leagues'
+import {
+  sportsLeagueForSlug,
+  sportsNavigationLeague,
+} from 'common/sports-league-label'
 import { useId, useMemo, useState } from 'react'
 import { formatJustTime } from 'client-common/lib/time'
 import {
@@ -18,13 +24,27 @@ import { groupByDay, SectionHeader } from './schedule-list'
  * grouping by close date gives an "up next" list from what people made, with
  * no matching involved. This is most of the page until a league is connected.
  */
-export function UpcomingMarkets(props: {
+type MarketsProps = {
   refs: UpcomingMarketRef[]
   sport: AnySportKey | 'all'
   /** Tag each row with its sport (the All view). */
   showSport: boolean
   sportsByKey: Record<string, SportInfo>
-}) {
+  title?: string
+  league?: BdlLeagueKey | null
+}
+
+export function UpcomingMarkets(props: MarketsProps) {
+  return (
+    <>
+      {chunk(props.refs, 100).map((refs) => (
+        <UpcomingMarketGroup key={refs[0].id} {...props} refs={refs} />
+      ))}
+    </>
+  )
+}
+
+function UpcomingMarketGroup(props: MarketsProps) {
   const { refs, sport, showSport, sportsByKey } = props
   const hides = useHidesBlocked()
   const [showAll, setShowAll] = useState(false)
@@ -35,7 +55,7 @@ export function UpcomingMarkets(props: {
     'markets-by-ids',
     { ids },
     undefined,
-    `sports-upcoming-${sport}`,
+    `sports-upcoming-${sport}-${ids.join(',')}`,
     ids.length > 0
   )
   const byId = useMemo(
@@ -47,7 +67,17 @@ export function UpcomingMarkets(props: {
 
   const available = refs.flatMap((ref) => {
     const contract = byId.get(ref.id)
-    return contract && !hides(contract.groupSlugs) ? [{ ref, contract }] : []
+    return contract &&
+      !contract.deleted &&
+      contract.visibility === 'public' &&
+      (props.league === undefined ||
+        sportsNavigationLeague(
+          contract,
+          contract.groupSlugs?.map(sportsLeagueForSlug)
+        ) === props.league) &&
+      !hides(contract.groupSlugs)
+      ? [{ ref, contract }]
+      : []
   })
   const days = groupByDay(
     showAll ? available : available.slice(0, previewLimit),
@@ -58,7 +88,7 @@ export function UpcomingMarkets(props: {
   return (
     <Col className="gap-2">
       <SectionHeader
-        label="Closing this week"
+        label={props.title ?? 'Closing this week'}
         count={data ? available.length : refs.length}
         unit="market"
       />

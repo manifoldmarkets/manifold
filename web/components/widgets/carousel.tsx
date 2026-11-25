@@ -19,6 +19,8 @@ type CarouselProps = {
   labelsParentClassName?: string
   fadeEdges?: boolean
   showArrowsOnHover?: boolean
+  /** Reveal the current link when the route or available choices change. */
+  revealActiveKey?: string
 } & Omit<JSX.IntrinsicElements['div'], 'children' | 'className'>
 
 export function Carousel(props: CarouselProps) {
@@ -29,6 +31,7 @@ export function Carousel(props: CarouselProps) {
     className,
     fadeEdges,
     showArrowsOnHover,
+    revealActiveKey,
     ...rest
   } = props
 
@@ -39,6 +42,24 @@ export function Carousel(props: CarouselProps) {
   const { scrollLeft, scrollRight, atFront, atBack, onScroll } = useCarousel(el)
 
   useEffect(onScroll, [children, onScroll])
+
+  useEffect(() => {
+    if (!el || !revealActiveKey) return
+    const reveal = () => {
+      const selected = el.querySelector('[aria-current="page"]')
+      if (!selected) return
+      const chip = selected.getBoundingClientRect()
+      const rail = el.getBoundingClientRect()
+      if (chip.left < rail.left || chip.right > rail.right)
+        el.scrollBy({
+          left: (chip.left + chip.right - rail.left - rail.right) / 2,
+        })
+    }
+    reveal()
+    const changes = new MutationObserver(reveal)
+    changes.observe(el, { childList: true })
+    return () => changes.disconnect()
+  }, [el, revealActiveKey])
 
   const showArrows = showArrowsOnHover ? isHovered : !fadeEdges
 
