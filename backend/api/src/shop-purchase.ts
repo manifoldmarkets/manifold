@@ -6,7 +6,7 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
-import { runShopCheckout } from './helpers/shop-checkout'
+import { checkPriceCeiling, runShopCheckout } from './helpers/shop-checkout'
 import {
   getShopItem,
   getEntitlementId,
@@ -196,7 +196,7 @@ async function checkItemRequirement(
 }
 
 export const shopPurchase: APIHandler<'shop-purchase'> = async (
-  { itemId },
+  { itemId, expectedPrice },
   auth
 ) => {
   const item = getShopItem(itemId)
@@ -341,6 +341,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
     // Apply upgrade credit (for supporter tier upgrades)
     const price = Math.max(0, basePrice - upgradeCredit)
+    checkPriceCeiling(price, expectedPrice)
 
     // Check balance (runTxnOutsideBetQueue will also check, but let's give a better error)
     if (user.balance < price) {

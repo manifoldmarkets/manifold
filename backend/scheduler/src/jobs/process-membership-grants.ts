@@ -3,6 +3,7 @@ import { membershipGrantToken } from 'shared/membership-grant-config'
 import { activeSupporterAccessSql } from 'shared/supabase/entitlements'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { processUserMembershipGrants } from 'shared/membership-grants'
+import { relayMembershipBroadcast } from 'shared/relay-membership-broadcast'
 import { log } from 'shared/utils'
 
 export async function processMembershipGrants() {
@@ -32,7 +33,12 @@ export async function processMembershipGrants() {
   let failed = 0
   for (const { user_id } of users) {
     try {
-      const change = await processUserMembershipGrants(pg, user_id)
+      const change = await processUserMembershipGrants(
+        pg,
+        user_id,
+        'advance',
+        relayMembershipBroadcast
+      )
       if (change.started) started++
       if (change.ended) ended++
     } catch (err) {

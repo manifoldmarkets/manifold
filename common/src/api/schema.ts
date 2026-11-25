@@ -1506,6 +1506,19 @@ export const API = (_apiTypeCheck = {
       .strict(),
   },
   // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-membership-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        userId: z.string().min(1),
+      })
+      .strict(),
+  },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
   'internal-sports-broadcast': {
     method: 'POST',
     visibility: 'private',
@@ -4656,6 +4669,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         itemId: z.string(),
+        expectedPrice: z.number().finite().nonnegative().optional(),
       })
       .strict(),
     returns: {} as {
@@ -4766,6 +4780,7 @@ export const API = (_apiTypeCheck = {
         itemId: z.string(),
         variantId: z.string(),
         shippingCost: z.number().int().min(0),
+        expectedTotal: z.number().finite().nonnegative().optional(),
         shipping: z.object({
           name: z.string().max(200),
           address1: z.string().max(200),

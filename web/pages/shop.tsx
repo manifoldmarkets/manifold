@@ -99,7 +99,8 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useOptimisticEntitlements } from 'web/hooks/use-optimistic-entitlements'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
+import { getUserSafe } from 'web/lib/supabase/users'
 import Custom404 from './404'
 import {
   BenefitsTable,
@@ -126,6 +127,18 @@ import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
+
+async function showPurchaseError(
+  error: unknown,
+  fallback: string,
+  userId: string
+) {
+  toast.error(
+    error instanceof Error && error.message ? error.message : fallback
+  )
+  if (error instanceof APIError && error.code === 409)
+    await getUserSafe(userId).catch(console.error)
+}
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -904,7 +917,6 @@ export default function ShopPage() {
         {merchHasNewItems && (
           <MerchSection
             user={user}
-            entitlements={effectiveEntitlements}
             purchasedMerchIds={purchasedMerchIds}
             outOfStockIds={outOfStockIds}
             isItemNewToUser={isItemNewToUser}
@@ -928,7 +940,6 @@ export default function ShopPage() {
         {!merchHasNewItems && (
           <MerchSection
             user={user}
-            entitlements={effectiveEntitlements}
             purchasedMerchIds={purchasedMerchIds}
             outOfStockIds={outOfStockIds}
             isItemNewToUser={isItemNewToUser}
@@ -1066,7 +1077,6 @@ function HolidaySaleShopNote() {
 
 function MerchSection(props: {
   user: User | null | undefined
-  entitlements: UserEntitlement[]
   purchasedMerchIds: Set<string>
   outOfStockIds: Set<string>
   isItemNewToUser: (item: ShopItem) => boolean
@@ -1076,7 +1086,6 @@ function MerchSection(props: {
 }) {
   const {
     user,
-    entitlements,
     purchasedMerchIds,
     outOfStockIds,
     isItemNewToUser,
@@ -1106,7 +1115,6 @@ function MerchSection(props: {
             key={item.id}
             item={item}
             user={user}
-            allEntitlements={entitlements}
             alreadyPurchased={purchasedMerchIds.has(item.id)}
             outOfStock={outOfStockIds.has(item.id)}
             isNew={isItemNewToUser(item)}
@@ -1121,27 +1129,18 @@ function MerchSection(props: {
 function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
-  allEntitlements?: UserEntitlement[]
   alreadyPurchased?: boolean
   outOfStock?: boolean
   isNew?: boolean
   onPurchased?: () => void
 }) {
-  const {
-    item,
-    user,
-    allEntitlements,
-    alreadyPurchased,
-    outOfStock,
-    isNew,
-    onPurchased,
-  } = props
+  const { item, user, alreadyPurchased, outOfStock, isNew, onPurchased } = props
   const tryOfferReview = useStoreReviewNudge('shop-order')
   // Same rule the API charges by: supporter discount, or the holiday sale's
   // merch discount if bigger.
   const holidaySale = useActiveHolidaySale()
   const { fraction: shopDiscount, sale: discountSale } = getShopDiscount(
-    getBenefit(allEntitlements, 'shopDiscount', 0),
+    getBenefit(user?.entitlements, 'shopDiscount', 0),
     holidaySale
   )
   const discountedPrice = applyShopDiscount(item.price, shopDiscount)
@@ -1363,6 +1362,11 @@ function MerchItemCard(props: {
     }
   }
 
+  const shippingMana = selectedShipping
+    ? Math.round(parseFloat(selectedShipping.rate) * 100)
+    : 0
+  const totalPrice = discountedPrice + shippingMana
+
   const handleSubmitOrder = async () => {
     if (!user || !selectedSize || !selectedShipping) return
     const variant = findSelectedVariant()
@@ -1370,7 +1374,6 @@ function MerchItemCard(props: {
 
     setPurchasing(true)
     try {
-      const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
       const { email, ...restShipping } = shippingInfo
       const shippingPayload = email.trim()
         ? { ...restShipping, email: email.trim() }
@@ -1379,6 +1382,7 @@ function MerchItemCard(props: {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
+        expectedTotal: totalPrice,
         shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
@@ -1401,9 +1405,9 @@ function MerchItemCard(props: {
       onPurchased?.()
       // Let the success toast land before the OS modal pops over it.
       setTimeout(tryOfferReview, 3000)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to place order')
+    } catch (e) {
       setShowConfirmOrderModal(false)
+      await showPurchaseError(e, 'Failed to place order', user.id)
     } finally {
       setPurchasing(false)
     }
@@ -1800,11 +1804,7 @@ function MerchItemCard(props: {
               }}
             >
               Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping &&
-                ` + ${formatMoney(
-                  Math.round(parseFloat(selectedShipping.rate) * 100)
-                )} shipping`}
-              )
+              {selectedShipping && ` + ${formatMoney(shippingMana)} shipping`})
             </Button>
           </>
         }
@@ -2120,23 +2120,12 @@ function MerchItemCard(props: {
             {selectedShipping && (
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping:</span>
-                <span className="font-medium">
-                  {formatMoney(
-                    Math.round(parseFloat(selectedShipping.rate) * 100)
-                  )}
-                </span>
+                <span className="font-medium">{formatMoney(shippingMana)}</span>
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
               <span>Total (mana):</span>
-              <span className="text-teal-600">
-                {formatMoney(
-                  discountedPrice +
-                    (selectedShipping
-                      ? Math.round(parseFloat(selectedShipping.rate) * 100)
-                      : 0)
-                )}
-              </span>
+              <span className="text-teal-600">{formatMoney(totalPrice)}</span>
             </Row>
           </Col>
 
@@ -2618,6 +2607,8 @@ function SupporterModal(props: {
     const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
+      // Memberships get no discount; the only drift is upgrade credit
+      // shrinking by the second, so no price ceiling here.
       const result = await api('shop-purchase', { itemId: item.id })
       // Update parent state with new entitlements for immediate UI update
       if (onPurchaseComplete) {
@@ -2626,8 +2617,8 @@ function SupporterModal(props: {
       setPurchasedTier(tier)
       setShowCelebration(true)
       toast.success('Thank you for your support!')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to purchase')
+    } catch (e) {
+      await showPurchaseError(e, 'Failed to purchase', user.id)
     } finally {
       setPurchasing(null)
     }
@@ -5611,7 +5602,7 @@ function ShopItemCard(props: {
   // shop discount if bigger. (Memberships never reach this card.)
   const holidaySale = useActiveHolidaySale()
   const { fraction: shopDiscount } = getShopDiscount(
-    getBenefit(allEntitlements, 'shopDiscount', 0),
+    getBenefit(user?.entitlements, 'shopDiscount', 0),
     holidaySale
   )
   const discountedPrice = applyShopDiscount(item.price, shopDiscount)
@@ -5644,12 +5635,15 @@ function ShopItemCard(props: {
 
     setPurchasing(true)
     try {
-      const result = await api('shop-purchase', { itemId: item.id })
+      const result = await api('shop-purchase', {
+        itemId: item.id,
+        expectedPrice: discountedPrice,
+      })
       toast.success(`Purchased ${item.name}!`)
       setShowConfirmModal(false)
       onPurchaseComplete(item.id, result.entitlements)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to purchase item')
+    } catch (e) {
+      await showPurchaseError(e, 'Failed to purchase item', user.id)
     } finally {
       setPurchasing(false)
     }
@@ -6114,7 +6108,7 @@ function ShopItemCard(props: {
               </>
             ) : (
               <span className="font-semibold text-teal-600">
-                {formatMoney(item.price)}
+                {formatMoney(discountedPrice)}
               </span>
             )}
             ?

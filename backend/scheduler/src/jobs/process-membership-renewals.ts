@@ -6,6 +6,7 @@ import {
   renewDueMembership,
 } from 'shared/membership-renewal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { relayMembershipBroadcast } from 'shared/relay-membership-broadcast'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
 
@@ -56,6 +57,7 @@ export async function processMembershipRenewals() {
       log(`Membership ${result.type} for user ${user_id} (${entitlement_id})`)
       if (result.type === 'renewed') renewedCount++
       else if (result.type === 'cancelled') failedCount++
+      void relayMembershipBroadcast(user_id)
       await publishMembershipRenewal(result)
     } catch (error) {
       log(`Error processing renewal for user ${user_id}: ${error}`)

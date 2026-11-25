@@ -15,6 +15,16 @@ import { log } from 'shared/monitoring/log'
 import type { SupabaseTransaction } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 
+export function checkPriceCeiling(price: number, ceiling?: number) {
+  if (ceiling !== undefined && price > ceiling)
+    throw new APIError(
+      409,
+      `The price changed to M$${price.toLocaleString(
+        'en-US'
+      )}. Please check and confirm again.`
+    )
+}
+
 export async function runShopCheckout<T>(
   userId: string,
   isMembershipPurchase: boolean,

@@ -213,7 +213,8 @@ export async function publishGrantTransition(
 export async function processUserMembershipGrants(
   pg: SupabaseDirectClientTimeout,
   userId: string,
-  mode: GrantTransitionMode = 'advance'
+  mode: GrantTransitionMode = 'advance',
+  onChangeCommitted?: (userId: string) => void
 ) {
   const change = await transactWithRetries(
     pg,
@@ -221,6 +222,7 @@ export async function processUserMembershipGrants(
     (tx) => advanceGrants(tx, userId, Date.now(), { mode }),
     grantRetryOptions
   )
+  if (change.started || change.ended) onChangeCommitted?.(userId)
   await publishGrantTransition(userId, change)
   return { started: change.started, ended: change.ended }
 }

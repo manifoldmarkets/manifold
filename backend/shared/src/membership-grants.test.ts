@@ -11,6 +11,7 @@ import { shopPurchaseMerch } from 'api/shop-purchase-merch'
 import * as checkout from 'api/helpers/shop-checkout'
 import * as holidaySale from 'common/holiday-sale'
 import { shopCancelSubscription } from 'api/shop-cancel-subscription'
+import { relayMembershipBroadcast } from './relay-membership-broadcast'
 import { processMembershipRenewals } from 'scheduler/jobs/process-membership-renewals'
 import { processMembershipGrants } from 'scheduler/jobs/process-membership-grants'
 import { checkSubscriptionExpiry } from 'scheduler/jobs/check-subscription-expiry'
@@ -21,6 +22,7 @@ import { getShopStats } from 'api/get-shop-stats'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import {
   getSupporterEntitlement,
+  SupporterTier,
   SUPPORTER_TIERS,
   wasEverSupporter,
 } from 'common/supporter-config'
@@ -45,6 +47,9 @@ import { betsQueue } from './helpers/fn-queue'
 import { log } from './monitoring/log'
 import { getUser } from './utils'
 
+jest.mock('./relay-membership-broadcast', () => ({
+  relayMembershipBroadcast: jest.fn(),
+}))
 jest.mock('../../scripts/run-script', () => ({ runScript: jest.fn() }))
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
@@ -161,7 +166,10 @@ type Handler = (
   props: Record<string, string>,
   auth: { uid: string }
 ) => Promise<unknown>
-const purchase = shopPurchase as Handler
+const purchase = shopPurchase as (
+  props: Parameters<typeof shopPurchase>[0],
+  auth: { uid: string }
+) => Promise<unknown>
 const { grantMembershipDays, processUserMembershipGrants } = membershipGrants
 const { runShopCheckout } = checkout
 const cancel = shopCancelSubscription as Handler
@@ -448,6 +456,22 @@ it('removes a free-only row without offering a paid cancellation', async () => {
   expect(await supporter()).toBeNull()
 })
 
+it.each([
+  ['grant', processMembershipGrants],
+  ['renewal', processMembershipRenewals],
+] as const)(
+  'skips the %s relay if the scanned user is no longer due',
+  async (_name, runJob) => {
+    jest
+      .spyOn(testClient, 'manyOrNone')
+      .mockResolvedValueOnce([
+        { user_id: userId, entitlement_id: 'supporter-basic' },
+      ])
+    await runJob()
+    expect(relayMembershipBroadcast).not.toHaveBeenCalled()
+  }
+)
+
 it('excludes a grant-owned row from mana renewals even with auto_renew set', async () => {
   await grantMembershipDays(pg, input)
   await rows(
@@ -497,7 +521,10 @@ it.each(['renewal first', 'grant first'])(
       metadata: { membershipGrantId: grant.id },
       autoRenew: false,
     })
+    expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
+    expect(relayMembershipBroadcast).toHaveBeenCalledWith(userId)
     await second()
+    expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
     expect(
       await rows('select status, paused_paid from membership_grants')
     ).toEqual([
@@ -626,6 +653,8 @@ it.each([true, false])(
         : { status: 'banked', paused_paid: null },
     ])
     await processMembershipRenewals()
+    expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
+    expect(relayMembershipBroadcast).toHaveBeenCalledWith(userId)
     expect(
       await rows(
         "select data->'data'->>'type' as type from user_notifications order by type"
@@ -787,6 +816,47 @@ it.each([
   }
 )
 
+function mockPrintful(
+  order = Response.json({ result: { id: 42, status: 'draft' } })
+) {
+  return jest
+    .spyOn(global, 'fetch')
+    .mockRejectedValue(new Error('Unexpected Printful request'))
+    .mockResolvedValueOnce(Response.json({ result: [{ rate: '1' }] }))
+    .mockResolvedValueOnce(order)
+}
+
+async function buyMerch(expectedTotal?: number) {
+  const buy = shopPurchaseMerch as (
+    props: Parameters<typeof shopPurchaseMerch>[0],
+    auth: { uid: string }
+  ) => Promise<unknown>
+  const previousToken = process.env.PRINTFUL_API_TOKEN
+  process.env.PRINTFUL_API_TOKEN = 'test'
+  try {
+    return await buy(
+      {
+        itemId: 'merch-wordmark-tshirt',
+        variantId: '69e70ad8bc1045',
+        shippingCost: 100,
+        shipping: {
+          name: 'Buyer',
+          address1: '1 Main',
+          city: 'Oakland',
+          state: 'CA',
+          zip: '94612',
+          country: 'US',
+        },
+        expectedTotal,
+      },
+      { uid: userId }
+    )
+  } finally {
+    if (previousToken === undefined) delete process.env.PRINTFUL_API_TOKEN
+    else process.env.PRINTFUL_API_TOKEN = previousToken
+  }
+}
+
 it.each(['due at settlement', 'ledger mismatch', 'expires during pricing'])(
   'prices merch at the checkout Premium discount (%s)',
   async (scenario) => {
@@ -814,40 +884,8 @@ it.each(['due at settlement', 'ledger mismatch', 'expires during pricing'])(
         'update user_entitlements set metadata = null, expires_time = $1',
         [new Date(Date.now() + DAY_MS)]
       )
-    const fetch = jest
-      .spyOn(global, 'fetch')
-      .mockRejectedValue(new Error('Unexpected Printful request'))
-      .mockResolvedValueOnce(Response.json({ result: [{ rate: '1' }] }))
-      .mockResolvedValueOnce(
-        Response.json({ result: { id: 42, status: 'draft' } })
-      )
-    const order = {
-      itemId: 'merch-wordmark-tshirt',
-      variantId: '69e70ad8bc1045',
-      shippingCost: 100,
-      shipping: {
-        name: 'Buyer',
-        address1: '1 Main',
-        city: 'Oakland',
-        state: 'CA',
-        zip: '94612',
-        country: 'US',
-      },
-    }
-    const buy = shopPurchaseMerch as (
-      p: typeof order,
-      auth: { uid: string }
-    ) => Promise<unknown>
-    const previousToken = process.env.PRINTFUL_API_TOKEN
-    process.env.PRINTFUL_API_TOKEN = 'test'
-    try {
-      await expect(buy(order, { uid: userId })).resolves.toMatchObject({
-        success: true,
-      })
-    } finally {
-      if (previousToken === undefined) delete process.env.PRINTFUL_API_TOKEN
-      else process.env.PRINTFUL_API_TOKEN = previousToken
-    }
+    const fetch = mockPrintful()
+    await expect(buyMerch()).resolves.toMatchObject({ success: true })
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(sale).toHaveBeenCalledWith(
       checkoutTime,
@@ -982,6 +1020,8 @@ it('publishes one debit and notice when a scheduled renewal retries after the de
       Object.assign(new Error('retry expiry update'), { code: '40001' })
     )
   await processMembershipRenewals()
+  expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
+  expect(relayMembershipBroadcast).toHaveBeenCalledWith(userId)
   const price = SUPPORTER_TIERS.plus.price
   expect(await rows('select amount from txns')).toEqual([{ amount: price }])
   expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
@@ -1208,7 +1248,8 @@ it.each([
 
 async function expireGrantOverPaidMembership(
   remaining: number,
-  autoRenew = false
+  autoRenew = false,
+  tier: SupporterTier = input.tier
 ) {
   const start = Date.now()
   const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
@@ -1219,12 +1260,111 @@ async function expireGrantOverPaidMembership(
   )
   const { grant } = await grantMembershipDays(pg, {
     ...input,
+    tier,
     durationMs: 4 * DAY_MS,
   })
   const end = grant.endsTime!
   clock.mockReturnValue(end)
   return end
 }
+
+const ceilingCases = [
+  {
+    item: 'cosmetic',
+    price: 25000,
+    confirmed: 22500,
+    buy: (expectedPrice: number) =>
+      purchase(
+        { itemId: 'avatar-golden-border', expectedPrice },
+        { uid: userId }
+      ),
+  },
+  { item: 'merch', price: 5100, confirmed: 4600, buy: buyMerch },
+]
+
+it.each(ceilingCases)(
+  'refuses a higher $item price while committing the grant restoration',
+  async ({ item, price, confirmed, buy }) => {
+    jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+    const end = await expireGrantOverPaidMembership(DAY_MS, false, 'premium')
+    const clock = jest
+      .spyOn(Date, 'now')
+      .mockReturnValue(item === 'merch' ? end - 1 : end)
+    const fetch = jest
+      .spyOn(global, 'fetch')
+      .mockRejectedValue(new Error('Unexpected Printful request'))
+      .mockImplementationOnce(async () => {
+        // The buyer still had Premium when the shipping-rate check started.
+        clock.mockReturnValue(end)
+        return Response.json({ result: [{ rate: '1' }] })
+      })
+    await expect(buy(confirmed)).rejects.toMatchObject({
+      code: 409,
+      message: `The price changed to M$${price.toLocaleString(
+        'en-US'
+      )}. Please check and confirm again.`,
+    })
+    expect(await supporter()).toMatchObject({
+      entitlementId: 'supporter-basic',
+      expiresTime: end + DAY_MS,
+      metadata: undefined,
+    })
+    expect(await rows('select status from membership_grants')).toEqual([
+      { status: 'used' },
+    ])
+    expect(await rows('select * from shop_orders')).toEqual([])
+    expect(await rows('select * from txns')).toEqual([])
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 100000 }])
+    expect(fetch).toHaveBeenCalledTimes(item === 'merch' ? 1 : 0)
+  }
+)
+
+describe.each(ceilingCases)('$item checkout', ({ price, buy }) => {
+  it.each([0, 500])(
+    'charges the computed price with a ceiling %i mana above it',
+    async (extra) => {
+      jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+      mockPrintful()
+      await expect(buy(price + extra)).resolves.toMatchObject({ success: true })
+      expect(await rows('select price_mana from shop_orders')).toEqual([
+        { price_mana: price },
+      ])
+      expect(await rows('select amount from txns')).toEqual([{ amount: price }])
+      expect(
+        await rows('select balance from users where id = $1', [userId])
+      ).toEqual([{ balance: 100000 - price }])
+    }
+  )
+})
+
+it('only broadcasts the committed charge when the merch refund status update fails', async () => {
+  jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+  mockPrintful(new Response('order failed', { status: 500 }))
+  jest.spyOn(console, 'error').mockImplementation(() => {})
+  await db.exec(
+    "alter table shop_orders add constraint reject_failed_status check (status <> 'FAILED')"
+  )
+  try {
+    await expect(buyMerch(5100)).rejects.toThrow(/reject_failed_status/)
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 94900 }])
+    expect(await rows('select amount from txns')).toEqual([{ amount: 5100 }])
+    expect(await rows('select status from shop_orders')).toEqual([
+      { status: 'PENDING_FULFILLMENT' },
+    ])
+    expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
+    expect(broadcastUpdatedUser).toHaveBeenCalledWith(
+      expect.objectContaining({ id: userId, balance: 94900 })
+    )
+  } finally {
+    await db.exec(
+      'alter table shop_orders drop constraint reject_failed_status'
+    )
+  }
+})
 
 it('commits the restored membership and inbox notice when a purchase is refused', async () => {
   const end = await expireGrantOverPaidMembership(DAY_MS)

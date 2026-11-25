@@ -19,10 +19,10 @@ import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { UserUpdate } from 'shared/supabase/users'
 import { broadcastShopUserState } from 'shared/shop-broadcast'
-import { runShopCheckout } from './helpers/shop-checkout'
+import { checkPriceCeiling, runShopCheckout } from './helpers/shop-checkout'
 
 export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
-  { itemId, variantId, shippingCost, shipping },
+  { itemId, variantId, shippingCost, shipping, expectedTotal },
   auth
 ) => {
   // Merch orders create real Printful drafts that staff have to clean up.
@@ -184,6 +184,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       )
       const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
       const totalCharge = discountedItemPrice + shippingCost
+      checkPriceCeiling(totalCharge, expectedTotal)
 
       // Check balance
       if (user.balance < totalCharge) {
@@ -290,17 +291,20 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
         originalTxnId: txnId,
       },
     }
-    await betsQueue.enqueueFn(
-      () =>
-        runTransactionWithRetries(async (tx) => {
-          await runTxnOutsideBetQueue(tx, refundTxn)
-          await tx.none(
-            `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
-            [txnId]
-          )
-        }),
-      [auth.uid]
-    )
+    await betsQueue.enqueueFn(async () => {
+      const balanceUpdates = await runTransactionWithRetries(async (tx) => {
+        const updates: UserUpdate[] = []
+        await runTxnOutsideBetQueue(tx, refundTxn, false, (rows) =>
+          updates.push(...rows)
+        )
+        await tx.none(
+          `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
+          [txnId]
+        )
+        return updates
+      })
+      broadcastShopUserState(auth.uid, { balanceUpdates })
+    }, [auth.uid])
     throw err
   }
 
