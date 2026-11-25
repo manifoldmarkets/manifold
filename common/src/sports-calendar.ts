@@ -1,3 +1,8 @@
+import { mapValues } from 'lodash'
+
+import { isSportsBdlEnabled } from './bdl/rollout'
+import { BDL_ESPORTS_CLOSE_HOURS } from './bdl/constants'
+import { isMajorLeague, MajorLeague } from './bdl/major-leagues'
 import { additionalFeedCalendar } from './sports-feeds'
 import type { SportKey } from './sports-schedule'
 import { ENV } from './envs/constants'
@@ -9,7 +14,19 @@ import { ENV } from './envs/constants'
 // every process (scheduler, API, admin page) reads the same list with nothing
 // to seed or sync. Status is computed from the dates at run time.
 
+/** Calendar IDs reserved for the BDL pipelines. No calendar phases are enabled by these mappings. */
+export const BDL_ADDITIONAL_SPORTS = {
+  mma: { label: 'MMA', sportKey: 'mma' },
+  golf: { label: 'Golf', sportKey: 'golf' },
+  cs2: { label: 'CS2', sportKey: 'esports' },
+  valorant: { label: 'VALORANT', sportKey: 'esports' },
+  lol: { label: 'LoL', sportKey: 'esports' },
+  dota2: { label: 'Dota 2', sportKey: 'esports' },
+  cbase: { label: 'College Baseball', sportKey: 'other' },
+} as const satisfies Record<string, { label: string; sportKey: SportKey }>
+
 export type SportId =
+  | keyof typeof BDL_ADDITIONAL_SPORTS
   | 'nfl'
   | 'cfb'
   | 'f1'
@@ -68,7 +85,8 @@ export interface SportsCalendarEntry {
    * A feed other than The Odds API that the scheduler creates this phase's
    * markets from: 'bdl-f1' is BALLDONTLIE's F1 API (shared/f1-markets.ts).
    */
-  provider?: 'bdl-f1'
+  provider?: 'bdl-f1' | 'bdl'
+  bdlLeagueKey?: MajorLeague
   /**
    * F1: how many rounds the season was announced with. The season title
    * markets need it to pay out: the provider must list at least this many
@@ -597,7 +615,44 @@ export const SPORTS_CALENDAR: SportsCalendarEntry[] = [
     oddsKey: ODDS_KEY_BY_COMPETITION[e.competitionId],
   })),
   ...additionalFeedCalendar(),
+  ...ENTRIES.flatMap((entry): SportsCalendarEntry[] =>
+    isMajorLeague(entry.sport) &&
+    entry.sport !== 'nfl' &&
+    !entry.locked &&
+    !/preseason|exhibition|all.star/i.test(entry.phase)
+      ? [
+          {
+            ...entry,
+            phase: entry.phase + ' (BDL)',
+            provider: 'bdl',
+            bdlLeagueKey: entry.sport,
+            autoCreate: false,
+            autoResolve: true,
+            notes: undefined,
+          },
+        ]
+      : []
+  ),
+  {
+    sport: 'nfl',
+    competition: 'NFL 2027 season',
+    competitionId: 'nfl-regular-2027',
+    phase: 'Regular Season (BDL)',
+    startDate: '2027-09-01',
+    endDate: '2028-01-31',
+    // The adapter checks provider season and phase. These dates bound discovery.
+    autoCreate: false,
+    autoResolve: true,
+    provider: 'bdl',
+    bdlLeagueKey: 'nfl',
+  },
 ]
+
+const legacyCalendar = SPORTS_CALENDAR.filter((e) => e.provider !== 'bdl')
+
+/** The production-facing calendar excludes staged BDL phases until rollout. */
+export const getSportsCalendar = () =>
+  isSportsBdlEnabled() ? SPORTS_CALENDAR : legacyCalendar
 
 export function calendarStatus(
   entry: Pick<SportsCalendarEntry, 'startDate' | 'endDate'>,
@@ -612,7 +667,7 @@ export function calendarStatus(
 
 /** Entries whose window contains `now`. */
 export function activeCalendarEntries(now = Date.now()): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => calendarStatus(e, now) === 'active')
+  return getSportsCalendar().filter((e) => calendarStatus(e, now) === 'active')
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -636,17 +691,22 @@ export function calendarEntriesOverlapping(
   from: number,
   to: number
 ): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => {
+  return getSportsCalendar().filter((e) => {
     const w = phaseWindow(e)
     return w.from <= to && w.to >= from
   })
 }
 
-/** All phases of one competition. */
+/** The existing feed and its BDL successor may share a competition ID during cutover. */
 export function calendarEntriesFor(
-  competitionId: string
+  competitionId: string,
+  provider?: 'bdl'
 ): SportsCalendarEntry[] {
-  return SPORTS_CALENDAR.filter((e) => e.competitionId === competitionId)
+  return SPORTS_CALENDAR.filter(
+    (e) =>
+      e.competitionId === competitionId &&
+      (provider === 'bdl' ? e.provider === 'bdl' : e.provider !== 'bdl')
+  )
 }
 
 /**
@@ -703,15 +763,31 @@ export function autoCreates(
 export function competitionSwitchError(
   competitionId: string,
   phase: string,
-  on: boolean
+  on: boolean,
+  switches?: CompetitionSwitches
 ): string | undefined {
-  const entry = SPORTS_CALENDAR.find(
+  const entry = getSportsCalendar().find(
     (e) => e.competitionId === competitionId && e.phase === phase
   )
   if (!entry) return `No calendar phase ${competitionId} / ${phase}`
   if (!entry.oddsKey && !entry.provider)
     return `${entry.competition} has no Odds API sport key or other feed`
   if (on && entry.locked) return entry.locked
+  if (on && switches && (entry.oddsKey || entry.provider === 'bdl')) {
+    const window = phaseWindow(entry)
+    const conflict = getSportsCalendar().find((other) => {
+      if (
+        other.sport !== entry.sport ||
+        !(entry.oddsKey ? other.provider === 'bdl' : other.oddsKey) ||
+        !autoCreates(other, switches)
+      )
+        return false
+      const otherWindow = phaseWindow(other)
+      return window.from <= otherWindow.to && otherWindow.from <= window.to
+    })
+    if (conflict)
+      return `Switch off ${conflict.competition} / ${conflict.phase} first`
+  }
   return undefined
 }
 
@@ -757,6 +833,7 @@ export const SPORT_LEAGUE_LABEL: Record<SportId, string> = {
   nrl: 'NRL',
   handball: 'Handball',
   tennis: 'Tennis',
+  ...mapValues(BDL_ADDITIONAL_SPORTS, (sport) => sport.label),
 }
 
 /** Which chip on /sports a calendar sport belongs to. */
@@ -779,6 +856,7 @@ export const SPORT_ID_TO_SPORT_KEY: Record<SportId, SportKey> = {
   nrl: 'nrl',
   handball: 'handball',
   tennis: 'tennis',
+  ...mapValues(BDL_ADDITIONAL_SPORTS, (sport) => sport.sportKey),
 }
 
 // Hours after the start before the market closes: the longest realistic game
@@ -802,6 +880,15 @@ export const CLOSE_BUFFER_HOURS: Record<SportId, number> = {
   nrl: 3,
   handball: 3,
   tennis: 6,
+  // BDL adapters use a fight's maximum duration, a tournament's final round,
+  // or the series format. These entries are generic calendar fallbacks.
+  mma: 0,
+  golf: 6,
+  cs2: BDL_ESPORTS_CLOSE_HOURS[5],
+  valorant: BDL_ESPORTS_CLOSE_HOURS[5],
+  lol: BDL_ESPORTS_CLOSE_HOURS[5],
+  dota2: BDL_ESPORTS_CLOSE_HOURS[5],
+  cbase: 4,
 }
 
 // ─── Readiness filters ────────────────────────────────────────────────────────

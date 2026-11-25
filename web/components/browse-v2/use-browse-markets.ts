@@ -1,10 +1,16 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { useEvent } from 'client-common/hooks/use-event'
 import { APIParams } from 'common/api/schema'
 import { Contract } from 'common/contract'
 import { uniqBy } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
 
-import { api } from 'web/lib/api/api'
+import { useRouter } from 'next/router'
+import {
+  discoveryParams,
+  DiscoverySearchSession,
+  searchDiscoveryMarkets,
+} from 'web/lib/api/discovery-markets'
 
 export type BrowseMarketsQuery = Omit<
   APIParams<'search-markets-full'>,
@@ -29,7 +35,17 @@ export function useBrowseMarkets(
   // Changing this refetches the same query (e.g. after following a topic).
   refreshKey: string | number = 0
 ) {
-  const key = query ? `${JSON.stringify(query)}|${refreshKey}` : undefined
+  const { pathname } = useRouter()
+  const surface = isSportsBdlEnabled()
+    ? pathname === '/home'
+      ? 'home'
+      : 'new'
+    : undefined
+  const key = query
+    ? `${surface ? surface + '|' : ''}${JSON.stringify(query)}|${refreshKey}`
+    : undefined
+  const compatibility = useRef<DiscoverySearchSession>({})
+  const pending = useRef<AbortController>()
   const [state, setState] = useState<State>({
     contracts: [],
     offset: 0,
@@ -41,6 +57,10 @@ export function useBrowseMarkets(
   const fetchPage = useEvent(async (fresh: boolean) => {
     if (!query || !key) return false
     const requestId = ++requestRef.current
+    pending.current?.abort()
+    const controller = new AbortController()
+    pending.current = controller
+    if (fresh) compatibility.current = {}
     const last = state.contracts[state.contracts.length - 1]
     // New uses a time cursor, as the classic page does: offsets shift as
     // markets are created while the page is open.
@@ -52,14 +72,24 @@ export function useBrowseMarkets(
         : { ...s, loading: true, error: undefined }
     )
     try {
-      const page = await api('search-markets-full', {
-        ...query,
-        offset,
-        ...(useCursor ? { beforeTime: last.createdTime } : {}),
-        limit: pageSize,
-      })
-      if (requestId !== requestRef.current) return false
       const previous = fresh ? [] : state.contracts
+      const params = discoveryParams(
+        {
+          ...query,
+          offset,
+          ...(useCursor ? { beforeTime: last.createdTime } : {}),
+          limit: pageSize,
+        },
+        surface,
+        previous
+      )
+      const page = await searchDiscoveryMarkets(
+        params,
+        previous,
+        compatibility.current,
+        { signal: controller.signal }
+      )
+      if (requestId !== requestRef.current) return false
       const contracts = uniqBy([...previous, ...page], 'id')
       // A full page that adds nothing new would repeat forever; stop.
       const hasMore =
@@ -87,6 +117,7 @@ export function useBrowseMarkets(
   useEffect(() => {
     if (key) fetchPage(true)
     return () => {
+      pending.current?.abort()
       requestRef.current++
     }
   }, [key])

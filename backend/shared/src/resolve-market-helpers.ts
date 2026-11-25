@@ -73,7 +73,10 @@ export const resolveMarketHelper = async (
   // The caller's last check, on this transaction's read of the contract and
   // before anything is written: throw to resolve nothing. The F1 resolver uses
   // it so another answer resolved after its snapshot stops a podium payout.
-  assertResolvable?: (contract: MarketContract) => void
+  assertResolvable?: (
+    contract: MarketContract,
+    tx: SupabaseTransaction
+  ) => void | Promise<void>
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -111,7 +114,7 @@ export const resolveMarketHelper = async (
       if (answer.resolution || answer.resolutionTime)
         throw new APIError(403, `${answerId} answer is already resolved`)
     }
-    assertResolvable?.(unresolvedContract)
+    await assertResolvable?.(unresolvedContract, tx)
 
     const resolutionTime = Date.now()
     const newCloseTime = closeTime

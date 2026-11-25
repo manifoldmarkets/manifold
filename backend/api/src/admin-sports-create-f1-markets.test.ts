@@ -4,7 +4,7 @@ jest.mock('shared/supabase/init', () => ({
 // Prod: an admin can create F1 markets by hand there too.
 jest.mock('shared/utils', () => ({ isProd: () => true }))
 jest.mock('shared/balldontlie-f1-client', () => ({
-  hasBalldontlieKey: jest.fn(() => true),
+  getF1ClientStatus: jest.fn(() => 'ready'),
 }))
 jest.mock('shared/f1-markets', () => ({ createF1Markets: jest.fn() }))
 jest.mock('common/envs/constants', () => ({
@@ -12,7 +12,7 @@ jest.mock('common/envs/constants', () => ({
   isAdminId: (id: string) => id === 'admin',
 }))
 
-import { hasBalldontlieKey } from 'shared/balldontlie-f1-client'
+import { getF1ClientStatus } from 'shared/balldontlie-f1-client'
 import { createF1Markets } from 'shared/f1-markets'
 import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
 
@@ -30,7 +30,7 @@ const log = [
 
 beforeEach(() => {
   jest.mocked(createF1Markets).mockReset()
-  jest.mocked(hasBalldontlieKey).mockReturnValue(true)
+  jest.mocked(getF1ClientStatus).mockReturnValue('ready')
 })
 
 it('previews and creates F1 markets for an admin in prod', async () => {
@@ -64,9 +64,23 @@ it('refuses non-admins, other sports and a server with no key', async () => {
   await expect(
     handler({ competitionId: 'nfl-regular-2026' }, { uid: 'admin' })
   ).rejects.toMatchObject({ code: 400 })
-  jest.mocked(hasBalldontlieKey).mockReturnValue(false)
+  jest.mocked(getF1ClientStatus).mockReturnValue('missing-key')
   await expect(
     handler({ competitionId: 'f1-2026' }, { uid: 'admin' })
-  ).rejects.toMatchObject({ code: 500 })
+  ).rejects.toMatchObject({
+    code: 500,
+    message: 'BALLDONTLIE_API_KEY is not set on the server',
+  })
+  expect(createF1Markets).not.toHaveBeenCalled()
+})
+
+it('tells the operator when dev F1 creation is disabled despite a configured API key', async () => {
+  jest.mocked(getF1ClientStatus).mockReturnValue('rollout-disabled')
+  await expect(
+    handler({ competitionId: 'f1-2026', dryRun: true }, { uid: 'admin' })
+  ).rejects.toMatchObject({
+    code: 503,
+    message: 'F1 market creation is disabled on this dev deployment.',
+  })
   expect(createF1Markets).not.toHaveBeenCalled()
 })

@@ -220,6 +220,24 @@ drop index if exists contracts_slug;
 
 create index contracts_slug on public.contracts using btree (slug);
 
+create index if not exists contracts_sports_event_id_idx on public.contracts ((data ->> 'sportsEventId'))
+where
+  data ->> 'sportsEventId' is not null;
+
+create index if not exists contracts_sports_schedule_idx on public.contracts (close_time, id)
+where
+  data ->> 'sportsEventId' is not null
+  and visibility = 'public'
+  and token = 'MANA'
+  and coalesce(deleted, false) = false
+  and resolution is distinct from 'CANCEL';
+
+create index if not exists contracts_sports_resumption_idx on public.contracts ((data -> 'sportsResumptionTime'), id)
+where
+  resolution is null
+  and jsonb_typeof(data -> 'sportsResumptionTime') = 'number'
+  and upper(data ->> 'sportsLiveStatus') in ('SUSPENDED', 'POSTPONED');
+
 drop index if exists contracts_visibility_public;
 
 create index contracts_visibility_public on public.contracts using btree (id)

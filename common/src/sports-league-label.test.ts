@@ -1,8 +1,11 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
+jest.mock('./bdl/rollout', () => ({ isSportsBdlEnabled: jest.fn(() => true) }))
 import { SPORTS_CALENDAR } from './sports-calendar'
 import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
 } from './sports-league-label'
 
@@ -91,8 +94,70 @@ describe('getSportsLeagueLabel', () => {
     ).toBeUndefined()
   })
 
+  it.each(['nba', 'wnba', 'mlb', 'nhl', 'nfl'] as const)(
+    'links %s games by event identity',
+    (league) => {
+      const game = {
+        creatorId: sports,
+        sportsEventId: 'bdl:' + league + ':22',
+        sportsLeagueKey: league,
+        sportsLeague: 'Other',
+      }
+      expect(getSportsLeagueLabel(game)).toBe(league.toUpperCase())
+      expect(sportsLeagueHref(game)).toBe('/sports/' + league)
+      expect(
+        getSportsLeagueLabel({ ...game, sportsProvider: 'odds' })
+      ).toBeUndefined()
+      expect(
+        getSportsLeagueLabel({ ...game, sportsFixture: true })
+      ).toBeUndefined()
+      expect(
+        getSportsLeagueLabel({ ...game, creatorId: 'visitor' })
+      ).toBeUndefined()
+    }
+  )
+
+  it('rejects conflicting league identities and keeps legacy dashboard links', () => {
+    expect(
+      getSportsLeagueLabel({
+        creatorId: sports,
+        sportsEventId: 'bdl:nhl:22',
+        sportsLeagueKey: 'nba',
+      })
+    ).toBeUndefined()
+    for (const sportsEventId of ['fd-537327', 'legacy-1'])
+      expect(
+        sportsLeagueHref({
+          creatorId: sports,
+          sportsLeague: 'FIFA World Cup',
+          sportsEventId,
+        })
+      ).toBe('/sports/world-cup-2026')
+  })
+
   it('has a label for every sport key on the calendar', () => {
     const keys = SPORTS_CALENDAR.flatMap((e) => (e.oddsKey ? [e.oddsKey] : []))
     expect(keys.filter((k) => !LEAGUE_LABEL_ODDS_KEYS.includes(k))).toEqual([])
   })
+})
+
+it('uses the original Odds, World Cup and F1 badges and destinations with rollout off', () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  try {
+    const owner = { creatorId: MANIFOLD_SPORTS_USER_IDS[0] }
+    for (const [sportsEventId, sportsLeague, label, href] of [
+      ['odds:americanfootball_nfl:abc', 'NFL', 'NFL', '/sports/nfl'],
+      ['fd-537327', 'FIFA World Cup', 'WC26', '/sports/world-cup-2026'],
+      ['bdl-f1:17:22', 'Formula 1', 'F1', '/sports/f1'],
+    ]) {
+      const contract = { ...owner, sportsEventId, sportsLeague }
+      expect(getSportsLeagueLabel(contract)).toBe(label)
+      expect(sportsLeagueHref(contract)).toBe(href)
+    }
+    expect(
+      getSportsLeagueLabel({ ...owner, sportsEventId: 'bdl:nba:22' })
+    ).toBeUndefined()
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })

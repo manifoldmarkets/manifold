@@ -114,10 +114,16 @@ const event: OddsApiEvent = {
 /** Minimal transactional store: inserts are invisible until commit; the
  * advisory lock serializes transactions, not the earlier preview lookup.
  * `onLock` runs as a transaction takes the lock. */
-function database(opts: { onLock?: () => void } = {}) {
+function database(
+  opts: {
+    onLock?: (sql: string) => void
+    latestSwitches?: Record<string, boolean>
+    switchCompetitionId?: string
+  } = {}
+) {
   const contracts: Contract[] = []
   const writes: string[] = []
-  let tail = Promise.resolve()
+  const lockTails = new Map<string, Promise<void>>()
   const oneOrNone = jest.fn(async (sql: string): Promise<unknown> => {
     if (sql.includes("data->>'sportsEventId'")) return contracts[0] ?? null
     if (sql.includes('from groups'))
@@ -135,17 +141,32 @@ function database(opts: { onLock?: () => void } = {}) {
     task: async (work: (task: { oneOrNone: typeof none }) => Promise<void>) =>
       work({ oneOrNone: none }),
     tx: async (run: (tx: SupabaseDirectClient) => Promise<Contract>) => {
-      let unlock: (() => void) | undefined
+      const releases = new Map<string, () => void>()
       const inserted: Contract[] = []
       const tx = {
         oneOrNone,
-        one: async () => {
-          const previous = tail
-          tail = new Promise<void>((resolve) => {
-            unlock = resolve
-          })
+        manyOrNone: pg.manyOrNone,
+        map: async (
+          _query: string,
+          _params: unknown[],
+          convert: (row: unknown) => unknown
+        ) =>
+          Object.entries(opts.latestSwitches ?? {}).map(([phase, enabled]) =>
+            convert({
+              competition_id: opts.switchCompetitionId ?? 'nba-regular-2026-27',
+              phase,
+              enabled,
+            })
+          ),
+        one: async (query: string, [key]: [string] = [query]) => {
+          if (releases.has(key)) return {}
+          const previous = lockTails.get(key)
+          lockTails.set(
+            key,
+            new Promise<void>((resolve) => releases.set(key, resolve))
+          )
           await previous
-          opts.onLock?.()
+          opts.onLock?.(query)
           return {}
         },
         none: async (encoded: string) => {
@@ -165,7 +186,7 @@ function database(opts: { onLock?: () => void } = {}) {
         contracts.push(...inserted)
         return result
       } finally {
-        unlock?.()
+        for (const release of releases.values()) release()
       }
     },
   }
@@ -781,12 +802,12 @@ describe("re-syncing a moved game's title", () => {
   ).question
   const newTitle = buildOddsMarketParams(event, entry).question
 
-  const resync = async (question: string) => {
+  const resync = async (question: string, resolution: string | null = null) => {
     const db = database()
     db.contracts.push({ id: 'existing' } as Contract)
     db.pg.oneOrNone.mockImplementation(async (sql: string) => {
       if (sql.includes("data->>'sportsStartTimestamp' as start"))
-        return { start: oldStart, resolution: null, question }
+        return { start: oldStart, resolution, question }
       if (sql.includes("data->>'sportsEventId'")) return { id: 'existing' }
       return null
     })
@@ -795,8 +816,21 @@ describe("re-syncing a moved game's title", () => {
     })
     const calls = db.pg.none.mock.calls as unknown as [string, unknown[]][]
     const update = calls.find(([sql]) => sql.includes('update contracts'))
-    return JSON.parse(update![1][0] as string)
+    if (!update) return undefined
+    expect(update[0]).toContain('and resolution is null')
+    return JSON.parse(update[1][0] as string)
   }
+
+  it('updates the scheduled kickoff and close without moving the immutable seed', async () => {
+    const patch = await resync(oldTitle)
+    expect(patch.sportsStartTimestamp).toBe(event.commence_time)
+    expect(patch.closeTime).toBe(buildOddsMarketParams(event, entry).closeTime)
+    expect(patch).not.toHaveProperty('sportsSeededStartTimestamp')
+  })
+
+  it('leaves the schedule unchanged once the market resolves', async () => {
+    expect(await resync(oldTitle, 'CANCEL')).toBeUndefined()
+  })
 
   it('moves the date in a title the pipeline wrote', async () => {
     expect(newTitle).not.toEqual(oldTitle)
@@ -1619,3 +1653,152 @@ it('backs off across the switch from live polls to a finals check', async () => 
     { finishedDays: 3 },
   ])
 })
+
+const originalEnv = process.env
+afterEach(() => {
+  process.env = originalEnv
+})
+it('preserves legacy NBA creation without BDL locks or switch rechecks when rollout is off', async () => {
+  process.env = { ...process.env }
+  delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
+  const competitionId = 'nba-regular-2026-27'
+  const locks = jest.fn()
+  const db = database({
+    onLock: locks,
+    latestSwitches: { 'Regular Season (BDL)': true },
+  })
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+  jest.mocked(getUpcomingOdds).mockResolvedValue([
+    {
+      ...event,
+      sport_key: 'basketball_nba',
+      commence_time: '2026-11-22T00:00:00Z',
+    },
+  ])
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    competitionId,
+    {
+      creator,
+      switches: { [competitionId + ':Regular Season']: true },
+    }
+  )
+  expect(result.created).toBe(1)
+  expect(locks).toHaveBeenCalledTimes(1)
+  expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+})
+it('rechecks the exact active major Odds phase when no BDL phase covers this season', async () => {
+  process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+  const competitionId = 'nfl-regular-2026'
+  const db = database({
+    switchCompetitionId: competitionId,
+    latestSwitches: { 'Regular Season': false },
+  })
+  const result = await createOddsMarketsForCompetition(
+    db.client,
+    competitionId,
+    { creator, switches: { [competitionId + ':Regular Season']: true } }
+  )
+  expect(result).toMatchObject({ created: 0, skipped: 1, errors: 0 })
+  expect(result.log[0].reason).toContain('Odds creation was switched off')
+  expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+})
+
+it.each([{ sport_key: 'basketball_nba' }, { id: '' }, { id: 'other:role' }])(
+  'skips a mismatched or malformed major provider event before writing: %p',
+  async (override) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    jest.mocked(getUpcomingOdds).mockResolvedValue([{ ...event, ...override }])
+    const db = database()
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      'nfl-regular-2026',
+      { creator }
+    )
+    expect(result).toMatchObject({ created: 0, skipped: 1, errors: 0 })
+    expect(result.log[0].reason).toContain('event identity')
+    expect(db.pg.none).not.toHaveBeenCalled()
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
+
+it.each([true, false])(
+  'moves only the unchanged official major matchup under the funding lock (still current = %s)',
+  async (unchanged) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const locks = jest.fn()
+    const db = database({ onLock: locks })
+    db.pg.oneOrNone.mockImplementation(async (sql: string) => {
+      if (sql.startsWith('update contracts')) {
+        expect(locks).toHaveBeenCalledWith(
+          "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+        )
+        expect(sql).toContain(
+          "data->>'sportsStartTimestamp' is not distinct from $3"
+        )
+        expect(sql).toContain("data->>'sportsEventId' = $4")
+        return unchanged ? { id: 'existing' } : null
+      }
+      if (sql.includes("data->>'sportsStartTimestamp' as start"))
+        return {
+          start: '2026-09-12T17:00:00Z',
+          resolution: null,
+          question: 'Edited title',
+        }
+      return { id: 'existing' }
+    })
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      'nfl-regular-2026',
+      { creator }
+    )
+    expect(result).toMatchObject({ created: 0, skipped: 1, errors: 0 })
+    expect(result.log[0].reason?.includes('moved its kickoff')).toBe(unchanged)
+    expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+  }
+)
+
+it.each(['off', 'dual', 'on'] as const)(
+  'rechecks a legacy game at the BDL cutover before funding when the current Odds state is %s',
+  async (state) => {
+    process.env = { ...process.env, NEXT_PUBLIC_SPORTS_BDL_ENABLED: 'true' }
+    const competitionId = 'nba-regular-2026-27'
+    const locks = jest.fn()
+    const db = database({
+      onLock: locks,
+      latestSwitches: {
+        'Regular Season': state !== 'off',
+        'Regular Season (BDL)': state === 'dual',
+      },
+    })
+    jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-11-21T15:00:00Z'))
+    jest.mocked(getUpcomingOdds).mockResolvedValue([
+      {
+        ...event,
+        sport_key: 'basketball_nba',
+        commence_time: '2026-11-22T00:00:00Z',
+      },
+    ])
+    const result = await createOddsMarketsForCompetition(
+      db.client,
+      competitionId,
+      { creator, switches: { [competitionId + ':Regular Season']: true } }
+    )
+    expect(result.log.filter((event) => event.status === 'error')).toEqual([])
+    expect(locks).toHaveBeenCalledWith(
+      "select pg_advisory_xact_lock(hashtext('sports-creation-budget'))"
+    )
+    if (state === 'on') {
+      expect(result.created).toBe(1)
+      expect(runTxnOutsideBetQueue).toHaveBeenCalledTimes(1)
+    } else {
+      expect(result).toMatchObject({ created: 0, errors: 0, skipped: 1 })
+      expect(result.log[0].reason).toContain(
+        state === 'dual'
+          ? 'BDL creation is enabled'
+          : 'Odds creation was switched off'
+      )
+      expect(runTxnOutsideBetQueue).not.toHaveBeenCalled()
+    }
+  }
+)

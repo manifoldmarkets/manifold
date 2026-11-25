@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronRightIcon, HeartIcon, UsersIcon } from '@heroicons/react/solid'
 import { HeartIcon as OutlineHeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
@@ -10,11 +11,14 @@ import {
   ScheduleTeam,
   teamDisplayName,
 } from 'common/sports-schedule'
+import { gameScoreLabel, scoreboardDetailLines } from 'common/sports-scoreboard'
+import { formatFeedPrice } from 'common/sports-price'
 import { readableTextColor } from 'common/sports-team-colors'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { GameLinkedMarkets } from 'web/components/sports/game-related-markets'
+import { canBetOnScheduledGame } from 'common/sports-game-feed'
 import { ScoreFreshness } from './score-freshness'
 import { SportsMarketBadge } from './sports-market-badge'
 import { SportHeroBackground } from './sport-hero-background'
@@ -136,7 +140,9 @@ export function GameRow(props: {
 
   const live = game.status === 'live'
   const finished = game.status === 'finished'
-  const canBet = !finished
+  const canBet = isSportsBdlEnabled()
+    ? canBetOnScheduledGame(game, Date.now())
+    : !finished
 
   const score =
     game.finalScore ??
@@ -358,6 +364,7 @@ export function GameRow(props: {
   }
 
   if (variant === 'featured') {
+    const details = isSportsBdlEnabled() ? scoreboardDetailLines(game) : []
     return (
       <section
         id={gameAnchor(game)}
@@ -387,6 +394,13 @@ export function GameRow(props: {
                   </span>
                   <GameWhen game={game} />
                 </div>
+                {details.length > 0 && (
+                  <ul className="text-ink-600 mb-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs tabular-nums">
+                    {details.map((detail) => (
+                      <li key={detail}>{detail}</li>
+                    ))}
+                  </ul>
+                )}
                 <div className="grid grid-cols-2 items-center gap-x-6 gap-y-2 text-center">
                   {displayTeams.map(({ team }, index) => (
                     <div
@@ -466,9 +480,9 @@ export function GameRow(props: {
                       type="button"
                       disabled={!canBet}
                       onClick={() => onBet('draw')}
-                      aria-label={`Bet on a draw (${Math.round(
-                        game.draw.prob * 100
-                      )}%)${
+                      aria-label={`Bet on a draw (${formatFeedPrice(
+                        game.draw.prob
+                      )})${
                         backsOutcome(stakeOn(game.draw.answerId))
                           ? ', your pick'
                           : ''
@@ -481,7 +495,7 @@ export function GameRow(props: {
                     >
                       Draw
                       <br />
-                      {Math.round(game.draw.prob * 100)}%
+                      {formatFeedPrice(game.draw.prob)}
                     </button>
                   )}
                   {displayTeams.map(({ team }, index) => (
@@ -570,7 +584,34 @@ function GameWhen(props: {
 
   let primary: ReactNode
   let secondary: ReactNode
-  if (hasFeed) {
+  const observed =
+    isSportsBdlEnabled() &&
+    (game.gameState ||
+      game.period != null ||
+      game.clock ||
+      game.liveScore?.minute)
+      ? gameScoreLabel(game, (at) => dayjs(at).format('MMM D'))
+      : null
+  if (observed) {
+    primary = (
+      <span
+        className="text-ink-900 text-xs font-semibold"
+        title={
+          game.gameState === 'settling'
+            ? 'The result is checked before payout.'
+            : undefined
+        }
+      >
+        {observed}
+      </span>
+    )
+    const heldScore =
+      (game.gameState === 'suspended' || game.gameState === 'settling') &&
+      (game.liveScore != null || game.finalScore != null)
+    secondary = (hasFeed || heldScore) && (
+      <ScoreFreshness updatedTime={game.scoreUpdatedTime} />
+    )
+  } else if (hasFeed) {
     primary = (
       <Row className="items-center gap-1 whitespace-nowrap text-[11px] font-semibold text-red-600">
         In progress
@@ -666,7 +707,7 @@ function TeamLine(props: {
       )}
       {finished ? (
         <span className="text-ink-500 w-14 text-right text-xs tabular-nums sm:w-16">
-          {Math.round(team.prob * 100)}%
+          {formatFeedPrice(team.prob)}
         </span>
       ) : (
         <PriceChip
@@ -808,7 +849,7 @@ function StripCell(props: {
       </Row>
       {finished ? (
         <span className="text-ink-500 flex min-h-[40px] items-center justify-center text-xs tabular-nums">
-          {Math.round(prob * 100)}%
+          {formatFeedPrice(prob)}
         </span>
       ) : (
         <PriceChip
@@ -884,7 +925,9 @@ function TeamBadge({
           : undefined
       }
     >
-      {team.shortName.slice(0, 3).toUpperCase()}
+      {team.shortName
+        .slice(0, isSportsBdlEnabled() && team.entrantId ? 4 : 3)
+        .toUpperCase()}
     </span>
   )
 }
@@ -903,12 +946,12 @@ export function PriceChip(props: {
   className?: string
 }) {
   const { prob, onClick, label, disabled, muted, held, className } = props
-  const pct = Math.round(prob * 100)
-  const flash = useProbFlash(pct)
+  const price = formatFeedPrice(prob)
+  const flash = useProbFlash(Math.round(prob * 100))
   return (
     <button
       type="button"
-      aria-label={`${label} (${pct}%)${held ? ', your pick' : ''}`}
+      aria-label={`${label} (${price})${held ? ', your pick' : ''}`}
       disabled={disabled}
       onClick={onClick}
       className={clsx(
@@ -928,7 +971,7 @@ export function PriceChip(props: {
           'hover:bg-teal-500/15 cursor-default opacity-60 hover:text-teal-700'
       )}
     >
-      {pct}%
+      {price}
     </button>
   )
 }
@@ -981,7 +1024,7 @@ function StakeLine(props: {
             {order.against ? 'No' : 'Order'}{' '}
           </span>
           {order.against && compact ? 'No ' : ''}
-          {formatMoney(order.amount)} at {Math.round(order.prob * 100)}%
+          {formatMoney(order.amount)} at {formatFeedPrice(order.prob)}
         </span>
       ))}
     </div>

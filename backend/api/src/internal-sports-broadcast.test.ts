@@ -1,3 +1,7 @@
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 jest.mock('shared/websockets/helpers', () => ({
   broadcastSportsLiveScore: jest.fn(),
 }))
@@ -35,10 +39,56 @@ it('rejects missing and incorrect service credentials without broadcasting', asy
   expect(broadcastSportsLiveScore).not.toHaveBeenCalled()
 })
 
+it('strips nested operator-only detail before handing a valid suspended update to public sockets', async () => {
+  process.env.API_SECRET = 'test-secret'
+  const row = {
+    ...score,
+    sportsLiveStatus: 'SUSPENDED' as const,
+    sportsLivePeriod: 2,
+    sportsResumptionTime: 0,
+    sportsAttentionReason: 'private',
+    sportsLiveDetail: {
+      shots: { home: 0, away: 3, checkedBy: 'private' },
+      providerBody: 'private',
+    },
+  }
+  await send({ apiSecret: 'test-secret', contractId: 'game', score: row })
+  expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', {
+    ...score,
+    sportsLiveStatus: 'SUSPENDED',
+    sportsLivePeriod: 2,
+    sportsResumptionTime: 0,
+    sportsLiveDetail: { shots: { home: 0, away: 3 } },
+  })
+})
+
 it('delivers an authenticated scheduler score to the API switchboard', async () => {
   process.env.API_SECRET = 'test-secret'
   await expect(
     send({ apiSecret: 'test-secret', contractId: 'game', score })
   ).resolves.toEqual({ success: true })
   expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', score)
+})
+
+it('keeps only legacy score fields and rejects the extended protocol when rollout is off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  process.env.API_SECRET = 'test-secret'
+  try {
+    await send({
+      apiSecret: 'test-secret',
+      contractId: 'game',
+      score: { ...score, sportsLivePeriod: 3 },
+    })
+    expect(broadcastSportsLiveScore).toHaveBeenCalledWith('game', score)
+    await expect(
+      send({
+        apiSecret: 'test-secret',
+        contractId: 'game',
+        score: { ...score, sportsLiveStatus: 'SUSPENDED' },
+      })
+    ).rejects.toThrow()
+    expect(broadcastSportsLiveScore).toHaveBeenCalledTimes(1)
+  } finally {
+    jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  }
 })

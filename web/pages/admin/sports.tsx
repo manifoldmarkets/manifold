@@ -1,3 +1,4 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import { useEffect, useState } from 'react'
@@ -14,6 +15,7 @@ import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { NoSEO } from 'web/components/NoSEO'
 import { useAdmin, useDev } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
@@ -29,13 +31,15 @@ import {
   PREMIER_LEAGUE_2526,
 } from 'common/sports'
 import { Flag } from 'web/components/sports/sports-match-card'
+import { AdminBdlCreation } from 'web/components/sports/admin-bdl-creation'
 import { AdminCompetitionSwitches } from 'web/components/sports/admin-competition-switches'
+import { AdminSportsAttention } from 'web/components/sports/admin-sports-attention'
 import { AdminScorePolling } from 'web/components/sports/admin-score-polling'
 import clsx from 'clsx'
 import {
   calendarEntriesFor,
   SPORT_LEAGUE_LABEL,
-  SPORTS_CALENDAR,
+  getSportsCalendar,
   SportId,
 } from 'common/sports-calendar'
 
@@ -113,7 +117,7 @@ const CALENDAR_SPORTS: { id: SportId; label: string }[] = [
 function calendarCompetitions(sport: SportId): CompetitionOption[] {
   const seen = new Set<string>()
   const out: CompetitionOption[] = []
-  for (const e of SPORTS_CALENDAR) {
+  for (const e of getSportsCalendar()) {
     if (e.sport !== sport || seen.has(e.competitionId)) continue
     seen.add(e.competitionId)
     const locked = calendarEntriesFor(e.competitionId).every((p) => p.locked)
@@ -204,6 +208,7 @@ function Section(props: {
   title: string
   children: React.ReactNode
   defaultOpen?: boolean
+  keepMounted?: boolean
 }) {
   const [open, setOpen] = useState(props.defaultOpen ?? true)
   return (
@@ -215,7 +220,11 @@ function Section(props: {
         <span className="text-ink-800 font-semibold">{props.title}</span>
         <span className="text-ink-400 text-sm">{open ? '▲' : '▼'}</span>
       </button>
-      {open && <div className="p-4">{props.children}</div>}
+      {(open || props.keepMounted) && (
+        <div hidden={!open} className="p-4">
+          {props.children}
+        </div>
+      )}
     </div>
   )
 }
@@ -250,6 +259,15 @@ function OddsApiSelectAll(props: {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function SportsAdminPage() {
+  return isSportsBdlEnabled() ? <ScopedSportsAdmin /> : <SportsAdmin />
+}
+
+function ScopedSportsAdmin() {
+  const user = useUser()
+  return <SportsAdmin key={user?.id ?? 'signed-out'} />
+}
+
+function SportsAdmin() {
   useRedirectIfSignedOut()
   // Both hooks run on every render; `useAdmin() || useDev()` skipped one.
   const admin = useAdmin()
@@ -726,7 +744,7 @@ export default function SportsAdminPage() {
   const filteredMarkets =
     marketFilter === 'ALL'
       ? markets
-      : marketFilter === 'NEEDS_ATTENTION'
+      : marketFilter === 'OVERDUE'
       ? markets.filter((m) => m.needsAttention)
       : marketFilter === 'RESOLVED'
       ? markets.filter((m) => m.resolution)
@@ -779,7 +797,7 @@ export default function SportsAdminPage() {
   return (
     <Page trackPageView={'sports admin page'}>
       <NoSEO />
-      <div className="mx-auto max-w-5xl px-4 pb-16">
+      <div className="mx-auto w-full min-w-0 max-w-5xl px-4 pb-16">
         <Title>
           Sports Admin
           {admin && <ModActionTag admin className="ml-2 align-middle" />}
@@ -812,6 +830,12 @@ export default function SportsAdminPage() {
         <Section title="Scheduler switches" defaultOpen>
           <AdminCompetitionSwitches />
         </Section>
+
+        {isSportsBdlEnabled() && admin && (
+          <Section title="Game creation budgets" keepMounted>
+            <AdminBdlCreation />
+          </Section>
+        )}
 
         <Section title="Live scores and credits" defaultOpen>
           <AdminScorePolling />
@@ -1701,7 +1725,8 @@ export default function SportsAdminPage() {
                   All: 'ALL',
                   Open: 'OPEN',
                   Resolved: 'RESOLVED',
-                  'Needs attention': 'NEEDS_ATTENTION',
+                  [isSportsBdlEnabled() ? 'Closed over 3h' : 'Needs attention']:
+                    'OVERDUE',
                 }}
                 setChoice={(v) => setMarketFilter(v as string)}
                 color="indigo-dark"
@@ -1711,7 +1736,7 @@ export default function SportsAdminPage() {
               </Button>
             </Row>
 
-            {alertMarkets.length > 0 && (
+            {!isSportsBdlEnabled() && alertMarkets.length > 0 && (
               <AlertBox
                 title={`${alertMarkets.length} market(s) need attention`}
               >
@@ -1756,7 +1781,9 @@ export default function SportsAdminPage() {
                           </a>
                           {m.needsAttention && (
                             <span className="ml-2 text-xs font-medium text-red-600">
-                              ⚠ overdue
+                              {isSportsBdlEnabled()
+                                ? 'Closed over 3h'
+                                : '⚠ overdue'}
                             </span>
                           )}
                         </td>
@@ -1885,80 +1912,85 @@ export default function SportsAdminPage() {
           </Col>
         </Section>
 
-        {/* ── 6. Alerts ── */}
-        <Section
-          title={`6. Alerts${
-            alertMarkets.length > 0
-              ? ` (${
-                  alertMarkets.filter((m) => !handledAlerts.has(m.id)).length
-                } active)`
-              : ''
-          }`}
-        >
-          <Col className="gap-3">
-            {alertMarkets.filter((m) => !handledAlerts.has(m.id)).length ===
-            0 ? (
-              <p className="text-sm text-green-600">✅ No active alerts.</p>
-            ) : (
-              alertMarkets
-                .filter((m) => !handledAlerts.has(m.id))
-                .map((m) => (
-                  <Row
-                    key={m.id}
-                    className="items-start justify-between rounded border border-red-200 bg-red-50 p-3"
-                  >
-                    <Col className="gap-1">
-                      <span className="text-sm font-medium text-red-700">
-                        ⚠ Unresolved past close time
-                      </span>
-                      <a
-                        href={m.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-primary-600 text-sm hover:underline"
-                      >
-                        {m.question}
-                      </a>
-                      <span className="text-ink-500 text-xs">
-                        Closed:{' '}
-                        {new Date(m.closeTime).toLocaleString('en-GB', {
-                          timeZone: 'UTC',
-                        })}{' '}
-                        UTC
-                      </span>
-                    </Col>
-                    <Button
-                      size="xs"
-                      color="gray-outline"
-                      onClick={() =>
-                        setHandledAlerts((prev) => new Set([...prev, m.id]))
-                      }
+        {isSportsBdlEnabled() ? (
+          <Section title="6. Markets needing attention">
+            <AdminSportsAttention overdue={alertMarkets} />
+          </Section>
+        ) : (
+          <Section
+            title={`6. Alerts${
+              alertMarkets.length > 0
+                ? ` (${
+                    alertMarkets.filter((m) => !handledAlerts.has(m.id)).length
+                  } active)`
+                : ''
+            }`}
+          >
+            <Col className="gap-3">
+              {alertMarkets.filter((m) => !handledAlerts.has(m.id)).length ===
+              0 ? (
+                <p className="text-sm text-green-600">✅ No active alerts.</p>
+              ) : (
+                alertMarkets
+                  .filter((m) => !handledAlerts.has(m.id))
+                  .map((m) => (
+                    <Row
+                      key={m.id}
+                      className="items-start justify-between rounded border border-red-200 bg-red-50 p-3"
                     >
-                      Mark handled
-                    </Button>
-                  </Row>
-                ))
-            )}
+                      <Col className="gap-1">
+                        <span className="text-sm font-medium text-red-700">
+                          ⚠ Unresolved past close time
+                        </span>
+                        <a
+                          href={m.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-primary-600 text-sm hover:underline"
+                        >
+                          {m.question}
+                        </a>
+                        <span className="text-ink-500 text-xs">
+                          Closed:{' '}
+                          {new Date(m.closeTime).toLocaleString('en-GB', {
+                            timeZone: 'UTC',
+                          })}{' '}
+                          UTC
+                        </span>
+                      </Col>
+                      <Button
+                        size="xs"
+                        color="gray-outline"
+                        onClick={() =>
+                          setHandledAlerts((prev) => new Set([...prev, m.id]))
+                        }
+                      >
+                        Mark handled
+                      </Button>
+                    </Row>
+                  ))
+              )}
 
-            {/* Handled alerts (collapsed) */}
-            {handledAlerts.size > 0 && (
-              <details className="text-ink-400 text-xs">
-                <summary className="cursor-pointer">
-                  {handledAlerts.size} handled alert(s)
-                </summary>
-                <Col className="mt-2 gap-1">
-                  {alertMarkets
-                    .filter((m) => handledAlerts.has(m.id))
-                    .map((m) => (
-                      <span key={m.id} className="line-through">
-                        {m.question}
-                      </span>
-                    ))}
-                </Col>
-              </details>
-            )}
-          </Col>
-        </Section>
+              {/* Handled alerts (collapsed) */}
+              {handledAlerts.size > 0 && (
+                <details className="text-ink-400 text-xs">
+                  <summary className="cursor-pointer">
+                    {handledAlerts.size} handled alert(s)
+                  </summary>
+                  <Col className="mt-2 gap-1">
+                    {alertMarkets
+                      .filter((m) => handledAlerts.has(m.id))
+                      .map((m) => (
+                        <span key={m.id} className="line-through">
+                          {m.question}
+                        </span>
+                      ))}
+                  </Col>
+                </details>
+              )}
+            </Col>
+          </Section>
+        )}
 
         {/* ── 7. Community Markets ── */}
         <Section title="7. Community Markets">

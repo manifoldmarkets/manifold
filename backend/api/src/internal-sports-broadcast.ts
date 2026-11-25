@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto'
 import { APIError } from 'common/api/utils'
+import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { broadcastSportsLiveScore } from 'shared/websockets/helpers'
 import { APIHandler } from './helpers/endpoint'
 
@@ -18,6 +19,6 @@ export const internalSportsBroadcast: APIHandler<
   ) {
     throw new APIError(403, 'Invalid API secret.')
   }
-  broadcastSportsLiveScore(contractId, score)
+  broadcastSportsLiveScore(contractId, rolloutSportsScoreSchema.parse(score))
   return { success: true }
 }

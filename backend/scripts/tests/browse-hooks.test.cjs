@@ -269,13 +269,44 @@ afterEach(async () => {
   await act(async () => mounted.splice(0).forEach((root) => root.unmount()))
   document.body.innerHTML = ''
 })
+const zod = require('zod')
+let bdlEnabled = true
+const rollout = { isSportsBdlEnabled: () => bdlEnabled }
+const marketSearchTypes = load('common/src/api/market-search-types.ts', {
+  '../bdl/rollout': rollout,
+  zod,
+  './zod-types': load('common/src/api/zod-types.ts', { zod }),
+})
+
 function markets(api) {
-  return load('web/components/browse-v2/use-browse-markets.ts', {
-    react: React,
-    lodash: require('lodash'),
-    'client-common/hooks/use-event': useEvent,
-    'web/lib/api/api': { api },
-  }).useBrowseMarkets
+  const transport = {
+    APIError: class APIError extends Error {},
+    api: async (name, params, options) => {
+      const page = await api(name, params, options)
+      if (!params.sportsDiscovery || !page.length) return page
+      return page.map((row, i) =>
+        i === page.length - 1 ? { ...row, sportsDiscoveryFiltered: true } : row
+      )
+    },
+  }
+  const discovery = load('web/lib/api/discovery-markets.ts', {
+    'common/api/market-search-types': marketSearchTypes,
+    // The existing lifecycle fixtures contain only ordinary markets.
+    'common/sports-discovery': { isOfficialSportsGameMarket: () => false },
+    './api': transport,
+  })
+  return load(
+    'web/components/browse-v2/use-browse-markets.ts',
+    {
+      react: React,
+      lodash: require('lodash'),
+      'next/router': { useRouter: () => ({ pathname: '/browse' }) },
+      'client-common/hooks/use-event': useEvent,
+      'web/lib/api/discovery-markets': discovery,
+      'common/bdl/rollout': rollout,
+    },
+    { AbortController }
+  ).useBrowseMarkets
 }
 
 // Exercise the actual Browse caller and pagination hook, replacing only the
@@ -523,18 +554,72 @@ test('the real Home page disables enrollment for loading and signed-out users', 
   assert.equal(events.length, 0)
 })
 
+test('disabled rollout keeps the original browse pagination and sitemap entries for official sports', async () => {
+  bdlEnabled = false
+  try {
+    const sport = {
+      id: 'game',
+      creatorUsername: 'ManifoldSports',
+      slug: 'game',
+      sportsEventId: 'fd-90',
+      createdTime: 100,
+      volume24Hours: 20,
+    }
+    const calls = []
+    const useMarkets = markets(async (_name, params) => {
+      calls.push(params)
+      return calls.length === 1 ? [sport] : []
+    })
+    const probe = await mount(() => useMarkets({ sort: 'newest' }, 1))
+    await act(async () => probe.value.loadMore())
+    assert.equal(probe.value.contracts[0].id, sport.id)
+    assert.equal(calls.length, 2)
+    assert.equal(calls[1].beforeTime, 100)
+    for (const params of calls) {
+      assert.equal(Object.hasOwn(params, 'sportsDiscovery'), false)
+      assert.equal(Object.hasOwn(params, 'sportsDiscoveryCursor'), false)
+    }
+
+    const reads = []
+    const discovery = load('web/lib/api/discovery-markets.ts', {
+      'common/api/market-search-types': marketSearchTypes,
+      'common/sports-discovery': { isOfficialSportsGameMarket: () => true },
+      './api': {
+        api: async (name, params) => {
+          reads.push([name, params])
+          return [sport]
+        },
+      },
+    })
+    const sitemap = load('web/pages/server-sitemap.xml.tsx', {
+      'next-sitemap': { getServerSideSitemap: (_ctx, fields) => fields },
+      'web/lib/api/discovery-markets': discovery,
+    })
+    const fields = await sitemap.getServerSideProps({})
+    assert.equal(fields[0].loc, 'https://manifold.markets/ManifoldSports/game')
+    assert.equal(reads.length, 1)
+    assert.equal(reads[0][0], 'search-markets-full')
+    assert.deepEqual(
+      { ...reads[0][1] },
+      { term: '', filter: 'all', sort: 'score', limit: 1000 }
+    )
+  } finally {
+    bdlEnabled = true
+  }
+})
+
 for (const sort of ['score', 'newest']) {
   test(`failed ${sort} page retries the same cursor and preserves existing results`, async () => {
     const calls = []
     const first = [
-      { id: 'a', createdTime: 20 },
+      { id: 'a', createdTime: 10 },
       { id: 'b', createdTime: 10 },
     ]
     const useMarkets = markets(async (_, args) => {
       calls.push(args)
       if (calls.length === 1) return first
       if (calls.length === 2) throw new Error('offline')
-      return [{ id: 'c', createdTime: 5 }]
+      return [{ id: 'c', createdTime: 10 }]
     })
     const probe = await mount(() => useMarkets({ sort }, 2))
     await act(async () => probe.value.loadMore())
@@ -547,7 +632,11 @@ for (const sort of ['score', 'newest']) {
     await act(async () => probe.value.retry())
     assert.deepEqual(calls[2], calls[1])
     assert.equal(calls[2].offset, sort === 'newest' ? 0 : 2)
-    assert.equal(calls[2].beforeTime, sort === 'newest' ? 10 : undefined)
+    assert.equal(calls[2].beforeTime, undefined)
+    assert.equal(
+      calls[2].sportsDiscoveryCursor,
+      sort === 'newest' ? '10:b' : undefined
+    )
     assert.deepEqual(
       probe.value.contracts.map((c) => c.id),
       ['a', 'b', 'c']

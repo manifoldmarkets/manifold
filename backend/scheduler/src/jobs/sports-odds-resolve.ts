@@ -2,10 +2,13 @@
 // is not resolved, ask for its sport's scores when /admin/sports says one is
 // due (live scores per sport or game, finals once a game is due to end), write
 // live scores onto the markets, and resolve when the provider marks a game
-// completed. Makes no call while nothing is due. No-op without
-// THE_ODDS_API_KEY.
+// completed. The same tick also refreshes opted-in NBA scores from BDL.
+// NBA payout reads committed finals independently of either provider.
 
 import { MINUTE_MS } from 'common/util/time'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { NbaPollAttempts, pollNbaScores } from 'shared/bdl/nba-scores'
+import { settlePendingNbaGames } from 'shared/bdl/settle-nba-game'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
@@ -17,6 +20,11 @@ import {
 // When each sport was last polled, for this process's lifetime.
 const state = newScorePollState()
 let warnedNoKey = false
+const nbaLastAttempts: NbaPollAttempts = new Map()
+let nbaWork: Promise<void> | undefined
+let settlingNba = false
+let nextSettlementScan = 0
+let afterSettlementId = ''
 
 // A run still going after this long is abandoned: the cron's promise settles
 // with an error (so the job-crash alert fires), the next 10-second tick starts
@@ -37,12 +45,66 @@ let current: { id: string } | undefined
 let nextRunId = 0
 
 export async function resolveOddsSportsMarkets() {
+  // The existing tick drives both sources. Waiting for a BDL quota slot must
+  // neither delay Odds resolution nor start a second NBA read on the next tick.
+  if (
+    isSportsBdlEnabled() &&
+    (process.env.BALLDONTLIE_API_KEY || process.env.BDL_FIXTURE_DIR) &&
+    !nbaWork
+  ) {
+    const controller = new AbortController()
+    let timer: NodeJS.Timeout
+    const deadline = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        controller.abort()
+        log.error(
+          '[sports-bdl-nba] score poll exceeded its three-minute deadline'
+        )
+        resolve()
+      }, RUN_DEADLINE_MS)
+    })
+    const work = pollNbaScores(
+      createSupabaseDirectClient(),
+      nbaLastAttempts,
+      controller.signal
+    )
+    nbaWork = Promise.race([work, deadline])
+      .catch((error) =>
+        log.error(`[sports-bdl-nba] score poll failed: ${error}`)
+      )
+      .finally(() => {
+        clearTimeout(timer)
+        nbaWork = undefined
+      })
+  }
+  // Native post-commit notifications may take time. They never hold the score poll.
+  if (
+    isSportsBdlEnabled() &&
+    !settlingNba &&
+    Date.now() >= nextSettlementScan
+  ) {
+    settlingNba = true
+    nextSettlementScan = Date.now() + MINUTE_MS
+    void Promise.resolve(nbaWork)
+      .then(() =>
+        settlePendingNbaGames(createSupabaseDirectClient(), afterSettlementId)
+      )
+      .then((next) => {
+        afterSettlementId = next
+      })
+      .catch((error) =>
+        log.error('[sports-bdl-nba] settlement scan failed: ' + error)
+      )
+      .finally(() => {
+        settlingNba = false
+      })
+  }
   if (!hasOddsApiKey()) {
     if (!warnedNoKey) {
       log('[sports-odds-resolve] THE_ODDS_API_KEY not set — skipping')
       warnedNoKey = true
     }
-    return
+    return nbaWork
   }
   const run = { id: `${Date.now()}-${++nextRunId}` }
   current = run

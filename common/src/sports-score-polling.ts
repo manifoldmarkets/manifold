@@ -1,6 +1,12 @@
 import { groupBy, sum } from 'lodash'
+import { BdlLeagueKey, isBdlLeagueKey } from './bdl/leagues'
 import { ENV } from './envs/constants'
-import { SPORT_LEAGUE_LABEL, SportId } from './sports-calendar'
+import {
+  BDL_ADDITIONAL_SPORTS,
+  SPORT_LEAGUE_LABEL,
+  SportId,
+} from './sports-calendar'
+import { FINALS_FROM_MINUTES } from './sports-finals-timing'
 
 // ─── How often the resolver asks for scores ───────────────────────────────────
 //
@@ -24,30 +30,7 @@ export const DEFAULT_FINALS_INTERVAL = 300
 /** A game still unresolved 3 hours after close is checked at most this often. */
 export const OVERDUE_FINALS_INTERVAL = 30 * 60
 
-/**
- * Minutes after kickoff when a game is due to end: the usual length with
- * breaks, a little early so the final is caught soon after the whistle.
- */
-export const FINALS_FROM_MINUTES: Record<SportId, number> = {
-  nfl: 180,
-  cfb: 195,
-  mlb: 150,
-  nba: 130,
-  wnba: 115,
-  soccer: 105,
-  nhl: 140,
-  cbb: 115,
-  football: 180,
-  basketball: 115,
-  wcbb: 115,
-  hockey: 140,
-  afl: 130,
-  nrl: 100,
-  handball: 75,
-  tennis: 120,
-  f1: 90,
-  tdf: 240,
-}
+export { FINALS_FROM_MINUTES }
 
 /** The admin settings, from the sports_score_polling table. */
 export interface ScorePollingSettings {
@@ -55,20 +38,26 @@ export interface ScorePollingSettings {
   adaptive?: boolean
   /** Live interval per sport, in seconds; missing means the default. */
   sports: Partial<Record<SportId, number>>
-  /** Live interval per game market, overriding its sport. */
+  /** An unconfigured BDL league is off, independently of the legacy sport setting. */
+  leagues?: Partial<Record<BdlLeagueKey, number>>
+  /** Live interval per game market, overriding its sport or league. */
   games: Record<string, number>
   finals: number
 }
 
 /** Row keys in sports_score_polling. */
 export const pollingTarget = {
+  league: (key: BdlLeagueKey) => `league:${key}`,
   sport: (sport: SportId) => `sport:${sport}`,
   game: (contractId: string) => `game:${contractId}`,
   finals: 'finals',
   adaptive: 'adaptive',
 }
 
-const SPORT_IDS = Object.keys(SPORT_LEAGUE_LABEL) as SportId[]
+// These are the existing Odds API polling settings. New BDL leagues have their own targets.
+const SPORT_IDS = (Object.keys(SPORT_LEAGUE_LABEL) as SportId[]).filter(
+  (id) => !Object.prototype.hasOwnProperty.call(BDL_ADDITIONAL_SPORTS, id)
+)
 
 /** Why a setting can't be saved, or undefined when it can. */
 export function pollingSettingError(
@@ -81,18 +70,22 @@ export function pollingSettingError(
       intervalSeconds === 1
       ? undefined
       : 'Adaptive polling must be off (0) or on (1)'
-  const [kind, id] = target.split(':')
+  const [kind, id, ...extra] = target.split(':')
+  if (extra.length) return `Unknown setting ${target}`
   if (target === pollingTarget.finals) {
     if (intervalSeconds === null) return undefined
     return (FINALS_INTERVALS as readonly number[]).includes(intervalSeconds)
       ? undefined
       : `Finals checks run every ${FINALS_INTERVALS.join(', ')} seconds`
   }
+  if (kind === 'league' && !isBdlLeagueKey(id ?? ''))
+    return `Unknown BDL league ${id}`
   if (kind === 'sport' && !SPORT_IDS.includes(id as SportId))
     return `Unknown sport ${id}`
   if (kind === 'game' && !/^[A-Za-z0-9]{1,40}$/.test(id ?? ''))
     return `Bad market id ${id}`
-  if (kind !== 'sport' && kind !== 'game') return `Unknown setting ${target}`
+  if (kind !== 'sport' && kind !== 'game' && kind !== 'league')
+    return `Unknown setting ${target}`
   if (intervalSeconds === null) return undefined
   return (LIVE_INTERVALS as readonly number[]).includes(intervalSeconds)
     ? undefined
@@ -115,6 +108,8 @@ export function parsePollingRows(
     if (target === pollingTarget.adaptive)
       settings.adaptive = intervalSeconds === 1
     else if (target === pollingTarget.finals) settings.finals = intervalSeconds
+    else if (kind === 'league' && isBdlLeagueKey(id))
+      (settings.leagues ??= {})[id] = intervalSeconds
     else if (kind === 'sport') settings.sports[id as SportId] = intervalSeconds
     else if (kind === 'game') settings.games[id] = intervalSeconds
   }
@@ -134,6 +129,20 @@ export function finalsOnlySettings(): ScorePollingSettings {
     games: {},
     finals: DEFAULT_FINALS_INTERVAL,
   }
+}
+
+/** BDL score jobs and the operator panel share the game, league, then off precedence. */
+export function bdlLiveInterval(
+  league: BdlLeagueKey,
+  contractId: string | null,
+  settings: ScorePollingSettings
+) {
+  const override =
+    contractId &&
+    Object.prototype.hasOwnProperty.call(settings.games, contractId)
+      ? settings.games[contractId]
+      : undefined
+  return override ?? settings.leagues?.[league] ?? 0
 }
 
 /** The sport behind a market's `sportsLeague` label. */
@@ -184,10 +193,21 @@ export function finalsDue(
   const minutes = game.sport
     ? FINALS_FROM_MINUTES[game.sport]
     : FINALS_FROM_MINUTES.soccer
-  return now >= game.startTime + minutes * 60_000
+  return minutes !== null && now >= game.startTime + minutes * 60_000
 }
 
-const OVERDUE_AFTER_MS = 3 * 60 * 60 * 1000
+/** Finals-only cadence is independent of live polling, including its overdue backoff. */
+export function finalsPollInterval(
+  game: Pick<PollingGame, 'sport' | 'startTime' | 'closeTime' | 'missing'>,
+  now: number,
+  interval: number
+) {
+  if (!game.missing && !finalsDue(game, now)) return 0
+  return game.closeTime !== undefined &&
+    now - game.closeTime > 3 * 60 * 60 * 1000
+    ? Math.max(interval, OVERDUE_FINALS_INTERVAL)
+    : interval
+}
 // A tick that lands a moment early still counts as due.
 const SLACK_MS = 5_000
 
@@ -244,16 +264,8 @@ export function scorePollPlan(
       // live scores for either would only cost credits.
       const open = game.closeTime === undefined || now < game.closeTime
       if (live > 0 && open && !game.missing) liveIntervals.push(live)
-      if (game.missing || finalsDue(game, now)) {
-        const overdue =
-          game.closeTime !== undefined &&
-          now - game.closeTime > OVERDUE_AFTER_MS
-        finalsIntervals.push(
-          overdue
-            ? Math.max(settings.finals, OVERDUE_FINALS_INTERVAL)
-            : settings.finals
-        )
-      }
+      const finals = finalsPollInterval(game, now, settings.finals)
+      if (finals) finalsIntervals.push(finals)
     }
     const fails = failures[sportKey] ?? 0
     // After a failed call, nothing goes out on either clock until the
@@ -336,6 +348,12 @@ export function creditsPerDay(
 }
 
 export interface ScorePollingPanel {
+  /** Absent on servers predating BDL league controls. */
+  leagues?: {
+    leagueKey: BdlLeagueKey
+    intervalSeconds: number
+    isDefault: boolean
+  }[]
   adaptive?: boolean
   sports: {
     sport: SportId
@@ -349,6 +367,7 @@ export interface ScorePollingPanel {
     question: string
     slug: string
     sport: SportId | undefined
+    leagueKey?: BdlLeagueKey
     startTime: number
     /** This game's own setting, or null when it follows its sport. */
     overrideSeconds: number | null

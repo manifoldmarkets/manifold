@@ -17,6 +17,7 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { scoreUpdatedTime } from 'common/sports-score-freshness'
 import { publishSportsLiveScore } from 'shared/publish-sports-live-score'
+import { updateSportsScore } from './update-sports-score'
 import {
   createSportsContract,
   ensureOfficialGroup,
@@ -27,6 +28,11 @@ import {
 import { getScores, getUpcomingOdds } from 'shared/the-odds-api-client'
 import { manifoldSportsUserId, MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
+import { isMajorOddsEvent } from './bdl/major-moneyline-identity'
+import { UnidentifiedSportsMoneyline } from './sports-market-dedupe'
+import { isMajorLeague } from 'common/bdl/major-leagues'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from 'shared/bdl/major-settings'
 import { getScorePollingSettings } from 'shared/supabase/sports-score-polling'
 import { LEGACY_OFFICIAL_SUFFIX } from 'common/sports-league-label'
 import {
@@ -64,6 +70,8 @@ import {
 } from 'common/contract'
 import { User } from 'common/user'
 import { HOUR_MS, MINUTE_MS, sleep } from 'common/util/time'
+
+class OddsCutoverHold extends Error {}
 
 const ROLLING_WINDOW_DAYS = 14
 /** The most the Odds API will look back for completed games. */
@@ -149,6 +157,7 @@ export async function createOddsMarketsForCompetition(
       `${competitionId} has no Odds API sport key; create by hand`
     )
   }
+  const guardMajor = isSportsBdlEnabled() && isMajorLeague(entry.sport)
   const switches = opts.switches ?? {}
   // Every phase a market could have been made in: a market that exists is
   // re-synced to the provider's kickoff even after its phase is switched off,
@@ -204,10 +213,17 @@ export async function createOddsMarketsForCompetition(
     try {
       const params = buildOddsMarketParams(event, entry)
       question = params.question
+      if (
+        guardMajor &&
+        (event.sport_key !== entry.oddsKey ||
+          !isMajorOddsEvent(params.sportsEventId))
+      )
+        throw new OddsCutoverHold('Unverified Odds moneyline event identity')
       const existing = await findSportsMoneyline(pg, params.sportsEventId)
       if (existing) {
         const moved = await resyncKickoff(pg, existing.id, params, {
           dryRun: opts.dryRun,
+          guardMajor,
           titleFor: (start) =>
             buildOddsMarketParams({ ...event, commence_time: start }, entry)
               .question,
@@ -305,6 +321,12 @@ export async function createOddsMarketsForCompetition(
           ...sportTagIds(SPORT_ID_TO_SPORT_KEY[entry.sport]),
         ])
       }
+      const atKickoff = isSportsBdlEnabled()
+        ? calendarEntriesOverlapping(start, start)
+        : []
+      const competing = atKickoff.filter(
+        (p) => p.provider === 'bdl' && p.sport === entry.sport
+      )
       const contract = await createSportsContract(
         pg,
         creator,
@@ -328,7 +350,34 @@ export async function createOddsMarketsForCompetition(
           sportsMarketType: params.sportsMarketType,
           groupIds,
         },
-        { deduplicateMoneyline: true, minLeadMs: MIN_CREATE_LEAD_MS }
+        {
+          deduplicateMoneyline: true,
+          minLeadMs: MIN_CREATE_LEAD_MS,
+          checkOddsCutover: guardMajor
+            ? async (tx) => {
+                const latest = await getCompetitionSwitches(tx)
+                if (competing.some((p) => autoCreates(p, latest)))
+                  throw new OddsCutoverHold(
+                    'BDL creation is enabled for this game'
+                  )
+                if (
+                  !atKickoff.some(
+                    (p) =>
+                      p.competitionId === competitionId &&
+                      p.oddsKey === entry.oddsKey &&
+                      autoCreates(p, latest)
+                  ) ||
+                  atKickoff.some(
+                    (p) =>
+                      p.oddsKey === entry.oddsKey && !autoCreates(p, latest)
+                  )
+                )
+                  throw new OddsCutoverHold(
+                    'Odds creation was switched off before the game was created'
+                  )
+              }
+            : undefined,
+        }
       )
       result.created++
       result.log.push({
@@ -342,7 +391,9 @@ export async function createOddsMarketsForCompetition(
       // or the game kicked off while this one was getting to it.
       const skipped =
         e instanceof SportsMarketAlreadyExistsError ||
-        e instanceof SportsGameStartedError
+        e instanceof SportsGameStartedError ||
+        e instanceof UnidentifiedSportsMoneyline ||
+        e instanceof OddsCutoverHold
       if (skipped) result.skipped++
       else result.errors++
       result.log.push({
@@ -367,6 +418,7 @@ async function resyncKickoff(
   params: OddsMarketParams,
   opts: {
     dryRun?: boolean
+    guardMajor: boolean
     /** The title the pipeline gives this game at a given kickoff. */
     titleFor: (start: string) => string
   }
@@ -394,18 +446,27 @@ async function resyncKickoff(
       row.question === pipelineTitle + LEGACY_OFFICIAL_SUFFIX) &&
     params.question !== row.question
   if (!opts.dryRun) {
-    await pg.none(
-      `update contracts set data = data || $1::jsonb
-       where id = $2 and resolution is null`,
-      [
-        JSON.stringify({
-          sportsStartTimestamp: params.sportsStartTimestamp,
-          closeTime: params.closeTime,
-          ...(retitle ? { question: params.question } : {}),
-        }),
-        contractId,
-      ]
-    )
+    const update =
+      'update contracts set data = data || $1::jsonb where id = $2 and resolution is null'
+    const patch = JSON.stringify({
+      sportsStartTimestamp: params.sportsStartTimestamp,
+      closeTime: params.closeTime,
+      ...(retitle ? { question: params.question } : {}),
+    })
+    if (opts.guardMajor) {
+      // Serialize only changed, real major kickoffs with the opposite provider's funding decision.
+      const updated = await pg.tx(async (tx) => {
+        await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+        return tx.oneOrNone(
+          update +
+            " and data->>'sportsStartTimestamp' is not distinct from $3 and data->>'sportsEventId' = $4 returning id",
+          [patch, contractId, row.start, params.sportsEventId]
+        )
+      })
+      if (!updated) return false
+    } else {
+      await pg.none(update, [patch, contractId])
+    }
     log(
       `[sports-odds-create] ${contractId}: kickoff moved from ${row.start} to ${params.sportsStartTimestamp}`
     )
@@ -908,25 +969,12 @@ async function writeScorePatch(
   patch: Record<string, unknown>,
   run: ScoreGameRun
 ): Promise<boolean> {
-  const updatedTime = patch.sportsLiveUpdatedTime
-  if (typeof updatedTime !== 'number' || !Number.isFinite(updatedTime))
-    throw new Error('Score update time must be finite')
   run.setStage('score-connection')
   return run.mutate(() =>
     pg.task(async (task) => {
       if (!run.isCurrent()) return false
       run.setStage('score-write')
-      // PostgreSQL rechecks these predicates after a concurrent row update.
-      // An old statement that outlives its client cannot undo newer/final state.
-      const written = await task.oneOrNone<{ id: string }>(
-        `update contracts set data = data || $1::jsonb
-         where id = $2 and resolution is null
-           and not coalesce((data->>'isResolved')::boolean, false)
-           and coalesce((data->>'sportsLiveUpdatedTime')::numeric, 0) < $3::numeric
-         returning id`,
-        [JSON.stringify(patch), id, updatedTime]
-      )
-      return written !== null
+      return updateSportsScore(task, id, patch)
     })
   )
 }

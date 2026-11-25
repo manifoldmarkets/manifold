@@ -1,11 +1,18 @@
+import { nbaAnswerIds } from './bdl/nba-answers'
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
 import { annotateScoreChanges } from 'shared/sports-goal-annotations'
 import {
+  findLockedSportsMarket,
+  findSportsMarket,
+  UnidentifiedSportsMoneyline,
+} from './sports-market-dedupe'
+import {
   createSupabaseDirectClient,
   pgp,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { anythingToRichText } from 'shared/tiptap'
@@ -19,10 +26,22 @@ import {
   Contract,
   contractPath,
   CPMMMultiContract,
+  Sports,
   nativeContractColumnsArray,
 } from 'common/contract'
 import { insert, bulkInsert, bulkInsertQuery } from 'shared/supabase/utils'
 import { answerToRow } from 'shared/supabase/answers'
+import {
+  isKickoffLiquidityCandidate,
+  SPORTS_KICKOFF_BUDGET,
+  SportsAnteDecision,
+} from 'common/sports-kickoff-interface'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+import { isMajorLeague } from 'common/bdl/major-leagues'
+import { BDL_MIN_CREATION_LEAD_MS } from 'common/bdl/constants'
+import { isMajorOddsEvent } from './bdl/major-moneyline-identity'
+import { SPORTS_CREATION_BUDGET_LOCK_SQL } from './bdl/major-settings'
+import { broadcastUserUpdates, UserUpdate } from './supabase/users'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
@@ -43,7 +62,6 @@ import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import {
   LiquidityTierValue,
-  MANIFOLD_SPORTS_USER_IDS,
   StageLiquidityTiers,
   TournamentConfig,
   TOURNAMENT_CONFIGS,
@@ -745,7 +763,7 @@ export async function runSportsMarketPostCreate(
   pg: SupabaseDirectClient,
   contract: Contract,
   creator: User,
-  opts: { notifyFollowers?: boolean } = {}
+  opts: { notifyFollowers?: boolean; groupEmbeddingBatch?: Set<string> } = {}
 ): Promise<void> {
   const eventId = contract.id + '-on-create'
 
@@ -780,8 +798,27 @@ export async function runSportsMarketPostCreate(
       [contract.id],
       (r) => r.group_id as string
     )
-    await Promise.all(groupIds.map((gId) => upsertGroupEmbedding(pg, gId)))
+    if (opts.groupEmbeddingBatch) {
+      for (const groupId of groupIds) opts.groupEmbeddingBatch.add(groupId)
+    } else {
+      await Promise.all(groupIds.map((gId) => upsertGroupEmbedding(pg, gId)))
+    }
   }
+}
+
+/** Refresh the distinct public groups touched by one creation run. */
+export async function flushSportsGroupEmbeddings(
+  pg: SupabaseDirectClient,
+  groups: Set<string>
+) {
+  const results = await Promise.allSettled(
+    Array.from(groups, async (id) => {
+      await upsertGroupEmbedding(pg, id)
+      groups.delete(id)
+    })
+  )
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed?.status === 'rejected') throw failed.reason
 }
 
 export async function createTournamentMarkets(
@@ -1085,7 +1122,22 @@ export async function pollAndStoreLiveScores(
 
 // ─── Creating a sports market from a job ─────────────────────────────────────
 
-export interface SportsContractParams {
+export interface SportsContractParams
+  extends Pick<
+    Sports,
+    | 'sportsProvider'
+    | 'sportsLeagueKey'
+    | 'sportsCompetitionId'
+    | 'sportsHomeTeamId'
+    | 'sportsAwayTeamId'
+    | 'openingLineSource'
+    | 'openingProbs'
+    | 'openingBookCount'
+    | 'openingLineVendors'
+    | 'openingSampledTime'
+    | 'sportsStartKnown'
+    | 'sportsFixture'
+  > {
   question: string
   outcomeType: 'BINARY' | 'MULTIPLE_CHOICE'
   description: JSONContent
@@ -1129,25 +1181,7 @@ export interface SportsContractParams {
   groupIds: string[]
 }
 
-/**
- * An active official market of this type on the event: what reserves the
- * event and type for a pipeline.
- */
-export const findSportsMarket = (
-  pg: SupabaseDirectClient,
-  eventId: string,
-  marketType: string
-) =>
-  pg.oneOrNone<{ id: string }>(
-    `select id from contracts
-     where data->>'sportsEventId' = $1
-       and creator_id = any($2)
-       and token = 'MANA'
-       and resolution is distinct from 'CANCEL'
-       and data->>'sportsMarketType' = $3
-     limit 1`,
-    [eventId, MANIFOLD_SPORTS_USER_IDS, marketType]
-  )
+export { findSportsMarket } from './sports-market-dedupe'
 
 /** Only an active official moneyline reserves an event for this pipeline. */
 export const findSportsMoneyline = (
@@ -1180,8 +1214,15 @@ export async function createSportsContract(
   creatorUser: User,
   params: SportsContractParams,
   opts: {
+    /** Evaluate the funding decision under the same locks as creation. */
+    chooseAnte?: (tx: SupabaseTransaction) => Promise<SportsAnteDecision>
+    groupEmbeddingBatch?: Set<string>
     notifyFollowers?: boolean
+    /** Recheck the legacy creator under the operator lock during a BDL cutover. */
+    checkOddsCutover?: (tx: SupabaseTransaction) => Promise<void>
     deduplicateMoneyline?: boolean
+    /** Explicit admin correction of a canceled BDL game identified by this key. */
+    allowCanceledEventId?: string
     /**
      * The same for any market type: refuse, inside the transaction, a second
      * active market of this type on the event (an F1 session's winner and
@@ -1193,6 +1234,7 @@ export async function createSportsContract(
      * the last check before the ante moves.
      */
     minLeadMs?: number
+    now?: () => number
   } = {}
 ): Promise<Contract> {
   const answers = params.answers ?? []
@@ -1208,7 +1250,9 @@ export async function createSportsContract(
     })
     if (error) throw new Error(`${params.question}: ${error}`)
   }
-  const ante = sportsMarketAnte(params)
+  if (opts.chooseAnte && params.sportsMarketType !== 'moneyline')
+    throw new Error('Sports game ante hooks require a moneyline')
+  const standardAnte = sportsMarketAnte(params)
   const proposedSlug = slugify(params.question)
   const slugExists = await pg.oneOrNone<{ id: string }>(
     `select id from contracts where slug = $1 limit 1`,
@@ -1216,100 +1260,199 @@ export async function createSportsContract(
   )
   const slug = slugExists ? `${proposedSlug}-${randomString(4)}` : proposedSlug
 
-  const contract = getNewContract({
-    id: randomString(),
-    slug,
-    creator: creatorUser,
-    question: params.question,
-    outcomeType: params.outcomeType,
-    description: params.description,
-    initialProb: params.initialProb ?? 50,
-    ante,
-    closeTime: params.closeTime,
-    visibility: 'public',
-    isTwitchContract: undefined,
-    token: 'MANA',
-    takerAPIOrdersDisabled: undefined,
-    siblingContractId: undefined,
-    coverImageUrl: undefined,
-    min: 0,
-    max: 0,
-    isLogScale: false,
-    answers,
-    addAnswersMode,
-    shouldAnswersSumToOne,
-    answerShortTexts: params.answerShortTexts,
-    answerImageUrls: params.answerImageUrls,
-    answerProbs: params.answerProbs,
-    answerColors: params.answerColors,
-    sportsStartTimestamp: params.sportsStartTimestamp,
-    sportsEventId: params.sportsEventId,
-    sportsLeague: params.sportsLeague,
-    sportsHomeTeam: params.sportsHomeTeam,
-    sportsAwayTeam: params.sportsAwayTeam,
-    sportsMarketType: params.sportsMarketType,
-    sportsEntrantIds: params.sportsEntrantIds,
-    unit: undefined,
-    midpoints: undefined,
-    timezone: undefined,
-    voterVisibility: undefined,
-    pollType: undefined,
-    maxSelections: undefined,
-  })
-  const multi = contract as CPMMMultiContract
   const providerId = creatorUser.id
+  function buildRows(decision?: SportsAnteDecision) {
+    const ante = decision?.ante ?? standardAnte
+    const contract = getNewContract({
+      id: randomString(),
+      slug,
+      creator: creatorUser,
+      question: params.question,
+      outcomeType: params.outcomeType,
+      description: params.description,
+      initialProb: params.initialProb ?? 50,
+      ante,
+      closeTime: params.closeTime,
+      visibility: 'public',
+      isTwitchContract: undefined,
+      token: 'MANA',
+      takerAPIOrdersDisabled: undefined,
+      siblingContractId: undefined,
+      coverImageUrl: undefined,
+      min: 0,
+      max: 0,
+      isLogScale: false,
+      answers,
+      addAnswersMode,
+      shouldAnswersSumToOne,
+      answerShortTexts: params.answerShortTexts,
+      answerImageUrls: params.answerImageUrls,
+      answerProbs: params.answerProbs,
+      answerColors: params.answerColors,
+      sportsStartTimestamp: params.sportsStartTimestamp,
+      sportsEventId: params.sportsEventId,
+      sportsLeague: params.sportsLeague,
+      sportsHomeTeam: params.sportsHomeTeam,
+      sportsAwayTeam: params.sportsAwayTeam,
+      sportsMarketType: params.sportsMarketType,
+      sportsEntrantIds: params.sportsEntrantIds,
+      unit: undefined,
+      midpoints: undefined,
+      timezone: undefined,
+      voterVisibility: undefined,
+      pollType: undefined,
+      maxSelections: undefined,
+    })
+    Object.assign(
+      contract,
+      removeUndefinedProps({
+        sportsProvider: params.sportsProvider,
+        sportsLeagueKey: params.sportsLeagueKey,
+        sportsCompetitionId: params.sportsCompetitionId,
+        sportsHomeTeamId: params.sportsHomeTeamId,
+        sportsAwayTeamId: params.sportsAwayTeamId,
+        openingLineSource: params.openingLineSource,
+        openingProbs: params.openingProbs,
+        openingBookCount: params.openingBookCount,
+        openingLineVendors: params.openingLineVendors,
+        openingSampledTime: params.openingSampledTime,
+        sportsStartKnown: params.sportsStartKnown,
+        sportsFixture: params.sportsFixture,
+        sportsSeededStartTimestamp:
+          params.sportsProvider || opts.chooseAnte
+            ? params.sportsStartTimestamp
+            : undefined,
+        sportsKickoffBudget: decision?.kickoffBudget,
+      })
+    )
+    if (
+      decision?.kickoffBudget !== undefined &&
+      (decision.kickoffBudget !== SPORTS_KICKOFF_BUDGET ||
+        decision.kickoffBudget !== ante ||
+        !isKickoffLiquidityCandidate(contract))
+    )
+      throw new Error('Ineligible kickoff funding')
+    const multi = contract as CPMMMultiContract
+    if (
+      params.sportsProvider === 'bdl' &&
+      params.sportsLeagueKey === 'nba' &&
+      params.sportsMarketType === 'moneyline' &&
+      params.sportsEntrantIds
+    ) {
+      const binding = nbaAnswerIds(multi)
+      if (!binding || binding.away !== multi.answers[0].id)
+        throw new Error('Invalid NBA entrant or funded answer')
+      Object.assign(contract, {
+        sportsFundedAnswerIds: [binding.away, binding.home],
+      })
+    }
 
-  // Insert with all native columns set (creator_id, slug, outcome_type,
-  // mechanism, importance_score, freshness_score, etc.) so feed ranking,
-  // search, and other systems that read native columns work correctly.
-  const nativeColumns = nativeContractColumnsArray.filter((c) => c !== 'data')
-  const nativeValues = nativeColumns.map((column) => {
-    const camelKey = camelCase(column) as keyof Contract
-    return camelKey in contract ? contract[camelKey] : null
-  })
-  const nativeKeys = nativeColumns.map(camelCase)
-  const contractDataToInsert = Object.fromEntries(
-    Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
-  )
-  const contractQuery = pgp.as.format(
-    `insert into contracts (id, data, ${nativeColumns.join(',')})
-     values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`).join(',')})`,
-    [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
-  )
-  const hasAnswers = multi.answers?.length > 0
-  const insertAnswersQuery = hasAnswers
-    ? bulkInsertQuery('answers', multi.answers.map(answerToRow), true)
-    : null
+    // Insert with all native columns set (creator_id, slug, outcome_type,
+    // mechanism, importance_score, freshness_score, etc.) so feed ranking,
+    // search, and other systems that read native columns work correctly.
+    const nativeColumns = nativeContractColumnsArray.filter((c) => c !== 'data')
+    const nativeValues = nativeColumns.map((column) => {
+      const camelKey = camelCase(column) as keyof Contract
+      return camelKey in contract ? contract[camelKey] : null
+    })
+    const nativeKeys = nativeColumns.map(camelCase)
+    const contractDataToInsert = Object.fromEntries(
+      Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
+    )
+    const contractQuery = pgp.as.format(
+      `insert into contracts (id, data, ${nativeColumns.join(',')})
+       values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`).join(',')})`,
+      [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
+    )
+    const hasAnswers = multi.answers?.length > 0
+    const insertAnswersQuery = hasAnswers
+      ? bulkInsertQuery('answers', multi.answers.map(answerToRow), true)
+      : null
+    return { contract, multi, contractQuery, insertAnswersQuery, ante }
+  }
 
-  const dedupeType = opts.deduplicateMoneyline
-    ? 'moneyline'
-    : opts.deduplicateMarketType
+  // Preserve the legacy creation timestamp and IDs while waiting on the transaction.
+  const legacyRows =
+    !opts.chooseAnte && params.sportsProvider !== 'bdl'
+      ? buildRows()
+      : undefined
+
+  const dedupeType =
+    params.sportsProvider === 'bdl'
+      ? params.sportsMarketType
+      : opts.deduplicateMoneyline
+      ? 'moneyline'
+      : opts.deduplicateMarketType
+  if (params.sportsProvider === 'bdl' && !dedupeType)
+    throw new Error('BDL creation requires a market type for deduplication')
+  const majorBdl =
+    params.sportsProvider === 'bdl' &&
+    isMajorLeague(params.sportsLeagueKey ?? '')
+  const guardFunding =
+    isSportsBdlEnabled() &&
+    dedupeType === 'moneyline' &&
+    (majorBdl || isMajorOddsEvent(params.sportsEventId))
+  const start = Date.parse(params.sportsStartTimestamp ?? '')
+  const minLead = guardFunding
+    ? Math.max(opts.minLeadMs ?? 0, BDL_MIN_CREATION_LEAD_MS)
+    : opts.minLeadMs
+  const checkLead = () => {
+    if (minLead !== undefined && !(start > (opts.now ?? Date.now)() + minLead))
+      throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
+  }
+  let pendingBalance: UserUpdate[] = []
   const result = await pg.tx(async (tx) => {
+    if (guardFunding) {
+      if (majorBdl) {
+        if (params.sportsStartKnown !== true)
+          throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
+        const ids = [params.sportsHomeTeamId, params.sportsAwayTeamId]
+        if (
+          params.sportsFixture ||
+          ids[0] === ids[1] ||
+          ids.some(
+            (id) =>
+              !id ||
+              !Number.isSafeInteger(+id) ||
+              +id <= 0 ||
+              String(+id) !== id
+          )
+        )
+          throw new UnidentifiedSportsMoneyline(
+            'Unverified BDL participants or fixture'
+          )
+      }
+      await tx.one(SPORTS_CREATION_BUDGET_LOCK_SQL)
+    }
     if (dedupeType) {
-      // Serialize the existence check with the insert and ante. A concurrent
-      // admin/scheduler run sees the committed market after acquiring the lock.
-      await tx.one('select pg_advisory_xact_lock(hashtext($1))', [
-        `sports-${dedupeType}:${params.sportsEventId}`,
-      ])
-      const existing = await findSportsMarket(
+      const existing = await findLockedSportsMarket(
         tx,
-        params.sportsEventId,
-        dedupeType
+        params,
+        dedupeType,
+        opts.allowCanceledEventId,
+        !!opts.checkOddsCutover
       )
       if (existing) throw new SportsMarketAlreadyExistsError(existing.id)
     }
-    if (opts.minLeadMs != null) {
-      const start = Date.parse(params.sportsStartTimestamp ?? '')
-      if (!(start > Date.now() + opts.minLeadMs))
-        throw new SportsGameStartedError(params.sportsStartTimestamp ?? '?')
-    }
+    checkLead()
+    if (opts.checkOddsCutover) await opts.checkOddsCutover(tx)
+    const decision = await opts.chooseAnte?.(tx)
+    if (
+      opts.chooseAnte &&
+      (!decision || !Number.isFinite(decision.ante) || decision.ante <= 0)
+    )
+      throw new Error('Invalid sports ante decision')
+    if (guardFunding) checkLead()
+    const { contract, multi, contractQuery, insertAnswersQuery, ante } =
+      legacyRows ?? buildRows(decision)
     if (insertAnswersQuery) {
       const rows = await tx.multi(`${contractQuery}; ${insertAnswersQuery};`)
       if (rows[1]?.length > 0) multi.answers = rows[1].map(convertAnswer)
     } else {
       await tx.none(contractQuery)
     }
-    await runTxnOutsideBetQueue(tx, {
+    if (guardFunding) checkLead()
+    const debit = {
       fromId: providerId,
       fromType: 'USER',
       toId: contract.id,
@@ -1317,10 +1460,29 @@ export async function createSportsContract(
       amount: ante,
       token: 'M$',
       category: 'CREATE_CONTRACT_ANTE',
-    })
+    } as const
+    if (guardFunding) {
+      await runTxnOutsideBetQueue(tx, debit, false, (updates) => {
+        pendingBalance = updates
+      })
+      checkLead()
+    } else {
+      await runTxnOutsideBetQueue(tx, debit)
+    }
     await generateAntes(tx, providerId, contract, ante, ante)
+    if (guardFunding) checkLead()
     return contract
   })
+  if (pendingBalance.length) {
+    try {
+      broadcastUserUpdates(pendingBalance)
+    } catch (error) {
+      logger.error('Could not publish the committed sports ante balance', {
+        contractId: result.id,
+        error,
+      })
+    }
+  }
 
   await Promise.allSettled(
     params.groupIds.map((gId) =>
@@ -1339,6 +1501,7 @@ export async function createSportsContract(
   await generateContractEmbeddings(result, pg).catch(() => undefined)
   await runSportsMarketPostCreate(pg, result, creatorUser, {
     notifyFollowers: opts.notifyFollowers ?? false,
+    groupEmbeddingBatch: opts.groupEmbeddingBatch,
   }).catch(() => undefined)
 
   return result

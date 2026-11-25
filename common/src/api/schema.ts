@@ -18,6 +18,11 @@ import type { BrowsePersonalization } from 'common/browse-personalization'
 import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
+import {
+  parseSportsAttentionCursor,
+  SPORTS_ATTENTION_MAX_LIMIT,
+  type SportsAttentionPage,
+} from 'common/bdl/attention'
 import type { Bet, LimitBet } from 'common/bet'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import {
@@ -74,8 +79,20 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
+import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
+import { isBdlLeagueKey } from 'common/bdl/leagues'
+import {
+  MAJOR_LEAGUES,
+  MAX_SPORTS_CREATION_AMOUNT,
+  MAX_CREATION_GAME_KEYS,
+  AdminMajorCreationResult,
+  StoredMajorSettingRow,
+} from 'common/bdl/major-leagues'
+import { parseSportsKickoffMs } from 'common/sports-kickoff-interface'
+import { parseBdlEventId } from 'common/sports-ids'
+import type { BdlOperatorPanel } from 'common/bdl/operator-panel'
 import { ScorePollingPanel } from 'common/sports-score-polling'
 import { Row } from 'common/supabase/utils'
 import type { ManaPayTxn, Txn } from 'common/txn'
@@ -85,6 +102,7 @@ import { PrivateUser, User, UserBan } from '../user'
 import {
   FIRESTORE_DOC_REF_ID_REGEX,
   type FullMarketSearchResult,
+  fullSearchProps,
   searchProps,
 } from './market-search-types'
 import {
@@ -164,6 +182,42 @@ type APIGenericSchema = {
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
+const creationAmount = z
+  .number()
+  .int()
+  .nonnegative()
+  .max(MAX_SPORTS_CREATION_AMOUNT)
+const positiveId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER)
+const creationConfirmation = z
+  .object({
+    awayId: positiveId,
+    homeId: positiveId,
+    startTime: positiveId,
+    canceledContractIds: z
+      .array(z.string().min(1).max(128))
+      .min(1)
+      .max(MAX_CREATION_GAME_KEYS)
+      .optional(),
+  })
+  .strict()
+  .refine((v) => v.homeId !== v.awayId)
+const expectedCreationSetting = z
+  .object({
+    scope: z.string().max(100),
+    cap: creationAmount.nullable(),
+    baseAnte: z
+      .number()
+      .int()
+      .nonnegative()
+      .max(MAX_SPORTS_CREATION_AMOUNT)
+      .nullable(),
+    startsOn: z.string().length(10).nullable(),
+    groupSlugs: z.array(z.string().max(100)).max(8).nullable(),
+  })
+  .strict()
+  .nullable()
+  .optional()
+
 export const API = (_apiTypeCheck = {
   'refresh-all-clients': {
     method: 'POST',
@@ -1511,19 +1565,7 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         contractId: z.string().min(1),
-        score: z.object({
-          sportsHomeScore: z.number().finite().nonnegative().nullable(),
-          sportsAwayScore: z.number().finite().nonnegative().nullable(),
-          sportsLiveStatus: z.enum([
-            'IN_PLAY',
-            'PAUSED',
-            'FINISHED',
-            'AWARDED',
-          ]),
-          sportsLiveMinute: z.string().nullable(),
-          sportsLiveUpdatedTime: z.number().finite(),
-          sportsScoreUpdatedTime: z.number().finite().nullable().optional(),
-        }),
+        score: rolloutSportsScoreSchema,
       })
       .strict(),
   },
@@ -1752,7 +1794,7 @@ export const API = (_apiTypeCheck = {
     preferAuth: true,
     cache: 'private, no-store',
     returns: [] as FullMarketSearchResult[],
-    props: searchProps,
+    props: fullSearchProps,
   },
   'recent-markets': {
     method: 'GET',
@@ -5356,6 +5398,102 @@ export const API = (_apiTypeCheck = {
     returns: {} as MarketLinks,
   },
 
+  'admin-sports-creation-settings': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z.object({}).strict(),
+    returns: {} as { settings: StoredMajorSettingRow[] },
+  },
+  'admin-sports-set-creation-budget': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.union([
+      z
+        .object({
+          expected: expectedCreationSetting,
+          league: z.string().refine(isBdlLeagueKey, 'Unknown league'),
+          baseAnte: creationAmount.min(1),
+          startsOn: z
+            .string()
+            .length(10)
+            .refine(
+              (date) =>
+                Number.isFinite(parseSportsKickoffMs(date + 'T00:00:00Z')),
+              'Invalid start date'
+            ),
+          groupSlugs: z
+            .array(z.string().regex(/^[a-z0-9-]{1,100}$/))
+            .min(1)
+            .max(8),
+          cap: creationAmount,
+        })
+        .strict(),
+      z
+        .object({
+          expected: expectedCreationSetting,
+          scope: z.enum(['wave:1', 'wave:2', 'wave:3', 'global']),
+          cap: creationAmount,
+        })
+        .strict(),
+    ]),
+    returns: {} as { saved: true },
+  },
+  'admin-sports-create-bdl-markets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        league: z.enum(MAJOR_LEAGUES),
+        competitionId: z.string().min(1).max(100),
+        dryRun: z.boolean(),
+        keys: z
+          .array(z.string().min(1).max(100))
+          .min(1)
+          .max(MAX_CREATION_GAME_KEYS)
+          .optional(),
+        force: z.boolean().optional(),
+        maxAntes: z.record(creationAmount).optional(),
+        confirmations: z.record(creationConfirmation).optional(),
+      })
+      .strict()
+      .refine(
+        (p) =>
+          ((p.dryRun && !p.force) || !!p.keys?.length) &&
+          new Set(p.keys).size === (p.keys?.length ?? 0) &&
+          (p.keys ?? []).every((key) => {
+            const game = parseBdlEventId(key)
+            return game?.league === p.league && !('suffix' in game)
+          }),
+        'Select game IDs from the chosen league before creating or forcing a run'
+      )
+      .refine(
+        (p) =>
+          [p.maxAntes, p.confirmations].every(
+            (map) =>
+              !map ||
+              (p.keys?.length === Object.keys(map).length &&
+                p.keys.every((id) =>
+                  Object.prototype.hasOwnProperty.call(map, id)
+                ))
+          ) &&
+          Object.values(p.confirmations ?? {}).every(
+            (row) => (row.canceledContractIds !== undefined) === !!p.force
+          ),
+        'Confirm the selected games, force mode and maximum antes from the preview'
+      ),
+    returns: {} as AdminMajorCreationResult,
+  },
+  'admin-sports-bdl-competitions': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as BdlOperatorPanel,
+  },
   // The scheduler switches on /admin/sports: one per Odds API calendar phase.
   'admin-sports-competition-switches': {
     method: 'GET',
@@ -5363,6 +5501,29 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { switches: CompetitionSwitchState[] },
+  },
+  'admin-sports-bdl-attention': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: 'private, no-store',
+    props: z
+      .object({
+        limit: z
+          .union([z.number(), z.string().regex(/^[1-9]\d{0,2}$/)])
+          .pipe(z.coerce.number().int().min(1).max(SPORTS_ATTENTION_MAX_LIMIT))
+          .optional(),
+        cursor: z
+          .string()
+          .max(256)
+          .refine((value) => {
+            const cursor = parseSportsAttentionCursor(value)
+            return cursor !== null && cursor.asOf <= Date.now()
+          })
+          .optional(),
+      })
+      .strict(),
+    returns: {} as SportsAttentionPage,
   },
   'admin-sports-set-competition-switch': {
     method: 'POST',

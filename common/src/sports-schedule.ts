@@ -1,4 +1,11 @@
 import { uniq } from 'lodash'
+import type { BdlLeagueKey } from './bdl/leagues'
+import type {
+  ScheduleScoreFields,
+  SportsFinalQualifier,
+  SportsGameState,
+  SportsScoreboard,
+} from './sports-scoreboard'
 import { ENV } from 'common/envs/constants'
 import { MarketLinkRelation } from 'common/market-links'
 import type { RaceChampionship, RaceWeekend } from 'common/race-weekends'
@@ -35,6 +42,7 @@ export type SportKey =
   | 'afl'
   | 'nrl'
   | 'handball'
+  | 'esports'
 
 /**
  * A sport on the /sports page: a curated `SportKey`, or the slug of a Sports
@@ -1213,9 +1221,16 @@ export interface SportsLiveScore {
   sportsLiveUpdatedTime: number
   /** Provider observation time; null when unavailable. */
   sportsScoreUpdatedTime?: number | null
+  sportsLivePeriod?: number | string | null
+  sportsLiveClock?: string | null
+  sportsLiveDetail?: SportsScoreboard | null
+  sportsResumptionTime?: number | null
+  sportsFinalQualifier?: SportsFinalQualifier | null
 }
 
 export interface ScheduleTeam {
+  /** Provider team id scoped to this game's league. */
+  entrantId?: string
   answerId: string
   name: string
   shortName: string
@@ -1226,7 +1241,8 @@ export interface ScheduleTeam {
   prob: number
 }
 
-export interface ScheduleGame {
+export interface ScheduleGame extends ScheduleScoreFields {
+  sportsLeagueKey?: BdlLeagueKey
   id: string
   slug: string
   creatorUsername: string
@@ -1240,6 +1256,8 @@ export interface ScheduleGame {
   closeTime: number
   status: GameStatus
   isResolved: boolean
+  /** The contract was actually voided, independently of its provider's status. */
+  isCanceled?: true
   /** Answer id that resolved YES, if resolved. */
   winnerAnswerId: string | null
   resolutionTime: number | null
@@ -1252,6 +1270,8 @@ export interface ScheduleGame {
     home: number | null
     away: number | null
     minute: string | null
+    period?: number | string
+    clock?: string
     status: string
   } | null
   finalScore: { home: number; away: number } | null
@@ -1323,6 +1343,8 @@ export function gameStatus(props: {
   closeTime: number
   isResolved: boolean
   liveStatus?: string | null
+  gameState?: SportsGameState
+  kickoffKnown?: boolean
   liveUpdatedTime?: number | null
   now?: number
 }): GameStatus {
@@ -1330,6 +1352,20 @@ export function gameStatus(props: {
     props
   const now = props.now ?? Date.now()
   if (isResolved) return 'finished'
+  switch (props.gameState) {
+    case 'final':
+    case 'canceled':
+      return 'finished'
+    case 'live':
+      return 'live'
+    case 'scheduled':
+    case 'delayed':
+    case 'postponed':
+    case 'suspended':
+    case 'settling':
+    case 'unavailable':
+      return 'upcoming'
+  }
   if (liveStatus && TERMINAL_STATUSES.has(liveStatus)) return 'finished'
   const freshLive =
     !!liveStatus &&
@@ -1338,6 +1374,6 @@ export function gameStatus(props: {
     now - liveUpdatedTime < LIVE_STALE_MS
   if (freshLive) return 'live'
   if (now >= closeTime) return 'finished'
-  if (now >= startTime) return 'live'
+  if (props.kickoffKnown !== false && now >= startTime) return 'live'
   return 'upcoming'
 }

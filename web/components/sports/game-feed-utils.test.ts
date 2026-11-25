@@ -4,6 +4,8 @@ import { ScheduleGame, ScheduleTeam } from 'common/sports-schedule'
 import {
   compareGameStartTime,
   compareGameVolume,
+  groupScheduleDays,
+  scheduleDayKey,
   getGameDisplayTeams,
   selectFeaturedGame,
 } from './game-feed-utils'
@@ -65,6 +67,39 @@ test('soccer keeps the home team first and leaves the draw separate', () => {
       ['away-answer', 'teamB'],
     ]
   )
+})
+
+test('local day filters, headings and date chips use the resumption without moving an F1 session or the original kickoff', () => {
+  const at = (day: number, hour: number) =>
+    new Date(2026, 6, day, hour).getTime()
+  const original = at(1, 19)
+  const moved = {
+    id: 'moved',
+    startTime: original,
+    gameState: 'suspended' as const,
+    resumptionTime: at(5, 19),
+  }
+  const event = { id: 'race', startTime: at(5, 17) }
+  const next = { id: 'next', startTime: at(6, 10) }
+  const all = [next, event, moved]
+  const key = scheduleDayKey(moved)
+  assert.equal(key, '2026-07-05')
+  assert.deepEqual(
+    all.filter((item) => scheduleDayKey(item) === key).map((item) => item.id),
+    ['race', 'moved']
+  )
+  assert.deepEqual(
+    groupScheduleDays(all, at(5, 9)).map(({ key, label, items }) => [
+      key,
+      label,
+      items.map((i) => i.id),
+    ]),
+    [
+      ['2026-07-05', 'Today', ['race', 'moved']],
+      ['2026-07-06', 'Tomorrow', ['next']],
+    ]
+  )
+  assert.equal(moved.startTime, original)
 })
 
 type FeedGame = Pick<ScheduleGame, 'id' | 'status' | 'startTime' | 'volume'>

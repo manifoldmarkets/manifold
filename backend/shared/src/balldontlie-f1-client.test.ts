@@ -1,4 +1,29 @@
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
+jest.mock('common/bdl/rollout', () => ({
+  isSportsBdlEnabled: jest.fn(() => true),
+}))
+jest.mock('./bdl/dev-admission', () => ({
+  sendDevBdlRequest: jest.fn(
+    async (
+      _league: string,
+      enabled: () => Promise<boolean>,
+      send: () => Promise<unknown>
+    ) => {
+      if (!(await enabled()))
+        throw new Error('[sports-bdl-client] League disabled')
+      return send()
+    }
+  ),
+}))
+import { isProd } from 'shared/utils'
+import { getCompetitionSwitches } from './supabase/sports-competition-switches'
+import { calendarPhaseKey, SPORTS_CALENDAR } from 'common/sports-calendar'
+jest.mock('./supabase/init', () => ({ createSupabaseDirectClient: jest.fn() }))
+jest.mock('./supabase/sports-competition-switches', () => ({
+  getCompetitionSwitches: jest.fn(),
+}))
 jest.mock('shared/utils', () => ({
+  isProd: jest.fn(() => true),
   log: Object.assign(jest.fn(), { error: jest.fn(), warn: jest.fn() }),
 }))
 
@@ -7,7 +32,7 @@ import {
   getF1Events,
   getF1SessionResults,
   getF1Sessions,
-  hasBalldontlieKey,
+  getF1ClientStatus,
 } from './balldontlie-f1-client'
 
 type Call = { url: URL; headers: Record<string, string> }
@@ -27,6 +52,8 @@ const page = (data: unknown[], next_cursor?: string | number | null) => ({
 
 beforeEach(() => {
   jest.clearAllMocks()
+  jest.mocked(isProd).mockReturnValue(true)
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   process.env.BALLDONTLIE_API_KEY = 'test-key'
   global.fetch = jest
     .fn()
@@ -102,7 +129,46 @@ it('stops a runaway cursor', async () => {
 })
 
 it('reports whether a key is configured without throwing', () => {
-  expect(hasBalldontlieKey()).toBe(true)
+  expect(getF1ClientStatus()).toBe('ready')
   delete process.env.BALLDONTLIE_API_KEY
-  expect(hasBalldontlieKey()).toBe(false)
+  expect(getF1ClientStatus()).toBe('missing-key')
+})
+
+it('keeps prod F1 available while blocking dev transport with the rollout or F1 phases off', async () => {
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(false)
+  expect(getF1ClientStatus()).toBe('ready')
+  await getF1Events(2026)
+  jest.mocked(isProd).mockReturnValue(false)
+  expect(getF1ClientStatus()).toBe('rollout-disabled')
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(getCompetitionSwitches).not.toHaveBeenCalled()
+  jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
+  jest.mocked(getCompetitionSwitches).mockResolvedValue({})
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+it('rechecks explicit F1 authorization across pages on dev', async () => {
+  jest.mocked(isProd).mockReturnValue(false)
+  const f1 = SPORTS_CALENDAR.find((e) => e.provider === 'bdl-f1')!
+  jest
+    .mocked(getCompetitionSwitches)
+    .mockResolvedValueOnce({ [calendarPhaseKey(f1)]: true })
+    .mockResolvedValue({})
+  jest.mocked(global.fetch).mockResolvedValue(page([], 10) as Response)
+  await expect(getF1Events(2026)).rejects.toThrow('League disabled')
+  expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+
+it('prevents a redirect from spending a second dev slot and preserves legacy prod options', async () => {
+  const f1 = SPORTS_CALENDAR.find((e) => e.provider === 'bdl-f1')!
+  jest
+    .mocked(getCompetitionSwitches)
+    .mockResolvedValue({ [calendarPhaseKey(f1)]: true })
+  await getF1Events(2026)
+  jest.mocked(isProd).mockReturnValue(false)
+  await getF1Events(2026)
+  const requests = jest.mocked(global.fetch).mock.calls
+  expect(requests).toHaveLength(2)
+  expect(requests[0][1]).not.toHaveProperty('redirect')
+  expect(requests[1][1]).toMatchObject({ redirect: 'error' })
 })

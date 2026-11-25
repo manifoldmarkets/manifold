@@ -47,6 +47,36 @@ export function refreshLimit(
   return Math.min(max, Math.max(pageSize, upcoming))
 }
 
+/** Refresh all loaded games atomically, including feeds larger than the API's per-request limit. */
+export async function refreshLoadedFeed(
+  previous: ScheduleFeed | undefined,
+  pageSize: number,
+  requestLimit: number,
+  read: (limit: number, cursor?: string) => Promise<SportsScheduleResponse>,
+  isCurrent: () => boolean,
+  readAllPages = true
+) {
+  const target = refreshLimit(previous, pageSize, Infinity)
+  const first = await read(Math.min(target, requestLimit))
+  if (!isCurrent()) return undefined
+  let feed = feedFromResponse(first)
+  let upcoming = first.games.filter((g) => g.status === 'upcoming').length
+  const pages = [first]
+  const visited = new Set<string>()
+  while (readAllPages && feed.cursor && upcoming < target) {
+    const cursor = feed.cursor
+    if (visited.has(cursor)) throw new Error('Repeated sports schedule cursor')
+    visited.add(cursor)
+    const page = await read(Math.min(target - upcoming, requestLimit), cursor)
+    if (!isCurrent()) return undefined
+    const adopted = adoptedGames(feed, page)
+    pages.push(adopted)
+    upcoming += adopted.games.filter((g) => g.status === 'upcoming').length
+    feed = appendPage(feed, cursor, page)!
+  }
+  return { feed, pages }
+}
+
 /**
  * The feed with the next page appended, or undefined if the feed has moved on
  * since `cursor` was read (a refresh replaced it), so the page is stale.

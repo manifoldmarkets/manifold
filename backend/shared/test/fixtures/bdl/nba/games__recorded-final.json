@@ -1,0 +1,26 @@
+{
+  "data": [
+    {
+      "id": 21717855,
+      "date": "2026-10-20",
+      "datetime": "2026-10-20T19:00:00.000Z",
+      "season": 2026,
+      "status_state": "final",
+      "status": "Final",
+      "period": 4,
+      "postseason": false,
+      "home_team_score": 121,
+      "visitor_team_score": 113,
+      "home_team": {
+        "id": 9,
+        "full_name": "Detroit Pistons",
+        "abbreviation": "DET"
+      },
+      "visitor_team": {
+        "id": 2,
+        "full_name": "Boston Celtics",
+        "abbreviation": "BOS"
+      }
+    }
+  ]
+}

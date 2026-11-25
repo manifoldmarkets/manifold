@@ -245,10 +245,17 @@ import { adminDeletePrizeClaim } from './admin-delete-prize-claim'
 import { adminGetManaSales } from './admin-get-mana-sales'
 import { adminGetTopWhaleUsers } from './admin-get-top-whale-users'
 import { adminGetNewUsers } from './admin-get-new-users'
+import {
+  adminSportsCreationSettings,
+  adminSetSportsCreationBudget,
+  adminCreateBdlMarkets,
+} from './admin-sports-bdl'
+import { adminSportsBdlCompetitions } from './admin-sports-bdl-competitions'
 import { adminSportsFixtures } from './admin-sports-fixtures'
 import { adminSportsCreateMarkets } from './admin-sports-create-markets'
 import { adminSportsCreateOddsMarkets } from './admin-sports-create-odds-markets'
 import { adminSportsCreateF1Markets } from './admin-sports-create-f1-markets'
+import { adminSportsBdlAttention } from './admin-sports-bdl-attention'
 import { linkMarket, unlinkMarket } from './link-market'
 import { getMarketLinksHandler } from './get-market-links'
 import {
@@ -662,9 +669,14 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'admin-sports-create-markets': adminSportsCreateMarkets,
   'admin-sports-create-odds-markets': adminSportsCreateOddsMarkets,
   'admin-sports-create-f1-markets': adminSportsCreateF1Markets,
+  'admin-sports-bdl-attention': adminSportsBdlAttention,
   'link-market': linkMarket,
   'unlink-market': unlinkMarket,
   'get-market-links': getMarketLinksHandler,
+  'admin-sports-creation-settings': adminSportsCreationSettings,
+  'admin-sports-set-creation-budget': adminSetSportsCreationBudget,
+  'admin-sports-create-bdl-markets': adminCreateBdlMarkets,
+  'admin-sports-bdl-competitions': adminSportsBdlCompetitions,
   'admin-sports-competition-switches': adminSportsCompetitionSwitches,
   'admin-sports-set-competition-switch': adminSportsSetCompetitionSwitch,
   'admin-sports-score-polling': adminSportsScorePolling,

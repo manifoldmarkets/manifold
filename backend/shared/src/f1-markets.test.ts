@@ -54,7 +54,10 @@ import { User } from 'common/user'
 import { HOUR_MS } from 'common/util/time'
 import { isProd, log } from 'shared/utils'
 import { sendTextEmail } from 'shared/send-email'
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import type {
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { sportsCreator } from 'shared/odds-markets'
 import { getCompetitionSwitches } from 'shared/supabase/sports-competition-switches'
@@ -269,9 +272,13 @@ describe('resolveF1Markets', () => {
     async (...args: Parameters<typeof resolveMarketHelper>) => {
       const check = args[5]
       seen.push(check)
-      check?.({
-        answers: answerRows(podiumIds, fresh),
-      } as unknown as MarketContract)
+      // The existing synchronous F1 guard only needs the fresh answers.
+      await check?.(
+        {
+          answers: answerRows(podiumIds, fresh),
+        } as unknown as MarketContract,
+        {} as SupabaseTransaction
+      )
       return undefined as unknown as Awaited<
         ReturnType<typeof resolveMarketHelper>
       >

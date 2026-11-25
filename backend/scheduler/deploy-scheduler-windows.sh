@@ -149,6 +149,14 @@ printf '%s\n' \
     "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV}" \
     "GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}" \
     "SCHEDULER_JOBS=${TARGET}" > "${ENV_FILE}"
+if [[ "$ENV" == dev && -v NEXT_PUBLIC_SPORTS_BDL_ENABLED ]]; then
+    # The container environment file stores exactly one variable per line.
+    if [[ "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" == *$'\n'* || "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" == *$'\r'* ]]; then
+        echo "NEXT_PUBLIC_SPORTS_BDL_ENABLED must be a single line." >&2
+        exit 1
+    fi
+    printf 'NEXT_PUBLIC_SPORTS_BDL_ENABLED=%s\n' "$NEXT_PUBLIC_SPORTS_BDL_ENABLED" >> "$ENV_FILE"
+fi
 
 METADATA_ARGS=(
   --metadata container-image=${IMAGE_URL},container-name=${SERVICE_NAME},google-logging-enabled=true

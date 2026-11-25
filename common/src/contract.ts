@@ -429,6 +429,35 @@ export type SportsMarketType =
   | 'title'
 
 export type Sports = {
+  sportsProvider?: import('./sports-provider').SportsProvider
+  sportsLeagueKey?: import('./bdl/leagues').BdlLeagueKey
+  sportsCompetitionId?: string
+  sportsHomeTeamId?: string
+  sportsAwayTeamId?: string
+  openingLineSource?: import('./sports-kickoff-interface').OpeningLineSource
+  openingProbs?: number[]
+  openingBookCount?: number
+  openingLineVendors?: string[]
+  openingSampledTime?: number
+  /** Kickoff as known at creation. Schedule changes only update sportsStartTimestamp. */
+  readonly sportsSeededStartTimestamp?: string
+  sportsStartKnown?: boolean
+  sportsKickoffBudget?: number
+  sportsObservedStartTime?: number
+  sportsFixture?: true
+  sportsLivePeriod?: number | string
+  sportsLiveClock?: string
+  sportsResumptionTime?: number
+  sportsFinalQualifier?: import('./sports-scoreboard').SportsFinalQualifier
+  sportsLiveDetail?: Record<string, import('./supabase/schema').Json>
+  sportsResultHash?: string
+  sportsVerification?: {
+    source: string
+    crossCheck: string | null
+    verifiedTime: number
+  }
+  sportsAttentionReason?: string
+  sportsAttentionSince?: number
   sportsStartTimestamp: string
   sportsEventId: string
   sportsLeague: string
@@ -446,6 +475,8 @@ export type Sports = {
    * resolver matches results by id, never by name.
    */
   sportsEntrantIds?: (number | null)[]
+  /** The native answers issued to these NBA entrants at initial funding, by index. */
+  readonly sportsFundedAnswerIds?: string[]
   /**
    * A field event's session: when the pipeline first saw the provider mark
    * it cancelled, cleared once it's seen otherwise. N/A waits for this to be

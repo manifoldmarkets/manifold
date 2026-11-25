@@ -1,9 +1,42 @@
+import { isSportsBdlEnabled } from './bdl/rollout'
 import type { ScheduleGame } from './sports-schedule'
 
 /** Initial schedule window shared by the page and its social preview. */
 export const SPORTS_SCHEDULE_PAGE_SIZE = 20
 
-type GameOrder = Pick<ScheduleGame, 'id' | 'status' | 'startTime' | 'volume'>
+export function canBetOnScheduledGame(game: ScheduleGame, now: number) {
+  if (game.isResolved || game.status === 'finished') return false
+  if (
+    game.gameState === 'settling' ||
+    game.gameState === 'final' ||
+    game.gameState === 'canceled'
+  )
+    return false
+  return !game.sportsLeagueKey || game.closeTime > now
+}
+
+type FeedTime = Pick<ScheduleGame, 'startTime' | 'gameState' | 'resumptionTime'>
+
+/** A suspended or postponed game is listed under its confirmed resumption.
+ * Its original kickoff still describes the game itself. */
+export function scheduleFeedTime({
+  startTime,
+  gameState,
+  resumptionTime,
+}: FeedTime) {
+  if (
+    isSportsBdlEnabled() &&
+    (gameState === 'suspended' || gameState === 'postponed') &&
+    resumptionTime != null &&
+    Number.isFinite(resumptionTime) &&
+    resumptionTime >= 0 &&
+    resumptionTime <= 8.64e15
+  )
+    return resumptionTime
+  return startTime
+}
+
+type GameOrder = Pick<ScheduleGame, 'id' | 'status' | 'volume'> & FeedTime
 
 /** Keep each team's score and bet target together when changing display order. */
 export function getGameDisplayTeams<Team>(game: {
@@ -26,7 +59,14 @@ export function getGameDisplayTeams<Team>(game: {
 }
 
 export const compareGameStartTime = (a: GameOrder, b: GameOrder) =>
-  a.startTime - b.startTime || a.id.localeCompare(b.id)
+  scheduleFeedTime(a) - scheduleFeedTime(b) ||
+  (isSportsBdlEnabled()
+    ? a.id < b.id
+      ? -1
+      : a.id > b.id
+      ? 1
+      : 0
+    : a.id.localeCompare(b.id))
 
 const safeVolume = (game: GameOrder) =>
   Number.isFinite(game.volume) ? Math.max(0, game.volume) : 0

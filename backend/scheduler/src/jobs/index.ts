@@ -1,4 +1,5 @@
 import { compact } from 'lodash'
+import { isSportsBdlEnabled } from 'common/bdl/rollout'
 
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
@@ -77,6 +78,7 @@ import { updateFearGreed } from './update-fear-greed'
 import { resolveSportsMarkets } from './sports-resolve'
 import { createUpcomingSportsMarkets } from './sports-create-markets'
 import { pollSportsLiveScores } from './sports-live'
+import { createMajorSportsMarkets } from './sports-bdl-create'
 import { createOddsSportsMarkets } from './sports-odds-create'
 import { resolveOddsSportsMarkets } from './sports-odds-resolve'
 import { createF1SportsMarkets } from './sports-f1-create'
@@ -510,6 +512,8 @@ export function createJobs(jobSet: SchedulerJobSet) {
       '0 0 7 * * *', // daily at 7:00 AM LA
       createUpcomingSportsMarkets
     ),
+    isSportsBdlEnabled() &&
+      createJob('sports-bdl-create', '0 11 * * * *', createMajorSportsMarkets),
     // The Odds API sports (NFL, college football, MLB, NBA, WNBA, EPL, MLS):
     // create the coming two weeks' game markets, twice a day. Lines for a
     // day's games are often posted only that morning, so one failed morning

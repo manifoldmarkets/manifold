@@ -5,6 +5,7 @@ import {
   feedFromResponse,
   pruneLiveForPage,
   refreshLimit,
+  refreshLoadedFeed,
   ScheduleFeed,
 } from './sports-schedule-feed'
 import { LiveGameState } from './sports-schedule-live'
@@ -112,6 +113,48 @@ it('asks a refresh for as many games as are loaded, within the limits', () => {
   expect(refreshLimit(feed, PAGE, 30)).toBe(30)
 })
 
+it('refreshes more than 400 loaded games without duplicates or lost cursor positions', async () => {
+  const games = Array.from({ length: 502 }, (_, i) =>
+    game('A' + String(i).padStart(3, '0'), 3600)
+  )
+  const previous = feedFromResponse(serve(games, { limit: 500 }))
+  const current = [game('000', 100), ...games]
+  const calls: number[] = []
+  const result = await refreshLoadedFeed(
+    previous,
+    PAGE,
+    MAX,
+    async (limit, cursor) => {
+      calls.push(limit)
+      return {
+        ...serve(current, { limit, cursor }),
+        snapshotTime: calls.length,
+      }
+    },
+    () => true
+  )
+  expect(calls).toEqual([400, 100])
+  expect(result?.feed.games.map((g) => g.id)).toEqual(
+    current.slice(0, 500).map((g) => g.id)
+  )
+  expect(result?.feed.snapshotTimes.A450).toBe(2)
+  expect(loadMore(result!.feed, current).games).toEqual(current)
+})
+
+it('abandons an obsolete refresh and rejects repeated cursors without publishing a partial list', async () => {
+  const previous = feedFromResponse(serve(schedule, { limit: 40 }))
+  const firstPage = serve(schedule, { limit: PAGE })
+  const read = jest.fn().mockResolvedValue(firstPage)
+  expect(
+    await refreshLoadedFeed(previous, PAGE, PAGE, read, () => false)
+  ).toBeUndefined()
+  expect(read).toHaveBeenCalledTimes(1)
+  await expect(
+    refreshLoadedFeed(previous, PAGE, PAGE, read, () => true)
+  ).rejects.toThrow('Repeated sports schedule cursor')
+  expect(previous.games).toHaveLength(40)
+})
+
 it('keeps a newer live price when a later page repeats the game', () => {
   // G was read at 50% (snapshot 1), then a live update moved it to 60% (at
   // 2). Rescheduled past the cursor, it turns up again on a later page read
@@ -134,4 +177,25 @@ it('keeps a newer live price when a later page repeats the game', () => {
   expect(pruneLiveForPage(live, page).G).toBeUndefined()
   // Against what the feed actually took, it stays.
   expect(pruneLiveForPage(live, adoptedGames(feed, page)).G).toEqual(live.G)
+})
+
+it('refreshes the first capped page exactly once with extended paging off', async () => {
+  const games = Array.from({ length: 502 }, (_, i) =>
+    game(String(i).padStart(3, '0'), 3600)
+  )
+  const previous = feedFromResponse(serve(games, { limit: 500 }))
+  const read = jest.fn(async (limit: number, cursor?: string) =>
+    serve(games, { limit, cursor })
+  )
+  const result = await refreshLoadedFeed(
+    previous,
+    PAGE,
+    MAX,
+    read,
+    () => true,
+    false
+  )
+  expect(read.mock.calls).toEqual([[400]])
+  expect(result?.feed.games).toHaveLength(400)
+  expect(result?.feed.cursor).toBeTruthy()
 })

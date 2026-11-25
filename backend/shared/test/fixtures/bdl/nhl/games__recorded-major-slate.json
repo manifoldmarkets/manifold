@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": 3328405,
+      "game_date": "2026-11-19",
+      "start_time_utc": "2026-11-20T02:40:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "status_state": "final",
+      "game_state": "OFF",
+      "period": 3,
+      "time_remaining": "00:00",
+      "home_score": 5,
+      "away_score": 1,
+      "home_team": {
+        "id": 57,
+        "full_name": "Seattle Kraken",
+        "tricode": "SEA"
+      },
+      "away_team": {
+        "id": 60,
+        "full_name": "Vancouver Canucks",
+        "tricode": "VAN"
+      }
+    }
+  ]
+}
