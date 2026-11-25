@@ -24,7 +24,14 @@ import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
 import { TrophyRewardTxn } from 'common/txn'
 import { User, UserBan } from 'common/user'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import {
+  TROPHY_FRESH_PORTFOLIO_FILTER,
+  TROPHY_NET_WORTH_PEAK_CONFLICT,
+} from 'shared/supabase/trophy-eligibility'
 import { UserUpdate, broadcastUserUpdates } from 'shared/supabase/users'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { loadUserAchievements } from './get-user-achievements'
@@ -52,11 +59,9 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         throw new APIError(403, 'These trophies are for new accounts')
       }
 
-      // A stat can only grow, apart from rare cases such as a deleted
-      // comment, and a claim is kept either way.
-      const value = await getStatValue(def, auth.uid)
-      const toClaim = getMilestonesToClaim(def, milestoneId, value)
-      if (!toClaim) {
+      const milestonesForValue = (value: number) => {
+        const toClaim = getMilestonesToClaim(def, milestoneId, value)
+        if (toClaim) return toClaim
         const needed =
           def.unit === 'league'
             ? formatTrophyValue(def, milestone.threshold)
@@ -66,11 +71,15 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           `You haven't reached ${milestone.name} yet: it needs ${needed}`
         )
       }
+      // Net Worth records the snapshot used for the claim inside the transaction.
+      const verifiedMilestones =
+        def.id === 'net-worth'
+          ? undefined
+          : milestonesForValue(await getStatValue(def, auth.uid))
 
       const userUpdates: UserUpdate[] = []
       const { inserted, rewardAmount } = await pg.tx(async (tx) => {
-        // Taken first, as quest rewards do, and the only lock waited for, so
-        // this cannot deadlock with a bet or another payout.
+        // Lock the user first, as quest rewards do.
         const locked = await tx.one<{
           bonus_eligibility: string | null
           user_deleted: boolean
@@ -99,6 +108,10 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         ) {
           throw new APIError(403, 'You are banned from claiming trophies')
         }
+
+        const toClaim =
+          verifiedMilestones ??
+          milestonesForValue(await recordNetWorthPeak(tx, auth.uid))
 
         // One row per milestone. A repeated or concurrent claim inserts
         // nothing the second time, and a claim can never be lowered.
@@ -195,6 +208,26 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
       }
     }
   )
+
+async function recordNetWorthPeak(tx: SupabaseTransaction, userId: string) {
+  await tx.none(
+    `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
+     select user_id, value, now() from (
+       select uphl.user_id, uphl.balance + uphl.investment_value as value
+       from user_portfolio_history_latest uphl
+       where uphl.user_id = $1 and ${TROPHY_FRESH_PORTFOLIO_FILTER}
+     ) snapshot
+     where value > 0 and value < 'Infinity'::numeric
+     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
+    [userId]
+  )
+  const peak = await tx.oneOrNone<{ peak_net_worth: number }>(
+    'select peak_net_worth from user_net_worth_peaks where user_id = $1',
+    [userId]
+  )
+  const value = peak?.peak_net_worth ?? 0
+  return Number.isFinite(value) ? value : 0
+}
 
 // Same numbers the profile shows: achievements for most trophies, the live
 // starter count for "Getting started".

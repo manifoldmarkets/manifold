@@ -6,6 +6,7 @@ import { APIHandler } from 'api/helpers/endpoint'
 // fields are live here and use separate nightly ranks in update-trophy-ranks.
 // Trades and their rank are live, from user_stats (dev-docs/user-stats.md).
 import { APIResponse } from 'common/api/schema'
+import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import {
   MARKET_CREATED_MIN_TRADERS,
   REFERRAL_MIN_TRADES,
@@ -42,12 +43,13 @@ export async function loadUserAchievements(
 ): Promise<APIResponse<'get-user-achievements'>> {
   const pg = createSupabaseDirectClient()
   const [result, trades, N] = await Promise.all([
-    pg.oneOrNone<StatsRow>(STATS_QUERY, [
+    pg.oneOrNone<StatsRow>(STATS_QUERY, {
       userId,
-      MARKET_CREATED_MIN_TRADERS,
-      REFERRAL_MIN_TRADES,
-      EPSILON,
-    ]),
+      minTraders: MARKET_CREATED_MIN_TRADERS,
+      minReferralTrades: REFERRAL_MIN_TRADES,
+      epsilon: EPSILON,
+      bannedTradingIds: BANNED_TRADING_USER_IDS,
+    }),
     loadTrades(pg, userId),
     getRankPopulation(pg),
   ])
@@ -209,7 +211,7 @@ const STATS_QUERY = `with
   creators as (
     select (data->'creatorTraders'->>'allTime')::int as creator_traders
     from users
-    where id = $1
+    where id = $[userId]
   ),
   -- Same numbers as the user_referrals_profit view, which ranks every referrer
   -- and so scans all users; this reads only this user's referrals
@@ -218,33 +220,33 @@ const STATS_QUERY = `with
     select
       count(uphl.user_id) as total_referrals,
       count(*) filter (where ${TROPHY_PERSON_FILTER}
-        and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $3) as referred_traders,
+        and coalesce(s.trades, 0) + coalesce(baseline.trades, 0) >= $[minReferralTrades]) as referred_traders,
       sum(uphl.balance + uphl.spice_balance + uphl.investment_value - uphl.total_deposits)
         as total_referred_profit_mana
     from users person
     left join user_portfolio_history_latest uphl on uphl.user_id = person.id
     left join user_stats s on s.user_id = person.id
     left join user_stats_baseline baseline on baseline.user_id = person.id
-    where person.data->>'referredByUserId' = $1
-      and exists (select 1 from users referrer where referrer.id = $1)
+    where person.data->>'referredByUserId' = $[userId]
+      and exists (select 1 from users referrer where referrer.id = $[userId])
   ),
   portfolio as (
     select uphl.balance + uphl.investment_value as net_worth,
       ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
-    from user_portfolio_history_latest uphl where uphl.user_id = $1
+    from user_portfolio_history_latest uphl where uphl.user_id = $[userId]
   ),
   liked as (
     select count(distinct r.content_id) as liked_comments
     from user_reactions r
     join users person on person.id = r.user_id
-    where r.content_owner_id = $1 and r.content_type = 'comment' and r.reaction_type = 'like'
-      and r.user_id <> $1 and ${TROPHY_PERSON_FILTER}
+    where r.content_owner_id = $[userId] and r.content_type = 'comment' and r.reaction_type = 'like'
+      and r.user_id <> $[userId] and ${TROPHY_PERSON_FILTER}
       and ${TROPHY_VISIBLE_COMMENT_FILTER}
   ),
   mod_tickets as (
     select count(*) as mod_tickets_resolved
     from txns
-    where category = 'ADMIN_REWARD' and to_id = $1
+    where category = 'ADMIN_REWARD' and to_id = $[userId]
     and data -> 'data' ->> 'updateType' = 'resolved'
   ),
   charity as (
@@ -252,7 +254,7 @@ const STATS_QUERY = `with
          + coalesce(sum(case when token = 'CASH' then amount else 0 end), 0)
          + coalesce(sum(case when token = 'SPICE' then amount / 1000.0 else 0 end), 0) as charity_donated_mana
     from txns
-    where category = 'CHARITY' and from_id = $1
+    where category = 'CHARITY' and from_id = $[userId]
   ),
   -- Volume and the P&L counts in one pass over the user's market summaries.
   metrics as (
@@ -260,7 +262,7 @@ const STATS_QUERY = `with
       sum(coalesce((ucm.data->>'totalAmountSold')::numeric, 0)
         + coalesce((ucm.data->>'totalAmountInvested')::numeric, 0)) as total_volume_mana,
       count(*) filter (where coalesce(ucm.profit, 0) > 0) as profitable_markets_count,
-      count(*) filter (where ucm.profit > $4 and ucm.profit < 'Infinity'::numeric
+      count(*) filter (where ucm.profit > $[epsilon] and ucm.profit < 'Infinity'::numeric
         and c.resolution is not null
         and c.resolution <> 'CANCEL' and not coalesce(c.deleted, false)) as resolved_profitable_markets,
       count(*) filter (where coalesce(ucm.profit, 0) < 0) as unprofitable_markets_count,
@@ -268,7 +270,7 @@ const STATS_QUERY = `with
       min(ucm.profit) filter (where coalesce(ucm.profit, 0) < 0) as largest_unprofitable_trade_value
     from user_contract_metrics ucm
     join contracts c on c.id = ucm.contract_id
-    where ucm.user_id = $1
+    where ucm.user_id = $[userId]
       and ucm.answer_id is null
       and c.token = 'MANA'
   ),
@@ -281,12 +283,12 @@ const STATS_QUERY = `with
       count(*) filter (where division = 6) as seasons_masters,
       max(mana_earned) as largest_league_season_earnings
     from leagues
-    where user_id = $1
+    where user_id = $[userId]
   ),
   comments as (
     select
-      (select count(*) from contract_comments where user_id = $1) +
-      (select count(*) from old_post_comments where user_id = $1) as number_of_comments
+      (select count(*) from contract_comments where user_id = $[userId]) +
+      (select count(*) from old_post_comments where user_id = $[userId]) as number_of_comments
   ),
   -- Markets created counts public mana markets: unlisted and deleted ones
   -- don't count (same rule as mv_ach_creator_contracts, migration
@@ -297,10 +299,10 @@ const STATS_QUERY = `with
         where c.visibility = 'public' and not coalesce(c.deleted, false)
       ) as total_markets_created,
       count(*) filter (where c.visibility = 'public' and not coalesce(c.deleted, false)
-        and c.mechanism <> 'none' and c.unique_bettor_count >= $2) as markets_created_with_traders,
+        and c.mechanism <> 'none' and c.unique_bettor_count >= $[minTraders]) as markets_created_with_traders,
       coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts c
-    where c.creator_id = $1 and c.token = 'MANA'
+    where c.creator_id = $[userId] and c.token = 'MANA'
   ),
   account_age as (
     -- Whole years since signup, plus the share of the current year,
@@ -335,7 +337,7 @@ const STATS_QUERY = `with
               now() at time zone 'UTC', u.created_time at time zone 'UTC'
             ))::int as k
           from users u
-          where u.id = $1
+          where u.id = $[userId]
         ) x
       ) y
     ) a
@@ -351,11 +353,11 @@ const STATS_QUERY = `with
           coalesce((u.data->>'longestBettingStreak')::int, 0),
           coalesce((u.data->>'currentBettingStreak')::int, 0)
         )
-        from users u where u.id = $1
+        from users u where u.id = $[userId]
       ), 0)
     ) as longest_betting_streak
     from txns tx
-    where tx.to_id = $1
+    where tx.to_id = $[userId]
       and tx.category = 'BETTING_STREAK_BONUS'
   )
   select
@@ -387,31 +389,31 @@ const STATS_QUERY = `with
     mod_tickets.mod_tickets_resolved,
     charity.charity_donated_mana,
     json_build_object(
-      'creatorTraders', (select creator_traders_rank from mv_ach_creator_traders where user_id = $1),
-      'totalReferrals', (select total_referrals_rank from mv_ach_referrals where user_id = $1),
-      'totalReferredProfit', (select total_referred_profit_rank from mv_ach_referrals where user_id = $1),
-      'volume', (select volume_rank from mv_ach_volume where user_id = $1),
-      'marketsCreated', (select markets_created_rank from mv_ach_creator_contracts where user_id = $1),
-      'comments', (select comments_rank from mv_ach_comments where user_id = $1),
-      'seasonsPlatinumOrHigher', (select seasons_platinum_or_higher_rank from mv_ach_leagues where user_id = $1),
-      'seasonsDiamondOrHigher', (select seasons_diamond_or_higher_rank from mv_ach_leagues where user_id = $1),
-      'seasonsMasters', (select seasons_masters_rank from mv_ach_leagues where user_id = $1),
-      'largestLeagueSeasonEarnings', (select largest_league_season_earnings_rank from mv_ach_leagues where user_id = $1),
-      'liquidity', (select liquidity_rank from mv_ach_creator_contracts where user_id = $1),
-      'profitableMarkets', (select profitable_markets_rank from mv_ach_pnl where user_id = $1),
-      'unprofitableMarkets', (select unprofitable_markets_rank from mv_ach_pnl where user_id = $1),
-      'largestProfitableTrade', (select largest_profitable_trade_rank from mv_ach_pnl where user_id = $1),
-      'largestUnprofitableTrade', (select largest_unprofitable_trade_rank from mv_ach_pnl where user_id = $1),
-      'accountAge', (select account_age_rank from mv_ach_account_age where user_id = $1),
-      'longestBettingStreak', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = $1),
-      'modTickets', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = $1),
-      'charityDonated', (select charity_donated_rank from mv_ach_txns_achievements where user_id = $1)
+      'creatorTraders', (select creator_traders_rank from mv_ach_creator_traders where user_id = $[userId]),
+      'totalReferrals', (select total_referrals_rank from mv_ach_referrals where user_id = $[userId]),
+      'totalReferredProfit', (select total_referred_profit_rank from mv_ach_referrals where user_id = $[userId]),
+      'volume', (select volume_rank from mv_ach_volume where user_id = $[userId]),
+      'marketsCreated', (select markets_created_rank from mv_ach_creator_contracts where user_id = $[userId]),
+      'comments', (select comments_rank from mv_ach_comments where user_id = $[userId]),
+      'seasonsPlatinumOrHigher', (select seasons_platinum_or_higher_rank from mv_ach_leagues where user_id = $[userId]),
+      'seasonsDiamondOrHigher', (select seasons_diamond_or_higher_rank from mv_ach_leagues where user_id = $[userId]),
+      'seasonsMasters', (select seasons_masters_rank from mv_ach_leagues where user_id = $[userId]),
+      'largestLeagueSeasonEarnings', (select largest_league_season_earnings_rank from mv_ach_leagues where user_id = $[userId]),
+      'liquidity', (select liquidity_rank from mv_ach_creator_contracts where user_id = $[userId]),
+      'profitableMarkets', (select profitable_markets_rank from mv_ach_pnl where user_id = $[userId]),
+      'unprofitableMarkets', (select unprofitable_markets_rank from mv_ach_pnl where user_id = $[userId]),
+      'largestProfitableTrade', (select largest_profitable_trade_rank from mv_ach_pnl where user_id = $[userId]),
+      'largestUnprofitableTrade', (select largest_unprofitable_trade_rank from mv_ach_pnl where user_id = $[userId]),
+      'accountAge', (select account_age_rank from mv_ach_account_age where user_id = $[userId]),
+      'longestBettingStreak', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = $[userId]),
+      'modTickets', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = $[userId]),
+      'charityDonated', (select charity_donated_rank from mv_ach_txns_achievements where user_id = $[userId])
     ) as ranks_json
   -- One row even when there is no users row (e.g. an imported comment's
   -- author): the parts that only need the id still count.
   from (select 1) base
   left join portfolio on portfolio.net_worth > '-Infinity'::numeric and portfolio.net_worth < 'Infinity'::numeric
-  left join user_net_worth_peaks peaks on peaks.user_id = $1
+  left join user_net_worth_peaks peaks on peaks.user_id = $[userId]
   left join liked on true
   left join metrics on true
   left join creators on true

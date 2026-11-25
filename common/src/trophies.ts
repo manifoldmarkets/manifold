@@ -208,12 +208,12 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'net-worth',
     label: 'Net Worth',
     description:
-      'Your highest portfolio snapshot value (mana balance plus open positions), checked nightly',
+      'Your highest portfolio snapshot value (mana balance plus open positions), recorded nightly and when you claim',
     category: 'trading',
     statKey: 'peakNetWorth',
     unit: 'mana',
     ranked: true,
-    rankNote: `Ranked nightly by net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. You must have placed a trade in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days or have an open limit order on a market that is still trading`,
+    rankNote: `Ranked nightly by net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. An account qualifies if it has placed a trade or order in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days, or has an open order that can still fill`,
     milestones: [
       m('minnow', 'Minnow', '\u{1F41F}', 2_500, 'green'),
       m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'blue'),
