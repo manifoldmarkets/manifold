@@ -53,7 +53,7 @@ export async function renewDueMembership(
   tx: SupabaseTransaction,
   userId: string,
   entitlementId: string,
-  now: number,
+  asOfMs: number,
   mode: GrantTransitionMode = 'advance',
   originalExpiresTime?: string,
   deferredNotices?: TransitionExpiryNotice[]
@@ -66,10 +66,12 @@ export async function renewDueMembership(
     `select u.balance from user_entitlements e join users u on u.id = e.user_id
      where e.user_id = $1 and e.entitlement_id = $2
        and e.metadata->>'membershipGrantId' is null and e.auto_renew
-       and e.expires_time <= $3 for update of e`,
-    [userId, entitlementId, new Date(now)]
+       and extract(epoch from e.expires_time) * 1000 <= $3 for update of e`,
+    [userId, entitlementId, asOfMs]
   )
   if (!due) return null
+  // Compare the full PostgreSQL timestamp above. Grant durations use whole milliseconds.
+  const now = Math.trunc(asOfMs)
   // An explicit end-active rollback must leave all banked grants untouched.
   const startBankedGrant = async (): Promise<StartedGrant | undefined> => {
     if (mode !== 'advance') return

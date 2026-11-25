@@ -1011,6 +1011,29 @@ it('cancels a paid renewal beyond the 25-hour access grace period', async () => 
   expect(await rows('select * from txns')).toEqual([])
 })
 
+it('renews a membership due at PostgreSQL microsecond precision when the scheduler clock lags', async () => {
+  const now = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now + 0.5)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-basic',now(),true)`,
+    [userId]
+  )
+  // PGlite uses Date.now() at BEGIN. Its transaction timestamp stays fixed afterward.
+  const transact = testClient.tx
+  jest.spyOn(testClient, 'tx').mockImplementationOnce((options, fn) =>
+    transact(options, (t) => {
+      clock.mockReturnValue(now - 100)
+      return fn(t)
+    })
+  )
+  await processMembershipRenewals()
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.basic.price },
+  ])
+  expect((await supporter())?.expiresTime).toBe(now + 30 * DAY_MS)
+})
+
 it('publishes one debit and notice when a scheduled renewal retries after the debit', async () => {
   await rows(
     `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)

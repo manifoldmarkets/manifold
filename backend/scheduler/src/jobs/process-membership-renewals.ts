@@ -42,7 +42,12 @@ export async function processMembershipRenewals() {
       const result = await betsQueue.enqueueFn(
         () =>
           runTransactionWithRetries(
-            (tx) => renewDueMembership(tx, user_id, entitlement_id, Date.now()),
+            async (tx) => {
+              const { now } = await tx.one<{ now: number }>(
+                'select (extract(epoch from now()) * 1000)::float8 as now'
+              )
+              return renewDueMembership(tx, user_id, entitlement_id, now)
+            },
             3,
             grantRetryOptions
           ),

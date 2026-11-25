@@ -142,6 +142,29 @@ function getChangedPrice(error: unknown) {
     return price
 }
 
+function usePurchaseQuote(liveAmount: number) {
+  const [quote, setQuote] = useState<{ amount: number; repriced?: boolean }>()
+
+  const applyPriceChange = (error: unknown) => {
+    const amount = getChangedPrice(error)
+    if (amount === undefined) return false
+    // A late response belongs only to the quote that was submitted.
+    setQuote((current) =>
+      current && current === quote ? { amount, repriced: true } : current
+    )
+    return true
+  }
+
+  return {
+    open: !!quote,
+    amount: quote?.amount ?? liveAmount,
+    repriced: quote?.repriced,
+    capture: (amount = liveAmount) => setQuote({ amount }),
+    close: () => setQuote(undefined),
+    applyPriceChange,
+  }
+}
+
 async function showPurchaseError(
   error: unknown,
   fallback: string,
@@ -1222,19 +1245,22 @@ function MerchItemCard(props: {
     taxNumber: '',
     email: '',
   })
-  const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
-  const [serverTotal, setServerTotal] = useState<number>()
+  const shippingMana = selectedShipping
+    ? Math.round(parseFloat(selectedShipping.rate) * 100)
+    : 0
+  const confirmation = usePurchaseQuote(discountedPrice + shippingMana)
+  const confirmedItemPrice = confirmation.amount - shippingMana
   const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
-    if (!showConfirmOrderModal) {
+    if (!confirmation.open) {
       setCountdown(5)
       return
     }
     if (countdown <= 0) return
     const timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
     return () => clearTimeout(timer)
-  }, [showConfirmOrderModal, countdown])
+  }, [confirmation.open, countdown])
 
   const canPurchase = user && user.balance >= discountedPrice
   const variants = item.variants ?? []
@@ -1377,14 +1403,9 @@ function MerchItemCard(props: {
     }
   }
 
-  const shippingMana = selectedShipping
-    ? Math.round(parseFloat(selectedShipping.rate) * 100)
-    : 0
-  const totalPrice = serverTotal ?? discountedPrice + shippingMana
-  const confirmedItemPrice = totalPrice - shippingMana
-
   const handleSubmitOrder = async () => {
-    if (!user || !selectedSize || !selectedShipping) return
+    if (!user || !selectedSize || !selectedShipping || !confirmation.open)
+      return
     const variant = findSelectedVariant()
     if (!variant) return
 
@@ -1398,11 +1419,11 @@ function MerchItemCard(props: {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
-        expectedTotal: totalPrice,
+        expectedTotal: confirmation.amount,
         shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
-      setShowConfirmOrderModal(false)
+      confirmation.close()
       setShowShippingModal(false)
       setSelectedSize(null)
       setShippingRates(null)
@@ -1422,9 +1443,7 @@ function MerchItemCard(props: {
       // Let the success toast land before the OS modal pops over it.
       setTimeout(tryOfferReview, 3000)
     } catch (e) {
-      const total = getChangedPrice(e)
-      if (total !== undefined) setServerTotal(total)
-      else setShowConfirmOrderModal(false)
+      if (!confirmation.applyPriceChange(e)) confirmation.close()
       await showPurchaseError(e, 'Failed to place order', user.id)
     } finally {
       setPurchasing(false)
@@ -1818,8 +1837,7 @@ function MerchItemCard(props: {
               }
               onClick={() => {
                 setAcceptedTerms(false)
-                setServerTotal(undefined)
-                setShowConfirmOrderModal(true)
+                confirmation.capture()
               }}
             >
               Place Order ({formatMoney(discountedPrice)}
@@ -2007,7 +2025,15 @@ function MerchItemCard(props: {
                 return (
                   <button
                     key={rate.id}
-                    onClick={() => setSelectedShipping(rate)}
+                    onClick={() => {
+                      // Keep the quoted item price; swap in the new rate's shipping.
+                      if (confirmation.open && selectedShipping?.id !== rate.id)
+                        confirmation.capture(
+                          confirmedItemPrice +
+                            Math.round(parseFloat(rate.rate) * 100)
+                        )
+                      setSelectedShipping(rate)
+                    }}
                     className={clsx(
                       'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
                       selectedShipping?.id === rate.id
@@ -2052,14 +2078,11 @@ function MerchItemCard(props: {
 
       {/* Final confirmation modal */}
       <MerchCheckoutModal
-        open={showConfirmOrderModal}
-        setOpen={setShowConfirmOrderModal}
+        open={confirmation.open}
+        setOpen={confirmation.close}
         actions={
           <>
-            <Button
-              color="gray"
-              onClick={() => setShowConfirmOrderModal(false)}
-            >
+            <Button color="gray" onClick={confirmation.close}>
               Go Back
             </Button>
             <Button
@@ -2143,17 +2166,18 @@ function MerchItemCard(props: {
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
-              {serverTotal === undefined ? (
+              {!confirmation.repriced ? (
                 <>
                   <span>Total (mana):</span>
                   <span className="text-teal-600">
-                    {formatMoney(totalPrice)}
+                    {formatMoney(confirmation.amount)}
                   </span>
                 </>
               ) : (
                 <span role="status">
-                  The price is now M${serverTotal.toLocaleString('en-US')}{' '}
-                  including shipping.
+                  The price is now M$
+                  {confirmation.amount.toLocaleString('en-US')} including
+                  shipping.
                 </span>
               )}
             </Row>
@@ -5625,8 +5649,6 @@ function ShopItemCard(props: {
     getToggleVersion,
     localStreakBonus,
   } = props
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [serverPrice, setServerPrice] = useState<number>()
   const [purchasing, setPurchasing] = useState(false)
 
   // Same rule the API charges by: supporter discount, or the holiday sale's
@@ -5638,6 +5660,7 @@ function ShopItemCard(props: {
   )
   const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0 && !owned
+  const confirmation = usePurchaseQuote(discountedPrice)
 
   const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
@@ -5661,26 +5684,22 @@ function ShopItemCard(props: {
   const isSeasonalUnavailable =
     item.seasonalAvailability && !isSeasonalItemAvailable(item)
 
-  const openPurchaseConfirmation = () => {
-    setServerPrice(undefined)
-    setShowConfirmModal(true)
-  }
+  const openPurchaseConfirmation = () => confirmation.capture()
 
   const handlePurchase = async () => {
-    if (!user) return
+    if (!user || !confirmation.open) return
 
     setPurchasing(true)
     try {
       const result = await api('shop-purchase', {
         itemId: item.id,
-        expectedPrice: serverPrice ?? discountedPrice,
+        expectedPrice: confirmation.amount,
       })
       toast.success(`Purchased ${item.name}!`)
-      setShowConfirmModal(false)
+      confirmation.close()
       onPurchaseComplete(item.id, result.entitlements)
     } catch (e) {
-      const price = getChangedPrice(e)
-      if (price !== undefined) setServerPrice(price)
+      confirmation.applyPriceChange(e)
       await showPurchaseError(e, 'Failed to purchase item', user.id)
     } finally {
       setPurchasing(false)
@@ -6122,33 +6141,33 @@ function ShopItemCard(props: {
         </Card>
       </div>
 
-      <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>
+      <Modal open={confirmation.open} setOpen={confirmation.close}>
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
-            {serverPrice !== undefined ? (
+            {confirmation.repriced ? (
               <>
                 The price is now{' '}
-                <strong>M${serverPrice.toLocaleString('en-US')}</strong> for{' '}
-                <strong>{item.name}</strong>.
+                <strong>M${confirmation.amount.toLocaleString('en-US')}</strong>{' '}
+                for <strong>{item.name}</strong>.
               </>
             ) : (
               <>
                 Are you sure you want to purchase <strong>{item.name}</strong>{' '}
                 for{' '}
-                {hasDiscount || item.originalPrice ? (
+                {confirmation.amount < (item.originalPrice ?? item.price) ? (
                   <>
                     <span className="text-ink-400 line-through">
                       {formatMoney(item.originalPrice ?? item.price)}
                     </span>{' '}
                     <span className="font-semibold text-teal-600">
-                      {formatMoney(discountedPrice)}
+                      {formatMoney(confirmation.amount)}
                     </span>
                     <span className="ml-1 text-xs text-green-600">
                       (
                       {Math.round(
                         (1 -
-                          discountedPrice /
+                          confirmation.amount /
                             (item.originalPrice ?? item.price)) *
                           100
                       )}
@@ -6157,7 +6176,7 @@ function ShopItemCard(props: {
                   </>
                 ) : (
                   <span className="font-semibold text-teal-600">
-                    {formatMoney(discountedPrice)}
+                    {formatMoney(confirmation.amount)}
                   </span>
                 )}
                 ?
@@ -6181,7 +6200,7 @@ function ShopItemCard(props: {
             </p>
           )}
           <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowConfirmModal(false)}>
+            <Button color="gray" onClick={confirmation.close}>
               Cancel
             </Button>
             <Button
