@@ -6,12 +6,11 @@
 //
 // Run at least an hour after the API that writes userLiquidityPayout is
 // deployed: notifications sent before that deploy and after this runs would
-// stay wrong, and it only reads notifications over an hour old (so every
-// resolution and unresolve before them has long committed). Notifications that
-// already have userLiquidityPayout are skipped, so it's safe to re-run.
-// A notification that can't be paired with its resolution for certain (its
-// market resolved more than once within an hour, say) is listed as DOUBTFUL
-// and left alone.
+// stay wrong, and it only reads notifications over an hour old. Notifications
+// that already have userLiquidityPayout are skipped, so it's safe to re-run.
+// Only markets (or answers) resolved exactly once and never unresolved are
+// fixed (see resolution-notification-liquidity.ts); notifications on others
+// that had a liquidity share are listed as DOUBTFUL and left alone.
 //
 // Dry run (default), last 90 days:
 //   yarn ts-node backfill-resolution-notification-liquidity.ts
@@ -28,19 +27,20 @@ import {
 import { DAY_MS } from 'common/util/time'
 import { runScript } from './run-script'
 import {
-  CLOCK_SKEW_MS,
+  CurrentResolution,
   DoubtfulNotification,
   getNotificationFixes,
-  ISOLATION_MS,
   NotificationFix,
   ResolutionNotification,
   ResolutionPayout,
-  ResolutionUndo,
 } from './resolution-notification-liquidity'
 
 const DEFAULT_DAYS = 90
 const USER_BATCH = 100
 const UPDATE_BATCH = 500
+// Read only notifications this old, so every resolution and unresolve before
+// them committed long before the reads.
+const MIN_NOTIFICATION_AGE_MS = 60 * 60 * 1000
 // The house's liquidity isn't a person's, and it has more notifications than
 // anyone to search.
 const HOUSE_IDS = [HOUSE_LIQUIDITY_PROVIDER_ID, DEV_HOUSE_LIQUIDITY_PROVIDER_ID]
@@ -60,7 +60,7 @@ const parseArgs = () => {
 
 runScript(async ({ pg }) => {
   const { apply, since } = parseArgs()
-  const until = Date.now() - ISOLATION_MS
+  const until = Date.now() - MIN_NOTIFICATION_AGE_MS
   console.log(
     `${apply ? 'APPLY' : 'DRY RUN (no writes)'}: payouts since ${new Date(
       since
@@ -98,9 +98,8 @@ runScript(async ({ pg }) => {
     const isWanted = (userId: string, contractId: string) =>
       wanted.has(`${userId}|${contractId}`)
 
-    // Their resolution notifications on those markets not fixed yet. Read
-    // first: every resolution before them has committed by now, and is in
-    // the reads after.
+    // Their resolution notifications on those markets, fixed or not, at any
+    // time: read first.
     const notifications = (
       await pg.map<ResolutionNotification>(
         `select user_id, notification_id,
@@ -108,17 +107,16 @@ runScript(async ({ pg }) => {
                 data->'data'->>'answerId' as answer_id,
                 data->'data'->>'outcome' as outcome,
                 (data->>'createdTime')::bigint as created_time,
-                (data->'data'->>'userPayout')::numeric as user_payout
+                (data->'data'->>'userPayout')::numeric as user_payout,
+                data->'data' ? 'userLiquidityPayout' as fixed
          from user_notifications
          where user_id = any($1)
            and data->>'sourceContractId' = any($2)
            and data->>'sourceType' = 'contract'
            and data->>'sourceUpdateType' = 'resolved'
            and data->'data' ? 'userPayout'
-           and not (data->'data' ? 'userLiquidityPayout')
-           and (data->>'createdTime')::bigint >= $3
-           and (data->>'createdTime')::bigint < $4`,
-        [users, contractIds, since - CLOCK_SKEW_MS, until],
+           and (data->>'createdTime')::bigint < $3`,
+        [users, contractIds, until],
         (r) => ({
           userId: r.user_id,
           notificationId: r.notification_id,
@@ -127,59 +125,71 @@ runScript(async ({ pg }) => {
           outcome: r.outcome ?? null,
           createdTime: Number(r.created_time),
           userPayout: Number(r.user_payout),
+          fixed: r.fixed === true,
         })
       )
     ).filter((n) => isWanted(n.userId, n.contractId))
 
-    // Every payout on those markets, to anyone: they give each market's
-    // resolution times, and the users' own payouts.
+    // Every payout ever on those markets, to anyone: they show how many
+    // times each market (or answer) paid out.
     const payouts = await pg.map<ResolutionPayout>(
       `select to_id, from_id, data->'data'->>'answerId' as answer_id,
               ts_to_millis(created_time) as created_time,
+              created_time >= millis_to_ts($2) as in_period,
               coalesce((data->'data'->>'deposit')::numeric, 0) as deposit
        from txns
        where category = 'CONTRACT_RESOLUTION_PAYOUT'
-         and from_id = any($1)
-         and created_time >= millis_to_ts($2)`,
-      [contractIds, since - CLOCK_SKEW_MS - ISOLATION_MS],
+         and from_id = any($1)`,
+      [contractIds, since],
       (r) => ({
         userId: r.to_id,
         contractId: r.from_id,
         answerId: r.answer_id ?? null,
         createdTime: Number(r.created_time),
+        inPeriod: r.in_period === true,
         deposit: Number(r.deposit),
       })
     )
 
-    const undos = await pg.map<ResolutionUndo>(
-      `select u.to_id as contract_id,
-              p.data->'data'->>'answerId' as answer_id,
-              p.id is null as any_answer,
-              ts_to_millis(u.created_time) as created_time
-       from txns u
-       left join txns p on p.id = u.data->'data'->>'revertsTxnId'
-       where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-         and u.to_id = any($1)
-         and u.created_time >= millis_to_ts($2)`,
-      [contractIds, since - CLOCK_SKEW_MS - ISOLATION_MS],
+    // Markets with any payout ever undone (unresolved), on any answer
+    const unresolvedContracts = new Set(
+      await pg.map<string>(
+        `select distinct to_id from txns
+         where category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+           and to_id = any($1)`,
+        [contractIds],
+        (r) => r.to_id
+      )
+    )
+
+    const currentResolutions = await pg.map<CurrentResolution>(
+      `select id as contract_id, null as answer_id, resolution,
+              ts_to_millis(resolution_time) as resolution_time
+       from contracts where id = any($1)
+       union all
+       select contract_id, id as answer_id, resolution,
+              ts_to_millis(resolution_time) as resolution_time
+       from answers where contract_id = any($1)`,
+      [contractIds],
       (r) => ({
         contractId: r.contract_id,
         answerId: r.answer_id ?? null,
-        anyAnswer: r.any_answer === true,
-        createdTime: Number(r.created_time),
+        resolution: r.resolution ?? null,
+        resolutionTime:
+          r.resolution_time == null ? null : Number(r.resolution_time),
       })
     )
 
     const { fixes, doubtful } = getNotificationFixes(
       notifications,
       payouts,
-      undos,
-      since
+      currentResolutions,
+      unresolvedContracts
     )
     allFixes.push(...fixes)
     allDoubtful.push(...doubtful)
     console.log(
-      `${users.length} users: ${payouts.length} payouts, ${undos.length} undos, ` +
+      `${users.length} users: ${payouts.length} payouts, ` +
         `${notifications.length} notifications, ${fixes.length} to fix, ` +
         `${doubtful.length} doubtful`
     )

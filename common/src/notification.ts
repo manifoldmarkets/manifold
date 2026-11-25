@@ -2,6 +2,7 @@ import { Bet } from 'common/bet'
 import { ContractToken, OutcomeType } from 'common/contract'
 import { groupBy } from 'lodash'
 import { groupPath } from './group'
+import { getMoneyNumber } from './util/format'
 import { league_user_info } from './leagues'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
@@ -485,10 +486,13 @@ export type ContractResolutionData = {
   token?: ContractToken
 }
 
-// Whether an amount shows as other than 0: formatMoney rounds mana toward 0 to
-// whole units.
+// Whether formatMoney shows an amount as other than 0: it rounds mana toward 0
+// to whole units (allowing for float error), and sweepcash to cents.
 export const isShownAmount = (amount: number, token?: ContractToken) =>
-  Number.isFinite(amount) && Math.abs(amount) >= (token === 'CASH' ? 0.01 : 1)
+  Number.isFinite(amount) &&
+  (token === 'CASH'
+    ? Math.round(Math.abs(amount) * 100) >= 1
+    : getMoneyNumber(amount) !== 0)
 
 // The return on the user's liquidity when it's worth a line of its own, else
 // 0. Negative when cancelling the market took back liquidity the user had

@@ -17,6 +17,10 @@ describe('resolution notification liquidity line', () => {
     expect(getShownLiquidityPayout({})).toBe(0)
     expect(getShownLiquidityPayout({ userLiquidityPayout: NaN })).toBe(0)
     expect(isShownAmount(-0.99)).toBe(false)
+    // As formatMoney shows them: M$1 and 0.01
+    expect(isShownAmount(0.9999999999999999)).toBe(true)
+    expect(isShownAmount(0.009, 'CASH')).toBe(true)
+    expect(isShownAmount(0.004, 'CASH')).toBe(false)
   })
 
   it('says whether liquidity came back or was taken back', () => {
