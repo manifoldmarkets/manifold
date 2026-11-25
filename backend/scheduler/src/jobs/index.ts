@@ -31,6 +31,7 @@ import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob as createCronJob, JobContext } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
+import { processMembershipGrants } from './process-membership-grants'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
 import { expirePersonalizedManaOffers } from './expire-personalized-mana-offers'
@@ -301,6 +302,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
       // looks for changes on an hourly timescale.
       '0 40 6 * * *',
       updateClassificationAudit
+    ),
+    createJob(
+      'process-membership-grants',
+      '0 */2 * * * *',
+      processMembershipGrants
     ),
     createJob(
       'process-membership-renewals',

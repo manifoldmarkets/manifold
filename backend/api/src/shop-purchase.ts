@@ -3,21 +3,27 @@ import { runTxnOutsideBetQueue, type TxnData } from 'shared/txn/run-txn'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { checkPriceCeiling, runShopCheckout } from './helpers/shop-checkout'
 import {
   getShopItem,
   getEntitlementId,
   EXCLUSIVE_SLOTS,
   getEntitlementIdsForSlot,
-  SHOP_ITEMS,
   isSeasonalItemAvailable,
   getSeasonalAvailabilityText,
   AchievementRequirement,
 } from 'common/shop/items'
-import { convertEntitlement, UserEntitlement } from 'common/shop/types'
+import { readMembershipGrantView } from 'shared/membership-grants'
+import { getOrStartMembershipGrant } from 'shared/membership-grant-start'
+import { publishExpiryNotice } from 'shared/membership-expiry-notice'
+import {
+  membershipChangeCredit,
+  membershipGrantLockMessage,
+} from 'common/membership-grants'
+import { UserEntitlement } from 'common/shop/types'
 import {
   applyShopDiscount,
   getActiveHolidaySale,
@@ -29,9 +35,12 @@ import {
   getBenefit,
   getMaxStreakFreezes,
 } from 'common/supporter-config'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { broadcastUpdatedUser } from 'shared/websockets/helpers'
-import { DAY_MS } from 'common/util/time'
+import {
+  getActiveSupporterEntitlements,
+  getUserEntitlements,
+} from 'shared/supabase/entitlements'
+import { UserUpdate } from 'shared/supabase/users'
+import { broadcastShopUserState } from 'shared/shop-broadcast'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
 // holding locks open during expensive scans.
@@ -179,13 +188,15 @@ async function checkItemRequirement(
   if (userValue < threshold) {
     throw new APIError(
       403,
-      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(userValue)}/${threshold}`
+      `Requirement not met: ${description}. Your ${valueName}: ${Math.floor(
+        userValue
+      )}/${threshold}`
     )
   }
 }
 
 export const shopPurchase: APIHandler<'shop-purchase'> = async (
-  { itemId },
+  { itemId, expectedPrice },
   auth
 ) => {
   const item = getShopItem(itemId)
@@ -208,6 +219,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
   // Get the entitlement ID (may differ from item ID for shared entitlements)
   const entitlementId = getEntitlementId(item)
+  const isSupporterTierPurchase = SUPPORTER_ENTITLEMENT_IDS.includes(
+    entitlementId as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
+  )
 
   const pg = createSupabaseDirectClient()
 
@@ -218,8 +232,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     await checkItemRequirement(pg, auth.uid, item.requirement)
   }
 
-  const result = await betsQueue.enqueueFn(
-    () => runTransactionWithRetries(async (tx) => {
+  const purchase = async (tx: SupabaseTransaction, now: number) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -240,17 +253,24 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
     // Check seasonal availability
     if (item.seasonalAvailability && !isSeasonalItemAvailable(item)) {
-      const availabilityText = getSeasonalAvailabilityText(item) ?? 'during its season'
-      throw new APIError(
-        403,
-        `This item is only available ${availabilityText}`
-      )
+      const availabilityText =
+        getSeasonalAvailabilityText(item) ?? 'during its season'
+      throw new APIError(403, `This item is only available ${availabilityText}`)
     }
+
+    const supporterEntitlements = await getActiveSupporterEntitlements(
+      tx,
+      auth.uid,
+      now
+    )
 
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
-      const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-      const maxFreezes = getMaxStreakFreezes(entitlements, user.bonusEligibility)
+      const maxFreezes = getMaxStreakFreezes(
+        supporterEntitlements,
+        user.bonusEligibility,
+        now
+      )
 
       // Get current streak freeze count
       const currentFreezes = user.streakForgiveness ?? 0
@@ -263,19 +283,25 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       }
     }
 
-    // Check if user is a supporter for discount
-    // Note: Don't apply discount to supporter tier purchases themselves
-    const isSupporterTierPurchase = SUPPORTER_ENTITLEMENT_IDS.includes(
-      entitlementId as (typeof SUPPORTER_ENTITLEMENT_IDS)[number]
-    )
-
     // For supporter tier purchases, check for existing supporter entitlement to calculate upgrade credit
     let existingSupporter: UserEntitlement | null = null
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const supporterEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+      const { active, next } = await readMembershipGrantView(tx, auth.uid, now)
+      if (active) {
+        throw new APIError(
+          403,
+          membershipGrantLockMessage(active.tier, active.endsTime, next)
+        )
+      }
       existingSupporter = supporterEntitlements[0] ?? null
+      if (existingSupporter?.metadata?.membershipGrantId != null) {
+        throw new APIError(
+          409,
+          'Your free membership is being updated. Refresh before changing tiers.'
+        )
+      }
 
       // Buying the tier you already have on auto-renew would charge for a
       // month the renewal covers anyway. Only a stale page offers it (e.g. a
@@ -290,28 +316,11 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         )
       }
 
-      // Calculate prorated credit from remaining time on existing tier
-      if (existingSupporter?.expiresTime) {
-        const msRemaining = existingSupporter.expiresTime - Date.now()
-        const daysRemaining = Math.max(0, msRemaining / DAY_MS)
-
-        // Get old tier price
-        const oldTierPrice =
-          SHOP_ITEMS.find((i) => i.id === existingSupporter!.entitlementId)
-            ?.price ?? 0
-
-        // Credit = remaining days * (oldPrice / 30 days)
-        // Only apply credit when switching to a different tier
-        if (existingSupporter.entitlementId !== entitlementId) {
-          upgradeCredit = Math.floor(daysRemaining * (oldTierPrice / 30))
-        }
-      }
-    }
-
-    // Get current supporter entitlements to check discount eligibility
-    let currentEntitlements: UserEntitlement[] = []
-    if (!isSupporterTierPurchase) {
-      currentEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
+      upgradeCredit = membershipChangeCredit(
+        existingSupporter,
+        entitlementId,
+        now
+      )
     }
 
     // Discount: the supporter benefit (0 for non-supporters), or a Black
@@ -319,21 +328,20 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     // get neither: tier changes credit unused time at the full tier price.
     // The grace keeps a buy button opened just before a sale ended (or a fast
     // device clock just before it started) at the price it showed.
-    const supporterDiscount = getBenefit(
-      currentEntitlements,
-      'shopDiscount',
-      0
-    )
+    const supporterDiscount = isSupporterTierPurchase
+      ? 0
+      : getBenefit(supporterEntitlements, 'shopDiscount', 0, now)
     const { fraction: shopDiscount, sale } = getShopDiscount(
       supporterDiscount,
       isSupporterTierPurchase
         ? undefined
-        : getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+        : getActiveHolidaySale(now, HOLIDAY_SALE_CHARGE_GRACE_MS)
     )
     const basePrice = applyShopDiscount(item.price, shopDiscount)
 
     // Apply upgrade credit (for supporter tier upgrades)
     const price = Math.max(0, basePrice - upgradeCredit)
+    checkPriceCeiling(price, expectedPrice)
 
     // Check balance (runTxnOutsideBetQueue will also check, but let's give a better error)
     if (user.balance < price) {
@@ -341,6 +349,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Create transaction using the standard pattern (skip if price is 0, e.g., downgrade fully covered by credit)
+    const balanceUpdates: UserUpdate[] = []
     let txnId: string | null = null
     if (price > 0) {
       const discountPercent = Math.round(shopDiscount * 100)
@@ -381,12 +390,17 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
               // The discount actually applied, under the key it was named for.
               supporterDiscount: sale ? 0 : shopDiscount,
               ...(sale
-                ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
+                ? {
+                    holidaySaleId: sale.id,
+                    holidaySaleDiscount: shopDiscount,
+                  }
                 : {}),
             },
           }
 
-      const txn = await runTxnOutsideBetQueue(tx, txnData)
+      const txn = await runTxnOutsideBetQueue(tx, txnData, false, (updates) =>
+        balanceUpdates.push(...updates)
+      )
       txnId = txn.id
     }
 
@@ -446,30 +460,27 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
 
           if (isSameTierRenewal && existingSupporter?.expiresTime) {
             // Same tier renewal - stack time on existing expiration
-            const baseTime =
-              existingSupporter.expiresTime > Date.now()
-                ? existingSupporter.expiresTime
-                : Date.now()
+            const baseTime = Math.max(existingSupporter.expiresTime, now)
             expiresTime = new Date(baseTime + item.duration)
           } else {
             // Different tier (upgrade) or no existing - fresh 30 days
-            expiresTime = new Date(Date.now() + item.duration)
+            expiresTime = new Date(now + item.duration)
           }
         } else {
           // Check for existing entitlement to stack time
-          const existing = await tx.oneOrNone<{ expires_time: Date | null }>(
+          const existing = await tx.oneOrNone<{
+            expires_time: string | null
+          }>(
             `SELECT expires_time FROM user_entitlements
              WHERE user_id = $1 AND entitlement_id = $2`,
             [auth.uid, entitlementId]
           )
 
-          if (existing?.expires_time && existing.expires_time > new Date()) {
-            // Add duration to existing expiration (stacking)
-            expiresTime = new Date(existing.expires_time.getTime() + item.duration)
-          } else {
-            // No existing or expired - start fresh from now
-            expiresTime = new Date(Date.now() + item.duration)
-          }
+          const previousExpiry = existing?.expires_time
+            ? Date.parse(existing.expires_time)
+            : now
+          const baseTime = previousExpiry > now ? previousExpiry : now
+          expiresTime = new Date(baseTime + item.duration)
         }
       }
 
@@ -493,16 +504,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
     }
 
-    // Fetch all entitlements after the transaction to return updated state
-    const allEntitlements = await tx.manyOrNone(
-      `SELECT * FROM user_entitlements WHERE user_id = $1`,
-      [auth.uid]
-    )
-    const entitlements = allEntitlements.map(convertEntitlement)
+    // A tier change can unlock banked days. Pause the purchase at its start instant.
+    const grant = isSupporterTierPurchase
+      ? await getOrStartMembershipGrant(tx, auth.uid, now)
+      : null
+    const entitlements = await getUserEntitlements(tx, auth.uid)
 
     // Find the one we just created/updated for backwards compatibility
     if (item.type !== 'instant') {
-      entitlement = entitlements.find((e) => e.entitlementId === entitlementId)
+      entitlement = entitlements.find((e) =>
+        grant?.started
+          ? e.metadata?.membershipGrantId === grant.id
+          : e.entitlementId === entitlementId
+      )
     }
 
     // Item-specific effects
@@ -519,14 +533,22 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
     }
 
-    return { success: true as const, entitlement, entitlements, upgradeCredit }
-  }),
-    [auth.uid]
-  )
-
-  // Entitlements live outside the users row, so nothing else tells the
-  // user's open pages (e.g. Yap's member check) that they changed.
-  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
-
-  return result
+    return {
+      balanceUpdates,
+      notice: grant?.notice ?? null,
+      success: true as const,
+      entitlement,
+      entitlements,
+      upgradeCredit,
+    }
+  }
+  const {
+    balanceUpdates: _balanceUpdates,
+    notice: _notice,
+    ...response
+  } = await runShopCheckout(auth.uid, isSupporterTierPurchase, purchase, {
+    broadcast: (result) => broadcastShopUserState(auth.uid, result),
+    notify: ({ notice }) => publishExpiryNotice(notice),
+  })
+  return response
 }
