@@ -9,8 +9,12 @@ const loaded = load('backend/scripts/resolution-notification-liquidity.ts', {
 })
 // The module runs in its own VM context: copy its results into this one so
 // strict deep equality compares values, not array prototypes.
-const getNotificationFixes = (...args) =>
-  JSON.parse(JSON.stringify(loaded.getNotificationFixes(...args)))
+const getNotificationFixes = (notifications, payouts, undos = [], since = 0) =>
+  JSON.parse(
+    JSON.stringify(
+      loaded.getNotificationFixes(notifications, payouts, undos, since)
+    )
+  )
 
 const T0 = Date.parse('2026-11-25T04:01:25.206Z')
 const MINUTE = 60_000
@@ -32,6 +36,13 @@ const notification = (over) => ({
   createdTime: T0 + 1478,
   outcome: '6RCqntZh6l',
   userPayout: 356.88,
+  ...over,
+})
+const undo = (over) => ({
+  contractId: 'dwts',
+  answerId: null,
+  anyAnswer: false,
+  createdTime: T0 + 2 * MINUTE,
   ...over,
 })
 const ids = (rows) => rows.map((r) => (r.notification ?? r).notificationId)
@@ -222,4 +233,56 @@ test('moves a negative liquidity share on a cancelled market', () => {
     fixes.map((f) => [f.userPayout, f.userLiquidityPayout]),
     [[80, -30]]
   )
+})
+
+test('a resolution that paid no one, after an unresolve, is not given the earlier share', () => {
+  // M$30 of liquidity paid, unresolved two minutes later (its payouts taken
+  // back), then cancelled paying no one: that leaves no payouts, so the only
+  // payout in the hour is the undone one.
+  const { fixes, doubtful } = getNotificationFixes(
+    [
+      notification({
+        createdTime: T0 + 3 * MINUTE,
+        outcome: 'CANCEL',
+        userPayout: 0,
+      }),
+    ],
+    [payout({ deposit: 30 })],
+    [undo()]
+  )
+  assert.deepEqual(fixes, [])
+  assert.equal(doubtful.length, 1)
+})
+
+test('an undo whose payout is unknown counts for every answer', () => {
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification({ answerId: 'a1', createdTime: T0 + 3 * MINUTE })],
+    [payout({ answerId: 'a1' })],
+    [undo({ anyAnswer: true })]
+  )
+  assert.deepEqual(fixes, [])
+  assert.equal(doubtful.length, 1)
+})
+
+test('an unresolve after the notification is no reason to leave it', () => {
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification()],
+    [payout()],
+    [undo(), undo({ answerId: 'other-answer', createdTime: T0 + 1000 })]
+  )
+  assert.deepEqual(doubtful, [])
+  assert.equal(fixes.length, 1)
+})
+
+test('leaves resolutions before --since alone', () => {
+  // Paid at 23:58, notified at 23:59:59.8, with --since at midnight
+  const midnight = T0 + 2 * MINUTE
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification({ createdTime: midnight - 200 })],
+    [payout()],
+    [],
+    midnight
+  )
+  assert.deepEqual(fixes, [])
+  assert.deepEqual(doubtful, [])
 })

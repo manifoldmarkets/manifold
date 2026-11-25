@@ -4,9 +4,11 @@
 // Each one gets the liquidity's share moved from userPayout to
 // userLiquidityPayout, as new notifications have it.
 //
-// Run after the API that writes userLiquidityPayout is deployed: notifications
-// sent before that deploy and after this runs would stay wrong. Notifications
-// that already have userLiquidityPayout are skipped, so it's safe to re-run.
+// Run at least an hour after the API that writes userLiquidityPayout is
+// deployed: notifications sent before that deploy and after this runs would
+// stay wrong, and it only reads notifications over an hour old (so every
+// resolution and unresolve before them has long committed). Notifications that
+// already have userLiquidityPayout are skipped, so it's safe to re-run.
 // A notification that can't be paired with its resolution for certain (its
 // market resolved more than once within an hour, say) is listed as DOUBTFUL
 // and left alone.
@@ -33,6 +35,7 @@ import {
   NotificationFix,
   ResolutionNotification,
   ResolutionPayout,
+  ResolutionUndo,
 } from './resolution-notification-liquidity'
 
 const DEFAULT_DAYS = 90
@@ -57,10 +60,11 @@ const parseArgs = () => {
 
 runScript(async ({ pg }) => {
   const { apply, since } = parseArgs()
+  const until = Date.now() - ISOLATION_MS
   console.log(
     `${apply ? 'APPLY' : 'DRY RUN (no writes)'}: payouts since ${new Date(
       since
-    ).toISOString()}`
+    ).toISOString()}, notifications before ${new Date(until).toISOString()}`
   )
 
   // Who was paid anything for their liquidity, and on which markets: one pass
@@ -94,6 +98,39 @@ runScript(async ({ pg }) => {
     const isWanted = (userId: string, contractId: string) =>
       wanted.has(`${userId}|${contractId}`)
 
+    // Their resolution notifications on those markets not fixed yet. Read
+    // first: every resolution before them has committed by now, and is in
+    // the reads after.
+    const notifications = (
+      await pg.map<ResolutionNotification>(
+        `select user_id, notification_id,
+                data->>'sourceContractId' as contract_id,
+                data->'data'->>'answerId' as answer_id,
+                data->'data'->>'outcome' as outcome,
+                (data->>'createdTime')::bigint as created_time,
+                (data->'data'->>'userPayout')::numeric as user_payout
+         from user_notifications
+         where user_id = any($1)
+           and data->>'sourceContractId' = any($2)
+           and data->>'sourceType' = 'contract'
+           and data->>'sourceUpdateType' = 'resolved'
+           and data->'data' ? 'userPayout'
+           and not (data->'data' ? 'userLiquidityPayout')
+           and (data->>'createdTime')::bigint >= $3
+           and (data->>'createdTime')::bigint < $4`,
+        [users, contractIds, since - CLOCK_SKEW_MS, until],
+        (r) => ({
+          userId: r.user_id,
+          notificationId: r.notification_id,
+          contractId: r.contract_id,
+          answerId: r.answer_id ?? null,
+          outcome: r.outcome ?? null,
+          createdTime: Number(r.created_time),
+          userPayout: Number(r.user_payout),
+        })
+      )
+    ).filter((n) => isWanted(n.userId, n.contractId))
+
     // Every payout on those markets, to anyone: they give each market's
     // resolution times, and the users' own payouts.
     const payouts = await pg.map<ResolutionPayout>(
@@ -114,41 +151,35 @@ runScript(async ({ pg }) => {
       })
     )
 
-    // Their resolution notifications on those markets not fixed yet
-    const notifications = (
-      await pg.map<ResolutionNotification>(
-        `select user_id, notification_id,
-                data->>'sourceContractId' as contract_id,
-                data->'data'->>'answerId' as answer_id,
-                data->'data'->>'outcome' as outcome,
-                (data->>'createdTime')::bigint as created_time,
-                (data->'data'->>'userPayout')::numeric as user_payout
-         from user_notifications
-         where user_id = any($1)
-           and data->>'sourceContractId' = any($2)
-           and data->>'sourceType' = 'contract'
-           and data->>'sourceUpdateType' = 'resolved'
-           and data->'data' ? 'userPayout'
-           and not (data->'data' ? 'userLiquidityPayout')
-           and (data->>'createdTime')::bigint >= $3`,
-        [users, contractIds, since - CLOCK_SKEW_MS],
-        (r) => ({
-          userId: r.user_id,
-          notificationId: r.notification_id,
-          contractId: r.contract_id,
-          answerId: r.answer_id ?? null,
-          outcome: r.outcome ?? null,
-          createdTime: Number(r.created_time),
-          userPayout: Number(r.user_payout),
-        })
-      )
-    ).filter((n) => isWanted(n.userId, n.contractId))
+    const undos = await pg.map<ResolutionUndo>(
+      `select u.to_id as contract_id,
+              p.data->'data'->>'answerId' as answer_id,
+              p.id is null as any_answer,
+              ts_to_millis(u.created_time) as created_time
+       from txns u
+       left join txns p on p.id = u.data->'data'->>'revertsTxnId'
+       where u.category = 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
+         and u.to_id = any($1)
+         and u.created_time >= millis_to_ts($2)`,
+      [contractIds, since - CLOCK_SKEW_MS - ISOLATION_MS],
+      (r) => ({
+        contractId: r.contract_id,
+        answerId: r.answer_id ?? null,
+        anyAnswer: r.any_answer === true,
+        createdTime: Number(r.created_time),
+      })
+    )
 
-    const { fixes, doubtful } = getNotificationFixes(notifications, payouts)
+    const { fixes, doubtful } = getNotificationFixes(
+      notifications,
+      payouts,
+      undos,
+      since
+    )
     allFixes.push(...fixes)
     allDoubtful.push(...doubtful)
     console.log(
-      `${users.length} users: ${payouts.length} payouts, ` +
+      `${users.length} users: ${payouts.length} payouts, ${undos.length} undos, ` +
         `${notifications.length} notifications, ${fixes.length} to fix, ` +
         `${doubtful.length} doubtful`
     )

@@ -18,6 +18,18 @@ export type ResolutionPayout = {
   deposit: number
 }
 
+// A CONTRACT_UNDO_RESOLUTION_PAYOUT txn: unresolving takes back each payout
+// of the resolution, so every re-resolution after one that paid anyone
+// follows undos of it.
+export type ResolutionUndo = {
+  contractId: string
+  answerId: string | null
+  // Its payout couldn't be found (some 2024 undos don't record it), so it
+  // counts for every answer of the market.
+  anyAnswer: boolean
+  createdTime: number
+}
+
 export type ResolutionNotification = {
   userId: string
   notificationId: string
@@ -51,28 +63,39 @@ export const CLOCK_SKEW_MS = 1000
 // resolution in this long before it.
 export const ISOLATION_MS = 60 * 60 * 1000
 
+const ANY_ANSWER = '*'
 const marketKey = (p: { contractId: string; answerId: string | null }) =>
   `${p.contractId}|${p.answerId ?? ''}`
 const payoutKey = (userId: string, market: string, time: number) =>
   `${userId}|${market}|${time}`
 
 // payouts: every payout on the notifications' markets, to anyone, from
-// ISOLATION_MS before the earliest notification. They give each market's
-// resolution times (a resolution that paid no one leaves no trace, and isn't
-// seen).
+// ISOLATION_MS before the earliest notification; undos: every undo of a
+// payout on those markets from then on. Payouts give each market's
+// resolution times. A resolution that paid no one leaves no payouts, but the
+// resolution before it was unresolved first, which left undos.
 //
 // A market resolved, unresolved and resolved again in quick succession sends
 // a notification for each resolution, and timing alone can't always tell
 // which is which: a notification can be written after the next resolution
-// started, and a resolution may pay the user nothing. So a notification is
-// only paired when exactly one resolution of its market came in the hour
-// before it, within MAX_NOTIFICATION_DELAY_MS. Otherwise, if any of those
-// resolutions paid the user's liquidity, it's reported and left alone.
+// started, and a resolution may pay no one. So a notification is only paired
+// when exactly one resolution of its market came in the hour before it,
+// within MAX_NOTIFICATION_DELAY_MS, at or after `since`, and wasn't undone
+// before the notification. Otherwise, if any of those resolutions paid the
+// user's liquidity, it's reported and left alone.
+//
+// The notifications must be old enough that every resolution and undo before
+// them had committed when payouts and undos were read.
 export const getNotificationFixes = (
   notifications: ResolutionNotification[],
-  payouts: ResolutionPayout[]
+  payouts: ResolutionPayout[],
+  undos: ResolutionUndo[],
+  since: number
 ) => {
   const resolutionTimes = mapUniqueTimes(payouts)
+  const undoTimes = mapUniqueTimes(
+    undos.map((u) => (u.anyAnswer ? { ...u, answerId: ANY_ANSWER } : u))
+  )
   const payoutByKey = keyBy(payouts, (p) =>
     payoutKey(p.userId, marketKey(p), p.createdTime)
   )
@@ -90,6 +113,8 @@ export const getNotificationFixes = (
     )
     if (!deposits.some((d) => Number.isFinite(d) && d !== 0)) continue
     const latest = maxBy(candidates, (t) => t) ?? 0
+    // A resolution before the period asked for
+    if (latest < since) continue
     if (candidates.length > 1) {
       doubtful.push({
         notification: n,
@@ -103,6 +128,17 @@ export const getNotificationFixes = (
         reason: `written ${Math.round(
           (n.createdTime - latest) / 1000
         )} s after the resolution`,
+      })
+      continue
+    }
+    const undone = [
+      ...(undoTimes[market] ?? []),
+      ...(undoTimes[marketKey({ ...n, answerId: ANY_ANSWER })] ?? []),
+    ].some((t) => t > latest && t <= n.createdTime + CLOCK_SKEW_MS)
+    if (undone) {
+      doubtful.push({
+        notification: n,
+        reason: 'the resolution before it was undone before it was written',
       })
       continue
     }
@@ -128,8 +164,10 @@ export const getNotificationFixes = (
   return { fixes, doubtful }
 }
 
-const mapUniqueTimes = (payouts: ResolutionPayout[]) => {
-  const byMarket = groupBy(payouts, marketKey)
+const mapUniqueTimes = (
+  events: { contractId: string; answerId: string | null; createdTime: number }[]
+) => {
+  const byMarket = groupBy(events, marketKey)
   const times: { [market: string]: number[] } = {}
   for (const [market, ps] of Object.entries(byMarket)) {
     times[market] = Array.from(new Set(ps.map((p) => p.createdTime)))
