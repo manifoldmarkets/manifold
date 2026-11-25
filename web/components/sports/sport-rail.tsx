@@ -15,6 +15,8 @@ import { Carousel } from 'web/components/widgets/carousel'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { Row } from 'web/components/layout/row'
 import { track } from 'web/lib/service/analytics'
+import { SportNavIcon } from './sport-nav-icon'
+import styles from './sports-navigation.module.css'
 import {
   leagueRailChoices,
   sportsLeague,
@@ -53,8 +55,9 @@ export function LeagueRail(props: {
   return (
     <nav aria-label="Leagues" className="min-w-0">
       <Carousel
+        className={styles.rail}
         revealActiveKey={active === null ? undefined : active ?? 'all'}
-        labelsParentClassName="gap-1.5 pb-2"
+        labelsParentClassName="items-center gap-0.5 overscroll-x-contain sm:gap-[3px]"
         fadeEdges
         showArrowsOnHover
       >
@@ -65,14 +68,19 @@ export function LeagueRail(props: {
             shallow={family === sport}
             scroll={false}
             aria-current={active === key ? 'page' : undefined}
-            className={clsx(
-              'flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-full px-3 text-sm font-medium',
-              active === key
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-ink-600 hover:bg-canvas-50'
-            )}
+            title={key ? BDL_LEAGUES[key].label : undefined}
+            className="group flex min-h-[44px] shrink-0 items-center whitespace-nowrap rounded-md text-xs focus-visible:outline-offset-[-2px]"
           >
-            {key ? BDL_LEAGUES[key].shortLabel : 'All leagues'}
+            <span
+              className={clsx(
+                'rounded-[5px] px-2 py-1.5 leading-tight sm:px-[9px]',
+                active === key
+                  ? 'bg-canvas-50 text-ink-1000 font-bold'
+                  : 'text-ink-600 group-hover:bg-ink-50 group-hover:text-ink-1000 font-medium'
+              )}
+            >
+              {key ? BDL_LEAGUES[key].shortLabel : 'All leagues'}
+            </span>
           </Link>
         ))}
       </Carousel>
@@ -118,28 +126,39 @@ export function SportRail(props: {
     (a, b) => a + (b ?? 0),
     0
   )
+  const all = (
+    <SportChip
+      sport="all"
+      href={hrefFor('all')}
+      active={selected === 'all'}
+      emoji="🏟️"
+      label={grouped ? 'All sports' : 'All'}
+      count={totalGames || undefined}
+    />
+  )
 
   return (
     <Row className={clsx('w-full items-center', className)}>
-      {/* "All" stays pinned: it never scrolls away. */}
-      <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
-        <SportChip
-          sport="all"
-          href={hrefFor('all')}
-          active={selected === 'all'}
-          emoji="🏟️"
-          label="All"
-          count={totalGames || undefined}
-        />
-        <div className="bg-ink-200 my-auto h-5 w-px shrink-0" />
-      </Row>
+      {!grouped && (
+        <Row className="bg-canvas-0 relative z-10 shrink-0 gap-1.5 py-2 pr-1.5">
+          {all}
+          <div className="bg-ink-200 my-auto h-5 w-px shrink-0" />
+        </Row>
+      )}
       <Carousel
-        className="min-w-0 flex-1"
+        className={clsx('min-w-0 flex-1', grouped && styles.rail)}
+        role={grouped ? 'navigation' : undefined}
+        aria-label={grouped ? 'Sports' : undefined}
         revealActiveKey={grouped ? selected : undefined}
-        labelsParentClassName="gap-1.5 py-2"
+        labelsParentClassName={
+          grouped
+            ? 'items-center gap-px overscroll-x-contain sm:gap-[5px]'
+            : 'gap-1.5 py-2'
+        }
         fadeEdges
         showArrowsOnHover
       >
+        {grouped && all}
         {withGames.map((s) => (
           <SportChip
             key={s.key}
@@ -151,7 +170,7 @@ export function SportRail(props: {
             count={counts[s.key]}
           />
         ))}
-        {withGames.length > 0 && withoutGames.length > 0 && (
+        {!grouped && withGames.length > 0 && withoutGames.length > 0 && (
           <div className="bg-ink-200 mx-1 my-auto h-5 w-px shrink-0" />
         )}
         {withoutGames.map((s) => (
@@ -166,11 +185,18 @@ export function SportRail(props: {
         ))}
       </Carousel>
       <DropdownMenu
-        className="ml-1.5 shrink-0"
-        buttonClass="border-ink-200 bg-canvas-0 hover:bg-canvas-50 min-h-[40px] gap-1 rounded-md border px-2 text-xs font-medium"
+        className={
+          grouped ? 'border-ink-200 ml-1 shrink-0 border-l' : 'ml-1.5 shrink-0'
+        }
+        buttonClass={
+          grouped
+            ? 'hover:bg-ink-50 h-11 w-11 justify-center rounded-md'
+            : 'border-ink-200 bg-canvas-0 hover:bg-canvas-50 min-h-[40px] gap-1 rounded-md border px-2 text-xs font-medium'
+        }
         buttonContent={
           <>
-            All sports <ChevronDownIcon className="h-4 w-4" />
+            <span className={grouped ? 'sr-only' : undefined}>All sports</span>
+            <ChevronDownIcon className="h-4 w-4" />
           </>
         }
         anchor={{ to: 'bottom end', gap: 8, padding: 8 }}
@@ -188,7 +214,11 @@ export function SportRail(props: {
             'aria-current': selected === s.key ? 'page' : undefined,
             onClick: () => track('sports rail select', { sport: s.key }),
           },
-          icon: <span aria-hidden>{s.emoji}</span>,
+          icon: grouped ? (
+            <SportNavIcon sport={s.key} />
+          ) : (
+            <span aria-hidden>{s.emoji}</span>
+          ),
           buttonContent: <span>{s.label}</span>,
         }))}
       />
@@ -205,13 +235,33 @@ function SportChip(props: {
   count?: number
 }) {
   const { sport, href, active, label, emoji, count } = props
+  if (isSportsBdlEnabled())
+    return (
+      <Link
+        href={href}
+        aria-current={active ? 'page' : undefined}
+        onClick={() => track('sports rail select', { sport })}
+        className="group flex min-h-[44px] shrink-0 snap-start items-center whitespace-nowrap rounded-md focus-visible:outline-offset-[-2px]"
+      >
+        <span
+          className={clsx(
+            'flex h-[34px] items-center gap-[5px] rounded-[7px] px-2.5 text-[13px] sm:h-[37px] sm:gap-[7px] sm:px-3 sm:text-sm',
+            active
+              ? 'bg-ink-1000 text-canvas-0 font-bold'
+              : 'text-ink-600 group-hover:bg-ink-50 group-hover:text-ink-1000 font-semibold'
+          )}
+        >
+          <SportNavIcon sport={sport} />
+          {label}
+        </span>
+      </Link>
+    )
   return (
     <Link
       href={href}
       aria-current={active ? 'page' : undefined}
       onClick={() => track('sports rail select', { sport })}
       className={clsx(
-        isSportsBdlEnabled() && 'min-h-[44px]',
         'flex shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
         active
           ? 'border-ink-900 bg-ink-900 text-ink-0'

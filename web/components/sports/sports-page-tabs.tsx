@@ -22,6 +22,7 @@ import {
 } from './sports-navigation'
 import { MoreGames, SportsPicks } from './sports-picks'
 import { SportMarkets } from './sports-shell'
+import styles from './sports-navigation.module.css'
 
 type Feed = ComponentProps<typeof GameFeed>
 type Markets = ComponentProps<typeof SportMarkets>
@@ -172,8 +173,34 @@ export function SportsPageTabs(props: {
       />
     )
   }
+  const liveCount =
+    games.filter((game) => game.status === 'live').length +
+    weekends.reduce(
+      (total, weekend) =>
+        total +
+        weekend.sessions.filter((session) => session.status === 'live').length,
+      0
+    )
   const tabs: Tab[] = SPORTS_VIEWS.map(([key, title]) => ({
     title,
+    titleElement:
+      key === 'live' ? (
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="bg-scarlet-500 h-1.5 w-1.5 rounded-full"
+          />
+          {title}
+          {!feed.loading && liveCount > 0 && (
+            <span
+              aria-hidden="true"
+              className="text-ink-600 font-medium tabular-nums"
+            >
+              {liveCount}
+            </span>
+          )}
+        </span>
+      ) : undefined,
     queryString: key,
     content: null,
   }))
@@ -191,7 +218,8 @@ export function SportsPageTabs(props: {
       <ControlledTabs
         trackingName={trackingName}
         activeIndex={active}
-        labelClassName="min-h-[44px]"
+        className={`${styles.views} -mt-3`}
+        labelsParentClassName="gap-3 overscroll-x-contain sm:gap-[22px]"
         onClick={(key) => {
           const next = sportsView(key)
           if (view !== next)
