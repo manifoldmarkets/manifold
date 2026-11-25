@@ -5,6 +5,7 @@ import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  sportsLeagueForSlug,
   sportsNavigationLeague,
   sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
@@ -36,6 +37,58 @@ it('scopes official games across feeds without trusting an unverified league fie
   expect(sportsNavigationLeague(exhibition, ['atp', 'wta'])).toBeUndefined()
   expect(
     sportsNavigationLeague({ ...exhibition, sportsLeague: 'WTA' }, ['atp'])
+  ).toBeUndefined()
+})
+
+it.each([
+  ['UEFA Champions League', 'ucl'],
+  ['Premier League', 'epl'],
+  ['FIFA World Cup', 'fifa/worldcup'],
+])('reads canonical football-data matches in %s', (name, key) => {
+  const market = {
+    creatorId: sports,
+    sportsEventId: 'fd-537327',
+    sportsLeague: name,
+  }
+  expect(sportsNavigationLeague(market)).toBe(key)
+  expect(
+    sportsNavigationLeague({ ...market, sportsLeagueKey: 'nba' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsProvider: 'odds' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, creatorId: 'fan' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsEventId: 'fd-00' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsEventId: 'unknown:1' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsLeague: 'Unverified league' })
+  ).toBeUndefined()
+  expect(sportsNavigationLeague({ ...market, sportsEventId: '537327' })).toBe(
+    key === 'fifa/worldcup' ? key : undefined
+  )
+})
+
+it('revalidates a verified optional league against the hydrated public topic slugs', () => {
+  const market = {
+    creatorId: sports,
+    sportsEventId: 'exhibition-2',
+    sportsLeague: 'CBB',
+    sportsLeagueKey: 'cbb' as const,
+  }
+  const league = (...slugs: string[]) =>
+    sportsNavigationLeague(market, slugs.map(sportsLeagueForSlug))
+  expect(league('sports-default', 'college-baseball')).toBe('cbb')
+  expect(league('sports-default')).toBeUndefined()
+  expect(league('college-baseball', 'nba')).toBeUndefined()
+  expect(league('nba')).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, creatorId: 'fan' }, ['cbb'])
   ).toBeUndefined()
 })
 

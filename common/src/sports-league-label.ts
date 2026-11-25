@@ -12,7 +12,12 @@ import { sportForMarket, sportPath, SportsIndex } from './sports-schedule'
 import { ADDITIONAL_SPORTS_FEEDS } from './sports-feeds'
 import { parseF1EventId, parseF1TitleEventId } from './f1-markets'
 import { parseOddsEventId } from './odds-markets'
-import { MANIFOLD_SPORTS_USER_IDS, WORLD_CUP_2026 } from './sports'
+import {
+  CHAMPIONS_LEAGUE_2026,
+  MANIFOLD_SPORTS_USER_IDS,
+  PREMIER_LEAGUE_2526,
+  WORLD_CUP_2026,
+} from './sports'
 
 // The short league label an official game market shows in front of its
 // title ("NFL Seahawks at Broncos, Oct 15"), the way a perp shows its ticker.
@@ -93,25 +98,32 @@ for (const key of BDL_LEAGUE_KEYS) {
 }
 leagueByLabel.set('wncaab', 'ncaaw')
 
+export const sportsLeagueForSlug = (slug?: string) =>
+  slug === 'college-baseball'
+    ? 'cbb'
+    : slug && isBdlLeagueKey(slug)
+    ? slug
+    : undefined
+
 /** Only public topics in the Sports index can identify an older exhibition market. */
 export function sportsLeagueTopics(index: SportsIndex) {
   const topics = new Map<string, BdlLeagueKey>()
-  const forSlug = (slug?: string) =>
-    slug === 'college-baseball'
-      ? 'cbb'
-      : slug && isBdlLeagueKey(slug)
-      ? slug
-      : undefined
   for (const sport of index.sports) {
-    const key = forSlug(sport.slug)
+    const key = sportsLeagueForSlug(sport.slug)
     if (key) for (const id of sport.groupIds) topics.set(id, key)
   }
   for (const topic of index.topics) {
-    const key = forSlug(topic.slug)
+    const key = sportsLeagueForSlug(topic.slug)
     if (key) topics.set(topic.id, key)
   }
   return topics
 }
+
+const footballDataLeagues = new Map<string, BdlLeagueKey>([
+  [CHAMPIONS_LEAGUE_2026.sportsLeague, 'ucl'],
+  [PREMIER_LEAGUE_2526.sportsLeague, 'epl'],
+  [WORLD_CUP_2026.sportsLeague, 'fifa/worldcup'],
+])
 
 /** Identify an official market's league without treating an Odds game as a BDL game. */
 export function sportsNavigationLeague(
@@ -137,11 +149,12 @@ export function sportsNavigationLeague(
         ? 'f1'
         : officialBdlLeagueKey(market)
   } else if (
-    (provider === 'legacy' || provider === 'football-data') &&
-    /^(fd-)?[1-9]\d*$/.test(id) &&
-    market.sportsLeague === WORLD_CUP_2026.sportsLeague
+    (provider === 'football-data' && /^fd-[1-9]\d*$/.test(id)) ||
+    ((provider === 'legacy' || provider === 'football-data') &&
+      /^[1-9]\d*$/.test(id) &&
+      market.sportsLeague === WORLD_CUP_2026.sportsLeague)
   ) {
-    key = 'fifa/worldcup'
+    key = footballDataLeagues.get(market.sportsLeague ?? '')
   } else if (provider === 'legacy' && topicKeys && market.sportsLeagueKey) {
     const distinct = new Set(topicKeys.filter((k) => k !== undefined))
     const label = leagueByLabel.get(

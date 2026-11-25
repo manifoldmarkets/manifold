@@ -53,10 +53,14 @@ export function toOfficialGame(
   const isResolved = !!c.resolution
   const isCanceled = bdlEnabled && c.resolution === 'CANCEL'
   const label = league?.shortLabel || d.sportsLeague || ''
+  const reportedFinal =
+    bdlEnabled && /^(FINAL|FINISHED|AWARDED)$/i.test(d.sportsLiveStatus ?? '')
   const details: ScheduleScoreFields | undefined = isCanceled
     ? { gameState: 'canceled' as const }
     : league
     ? scheduleScoreFields(d, isResolved)
+    : reportedFinal
+    ? { gameState: isResolved ? 'final' : 'settling' }
     : undefined
 
   const ordered = sortBy(answers, 'index')
@@ -108,8 +112,7 @@ export function toOfficialGame(
   const awayScore = bdlEnabled
     ? validScore(d.sportsAwayScore)
     : d.sportsAwayScore ?? null
-  const terminalScore =
-    !league || /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '')
+  const terminalScore = !league || reportedFinal
   const liveScore =
     (status === 'live' ||
       details?.gameState === 'settling' ||
@@ -145,10 +148,9 @@ export function toOfficialGame(
     league: label,
     ...(leagueKey && { sportsLeagueKey: leagueKey }),
     ...(navigationLeagueKey && { navigationLeagueKey }),
-    ...(bdlEnabled &&
-      /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '') && {
-        reportedFinal: true as const,
-      }),
+    ...(reportedFinal && {
+      reportedFinal: true as const,
+    }),
     ...details,
     sportsEventId,
     startTime,
