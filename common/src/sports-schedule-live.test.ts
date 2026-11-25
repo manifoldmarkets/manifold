@@ -97,6 +97,7 @@ it('recovers postponed and final-in-review games via full websocket snapshots an
   })
   const settling = applySportsLive(interrupted, { liveScore: final })
   expect(settling).toMatchObject({
+    reportedFinal: true,
     status: 'upcoming',
     gameState: 'settling',
     finalQualifier: 'OT',
@@ -112,6 +113,7 @@ it('recovers postponed and final-in-review games via full websocket snapshots an
     sportsLiveClock: '0:00',
   })
   const recovered = applySportsLive(settling, { liveScore: live })
+  expect(recovered.reportedFinal).toBeUndefined()
   expect(recovered).toMatchObject({
     status: 'live',
     gameState: 'live',

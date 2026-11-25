@@ -1243,6 +1243,10 @@ export interface ScheduleTeam {
 
 export interface ScheduleGame extends ScheduleScoreFields {
   sportsLeagueKey?: BdlLeagueKey
+  /** League for browsing, including older official markets from other feeds. */
+  navigationLeagueKey?: BdlLeagueKey
+  /** The provider reported a final. A market merely past close does not qualify. */
+  reportedFinal?: true
   id: string
   slug: string
   creatorUsername: string
@@ -1297,6 +1301,7 @@ export interface UpcomingMarketRef {
   id: string
   closeTime: number
   sport: AnySportKey
+  sportsLeagueKey?: BdlLeagueKey
 }
 
 export interface SportsScheduleResponse {
@@ -1307,6 +1312,10 @@ export interface SportsScheduleResponse {
    * games by kickoff. Finished games are never included.
    */
   games: ScheduleGame[]
+  /** Recent reported finals and resolved games from the first schedule read. */
+  results?: ScheduleGame[]
+  /** Public leagues represented in this scope, before league filtering and paging. */
+  availableLeagues?: BdlLeagueKey[]
   /** Pass as `cursor` for the next page of upcoming games; null at the end. */
   nextCursor: string | null
   /**

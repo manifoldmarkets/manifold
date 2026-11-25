@@ -163,3 +163,39 @@ it('does not publish an old in-progress score as a final score after a BDL resol
     })
   ).toMatchObject({ winnerAnswerId: 'home', finalScore: { home: 2, away: 1 } })
 })
+
+it.each(['FINISHED', 'FINAL', 'AWARDED'])(
+  'shows a confirmed legacy %s score before native settlement only on the new navigation',
+  (status) => {
+    const legacy = {
+      ...market,
+      sportsProvider: undefined,
+      sportsLeagueKey: undefined,
+      sportsEventId: 'fd-537327',
+      sportsLeague: 'FIFA World Cup',
+      sportsLiveStatus: status,
+      sportsHomeScore: 0,
+      sportsAwayScore: 2,
+    }
+    const row = (overrides: Record<string, unknown>, enabled: boolean) =>
+      toOfficialGame(
+        { ...legacy, ...overrides } as unknown as Contract,
+        answers,
+        [],
+        undefined,
+        now,
+        enabled
+      )
+    expect(row({}, true)).toMatchObject({
+      gameState: 'settling',
+      reportedFinal: true,
+      isResolved: false,
+      finalScore: { home: 0, away: 2 },
+    })
+    expect(row({}, false)?.finalScore).toBeNull()
+    for (const score of [null, -1, NaN, Infinity])
+      expect(row({ sportsHomeScore: score }, true)?.finalScore).toBeNull()
+    expect(row({ resolution: 'CANCEL' }, true)?.finalScore).toBeNull()
+    expect(row({ sportsLiveStatus: 'IN_PLAY' }, true)?.finalScore).toBeNull()
+  }
+)

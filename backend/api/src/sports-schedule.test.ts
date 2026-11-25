@@ -835,6 +835,51 @@ describe('F1 race weekends', () => {
     expect(week).toEqual(expect.arrayContaining(['japan', 'race']))
   })
 
+  it('limits an explicit F1 league to verified session and current title identities', async () => {
+    officialRows = f1Rows.map(({ data }, i) => ({
+      data: {
+        ...data,
+        creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+        ...(i === 1
+          ? { sportsFixture: true }
+          : i === 2
+          ? { sportsProvider: 'odds' }
+          : {}),
+      },
+    }))
+    const season = f1Season(Date.now())
+    championshipRows = [
+      {
+        id: 'drivers',
+        question: 'F1 Drivers Championship',
+        official_event_id: 'bdl-f1-title:' + season + ':drivers',
+        verified: true,
+      },
+      {
+        id: 'constructors',
+        question: 'F1 Constructors Championship',
+        official_event_id: 'bdl-f1-title:' + season + ':constructors',
+        verified: false,
+      },
+    ]
+    const read = async (props: Parameters<typeof getSchedule>[0]) => {
+      const res = await getSchedule(props)
+      return 'result' in res ? res.result : res
+    }
+    const official = await read({ sport: 'racing', league: 'f1' })
+    expect(
+      official.raceWeekends?.flatMap((w) =>
+        w.sessions.flatMap((s) => s.markets.map((m) => m.id))
+      )
+    ).toEqual(['pole'])
+    expect(official.raceChampionships?.map((m) => m.id)).toEqual(['drivers'])
+    const legacy = await read({ sport: 'f1' })
+    expect(legacy.raceWeekends?.[0].sessions).toHaveLength(2)
+    expect(legacy.raceChampionships).toHaveLength(2)
+    expect(
+      (await read({ sport: 'football', league: 'f1' })).availableLeagues
+    ).not.toContain('f1')
+  })
   it("sends the season's title markets to the F1 page only", async () => {
     const season = f1Season(Date.now())
     championshipRows = [
@@ -1111,4 +1156,65 @@ it('uses the legacy single capped close-time scan and original scores when rollo
   } finally {
     jest.mocked(isSportsBdlEnabled).mockReturnValue(true)
   }
+})
+
+it('finds verified open fields beyond the first 300 general markets before applying a league limit', async () => {
+  const day = 24 * 60 * 60 * 1000
+  const field = (id: string, overrides: Record<string, unknown> = {}) => ({
+    data: {
+      ...official[0].data,
+      id,
+      creatorId: MANIFOLD_SPORTS_USER_IDS[0],
+      sportsEventId: 'bdl:pga:101',
+      sportsProvider: 'bdl',
+      sportsLeagueKey: 'pga',
+      sportsMarketType: 'winner',
+      closeTime: kickoff + 2 * day,
+      ...overrides,
+    },
+  })
+  officialRows = [
+    field('later', { closeTime: kickoff + 4 * day }),
+    field('first'),
+    field('unfiled'),
+    field('fixture', { sportsFixture: true }),
+    field('other-provider', { sportsProvider: 'odds' }),
+    field('settled', { resolution: 'MKT' }),
+    field('closed', { closeTime: kickoff - day }),
+    field('too-far', { closeTime: kickoff + 8 * day }),
+  ]
+  gameGroups = officialRows
+    .filter((r) => r.data.id !== 'unfiled')
+    .map((r) => ({ contract_id: String(r.data.id), group_id: groupId('golf') }))
+  marketRows = Array.from({ length: 300 }, (_, i) => ({
+    ...props[0],
+    id: 'community-' + i,
+    creator_id: 'member',
+    question: 'Season prop',
+    sports_event_id: '',
+    group_ids: [groupId('golf')],
+    close_time: new Date(kickoff + i * 1000).toISOString(),
+  }))
+  const get = sportsSchedule as (
+    props: Parameters<typeof sportsSchedule>[0]
+  ) => ReturnType<typeof sportsSchedule>
+  const read = async (props: Parameters<typeof get>[0]) => {
+    const res = await get(props)
+    return 'result' in res ? res.result : res
+  }
+  const all = await read({ sport: 'all', daysAhead: 1 })
+  expect(all.upcoming).toHaveLength(100)
+  expect(all.availableLeagues).toContain('pga')
+  expect(
+    (await read({ sport: 'golf', league: 'pga', daysAhead: 1 })).upcoming.map(
+      (m) => m.id
+    )
+  ).toEqual(['first', 'later'])
+  expect((await read({ sport: 'tennis', league: 'pga' })).upcoming).toEqual([])
+  marketRows.push({ ...marketRows[0], id: 'first' })
+  expect(
+    (await read({ sport: 'golf', league: 'pga' })).upcoming.map(
+      (m) => m.closeTime
+    )
+  ).toEqual([kickoff + 2 * day, kickoff + 4 * day])
 })

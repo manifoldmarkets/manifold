@@ -5,11 +5,92 @@ import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  sportsLeagueForSlug,
+  sportsNavigationLeague,
   sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
 } from './sports-league-label'
 
 const sports = MANIFOLD_SPORTS_USER_IDS[0]
+
+it('scopes official games across feeds without trusting an unverified league field', () => {
+  const odds = { creatorId: sports, sportsEventId: 'odds:basketball_nba:one' }
+  expect(sportsNavigationLeague(odds)).toBe('nba')
+  expect(
+    sportsNavigationLeague({ ...odds, sportsProvider: 'bdl' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...odds, sportsLeagueKey: 'nhl' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...odds, sportsFixture: true })
+  ).toBeUndefined()
+  expect(sportsNavigationLeague({ ...odds, creatorId: 'fan' })).toBeUndefined()
+  const exhibition = {
+    creatorId: sports,
+    sportsEventId: 'exhibition-1',
+    sportsLeague: 'ATP',
+    sportsLeagueKey: 'atp' as const,
+  }
+  expect(sportsNavigationLeague(exhibition, ['atp'])).toBe('atp')
+  expect(sportsNavigationLeague(exhibition, [])).toBeUndefined()
+  expect(sportsNavigationLeague(exhibition, ['atp', 'wta'])).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...exhibition, sportsLeague: 'WTA' }, ['atp'])
+  ).toBeUndefined()
+})
+
+it.each([
+  ['UEFA Champions League', 'ucl'],
+  ['Premier League', 'epl'],
+  ['FIFA World Cup', 'fifa/worldcup'],
+])('reads canonical football-data matches in %s', (name, key) => {
+  const market = {
+    creatorId: sports,
+    sportsEventId: 'fd-537327',
+    sportsLeague: name,
+  }
+  expect(sportsNavigationLeague(market)).toBe(key)
+  expect(
+    sportsNavigationLeague({ ...market, sportsLeagueKey: 'nba' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsProvider: 'odds' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, creatorId: 'fan' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsEventId: 'fd-00' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsEventId: 'unknown:1' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, sportsLeague: 'Unverified league' })
+  ).toBeUndefined()
+  expect(sportsNavigationLeague({ ...market, sportsEventId: '537327' })).toBe(
+    key === 'fifa/worldcup' ? key : undefined
+  )
+})
+
+it('revalidates a verified optional league against the hydrated public topic slugs', () => {
+  const market = {
+    creatorId: sports,
+    sportsEventId: 'exhibition-2',
+    sportsLeague: 'CBB',
+    sportsLeagueKey: 'cbb' as const,
+  }
+  const league = (...slugs: string[]) =>
+    sportsNavigationLeague(market, slugs.map(sportsLeagueForSlug))
+  expect(league('sports-default', 'college-baseball')).toBe('cbb')
+  expect(league('sports-default')).toBeUndefined()
+  expect(league('college-baseball', 'nba')).toBeUndefined()
+  expect(league('nba')).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...market, creatorId: 'fan' }, ['cbb'])
+  ).toBeUndefined()
+})
 
 describe('getSportsLeagueLabel', () => {
   it('labels an @ManifoldSports game market by its sport key', () => {

@@ -13,9 +13,10 @@ import { OutcomeType } from 'common/contract'
 import { Answer } from 'common/answer'
 import { tsToMillis } from 'common/supabase/utils'
 import { MANIFOLD_SPORTS_USER_IDS } from 'common/sports'
-import { F1_DAYS_AHEAD } from 'common/f1-markets'
+import { F1_DAYS_AHEAD, parseF1TitleEventId } from 'common/f1-markets'
 import {
   buildRaceWeekends,
+  f1Season,
   findRaceRelatedMarkets,
   pickRaceChampionships,
   RaceContract,
@@ -23,7 +24,12 @@ import {
   RaceWeekend,
 } from 'common/race-weekends'
 import { scheduleFeedTime } from 'common/sports-game-feed'
-import { BDL_LEAGUES } from 'common/bdl/leagues'
+import { BDL_LEAGUES, BdlLeagueKey } from 'common/bdl/leagues'
+import {
+  sportsNavigationLeague,
+  sportsLeagueTopics,
+} from 'common/sports-league-label'
+import { sportsFamily } from 'common/sports-navigation-family'
 import { toOfficialGame } from 'common/sports-official-game'
 export { homeAndAway } from 'common/sports-official-game'
 import {
@@ -43,8 +49,8 @@ import { DAY_MS, HOUR_MS } from 'common/util/time'
 // @ManifoldSports account that carry a sportsEventId. Everything else people
 // make in the sports topics either hangs under a game as a related market or
 // shows up in the "this week" list by close time. Finished games are loaded
-// for a while after kickoff (their markets can still be matched) but never
-// returned: the page is a feed of what's on and what's next.
+// for a while after kickoff so related markets and recent results can use
+// the same read. They stay out of the upcoming games list.
 const FINISHED_GRACE_HOURS = 18
 const OFFICIAL_PAGE_SIZE = 200
 const MAX_CANDIDATES = 1000
@@ -70,6 +76,8 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   const daysAhead = props.daysAhead ?? 14
   const limit = props.limit ?? 120
   const cursor = parseScheduleCursor(props.cursor)
+  const navigation = isSportsBdlEnabled()
+  const league = navigation ? props.league : undefined
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const horizon = now + daysAhead * DAY_MS
@@ -86,22 +94,40 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
     : undefined
   const inTopic = (groupIds: readonly string[] | undefined) =>
     !!topicIds && (groupIds ?? []).some((id) => topicIds.has(id))
-  const shows = (m: { sport: AnySportKey }, groupIds: readonly string[]) =>
-    topicIds ? inTopic(groupIds) : sport === 'all' || m.sport === sport
+  const shows = (
+    m: {
+      sport: AnySportKey
+      sportsLeagueKey?: BdlLeagueKey
+      navigationLeagueKey?: BdlLeagueKey
+    },
+    groupIds: readonly string[]
+  ) =>
+    topicIds
+      ? inTopic(groupIds)
+      : sport === 'all' ||
+        m.sport === sport ||
+        (navigation &&
+          sportsFamily(m.sport, m.navigationLeagueKey ?? m.sportsLeagueKey) ===
+            sport)
+  const racing = sport === 'f1' || (navigation && sport === 'racing')
   const [
-    { games: official, groupIds: gameGroupIds },
+    { games: official, groupIds: gameGroupIds, week: officialWeek },
     weekAll,
-    { weekends: allWeekends, groupIds: raceGroupIds },
-    championships,
+    {
+      weekends: allWeekends,
+      groupIds: raceGroupIds,
+      verified: verifiedRaceIds,
+    },
+    { championships, hasOfficialTitle },
   ] = await Promise.all([
     isSportsBdlEnabled()
       ? getOfficialGames(pg, index, daysAhead, now)
       : getLegacyOfficialGames(pg, index, daysAhead, now),
     getUpcomingMarkets(pg, index),
-    getRaceWeekends(pg, raceDays, now),
-    sport === 'f1' && !cursor && !topicIds
-      ? getRaceChampionships(pg, index, now)
-      : Promise.resolve([]),
+    getRaceWeekends(pg, raceDays, now, league === 'f1'),
+    (racing || (navigation && sport === 'all')) && !cursor && !topicIds
+      ? getRaceChampionships(pg, index, now, league === 'f1')
+      : Promise.resolve({ championships: [], hasOfficialTitle: false }),
   ])
   const games = official.filter((g) => {
     if (
@@ -282,15 +308,32 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // The weekends this page shows: all of F1's on /sports/f1; on /sports,
   // those within the games' horizon; on a topic's page, those with a market
   // in the topic.
-  const shownWeekends = cursor
+  const sportWeekends = cursor
     ? []
     : topicIds
     ? weekends.filter((w) => inTopic(weekendGroupIds(w)))
-    : sport !== 'all' && sport !== 'f1'
+    : sport !== 'all' && !racing
     ? []
-    : sport === 'f1'
+    : racing
     ? weekends
     : weekends.filter(onBefore(horizon))
+  const verifiedWeekend = (w: RaceWeekend) =>
+    w.sessions.some(
+      (s) =>
+        s.status !== 'finished' &&
+        s.markets.some(
+          (m) =>
+            verifiedRaceIds.has(m.id) &&
+            (!topicIds || inTopic(raceGroupIds[m.id]))
+        )
+    )
+  const hasVerifiedSession = sportWeekends.some(verifiedWeekend)
+  const shownWeekends =
+    league === 'f1'
+      ? sportWeekends.filter(verifiedWeekend)
+      : league
+      ? []
+      : sportWeekends
   const shownWeekendIds = new Set(shownWeekends.map((w) => w.id))
   // On a topic's page a market under a game leaves the week list only if the
   // page has that game; elsewhere, whatever game it's under.
@@ -311,7 +354,10 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // official F1 markets stay in, and the page drops the ones on the sessions
   // it shows (withoutRaceMarkets).
   const gameIds = new Set(official.map((g) => g.id))
-  const upcoming = weekAll.filter(
+  const week = officialWeek.length
+    ? sortBy(uniqBy([...officialWeek, ...weekAll], 'id'), ['closeTime', 'id'])
+    : weekAll
+  const upcoming = week.filter(
     (m) =>
       !gameIds.has(m.id) &&
       !underAGame(m.id) &&
@@ -335,9 +381,17 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
   // The feed: every live game on the first page, then upcoming games by
   // kickoff, `limit` at a time. A cursor continues after the last game the
   // client has.
-  const feed = ordered.filter(
-    (g) => g.status !== 'finished' && shows(g, gameGroupIds[g.id] ?? [])
-  )
+  const scopedGames = ordered.filter((g) => shows(g, gameGroupIds[g.id] ?? []))
+  const leagueGames = league
+    ? scopedGames.filter((g) => g.navigationLeagueKey === league)
+    : scopedGames
+  const feed = leagueGames.filter((g) => g.status !== 'finished')
+  const sportMarkets = cursor
+    ? []
+    : upcoming.filter((m) => shows(m, m.groupIds))
+  const leagueMarkets = league
+    ? sportMarkets.filter((m) => m.sportsLeagueKey === league)
+    : sportMarkets
   const live = cursor ? [] : feed.filter((g) => g.status === 'live')
   const later = feed.filter(
     (g) => g.status === 'upcoming' && (!cursor || isAfterCursor(g, cursor))
@@ -347,18 +401,44 @@ export const sportsSchedule: APIHandler<'sports-schedule'> = async (props) => {
 
   const response: SportsScheduleResponse = {
     snapshotTime: now,
+    ...(navigation &&
+      !cursor && {
+        results: leagueGames
+          .filter((g) => !g.isCanceled && (g.isResolved || g.reportedFinal))
+          .sort(
+            (a, b) =>
+              (b.resolutionTime ?? b.startTime) -
+              (a.resolutionTime ?? a.startTime)
+          )
+          .slice(0, MAX_UPCOMING_RETURNED),
+        availableLeagues: uniq(
+          [
+            ...scopedGames
+              .filter(
+                (g) =>
+                  g.status !== 'finished' || g.isResolved || g.reportedFinal
+              )
+              .map((g) => g.navigationLeagueKey),
+            ...sportMarkets.map((m) => m.sportsLeagueKey),
+            ...(hasVerifiedSession || hasOfficialTitle ? ['f1' as const] : []),
+          ].filter((key): key is BdlLeagueKey => key !== undefined)
+        ),
+      }),
     games: [...live, ...page],
     nextCursor:
       later.length > page.length && last ? scheduleCursor(last) : null,
     // Only the first page carries the week's other markets.
-    upcoming: cursor
-      ? []
-      : upcoming
-          .filter((m) => shows(m, m.groupIds))
-          .slice(0, MAX_UPCOMING_RETURNED)
-          .map(({ id, closeTime, sport }) => ({ id, closeTime, sport })),
+    upcoming: leagueMarkets
+      .slice(0, MAX_UPCOMING_RETURNED)
+      .map(({ id, closeTime, sport, sportsLeagueKey }) => ({
+        id,
+        closeTime,
+        sport,
+        ...(sportsLeagueKey && { sportsLeagueKey }),
+      })),
     raceWeekends: shownWeekends,
-    raceChampionships: championships,
+    raceChampionships:
+      (!league && racing) || league === 'f1' ? championships : [],
     counts,
     liveCount,
     sports: index.sports,
@@ -421,6 +501,7 @@ async function getLegacyOfficialGames(
   games: ScheduleGame[]
   /** Each game's topic ids. */
   groupIds: Record<string, string[]>
+  week: (UpcomingMarketRef & { groupIds: string[] })[]
 }> {
   const maxGames = 400
   const rows = await pg.manyOrNone(
@@ -461,7 +542,7 @@ async function getLegacyOfficialGames(
       )
     )
     .filter((g): g is ScheduleGame => g !== null)
-  return { games, groupIds: groupIdsByContract }
+  return { games, groupIds: groupIdsByContract, week: [] }
 }
 
 async function getOfficialGames(
@@ -474,6 +555,9 @@ async function getOfficialGames(
   // not move it between pages or mix its answers with a different snapshot.
   return pg.tx({ mode: READ_ONLY_REPEATABLE_MODE }, async (tx) => {
     const games: ScheduleGame[] = []
+    const leagueTopics = sportsLeagueTopics(index)
+    const sportsTopics = new Set(index.allGroupIds)
+    const week: (UpcomingMarketRef & { groupIds: string[] })[] = []
     const groupIds: Record<string, string[]> = {}
     const earliestClose = new Date(now - FINISHED_GRACE_HOURS * HOUR_MS)
     const horizon = now + daysAhead * DAY_MS
@@ -483,7 +567,9 @@ async function getOfficialGames(
       const key = resuming ? "(data->'sportsResumptionTime')" : 'close_time'
       const cast = resuming ? 'jsonb' : 'timestamptz'
       const lower = resuming ? String(now) : earliestClose
-      const upper = resuming ? String(horizon) : new Date(horizon + DAY_MS)
+      const upper = resuming
+        ? String(horizon)
+        : new Date(Math.max(horizon + DAY_MS, now + UPCOMING_DAYS * DAY_MS))
       type Row = Parameters<typeof convertContract>[0] & {
         id: string
         page_time: string
@@ -533,14 +619,41 @@ async function getOfficialGames(
             index,
             now
           )
+          const key =
+            game?.navigationLeagueKey ??
+            sportsNavigationLeague(
+              contract,
+              topics.map((id) => leagueTopics.get(id))
+            )
+          const close = resuming ? 0 : tsToMillis(row.page_time)
+          if (
+            !game &&
+            key &&
+            !contract.resolution &&
+            !contract.isResolved &&
+            close > now &&
+            close < now + UPCOMING_DAYS * DAY_MS &&
+            MARKET_OUTCOME_TYPES.includes(contract.outcomeType) &&
+            topics.some((id) => sportsTopics.has(id))
+          ) {
+            week.push({
+              id: contract.id,
+              closeTime: close,
+              sportsLeagueKey: key,
+              sport: BDL_LEAGUES[key].sportKey,
+              groupIds: topics,
+            })
+          }
           if (
             !game ||
+            (!resuming && close >= horizon + DAY_MS) ||
             (resuming &&
               (!game.sportsLeagueKey ||
                 BDL_LEAGUES[game.sportsLeagueKey].adapter !== 'us-majors' ||
                 !game.resumptionTime))
           )
             continue
+          game.navigationLeagueKey = key
           games.push(game)
           groupIds[game.id] = topics
         }
@@ -549,7 +662,7 @@ async function getOfficialGames(
         after = rows[rows.length - 1]
       }
     }
-    return { games, groupIds }
+    return { games, groupIds, week }
   })
 }
 
@@ -559,11 +672,20 @@ async function getOfficialGames(
 const RACE_LOOKBACK_HOURS = 96
 const MAX_RACE_MARKETS = 100
 
-async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
+const F1_METADATA =
+  "coalesce(data->>'sportsProvider','bdl') = 'bdl' and coalesce(data->>'sportsLeagueKey','f1') = 'f1' and coalesce(data->>'sportsFixture','false') = 'false'"
+
+async function getRaceWeekends(
+  pg: Pg,
+  daysAhead: number,
+  now: number,
+  onlyVerified: boolean
+) {
   const rows = await pg.manyOrNone(
     `select ${contractColumnsToSelect}
      from contracts
      where data->>'sportsEventId' like 'bdl-f1:%'
+       ${onlyVerified ? 'and ' + F1_METADATA : ''}
        and creator_id = any($2)
        and token = 'MANA'
        and visibility = 'public'
@@ -576,7 +698,12 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
     [String(daysAhead), MANIFOLD_SPORTS_USER_IDS]
   )
   const full = rows.map((r) => convertContract(r))
-  const contracts = full.map((c) => c as RaceContract)
+  const verified = new Set(
+    full.filter((c) => sportsNavigationLeague(c) === 'f1').map((c) => c.id)
+  )
+  const contracts = full
+    .filter((c) => !onlyVerified || verified.has(c.id))
+    .map((c) => c as RaceContract)
   const ids = contracts.map((c) => c.id)
   const [answers, groupIds] = await Promise.all([
     getAnswers(pg, ids),
@@ -589,7 +716,7 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
       w.sessions.flatMap((s) => s.markets.flatMap((m) => slugs.get(m.id) ?? []))
     ),
   }))
-  return { weekends, groupIds }
+  return { weekends, groupIds, verified }
 }
 
 // The F1 page's title markets: our own (a `bdl-f1-title:` market from
@@ -597,20 +724,27 @@ async function getRaceWeekends(pg: Pg, daysAhead: number, now: number) {
 // topics about F1 and a championship. Which ones count, and the pick of
 // each kind, is pickRaceChampionships. The order by repeats the test for
 // ours: Postgres can't read an output column's name inside an expression.
-async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
+async function getRaceChampionships(
+  pg: Pg,
+  index: SportsIndex,
+  now: number,
+  onlyVerified: boolean
+) {
   const rows = await pg.manyOrNone<{
     id: string
     question: string
     bettors: number | null
     volume: number | null
     official_event_id: string | null
+    verified: boolean
   }>(
     `select c.question, c.id,
             (c.data->>'uniqueBettorCount')::float8 as bettors,
             (c.data->>'volume')::float8 as volume,
             case when c.creator_id = any($4)
                   and c.data->>'sportsEventId' like 'bdl-f1-title:%'
-                 then c.data->>'sportsEventId' end as official_event_id
+                 then c.data->>'sportsEventId' end as official_event_id,
+            (${F1_METADATA}) as verified
      from contracts c
      where exists (
          select 1 from group_contracts gc
@@ -624,6 +758,12 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
        and c.outcome_type = 'MULTIPLE_CHOICE'
        and c.question ~* $2
        and c.question ~* $3
+       ${
+         onlyVerified
+           ? "and c.creator_id = any($4) and c.data->>'sportsEventId' like 'bdl-f1-title:%' and " +
+             F1_METADATA
+           : ''
+       }
      order by (c.creator_id = any($4)
                and c.data->>'sportsEventId' like 'bdl-f1-title:%') is true desc,
               bettors desc nulls last
@@ -635,8 +775,9 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
       MANIFOLD_SPORTS_USER_IDS,
     ]
   )
-  return pickRaceChampionships(
-    rows.map((r) => ({
+  const official = rows.filter((r) => r.official_event_id && r.verified)
+  const championships = pickRaceChampionships(
+    (onlyVerified ? official : rows).map((r) => ({
       id: r.id,
       question: r.question,
       uniqueBettorCount: Number(r.bettors ?? 0),
@@ -645,6 +786,11 @@ async function getRaceChampionships(pg: Pg, index: SportsIndex, now: number) {
     })),
     now
   )
+  const season = f1Season(now)
+  const hasOfficialTitle = official.some(
+    (r) => parseF1TitleEventId(r.official_event_id)?.season === season
+  )
+  return { championships, hasOfficialTitle }
 }
 
 async function getAnswers(

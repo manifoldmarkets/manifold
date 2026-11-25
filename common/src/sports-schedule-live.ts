@@ -167,6 +167,8 @@ export function applySportsLive(
         resumptionTime: score.fields?.resumptionTime,
         finalQualifier: score.fields?.finalQualifier,
         finalScore: score.finalScore ?? null,
+        reportedFinal:
+          /^(FINAL|FINISHED|AWARDED)$/i.test(score.status) || undefined,
         status: gameStatus({
           ...game,
           gameState: score.fields?.gameState,
