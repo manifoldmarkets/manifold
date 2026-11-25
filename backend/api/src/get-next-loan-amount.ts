@@ -2,11 +2,10 @@ import { type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import {
-  calculateMaxGeneralLoanAmount,
-  calculateDailyLoanLimit,
   canClaimDailyFreeLoan,
   calculateTotalFreeLoanAvailable,
   filterLoanEquityMetrics,
+  getGeneralLoanHeadroom,
   isMarketEligibleForLoan,
   getMidnightPacific,
   sumExcludedPerpEquity,
@@ -31,7 +30,9 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
 }) => {
   const pg = createSupabaseDirectClient()
 
-  const portfolioMetricRow = await pg.oneOrNone<Row<'user_portfolio_history_latest'>>(
+  const portfolioMetricRow = await pg.oneOrNone<
+    Row<'user_portfolio_history_latest'>
+  >(
     `select *
      from user_portfolio_history_latest
      where user_id = $1`,
@@ -93,15 +94,10 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   // Note: Balance is not included since loans are taken against positions.
   const equity = Math.max(0, portfolioValueNet)
 
-  // Calculate limits based on equity
-  const maxGeneralLoan = calculateMaxGeneralLoanAmount(equity, maxLoanPercent)
-  const available = Math.max(0, maxGeneralLoan - currentLoan)
-
-  // Calculate daily limit based on equity (resets at midnight PT)
-  const dailyLimit = calculateDailyLoanLimit(equity)
+  // Daily limit resets at midnight PT
   const midnightPT = getMidnightPacific()
   const todayLoansResult = await pg.oneOrNone<{ total: number }>(
-    `select coalesce(sum(amount), 0) as total
+    `select coalesce(sum(amount), 0)::float as total
      from txns
      where to_id = $1
      and category IN ('MARGIN_LOAN', 'LOAN')
@@ -109,7 +105,14 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
     [userId, midnightPT.toISOString()]
   )
   const todayLoans = todayLoansResult?.total ?? 0
-  const availableToday = Math.max(0, dailyLimit - todayLoans)
+
+  // Calculate limits based on equity, the same way request-loan checks them
+  const {
+    maxLoan: maxGeneralLoan,
+    dailyLimit,
+    availableTotal: available,
+    availableToday,
+  } = getGeneralLoanHeadroom(equity, maxLoanPercent, currentLoan, todayLoans)
 
   // Get last free loan claim time
   const lastClaimResult = await pg.oneOrNone<{ last_free_loan_claim: Date }>(
