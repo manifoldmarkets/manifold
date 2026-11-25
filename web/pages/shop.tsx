@@ -128,12 +128,12 @@ import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
-function getChangedPrice(error: unknown) {
+function getChangedPrice(error: unknown, field: 'price' | 'total' = 'price') {
   if (!(error instanceof APIError) || error.code !== 409) return
   const { details } = error
   if (!details || typeof details !== 'object') return
   const price =
-    'price' in details
+    field === 'price' && 'price' in details
       ? details.price
       : 'total' in details
       ? details.total
@@ -1224,7 +1224,9 @@ function MerchItemCard(props: {
     item.defaultImageIndex ?? 0
   )
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
-  const [showShippingModal, setShowShippingModal] = useState(false)
+  const [shippingCheckout, setShippingCheckout] = useState<{
+    quotedItemPrice?: number
+  }>()
   const [purchasing, setPurchasing] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
@@ -1248,8 +1250,9 @@ function MerchItemCard(props: {
   const shippingMana = selectedShipping
     ? Math.round(parseFloat(selectedShipping.rate) * 100)
     : 0
-  const confirmation = usePurchaseQuote(discountedPrice + shippingMana)
-  const confirmedItemPrice = confirmation.amount - shippingMana
+  const confirmation = usePurchaseQuote(discountedPrice)
+  const itemPrice = shippingCheckout?.quotedItemPrice ?? confirmation.amount
+  const total = itemPrice + shippingMana
   const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
@@ -1367,9 +1370,14 @@ function MerchItemCard(props: {
 
   const handleProceedToShipping = () => {
     setShowPurchaseModal(false)
-    setShowShippingModal(true)
+    setShippingCheckout({})
     setShippingRates(null)
     setSelectedShipping(null)
+  }
+
+  const closeShipping = () => {
+    setShippingCheckout(undefined)
+    confirmation.close()
   }
 
   const handleGetShippingRates = async () => {
@@ -1404,7 +1412,7 @@ function MerchItemCard(props: {
   }
 
   const handleSubmitOrder = async () => {
-    if (!user || !selectedSize || !selectedShipping || !confirmation.open)
+    if (!user || !shippingCheckout || !selectedShipping || !confirmation.open)
       return
     const variant = findSelectedVariant()
     if (!variant) return
@@ -1419,12 +1427,11 @@ function MerchItemCard(props: {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
-        expectedTotal: confirmation.amount,
+        expectedTotal: total,
         shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
-      confirmation.close()
-      setShowShippingModal(false)
+      closeShipping()
       setSelectedSize(null)
       setShippingRates(null)
       setSelectedShipping(null)
@@ -1443,7 +1450,17 @@ function MerchItemCard(props: {
       // Let the success toast land before the OS modal pops over it.
       setTimeout(tryOfferReview, 3000)
     } catch (e) {
-      if (!confirmation.applyPriceChange(e)) confirmation.close()
+      const quotedTotal = getChangedPrice(e, 'total')
+      if (quotedTotal !== undefined && quotedTotal >= shippingMana) {
+        // A response can arrive after the buyer has started another checkout.
+        setShippingCheckout((current) =>
+          current === shippingCheckout
+            ? { quotedItemPrice: quotedTotal - shippingMana }
+            : current
+        )
+      } else {
+        confirmation.close()
+      }
       await showPurchaseError(e, 'Failed to place order', user.id)
     } finally {
       setPurchasing(false)
@@ -1617,7 +1634,10 @@ function MerchItemCard(props: {
               {colors.map((color) => (
                 <button
                   key={color}
-                  onClick={() => setSelectedColor(color)}
+                  onClick={() => {
+                    if (color !== selectedColor) closeShipping()
+                    setSelectedColor(color)
+                  }}
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedColor === color
@@ -1642,7 +1662,10 @@ function MerchItemCard(props: {
               {sizesForSelection.map((variant) => (
                 <button
                   key={variant.size}
-                  onClick={() => setSelectedSize(variant.size)}
+                  onClick={() => {
+                    if (variant.size !== selectedSize) closeShipping()
+                    setSelectedSize(variant.size)
+                  }}
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedSize === variant.size
@@ -1820,11 +1843,11 @@ function MerchItemCard(props: {
 
       {/* Shipping address modal */}
       <MerchCheckoutModal
-        open={showShippingModal}
-        setOpen={setShowShippingModal}
+        open={!!shippingCheckout}
+        setOpen={closeShipping}
         actions={
           <>
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+            <Button color="gray" onClick={closeShipping}>
               Back
             </Button>
             <Button
@@ -1837,10 +1860,10 @@ function MerchItemCard(props: {
               }
               onClick={() => {
                 setAcceptedTerms(false)
-                confirmation.capture()
+                confirmation.capture(itemPrice)
               }}
             >
-              Place Order ({formatMoney(discountedPrice)}
+              Place Order ({formatMoney(itemPrice)}
               {selectedShipping && ` + ${formatMoney(shippingMana)} shipping`})
             </Button>
           </>
@@ -2025,15 +2048,7 @@ function MerchItemCard(props: {
                 return (
                   <button
                     key={rate.id}
-                    onClick={() => {
-                      // Keep the quoted item price; swap in the new rate's shipping.
-                      if (confirmation.open && selectedShipping?.id !== rate.id)
-                        confirmation.capture(
-                          confirmedItemPrice +
-                            Math.round(parseFloat(rate.rate) * 100)
-                        )
-                      setSelectedShipping(rate)
-                    }}
+                    onClick={() => setSelectedShipping(rate)}
                     className={clsx(
                       'flex items-center justify-between rounded-lg border-2 p-3 text-left transition-all',
                       selectedShipping?.id === rate.id
@@ -2151,8 +2166,8 @@ function MerchItemCard(props: {
             <Row className="justify-between">
               <span className="text-ink-500">Item price:</span>
               <span className="font-medium">
-                {formatMoney(confirmedItemPrice)}
-                {confirmedItemPrice < item.price && (
+                {formatMoney(itemPrice)}
+                {itemPrice < item.price && (
                   <span className="text-ink-400 ml-1 text-xs line-through">
                     {formatMoney(item.price)}
                   </span>
@@ -2166,17 +2181,14 @@ function MerchItemCard(props: {
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
-              {!confirmation.repriced ? (
+              {shippingCheckout?.quotedItemPrice === undefined ? (
                 <>
                   <span>Total (mana):</span>
-                  <span className="text-teal-600">
-                    {formatMoney(confirmation.amount)}
-                  </span>
+                  <span className="text-teal-600">{formatMoney(total)}</span>
                 </>
               ) : (
                 <span role="status">
-                  The price is now M$
-                  {confirmation.amount.toLocaleString('en-US')} including
+                  The price is now M${total.toLocaleString('en-US')} including
                   shipping.
                 </span>
               )}
