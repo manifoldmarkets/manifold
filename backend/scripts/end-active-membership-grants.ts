@@ -1,4 +1,5 @@
 import { processUserMembershipGrants } from 'shared/membership-grants'
+import { membershipGrantStartsDisabled } from 'shared/membership-grant-config'
 import { runScript } from './run-script'
 import { parseArgs } from 'node:util'
 
@@ -9,6 +10,9 @@ if (require.main === module) {
     args: process.argv.slice(2),
     options: { apply: { type: 'boolean', default: false } },
   })
+
+  if (apply && !membershipGrantStartsDisabled())
+    throw new Error('--apply requires MEMBERSHIP_GRANT_STARTS_DISABLED=true')
 
   runScript(async ({ pg }) => {
     const active = await pg.manyOrNone<{

@@ -137,6 +137,7 @@ const purchase = shopPurchase as Handler
 const cancel = shopCancelSubscription as Handler
 const supporter = () =>
   getSupporterRow(tx as unknown as SupabaseTransaction, userId)
+const originalStartsDisabled = process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
 
 beforeAll(async () => {
   db = new PGlite({
@@ -178,12 +179,16 @@ beforeAll(async () => {
   jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
 }, 30000)
 beforeEach(async () => {
+  delete process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
   jest.clearAllMocks()
   await db.exec(
     'truncate membership_grants, membership_notice_deliveries, user_entitlements, txns, shop_orders, user_notifications; update users set balance = 100000, total_deposits = 100000'
   )
 })
 afterEach(() => {
+  if (originalStartsDisabled === undefined)
+    delete process.env.MEMBERSHIP_GRANT_STARTS_DISABLED
+  else process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = originalStartsDisabled
   jest.useRealTimers()
   jest.restoreAllMocks()
 })
@@ -358,7 +363,12 @@ it.each(['renewal first', 'grant first'])(
     ).toEqual([{ balance: 100000 }])
     expect(await rows('select * from txns')).toEqual([])
     expect(broadcastUpdatedUser).toHaveBeenCalledTimes(1)
-    expect(createPushNotifications).not.toHaveBeenCalled()
+    expect(createPushNotifications).toHaveBeenCalledTimes(1)
+    expect(
+      await rows(
+        "select data->'data'->>'expiryReason' as reason from user_notifications"
+      )
+    ).toEqual([{ reason: 'free_days' }])
 
     clock.mockReturnValue(now + input.durationMs)
     await processUserMembershipGrants(pg, userId)
@@ -430,7 +440,8 @@ it.each([
   'settles a restored renewal %ih overdue immediately after the scan (balance %i)',
   async (hours, balance) => {
     const end = Date.now()
-    const start = end - input.durationMs
+    const durationMs = 4 * DAY_MS
+    const start = end - durationMs
     const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
     const remainingMs = 0 - hours * HOUR_MS
     await rows('update users set balance = $1 where id = $2', [balance, userId])
@@ -439,7 +450,7 @@ it.each([
     values ($1,'supporter-plus',$2,true)`,
       [userId, new Date(start + remainingMs)]
     )
-    const issued = await grantMembershipDays(pg, input)
+    const issued = await grantMembershipDays(pg, { ...input, durationMs })
     expect(issued.grant.pausedPaid).toMatchObject({
       remainingMs,
       autoRenew: true,
@@ -541,6 +552,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   )
   const active = await grantMembershipDays(pg, input)
   await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
   clock.mockReturnValue(now + DAY_MS)
   expect(await processUserMembershipGrants(pg, userId, 'end-active')).toEqual({
     ended: active.grant.id,
@@ -550,6 +562,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
     ended: null,
     started: null,
   })
+  await processMembershipGrants()
   expect(await supporter()).toMatchObject({
     entitlementId: 'supporter-basic',
     expiresTime: now + DAY_MS + HOUR_MS,
@@ -577,7 +590,76 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   ])
 })
 
+it('keeps an eligible award banked through issuance, the ten-minute job and checkout while starts are disabled', async () => {
+  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  expect(await grantMembershipDays(pg, input)).toMatchObject({
+    outcome: 'banked',
+  })
+  await processMembershipGrants()
+  expect(await supporter()).toBeNull()
+  await purchase({ itemId: 'supporter-basic' }, { uid: userId })
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.basic.price },
+  ])
+  expect(await supporter()).toMatchObject({
+    entitlementId: 'supporter-basic',
+    autoRenew: true,
+    metadata: undefined,
+  })
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'banked' },
+  ])
+})
+
+it('renews paid time with an eligible banked grant while starts are disabled', async () => {
+  const now = Date.now()
+  await bankPlusBehindPremium(now, true)
+  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  await processMembershipRenewals()
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.premium.price },
+  ])
+  expect(await supporter()).toMatchObject({
+    entitlementId: 'supporter-premium',
+    expiresTime: now + 30 * DAY_MS,
+  })
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'banked' },
+  ])
+})
+
+it('locks active free time and restores paid time without chaining when starts are disabled', async () => {
+  const end = Date.now() - HOUR_MS
+  const start = end - input.durationMs
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
+  await rows(
+    "insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew) values ($1, 'supporter-basic', $2, true)",
+    [userId, new Date(start + DAY_MS)]
+  )
+  await grantMembershipDays(pg, input)
+  process.env.MEMBERSHIP_GRANT_STARTS_DISABLED = 'true'
+  await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+  await expect(
+    purchase({ itemId: 'supporter-premium' }, { uid: userId })
+  ).rejects.toMatchObject({
+    code: 403,
+    message: membershipGrantLockMessage('plus', end),
+  })
+  clock.mockReturnValue(end)
+  await processMembershipGrants()
+  expect(await supporter()).toMatchObject({
+    entitlementId: 'supporter-basic',
+    expiresTime: end + DAY_MS,
+    metadata: undefined,
+  })
+  expect(
+    await rows('select status from membership_grants order by id')
+  ).toEqual([{ status: 'used' }, { status: 'banked' }])
+})
+
 it('shows the next banked Pro grant before paused paid Plus in the notice and owner view', async () => {
+  const now = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
   await rows(
     `insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew)
     values ($1,'supporter-basic',now()+interval '20 days',true)`,
@@ -586,9 +668,10 @@ it('shows the next banked Pro grant before paused paid Plus in the notice and ow
   await grantMembershipDays(pg, {
     ...input,
     tier: 'premium',
-    durationMs: 2.5 * DAY_MS,
+    durationMs: 4 * DAY_MS,
   })
   await grantMembershipDays(pg, { ...input, sourceId: 'banked-pro' })
+  clock.mockReturnValue(now + DAY_MS)
   const next = { kind: 'free', tier: 'plus' }
   expect(
     await (getMembershipGrants as Handler)({}, { uid: userId })
@@ -657,6 +740,66 @@ it('counts an exhausted paid row only while it can still renew, live or paused',
   })
 })
 
+it.each([
+  {
+    remaining: 2.5 * DAY_MS,
+    autoRenew: false,
+    balance: 100000,
+    reason: 'cancelled',
+  },
+  {
+    remaining: 3 * DAY_MS,
+    autoRenew: true,
+    balance: 0,
+    reason: 'insufficient_balance',
+  },
+  { remaining: 1, autoRenew: false, balance: 100000, reason: 'cancelled' },
+  { remaining: HOUR_MS, autoRenew: true, balance: 100000, reason: null },
+  {
+    remaining: HOUR_MS,
+    autoRenew: false,
+    balance: 0,
+    optedOut: true,
+    reason: null,
+  },
+  { remaining: 3 * DAY_MS + 1, autoRenew: false, balance: 0, reason: null },
+  { remaining: 0, autoRenew: false, balance: 0, reason: null },
+])(
+  'checks restored paid expiry immediately ($remaining ms left, auto-renew $autoRenew, balance $balance)',
+  async ({ remaining, autoRenew, balance, optedOut, reason }) => {
+    const end = Date.UTC(2026, 10, 25, 18, 1) // 10:01 Pacific, after the daily scan.
+    const durationMs = 4 * DAY_MS
+    const start = end - durationMs
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
+    await rows('update users set balance = $1 where id = $2', [balance, userId])
+    await rows(
+      "insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew) values ($1, 'supporter-basic', $2, $3)",
+      [userId, new Date(start + remaining), autoRenew]
+    )
+    await grantMembershipDays(pg, { ...input, durationMs })
+    clock.mockReturnValue(end)
+    if (optedOut)
+      jest.mocked(getNotificationDestinationsForUser).mockReturnValueOnce({
+        sendToBrowser: false,
+        sendToMobile: false,
+        sendToEmail: false,
+        urlToManageThisNotification: '',
+      })
+    await processUserMembershipGrants(pg, userId)
+    const notices = () =>
+      rows(`select data->'data'->>'expiryReason' as reason from membership_notice_deliveries
+      join user_notifications on notification_id = notice_key`)
+    const expected = reason ? [{ reason }] : []
+    expect(await notices()).toEqual(expected)
+    await checkSubscriptionExpiry()
+    expect(await notices()).toEqual(expected)
+    expect(
+      await rows('select notice_key from membership_notice_deliveries')
+    ).toHaveLength(expected.length)
+    expect(createPushNotifications).toHaveBeenCalledTimes(expected.length)
+  }
+)
+
 it.each([true, false])(
   'sends one mobile-only paid expiry notice across reruns (auto-renew = %p)',
   async (autoRenew) => {
@@ -712,7 +855,10 @@ it.each([true, false])(
 it.each(['initially immediate', 'initially deferred'])(
   'retries the notice after a failed inbox write or commit (%s)',
   async (timing) => {
-    await grantMembershipDays(pg, { ...input, durationMs: 2 * DAY_MS })
+    const now = Date.now()
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+    await grantMembershipDays(pg, { ...input, durationMs: 4 * DAY_MS })
+    clock.mockReturnValue(now + 2 * DAY_MS)
     // The notice ID has no matching user. Exercise both INSERT and COMMIT failure.
     await db.exec(`alter table user_notifications add constraint fail_notice
       foreign key (notification_id) references users(id) deferrable ${timing}`)
@@ -768,9 +914,17 @@ it.each(['ownership', 'expiry', 'renewal'])(
         return batch
       })
     await checkSubscriptionExpiry()
-    expect(await rows('select * from membership_notice_deliveries')).toEqual([])
-    expect(await rows('select * from user_notifications')).toEqual([])
-    expect(createPushNotifications).not.toHaveBeenCalled()
+    // Changing ownership activates a short grant with its own immediate notice.
+    const reasons = change === 'ownership' ? [{ reason: 'free_days' }] : []
+    expect(
+      await rows(
+        "select data->'data'->>'expiryReason' as reason from user_notifications"
+      )
+    ).toEqual(reasons)
+    expect(
+      await rows('select notice_key from membership_notice_deliveries')
+    ).toHaveLength(reasons.length)
+    expect(createPushNotifications).toHaveBeenCalledTimes(reasons.length)
   }
 )
 
@@ -846,26 +1000,13 @@ it('delivers a cap-reduced four-hour grant notice at start and deduplicates a la
 })
 
 it.each([
-  // Before 10:00 Pacific, the scan is still ahead today.
-  { start: '2026-11-25T17:00:00Z', duration: HOUR_MS, immediate: true },
-  { start: '2026-11-25T17:00:00Z', duration: HOUR_MS + 1, immediate: false },
-  // Starting at 10:00 Pacific, the next scan can be 23 or 25 hours away.
-  { start: '2026-03-07T18:00:00Z', duration: 23 * HOUR_MS, immediate: true },
-  {
-    start: '2026-03-07T18:00:00Z',
-    duration: 23 * HOUR_MS + 1,
-    immediate: false,
-  },
-  { start: '2026-10-31T17:00:00Z', duration: 25 * HOUR_MS, immediate: true },
-  {
-    start: '2026-10-31T17:00:00Z',
-    duration: 25 * HOUR_MS + 1,
-    immediate: false,
-  },
+  { duration: HOUR_MS + 1, immediate: true }, // Ends just after 10:00 Pacific.
+  { duration: 3 * DAY_MS, immediate: true },
+  { duration: 3 * DAY_MS + 1, immediate: false },
 ])(
-  'uses the next Pacific scan for a grant starting at $start and lasting $duration ms',
-  async ({ start, duration, immediate }) => {
-    jest.spyOn(Date, 'now').mockReturnValue(Date.parse(start))
+  'checks the three-day warning window at activation for a grant lasting $duration ms',
+  async ({ duration, immediate }) => {
+    jest.spyOn(Date, 'now').mockReturnValue(Date.UTC(2026, 10, 25, 17))
     await grantMembershipDays(pg, { ...input, durationMs: duration })
     expect(createPushNotifications).toHaveBeenCalledTimes(immediate ? 1 : 0)
   }

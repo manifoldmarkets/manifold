@@ -10,7 +10,7 @@ The main scheduler checks every ten minutes. Each user's transition runs in a re
 
 Membership purchases check the ledger before charging. Free time earns zero upgrade credit. Members can turn off renewal of a paused subscription. The daily expiry notice and membership panel preview the transition at the free end time, including eligible banked grants. When access will end, the notice quotes the mana price to continue. Ordinary shop discounts and freeze limits read the active tier as usual.
 
-The expiry job checks active free grants with up to three days left and records one receipt per grant ID and exact expiry in `membership_notice_deliveries`. It commits the receipt and any requested inbox row in the same transaction. A failed inbox write leaves the event eligible for the next scan. Broadcast and mobile push are best effort after commit. Reruns skip events with a receipt.
+The expiry job checks active free grants with up to three days left. A grant that starts with three days or less sends its free-day notice at activation. When a grant ends and restores paid time with three days or less remaining, the same transaction checks whether the member needs a paid expiry notice. Both paths use the daily scan's notification preferences and commit the receipt in `membership_notice_deliveries` together with any requested inbox row. Broadcast and mobile push are best effort after commit. Later scans skip events with a receipt for that expiry.
 
 Current shop stats count a paused subscriber at their paid tier when paid time remains or automatic renewal is on. The free-day count includes members currently using free access, including those with paid time paused. The historical chart reconstructs past dates from today's entitlement rows, so an in-place tier swap can attribute earlier days to the free tier.
 
@@ -22,13 +22,13 @@ The mana rail swaps the supporter row. A Stripe rail must also defer the next in
 
 Apply `2026112503_membership_grants.sql`, deploy the API and main scheduler, then deploy the web client. Issue the first grant only after **every API instance runs the grant-aware version**. An older checkout can credit and delete a grant-owned supporter row. The migration enables RLS and revokes all privileges on both tables and the grant ID sequence from `anon` and `authenticated`. The read endpoint returns the owner's view and the grant endpoint requires an admin ID.
 
-Before rolling back the API, stop issuing grants, stop the grant scheduler and let in-flight grant operations finish. Run the preview and apply commands from the repository root.
+Before rolling back the API, set `MEMBERSHIP_GRANT_STARTS_DISABLED=true` on the API and main scheduler. For GCE, include that line in the `container-env` metadata generated for the API instance template and main scheduler VM on each deploy during rollback. Deploy both services with the switch set. Wait for every instance to finish rolling out and for in-flight operations on the previous version to finish. New awards stay banked, and active grants can still end and restore paid access. From the repository root, preview the rollback and apply it with the switch set in the script's environment.
 
 ```sh
 yarn --cwd=backend/scripts ts-node end-active-membership-grants.ts
-yarn --cwd=backend/scripts ts-node end-active-membership-grants.ts --apply
+MEMBERSHIP_GRANT_STARTS_DISABLED=true yarn --cwd=backend/scripts ts-node end-active-membership-grants.ts --apply
 ```
 
-The preview prints the unserved milliseconds for each active grant. Apply restores the paid row and re-banks any unserved time on the original receipt in one transaction. After it verifies zero active grants, roll back the API. Keep issuance and the grant scheduler stopped until every API instance supports grants again.
+The preview prints the unserved milliseconds for each active grant. Apply restores the paid row and re-banks any unserved time on the original receipt in one transaction. After it verifies zero active grants, roll back the API. Keep the switch set on both services until every API and main scheduler instance is running the version that supports it again.
 
 A fully capped award persists a zero-duration used receipt, so replaying its source returns the same award. A grant behind a permanent paid membership stays banked until the paid membership ends.

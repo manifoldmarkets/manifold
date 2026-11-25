@@ -6,10 +6,8 @@ import {
 import { getSupporterRow } from './supabase/entitlements'
 import { heldGrants } from './supabase/membership-grants'
 import { SupabaseTransaction } from './supabase/init'
-import {
-  writeExpiryNotice,
-  nextMembershipExpiryScan,
-} from './membership-expiry-notice'
+import { writeTransitionExpiryNotice } from './membership-expiry-notice'
+import { membershipGrantStartsDisabled } from './membership-grant-config'
 
 async function writeSupporterRow(
   tx: SupabaseTransaction,
@@ -99,21 +97,13 @@ export async function startMembershipGrant(
      where id = $1 and status = 'banked' returning id`,
     [grant.id, new Date(now), new Date(endsTime), paid]
   )
-  // The scheduled scan only selects grants with strictly future expiries.
-  const notice =
-    endsTime <= nextMembershipExpiryScan(now)
-      ? await writeExpiryNotice(
-          tx,
-          {
-            user_id: userId,
-            entitlement_id: newRow.entitlementId,
-            expires_time: new Date(endsTime).toISOString(),
-            auto_renew: false,
-            grant_id: grant.id,
-          },
-          now
-        )
-      : null
+  const notice = await writeTransitionExpiryNotice(
+    tx,
+    userId,
+    newRow,
+    grant.id,
+    now
+  )
   return { tier: grant.tier, endsTime, notice }
 }
 
@@ -132,6 +122,7 @@ export async function getOrStartMembershipGrant(
       endsTime: active.endsTime!,
       notice: null,
     }
+  if (membershipGrantStartsDisabled()) return null
   const row = await getSupporterRow(tx, userId, true)
   const start = planGrantStart(row, grants, now)
   if (!start) return null

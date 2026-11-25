@@ -1,9 +1,7 @@
 import { SupabaseTransaction } from 'shared/supabase/init'
+import { GrantSupporterRow } from 'common/membership-grants'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { readMembershipGrantView } from './supabase/membership-grants'
-import * as dayjs from 'dayjs'
-import * as timezone from 'dayjs/plugin/timezone'
-import * as utc from 'dayjs/plugin/utc'
 import { DAY_MS } from 'common/util/time'
 import { getPrivateUser, log } from 'shared/utils'
 import {
@@ -173,14 +171,29 @@ export const daysUntilExpiry = (
   nowMs = Date.now()
 ) => Math.ceil((new Date(expiresTime).getTime() - nowMs) / DAY_MS)
 
-dayjs.extend(utc)
-dayjs.extend(timezone)
-
-const pacific = 'America/Los_Angeles'
-
-// Resolve 10:00 on the target calendar date so an overnight DST change is included.
-export function nextMembershipExpiryScan(now: number) {
-  const local = dayjs(now).tz(pacific)
-  const day = local.hour() < 10 ? local : local.add(1, 'day')
-  return dayjs.tz(day.format('YYYY-MM-DD') + ' 10:00', pacific).valueOf()
+export async function writeTransitionExpiryNotice(
+  tx: SupabaseTransaction,
+  userId: string,
+  row: GrantSupporterRow,
+  grantId: string | null,
+  now: number
+) {
+  const { expiresTime } = row
+  if (
+    expiresTime === undefined ||
+    expiresTime <= now ||
+    expiresTime > now + 3 * DAY_MS
+  )
+    return null
+  return writeExpiryNotice(
+    tx,
+    {
+      user_id: userId,
+      entitlement_id: row.entitlementId,
+      expires_time: new Date(expiresTime).toISOString(),
+      auto_renew: row.autoRenew,
+      grant_id: grantId,
+    },
+    now
+  )
 }

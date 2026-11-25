@@ -23,9 +23,11 @@ import {
   readMembershipGrantView,
 } from './supabase/membership-grants'
 import { startMembershipGrant, mana } from './membership-grant-start'
+import { membershipGrantStartsDisabled } from './membership-grant-config'
 import {
   ExpiryNoticeDelivery,
   publishExpiryNotice,
+  writeTransitionExpiryNotice,
 } from './membership-expiry-notice'
 
 export {
@@ -56,7 +58,13 @@ async function advanceGrants(
 ) {
   const row = await getSupporterRow(tx, userId, true)
   const grants = await heldGrants(tx, userId)
-  const { ended, start, restored } = planGrantTransition(row, grants, now, mode)
+  const { ended, start, restored } = planGrantTransition(
+    row,
+    grants,
+    now,
+    mode,
+    membershipGrantStartsDisabled()
+  )
   let renewal: MembershipRenewal | null = null
   let notice: ExpiryNoticeDelivery = null
   const unservedMs =
@@ -88,6 +96,14 @@ async function advanceGrants(
         restored.entitlementId,
         now,
         mode
+      )
+    else if (restored)
+      notice = await writeTransitionExpiryNotice(
+        tx,
+        userId,
+        restored,
+        null,
+        now
       )
     if (unservedMs > 0)
       await tx.one(

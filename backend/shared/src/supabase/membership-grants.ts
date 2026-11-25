@@ -4,6 +4,7 @@ import {
 } from 'common/membership-grants'
 import { SupabaseDirectClient, SupabaseTransaction } from './init'
 import { getSupporterRow } from './entitlements'
+import { membershipGrantStartsDisabled } from '../membership-grant-config'
 
 type GrantRecord = Omit<
   MembershipGrant,
@@ -71,6 +72,7 @@ export async function readMembershipGrantView(
   return getMembershipGrantView(
     await getSupporterRow(tx, userId),
     await heldGrants(tx, userId),
-    now
+    now,
+    membershipGrantStartsDisabled()
   )
 }

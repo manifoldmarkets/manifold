@@ -201,7 +201,8 @@ export function planGrantTransition(
   row: GrantSupporterRow | null,
   grants: MembershipGrant[],
   now: number,
-  mode: GrantTransitionMode = 'advance'
+  mode: GrantTransitionMode = 'advance',
+  startsDisabled = false
 ) {
   const active = grants.find((g) => g.status === 'active')
   if (String(row?.metadata?.membershipGrantId ?? '') !== (active?.id ?? ''))
@@ -209,7 +210,7 @@ export function planGrantTransition(
   const end = active && planGrantEnd(active, now, mode === 'end-active')
   if (active && !end) return { ended: null, start: null, restored: null }
   const restored = end ? end.newRow : row
-  if (mode === 'end-active')
+  if (mode === 'end-active' || startsDisabled)
     return { ended: active ?? null, start: null, restored }
   const start = planGrantStart(
     restored,
@@ -226,12 +227,15 @@ export function planGrantTransition(
 export function getMembershipGrantView(
   row: GrantSupporterRow | null,
   grants: MembershipGrant[],
-  now: number
+  now: number,
+  startsDisabled = false
 ) {
   const active = grants.find((g) => g.status === 'active')
   const paused = active?.pausedPaid
   const endsTime = active ? endTime(active) : now
-  const transition = active && planGrantTransition(row, grants, endsTime)
+  const transition =
+    active &&
+    planGrantTransition(row, grants, endsTime, 'advance', startsDisabled)
   const restored = transition?.restored
   const next = transition?.start
     ? { kind: 'free' as const, tier: transition.start.grant.tier }
@@ -266,7 +270,9 @@ export function getMembershipGrantView(
         id: g.id,
         tier: g.tier,
         days: milliseconds(g.durationMs, 1) / DAY_MS,
-        reason: active
+        reason: startsDisabled
+          ? 'Free membership starts are temporarily paused.'
+          : active
           ? 'Waiting for the current free days to end.'
           : planGrantStart(row, [g], now)
           ? 'Ready to start.'
