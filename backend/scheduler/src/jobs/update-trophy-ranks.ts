@@ -36,6 +36,10 @@ const valueQueries: Record<string, string> = {
           and b.is_redemption is not true
           and (b.data->>'isAutoRedemption') is distinct from 'true'
         limit 1)
+      or (select true from perp_orders p
+        where p.user_id = n.user_id
+          and p.created_time between now() - make_interval(days => $[activeDays]) and now()
+        limit 1)
       or (select true from contract_bets b
         join contracts c on c.id = b.contract_id
         join system_trading_status s on s.token = c.token and s.status

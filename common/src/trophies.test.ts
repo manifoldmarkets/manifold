@@ -7,6 +7,7 @@ import {
   TROPHY_STAT_KEYS,
   RANKED_TROPHY_DEFINITIONS,
   formatLeagueRemaining,
+  formatNetWorthPeak,
   getLeagueLevel,
   getHeldTrophyTitles,
   getPeakRankTier,
@@ -459,6 +460,21 @@ describe('showcase pins', () => {
       )
     ).not.toBeNull()
   })
+})
+
+describe('formatNetWorthPeak', () => {
+  it.each([
+    [550_000, 700_000, 'Peak M700K'],
+    [800_000, 700_000, 'Peak M800K'],
+    [550_000, undefined, 'Peak M550K'],
+    [undefined, 700_000, 'Peak M700K'],
+    [undefined, undefined, undefined],
+  ] as const)(
+    'formats achievements peak %s with held value %s',
+    (peak, held, label) => {
+      expect(formatNetWorthPeak(netWorth, peak, held)).toBe(label)
+    }
+  )
 })
 
 describe('formatTrophyValue', () => {

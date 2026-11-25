@@ -145,6 +145,7 @@ beforeAll(async () => {
       visibility text, deleted boolean, unique_bettor_count int, mechanism text, data jsonb, close_time timestamptz
     );
     create table answers (id text primary key, contract_id text, resolution text);
+    create table perp_orders (user_id text not null, created_time timestamptz not null);
     create table system_trading_status (token text primary key, status boolean not null);
     insert into system_trading_status values ('MANA', true), ('CASH', false);
     create table contract_bets (
@@ -241,6 +242,7 @@ beforeEach(async () => {
     delete from user_bans;
     delete from txns;
     delete from contract_bets;
+    delete from perp_orders;
     delete from user_entitlements;
     delete from users;
     delete from leagues;
@@ -928,6 +930,25 @@ describe('nightly trophy ranks', () => {
     ])
     expect((await trophiesOf('redemption')).ranks).toEqual([])
     expect((await trophiesOf('auto-redemption')).ranks).toEqual([])
+  })
+
+  it('counts perpetuals orders placed in the last 90 days with a stale lastBetTime', async () => {
+    for (const id of ['recent', 'old', 'future'])
+      await addUser(id, { data: { lastBetTime: Date.now() - 91 * DAY } })
+    await db.exec(`
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        select id, 500000, 0 from users;
+      insert into perp_orders (user_id, created_time) values
+        ('recent', now() - interval '89 days'),
+        ('old', now() - interval '91 days'),
+        ('future', now() + interval '1 day');
+    `)
+    await updateTrophyRanks()
+    expect(
+      await rows(
+        "select user_id from trophy_ranks where trophy_id = 'net-worth'"
+      )
+    ).toEqual([{ user_id: 'recent' }])
   })
 
   it('requires an executable limit order when the last trade was placed over 90 days ago', async () => {

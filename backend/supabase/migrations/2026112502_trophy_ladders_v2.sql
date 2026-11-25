@@ -23,7 +23,8 @@ from
       ('IPTOzEqrpkWmEzh6hwvAyY9PqFb2'), -- Manifold
       ('NnVY8olowYMYQGr346dfmHXBSpx2'), -- ManifoldSports
       ('vuI5upWB8yU00rP7yxj95J2zd952'), -- ManifoldPolitics
-      ('0YOMCbJas0UqJdlrqKe1MrQewrF2') -- MNX
+      ('0YOMCbJas0UqJdlrqKe1MrQewrF2'), -- MNX
+      ('byEds8x9SMYgX0BuPMufdcpbSIH2') -- predyx_markets
   ) as excluded (id)
   join users u on u.id = excluded.id
 on conflict do nothing;

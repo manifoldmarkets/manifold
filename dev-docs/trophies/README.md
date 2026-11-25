@@ -20,9 +20,9 @@ The main scheduler runs `update-trophy-ranks` at 4:10 AM Los Angeles time after 
 | Liked Comments     | Distinct visible market or legacy post comments by the holder that another eligible person liked              |
 | Leagues            | Gold, Platinum and Diamond score 1, 2 and 3. Each Masters season adds one to 3                                |
 
-For Net Worth, an active trader has placed a trade or order in the last 90 days, or has an open order that can still fill. The 90-day window runs from placement, including for a maker whose order has since filled. To qualify through an older open order, the holder needs at least M1 in spendable mana and trading must be enabled for the market's token. The order must have remaining quantity, be uncancelled and unexpired, and be on a market that is still trading with an unresolved answer if it specifies one.
+For Net Worth, an active trader has placed a trade or order in the last 90 days, or has an open order that can still fill. The 90-day window runs from placement and includes perpetuals orders and maker orders that have since filled. To qualify through an older open order, the holder needs at least M1 in spendable mana and trading must be enabled for the market's token. The order must have remaining quantity, be uncancelled and unexpired, and be on a market that is still trading with an unresolved answer if it specifies one.
 
-Ranked accounts must be people. Bots, deleted accounts, accounts in `BANNED_TRADING_USER_IDS` and users with active bans other than mod alerts are ineligible. SQL-managed entries in `trophy_rank_exclusions` also exclude holders. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
+Ranked accounts must be people. Bots, deleted accounts, accounts in `BANNED_TRADING_USER_IDS` and users with active bans other than mod alerts are ineligible. The migration seeds `trophy_rank_exclusions` with the production IDs of `@Manifund`, `@Manifold`, `@ManifoldSports`, `@ManifoldPolitics`, `@MNX` and `@predyx_markets`. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
 
 Markets Created uses `contracts.unique_bettor_count`, which includes bot traders. The streak rank reflects the last successful `mv_ach_txns_achievements` refresh.
 
@@ -30,7 +30,7 @@ Equal scores share a rank. First place holds #1, ranks 2–5 hold Mega and ranks
 
 | New table                | Contents                                                                    |
 | ------------------------ | --------------------------------------------------------------------------- |
-| `trophy_rank_exclusions` | Private holder exclusions, seeded by five production account IDs            |
+| `trophy_rank_exclusions` | Private holder exclusions and their reasons                                 |
 | `user_net_worth_peaks`   | Private positive high recorded by a claim or nightly run, and its timestamp |
 | `trophy_ranks`           | Public current holders, values, ranks and a single publication timestamp    |
 | `trophy_rank_state`      | Public timestamp of the latest publication, including a run with no holders |

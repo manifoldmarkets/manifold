@@ -17,6 +17,7 @@ import {
   type TrophyRankTier,
   MAX_TROPHY_RANK,
   formatLeagueRemaining,
+  formatNetWorthPeak,
   getPeakRankTier,
   getTopMilestone,
   getTrophyRankTier,
@@ -182,6 +183,7 @@ export function TrophyCard(props: {
 
   if (!viewing) return null
 
+  const peak = formatNetWorthPeak(definition, currentValue, rank?.value)
   const isReached = isMilestoneReached(viewing, currentValue)
   const isClaimed = claimedIds.has(viewing.id)
   const earned = isEarned(viewing)
@@ -237,8 +239,7 @@ export function TrophyCard(props: {
         {rankLabel}
         <span className="text-ink-500 text-center text-xs">
           {definition.label}
-          {definition.id === 'net-worth' &&
-            ` · ${formatStat(definition, currentValue)}`}
+          {peak && ` · ${peak}`}
         </span>
       </Col>
     )
@@ -292,7 +293,7 @@ export function TrophyCard(props: {
         <span className="text-ink-500 text-center text-xs">
           {definition.label}
           {' · '}
-          {formatStat(definition, currentValue, accountCreatedTime)}
+          {peak ?? formatStat(definition, currentValue, accountCreatedTime)}
         </span>
 
         {!isClaimed && <TrophyRewardChip amount={rewardAmount} />}
@@ -440,7 +441,6 @@ function formatStat(
   value: number,
   accountCreatedTime?: number
 ) {
-  if (def.id === 'net-worth') return `Peak M${formatTrophyValue(def, value)}`
   if (def.unit === 'years') {
     return days(
       accountCreatedTime

@@ -891,6 +891,21 @@ export function getShowcasePinsError(
 // Display
 // ---------------------------------------------------------------------------
 
+// Achievements and held ranks are cached separately. Either can establish a peak.
+export function formatNetWorthPeak(
+  def: TrophyDefinition,
+  achievementsPeak: number | undefined,
+  heldValue?: number
+) {
+  if (def.id !== 'net-worth') return undefined
+  const values = [achievementsPeak, heldValue].filter(
+    (value): value is number => value !== undefined && Number.isFinite(value)
+  )
+  return values.length
+    ? `Peak M${formatTrophyValue(def, Math.max(...values))}`
+    : undefined
+}
+
 // Rounded down by default, so a stat never shows a threshold it hasn't
 // reached (9,999.75 is 9.9K, not 10K); 'up' for an amount still to go, so a
 // positive gap never shows as 0.
