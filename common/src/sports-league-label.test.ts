@@ -5,11 +5,39 @@ import { SPORT_CATEGORIES } from './sports-schedule'
 import { MANIFOLD_SPORTS_USER_IDS } from './sports'
 import {
   getSportsLeagueLabel,
+  sportsNavigationLeague,
   sportsLeagueHref,
   LEAGUE_LABEL_ODDS_KEYS,
 } from './sports-league-label'
 
 const sports = MANIFOLD_SPORTS_USER_IDS[0]
+
+it('scopes official games across feeds without trusting an unverified league field', () => {
+  const odds = { creatorId: sports, sportsEventId: 'odds:basketball_nba:one' }
+  expect(sportsNavigationLeague(odds)).toBe('nba')
+  expect(
+    sportsNavigationLeague({ ...odds, sportsProvider: 'bdl' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...odds, sportsLeagueKey: 'nhl' })
+  ).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...odds, sportsFixture: true })
+  ).toBeUndefined()
+  expect(sportsNavigationLeague({ ...odds, creatorId: 'fan' })).toBeUndefined()
+  const exhibition = {
+    creatorId: sports,
+    sportsEventId: 'exhibition-1',
+    sportsLeague: 'ATP',
+    sportsLeagueKey: 'atp' as const,
+  }
+  expect(sportsNavigationLeague(exhibition, ['atp'])).toBe('atp')
+  expect(sportsNavigationLeague(exhibition, [])).toBeUndefined()
+  expect(sportsNavigationLeague(exhibition, ['atp', 'wta'])).toBeUndefined()
+  expect(
+    sportsNavigationLeague({ ...exhibition, sportsLeague: 'WTA' }, ['atp'])
+  ).toBeUndefined()
+})
 
 describe('getSportsLeagueLabel', () => {
   it('labels an @ManifoldSports game market by its sport key', () => {

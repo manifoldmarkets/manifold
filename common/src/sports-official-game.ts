@@ -2,7 +2,10 @@ import { sortBy } from 'lodash'
 import type { Answer } from './answer'
 import { BDL_LEAGUES, BdlLeagueKey } from './bdl/leagues'
 import { Contract, isMultiCpmm, isSportsContract } from './contract'
-import { officialBdlLeagueKey } from './sports-league-label'
+import {
+  officialBdlLeagueKey,
+  sportsNavigationLeague,
+} from './sports-league-label'
 import { recordedTeamCode } from './bdl/team-codes'
 import { parseBdlEventId } from './sports-ids'
 import { providerOf } from './sports-provider'
@@ -35,6 +38,7 @@ export function toOfficialGame(
   const d = c as typeof c & Partial<SportsLiveScore>
   const sportsEventId = d.sportsEventId
   const leagueKey = bdlEnabled ? officialBdlLeagueKey(c) : undefined
+  const navigationLeagueKey = bdlEnabled ? sportsNavigationLeague(c) : undefined
   const provider = providerOf(c)
   if (bdlEnabled && (d.sportsFixture || provider === 'fixture')) return null
   const league = leagueKey ? BDL_LEAGUES[leagueKey] : undefined
@@ -140,6 +144,11 @@ export function toOfficialGame(
     groupSlugs: c.groupSlugs ?? [],
     league: label,
     ...(leagueKey && { sportsLeagueKey: leagueKey }),
+    ...(navigationLeagueKey && { navigationLeagueKey }),
+    ...(bdlEnabled &&
+      /^(FINAL|FINISHED|AWARDED)$/i.test(liveStatus ?? '') && {
+        reportedFinal: true as const,
+      }),
     ...details,
     sportsEventId,
     startTime,

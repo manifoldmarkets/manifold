@@ -1,9 +1,14 @@
 import { isSportsBdlEnabled } from './bdl/rollout'
-import { BDL_LEAGUES } from './bdl/leagues'
+import {
+  BDL_LEAGUES,
+  BDL_LEAGUE_KEYS,
+  BdlLeagueKey,
+  isBdlLeagueKey,
+} from './bdl/leagues'
 import type { Sports } from './contract'
 import { parseBdlEventId } from './sports-ids'
 import { providerOf } from './sports-provider'
-import { sportForMarket, sportPath } from './sports-schedule'
+import { sportForMarket, sportPath, SportsIndex } from './sports-schedule'
 import { ADDITIONAL_SPORTS_FEEDS } from './sports-feeds'
 import { parseF1EventId, parseF1TitleEventId } from './f1-markets'
 import { parseOddsEventId } from './odds-markets'
@@ -78,6 +83,80 @@ export function officialBdlLeagueKey(market: SportsTitle) {
 export function officialBdlLeague(market: SportsTitle) {
   const key = officialBdlLeagueKey(market)
   return key ? BDL_LEAGUES[key] : undefined
+}
+
+const leagueByLabel = new Map<string, BdlLeagueKey>()
+for (const key of BDL_LEAGUE_KEYS) {
+  const { label, shortLabel } = BDL_LEAGUES[key]
+  for (const name of [key, label, shortLabel])
+    leagueByLabel.set(name.toLowerCase(), key)
+}
+leagueByLabel.set('wncaab', 'ncaaw')
+
+/** Only public topics in the Sports index can identify an older exhibition market. */
+export function sportsLeagueTopics(index: SportsIndex) {
+  const topics = new Map<string, BdlLeagueKey>()
+  const forSlug = (slug?: string) =>
+    slug === 'college-baseball'
+      ? 'cbb'
+      : slug && isBdlLeagueKey(slug)
+      ? slug
+      : undefined
+  for (const sport of index.sports) {
+    const key = forSlug(sport.slug)
+    if (key) for (const id of sport.groupIds) topics.set(id, key)
+  }
+  for (const topic of index.topics) {
+    const key = forSlug(topic.slug)
+    if (key) topics.set(topic.id, key)
+  }
+  return topics
+}
+
+/** Identify an official market's league without treating an Odds game as a BDL game. */
+export function sportsNavigationLeague(
+  market: SportsTitle,
+  topicKeys?: readonly (BdlLeagueKey | undefined)[]
+): BdlLeagueKey | undefined {
+  if (
+    !MANIFOLD_SPORTS_USER_IDS.includes(market.creatorId) ||
+    market.sportsFixture
+  )
+    return
+  const id = market.sportsEventId
+  if (!id) return
+  const provider = providerOf(market)
+  let key: BdlLeagueKey | undefined
+  if (provider === 'odds') {
+    const odds = parseOddsEventId(id)
+    const label = odds && LABEL_BY_ODDS_KEY[odds.sportKey]
+    if (label) key = leagueByLabel.get(label.toLowerCase())
+  } else if (provider === 'bdl') {
+    key =
+      parseF1EventId(id) || parseF1TitleEventId(id)
+        ? 'f1'
+        : officialBdlLeagueKey(market)
+  } else if (
+    (provider === 'legacy' || provider === 'football-data') &&
+    /^(fd-)?[1-9]\d*$/.test(id) &&
+    market.sportsLeague === WORLD_CUP_2026.sportsLeague
+  ) {
+    key = 'fifa/worldcup'
+  } else if (provider === 'legacy' && topicKeys && market.sportsLeagueKey) {
+    const distinct = new Set(topicKeys.filter((k) => k !== undefined))
+    const label = leagueByLabel.get(
+      market.sportsLeague?.trim().toLowerCase() ?? ''
+    )
+    if (
+      distinct.size === 1 &&
+      label === market.sportsLeagueKey &&
+      distinct.has(label)
+    )
+      key = label
+  }
+  return market.sportsLeagueKey && market.sportsLeagueKey !== key
+    ? undefined
+    : key
 }
 
 /**
