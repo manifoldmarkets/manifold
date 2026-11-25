@@ -231,11 +231,10 @@ export const SUPPORTER_BENEFITS: Record<SupporterTier, TierBenefits> = {
 
 // Get user's current supporter tier (null if not supporter)
 export function getUserSupporterTier(
-  entitlements: UserEntitlement[] | undefined
+  entitlements: UserEntitlement[] | undefined,
+  now = Date.now()
 ): SupporterTier | null {
   if (!entitlements) return null
-
-  const now = Date.now()
 
   // Check tiers in reverse order (premium first) to get highest active tier
   for (const tier of ['premium', 'plus', 'basic'] as const) {
@@ -266,9 +265,10 @@ export function getUserSupporterTier(
 export function getBenefit<K extends keyof TierBenefits>(
   entitlements: UserEntitlement[] | undefined,
   benefit: K,
-  defaultValue?: TierBenefits[K]
+  defaultValue?: TierBenefits[K],
+  now?: number
 ): TierBenefits[K] {
-  const tier = getUserSupporterTier(entitlements)
+  const tier = getUserSupporterTier(entitlements, now)
   if (!tier) {
     if (defaultValue !== undefined) return defaultValue
     return TIER_BENEFITS.free[benefit]
@@ -344,6 +344,7 @@ export const TIER_ORDER: SupporterTier[] = ['basic', 'plus', 'premium']
 // Pure: callers pass in the bits we need so this file doesn't need to import User.
 export function resolveEffectiveTier(args: {
   entitlements: UserEntitlement[] | undefined
+  now?: number
   // Accepts the full User.bonusEligibility union (unless they have a
   // subscription, which always wins). Only the two explicit deny states drop
   // below 'free': 'requires_verification' (admin-flagged) maps to 'restricted'
@@ -357,7 +358,7 @@ export function resolveEffectiveTier(args: {
     | 'requires_verification'
     | undefined
 }): EffectiveTier {
-  const subTier = getUserSupporterTier(args.entitlements)
+  const subTier = getUserSupporterTier(args.entitlements, args.now)
   if (subTier) return subTier
   if (args.bonusEligibility === 'requires_verification') return 'restricted'
   if (args.bonusEligibility === 'ineligible') return 'reduced'
@@ -403,9 +404,10 @@ export function getMaxStreakFreezes(
     | 'grandfathered'
     | 'eligible'
     | 'ineligible'
-    | 'requires_verification'
+    | 'requires_verification',
+  now?: number
 ): number {
-  const tier = resolveEffectiveTier({ entitlements, bonusEligibility })
+  const tier = resolveEffectiveTier({ entitlements, bonusEligibility, now })
   return TIER_BENEFITS[tier].maxStreakFreezes
 }
 

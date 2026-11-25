@@ -5,9 +5,12 @@ import { convertEntitlement, UserEntitlement } from 'common/shop/types'
 
 type EntitlementReader = Pick<SupabaseTransaction, 'manyOrNone'>
 
-export const activeSupporterAccessSql = `enabled = true
-  and (expires_time is null or expires_time > now()
-       or (auto_renew and expires_time > now() - interval '25 hours'))`
+const activeSupporterAccessAt = (time: 'now()' | '$3::timestamptz') =>
+  `enabled = true
+  and (expires_time is null or expires_time > ${time}
+       or (auto_renew and expires_time > ${time} - interval '25 hours'))`
+
+export const activeSupporterAccessSql = activeSupporterAccessAt('now()')
 
 /**
  * Fetch active supporter entitlements for a user.
@@ -20,8 +23,10 @@ export const activeSupporterAccessSql = `enabled = true
  */
 export async function getActiveSupporterEntitlements(
   pg: EntitlementReader,
-  userId: string
+  userId: string,
+  now?: number
 ): Promise<UserEntitlement[]> {
+  const time = now === undefined ? 'now()' : '$3::timestamptz'
   const rows = await pg.manyOrNone<{
     user_id: string
     entitlement_id: string
@@ -35,8 +40,12 @@ export async function getActiveSupporterEntitlements(
      FROM user_entitlements
      WHERE user_id = $1
        AND entitlement_id = ANY($2)
-       AND ${activeSupporterAccessSql}`,
-    [userId, [...SUPPORTER_ENTITLEMENT_IDS]]
+       AND ${activeSupporterAccessAt(time)}`,
+    [
+      userId,
+      SUPPORTER_ENTITLEMENT_IDS,
+      ...(now === undefined ? [] : [new Date(now)]),
+    ]
   )
   return rows.map(convertEntitlement)
 }

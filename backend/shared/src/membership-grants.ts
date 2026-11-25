@@ -29,6 +29,7 @@ import { canStartMembershipGrant } from './membership-grant-config'
 import { log } from './monitoring/log'
 import {
   ExpiryNoticeDelivery,
+  TransitionExpiryNotice,
   publishExpiryNotice,
   writeTransitionExpiryNotice,
 } from './membership-expiry-notice'
@@ -60,9 +61,11 @@ export async function advanceGrants(
   {
     mode = 'advance',
     allowRowMismatch = false,
+    deferExpiryNotices = false,
   }: {
     mode?: GrantTransitionMode
     allowRowMismatch?: boolean
+    deferExpiryNotices?: boolean
   } = {}
 ) {
   const row = await getSupporterRow(tx, userId, true)
@@ -84,6 +87,8 @@ export async function advanceGrants(
   const { ended, start, restored } = plan
   let renewal: MembershipRenewal | null = null
   let notice: ExpiryNoticeDelivery = null
+  const deferredNotices: TransitionExpiryNotice[] | undefined =
+    deferExpiryNotices ? [] : undefined
   const unservedMs =
     ended && mode === 'end-active' ? Math.max(0, ended.endsTime! - now) : 0
   if (ended && !unservedMs)
@@ -93,7 +98,14 @@ export async function advanceGrants(
       [ended.id, new Date(now)]
     )
   if (start) {
-    const started = await startMembershipGrant(tx, userId, row, start, now)
+    const started = await startMembershipGrant(
+      tx,
+      userId,
+      row,
+      start,
+      now,
+      deferredNotices
+    )
     notice = started.notice
   } else if (ended) {
     await mana.resume(tx, userId, {
@@ -115,7 +127,8 @@ export async function advanceGrants(
         mode,
         ended.pausedPaid
           ? originalPaidExpiry(ended.pausedPaid, ended.startedTime!)
-          : undefined
+          : undefined,
+        deferredNotices
       )
     else if (restored)
       notice = await writeTransitionExpiryNotice(
@@ -123,7 +136,8 @@ export async function advanceGrants(
         userId,
         restored,
         null,
-        now
+        now,
+        deferredNotices
       )
     if (unservedMs > 0)
       await tx.one(
@@ -149,6 +163,7 @@ export async function advanceGrants(
         : null,
     renewal,
     notice,
+    deferredNotices,
   }
 }
 

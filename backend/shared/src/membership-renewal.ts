@@ -4,6 +4,7 @@ import { UserEntitlement } from 'common/shop/types'
 import { getOrStartMembershipGrant } from './membership-grant-start'
 import {
   ExpiryNoticeDelivery,
+  TransitionExpiryNotice,
   publishExpiryNotice,
 } from './membership-expiry-notice'
 import { getUserEntitlements } from './supabase/entitlements'
@@ -54,7 +55,8 @@ export async function renewDueMembership(
   entitlementId: string,
   now: number,
   mode: GrantTransitionMode = 'advance',
-  originalExpiresTime?: string
+  originalExpiresTime?: string,
+  deferredNotices?: TransitionExpiryNotice[]
 ): Promise<MembershipRenewal | null> {
   const tier = Object.values(SUPPORTER_TIERS).find(
     (t) => t.id === entitlementId
@@ -75,7 +77,8 @@ export async function renewDueMembership(
       tx,
       userId,
       now,
-      originalExpiresTime
+      originalExpiresTime,
+      deferredNotices
     )
     if (!grant) return
     if (!grant.started)
@@ -99,8 +102,10 @@ export async function renewDueMembership(
   }
   if (due.balance < tier.price) {
     await tx.none(
-      'update user_entitlements set auto_renew = false where user_id = $1 and entitlement_id = $2',
-      [userId, entitlementId]
+      `update user_entitlements set auto_renew = false,
+       expires_time = least(expires_time, $3::timestamptz)
+       where user_id = $1 and entitlement_id = $2`,
+      [userId, entitlementId, originalExpiresTime ?? null]
     )
     return { ...result, type: 'cancelled', grant: await startBankedGrant() }
   }

@@ -15,7 +15,7 @@ import {
   getShopDiscount,
   HOLIDAY_SALE_CHARGE_GRACE_MS,
 } from 'common/holiday-sale'
-import { convertEntitlement } from 'common/shop/types'
+import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
 import { runShopCheckout } from './helpers/shop-checkout'
@@ -135,7 +135,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   const { txnId, price, username } = await runShopCheckout(
     auth.uid,
     false,
-    async (tx) => {
+    async (tx, now) => {
       const user = await getUser(auth.uid, tx)
       if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -166,19 +166,20 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       // supporter discount, or a Black Friday / Cyber Monday sale's merch
       // discount if bigger (they don't stack). The grace keeps a form opened
       // just before a sale ended at the price it showed.
-      const entRows = await tx.manyOrNone(
-        `SELECT * FROM user_entitlements WHERE user_id = $1`,
-        [auth.uid]
+      const currentEntitlements = await getActiveSupporterEntitlements(
+        tx,
+        auth.uid,
+        now
       )
-      const currentEntitlements = entRows.map(convertEntitlement)
       const supporterDiscount = getBenefit(
         currentEntitlements,
         'shopDiscount',
-        0
+        0,
+        now
       )
       const { fraction: shopDiscount, sale } = getShopDiscount(
         supporterDiscount,
-        getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+        getActiveHolidaySale(now, HOLIDAY_SALE_CHARGE_GRACE_MS)
       )
       const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
       const totalCharge = discountedItemPrice + shippingCost

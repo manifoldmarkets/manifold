@@ -6,7 +6,10 @@ import {
 import { getSupporterRow } from './supabase/entitlements'
 import { heldGrants } from './supabase/membership-grants'
 import { SupabaseTransaction } from './supabase/init'
-import { writeTransitionExpiryNotice } from './membership-expiry-notice'
+import {
+  TransitionExpiryNotice,
+  writeTransitionExpiryNotice,
+} from './membership-expiry-notice'
 import { canStartMembershipGrant } from './membership-grant-config'
 
 async function writeSupporterRow(
@@ -81,7 +84,8 @@ export async function startMembershipGrant(
   userId: string,
   previous: GrantSupporterRow | null,
   start: NonNullable<ReturnType<typeof planGrantStart>>,
-  now: number
+  now: number,
+  deferredNotices?: TransitionExpiryNotice[]
 ) {
   const { grant, newRow, pausedPaid } = start
   const endsTime = newRow.expiresTime!
@@ -101,7 +105,8 @@ export async function startMembershipGrant(
     userId,
     newRow,
     grant.id,
-    now
+    now,
+    deferredNotices
   )
   return { id: grant.id, tier: grant.tier, endsTime, notice }
 }
@@ -110,7 +115,8 @@ export async function getOrStartMembershipGrant(
   tx: SupabaseTransaction,
   userId: string,
   now: number,
-  originalExpiresTime?: string
+  originalExpiresTime?: string,
+  deferredNotices?: TransitionExpiryNotice[]
 ) {
   const grants = await heldGrants(tx, userId)
   if (!grants.length) return null
@@ -128,6 +134,13 @@ export async function getOrStartMembershipGrant(
   if (!start) return null
   return {
     started: true as const,
-    ...(await startMembershipGrant(tx, userId, row, start, now)),
+    ...(await startMembershipGrant(
+      tx,
+      userId,
+      row,
+      start,
+      now,
+      deferredNotices
+    )),
   }
 }

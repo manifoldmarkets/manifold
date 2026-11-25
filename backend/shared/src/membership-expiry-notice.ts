@@ -171,13 +171,23 @@ export const daysUntilExpiry = (
   nowMs = Date.now()
 ) => Math.ceil((new Date(expiresTime).getTime() - nowMs) / DAY_MS)
 
+export type TransitionExpiryNotice = {
+  row: GrantSupporterRow
+  grantId: string | null
+}
+
 export async function writeTransitionExpiryNotice(
   tx: SupabaseTransaction,
   userId: string,
   row: GrantSupporterRow,
   grantId: string | null,
-  now: number
+  now: number,
+  deferredNotices?: TransitionExpiryNotice[]
 ) {
+  if (deferredNotices) {
+    deferredNotices.push({ row, grantId })
+    return null
+  }
   const { expiresTime } = row
   if (
     expiresTime === undefined ||

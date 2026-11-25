@@ -258,12 +258,18 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       throw new APIError(403, `This item is only available ${availabilityText}`)
     }
 
+    const supporterEntitlements = await getActiveSupporterEntitlements(
+      tx,
+      auth.uid,
+      now
+    )
+
     // Check streak freeze purchase cap based on supporter tier
     if (itemId === 'streak-forgiveness') {
-      const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
       const maxFreezes = getMaxStreakFreezes(
-        entitlements,
-        user.bonusEligibility
+        supporterEntitlements,
+        user.bonusEligibility,
+        now
       )
 
       // Get current streak freeze count
@@ -289,10 +295,6 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
           membershipGrantLockMessage(active.tier, active.endsTime, next)
         )
       }
-      const supporterEntitlements = await getActiveSupporterEntitlements(
-        tx,
-        auth.uid
-      )
       existingSupporter = supporterEntitlements[0] ?? null
       if (existingSupporter?.metadata?.membershipGrantId != null) {
         throw new APIError(
@@ -321,23 +323,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       )
     }
 
-    // Get current supporter entitlements to check discount eligibility
-    let currentEntitlements: UserEntitlement[] = []
-    if (!isSupporterTierPurchase) {
-      currentEntitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-    }
-
     // Discount: the supporter benefit (0 for non-supporters), or a Black
     // Friday / Cyber Monday sale's if bigger; they don't stack. Memberships
     // get neither: tier changes credit unused time at the full tier price.
     // The grace keeps a buy button opened just before a sale ended (or a fast
     // device clock just before it started) at the price it showed.
-    const supporterDiscount = getBenefit(currentEntitlements, 'shopDiscount', 0)
+    const supporterDiscount = isSupporterTierPurchase
+      ? 0
+      : getBenefit(supporterEntitlements, 'shopDiscount', 0, now)
     const { fraction: shopDiscount, sale } = getShopDiscount(
       supporterDiscount,
       isSupporterTierPurchase
         ? undefined
-        : getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+        : getActiveHolidaySale(now, HOLIDAY_SALE_CHARGE_GRACE_MS)
     )
     const basePrice = applyShopDiscount(item.price, shopDiscount)
 
@@ -470,22 +468,18 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
         } else {
           // Check for existing entitlement to stack time
           const existing = await tx.oneOrNone<{
-            expires_time: Date | null
+            expires_time: string | null
           }>(
             `SELECT expires_time FROM user_entitlements
              WHERE user_id = $1 AND entitlement_id = $2`,
             [auth.uid, entitlementId]
           )
 
-          if (existing?.expires_time && existing.expires_time > new Date()) {
-            // Add duration to existing expiration (stacking)
-            expiresTime = new Date(
-              existing.expires_time.getTime() + item.duration
-            )
-          } else {
-            // No existing or expired - start fresh from now
-            expiresTime = new Date(Date.now() + item.duration)
-          }
+          const previousExpiry = existing?.expires_time
+            ? Date.parse(existing.expires_time)
+            : now
+          const baseTime = previousExpiry > now ? previousExpiry : now
+          expiresTime = new Date(baseTime + item.duration)
         }
       }
 
