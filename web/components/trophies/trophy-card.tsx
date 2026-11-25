@@ -31,7 +31,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
-import { TrophyRankChip, TrophyRankRing } from './trophy-rank'
+import { TrophyRankChip, TrophyRankRing, formatRankValue } from './trophy-rank'
 import { TrophyRewardChip, formatTrophyReward } from './trophy-reward-chip'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -306,8 +306,9 @@ export function TrophyCard(props: {
 
         {definition.ranked && isOwnProfile && !heldTier && !peakTier && (
           <span className="text-ink-500 text-center text-[11px]">
-            Top {MAX_TROPHY_RANK} tonight:{' '}
-            {getTrophyRankTitle(definition, 'super')}
+            Top {MAX_TROPHY_RANK} with at least{' '}
+            {formatRankValue(definition, getTopMilestone(definition).threshold)}
+            : {getTrophyRankTitle(definition, 'super')}
           </span>
         )}
 

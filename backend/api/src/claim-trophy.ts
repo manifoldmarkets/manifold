@@ -31,6 +31,7 @@ import {
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_NET_WORTH_PEAK_CONFLICT,
+  TROPHY_SNAPSHOT_NET_WORTH,
 } from 'shared/supabase/trophy-eligibility'
 import { UserUpdate, broadcastUserUpdates } from 'shared/supabase/users'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
@@ -213,7 +214,7 @@ async function recordNetWorthPeak(tx: SupabaseTransaction, userId: string) {
   await tx.none(
     `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
      select user_id, value, now() from (
-       select uphl.user_id, uphl.balance + uphl.investment_value as value
+       select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value
        from user_portfolio_history_latest uphl
        where uphl.user_id = $1 and ${TROPHY_FRESH_PORTFOLIO_FILTER}
      ) snapshot
@@ -222,7 +223,7 @@ async function recordNetWorthPeak(tx: SupabaseTransaction, userId: string) {
     [userId]
   )
   const peak = await tx.oneOrNone<{ peak_net_worth: number }>(
-    'select peak_net_worth from user_net_worth_peaks where user_id = $1',
+    'select floor(peak_net_worth) as peak_net_worth from user_net_worth_peaks where user_id = $1',
     [userId]
   )
   const value = peak?.peak_net_worth ?? 0

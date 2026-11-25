@@ -17,6 +17,7 @@ import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_PERSON_FILTER,
+  TROPHY_SNAPSHOT_NET_WORTH,
   TROPHY_VISIBLE_COMMENT_FILTER,
 } from 'shared/supabase/trophy-eligibility'
 import {
@@ -231,7 +232,7 @@ const STATS_QUERY = `with
       and exists (select 1 from users referrer where referrer.id = $[userId])
   ),
   portfolio as (
-    select uphl.balance + uphl.investment_value as net_worth,
+    select ${TROPHY_SNAPSHOT_NET_WORTH} as net_worth,
       ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
     from user_portfolio_history_latest uphl where uphl.user_id = $[userId]
   ),
@@ -362,7 +363,7 @@ const STATS_QUERY = `with
   )
   select
     coalesce(portfolio.net_worth, 0) as net_worth,
-    greatest(coalesce(peaks.peak_net_worth, 0),
+    greatest(coalesce(floor(peaks.peak_net_worth), 0),
       case when portfolio.is_fresh then portfolio.net_worth end) as peak_net_worth,
     liked.liked_comments,
     created.markets_created_with_traders,

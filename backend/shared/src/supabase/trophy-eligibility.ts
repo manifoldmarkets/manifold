@@ -1,5 +1,8 @@
 import { NET_WORTH_SNAPSHOT_MAX_AGE_HOURS } from 'common/trophies'
 
+// Floor the sum in Postgres before a numeric can round up in JavaScript.
+export const TROPHY_SNAPSHOT_NET_WORTH = `floor(uphl.balance + uphl.investment_value)`
+
 export const TROPHY_FRESH_PORTFOLIO_FILTER = `uphl.last_calculated between
   now() - make_interval(hours => ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS}) and now()`
 
@@ -31,4 +34,4 @@ export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
 
 export const TROPHY_NET_WORTH_PEAK_CONFLICT = `on conflict (user_id) do update set
   peak_net_worth = excluded.peak_net_worth, peak_time = excluded.peak_time
-  where excluded.peak_net_worth > user_net_worth_peaks.peak_net_worth`
+  where excluded.peak_net_worth > floor(user_net_worth_peaks.peak_net_worth)`

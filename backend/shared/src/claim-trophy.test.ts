@@ -153,7 +153,8 @@ beforeAll(async () => {
       contract_id text not null,
       amount numeric not null,
       created_time timestamptz not null,
-      is_redemption boolean not null default false,
+      data jsonb not null default '{}',
+      is_redemption boolean,
       is_api boolean,
       is_filled boolean,
       is_cancelled boolean,
@@ -867,18 +868,66 @@ describe('nightly trophy ranks', () => {
     expect(await claimRows('u')).toEqual([])
   })
 
-  it('counts an order placed seven days ago after it fills with a stale lastBetTime', async () => {
-    await addUser('maker', { data: { lastBetTime: Date.now() - 91 * DAY } })
+  it('uses whole mana for live stats, claims and nightly ranks at the Whale boundary', async () => {
+    await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
+    // This exact numeric rounds up to 500000 if parsed as a JavaScript number.
+    await rows(`insert into user_portfolio_history_latest (user_id, balance, investment_value)
+      values ('u', 499999, 0.99999999999)`)
+    expect(await loadLive('u')).toMatchObject({
+      netWorth: 499999,
+      peakNetWorth: 499999,
+    })
+    await expect(claim('u', 'net-worth', 'whale')).rejects.toMatchObject({
+      code: 403,
+    })
+    await claim('u', 'net-worth', 'orca')
+    expect(
+      await rows('select peak_net_worth from user_net_worth_peaks')
+    ).toEqual([{ peak_net_worth: 499999 }])
+    await updateTrophyRanks()
+    expect((await trophiesOf('u')).ranks).toEqual([])
+
+    await rows(
+      `update user_portfolio_history_latest set balance = 500000 where user_id = 'u'`
+    )
+    await updateTrophyRanks()
+    expect((await trophiesOf('u')).ranks).toEqual([
+      { trophyId: 'net-worth', rank: 1, value: 500000 },
+    ])
+    expect(
+      await rows('select peak_net_worth from user_net_worth_peaks')
+    ).toEqual([{ peak_net_worth: 500000 }])
+    await claim('u', 'net-worth', 'whale')
+  })
+
+  it('floors an existing fractional peak before displaying it or granting a claim', async () => {
+    await addUser('u')
+    await rows(
+      `insert into user_net_worth_peaks values ('u', 499999.99999999999, now())`
+    )
+    expect((await loadLive('u')).peakNetWorth).toBe(499999)
+    await expect(claim('u', 'net-worth', 'whale')).rejects.toMatchObject({
+      code: 403,
+    })
+  })
+
+  it('counts a recent filled order but excludes both forms of redemption with a stale lastBetTime', async () => {
+    for (const id of ['maker', 'redemption', 'auto-redemption'])
+      await addUser(id, { data: { lastBetTime: Date.now() - 91 * DAY } })
     await db.exec(`
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
-        values ('maker', 500000, 0);
-      insert into contract_bets (bet_id, user_id, contract_id, amount, created_time, is_filled, is_cancelled)
-        values ('filled', 'maker', 'm1', 10, now() - interval '7 days', true, false);
+        select id, 500000, 0 from users;
+      insert into contract_bets (bet_id, user_id, contract_id, amount, created_time, is_filled, is_cancelled, is_redemption, data)
+        values ('filled', 'maker', 'm1', 10, now() - interval '7 days', true, false, null, '{}'),
+               ('redeem', 'redemption', 'm1', 10, now(), null, null, true, '{}'),
+               ('auto', 'auto-redemption', 'm1', 10, now(), null, null, false, '{"isAutoRedemption":true}');
     `)
     await updateTrophyRanks()
     expect((await trophiesOf('maker')).ranks).toEqual([
       { trophyId: 'net-worth', rank: 1, value: 500000 },
     ])
+    expect((await trophiesOf('redemption')).ranks).toEqual([])
+    expect((await trophiesOf('auto-redemption')).ranks).toEqual([])
   })
 
   it('requires an executable limit order when the last trade was placed over 90 days ago', async () => {

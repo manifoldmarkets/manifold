@@ -13,6 +13,7 @@ import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_NET_WORTH_PEAK_CONFLICT,
   TROPHY_PERSON_FILTER,
+  TROPHY_SNAPSHOT_NET_WORTH,
   TROPHY_VISIBLE_COMMENT_FILTER,
 } from 'shared/supabase/trophy-eligibility'
 import { bulkInsertQuery } from 'shared/supabase/utils'
@@ -32,6 +33,8 @@ const valueQueries: Record<string, string> = {
       or (select true from contract_bets b
         where b.user_id = n.user_id
           and b.created_time between now() - make_interval(days => $[activeDays]) and now()
+          and b.is_redemption is not true
+          and (b.data->>'isAutoRedemption') is distinct from 'true'
         limit 1)
       or (select true from contract_bets b
         join contracts c on c.id = b.contract_id
@@ -117,17 +120,10 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
   )
   await tx.none(
     `create temp table trophy_net_worth_sample on commit drop as
-     select uphl.user_id, uphl.balance + uphl.investment_value as value,
+     select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value,
        u.balance as spendable_balance, (u.data->>'lastBetTime')::bigint as last_bet_time
      from user_portfolio_history_latest uphl join users u on u.id = uphl.user_id
      where ${TROPHY_FRESH_PORTFOLIO_FILTER}`
-  )
-  await tx.none(
-    `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
-     select user_id, value, $1 from trophy_net_worth_sample
-     where value > 0 and ${finiteValue}
-     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
-    [computedTime]
   )
 
   const summaries: string[] = []
@@ -185,6 +181,16 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
   )
   await tx.none(
     'update trophy_rank_state set computed_time = $1 where id = true',
+    [computedTime]
+  )
+  // Claims also write peaks. Filter before ON CONFLICT takes row locks and
+  // acquire those locks only after the ranking work is done.
+  await tx.none(
+    `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
+     select sample.user_id, sample.value, $1 from trophy_net_worth_sample sample
+     left join user_net_worth_peaks peak on peak.user_id = sample.user_id
+     where sample.value > coalesce(floor(peak.peak_net_worth), 0) and ${finiteValue}
+     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
     [computedTime]
   )
   return summaries
