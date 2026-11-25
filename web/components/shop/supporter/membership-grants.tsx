@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useEvent } from 'client-common/hooks/use-event'
 import {
+  formatMembershipDate,
   MembershipGrantView,
   membershipGrantLockMessage,
   nextMembershipMessage,
@@ -84,7 +85,7 @@ export function MembershipGrantsPanel({
         <p>
           <strong>
             You're using free {SUPPORTER_TIERS[active.tier].name} days until{' '}
-            {new Date(active.endsTime).toLocaleDateString()}.
+            {formatMembershipDate(active.endsTime)}.
           </strong>{' '}
           From {active.source}.
         </p>

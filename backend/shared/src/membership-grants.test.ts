@@ -16,7 +16,12 @@ import { getNotificationDestinationsForUser } from 'common/user-notification-pre
 import {
   getSupporterEntitlement,
   SUPPORTER_TIERS,
+  wasEverSupporter,
 } from 'common/supporter-config'
+import {
+  freeDaysExpiryMessage,
+  MembershipSubscriptionData,
+} from 'common/notification'
 import { membershipGrantLockMessage } from 'common/membership-grants'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
@@ -31,6 +36,7 @@ import {
   SupabaseTransaction,
 } from './supabase/init'
 import { broadcastUpdatedUser } from './websockets/helpers'
+import { broadcast } from './websockets/server'
 
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
@@ -150,12 +156,18 @@ beforeAll(async () => {
   )
   await db.exec(migration)
   await db.exec(
-    'create role anon; create role authenticated; grant all on membership_grants, membership_notice_deliveries to anon, authenticated'
+    `create role anon; create role authenticated;
+     grant all on membership_grants, membership_notice_deliveries to anon, authenticated;
+     grant all on sequence membership_grants_id_seq to anon, authenticated`
   )
   await db.exec(migration)
   expect(
     await rows(`select grantee from information_schema.role_table_grants where
     table_name in ('membership_grants','membership_notice_deliveries') and grantee in ('anon','authenticated')`)
+  ).toEqual([])
+  expect(
+    await rows(`select rolname from pg_roles where rolname in ('anon','authenticated')
+      and has_sequence_privilege(rolname, 'membership_grants_id_seq', 'SELECT, USAGE, UPDATE')`)
   ).toEqual([])
   expect(
     await rows(
@@ -239,6 +251,31 @@ it('locks checkout, cancels only the waiting renewal, chains grants and preserve
   })
   expect(broadcastUpdatedUser).not.toHaveBeenCalled()
   expect(await rows('select id from membership_grants')).toHaveLength(2)
+})
+
+it('restores a former member’s lapsed row exactly after chained grants', async () => {
+  const now = Date.UTC(2026, 10, 25)
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, granted_time, expires_time, enabled, auto_renew, metadata)
+     values ($1,'supporter-premium','2026-09-01 12:00:00.123456+00','2026-10-01 12:00:00.654321+00',true,false,$2)`,
+    [userId, { source: 'shop' }]
+  )
+  const original = await rows('select * from user_entitlements')
+  const first = await grantMembershipDays(pg, input)
+  expect(first.outcome).toBe('started')
+  const second = await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+  clock.mockReturnValue(first.grant.endsTime! + HOUR_MS)
+  expect((await processUserMembershipGrants(pg, userId)).started).toBe(
+    second.grant.id
+  )
+  clock.mockReturnValue(Date.now() + input.durationMs + HOUR_MS)
+  await processUserMembershipGrants(pg, userId)
+  expect(await rows('select * from user_entitlements')).toEqual(original)
+  const restored = await supporter()
+  expect(wasEverSupporter(restored ? [restored] : [])).toBe(true)
+  expect(getSupporterEntitlement(restored ? [restored] : [])).toBeNull()
+  expect(await rows('select * from txns')).toEqual([])
 })
 
 it('removes a free-only row without offering a paid cancellation', async () => {
@@ -551,6 +588,37 @@ it.each([true, false])(
   }
 )
 
+it.each(['initially immediate', 'initially deferred'])(
+  'retries the notice after a failed inbox write or commit (%s)',
+  async (timing) => {
+    await grantMembershipDays(pg, { ...input, durationMs: DAY_MS })
+    // The notice ID has no matching user. Exercise both INSERT and COMMIT failure.
+    await db.exec(`alter table user_notifications add constraint fail_notice
+      foreign key (notification_id) references users(id) deferrable ${timing}`)
+    try {
+      await checkSubscriptionExpiry()
+      expect(await rows('select * from membership_notice_deliveries')).toEqual(
+        []
+      )
+      expect(await rows('select * from user_notifications')).toEqual([])
+      expect(broadcast).not.toHaveBeenCalled()
+      expect(createPushNotifications).not.toHaveBeenCalled()
+    } finally {
+      await db.exec(
+        'alter table user_notifications drop constraint fail_notice'
+      )
+    }
+    await checkSubscriptionExpiry()
+    await checkSubscriptionExpiry()
+    expect(
+      await rows(`select notice_key from membership_notice_deliveries
+      join user_notifications on notice_key = notification_id`)
+    ).toHaveLength(1)
+    expect(broadcast).toHaveBeenCalledTimes(1)
+    expect(createPushNotifications).toHaveBeenCalledTimes(1)
+  }
+)
+
 it.each(['ownership', 'expiry', 'renewal'])(
   'skips a paid warning after a change of %s during the scan',
   async (change) => {
@@ -602,23 +670,75 @@ it('distinguishes separate paid expiry events for the same tier on the same day'
   expect(createPushNotifications).toHaveBeenCalledTimes(2)
 })
 
+it.each([
+  { remaining: 3 * DAY_MS + 1, eligible: false },
+  { remaining: 3 * DAY_MS, eligible: true },
+  { remaining: 1, eligible: true },
+  { remaining: 0, eligible: false },
+])(
+  'checks the free notice window at $remaining ms remaining',
+  async ({ remaining, eligible }) => {
+    const now = Date.now()
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+    const issued = await grantMembershipDays(pg, {
+      ...input,
+      durationMs: 4 * DAY_MS,
+    })
+    clock.mockReturnValue(issued.grant.endsTime! - remaining)
+    await checkSubscriptionExpiry()
+    expect(createPushNotifications).toHaveBeenCalledTimes(eligible ? 1 : 0)
+  }
+)
+
+it('sends another notice when the same grant restarts with a new expiry', async () => {
+  const now = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  const issued = await grantMembershipDays(pg, { ...input, durationMs: DAY_MS })
+  await checkSubscriptionExpiry()
+  clock.mockReturnValue(now + HOUR_MS)
+  await processUserMembershipGrants(pg, userId, 'end-active')
+  clock.mockReturnValue(now + HOUR_MS + 1)
+  expect((await processUserMembershipGrants(pg, userId)).started).toBe(
+    issued.grant.id
+  )
+  await checkSubscriptionExpiry()
+  await checkSubscriptionExpiry()
+  expect(
+    await rows(`select data->'data'->'grantEndsTime' as expiry from user_notifications
+    order by expiry`)
+  ).toEqual([{ expiry: now + DAY_MS }, { expiry: now + DAY_MS + 1 }])
+  expect(
+    await rows('select notice_key from membership_notice_deliveries')
+  ).toHaveLength(2)
+  expect(createPushNotifications).toHaveBeenCalledTimes(2)
+})
+
 it.each([false, true])(
   'sends a free-days expiry notice (paid membership paused = %p)',
   async (paid) => {
+    const durationMs = (paid ? 2 : 1) * DAY_MS
+    const endsTime = Date.UTC(2026, 10, 29, 2)
+    jest.spyOn(Date, 'now').mockReturnValue(endsTime - durationMs)
     if (paid)
       await rows(
-        "insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew) values ($1,'supporter-basic',now()+interval '20 days',true)",
-        [userId]
+        "insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew) values ($1,'supporter-basic',$2,true)",
+        [userId, new Date(endsTime + 20 * DAY_MS)]
       )
     const issued = await grantMembershipDays(pg, {
       ...input,
-      durationMs: 2.5 * DAY_MS,
+      durationMs,
     })
     await checkSubscriptionExpiry()
     await checkSubscriptionExpiry()
     expect(
       await rows('select notice_key from membership_notice_deliveries')
-    ).toEqual([{ notice_key: `sub-expiry-grant-${issued.grant.id}-free_days` }])
+    ).toEqual([
+      {
+        notice_key: `sub-expiry-grant-${issued.grant.id}-${
+          endsTime / 1000
+        }.000000-free_days`,
+      },
+    ])
     expect(await rows('select data from user_notifications')).toEqual([
       {
         data: expect.objectContaining({
@@ -634,6 +754,22 @@ it.each([false, true])(
       },
     ])
     expect(createPushNotifications).toHaveBeenCalledTimes(1)
+    const {
+      rows: [inbox],
+    } = await db.query<{ data: MembershipSubscriptionData }>(
+      "select data->'data' as data from user_notifications"
+    )
+    const { tierName, grantEndsTime, amount, nextMembership } = inbox.data
+    const inboxText = freeDaysExpiryMessage(
+      tierName,
+      grantEndsTime!,
+      amount,
+      nextMembership
+    )
+    expect(inboxText).toContain('Nov 28, 6:00 PM PT')
+    expect(jest.mocked(createPushNotifications).mock.calls[0][0][0][3]).toBe(
+      inboxText
+    )
   }
 )
 
@@ -721,11 +857,14 @@ it('records a grant the holding cap cuts to nothing as a used receipt', async ()
   ).toMatchObject({ outcome: 'duplicate', grant: { status: 'used' } })
 })
 
-it('names the free tier and expiry in the purchase refusal', () => {
-  const ends = Date.UTC(2026, 10, 25)
-  expect(membershipGrantLockMessage('plus', ends)).toBe(
-    `You're using free Pro days until ${new Date(
-      ends
-    ).toLocaleDateString()}. You can change your membership once your free days end.`
-  )
-})
+it.each([
+  { ends: Date.UTC(2026, 10, 25), expected: 'Nov 24, 4:00 PM PT' },
+  { ends: Date.UTC(2026, 6, 25), expected: 'Jul 24, 5:00 PM PT' },
+])(
+  'names the free tier and Pacific expiry ($expected) in the purchase refusal',
+  ({ ends, expected }) => {
+    expect(membershipGrantLockMessage('plus', ends)).toBe(
+      `You're using free Pro days until ${expected}. You can change your membership once your free days end.`
+    )
+  }
+)

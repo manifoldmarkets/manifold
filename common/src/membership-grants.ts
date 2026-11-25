@@ -15,9 +15,12 @@ export type PausedPaid = {
   tier: SupporterTier
   // Signed time to expiry. A negative value preserves time already overdue.
   remainingMs: number
+  // An already lapsed, non-renewing membership keeps its historical expiry.
+  lapsedExpiresTime?: string
   autoRenew: boolean
   enabled?: boolean
   grantedTime: number
+  metadata?: Record<string, unknown>
 }
 
 export type MembershipGrant = {
@@ -51,7 +54,10 @@ export type GrantSupporterRow = Pick<
   | 'autoRenew'
   | 'grantedTime'
   | 'metadata'
->
+> & {
+  // PostgreSQL timestamps can carry more precision than a JavaScript Date.
+  expiresTimeText?: string
+}
 
 function milliseconds(value: number, minimum = 0) {
   if (
@@ -109,15 +115,8 @@ export function planGrantStart(
     return null
   if (row?.expiresTime !== undefined) milliseconds(row.expiresTime)
   const current = row && getSupporterEntitlement([row], now)
-  // Benefit eligibility sets the tier floor. Preserve paid time and renewal
-  // obligations even when the supporter row is disabled.
-  const paid =
-    row &&
-    (row.autoRenew || row.expiresTime === undefined || row.expiresTime > now)
-      ? row
-      : null
   const paidTier = TIER_ORDER.find(
-    (tier) => SUPPORTER_TIERS[tier].id === paid?.entitlementId
+    (tier) => SUPPORTER_TIERS[tier].id === row?.entitlementId
   )
   const eligible = grants.filter(
     (g) =>
@@ -137,16 +136,21 @@ export function planGrantStart(
   if (!grant) return null
   // A membership with no end date can't be set aside and resumed, so the
   // grant waits in the bank. Prod had no such rows on 25 Nov 2026.
-  if (paid && paid.expiresTime === undefined) return null
+  if (row && row.expiresTime === undefined) return null
   const pausedPaid: PausedPaid | null =
-    paid && paidTier && paid.expiresTime !== undefined
+    row && paidTier && row.expiresTime !== undefined
       ? {
           rail: 'mana',
           tier: paidTier,
-          remainingMs: paid.expiresTime - now,
-          autoRenew: paid.autoRenew,
-          enabled: paid.enabled,
-          grantedTime: paid.grantedTime,
+          remainingMs: row.expiresTime - now,
+          lapsedExpiresTime:
+            !row.autoRenew && row.expiresTime <= now
+              ? row.expiresTimeText ?? new Date(row.expiresTime).toISOString()
+              : undefined,
+          autoRenew: row.autoRenew,
+          enabled: row.enabled,
+          grantedTime: row.grantedTime,
+          metadata: row.metadata,
         }
       : null
   const newRow: GrantSupporterRow = {
@@ -178,8 +182,11 @@ export function planGrantEnd(
           enabled: paid.enabled ?? true,
           autoRenew: paid.autoRenew,
           grantedTime: paid.grantedTime,
+          metadata: paid.metadata,
           expiresTime: milliseconds(
-            now + milliseconds(paid.remainingMs, Number.MIN_SAFE_INTEGER)
+            paid.lapsedExpiresTime === undefined
+              ? now + milliseconds(paid.remainingMs, Number.MIN_SAFE_INTEGER)
+              : Date.parse(paid.lapsedExpiresTime)
           ),
         }
       : null,
@@ -223,12 +230,17 @@ export function getMembershipGrantView(
 ) {
   const active = grants.find((g) => g.status === 'active')
   const paused = active?.pausedPaid
-  const transition = active && planGrantTransition(row, grants, endTime(active))
+  const endsTime = active ? endTime(active) : now
+  const transition = active && planGrantTransition(row, grants, endsTime)
+  const restored = transition?.restored
   const next = transition?.start
     ? { kind: 'free' as const, tier: transition.start.grant.tier }
-    : paused && paused.remainingMs <= 0 && paused.autoRenew
+    : paused &&
+      restored?.autoRenew &&
+      restored.expiresTime !== undefined &&
+      restored.expiresTime <= endsTime
     ? { kind: 'renewal' as const, tier: paused.tier }
-    : paused && paused.remainingMs > 0
+    : paused && restored && getSupporterEntitlement([restored], endsTime)
     ? { kind: 'paid' as const, tier: paused.tier }
     : null
   return {
@@ -237,7 +249,7 @@ export function getMembershipGrantView(
       ? {
           id: active.id,
           tier: active.tier,
-          endsTime: endTime(active),
+          endsTime,
           source: active.source,
         }
       : null,
@@ -280,6 +292,17 @@ export function nextMembershipMessage(
   return `Your paid ${name} membership resumes then.`
 }
 
+const membershipDate = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Los_Angeles',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+export const formatMembershipDate = (time: number) =>
+  `${membershipDate.format(time)} PT`
+
 export function membershipGrantLockMessage(
   tier: SupporterTier,
   endsTime: number,
@@ -289,9 +312,11 @@ export function membershipGrantLockMessage(
     next?.kind === 'free'
       ? `, then free ${SUPPORTER_TIERS[next.tier].name} days start`
       : ''
-  return `You're using free ${SUPPORTER_TIERS[tier].name} days until ${new Date(
+  return `You're using free ${
+    SUPPORTER_TIERS[tier].name
+  } days until ${formatMembershipDate(
     endsTime
-  ).toLocaleDateString()}${chain}. You can change your membership once your free days end.`
+  )}${chain}. You can change your membership once your free days end.`
 }
 
 // Both checkout surfaces and the charging transaction use the same credit calculation.

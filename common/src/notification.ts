@@ -1,4 +1,5 @@
 import {
+  formatMembershipDate,
   nextMembershipMessage,
   type MembershipGrantView,
 } from './membership-grants'
@@ -586,7 +587,7 @@ export function freeDaysExpiryMessage(
   amount: number,
   next?: MembershipGrantView['next'] | string
 ) {
-  const until = new Date(endsTime).toLocaleDateString()
+  const until = formatMembershipDate(endsTime)
   return (
     `Your free ${tierName} days end on ${until}. ` +
     (typeof next === 'string'

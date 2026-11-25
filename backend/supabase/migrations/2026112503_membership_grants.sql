@@ -57,6 +57,7 @@ begin
   foreach r in array array['anon', 'authenticated'] loop
     if exists (select 1 from pg_roles where rolname = r) then
       execute format('revoke all on membership_grants, membership_notice_deliveries from %I', r);
+      execute format('revoke all on sequence membership_grants_id_seq from %I', r);
     end if;
   end loop;
 end

@@ -54,7 +54,13 @@ export async function getSupporterRow(
   )
   if (rows.length > 1)
     throw new Error('Multiple supporter rows for user ' + userId)
-  return rows[0] ? convertEntitlement(rows[0]) : null
+  const row = rows[0]
+  return row
+    ? {
+        ...convertEntitlement(row),
+        expiresTimeText: row.expires_time ?? undefined,
+      }
+    : null
 }
 
 export async function getUserEntitlements(

@@ -1,6 +1,7 @@
 import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
+import { formatMembershipDate } from 'common/membership-grants'
 import {
   AirdropData,
   BetFillData,
@@ -1863,14 +1864,14 @@ function LiquidityReturnedNotification(props: {
   )
 }
 
-function ReferralProgramNotification(props: {
+function ReferralProgramNotification(_props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
   return null
-  // const { notification, highlighted, setHighlighted } = props
+  // const { notification, highlighted, setHighlighted } = _props
   // const [showModal, setShowModal] = useState(false)
   // const user = useUser()
   // return (
@@ -2803,9 +2804,9 @@ function MembershipSubscriptionNotification(props: {
 
   const subtitle = isRenewal
     ? newExpiresTime
-      ? `Your membership will renew again on ${new Date(
+      ? `Your membership will renew again on ${formatMembershipDate(
           newExpiresTime
-        ).toLocaleDateString()}`
+        )}`
       : undefined
     : type === 'expiring_soon'
     ? undefined

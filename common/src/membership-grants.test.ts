@@ -65,14 +65,18 @@ describe('membership grant transitions', () => {
             -(sample % (25 * HOUR_MS)),
             -25 * HOUR_MS - sample,
           ][i % 3]
-          const paid = row(oldTier, remaining, i % 2 === 0)
+          const paid = {
+            ...row(oldTier, remaining, i % 2 === 0),
+            enabled: i % 4 < 2,
+          }
           const banked = grant({
             tier,
             durationMs: (random() % MAX_FREE_MEMBERSHIP_HELD_MS) + 1,
           })
           const start = planGrantStart(paid, [banked], now)
           const hasAccess =
-            remaining > 0 || (paid.autoRenew && remaining > -25 * HOUR_MS)
+            paid.enabled &&
+            (remaining > 0 || (paid.autoRenew && remaining > -25 * HOUR_MS))
           if (
             hasAccess &&
             SUPPORTER_TIERS[oldTier].order > SUPPORTER_TIERS[tier].order
@@ -93,12 +97,14 @@ describe('membership grant transitions', () => {
           expect(planGrantEnd(active, active.endsTime! - 1)).toBeNull()
           const end = active.endsTime! + random()
           const restored = planGrantEnd(active, end)!.newRow
-          if (hasAccess || paid.autoRenew) {
-            expect(start.pausedPaid?.remainingMs).toBe(remaining)
-            expect(restored).toEqual({ ...paid, expiresTime: end + remaining })
-          } else {
-            expect(restored).toBeNull()
-          }
+          expect(start.pausedPaid?.remainingMs).toBe(remaining)
+          expect(restored).toEqual({
+            ...paid,
+            expiresTime:
+              remaining > 0 || paid.autoRenew
+                ? end + remaining
+                : paid.expiresTime,
+          })
           for (const target of TIER_ORDER) {
             const id = SUPPORTER_TIERS[target].id
             expect(membershipChangeCredit(start.newRow, id, now)).toBe(0)
@@ -133,12 +139,15 @@ describe('membership grant transitions', () => {
     expect(planGrantStart(null, banked.slice(0, 3), now)?.grant.id).toBe('4')
   })
 
-  it('restores a renewal with exactly one millisecond of grace left', () => {
+  it('previews a pending renewal and restores exactly one millisecond of grace', () => {
     const grace = row('premium', -25 * HOUR_MS + 1)
     expect(planGrantStart(grace, [grant()], now)).toBeNull()
-    const active = activate(
-      planGrantStart(grace, [grant({ tier: 'premium' })], now)!
-    )
+    const start = planGrantStart(grace, [grant({ tier: 'premium' })], now)!
+    const active = activate(start)
+    expect(getMembershipGrantView(start.newRow, [active], now).next).toEqual({
+      kind: 'renewal',
+      tier: 'premium',
+    })
     expect(active.pausedPaid?.remainingMs).toBe(-25 * HOUR_MS + 1)
     expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
       ...grace,
@@ -175,6 +184,9 @@ describe('membership grant transitions', () => {
       const paid = { ...row('premium', remaining), enabled: false }
       const start = planGrantStart(paid, [grant({ tier: 'basic' })], now)!
       const active = activate(start)
+      expect(getMembershipGrantView(start.newRow, [active], now).next).toEqual(
+        remaining <= 0 ? { kind: 'renewal', tier: 'premium' } : null
+      )
       expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
         ...paid,
         expiresTime: active.endsTime! + remaining,
@@ -182,19 +194,23 @@ describe('membership grant transitions', () => {
     }
   )
 
-  it('discards lapsed rows with no outstanding renewal', () => {
-    for (const lapsed of [
-      row('premium', -25 * HOUR_MS, false),
-      row('premium', 0, false),
-      null,
-    ]) {
+  it.each([-25 * HOUR_MS, 0])(
+    'restores a lapsed non-renewing row at its original expiry (%i ms from start)',
+    (remaining) => {
+      const lapsed = row('premium', remaining, false)
       const start = planGrantStart(lapsed, [grant()], now)!
-      expect(start.pausedPaid).toBeNull()
-      expect(planGrantEnd(activate(start), start.newRow.expiresTime!)).toEqual({
-        newRow: null,
+      const active = activate(start)
+      expect(start.pausedPaid).toMatchObject({
+        tier: 'premium',
+        remainingMs: remaining,
+        autoRenew: false,
       })
+      expect(
+        getMembershipGrantView(start.newRow, [active], now).next
+      ).toBeNull()
+      expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual(lapsed)
     }
-  })
+  )
 
   it('hands the paid snapshot directly to the next eligible grant and respects cancellation while paused', () => {
     const start = planGrantStart(

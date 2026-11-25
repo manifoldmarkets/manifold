@@ -96,7 +96,8 @@ async function writeSupporterRow(
   tx: SupabaseTransaction,
   userId: string,
   previous: GrantSupporterRow | null,
-  next: GrantSupporterRow | null
+  next: GrantSupporterRow | null,
+  exactExpiry?: string
 ) {
   if (!next) {
     if (previous)
@@ -110,7 +111,7 @@ async function writeSupporterRow(
     userId,
     next.entitlementId,
     new Date(next.grantedTime),
-    new Date(next.expiresTime!),
+    exactExpiry ?? new Date(next.expiresTime!),
     next.autoRenew,
     next.metadata ?? null,
     next.enabled,
@@ -158,8 +159,8 @@ const mana: MembershipBillingRail = {
     await writeSupporterRow(tx, userId, previous, next)
     return paid
   },
-  async resume(tx, userId, { previous, next, now }) {
-    await writeSupporterRow(tx, userId, previous, next)
+  async resume(tx, userId, { previous, next, paid, now }) {
+    await writeSupporterRow(tx, userId, previous, next, paid?.lapsedExpiresTime)
     return next?.autoRenew &&
       next.expiresTime !== undefined &&
       next.expiresTime <= now
