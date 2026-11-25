@@ -1,5 +1,7 @@
 import { processUserMembershipGrants } from 'shared/membership-grants'
 import { membershipGrantStartsDisabled } from 'shared/membership-grant-config'
+import { getLocalEnv } from 'shared/init-admin'
+import { relayMembershipBroadcast } from 'shared/relay-membership-broadcast'
 import type { SupabaseDirectClientTimeout } from 'shared/supabase/init'
 import { runScript } from './run-script'
 import { parseArgs } from 'node:util'
@@ -30,8 +32,16 @@ export async function endActiveMembershipGrants(
     return
   }
 
-  for (const { user_id } of active)
-    await processUserMembershipGrants(pg, user_id, 'end-active')
+  const env = getLocalEnv()
+  const relays: Promise<void>[] = []
+  try {
+    for (const { user_id } of active)
+      await processUserMembershipGrants(pg, user_id, 'end-active', (userId) => {
+        relays.push(relayMembershipBroadcast(userId, env))
+      })
+  } finally {
+    await Promise.all(relays)
+  }
 
   const remaining = await pg.one<{ count: number }>(
     "select count(*)::int from membership_grants where status = 'active'"

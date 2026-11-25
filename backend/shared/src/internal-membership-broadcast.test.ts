@@ -1,4 +1,5 @@
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { relayMembershipBroadcast } from 'shared/relay-membership-broadcast'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { internalMembershipBroadcast } from 'api/internal-membership-broadcast'
 
@@ -6,7 +7,11 @@ const mockReadUser = jest.fn()
 jest.mock('shared/supabase/init', () => ({
   createSupabaseDirectClient: () => ({ oneOrNone: mockReadUser }),
 }))
-jest.mock('shared/utils', () => ({ log: jest.fn() }))
+jest.mock('shared/utils', () => ({
+  LOCAL_DEV: true,
+  LOCAL_ONLY: false,
+  log: jest.fn(),
+}))
 jest.mock('shared/websockets/helpers', () => ({
   broadcastUpdatedUser: jest.fn(),
 }))
@@ -36,6 +41,28 @@ it('rejects missing or invalid service credentials before reading user state', a
   }
   expect(mockReadUser).not.toHaveBeenCalled()
   expect(broadcastUpdatedUser).not.toHaveBeenCalled()
+})
+
+it('relays a remote rollback from a local script using the selected project and its loaded secret', async () => {
+  const fetch = jest
+    .spyOn(global, 'fetch')
+    .mockResolvedValue(new Response(null))
+  try {
+    process.env.API_SECRET = 'script-secret'
+    await relayMembershipBroadcast(userId)
+    expect(fetch).not.toHaveBeenCalled()
+    await relayMembershipBroadcast(userId, 'DEV')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.dev.manifold.markets/internal-membership-broadcast',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ apiSecret: 'script-secret', userId }),
+      })
+    )
+  } finally {
+    fetch.mockRestore()
+  }
 })
 
 it('reads and broadcasts the committed state after an earlier checkout releases the user slot', async () => {

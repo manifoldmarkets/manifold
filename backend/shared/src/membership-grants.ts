@@ -28,6 +28,7 @@ import {
 import { startMembershipGrant, mana } from './membership-grant-start'
 import { canStartMembershipGrant } from './membership-grant-config'
 import { log } from './monitoring/log'
+import { betsQueue } from './helpers/fn-queue'
 import {
   ExpiryNoticeDelivery,
   TransitionExpiryNotice,
@@ -169,7 +170,7 @@ export async function advanceGrants(
 }
 
 // The owner view settles expired grants on read.
-export async function endDueMembershipGrant(
+export async function hasDueMembershipGrant(
   tx: SupabaseTransaction,
   userId: string,
   now: number
@@ -178,7 +179,7 @@ export async function endDueMembershipGrant(
     `select 1 from membership_grants where user_id = $1 and status = 'active' and ends_time <= $2`,
     [userId, new Date(now)]
   )
-  return due ? advanceGrants(tx, userId, now) : null
+  return !!due
 }
 
 type GrantTransitionUpdates = Pick<
@@ -202,12 +203,24 @@ export async function notifyGrantTransition({
   if (notice) await publishExpiryNotice(notice)
 }
 
-export async function publishGrantTransition(
+// API entry points call this before taking any queue slot for the user.
+export async function runQueuedGrantTransition<T>(
   userId: string,
-  transition: GrantTransitionUpdates
+  commit: () => Promise<{ result: T; change: GrantTransitionUpdates | null }>
 ) {
-  broadcastGrantTransition(userId, transition)
-  await notifyGrantTransition(transition)
+  const { result, change } = await betsQueue.enqueueFn(async () => {
+    const committed = await commit()
+    if (committed.change) broadcastGrantTransition(userId, committed.change)
+    return committed
+  }, [userId])
+  if (change)
+    void notifyGrantTransition(change).catch((error) =>
+      log.error('Failed to publish membership grant notification', {
+        userId,
+        error,
+      })
+    )
+  return result
 }
 
 export async function processUserMembershipGrants(
@@ -223,23 +236,38 @@ export async function processUserMembershipGrants(
     grantRetryOptions
   )
   if (change.started || change.ended) onChangeCommitted?.(userId)
-  await publishGrantTransition(userId, change)
+  broadcastGrantTransition(userId, change)
+  await notifyGrantTransition(change)
   return { started: change.started, ended: change.ended }
 }
 
-export async function grantMembershipDays(
+type MembershipGrantInput = {
+  userId: string
+  tier: SupporterTier
+  durationMs: number
+  source: string
+  sourceId: string
+  note?: string
+}
+
+// Idempotent per (userId, source, sourceId). Takes the user's betsQueue slot
+// so a renewal it settles broadcasts in order with checkouts: never call it
+// from inside that user's slot (betsQueue isn't re-entrant; it would deadlock).
+export function grantMembershipDays(
   pg: SupabaseDirectClientTimeout,
-  input: {
-    userId: string
-    tier: SupporterTier
-    durationMs: number
-    source: string
-    sourceId: string
-    note?: string
-  }
+  input: MembershipGrantInput
 ): Promise<MembershipGrantResult> {
+  return runQueuedGrantTransition<MembershipGrantResult>(input.userId, () =>
+    commitMembershipDays(pg, input)
+  )
+}
+
+function commitMembershipDays(
+  pg: SupabaseDirectClientTimeout,
+  input: MembershipGrantInput
+) {
   const { userId, tier, source, sourceId } = input
-  const { result, entitlements, renewal, notice } = await transactWithRetries(
+  return transactWithRetries(
     pg,
     5,
     async (tx) => {
@@ -253,9 +281,7 @@ export async function grantMembershipDays(
             grant: existing,
             outcome: 'duplicate' as const,
           },
-          entitlements: null,
-          renewal: null,
-          notice: null,
+          change: null,
         }
       const { durationMs, reductionNote } = capGrantDuration(
         input.durationMs,
@@ -275,9 +301,7 @@ export async function grantMembershipDays(
         if (!grant) throw new Error('Membership grant receipt missing')
         return {
           result: { grant, outcome: 'capped' as const },
-          entitlements: null,
-          renewal: null,
-          notice: null,
+          change: null,
         }
       }
       const inserted = await tx.oneOrNone(
@@ -301,16 +325,14 @@ export async function grantMembershipDays(
           : undefined
       return {
         result: { grant, outcome, reason },
-        renewal: change?.renewal ?? null,
-        notice: change?.notice ?? null,
-        entitlements:
-          inserted && !change?.renewal?.grant
-            ? change?.entitlements ?? (await getUserEntitlements(tx, userId))
-            : null,
+        change: change && {
+          ...change,
+          entitlements: change.renewal?.grant
+            ? null
+            : change.entitlements ?? (await getUserEntitlements(tx, userId)),
+        },
       }
     },
     grantRetryOptions
   )
-  await publishGrantTransition(userId, { entitlements, renewal, notice })
-  return result
 }

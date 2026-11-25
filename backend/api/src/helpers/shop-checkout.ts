@@ -15,13 +15,18 @@ import { log } from 'shared/monitoring/log'
 import type { SupabaseTransaction } from 'shared/supabase/init'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 
-export function checkPriceCeiling(price: number, ceiling?: number) {
+export function checkPriceCeiling(
+  price: number,
+  ceiling?: number,
+  field: 'price' | 'total' = 'price'
+) {
   if (ceiling !== undefined && price > ceiling)
     throw new APIError(
       409,
       `The price changed to M$${price.toLocaleString(
         'en-US'
-      )}. Please check and confirm again.`
+      )}. Please check and confirm again.`,
+      { [field]: price }
     )
 }
 

@@ -128,6 +128,20 @@ import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
 
+function getChangedPrice(error: unknown) {
+  if (!(error instanceof APIError) || error.code !== 409) return
+  const { details } = error
+  if (!details || typeof details !== 'object') return
+  const price =
+    'price' in details
+      ? details.price
+      : 'total' in details
+      ? details.total
+      : undefined
+  if (typeof price === 'number' && Number.isFinite(price) && price >= 0)
+    return price
+}
+
 async function showPurchaseError(
   error: unknown,
   fallback: string,
@@ -1209,6 +1223,7 @@ function MerchItemCard(props: {
     email: '',
   })
   const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
+  const [serverTotal, setServerTotal] = useState<number>()
   const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
@@ -1365,7 +1380,8 @@ function MerchItemCard(props: {
   const shippingMana = selectedShipping
     ? Math.round(parseFloat(selectedShipping.rate) * 100)
     : 0
-  const totalPrice = discountedPrice + shippingMana
+  const totalPrice = serverTotal ?? discountedPrice + shippingMana
+  const confirmedItemPrice = totalPrice - shippingMana
 
   const handleSubmitOrder = async () => {
     if (!user || !selectedSize || !selectedShipping) return
@@ -1406,7 +1422,9 @@ function MerchItemCard(props: {
       // Let the success toast land before the OS modal pops over it.
       setTimeout(tryOfferReview, 3000)
     } catch (e) {
-      setShowConfirmOrderModal(false)
+      const total = getChangedPrice(e)
+      if (total !== undefined) setServerTotal(total)
+      else setShowConfirmOrderModal(false)
       await showPurchaseError(e, 'Failed to place order', user.id)
     } finally {
       setPurchasing(false)
@@ -1800,6 +1818,7 @@ function MerchItemCard(props: {
               }
               onClick={() => {
                 setAcceptedTerms(false)
+                setServerTotal(undefined)
                 setShowConfirmOrderModal(true)
               }}
             >
@@ -2109,8 +2128,8 @@ function MerchItemCard(props: {
             <Row className="justify-between">
               <span className="text-ink-500">Item price:</span>
               <span className="font-medium">
-                {formatMoney(discountedPrice)}
-                {hasDiscount && (
+                {formatMoney(confirmedItemPrice)}
+                {confirmedItemPrice < item.price && (
                   <span className="text-ink-400 ml-1 text-xs line-through">
                     {formatMoney(item.price)}
                   </span>
@@ -2124,8 +2143,19 @@ function MerchItemCard(props: {
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
-              <span>Total (mana):</span>
-              <span className="text-teal-600">{formatMoney(totalPrice)}</span>
+              {serverTotal === undefined ? (
+                <>
+                  <span>Total (mana):</span>
+                  <span className="text-teal-600">
+                    {formatMoney(totalPrice)}
+                  </span>
+                </>
+              ) : (
+                <span role="status">
+                  The price is now M${serverTotal.toLocaleString('en-US')}{' '}
+                  including shipping.
+                </span>
+              )}
             </Row>
           </Col>
 
@@ -5596,6 +5626,7 @@ function ShopItemCard(props: {
     localStreakBonus,
   } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [serverPrice, setServerPrice] = useState<number>()
   const [purchasing, setPurchasing] = useState(false)
 
   // Same rule the API charges by: supporter discount, or the holiday sale's
@@ -5630,6 +5661,11 @@ function ShopItemCard(props: {
   const isSeasonalUnavailable =
     item.seasonalAvailability && !isSeasonalItemAvailable(item)
 
+  const openPurchaseConfirmation = () => {
+    setServerPrice(undefined)
+    setShowConfirmModal(true)
+  }
+
   const handlePurchase = async () => {
     if (!user) return
 
@@ -5637,12 +5673,14 @@ function ShopItemCard(props: {
     try {
       const result = await api('shop-purchase', {
         itemId: item.id,
-        expectedPrice: discountedPrice,
+        expectedPrice: serverPrice ?? discountedPrice,
       })
       toast.success(`Purchased ${item.name}!`)
       setShowConfirmModal(false)
       onPurchaseComplete(item.id, result.entitlements)
     } catch (e) {
+      const price = getChangedPrice(e)
+      if (price !== undefined) setServerPrice(price)
       await showPurchaseError(e, 'Failed to purchase item', user.id)
     } finally {
       setPurchasing(false)
@@ -5957,7 +5995,7 @@ function ShopItemCard(props: {
                       size="xs"
                       color="indigo-outline"
                       disabled={!user}
-                      onClick={() => setShowConfirmModal(true)}
+                      onClick={openPurchaseConfirmation}
                     >
                       Add more time
                     </Button>
@@ -6031,7 +6069,7 @@ function ShopItemCard(props: {
                         size="sm"
                         color="indigo"
                         disabled={!user}
-                        onClick={() => setShowConfirmModal(true)}
+                        onClick={openPurchaseConfirmation}
                       >
                         Buy
                       </Button>
@@ -6064,7 +6102,7 @@ function ShopItemCard(props: {
                       size="sm"
                       color="indigo"
                       disabled={!user}
-                      onClick={() => setShowConfirmModal(true)}
+                      onClick={openPurchaseConfirmation}
                       className="w-full"
                     >
                       Buy
@@ -6088,30 +6126,43 @@ function ShopItemCard(props: {
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
-            Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            {hasDiscount || item.originalPrice ? (
+            {serverPrice !== undefined ? (
               <>
-                <span className="text-ink-400 line-through">
-                  {formatMoney(item.originalPrice ?? item.price)}
-                </span>{' '}
-                <span className="font-semibold text-teal-600">
-                  {formatMoney(discountedPrice)}
-                </span>
-                <span className="ml-1 text-xs text-green-600">
-                  (
-                  {Math.round(
-                    (1 - discountedPrice / (item.originalPrice ?? item.price)) *
-                      100
-                  )}
-                  % off)
-                </span>
+                The price is now{' '}
+                <strong>M${serverPrice.toLocaleString('en-US')}</strong> for{' '}
+                <strong>{item.name}</strong>.
               </>
             ) : (
-              <span className="font-semibold text-teal-600">
-                {formatMoney(discountedPrice)}
-              </span>
+              <>
+                Are you sure you want to purchase <strong>{item.name}</strong>{' '}
+                for{' '}
+                {hasDiscount || item.originalPrice ? (
+                  <>
+                    <span className="text-ink-400 line-through">
+                      {formatMoney(item.originalPrice ?? item.price)}
+                    </span>{' '}
+                    <span className="font-semibold text-teal-600">
+                      {formatMoney(discountedPrice)}
+                    </span>
+                    <span className="ml-1 text-xs text-green-600">
+                      (
+                      {Math.round(
+                        (1 -
+                          discountedPrice /
+                            (item.originalPrice ?? item.price)) *
+                          100
+                      )}
+                      % off)
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-semibold text-teal-600">
+                    {formatMoney(discountedPrice)}
+                  </span>
+                )}
+                ?
+              </>
             )}
-            ?
           </p>
 
           {/* Preview in modal too with actual user data */}

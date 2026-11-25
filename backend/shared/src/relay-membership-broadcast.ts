@@ -1,10 +1,15 @@
-import { getApiUrl } from 'common/api/utils'
-import { LOCAL_DEV, log } from 'shared/utils'
+import { getApiUrl, pathWithPrefix } from 'common/api/utils'
+import { CONFIGS } from 'common/envs/constants'
+import { LOCAL_DEV, LOCAL_ONLY, log } from 'shared/utils'
 
 // Only the API writer has browser sockets. Send the user ID so the writer
 // can read the current membership and balance when the request arrives.
-export async function relayMembershipBroadcast(userId: string): Promise<void> {
-  if (LOCAL_DEV) return
+export async function relayMembershipBroadcast(
+  userId: string,
+  scriptEnv?: 'PROD' | 'DEV'
+): Promise<void> {
+  // runScript can target remote Firebase/Supabase from a developer machine.
+  if (LOCAL_ONLY || (LOCAL_DEV && !scriptEnv)) return
   const apiSecret = process.env.API_SECRET
   if (!apiSecret) {
     log.error('API_SECRET missing, skipping membership broadcast', { userId })
@@ -13,7 +18,11 @@ export async function relayMembershipBroadcast(userId: string): Promise<void> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 2_000)
   try {
-    const response = await fetch(getApiUrl('internal-membership-broadcast'), {
+    const path = 'internal-membership-broadcast'
+    const url = scriptEnv
+      ? `https://${CONFIGS[scriptEnv].apiEndpoint}/${pathWithPrefix(path)}`
+      : getApiUrl(path)
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ apiSecret, userId }),

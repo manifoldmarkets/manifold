@@ -184,7 +184,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       )
       const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
       const totalCharge = discountedItemPrice + shippingCost
-      checkPriceCeiling(totalCharge, expectedTotal)
+      checkPriceCeiling(totalCharge, expectedTotal, 'total')
 
       // Check balance
       if (user.balance < totalCharge) {

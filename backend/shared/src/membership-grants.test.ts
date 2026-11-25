@@ -52,6 +52,7 @@ jest.mock('./relay-membership-broadcast', () => ({
   relayMembershipBroadcast: jest.fn(),
 }))
 jest.mock('../../scripts/run-script', () => ({ runScript: jest.fn() }))
+jest.mock('shared/init-admin', () => ({ getLocalEnv: () => 'DEV' }))
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
   pgp: jest.requireActual('pg-promise')(),
@@ -87,9 +88,6 @@ jest.mock('common/user-notification-preferences', () => ({
     sendToBrowser: true,
     sendToMobile: true,
   })),
-}))
-jest.mock('shared/helpers/fn-queue', () => ({
-  betsQueue: { enqueueFn: (fn: () => unknown) => fn() },
 }))
 
 // Execute production SQL against the real migration. Match the direct client's
@@ -169,6 +167,10 @@ type Handler = (
 ) => Promise<unknown>
 const purchase = shopPurchase as (
   props: Parameters<typeof shopPurchase>[0],
+  auth: { uid: string }
+) => Promise<unknown>
+const issue = adminGrantMembershipDays as (
+  props: Parameters<typeof adminGrantMembershipDays>[0],
   auth: { uid: string }
 ) => Promise<unknown>
 const { grantMembershipDays, processUserMembershipGrants } = membershipGrants
@@ -1069,8 +1071,11 @@ it('allows starts by default and requires an explicit false switch for rollback 
     '--apply requires'
   )
   expect((await supporter())?.metadata).toEqual({ membershipGrantId: grant.id })
+  expect(relayMembershipBroadcast).not.toHaveBeenCalled()
   await setStartsEnabled(false)
   await endActiveMembershipGrants(pg, true)
+  expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
+  expect(relayMembershipBroadcast).toHaveBeenCalledWith(userId, 'DEV')
   expect(await supporter()).toBeNull()
   expect(await rows('select status from membership_grants')).toEqual([
     { status: 'banked' },
@@ -1301,6 +1306,7 @@ it.each(ceilingCases)(
       })
     await expect(buy(confirmed)).rejects.toMatchObject({
       code: 409,
+      details: item === 'merch' ? { total: price } : { price },
       message: `The price changed to M$${price.toLocaleString(
         'en-US'
       )}. Please check and confirm again.`,
@@ -1594,6 +1600,63 @@ it('broadcasts the renewal and purchase balances in order before returning with 
     await published
   }
 })
+
+it.each(['owner view', 'admin grant'])(
+  'broadcasts the %s renewal before a concurrent cosmetic checkout takes the user slot',
+  async (path) => {
+    await expireGrantOverPaidMembership(-HOUR_MS, true)
+    await setStartsEnabled(false)
+    jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+    jest.mocked(broadcastUpdatedUser).mockClear()
+    const balances = () =>
+      jest
+        .mocked(broadcastUpdatedUser)
+        .mock.calls.flatMap(([u]) =>
+          u.balance === undefined ? [] : [u.balance]
+        )
+
+    // Start checkout after the renewal commits but before its transaction
+    // promise returns to the handler that broadcasts the new balance.
+    let cosmetic: Promise<unknown> | undefined
+    let balancesAtCheckout: number[] | undefined
+    const transact = testClient.tx.bind(testClient)
+    const transactions = jest.spyOn(testClient, 'tx')
+    transactions.mockImplementation(async (...args) => {
+      const result = await transact(...args)
+      if (
+        (await rows("select 1 from txns where category = 'MEMBERSHIP_PAYMENT'"))
+          .length
+      ) {
+        transactions.mockImplementationOnce((...next) => {
+          balancesAtCheckout = balances()
+          return transact(...next)
+        })
+        cosmetic = purchase({ itemId: 'avatar-golden-border' }, { uid: userId })
+      }
+      return result
+    })
+    if (path === 'owner view') {
+      await (getMembershipGrants as Handler)({}, { uid: userId })
+    } else {
+      await issue(
+        {
+          userId,
+          tier: 'basic',
+          days: 1,
+          key: 'admin-ticket',
+          note: 'test grant',
+        },
+        { uid: ENV_CONFIG.adminIds[0] }
+      )
+    }
+    await expect(cosmetic).resolves.toMatchObject({ success: true })
+    expect(balancesAtCheckout).toEqual([99500])
+    expect(balances()).toEqual([99500, 74500])
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: balances().at(-1) }])
+  }
+)
 
 it('uses the restored paid credit for a purchase made at the free expiry', async () => {
   const now = Date.now()
@@ -2109,16 +2172,6 @@ it.each([false, true])(
 )
 
 it('restricts grants to admins and exposes the private ledger only through the owner view', async () => {
-  const issue = adminGrantMembershipDays as (
-    props: {
-      userId: string
-      tier: 'basic'
-      days: number
-      note: string
-      key: string
-    },
-    auth: { uid: string }
-  ) => Promise<unknown>
   const view = getMembershipGrants as Handler
   const request = {
     userId,
@@ -2141,7 +2194,9 @@ it('restricts grants to admins and exposes the private ledger only through the o
   await expect(view({ userId }, { uid: 'other' })).rejects.toMatchObject({
     code: 403,
   })
+  const enqueue = jest.spyOn(betsQueue, 'enqueueFn')
   const result = await view({}, { uid: userId })
+  expect(enqueue).not.toHaveBeenCalled()
   expect(result).toMatchObject({
     userId,
     active: { tier: 'basic', source: 'admin' },
