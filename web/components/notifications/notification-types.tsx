@@ -1030,8 +1030,10 @@ export function MarketResolvedNotification(props: {
     totalShareholders,
     token,
   } = (data as ContractResolutionData) ?? {}
-  // sourceText is the displayed resolution, 'N/A' for a cancellation
-  const isCancel = outcome === 'CANCEL' || sourceText === 'CANCEL'
+  // sourceText is the displayed resolution: 'N/A' for a cancellation, and a
+  // winning answer's text on a multiple choice market
+  const isCancel =
+    outcome !== undefined ? outcome === 'CANCEL' : sourceText === 'CANCEL'
   const profit = userPayout - userInvestment
   const liquidityPayout = getShownLiquidityPayout({
     userLiquidityPayout,
@@ -1043,17 +1045,16 @@ export function MarketResolvedNotification(props: {
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
+  // A cancellation pays back what was spent less what was sold for, which is
+  // negative after selling at a profit. Notifications sent before Nov 2026
+  // also count the liquidity's refund in userPayout, so the wording doesn't
+  // say what the amount was for.
   const tradeTitle = isCancel ? (
-    userInvestment > 0 ? (
-      <>
-        Your {formatMoney(userInvestment, token)} invested has been returned to
-        you
-      </>
-    ) : isShownAmount(userPayout, token) && userPayout < 0 ? (
-      <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
-    ) : isShownAmount(userPayout, token) ? (
-      <>Your {formatMoney(userPayout, token)} in losses has been returned</>
-    ) : null
+    !isShownAmount(userPayout, token) ? null : userPayout > 0 ? (
+      <>{formatMoney(userPayout, token)} was refunded to you</>
+    ) : (
+      <>{formatMoney(-userPayout, token)} was taken back</>
+    )
   ) : profitable ? (
     <>
       Your {formatMoney(userInvestment, token)} won{' '}
@@ -1137,43 +1138,44 @@ export function MarketResolvedNotification(props: {
     ? MANIFOLD_AVATAR_URL
     : notification.sourceUserAvatarUrl
 
-  const content = isCancel ? (
-    <>
-      <NotificationUserLink
-        userId={sourceId}
-        name={resolverName}
-        username={resolverUsername}
-      />{' '}
-      cancelled {isChildOfGroup && <span>the question</span>}
-      {!isChildOfGroup && (
-        <span>
-          {' '}
-          <PrimaryNotificationLink
-            text={sourceContractTitle}
-            truncatedLength={'xl'}
-          />
-        </span>
-      )}
-    </>
-  ) : (
-    <>
-      <NotificationUserLink
-        userId={sourceId}
-        name={resolverName}
-        username={resolverUsername}
-      />{' '}
-      resolved {isChildOfGroup && <span>the question</span>}
-      {!isChildOfGroup && (
-        <span>
-          <PrimaryNotificationLink
-            text={sourceContractTitle}
-            truncatedLength={'xl'}
-          />
-        </span>
-      )}{' '}
-      to {resolutionDescription()}
-    </>
-  )
+  const content =
+    sourceText === 'CANCEL' ? (
+      <>
+        <NotificationUserLink
+          userId={sourceId}
+          name={resolverName}
+          username={resolverUsername}
+        />{' '}
+        cancelled {isChildOfGroup && <span>the question</span>}
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            <PrimaryNotificationLink
+              text={sourceContractTitle}
+              truncatedLength={'xl'}
+            />
+          </span>
+        )}
+      </>
+    ) : (
+      <>
+        <NotificationUserLink
+          userId={sourceId}
+          name={resolverName}
+          username={resolverUsername}
+        />{' '}
+        resolved {isChildOfGroup && <span>the question</span>}
+        {!isChildOfGroup && (
+          <span>
+            <PrimaryNotificationLink
+              text={sourceContractTitle}
+              truncatedLength={'xl'}
+            />
+          </span>
+        )}{' '}
+        to {resolutionDescription()}
+      </>
+    )
 
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(notification.sourceId, notification.userId)
@@ -1220,7 +1222,7 @@ export function MarketResolvedNotification(props: {
                 ...notification,
                 sourceUserAvatarUrl: resolverAvatarUrl,
               }}
-              symbol={isCancel ? '🚫' : profitable ? '💰' : '☑️'}
+              symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
             />
             {!!secondaryTitle && (
               <div

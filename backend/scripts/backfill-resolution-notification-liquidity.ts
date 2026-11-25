@@ -7,8 +7,9 @@
 // Run after the API that writes userLiquidityPayout is deployed: notifications
 // sent before that deploy and after this runs would stay wrong. Notifications
 // that already have userLiquidityPayout are skipped, so it's safe to re-run.
-// A notification that can't be paired with its payout for certain is listed
-// as DOUBTFUL and left alone.
+// A notification that can't be paired with its resolution for certain (its
+// market resolved more than once within an hour, say) is listed as DOUBTFUL
+// and left alone.
 //
 // Dry run (default), last 90 days:
 //   yarn ts-node backfill-resolution-notification-liquidity.ts
@@ -28,7 +29,7 @@ import {
   CLOCK_SKEW_MS,
   DoubtfulNotification,
   getNotificationFixes,
-  MAX_NOTIFICATION_DELAY_MS,
+  ISOLATION_MS,
   NotificationFix,
   ResolutionNotification,
   ResolutionPayout,
@@ -93,31 +94,27 @@ runScript(async ({ pg }) => {
     const isWanted = (userId: string, contractId: string) =>
       wanted.has(`${userId}|${contractId}`)
 
-    // Every payout to them on those markets, including ones without a
-    // deposit, so each notification finds its own resolution.
-    const payouts = (
-      await pg.map<ResolutionPayout>(
-        `select id, to_id, from_id, data->'data'->>'answerId' as answer_id,
-                ts_to_millis(created_time) as created_time,
-                coalesce((data->'data'->>'deposit')::numeric, 0) as deposit
-         from txns
-         where category = 'CONTRACT_RESOLUTION_PAYOUT'
-           and to_id = any($1) and from_id = any($2)
-           and created_time >= millis_to_ts($3)`,
-        [users, contractIds, since - MAX_NOTIFICATION_DELAY_MS],
-        (r) => ({
-          id: r.id,
-          userId: r.to_id,
-          contractId: r.from_id,
-          answerId: r.answer_id ?? null,
-          createdTime: Number(r.created_time),
-          deposit: Number(r.deposit),
-        })
-      )
-    ).filter((p) => isWanted(p.userId, p.contractId))
+    // Every payout on those markets, to anyone: they give each market's
+    // resolution times, and the users' own payouts.
+    const payouts = await pg.map<ResolutionPayout>(
+      `select to_id, from_id, data->'data'->>'answerId' as answer_id,
+              ts_to_millis(created_time) as created_time,
+              coalesce((data->'data'->>'deposit')::numeric, 0) as deposit
+       from txns
+       where category = 'CONTRACT_RESOLUTION_PAYOUT'
+         and from_id = any($1)
+         and created_time >= millis_to_ts($2)`,
+      [contractIds, since - CLOCK_SKEW_MS - ISOLATION_MS],
+      (r) => ({
+        userId: r.to_id,
+        contractId: r.from_id,
+        answerId: r.answer_id ?? null,
+        createdTime: Number(r.created_time),
+        deposit: Number(r.deposit),
+      })
+    )
 
-    // Every resolution notification of theirs on those markets, including
-    // ones already fixed, which account for their own payouts.
+    // Their resolution notifications on those markets not fixed yet
     const notifications = (
       await pg.map<ResolutionNotification>(
         `select user_id, notification_id,
@@ -125,14 +122,14 @@ runScript(async ({ pg }) => {
                 data->'data'->>'answerId' as answer_id,
                 data->'data'->>'outcome' as outcome,
                 (data->>'createdTime')::bigint as created_time,
-                (data->'data'->>'userPayout')::numeric as user_payout,
-                data->'data' ? 'userLiquidityPayout' as fixed
+                (data->'data'->>'userPayout')::numeric as user_payout
          from user_notifications
          where user_id = any($1)
            and data->>'sourceContractId' = any($2)
            and data->>'sourceType' = 'contract'
            and data->>'sourceUpdateType' = 'resolved'
            and data->'data' ? 'userPayout'
+           and not (data->'data' ? 'userLiquidityPayout')
            and (data->>'createdTime')::bigint >= $3`,
         [users, contractIds, since - CLOCK_SKEW_MS],
         (r) => ({
@@ -143,7 +140,6 @@ runScript(async ({ pg }) => {
           outcome: r.outcome ?? null,
           createdTime: Number(r.created_time),
           userPayout: Number(r.user_payout),
-          fixed: r.fixed === true,
         })
       )
     ).filter((n) => isWanted(n.userId, n.contractId))

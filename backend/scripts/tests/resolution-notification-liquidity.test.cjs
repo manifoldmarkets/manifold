@@ -1,4 +1,4 @@
-// Pairing old resolution notifications with their payouts:
+// Pairing old resolution notifications with their resolutions:
 // node --test backend/scripts/tests/resolution-notification-liquidity.test.cjs
 const assert = require('node:assert/strict')
 const { test } = require('node:test')
@@ -13,9 +13,8 @@ const getNotificationFixes = (...args) =>
   JSON.parse(JSON.stringify(loaded.getNotificationFixes(...args)))
 
 const T0 = Date.parse('2026-11-25T04:01:25.206Z')
-let nextId = 0
+const MINUTE = 60_000
 const payout = (over) => ({
-  id: `p${nextId++}`,
   userId: 'gen',
   contractId: 'dwts',
   answerId: null,
@@ -23,6 +22,8 @@ const payout = (over) => ({
   deposit: 356.88,
   ...over,
 })
+// Someone else paid in a resolution
+const other = (over) => payout({ userId: 'other', deposit: 0, ...over })
 const notification = (over) => ({
   userId: 'gen',
   notificationId: 'n1',
@@ -31,14 +32,17 @@ const notification = (over) => ({
   createdTime: T0 + 1478,
   outcome: '6RCqntZh6l',
   userPayout: 356.88,
-  fixed: false,
   ...over,
 })
+const ids = (rows) => rows.map((r) => (r.notification ?? r).notificationId)
 
 test('moves the liquidity share out of userPayout', () => {
   // The case that found the bug: a M$5 losing bet plus a subsidy that paid
   // back M$356.88, notified as a payout of M$356.88.
-  const { fixes, doubtful } = getNotificationFixes([notification()], [payout()])
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification()],
+    [payout(), other()]
+  )
   assert.deepEqual(doubtful, [])
   assert.deepEqual(fixes, [
     {
@@ -61,13 +65,12 @@ test('keeps what the trades paid', () => {
   assert.equal(fixes[0].userLiquidityPayout, 118.96)
 })
 
-test('pairs each notification with its own resolution when re-resolved', () => {
+test('when the market resolved twice within the hour, fixes only the notification written before the second', () => {
   // Resolved, unresolved and resolved again 3.7 minutes later (seen on prod
-  // 23 Nov): two payouts and two notifications, each within ten minutes of
-  // both payouts.
-  const first = payout({ createdTime: T0, deposit: 0.8665 })
-  const second = payout({ createdTime: T0 + 221_796, deposit: 5.009 })
-  const { fixes } = getNotificationFixes(
+  // 23 Nov), one notification after each. The first was written before the
+  // second resolution began, so it can only be the first's; the second
+  // could be either.
+  const { fixes, doubtful } = getNotificationFixes(
     [
       notification({
         notificationId: 'a',
@@ -80,23 +83,79 @@ test('pairs each notification with its own resolution when re-resolved', () => {
         userPayout: 5.009,
       }),
     ],
-    [first, second]
+    [
+      payout({ deposit: 0.8665 }),
+      payout({ createdTime: T0 + 221_796, deposit: 5.009 }),
+    ]
   )
   assert.deepEqual(
-    fixes.map((f) => [f.notificationId, f.userLiquidityPayout, f.userPayout]),
+    fixes.map((f) => [f.notificationId, f.userLiquidityPayout]),
+    [['a', 0.8665]]
+  )
+  assert.deepEqual(ids(doubtful), ['b'])
+})
+
+test("a later resolution that didn't pay the user still makes it doubtful", () => {
+  // Cancelled (M$30 of withdrawn liquidity taken back), then resolved YES
+  // 3.7 minutes later, paying others but not this user: the YES
+  // notification must not take the cancellation's share.
+  const { fixes, doubtful } = getNotificationFixes(
     [
-      ['a', 0.8665, 0],
-      ['b', 5.009, 0],
+      notification({
+        createdTime: T0 + 223_000,
+        outcome: 'YES',
+        userPayout: 0,
+      }),
+    ],
+    [payout({ deposit: -30 }), other({ createdTime: T0 + 221_796 })]
+  )
+  assert.deepEqual(fixes, [])
+  assert.equal(doubtful.length, 1)
+})
+
+test('leaves a chain of resolutions alone', () => {
+  // Three resolutions six minutes apart, each notification written just
+  // after the next resolution began.
+  const { fixes, doubtful } = getNotificationFixes(
+    [
+      notification({
+        notificationId: 'a',
+        createdTime: T0 + 6 * MINUTE + 500,
+      }),
+      notification({
+        notificationId: 'b',
+        createdTime: T0 + 12 * MINUTE + 500,
+      }),
+    ],
+    [
+      payout({ deposit: 10 }),
+      payout({ createdTime: T0 + 6 * MINUTE, deposit: 20 }),
+      payout({ createdTime: T0 + 12 * MINUTE, deposit: 30 }),
     ]
+  )
+  assert.deepEqual(fixes, [])
+  assert.deepEqual(ids(doubtful), ['a', 'b'])
+})
+
+test('a resolution over an hour before is not in the way', () => {
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification({ createdTime: T0 + 61 * MINUTE + 1478 })],
+    [payout({ deposit: 5 }), payout({ createdTime: T0 + 61 * MINUTE })]
+  )
+  assert.deepEqual(doubtful, [])
+  assert.deepEqual(
+    fixes.map((f) => f.userLiquidityPayout),
+    [356.88]
   )
 })
 
-test("a later resolution that paid the liquidity nothing isn't mistaken for an earlier one", () => {
-  const { fixes } = getNotificationFixes(
-    [notification({ createdTime: T0 + 60_000, userPayout: 10 })],
-    [payout({ deposit: 50 }), payout({ createdTime: T0 + 59_000, deposit: 0 })]
+test('nothing to do when no nearby resolution paid the liquidity', () => {
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification({ createdTime: T0 + 2 * MINUTE, userPayout: 10 })],
+    [payout({ deposit: 0 }), other({ createdTime: T0 + MINUTE })]
   )
   assert.deepEqual(fixes, [])
+  assert.deepEqual(doubtful, [])
 })
 
 test('matches only the same user, market and answer', () => {
@@ -106,20 +165,21 @@ test('matches only the same user, market and answer', () => {
       notification({ notificationId: 'other-user', userId: 'someone' }),
       notification({ notificationId: 'other-market', contractId: 'x' }),
     ],
-    [payout({ answerId: 'a1' }), payout()]
+    [payout({ answerId: 'a1' }), payout(), other({ contractId: 'x' })]
   )
   assert.deepEqual(fixes, [])
 })
 
-test('ignores payouts after the notification or too long before it', () => {
-  const { fixes } = getNotificationFixes(
+test('needs the resolution before the notification, and within ten minutes', () => {
+  const { fixes, doubtful } = getNotificationFixes(
     [
       notification({ notificationId: 'before', createdTime: T0 - 5000 }),
-      notification({ notificationId: 'late', createdTime: T0 + 11 * 60_000 }),
+      notification({ notificationId: 'late', createdTime: T0 + 11 * MINUTE }),
     ],
     [payout()]
   )
   assert.deepEqual(fixes, [])
+  assert.deepEqual(ids(doubtful), ['late'])
 })
 
 test('allows a second of clock difference between the two', () => {
@@ -143,79 +203,11 @@ test('leaves a stored payout below the liquidity share alone, unless cancelled',
     ],
     [payout({ deposit: 300 }), payout({ answerId: 'a', deposit: 300 })]
   )
-  assert.deepEqual(
-    doubtful.map((d) => d.notification.notificationId),
-    ['resolved']
-  )
+  assert.deepEqual(ids(doubtful), ['resolved'])
   // A cancelled market refunds trades, which can be negative after sales.
   assert.deepEqual(
     fixes.map((f) => [f.notificationId, f.userPayout]),
     [['cancelled', -200]]
-  )
-})
-
-test('leaves notifications alone when both come after the second payout', () => {
-  // The first resolution's notification was written after the market had
-  // been unresolved and resolved again: both notifications fall after the
-  // second payout, so neither can be placed by time. (The first payout is
-  // outside their window, so only the shared payout gives this away.)
-  const { fixes, doubtful } = getNotificationFixes(
-    [
-      notification({
-        notificationId: 'first',
-        createdTime: T0 + 661_000,
-        userPayout: 100,
-      }),
-      notification({
-        notificationId: 'second',
-        createdTime: T0 + 662_000,
-        userPayout: 100,
-      }),
-    ],
-    [
-      payout({ deposit: 40 }),
-      payout({ createdTime: T0 + 660_000, deposit: 20 }),
-    ]
-  )
-  assert.deepEqual(fixes, [])
-  assert.deepEqual(
-    doubtful.map((d) => d.notification.notificationId),
-    ['first', 'second']
-  )
-})
-
-test('leaves a notification alone when an earlier payout in its window has none', () => {
-  // Only one notification survives, written after the second payout: it may
-  // belong to either resolution.
-  const { fixes, doubtful } = getNotificationFixes(
-    [notification({ createdTime: T0 + 61_000, userPayout: 100 })],
-    [payout({ deposit: 40 }), payout({ createdTime: T0 + 60_000, deposit: 20 })]
-  )
-  assert.deepEqual(fixes, [])
-  assert.equal(doubtful.length, 1)
-})
-
-test('a notification fixed before still accounts for its own payout', () => {
-  const { fixes, doubtful } = getNotificationFixes(
-    [
-      notification({
-        notificationId: 'done',
-        createdTime: T0 + 400,
-        userPayout: 0,
-        fixed: true,
-      }),
-      notification({
-        notificationId: 'next',
-        createdTime: T0 + 60_400,
-        userPayout: 20,
-      }),
-    ],
-    [payout({ deposit: 40 }), payout({ createdTime: T0 + 60_000, deposit: 20 })]
-  )
-  assert.deepEqual(doubtful, [])
-  assert.deepEqual(
-    fixes.map((f) => [f.notificationId, f.userPayout, f.userLiquidityPayout]),
-    [['next', 0, 20]]
   )
 })
 
