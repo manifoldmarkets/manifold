@@ -9,6 +9,7 @@ import {
   BetReplyNotificationData,
   BettingStreakData,
   ContractResolutionData,
+  getShownLiquidityPayout,
   LeagueChangeData,
   MarketMovementData,
   Notification,
@@ -859,7 +860,9 @@ export const createContractResolvedNotifications = async (
     userIdToContractMetric: {
       [userId: string]: Pick<ContractMetric, 'invested' | 'profit'>
     }
+    // Trading payouts only. Liquidity returns go in userLiquidityPayouts.
     userPayouts: { [userId: string]: number }
+    userLiquidityPayouts?: { [userId: string]: number }
     creatorPayout: number
     resolutionProbability?: number
     resolutions?: { [outcome: string]: number }
@@ -874,6 +877,7 @@ export const createContractResolvedNotifications = async (
   const {
     userIdToContractMetric: userIdToContractMetrics,
     userPayouts,
+    userLiquidityPayouts = {},
     creatorPayout,
     resolutionProbability,
     resolutions,
@@ -899,7 +903,10 @@ export const createContractResolvedNotifications = async (
           where private_users.id in
           (select follow_id from contract_follows where contract_id = $1)
           or private_users.id = any($2)`,
-    [isIndependentMulti ? '_' : contract.id, Object.keys(userPayouts)],
+    [
+      isIndependentMulti ? '_' : contract.id,
+      uniq([...Object.keys(userPayouts), ...Object.keys(userLiquidityPayouts)]),
+    ],
     (r) => ({ ...convertPrivateUser(r), name: r.name })
   )
   const usersToNotify = uniq(
@@ -940,6 +947,7 @@ export const createContractResolvedNotifications = async (
         answerId,
         userInvestment: userIdToContractMetrics?.[userId]?.invested ?? 0,
         userPayout: userPayouts[userId] ?? 0,
+        userLiquidityPayout: userLiquidityPayouts[userId],
         profitRank: sortedProfits.findIndex((p) => p.userId === userId) + 1,
         totalShareholders: sortedProfits.length,
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
@@ -976,7 +984,8 @@ export const createContractResolvedNotifications = async (
         outcome,
         resolutionProbability,
         resolutions,
-        answerId
+        answerId,
+        userLiquidityPayouts[userId]
       )
       if (email && floatingEqual(email.correctedInvestment, 0)) {
         bulkNoPayoutEmails.push(email.entry)
@@ -986,8 +995,16 @@ export const createContractResolvedNotifications = async (
     }
     if (sendToMobile) {
       const notification = constructNotification(userId, reason)
+      const resolutionData = notification.data as ContractResolutionData
       const { userPayout, profitRank, userInvestment, totalShareholders } =
-        notification.data as ContractResolutionData
+        resolutionData
+      const liquidityPayout = getShownLiquidityPayout(resolutionData)
+      const liquidityString = liquidityPayout
+        ? ` You got ${formatMoneyEmail(
+            liquidityPayout,
+            token
+          )} back from the liquidity you added.`
+        : ''
       const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
       const comparison =
         profitRank && totalShareholders && betterThan > 0
@@ -1009,7 +1026,8 @@ export const createContractResolvedNotifications = async (
         `Resolved: ${resolutionText}.` +
           (userInvestment === 0 || outcome === 'CANCEL'
             ? ''
-            : (profit > 0 ? profitString : lossString) + comparison),
+            : (profit > 0 ? profitString : lossString) + comparison) +
+          liquidityString,
       ])
     }
   }

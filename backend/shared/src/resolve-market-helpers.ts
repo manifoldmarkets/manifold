@@ -81,7 +81,8 @@ export const resolveMarketHelper = async (
   const {
     resolvedContract,
     updatedContractMetrics,
-    payoutsWithoutLoans,
+    traderPayouts,
+    liquidityPayouts,
     updatedContractAttrs,
     userUpdates,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
@@ -128,8 +129,8 @@ export const resolveMarketHelper = async (
     const {
       resolutionProbability,
       payouts: basePayouts,
-      payoutsWithoutLoans,
       traderPayouts,
+      liquidityPayouts,
       withheldLiquidityRefund,
     } = getPayoutInfo(
       outcome,
@@ -354,7 +355,8 @@ export const resolveMarketHelper = async (
 
     return {
       resolvedContract,
-      payoutsWithoutLoans,
+      traderPayouts,
+      liquidityPayouts,
       updatedContractAttrs,
       userUpdates,
       updatedContractMetrics,
@@ -364,7 +366,10 @@ export const resolveMarketHelper = async (
   onTransactionState?.('committed')
   broadcastUpdatedContract(resolvedContract.visibility, updatedContractAttrs)
   broadcastUpdatedMetrics(updatedContractMetrics)
-  const userPayoutsWithoutLoans = groupPayoutsByUser(payoutsWithoutLoans)
+  // Separate, so a provider who also traded isn't told their liquidity's
+  // return was trading profit. Both exclude loan repayments.
+  const userTraderPayouts = groupPayoutsByUser(traderPayouts)
+  const userLiquidityPayouts = groupPayoutsByUser(liquidityPayouts)
 
   await trackPublicEvent(resolver.id, 'resolve market', {
     resolution: outcome,
@@ -388,7 +393,8 @@ export const resolveMarketHelper = async (
     answerId,
     {
       userIdToContractMetric,
-      userPayouts: userPayoutsWithoutLoans,
+      userPayouts: userTraderPayouts,
+      userLiquidityPayouts,
       creatorPayout: 0,
       resolutionProbability: resolvedContract.resolutionProbability,
       resolutions,
@@ -469,6 +475,7 @@ export const getPayoutInfo = (
     resolutionProbability,
     payouts,
     traderPayouts,
+    liquidityPayouts,
     withheldLiquidityRefund,
   }
 }

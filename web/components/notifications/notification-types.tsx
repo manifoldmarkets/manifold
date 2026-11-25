@@ -8,6 +8,7 @@ import {
   CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
+  getShownLiquidityPayout,
   getSourceUrl,
   MembershipSubscriptionData,
   Notification,
@@ -1018,16 +1019,26 @@ export function MarketResolvedNotification(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
   } = notification
-  const { userInvestment, userPayout, profitRank, totalShareholders, token } =
-    (data as ContractResolutionData) ?? {}
+  const {
+    userInvestment,
+    userPayout,
+    userLiquidityPayout,
+    profitRank,
+    totalShareholders,
+    token,
+  } = (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
+  const liquidityPayout = getShownLiquidityPayout({
+    userLiquidityPayout,
+    token,
+  })
   const profitable = profit > 0 && !floatingEqual(userInvestment, 0)
   const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
   const comparison =
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  const secondaryTitle =
+  const tradeTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
       <>
         Your {formatMoney(userInvestment, token)} invested has been returned to
@@ -1048,6 +1059,21 @@ export function MarketResolvedNotification(props: {
         {comparison ? `, but ${comparison}` : ``}
       </>
     ) : null
+  const liquidityTitle = liquidityPayout ? (
+    <>
+      You got {formatMoney(liquidityPayout, token)} back from the liquidity you
+      added
+    </>
+  ) : null
+  const secondaryTitle =
+    tradeTitle && liquidityTitle ? (
+      <Col>
+        <span>{tradeTitle}</span>
+        <span>{liquidityTitle}</span>
+      </Col>
+    ) : (
+      tradeTitle ?? liquidityTitle
+    )
 
   const [openRateModal, setOpenRateModal] = useState(false)
 

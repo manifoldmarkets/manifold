@@ -21,6 +21,7 @@ import { sendTemplateEmail, sendTextEmail } from './send-email'
 import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
 import {
+  getShownLiquidityPayout,
   notification_reason_types,
   NotificationReason,
 } from 'common/notification'
@@ -75,7 +76,9 @@ export const getMarketResolutionEmail = (
   resolution: string,
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number },
-  answerId?: string
+  answerId?: string,
+  // What the user's liquidity paid back; payout is trading only.
+  liquidityPayout?: number
 ) => {
   const { sendToEmail, unsubscribeUrl } = getEmailNotificationDestinations(
     privateUser,
@@ -99,6 +102,17 @@ export const getMarketResolutionEmail = (
         )} in commissions)`
       : ''
 
+  const shownLiquidityPayout = getShownLiquidityPayout({
+    userLiquidityPayout: liquidityPayout,
+    token: contract.token,
+  })
+  const liquidityPayoutText = shownLiquidityPayout
+    ? ` (plus ${formatMoneyEmail(
+        shownLiquidityPayout,
+        contract.token
+      )} back from the liquidity you added)`
+    : ''
+
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment
 
@@ -115,7 +129,7 @@ export const getMarketResolutionEmail = (
     question: contract.question,
     outcome,
     investment: displayedInvestment,
-    payout: displayedPayout + creatorPayoutText,
+    payout: displayedPayout + creatorPayoutText + liquidityPayoutText,
     url: `https://${DOMAIN}/${creator.username}/${contract.slug}`,
     unsubscribeUrl,
   }

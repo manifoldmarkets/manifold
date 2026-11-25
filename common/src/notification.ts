@@ -471,13 +471,28 @@ export type BetFillData = {
 
 export type ContractResolutionData = {
   outcome: string
+  // What the user's trades paid. Notifications sent before Nov 2026 also
+  // counted their liquidity's return here.
   userPayout: number
   userInvestment: number
+  // What the liquidity (subsidy) the user added paid back. It isn't trading
+  // profit, so it's kept out of userPayout.
+  userLiquidityPayout?: number
   profitRank?: number
   totalShareholders?: number
   profit?: number
   answerId?: string
   token?: ContractToken
+}
+
+// The return on the user's liquidity when it's worth a line of its own
+// (formatMoney floors mana to whole units), else 0.
+export const getShownLiquidityPayout = (
+  data: Pick<ContractResolutionData, 'userLiquidityPayout' | 'token'>
+) => {
+  const amount = data.userLiquidityPayout ?? 0
+  if (!Number.isFinite(amount)) return 0
+  return amount >= (data.token === 'CASH' ? 0.01 : 1) ? amount : 0
 }
 
 export type UniqueBettorData = {
