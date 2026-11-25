@@ -8,6 +8,7 @@ import {
   CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
+  getCancelPayoutText,
   getLiquidityPayoutText,
   getShownLiquidityPayout,
   getSourceUrl,
@@ -1045,16 +1046,18 @@ export function MarketResolvedNotification(props: {
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  // A cancellation pays back what was spent less what was sold for, which is
-  // negative after selling at a profit. Notifications sent before Nov 2026
-  // also count the liquidity's refund in userPayout, so the wording doesn't
-  // say what the amount was for.
+  // Notifications written before the API split out the liquidity's return
+  // (#4371) count its refund in userPayout too, so the cancellation wording
+  // doesn't say what the amount was for.
   const tradeTitle = isCancel ? (
-    !isShownAmount(userPayout, token) ? null : userPayout > 0 ? (
-      <>{formatMoney(userPayout, token)} was refunded to you</>
-    ) : (
-      <>{formatMoney(-userPayout, token)} was taken back</>
-    )
+    isShownAmount(userPayout, token) ? (
+      <>
+        {getCancelPayoutText(
+          userPayout,
+          formatMoney(Math.abs(userPayout), token)
+        )}
+      </>
+    ) : null
   ) : profitable ? (
     <>
       Your {formatMoney(userInvestment, token)} won{' '}

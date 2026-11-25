@@ -1,4 +1,5 @@
 import {
+  getCancelPayoutText,
   getLiquidityPayoutText,
   getShownLiquidityPayout,
   isShownAmount,
@@ -30,5 +31,10 @@ describe('resolution notification liquidity line', () => {
     expect(getLiquidityPayoutText(-30, 'M$30')).toBe(
       'M$30 of the liquidity you withdrew was taken back'
     )
+  })
+
+  it('says whether a cancellation refunded trades or took sales back', () => {
+    expect(getCancelPayoutText(5, 'M$5')).toBe('M$5 was refunded to you')
+    expect(getCancelPayoutText(-120, 'M$120')).toBe('M$120 was taken back')
   })
 })

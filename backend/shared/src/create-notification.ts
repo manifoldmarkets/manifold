@@ -9,8 +9,10 @@ import {
   BetReplyNotificationData,
   BettingStreakData,
   ContractResolutionData,
+  getCancelPayoutText,
   getLiquidityPayoutText,
   getShownLiquidityPayout,
+  isShownAmount,
   LeagueChangeData,
   MarketMovementData,
   Notification,
@@ -1018,6 +1020,14 @@ export const createContractResolvedNotifications = async (
         token
       )} (+${profitPercent}%)`
       const lossString = ` You lost ${formatMoneyEmail(-profit, token)}`
+      // A cancellation refunds trades, or takes back sales at a profit, even
+      // for someone whose position was sold off.
+      const cancelString = isShownAmount(userPayout, token)
+        ? ` ${getCancelPayoutText(
+            userPayout,
+            formatMoneyEmail(Math.abs(userPayout), token)
+          )}.`
+        : ''
       bulkPushNotifications.push([
         privateUser,
         notification,
@@ -1025,7 +1035,9 @@ export const createContractResolvedNotifications = async (
           ? contract.question.slice(0, 50) + '...'
           : contract.question,
         `Resolved: ${resolutionText}.` +
-          (userInvestment === 0 || outcome === 'CANCEL'
+          (outcome === 'CANCEL'
+            ? cancelString
+            : userInvestment === 0
             ? ''
             : (profit > 0 ? profitString : lossString) + comparison) +
           liquidityString,

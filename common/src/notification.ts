@@ -472,8 +472,9 @@ export type BetFillData = {
 
 export type ContractResolutionData = {
   outcome: string
-  // What the user's trades paid. Notifications sent before Nov 2026 also
-  // counted their liquidity's return here.
+  // What the user's trades paid. Notifications written before the API split
+  // it from the liquidity's return (#4371) also counted that here; they have
+  // no userLiquidityPayout.
   userPayout: number
   userInvestment: number
   // What the liquidity (subsidy) the user added paid back. It isn't trading
@@ -512,6 +513,14 @@ export const getLiquidityPayoutText = (
   amount > 0
     ? `You got ${formattedAmount} back from the liquidity you added`
     : `${formattedAmount} of the liquidity you withdrew was taken back`
+
+// A cancellation's trading payout: what was spent less what was sold for, so
+// negative after selling at a profit. formattedAmount: the absolute amount,
+// formatted.
+export const getCancelPayoutText = (amount: number, formattedAmount: string) =>
+  amount > 0
+    ? `${formattedAmount} was refunded to you`
+    : `${formattedAmount} was taken back`
 
 export type UniqueBettorData = {
   bet: Bet
