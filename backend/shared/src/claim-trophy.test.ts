@@ -131,18 +131,19 @@ beforeAll(async () => {
     );
     create table user_portfolio_history_latest (
       user_id text primary key, balance numeric not null, investment_value numeric not null,
-      spice_balance numeric default 0, total_deposits numeric default 0
+      spice_balance numeric default 0, total_deposits numeric default 0, last_calculated timestamptz not null default now()
     );
     create table user_stats (user_id text primary key, trades int);
     create table user_stats_baseline (user_id text primary key, trades int);
     create table user_referrals_profit (id text, total_referrals int, total_referred_profit numeric);
     create table contract_comments (comment_id text primary key, user_id text, data jsonb);
-    create table old_post_comments (comment_id text, user_id text);
+    create table old_post_comments (comment_id text, user_id text, data jsonb);
     create table user_contract_metrics (user_id text, contract_id text, answer_id text, profit numeric, data jsonb);
     create table contracts (
       id text primary key, token text not null, creator_id text, resolution text,
-      visibility text, deleted boolean, unique_bettor_count int, mechanism text, data jsonb
+      visibility text, deleted boolean, unique_bettor_count int, mechanism text, data jsonb, close_time timestamptz
     );
+    create table answers (id text primary key, contract_id text, resolution text);
     create table contract_bets (
       bet_id text primary key,
       user_id text not null,
@@ -152,7 +153,9 @@ beforeAll(async () => {
       is_redemption boolean not null default false,
       is_api boolean,
       is_filled boolean,
-      is_cancelled boolean
+      is_cancelled boolean,
+      expires_at timestamptz,
+      answer_id text
     );
     create table txns (
       id text primary key default md5(random()::text),
@@ -188,8 +191,8 @@ beforeAll(async () => {
       mana_earned numeric,
       primary key (user_id, season)
     );
-    insert into contracts (id, token) values
-      ('m1', 'MANA'), ('m2', 'MANA'), ('m3', 'MANA'), ('cash1', 'CASH');
+    insert into contracts (id, token, mechanism) values
+      ('m1', 'MANA', 'cpmm-1'), ('m2', 'MANA', 'cpmm-1'), ('m3', 'MANA', 'cpmm-1'), ('cash1', 'CASH', 'cpmm-1');
     insert into leagues_season_end_times values (11, 'complete'), (12, 'active');
   `)
   const dir = path.resolve(__dirname, '../../supabase/migrations')
@@ -224,6 +227,7 @@ beforeEach(async () => {
     delete from contract_comments;
     delete from old_post_comments;
     delete from user_contract_metrics;
+    delete from answers;
     delete from contracts where creator_id is not null;
     delete from user_trophy_milestones;
     delete from user_trophy_rewards;
@@ -780,20 +784,131 @@ describe('admin unclaim', () => {
 })
 
 describe('nightly trophy ranks', () => {
-  it('publishes a timestamp even when nobody qualifies', async () => {
-    await addUser('u')
+  const { loadUserAchievements: loadLive } = jest.requireActual<
+    typeof import('api/get-user-achievements')
+  >('api/get-user-achievements')
+
+  it('publishes an empty ranking when an active user has no portfolio snapshot', async () => {
+    await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
+    await rows("update users set balance = 600000 where id = 'u'")
+    expect(await loadLive('u')).toMatchObject({ netWorth: 0, peakNetWorth: 0 })
     expect((await trophiesOf('u')).ranksComputedTime).toBeNull()
     await updateTrophyRanks()
     expect(await rows('select * from trophy_ranks')).toEqual([])
+    expect(await rows('select * from user_net_worth_peaks')).toEqual([])
     expect(Number.isFinite((await trophiesOf('u')).ranksComputedTime)).toBe(
       true
     )
   })
 
+  it('keeps sale proceeds out of the previous portfolio snapshot', async () => {
+    await addUser('seller', { data: { lastBetTime: Date.now() - DAY } })
+    await db.exec(`
+      update users set balance = 100000 where id = 'seller';
+      insert into user_portfolio_history_latest (user_id, balance, investment_value, last_calculated)
+        values ('seller', 100000, 300000, now() - interval '71 hours');
+      update users set balance = balance + 300000 where id = 'seller';
+    `)
+    expect(await loadLive('seller')).toMatchObject({
+      netWorth: 400000,
+      peakNetWorth: 400000,
+    })
+    await updateTrophyRanks()
+    expect(
+      await rows('select peak_net_worth from user_net_worth_peaks')
+    ).toEqual([{ peak_net_worth: 400000 }])
+    expect((await trophiesOf('seller')).ranks).toEqual([])
+  })
+
+  it('reports an old snapshot without raising the stored peak or qualifying for a rank', async () => {
+    await addUser('stale', { data: { lastBetTime: Date.now() - DAY } })
+    await db.exec(`
+      insert into user_portfolio_history_latest (user_id, balance, investment_value, last_calculated)
+        values ('stale', 400000, 200000, now() - interval '73 hours');
+      insert into user_net_worth_peaks values ('stale', 500000, now() - interval '4 days');
+    `)
+    expect(await loadLive('stale')).toMatchObject({
+      netWorth: 600000,
+      peakNetWorth: 500000,
+    })
+    await updateTrophyRanks()
+    expect(
+      await rows('select peak_net_worth from user_net_worth_peaks')
+    ).toEqual([{ peak_net_worth: 500000 }])
+    expect((await trophiesOf('stale')).ranks).toEqual([])
+  })
+
+  it('requires an executable limit order when the last trade was placed over 90 days ago', async () => {
+    await db.exec(`
+      insert into contracts (id, token, creator_id, mechanism, resolution, close_time, deleted) values
+        ('resolved', 'MANA', 'creator', 'cpmm-1', 'YES', null, false),
+        ('closed', 'MANA', 'creator', 'cpmm-1', null, now() - interval '1 day', false),
+        ('deleted', 'MANA', 'creator', 'cpmm-1', null, null, true),
+        ('poll', 'MANA', 'creator', 'none', null, null, false),
+        ('multi', 'MANA', 'creator', 'cpmm-multi-1', null, now() + interval '1 day', false);
+      insert into answers values ('done', 'multi', 'NO'), ('open', 'multi', null);
+      insert into contract_bets
+        (bet_id, user_id, contract_id, amount, created_time, is_filled, is_cancelled, answer_id, expires_at)
+        select holder, holder, market, 0, now() - interval '91 days', false, false, answer_id, expires_at
+        from (values
+          ('resolved-market', 'resolved', null, null),
+          ('closed-market', 'closed', null, null),
+          ('deleted-market', 'deleted', null, null),
+          ('poll-market', 'poll', null, null),
+          ('expired', 'm1', null, now() - interval '1 hour'),
+          ('resolved-answer', 'multi', 'done', null),
+          ('missing-answer', 'multi', 'missing', null),
+          ('live-market', 'm1', null, null),
+          ('live-answer', 'multi', 'open', now() + interval '1 hour')
+        ) orders(holder, market, answer_id, expires_at);
+      insert into users (id, data)
+        select user_id, jsonb_build_object('lastBetTime', (extract(epoch from created_time) * 1000)::bigint)
+        from contract_bets;
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        select id, 500000, 0 from users;
+    `)
+    await updateTrophyRanks()
+    expect(
+      await rows(
+        "select user_id from trophy_ranks where trophy_id = 'net-worth' order by user_id"
+      )
+    ).toEqual([{ user_id: 'live-answer' }, { user_id: 'live-market' }])
+  })
+
+  it('retries the entire repeatable-read publication after a serialization failure or deadlock', async () => {
+    const none = client.none
+    const codes = ['40001', '40P01']
+    const isolationLevels: string[] = []
+    const writes = jest
+      .spyOn(client, 'none')
+      .mockImplementation(async (sql, params) => {
+        if (sql.includes('insert into trophy_rank_state')) {
+          const { transaction_isolation } = await client.one(
+            'show transaction_isolation'
+          )
+          isolationLevels.push(transaction_isolation)
+          const code = codes.shift()
+          if (code)
+            throw Object.assign(new Error('publication conflict'), { code })
+        }
+        return none(sql, params)
+      })
+    try {
+      await updateTrophyRanks()
+      expect(isolationLevels).toEqual([
+        'repeatable read',
+        'repeatable read',
+        'repeatable read',
+      ])
+      expect(await rows('select id from trophy_rank_state')).toEqual([
+        { id: true },
+      ])
+    } finally {
+      writes.mockRestore()
+    }
+  })
+
   it('agrees with the live achievement stats for every ranked trophy', async () => {
-    const { loadUserAchievements: loadLive } = jest.requireActual<
-      typeof import('api/get-user-achievements')
-    >('api/get-user-achievements')
     await addUser('maker', {
       data: {
         lastBetTime: Date.now() - 91 * DAY,
@@ -804,10 +919,8 @@ describe('nightly trophy ranks', () => {
     await addUser('liker')
     await addUser('invalid', { data: { lastBetTime: Date.now() - DAY } })
     await db.exec(`
-      update users set balance = 510000 where id in ('maker', 'liker');
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
-        values ('liker', 1, 5000);
-      update users set balance = 'NaN' where id = 'invalid';
+        values ('maker', 510000, 0), ('liker', 510000, 5000), ('invalid', 'NaN', 0);
       insert into user_net_worth_peaks values ('maker', 2000000, now() - interval '1 day');
       insert into contract_bets (bet_id, user_id, contract_id, amount, created_time, is_filled, is_cancelled)
       values ('open', 'maker', 'm1', 0, now(), false, false),
@@ -818,25 +931,33 @@ describe('nightly trophy ranks', () => {
       insert into contracts (id, creator_id, token, mechanism, resolution, visibility, unique_bettor_count)
         select 'market-' || i, 'maker', 'MANA', 'cpmm-1', 'YES', 'public',
           case when i <= 250 then 10 else 9 end
-        from generate_series(1, 2000) i;
+        from generate_series(1, 2002) i;
       insert into contracts (id, creator_id, token, mechanism, visibility, unique_bettor_count)
         values ('poll', 'maker', 'MANA', 'none', 'public', 10),
                ('bounty', 'maker', 'MANA', 'none', 'public', 10);
       insert into contracts (id, creator_id, token, mechanism, resolution, visibility, unique_bettor_count, deleted)
         values ('deleted', 'maker', 'MANA', 'cpmm-1', 'YES', 'public', 10, true);
       insert into user_contract_metrics (user_id, contract_id, profit)
-        select 'maker', id, 1 from contracts where resolution = 'YES';
+        select 'maker', id, case id when 'market-2001' then 'NaN'::numeric
+          when 'market-2002' then 'Infinity'::numeric else 1 end
+        from contracts where resolution = 'YES';
 
       insert into contract_comments
         select 'comment-' || i, 'maker', '{}'::jsonb from generate_series(1, 997) i;
       insert into contract_comments values
-        ('deleted-comment', 'maker', '{"deleted":true}'), ('hidden-comment', 'maker', '{"hidden":true}');
+        ('deleted-comment', 'maker', '{"deleted":true}'), ('hidden-comment', 'maker', '{"hidden":true}'),
+        ('other-market-comment', 'other-author', '{}');
       insert into old_post_comments
-        select 'post-comment-' || i, 'maker' from generate_series(1, 3) i;
+        select 'post-comment-' || i, 'maker', '{}'::jsonb from generate_series(1, 3) i;
+      insert into old_post_comments values
+        ('hidden-post-comment', 'maker', '{"hidden":true}'), ('deleted-post-comment', 'maker', '{"deleted":true}'),
+        ('other-post-comment', 'other-author', '{}');
       insert into user_reactions (content_owner_id, content_id, content_type, reaction_type, user_id)
         select 'maker', comment_id, 'comment', 'like', 'liker' from contract_comments
         union all
-        select 'maker', comment_id, 'comment', 'like', 'liker' from old_post_comments;
+        select 'maker', comment_id, 'comment', 'like', 'liker' from old_post_comments
+        union all
+        select 'maker', 'orphan', 'comment', 'like', 'liker';
 
       insert into leagues (season, division, cohort, user_id)
         select i, 6, 'c1', 'maker' from generate_series(1, 8) i;
@@ -851,7 +972,7 @@ describe('nightly trophy ranks', () => {
       creatorTraders: 12001,
       marketsCreatedWithTraders: 250,
       resolvedProfitableMarkets: 2000,
-      profitableMarketsCount: 2001,
+      profitableMarketsCount: 2003,
       likedComments: 1000,
       leagueLevel: 11,
     })
@@ -886,9 +1007,8 @@ describe('nightly trophy ranks', () => {
     await addUser('inactive', { data: { lastBetTime: Date.now() - 91 * DAY } })
     await addUser('deleted', { data: { ...active.data, userDeleted: true } })
     await db.exec(`
-      update users set balance = 450000;
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
-        select id, 123, 50000 from users;
+        select id, 450000, 50000 from users;
       update users set is_bot = true where id = 'bot';
       insert into user_bans (user_id, ban_type) values ('banned', 'trading'), ('a', 'modAlert');
       insert into trophy_rank_exclusions (user_id, reason) values ('house', 'Organisation');
@@ -906,7 +1026,9 @@ describe('nightly trophy ranks', () => {
       { user_id: 'a', rank: 1 },
       { user_id: 'b', rank: 1 },
     ])
-    await db.exec("update users set balance = 400000 where id = 'a'")
+    await db.exec(
+      "update user_portfolio_history_latest set balance = 400000 where user_id = 'a'"
+    )
     await updateTrophyRanks()
     const next = await trophiesOf('a')
     expect(next.ranks).toEqual([])

@@ -1,6 +1,6 @@
 # Trophies
 
-Each of the 11 lifetime trophies has six milestones, in ascending order: green, blue, purple, crimson, gold and prismatic. Whale is the prismatic Net Worth milestone at M500,000. Net worth adds the live mana balance to the latest investment value (zero before the first portfolio snapshot). Investment value already accounts for position loans. Claims use the higher of current net worth and the highest positive nightly observation.
+Each of the 11 lifetime trophies has six milestones, in ascending order: green, blue, purple, crimson, gold and prismatic. Whale is the prismatic Net Worth milestone at M500,000. Net worth adds the mana balance and investment value from the same portfolio snapshot. Investment value already accounts for position loans. The achievements API reports the latest snapshot at any age, or zero before the first snapshot. Claims use the higher of the stored nightly peak and the latest snapshot if it is at most 72 hours old. The same age limit applies to snapshots used for nightly peaks and ranks.
 
 `common/src/trophies.ts` defines the ladders and the shared progress, title, claim and pin rules. `get-user-achievements` reads lifetime stats. The achievements grid retains its own stat and rank definitions. `claim-trophy` rechecks the stat and records the requested milestone and all lower ones in `user_trophy_milestones`. Claims last even if the stat falls. Retired IDs are ignored. Keep IDs stable after launch.
 
@@ -12,13 +12,15 @@ The main scheduler runs `update-trophy-ranks` at 4:10 AM Los Angeles time after 
 
 | Trophy             | Ranked value                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------------- |
-| Net Worth          | Current net worth, for people who traded in the last 90 days or have an open limit order                      |
+| Net Worth          | Latest qualifying portfolio snapshot for an active trader                                                     |
 | Prediction Streak  | Longest of the paid bonus streak, longest ended streak and current streak, from the 3:40 AM transactions view |
-| Profitable Markets | Resolved, undeleted, non-cancelled mana markets with positive profit on the user's market-level summary       |
+| Profitable Markets | Resolved, undeleted, non-cancelled mana markets with positive finite profit on the user's market summary      |
 | Markets Created    | Public, undeleted mana markets created with at least 10 traders, excluding polls and bounties                 |
 | Creator Popularity | All-time creator traders, counted once per market                                                             |
-| Liked Comments     | Distinct comments liked by another eligible person, excluding hidden or deleted market comments               |
+| Liked Comments     | Distinct visible market or legacy post comments by the holder that another eligible person liked              |
 | Leagues            | Gold, Platinum and Diamond score 1, 2 and 3. Each Masters season adds one to 3                                |
+
+For Net Worth, an active trader has placed a trade in the last 90 days or has an open limit order on a market that is still trading. The order must have remaining quantity, be uncancelled and unexpired, and be on an unresolved answer if it specifies one. Filling an older order does not restart the 90-day window.
 
 Ranked accounts must be people. Bots, deleted accounts and users with active bans other than mod alerts are ineligible. SQL-managed entries in `trophy_rank_exclusions` also exclude holders. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
 

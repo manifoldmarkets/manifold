@@ -32,7 +32,7 @@ create table if not exists
   user_net_worth_peaks (
     user_id text primary key references users (id) on delete cascade,
     peak_net_worth numeric not null check (
-      peak_net_worth > '-Infinity'::numeric
+      peak_net_worth > 0
       and peak_net_worth < 'Infinity'::numeric
     ),
     peak_time timestamptz not null
@@ -63,7 +63,7 @@ create table if not exists
   user_trophy_rank_peaks (
     user_id text not null references users (id) on delete cascade,
     trophy_id text not null,
-    best_rank int not null check (best_rank >= 1),
+    best_rank int not null check (best_rank between 1 and 25),
     first_ranked_time timestamptz not null,
     best_rank_time timestamptz not null,
     primary key (user_id, trophy_id)

@@ -6,6 +6,7 @@ import {
   Placement,
   safePolygon,
   shift,
+  useDismiss,
   useFloating,
   useFocus,
   useHover,
@@ -87,6 +88,7 @@ export function Tooltip({
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
     useFocus(context, { enabled: showOnFocus }),
+    useDismiss(context, { enabled: showOnFocus, outsidePress: false }),
     useHover(context, {
       mouseOnly: noTap,
       handleClose: hasSafePolygon ? safePolygon({ buffer: -0.5 }) : null,

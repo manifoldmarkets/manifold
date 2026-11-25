@@ -114,6 +114,7 @@ export function isStarterTrophyAccount(
 export const MARKET_CREATED_MIN_TRADERS = 10
 export const REFERRAL_MIN_TRADES = 10
 export const NET_WORTH_RANK_ACTIVE_DAYS = 90
+export const NET_WORTH_SNAPSHOT_MAX_AGE_HOURS = 72
 
 // Live achievement fields and starter stats used by the trophy ladders.
 export const TROPHY_STAT_KEYS = [
@@ -207,12 +208,12 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'net-worth',
     label: 'Net Worth',
     description:
-      'Your highest net worth (balance plus the value of your open positions), checked nightly',
+      'Your highest portfolio snapshot value (mana balance plus open positions), checked nightly',
     category: 'trading',
     statKey: 'peakNetWorth',
     unit: 'mana',
     ranked: true,
-    rankNote: `Ranked nightly by current net worth if the holder traded in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days or has an open limit order`,
+    rankNote: `Ranked nightly by net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. You must have placed a trade in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days or have an open limit order on a market that is still trading`,
     milestones: [
       m('minnow', 'Minnow', '\u{1F41F}', 2_500, 'green'),
       m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'blue'),

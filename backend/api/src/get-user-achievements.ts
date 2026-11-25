@@ -13,6 +13,7 @@ import {
 } from 'common/trophies'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
+  TROPHY_FRESH_PORTFOLIO_FILTER,
   TROPHY_PERSON_FILTER,
   TROPHY_VISIBLE_COMMENT_FILTER,
 } from 'shared/supabase/trophy-eligibility'
@@ -226,10 +227,9 @@ const STATS_QUERY = `with
       and exists (select 1 from users referrer where referrer.id = $1)
   ),
   portfolio as (
-    select u.balance + coalesce(p.investment_value, 0) as net_worth
-    from users u
-    left join user_portfolio_history_latest p on p.user_id = u.id
-    where u.id = $1
+    select uphl.balance + uphl.investment_value as net_worth,
+      ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
+    from user_portfolio_history_latest uphl where uphl.user_id = $1
   ),
   liked as (
     select count(distinct r.content_id) as liked_comments
@@ -258,7 +258,8 @@ const STATS_QUERY = `with
       sum(coalesce((ucm.data->>'totalAmountSold')::numeric, 0)
         + coalesce((ucm.data->>'totalAmountInvested')::numeric, 0)) as total_volume_mana,
       count(*) filter (where coalesce(ucm.profit, 0) > 0) as profitable_markets_count,
-      count(*) filter (where coalesce(ucm.profit, 0) > 0 and c.resolution is not null
+      count(*) filter (where ucm.profit > 0 and ucm.profit < 'Infinity'::numeric
+        and c.resolution is not null
         and c.resolution <> 'CANCEL' and not coalesce(c.deleted, false)) as resolved_profitable_markets,
       count(*) filter (where coalesce(ucm.profit, 0) < 0) as unprofitable_markets_count,
       max(ucm.profit) filter (where coalesce(ucm.profit, 0) > 0) as largest_profitable_trade_value,
@@ -357,7 +358,8 @@ const STATS_QUERY = `with
   )
   select
     coalesce(portfolio.net_worth, 0) as net_worth,
-    greatest(coalesce(portfolio.net_worth, 0), coalesce(peaks.peak_net_worth, 0)) as peak_net_worth,
+    greatest(coalesce(peaks.peak_net_worth, 0),
+      case when portfolio.is_fresh then portfolio.net_worth end) as peak_net_worth,
     liked.liked_comments,
     created.markets_created_with_traders,
     referrals.referred_traders,
