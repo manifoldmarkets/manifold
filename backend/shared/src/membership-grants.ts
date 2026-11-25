@@ -232,7 +232,12 @@ export async function processUserMembershipGrants(
   const change = await transactWithRetries(
     pg,
     5,
-    (tx) => advanceGrants(tx, userId, Date.now(), { mode }),
+    async (tx) => {
+      const { now } = await tx.one<{ now: number }>(
+        'select (extract(epoch from now()) * 1000)::float8 as now'
+      )
+      return advanceGrants(tx, userId, Math.trunc(now), { mode })
+    },
     grantRetryOptions
   )
   if (change.started || change.ended) onChangeCommitted?.(userId)

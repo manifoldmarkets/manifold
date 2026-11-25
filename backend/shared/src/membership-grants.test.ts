@@ -32,7 +32,7 @@ import {
   MembershipSubscriptionData,
 } from 'common/notification'
 import { membershipGrantLockMessage } from 'common/membership-grants'
-import { DAY_MS, HOUR_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS } from 'common/util/time'
 import * as membershipGrants from './membership-grants'
 import { getSupporterRow } from './supabase/entitlements'
 import * as notifications from './supabase/notifications'
@@ -1105,18 +1105,43 @@ it('allows starts by default and requires an explicit false switch for rollback 
   ])
 })
 
-it('ends early for rollback, restores paid time, and leaves banked grants untouched on retries', async () => {
+it('previews and rolls back on database time when the operator clock is ten minutes slow', async () => {
   const now = Date.now()
   const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  const output = jest.spyOn(console, 'log').mockImplementation(() => {})
   await rows(
     `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
     values ($1,'supporter-basic',$2,true)`,
     [userId, new Date(now + HOUR_MS)]
   )
-  const active = await grantMembershipDays(pg, input)
+  const active = await grantMembershipDays(pg, { ...input, durationMs: DAY_MS })
   await grantMembershipDays(pg, { ...input, sourceId: 'next' })
   await setStartsEnabled(false)
-  clock.mockReturnValue(now + DAY_MS)
+  const rollbackTime = now + 5 * MINUTE_MS
+  const operatorTime = rollbackTime - 10 * MINUTE_MS
+  const remainingMs = DAY_MS - 5 * MINUTE_MS
+  // PGlite captures Date.now() at statement/transaction start. Keep a fractional
+  // database millisecond and skew only the operator clock after each snapshot.
+  clock.mockReturnValue(rollbackTime + 0.5)
+  jest
+    .spyOn(testClient, 'manyOrNone')
+    .mockImplementationOnce(async (sql, params) => {
+      const activeGrants = await rows(sql, params)
+      clock.mockReturnValue(operatorTime)
+      return activeGrants
+    })
+  await endActiveMembershipGrants(pg)
+  expect(output).toHaveBeenCalledWith(
+    `Grant ${active.grant.id} for ${userId} would re-bank ${remainingMs} ms.`
+  )
+  clock.mockReturnValue(rollbackTime + 0.5)
+  const transact = testClient.tx
+  jest.spyOn(testClient, 'tx').mockImplementationOnce((options, fn) =>
+    transact(options, (t) => {
+      clock.mockReturnValue(operatorTime)
+      return fn(t)
+    })
+  )
   expect(await processUserMembershipGrants(pg, userId, 'end-active')).toEqual({
     ended: active.grant.id,
     started: null,
@@ -1128,7 +1153,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   await processMembershipGrants()
   expect(await supporter()).toMatchObject({
     entitlementId: 'supporter-basic',
-    expiresTime: now + DAY_MS + HOUR_MS,
+    expiresTime: rollbackTime + HOUR_MS,
     autoRenew: true,
     metadata: undefined,
   })
@@ -1137,7 +1162,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
     grant: {
       id: active.grant.id,
       status: 'banked',
-      durationMs: input.durationMs - DAY_MS,
+      durationMs: remainingMs,
       startedTime: null,
       endsTime: null,
       pausedPaid: null,
@@ -1148,7 +1173,7 @@ it('ends early for rollback, restores paid time, and leaves banked grants untouc
   expect(
     await rows('select status, duration_ms from membership_grants order by id')
   ).toEqual([
-    { status: 'banked', duration_ms: input.durationMs - DAY_MS },
+    { status: 'banked', duration_ms: remainingMs },
     { status: 'banked', duration_ms: input.durationMs },
   ])
 })

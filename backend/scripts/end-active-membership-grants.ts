@@ -17,14 +17,18 @@ export async function endActiveMembershipGrants(
     user_id: string
     id: string
     ends_time: string
+    db_time: string
   }>(
-    "select user_id, id::text, ends_time from membership_grants where status = 'active' order by user_id"
+    `select user_id, id::text, ends_time, now() as db_time
+     from membership_grants where status = 'active' order by user_id`
   )
   console.log(`Found ${active.length} active membership grants.`)
   if (!apply) {
-    const now = Date.now()
     for (const grant of active) {
-      const remainingMs = Math.max(0, Date.parse(grant.ends_time) - now)
+      const remainingMs = Math.max(
+        0,
+        Date.parse(grant.ends_time) - Date.parse(grant.db_time)
+      )
       console.log(
         `Grant ${grant.id} for ${grant.user_id} would re-bank ${remainingMs} ms.`
       )
