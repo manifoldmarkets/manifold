@@ -10,14 +10,22 @@ import {
   SportSelection,
   UpcomingMarketRef,
 } from 'common/sports-schedule'
+import { ESPORTS_SPORT_KEY, EsportsEventView } from 'common/esports'
 import { BackButton } from 'web/components/contract/back-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { SEO } from 'web/components/SEO'
+import { esportsCounts, useEsports } from 'web/hooks/use-esports'
 import { SportsRailData } from 'web/hooks/use-sports-schedule'
 import { HideBlockedTopics, HidesBlocked } from './blocked-topics'
-import { SportRail } from './sport-rail'
+import {
+  EsportsRailData,
+  SportRail,
+  SportsWorld,
+  useSportHref,
+  WorldSwitch,
+} from './sport-rail'
 import { SportsMarketSections } from './sports-market-sections'
 import { UpcomingMarkets } from './upcoming-markets'
 
@@ -32,6 +40,12 @@ export function SportsShell(props: {
   /** The open topic's slug, on a topic's page. */
   selectedTopic?: string
   rail: SportsRailData | undefined
+  /** Sports or esports: which world's chips the rail shows. */
+  world?: SportsWorld
+  /** On an esports page: which game is open. */
+  esportsSelected?: EsportsRailData['selected']
+  /** The page's own live read of the esports events, for the rail's counts. */
+  esportsEvents?: EsportsEventView[]
   heading: ReactNode
   /** One line; truncated rather than wrapped. */
   subheading?: ReactNode
@@ -47,6 +61,9 @@ export function SportsShell(props: {
     selected,
     selectedTopic,
     rail,
+    world = 'sports',
+    esportsSelected = 'all',
+    esportsEvents,
     heading,
     subheading,
     actions,
@@ -55,6 +72,13 @@ export function SportsShell(props: {
     trackPageView,
     children,
   } = props
+  // The switch counts esports' open series from every sports page.
+  const { events } = useEsports(false)
+  const esports = {
+    ...esportsCounts(esportsEvents ?? events),
+    selected: esportsSelected,
+  }
+  const hrefFor = useSportHref()
   return (
     <Page trackPageView={trackPageView} className="min-w-0">
       <SEO {...seo} />
@@ -96,12 +120,23 @@ export function SportsShell(props: {
         <p className="text-ink-500 truncate px-1 text-sm">
           {subheading ?? '\u00a0'}
         </p>
+        {/* Phones: the world switch gets a row of its own; wider screens
+            have it pinned at the start of the rail. */}
+        <WorldSwitch
+          world={world}
+          sportsHref={hrefFor('all')}
+          esportsCount={esports.total}
+          stretch
+          className="sm:hidden"
+        />
 
         <div className="bg-canvas-0 border-ink-100 sticky top-0 z-20 -mx-3 border-b px-3 sm:-mx-6 sm:px-6">
           <SportRail
             sports={rail?.sports ?? CURATED_SPORTS}
             selected={selected}
             counts={rail?.counts ?? {}}
+            world={world}
+            esports={esports}
           />
         </div>
 
@@ -112,9 +147,9 @@ export function SportsShell(props: {
         )}
 
         <p className="text-ink-400 px-1 pb-2 pt-4 text-[11px]">
-          Times are in your local time zone. Official markets are created by
-          @ManifoldSports; community markets are created by other users. Check
-          each market's rules for how it resolves.
+          {world === 'esports'
+            ? "Esports markets are made by the community: each tournament's series are answers in its matches market. Check each market's rules for how it resolves."
+            : "Times are in your local time zone. Official markets are created by @ManifoldSports; community markets are created by other users. Check each market's rules for how it resolves."}
         </p>
       </Col>
     </Page>
@@ -198,7 +233,12 @@ export function NoGames(props: {
 }) {
   const { sport, sports, counts, allBlocked } = props
   const others = sortBy(
-    sports.filter((s) => s.key !== sport?.key && (counts[s.key] ?? 0) > 0),
+    sports.filter(
+      (s) =>
+        s.key !== sport?.key &&
+        s.key !== ESPORTS_SPORT_KEY &&
+        (counts[s.key] ?? 0) > 0
+    ),
     (s) => -(counts[s.key] ?? 0)
   ).slice(0, 4)
   return (
