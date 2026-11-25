@@ -1,7 +1,9 @@
 import {
   capGrantDuration,
   GrantTransitionMode,
+  MembershipGrantMismatchError,
   MembershipGrantResult,
+  originalPaidExpiry,
   planGrantTransition,
 } from 'common/membership-grants'
 import {
@@ -23,7 +25,8 @@ import {
   readMembershipGrantView,
 } from './supabase/membership-grants'
 import { startMembershipGrant, mana } from './membership-grant-start'
-import { membershipGrantStartsDisabled } from './membership-grant-config'
+import { canStartMembershipGrant } from './membership-grant-config'
+import { log } from './monitoring/log'
 import {
   ExpiryNoticeDelivery,
   publishExpiryNotice,
@@ -50,21 +53,35 @@ export const grantRetryOptions = {
 }
 
 // Called only inside a retried SERIALIZABLE transaction.
-async function advanceGrants(
+export async function advanceGrants(
   tx: SupabaseTransaction,
   userId: string,
   now: number,
-  mode: GrantTransitionMode = 'advance'
+  {
+    mode = 'advance',
+    allowRowMismatch = false,
+  }: {
+    mode?: GrantTransitionMode
+    allowRowMismatch?: boolean
+  } = {}
 ) {
   const row = await getSupporterRow(tx, userId, true)
   const grants = await heldGrants(tx, userId)
-  const { ended, start, restored } = planGrantTransition(
-    row,
-    grants,
-    now,
-    mode,
-    await membershipGrantStartsDisabled(tx)
-  )
+  const startsDisabled =
+    mode === 'advance' &&
+    grants.some((g) => g.status === 'banked') &&
+    !(await canStartMembershipGrant(tx))
+  let plan: ReturnType<typeof planGrantTransition>
+  try {
+    plan = planGrantTransition(row, grants, now, mode, startsDisabled)
+  } catch (error) {
+    if (!allowRowMismatch || !(error instanceof MembershipGrantMismatchError))
+      throw error
+    log.error(error.message, { userId })
+    // Non-membership checkout can still price against the current entitlement.
+    plan = { ended: null, start: null, restored: row }
+  }
+  const { ended, start, restored } = plan
   let renewal: MembershipRenewal | null = null
   let notice: ExpiryNoticeDelivery = null
   const unservedMs =
@@ -95,7 +112,10 @@ async function advanceGrants(
         userId,
         restored.entitlementId,
         now,
-        mode
+        mode,
+        ended.pausedPaid
+          ? originalPaidExpiry(ended.pausedPaid, ended.startedTime!)
+          : undefined
       )
     else if (restored)
       notice = await writeTransitionExpiryNotice(
@@ -132,7 +152,7 @@ async function advanceGrants(
   }
 }
 
-// A read or checkout only needs to advance the ledger if free access just ended.
+// The owner view settles expired grants on read.
 export async function endDueMembershipGrant(
   tx: SupabaseTransaction,
   userId: string,
@@ -162,7 +182,7 @@ export async function processUserMembershipGrants(
   const change = await transactWithRetries(
     pg,
     5,
-    (tx) => advanceGrants(tx, userId, Date.now(), mode),
+    (tx) => advanceGrants(tx, userId, Date.now(), { mode }),
     grantRetryOptions
   )
   await publishGrantTransition(userId, change)

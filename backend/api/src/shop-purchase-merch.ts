@@ -17,6 +17,8 @@ import {
 } from 'common/holiday-sale'
 import { convertEntitlement } from 'common/shop/types'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
+import { runShopCheckout } from './helpers/shop-checkout'
 
 export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   { itemId, variantId, shippingCost, shipping },
@@ -38,7 +40,9 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   }
 
   // Validate the variant exists for this item
-  const variant = item.variants?.find((v) => v.printfulSyncVariantId === variantId)
+  const variant = item.variants?.find(
+    (v) => v.printfulSyncVariantId === variantId
+  )
   if (!variant) {
     throw new APIError(400, 'Invalid variant for this item')
   }
@@ -104,14 +108,23 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     }),
   })
   if (!ratesResponse.ok) {
-    console.error('Printful shipping rates verification failed:', ratesResponse.status)
-    throw new APIError(503, 'Unable to verify shipping rates — please try again')
+    console.error(
+      'Printful shipping rates verification failed:',
+      ratesResponse.status
+    )
+    throw new APIError(
+      503,
+      'Unable to verify shipping rates — please try again'
+    )
   }
   const ratesData = await ratesResponse.json()
   const rates: { rate: string }[] = ratesData.result || []
   const validManaRates = rates.map((r) => Math.round(parseFloat(r.rate) * 100))
   if (!validManaRates.includes(shippingCost)) {
-    throw new APIError(400, 'Invalid shipping cost — does not match any available rate')
+    throw new APIError(
+      400,
+      'Invalid shipping cost — does not match any available rate'
+    )
   }
 
   // Phase 1: Charge the user atomically. Insert order as PENDING_FULFILLMENT.
@@ -119,118 +132,130 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   // transaction open across an external HTTP request.
   // Enqueue the whole function in the bet queue so we don't hold the user lock
   // while waiting in the queue.
-  const { txnId, price, username } = await betsQueue.enqueueFn(
-    () =>
-      runTransactionWithRetries(async (tx) => {
-        const user = await getUser(auth.uid, tx)
-        if (!user) throw new APIError(401, 'Your account was not found')
+  const { txnId, price, username } = await runShopCheckout(
+    auth.uid,
+    false,
+    async (tx) => {
+      const user = await getUser(auth.uid, tx)
+      if (!user) throw new APIError(401, 'Your account was not found')
 
-        if (user.isBannedFromPosting) {
-          throw new APIError(403, 'Your account is banned')
-        }
+      if (user.isBannedFromPosting) {
+        throw new APIError(403, 'Your account is banned')
+      }
 
-        // Check one-time purchase limit (max 1 of each merch item per user)
-        // Exclude FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders
-        if (item.limit === 'one-time') {
-          const existing = await tx.oneOrNone(
-            `SELECT 1 FROM shop_orders
+      // Check one-time purchase limit (max 1 of each merch item per user)
+      // Exclude FAILED/REFUNDED/CANCELLED so users can re-purchase after failed orders
+      if (item.limit === 'one-time') {
+        const existing = await tx.oneOrNone(
+          `SELECT 1 FROM shop_orders
              WHERE user_id = $1 AND item_id = $2
              AND status NOT IN ('FAILED', 'REFUNDED', 'CANCELLED')
              LIMIT 1
              FOR UPDATE`,
-            [auth.uid, itemId]
-          )
-          if (existing) {
-            throw new APIError(403, 'You have already purchased this item (limit 1 per customer)')
-          }
-        }
-
-        // Discount applies to the item price only, not shipping: the
-        // supporter discount, or a Black Friday / Cyber Monday sale's merch
-        // discount if bigger (they don't stack). The grace keeps a form opened
-        // just before a sale ended at the price it showed.
-        const entRows = await tx.manyOrNone(
-          `SELECT * FROM user_entitlements WHERE user_id = $1`,
-          [auth.uid]
+          [auth.uid, itemId]
         )
-        const currentEntitlements = entRows.map(convertEntitlement)
-        const supporterDiscount = getBenefit(
-          currentEntitlements,
-          'shopDiscount',
-          0
-        )
-        const { fraction: shopDiscount, sale } = getShopDiscount(
-          supporterDiscount,
-          getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
-        )
-        const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
-        const totalCharge = discountedItemPrice + shippingCost
-
-        // Check balance
-        if (user.balance < totalCharge) {
-          throw new APIError(403, 'Insufficient balance')
-        }
-
-        // Create transaction to deduct mana (item price + shipping).
-        // Description deliberately OMITS the size — the balance log is public
-        // and a user's t-shirt size shouldn't be. Colour is included when
-        // present (low-sensitivity, useful context). The variantId stays on
-        // txn.data for refund/audit lookups (opaque Printful hex, not
-        // human-readable). Full size/colour/variant lives on shop_orders
-        // .metadata below for admin-only lookup.
-        const discountPercent = Math.round(shopDiscount * 100)
-        const descriptionParts = [
-          `Purchased ${item.name}${variant.color ? ` (${variant.color})` : ''}`,
-        ]
-        if (discountPercent > 0) {
-          descriptionParts.push(
-            `(${discountPercent}% ${sale ? sale.name : 'supporter'} discount)`
+        if (existing) {
+          throw new APIError(
+            403,
+            'You have already purchased this item (limit 1 per customer)'
           )
         }
-        if (shippingCost > 0) {
-          descriptionParts.push(`+ M$${shippingCost} shipping`)
-        }
-        const txnData: TxnData = {
-          category: 'SHOP_PURCHASE',
-          fromType: 'USER',
-          fromId: auth.uid,
-          toType: 'BANK',
-          toId: 'BANK',
-          amount: totalCharge,
-          token: 'M$',
-          description: descriptionParts.join(' '),
-          data: {
-            itemId,
-            variantId,
-            merchOrder: true,
-            // The discount actually applied, under the key it was named for.
-            supporterDiscount: sale ? 0 : shopDiscount,
-            ...(sale
-              ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
-              : {}),
-            shippingCost,
-          },
-        }
+      }
 
-        const txn = await runTxnOutsideBetQueue(tx, txnData)
+      // Discount applies to the item price only, not shipping: the
+      // supporter discount, or a Black Friday / Cyber Monday sale's merch
+      // discount if bigger (they don't stack). The grace keeps a form opened
+      // just before a sale ended at the price it showed.
+      const entRows = await tx.manyOrNone(
+        `SELECT * FROM user_entitlements WHERE user_id = $1`,
+        [auth.uid]
+      )
+      const currentEntitlements = entRows.map(convertEntitlement)
+      const supporterDiscount = getBenefit(
+        currentEntitlements,
+        'shopDiscount',
+        0
+      )
+      const { fraction: shopDiscount, sale } = getShopDiscount(
+        supporterDiscount,
+        getActiveHolidaySale(Date.now(), HOLIDAY_SALE_CHARGE_GRACE_MS)
+      )
+      const discountedItemPrice = applyShopDiscount(item.price, shopDiscount)
+      const totalCharge = discountedItemPrice + shippingCost
 
-        // Insert order record as PENDING_FULFILLMENT — Printful details added
-        // after tx. metadata captures what was actually ordered so /admin/merch
-        // can render the variant inline without joining txns or Printful.
-        const orderMetadata = {
-          size: variant.size,
-          ...(variant.color ? { color: variant.color } : {}),
+      // Check balance
+      if (user.balance < totalCharge) {
+        throw new APIError(403, 'Insufficient balance')
+      }
+
+      // Create transaction to deduct mana (item price + shipping).
+      // Description deliberately OMITS the size — the balance log is public
+      // and a user's t-shirt size shouldn't be. Colour is included when
+      // present (low-sensitivity, useful context). The variantId stays on
+      // txn.data for refund/audit lookups (opaque Printful hex, not
+      // human-readable). Full size/colour/variant lives on shop_orders
+      // .metadata below for admin-only lookup.
+      const discountPercent = Math.round(shopDiscount * 100)
+      const descriptionParts = [
+        `Purchased ${item.name}${variant.color ? ` (${variant.color})` : ''}`,
+      ]
+      if (discountPercent > 0) {
+        descriptionParts.push(
+          `(${discountPercent}% ${sale ? sale.name : 'supporter'} discount)`
+        )
+      }
+      if (shippingCost > 0) {
+        descriptionParts.push(`+ M$${shippingCost} shipping`)
+      }
+      const txnData: TxnData = {
+        category: 'SHOP_PURCHASE',
+        fromType: 'USER',
+        fromId: auth.uid,
+        toType: 'BANK',
+        toId: 'BANK',
+        amount: totalCharge,
+        token: 'M$',
+        description: descriptionParts.join(' '),
+        data: {
+          itemId,
           variantId,
-        }
-        await tx.none(
-          `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status, metadata)
-           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT', $5)`,
-          [auth.uid, itemId, totalCharge, txn.id, orderMetadata]
-        )
+          merchOrder: true,
+          // The discount actually applied, under the key it was named for.
+          supporterDiscount: sale ? 0 : shopDiscount,
+          ...(sale
+            ? { holidaySaleId: sale.id, holidaySaleDiscount: shopDiscount }
+            : {}),
+          shippingCost,
+        },
+      }
 
-        return { txnId: txn.id, price: totalCharge, username: user.username }
-      }),
-    [auth.uid]
+      const balanceUpdates: UserUpdate[] = []
+      const txn = await runTxnOutsideBetQueue(tx, txnData, false, (updates) =>
+        balanceUpdates.push(...updates)
+      )
+
+      // Insert order record as PENDING_FULFILLMENT — Printful details added
+      // after tx. metadata captures what was actually ordered so /admin/merch
+      // can render the variant inline without joining txns or Printful.
+      const orderMetadata = {
+        size: variant.size,
+        ...(variant.color ? { color: variant.color } : {}),
+        variantId,
+      }
+      await tx.none(
+        `INSERT INTO shop_orders (user_id, item_id, price_mana, txn_id, status, metadata)
+           VALUES ($1, $2, $3, $4, 'PENDING_FULFILLMENT', $5)`,
+        [auth.uid, itemId, totalCharge, txn.id, orderMetadata]
+      )
+
+      return {
+        txnId: txn.id,
+        price: totalCharge,
+        username: user.username,
+        balanceUpdates,
+      }
+    },
+    ({ balanceUpdates }) => broadcastUserUpdates(balanceUpdates)
   )
 
   // Phase 2: Create Printful order outside the DB transaction.
@@ -255,7 +280,13 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       amount: price,
       token: 'M$',
       description: `Refund: Printful order failed for ${item.name}`,
-      data: { itemId, variantId, merchOrder: true, refund: true, originalTxnId: txnId },
+      data: {
+        itemId,
+        variantId,
+        merchOrder: true,
+        refund: true,
+        originalTxnId: txnId,
+      },
     }
     await betsQueue.enqueueFn(
       () =>
@@ -369,7 +400,10 @@ async function createPrintfulOrder(
       throw new APIError(500, `Printful: ${message}`)
     } catch (e) {
       if (e instanceof APIError) throw e
-      throw new APIError(500, `Printful order failed (${response.status}): ${errorText.slice(0, 200)}`)
+      throw new APIError(
+        500,
+        `Printful order failed (${response.status}): ${errorText.slice(0, 200)}`
+      )
     }
   }
 

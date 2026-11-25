@@ -53,7 +53,8 @@ export async function renewDueMembership(
   userId: string,
   entitlementId: string,
   now: number,
-  mode: GrantTransitionMode = 'advance'
+  mode: GrantTransitionMode = 'advance',
+  originalExpiresTime?: string
 ): Promise<MembershipRenewal | null> {
   const tier = Object.values(SUPPORTER_TIERS).find(
     (t) => t.id === entitlementId
@@ -70,7 +71,12 @@ export async function renewDueMembership(
   // An explicit end-active rollback must leave all banked grants untouched.
   const startBankedGrant = async (): Promise<StartedGrant | undefined> => {
     if (mode !== 'advance') return
-    const grant = await getOrStartMembershipGrant(tx, userId, now)
+    const grant = await getOrStartMembershipGrant(
+      tx,
+      userId,
+      now,
+      originalExpiresTime
+    )
     if (!grant) return
     if (!grant.started)
       throw new Error('Paid renewal row has an active membership grant')

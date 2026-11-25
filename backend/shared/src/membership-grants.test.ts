@@ -6,6 +6,8 @@ import { adminGrantMembershipDays } from 'api/admin-grant-membership-days'
 import { getMembershipGrants } from 'api/get-membership-grants'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { shopPurchase } from 'api/shop-purchase'
+import { shopPurchaseMerch } from 'api/shop-purchase-merch'
+import * as holidaySale from 'common/holiday-sale'
 import { shopCancelSubscription } from 'api/shop-cancel-subscription'
 import { processMembershipRenewals } from 'scheduler/jobs/process-membership-renewals'
 import { processMembershipGrants } from 'scheduler/jobs/process-membership-grants'
@@ -39,6 +41,8 @@ import {
 } from './supabase/init'
 import { broadcastUpdatedUser } from './websockets/helpers'
 import { broadcast } from './websockets/server'
+import { betsQueue } from './helpers/fn-queue'
+import { log } from './monitoring/log'
 
 jest.mock('../../scripts/run-script', () => ({ runScript: jest.fn() }))
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
@@ -56,7 +60,14 @@ jest.mock('api/helpers/endpoint', () => ({
 jest.mock('shared/utils', () => ({
   log: jest.fn(),
   getPrivateUser: jest.fn(async () => ({ id: 'member' })),
-  getUser: jest.fn(async () => ({ id: 'member', balance: 100000 })),
+  getUser: jest.fn((id: string, tx: SupabaseTransaction) =>
+    tx.one(
+      `select id, balance, (data->>'streakForgiveness')::int as "streakForgiveness"
+      from users where id = $1`,
+      [id]
+    )
+  ),
+  isProd: () => true,
 }))
 jest.mock('shared/websockets/server', () => ({
   broadcast: jest.fn(),
@@ -155,10 +166,12 @@ beforeAll(async () => {
   db = new PGlite({
     parsers: { 1184: (v: string) => v, 20: Number },
   })
-  await db.exec(`create table users(id text primary key, balance integer default 100000, cash_balance integer default 0, total_deposits integer default 100000, total_cash_deposits integer default 0);
+  await db.exec(`create table users(id text primary key, balance integer default 100000, cash_balance integer default 0, total_deposits integer default 100000, total_cash_deposits integer default 0, data jsonb);
  create table system_trading_status(token text primary key, status boolean not null);
  create table txns(id bigint generated always as identity primary key, created_time timestamptz default now(), amount integer, from_id text, from_type text, to_id text, to_type text, token text, category text, data jsonb);
- create table shop_orders(user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now());
+ create table shop_orders(user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now(), metadata jsonb, printful_order_id text, printful_status text);
+ create table merch_stock_status(item_id text primary key, out_of_stock boolean);
+ insert into merch_stock_status values ('merch-wordmark-tshirt', false);
  create table user_notifications(user_id text, notification_id text, data jsonb, primary key(user_id,notification_id));
  create table user_entitlements(user_id text, entitlement_id text, granted_time timestamptz not null default now(), expires_time timestamptz, enabled boolean default true, auto_renew boolean default false, metadata jsonb, primary key(user_id,entitlement_id));
  insert into users values ('member');`)
@@ -199,7 +212,7 @@ beforeEach(async () => {
   await setStartsEnabled(true)
   jest.clearAllMocks()
   await db.exec(
-    'truncate membership_grants, membership_notice_deliveries, user_entitlements, txns, shop_orders, user_notifications; update users set balance = 100000, total_deposits = 100000'
+    'truncate membership_grants, membership_notice_deliveries, user_entitlements, txns, shop_orders, user_notifications; update users set balance = 100000, total_deposits = 100000, data = null'
   )
 })
 afterEach(() => {
@@ -318,6 +331,45 @@ it('restores a former member’s lapsed row exactly after chained grants', async
   const restored = await supporter()
   expect(wasEverSupporter(restored ? [restored] : [])).toBe(true)
   expect(getSupporterEntitlement(restored ? [restored] : [])).toBeNull()
+  expect(await rows('select * from txns')).toEqual([])
+})
+
+it('keeps the original microsecond expiry when failed renewal hands the paid row to a lower grant', async () => {
+  const now = Date.UTC(2026, 10, 25)
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows('update users set balance = 0 where id = $1', [userId])
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-premium','2026-11-24 23:59:59.654321+00',true)`,
+    [userId]
+  )
+  const original = await supporter()
+  const first = await grantMembershipDays(pg, { ...input, tier: 'premium' })
+  const second = await grantMembershipDays(pg, {
+    ...input,
+    sourceId: 'lower-tier',
+  })
+  clock.mockReturnValue(first.grant.endsTime!)
+  expect(await processUserMembershipGrants(pg, userId)).toEqual({
+    ended: first.grant.id,
+    started: second.grant.id,
+  })
+  expect(
+    await rows(
+      "select paused_paid from membership_grants where status = 'active'"
+    )
+  ).toEqual([
+    {
+      paused_paid: expect.objectContaining({
+        autoRenew: false,
+        originalExpiresTime: original!.expiresTimeText,
+        remainingMs: first.grant.pausedPaid!.remainingMs,
+      }),
+    },
+  ])
+  clock.mockReturnValue(Date.now() + second.grant.durationMs)
+  await processUserMembershipGrants(pg, userId)
+  expect(await supporter()).toEqual({ ...original, autoRenew: false })
   expect(await rows('select * from txns')).toEqual([])
 })
 
@@ -564,6 +616,14 @@ it('commits banked Plus at checkout and returns the free-days lock without selli
     code: 403,
     message: membershipGrantLockMessage('basic', now + grant.durationMs),
   }
+  const queueReleased = jest.fn()
+  jest.spyOn(betsQueue, 'enqueueFn').mockImplementation(async (fn) => {
+    try {
+      return await fn()
+    } finally {
+      queueReleased()
+    }
+  })
   await expect(
     purchase({ itemId: 'supporter-basic' }, { uid: userId })
   ).rejects.toMatchObject(lock)
@@ -577,6 +637,9 @@ it('commits banked Plus at checkout and returns the free-days lock without selli
     entitlements,
   })
   expect(createPushNotifications).toHaveBeenCalledTimes(1)
+  expect(queueReleased.mock.invocationCallOrder[0]).toBeLessThan(
+    jest.mocked(createPushNotifications).mock.invocationCallOrder[0]
+  )
   expect(
     await rows('select notice_key from membership_notice_deliveries')
   ).toHaveLength(1)
@@ -595,6 +658,124 @@ it('commits banked Plus at checkout and returns the free-days lock without selli
     },
   ])
 })
+
+it.each([
+  { itemId: 'avatar-golden-border', price: 23750 },
+  { itemId: 'streak-forgiveness', price: 142 },
+])(
+  'starts banked Pro before pricing or limiting $itemId',
+  async ({ itemId, price }) => {
+    const now = Date.now()
+    jest.spyOn(Date, 'now').mockReturnValue(now)
+    jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+    await rows('update users set data = $1 where id = $2', [
+      { streakForgiveness: 2 },
+      userId,
+    ])
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+      values ($1,'supporter-premium',$2,true)`,
+      [userId, new Date(now - HOUR_MS)]
+    )
+    const { grant, outcome } = await grantMembershipDays(pg, input)
+    expect(outcome).toBe('banked')
+    await cancel({}, { uid: userId })
+    await purchase({ itemId }, { uid: userId })
+    expect((await supporter())?.metadata).toEqual({
+      membershipGrantId: grant.id,
+    })
+    expect(await rows('select price_mana from shop_orders')).toEqual([
+      { price_mana: price },
+    ])
+  }
+)
+
+it('prices cosmetics against the current row on a ledger mismatch and blocks membership checkout', async () => {
+  jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+  const { grant } = await grantMembershipDays(pg, input)
+  await rows(
+    "update user_entitlements set metadata = null, entitlement_id = 'supporter-premium', expires_time = now() + interval '10 days'"
+  )
+  jest.spyOn(Date, 'now').mockReturnValue(grant.endsTime!)
+  await purchase({ itemId: 'avatar-golden-border' }, { uid: userId })
+  expect(log.error).toHaveBeenCalledWith(
+    'Membership grant and supporter row disagree',
+    { userId }
+  )
+  await expect(
+    purchase({ itemId: 'supporter-basic' }, { uid: userId })
+  ).rejects.toThrow(/disagree/)
+  expect(await rows('select amount from txns')).toEqual([{ amount: 22500 }])
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'active' },
+  ])
+})
+
+it.each([false, true])(
+  'prices merch at the current Premium discount after a grant ends (ledger mismatch = %p)',
+  async (mismatch) => {
+    const now = Date.now()
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(now)
+    jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1,'supporter-premium',$2,false)`,
+      [userId, new Date(now + 10 * DAY_MS)]
+    )
+    const { grant } = await grantMembershipDays(pg, {
+      ...input,
+      tier: 'premium',
+    })
+    clock.mockReturnValue(grant.endsTime!)
+    if (mismatch)
+      await rows(
+        'update user_entitlements set metadata = null, expires_time = $1',
+        [new Date(Date.now() + DAY_MS)]
+      )
+    const fetch = jest
+      .spyOn(global, 'fetch')
+      .mockRejectedValue(new Error('Unexpected Printful request'))
+      .mockResolvedValueOnce(Response.json({ result: [{ rate: '1' }] }))
+      .mockResolvedValueOnce(
+        Response.json({ result: { id: 42, status: 'draft' } })
+      )
+    const order = {
+      itemId: 'merch-wordmark-tshirt',
+      variantId: '69e70ad8bc1045',
+      shippingCost: 100,
+      shipping: {
+        name: 'Buyer',
+        address1: '1 Main',
+        city: 'Oakland',
+        state: 'CA',
+        zip: '94612',
+        country: 'US',
+      },
+    }
+    const buy = shopPurchaseMerch as (
+      p: typeof order,
+      auth: { uid: string }
+    ) => Promise<unknown>
+    const previousToken = process.env.PRINTFUL_API_TOKEN
+    process.env.PRINTFUL_API_TOKEN = 'test'
+    try {
+      await expect(buy(order, { uid: userId })).resolves.toMatchObject({
+        success: true,
+      })
+    } finally {
+      if (previousToken === undefined) delete process.env.PRINTFUL_API_TOKEN
+      else process.env.PRINTFUL_API_TOKEN = previousToken
+    }
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(await rows('select status from membership_grants')).toEqual([
+      { status: mismatch ? 'active' : 'used' },
+    ])
+    expect(
+      await rows('select price_mana, printful_order_id from shop_orders')
+    ).toEqual([{ price_mana: 4600, printful_order_id: '42' }])
+    expect(await rows('select amount from txns')).toEqual([{ amount: 4600 }])
+  }
+)
 
 it.each([
   [23, 100000],
@@ -714,6 +895,11 @@ it('allows starts by default and requires an explicit false switch for rollback 
   )
   const { grant, outcome } = await grantMembershipDays(pg, input)
   expect(outcome).toBe('started')
+  expect(
+    await rows(
+      "select status from system_trading_status where token = 'MEMBERSHIP_GRANTS'"
+    )
+  ).toEqual([{ status: true }])
   await endActiveMembershipGrants(pg, false)
   await expect(endActiveMembershipGrants(pg, true)).rejects.toThrow(
     '--apply requires'

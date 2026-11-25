@@ -108,7 +108,8 @@ export function capGrantDuration(
 export function planGrantStart(
   row: GrantSupporterRow | null,
   grants: MembershipGrant[],
-  now: number
+  now: number,
+  originalExpiresTime?: string
 ) {
   milliseconds(now)
   if (
@@ -147,7 +148,9 @@ export function planGrantStart(
           tier: paidTier,
           remainingMs: row.expiresTime - now,
           originalExpiresTime:
-            row.expiresTimeText ?? new Date(row.expiresTime).toISOString(),
+            originalExpiresTime ??
+            row.expiresTimeText ??
+            new Date(row.expiresTime).toISOString(),
           autoRenew: row.autoRenew,
           enabled: row.enabled,
           grantedTime: row.grantedTime,
@@ -165,7 +168,7 @@ export function planGrantStart(
   return { grant, newRow, pausedPaid }
 }
 
-function originalPaidExpiry(paid: PausedPaid, startedTime: number) {
+export function originalPaidExpiry(paid: PausedPaid, startedTime: number) {
   return (
     paid.originalExpiresTime ??
     paid.lapsedExpiresTime ??
@@ -209,6 +212,12 @@ export function planGrantEnd(
 
 export type GrantTransitionMode = 'advance' | 'end-active'
 
+export class MembershipGrantMismatchError extends Error {
+  constructor() {
+    super('Membership grant and supporter row disagree')
+  }
+}
+
 // A single instant for the end and next start keeps paused milliseconds intact,
 // even when the scheduler is late. Only the final supporter row is written.
 export function planGrantTransition(
@@ -220,7 +229,7 @@ export function planGrantTransition(
 ) {
   const active = grants.find((g) => g.status === 'active')
   if (String(row?.metadata?.membershipGrantId ?? '') !== (active?.id ?? ''))
-    throw new Error('Membership grant and supporter row disagree')
+    throw new MembershipGrantMismatchError()
   const end = active && planGrantEnd(active, now, mode === 'end-active')
   if (active && !end) return { ended: null, start: null, restored: null }
   const restored = end ? end.newRow : row

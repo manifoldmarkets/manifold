@@ -5,9 +5,8 @@ import {
   SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getUser } from 'shared/utils'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { runShopCheckout } from './helpers/shop-checkout'
 import {
   getShopItem,
   getEntitlementId,
@@ -17,12 +16,7 @@ import {
   getSeasonalAvailabilityText,
   AchievementRequirement,
 } from 'common/shop/items'
-import {
-  endDueMembershipGrant,
-  grantRetryOptions,
-  publishGrantTransition,
-  readMembershipGrantView,
-} from 'shared/membership-grants'
+import { readMembershipGrantView } from 'shared/membership-grants'
 import { getOrStartMembershipGrant } from 'shared/membership-grant-start'
 import { publishExpiryNotice } from 'shared/membership-expiry-notice'
 import {
@@ -238,11 +232,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     await checkItemRequirement(pg, auth.uid, item.requirement)
   }
 
-  const purchase = async (tx: SupabaseTransaction) => {
-    const now = Date.now()
-    const transition = await endDueMembershipGrant(tx, auth.uid, now)
-    if (transition) return { transition }
-
+  const purchase = async (tx: SupabaseTransaction, now: number) => {
     const user = await getUser(auth.uid, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
 
@@ -292,22 +282,12 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     let upgradeCredit = 0
 
     if (isSupporterTierPurchase) {
-      const active = await getOrStartMembershipGrant(tx, auth.uid, now)
+      const { active, next } = await readMembershipGrantView(tx, auth.uid, now)
       if (active) {
-        const { next } = await readMembershipGrantView(tx, auth.uid, now)
-        const message = membershipGrantLockMessage(
-          active.tier,
-          active.endsTime,
-          next
+        throw new APIError(
+          403,
+          membershipGrantLockMessage(active.tier, active.endsTime, next)
         )
-        if (!active.started) throw new APIError(403, message)
-        // Commit free access before returning the checkout lock.
-        return {
-          success: false as const,
-          message,
-          entitlements: await getUserEntitlements(tx, auth.uid),
-          notice: active.notice,
-        }
       }
       const supporterEntitlements = await getActiveSupporterEntitlements(
         tx,
@@ -419,13 +399,8 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             },
           }
 
-      const txn = await runTxnOutsideBetQueue(
-        tx,
-        txnData,
-        false,
-        isSupporterTierPurchase
-          ? (updates) => balanceUpdates.push(...updates)
-          : undefined
+      const txn = await runTxnOutsideBetQueue(tx, txnData, false, (updates) =>
+        balanceUpdates.push(...updates)
       )
       txnId = txn.id
     }
@@ -572,28 +547,19 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
       upgradeCredit,
     }
   }
-  const result = await betsQueue.enqueueFn(async () => {
-    const checkout = () =>
-      runTransactionWithRetries(purchase, 3, grantRetryOptions)
-    let attempt = await checkout()
-    // Commit restoration (including any renewal) even if the purchase is declined.
-    while (attempt.transition) {
-      await publishGrantTransition(auth.uid, attempt.transition)
-      attempt = await checkout()
+  const {
+    balanceUpdates: _balanceUpdates,
+    notice: _notice,
+    ...response
+  } = await runShopCheckout(
+    auth.uid,
+    isSupporterTierPurchase,
+    purchase,
+    ({ balanceUpdates, entitlements, notice }) => {
+      if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
+      broadcastUpdatedUser({ id: auth.uid, entitlements })
+      return publishExpiryNotice(notice)
     }
-    if (!attempt.success) return attempt
-    const { balanceUpdates, ...result } = attempt
-    if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
-    return result
-  }, [auth.uid])
-
-  // Entitlements live outside the users row, so nothing else tells the
-  // user's open pages (e.g. Yap's member check) that they changed.
-  broadcastUpdatedUser({ id: auth.uid, entitlements: result.entitlements })
-  await publishExpiryNotice(result.notice)
-  if (!result.success) {
-    throw new APIError(403, result.message)
-  }
-  const { notice: _notice, ...response } = result
+  )
   return response
 }
