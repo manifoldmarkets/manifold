@@ -886,6 +886,13 @@ export const getTrophyBadgeImagePath = (
   milestoneId: string
 ) => `/trophy-badges/${trophyId}/${milestoneId}.webp`
 
+/** Art for a held rank tier of a ranked trophy (Super, Mega, #1), served
+ * next to its milestones; no milestone may use these ids. */
+export const getTrophyRankBadgeImagePath = (
+  trophyId: string,
+  tier: TrophyRankTier
+) => getTrophyBadgeImagePath(trophyId, tier)
+
 export const getTrophyPinId = (trophyId: string) =>
   `${TROPHY_PIN_PREFIX}${trophyId}`
 
