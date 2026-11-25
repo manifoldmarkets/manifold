@@ -17,6 +17,7 @@ import {
   EffectiveTier,
   EFFECTIVE_TIER_LABELS,
   TIER_BENEFITS,
+  TIER_ORDER,
   getUserSupporterTier,
   getSupporterEntitlement,
 } from 'common/supporter-config'
@@ -58,7 +59,12 @@ export default function SupporterPage() {
 
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
-  const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
+  const [purchaseSummary, setPurchaseSummary] = useState<{
+    paidTier: SupporterTier
+    grant?: { tier: SupporterTier; endsTime: number }
+  }>()
+  const celebrationTier =
+    purchaseSummary?.grant?.tier ?? purchaseSummary?.paidTier
   const [confirmingPurchase, setConfirmingPurchase] =
     useState<SupporterTier | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
@@ -134,8 +140,20 @@ export default function SupporterPage() {
     const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
-      await api('shop-purchase', { itemId: item.id })
-      setPurchasedTier(tier)
+      const { entitlement } = await api('shop-purchase', { itemId: item.id })
+      const grantTier =
+        entitlement?.metadata?.membershipGrantId != null
+          ? TIER_ORDER.find(
+              (t) => SUPPORTER_TIERS[t].id === entitlement.entitlementId
+            )
+          : undefined
+      setPurchaseSummary({
+        paidTier: tier,
+        grant:
+          grantTier && entitlement?.expiresTime !== undefined
+            ? { tier: grantTier, endsTime: entitlement.expiresTime }
+            : undefined,
+      })
       setShowCelebration(true)
       toast.success('Thank you for your support!')
       await refreshMembership()
@@ -396,53 +414,62 @@ export default function SupporterPage() {
           <div className="mb-4 text-5xl">🎉</div>
           <h2 className="mb-6 text-2xl font-bold">
             You're now a{' '}
-            {purchasedTier && (
+            {celebrationTier && (
               <>
                 <TierBadge
-                  tier={purchasedTier}
-                  animate={purchasedTier === 'premium'}
+                  tier={celebrationTier}
+                  animate={celebrationTier === 'premium'}
                 />{' '}
-                Manifold {SUPPORTER_TIERS[purchasedTier].name}
+                Manifold {SUPPORTER_TIERS[celebrationTier].name}
               </>
             )}{' '}
             member!
           </h2>
 
+          {purchaseSummary?.grant && (
+            <p className="text-ink-600 mb-6">
+              Your free {SUPPORTER_TIERS[purchaseSummary.grant.tier].name} days
+              run until {formatMembershipDate(purchaseSummary.grant.endsTime)}.
+              Your paid {SUPPORTER_TIERS[purchaseSummary.paidTier].name}{' '}
+              membership starts when your free days end.
+            </p>
+          )}
+
           <Col className="mb-6 gap-2 text-left">
-            {purchasedTier && (
+            {celebrationTier && (
               <>
                 <BenefitRow
                   icon="🎯"
-                  label={`${SUPPORTER_BENEFITS[purchasedTier].questMultiplier}x quest rewards`}
+                  label={`${SUPPORTER_BENEFITS[celebrationTier].questMultiplier}x quest rewards`}
                 />
-                {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
+                {SUPPORTER_BENEFITS[celebrationTier].shopDiscount > 0 && (
                   <BenefitRow
                     icon="💎"
                     label={`${Math.round(
-                      SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
+                      SUPPORTER_BENEFITS[celebrationTier].shopDiscount * 100
                     )}% off shop items`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
+                {SUPPORTER_BENEFITS[celebrationTier].maxStreakFreezes > 1 && (
                   <BenefitRow
                     icon="❄️"
-                    label={`${SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes} max streak freezes`}
+                    label={`${SUPPORTER_BENEFITS[celebrationTier].maxStreakFreezes} max streak freezes`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].freeLoanRate > 0.01 && (
+                {SUPPORTER_BENEFITS[celebrationTier].freeLoanRate > 0.01 && (
                   <BenefitRow
                     icon="💰"
                     label={`${Math.round(
-                      SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100
+                      SUPPORTER_BENEFITS[celebrationTier].freeLoanRate * 100
                     )}% daily free loans`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].marginLoanAccess && (
+                {SUPPORTER_BENEFITS[celebrationTier].marginLoanAccess && (
                   <BenefitRow
                     icon="📈"
                     label={`${
-                      SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent +
-                      1
+                      SUPPORTER_BENEFITS[celebrationTier]
+                        .maxLoanNetWorthPercent + 1
                     }x leverage boost`}
                   />
                 )}

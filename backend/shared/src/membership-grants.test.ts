@@ -2,6 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import * as pgPromise from 'pg-promise'
+import { APIError } from 'common/api/utils'
 import { adminGrantMembershipDays } from 'api/admin-grant-membership-days'
 import { getMembershipGrants } from 'api/get-membership-grants'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -31,6 +32,7 @@ import { membershipGrantLockMessage } from 'common/membership-grants'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import * as membershipGrants from './membership-grants'
 import { getSupporterRow } from './supabase/entitlements'
+import * as notifications from './supabase/notifications'
 import {
   createSupabaseDirectClient,
   SERIAL_MODE,
@@ -95,7 +97,7 @@ const rows = async (sql: string, params?: unknown) =>
       pgp.as.format(sql.replace('postgres.public.', 'public.'), params)
     )
   ).rows
-const tx = {
+const queries = {
   manyOrNone: rows,
   async multi(sql: string) {
     return (await db.exec(sql)).map((result) => result.rows)
@@ -115,6 +117,20 @@ const tx = {
   },
   async none(sql: string, params?: unknown) {
     expect(await rows(sql, params)).toHaveLength(0)
+  },
+}
+const tx = {
+  ...queries,
+  async tx<T>(fn: (t: typeof queries) => Promise<T>): Promise<T> {
+    await db.exec('savepoint purchase')
+    try {
+      const result = await fn(tx)
+      await db.exec('release savepoint purchase')
+      return result
+    } catch (error) {
+      await db.exec('rollback to savepoint purchase')
+      throw error
+    }
   },
 }
 const testClient = {
@@ -220,7 +236,7 @@ beforeAll(async () => {
 beforeEach(async () => {
   await setStartsEnabled(true)
   jest.clearAllMocks()
-  // Handler assertions include the inbox writes and pushes detached in production.
+  // Wait for detached notification delivery in handler tests unless testing its timing.
   jest
     .spyOn(checkout, 'runShopCheckout')
     .mockImplementation(async (id, membership, buy, publish) => {
@@ -1190,39 +1206,108 @@ it.each([
   }
 )
 
+async function expireGrantOverPaidMembership(
+  remaining: number,
+  autoRenew = false
+) {
+  const start = Date.now()
+  const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+     values ($1, 'supporter-basic', $2, $3)`,
+    [userId, new Date(start + remaining), autoRenew]
+  )
+  const { grant } = await grantMembershipDays(pg, {
+    ...input,
+    durationMs: 4 * DAY_MS,
+  })
+  const end = grant.endsTime!
+  clock.mockReturnValue(end)
+  return end
+}
+
+it('commits the restored membership and inbox notice when a purchase is refused', async () => {
+  const end = await expireGrantOverPaidMembership(DAY_MS)
+  const refusal = new APIError(403, 'Insufficient balance')
+  const publisher = { broadcast: jest.fn(), notify: jest.fn() }
+  await expect(
+    checkout.runShopCheckout(
+      userId,
+      false,
+      async (savepoint) => {
+        await savepoint.none('update users set balance = 0 where id = $1', [
+          userId,
+        ])
+        throw refusal
+      },
+      publisher
+    )
+  ).rejects.toBe(refusal)
+  expect(
+    await rows('select balance from users where id = $1', [userId])
+  ).toEqual([{ balance: 100000 }])
+  expect(await rows('select status from membership_grants')).toEqual([
+    { status: 'used' },
+  ])
+  expect(await supporter()).toMatchObject({
+    entitlementId: 'supporter-basic',
+    expiresTime: end + DAY_MS,
+    autoRenew: false,
+  })
+  expect(
+    await rows(`select data->'data'->>'expiryReason' as reason from user_notifications
+    join membership_notice_deliveries on notification_id = notice_key`)
+  ).toEqual([{ reason: 'cancelled' }])
+  expect(publisher.broadcast).not.toHaveBeenCalled()
+  expect(publisher.notify).not.toHaveBeenCalled()
+  expect(createPushNotifications).toHaveBeenCalledTimes(1)
+})
+
 it.each([
-  { itemId: 'supporter-basic', remaining: DAY_MS, resubscribes: true },
+  {
+    itemId: 'supporter-basic',
+    remaining: DAY_MS,
+    resubscribes: true,
+    retry: false,
+  },
   {
     itemId: 'avatar-golden-border',
     remaining: 2.5 * DAY_MS,
     resubscribes: false,
+    retry: false,
+  },
+  {
+    itemId: 'avatar-golden-border',
+    remaining: DAY_MS,
+    resubscribes: false,
+    retry: true,
   },
 ])(
-  'revalidates the restored paid expiry after buying $itemId',
-  async ({ itemId, remaining, resubscribes }) => {
-    const start = Date.now()
-    const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
-    await rows(
-      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
-    values ($1, 'supporter-basic', $2, false)`,
-      [userId, new Date(start + remaining)]
-    )
-    const { grant } = await grantMembershipDays(pg, {
-      ...input,
-      durationMs: 4 * DAY_MS,
-    })
-    const end = grant.endsTime!
-    clock.mockReturnValue(end)
-    const deliveryTime = end + HOUR_MS
-    moveClockDuringPurchase(deliveryTime)
+  'revalidates the restored paid expiry in the purchase of $itemId (retry inbox insert = $retry)',
+  async ({ itemId, remaining, resubscribes, retry }) => {
+    const end = await expireGrantOverPaidMembership(remaining)
+    const transactions = jest.spyOn(testClient, 'tx')
+    if (retry) {
+      jest
+        .spyOn(notifications, 'insertNotificationRow')
+        .mockRejectedValueOnce(
+          Object.assign(new Error('retry inbox insert'), { code: '40001' })
+        )
+    } else {
+      moveClockDuringPurchase(end + HOUR_MS)
+    }
     await purchase({ itemId }, { uid: userId })
+    expect(transactions).toHaveBeenCalledTimes(retry ? 2 : 1)
+    expect(getUser).toHaveBeenCalledTimes(retry ? 2 : 1)
+    expect(await rows('select item_id from shop_orders')).toEqual([
+      { item_id: itemId },
+    ])
+    expect(await rows('select amount from txns')).toHaveLength(1)
     expect(await supporter()).toMatchObject({
       autoRenew: resubscribes,
       expiresTime: end + remaining + (resubscribes ? 30 * DAY_MS : 0),
     })
-    const expected = resubscribes
-      ? []
-      : [{ reason: 'cancelled', created: deliveryTime }]
+    const expected = resubscribes ? [] : [{ reason: 'cancelled', created: end }]
     const notices = () =>
       rows(`select data->'data'->>'expiryReason' as reason,
     data->'createdTime' as created from user_notifications`)
@@ -1237,20 +1322,24 @@ it.each([
   }
 )
 
-it('returns checkout while transition publication is pending and continues in order on error', async () => {
+it('broadcasts before checkout returns and continues delivery after a notification fails', async () => {
   await bankPlusBehindPremium(Date.now(), false, 4 * HOUR_MS)
   let release!: () => void
   const pending = new Promise<void>((resolve) => {
     release = resolve
   })
-  const error = new Error('transition publish failed')
+  const error = new Error('transition notification failed')
   jest
-    .spyOn(membershipGrants, 'publishGrantTransition')
+    .spyOn(membershipGrants, 'notifyGrantTransition')
     .mockImplementationOnce(async () => {
       await pending
       throw error
     })
-  const publishPurchase = jest.fn()
+  const broadcastError = new Error('transition broadcast failed')
+  jest.mocked(broadcastUpdatedUser).mockImplementationOnce(() => {
+    throw broadcastError
+  })
+  const publisher = { broadcast: jest.fn(), notify: jest.fn() }
   let published: Promise<void> | undefined
   try {
     expect(
@@ -1258,27 +1347,76 @@ it('returns checkout while transition publication is pending and continues in or
         userId,
         false,
         async () => 'purchased',
-        publishPurchase,
+        publisher,
         (work) => {
           published = work
         }
       )
     ).toBe('purchased')
-    expect(publishPurchase).not.toHaveBeenCalled()
+    expect(publisher.broadcast).toHaveBeenCalledWith('purchased')
+    expect(publisher.notify).not.toHaveBeenCalled()
     expect(createPushNotifications).not.toHaveBeenCalled()
   } finally {
     release()
     await published
   }
   expect(log.error).toHaveBeenCalledWith(
-    'Failed to publish shop checkout update',
+    'Failed to publish shop checkout notification',
     { userId, error }
   )
+  expect(log.error).toHaveBeenCalledWith(
+    'Failed to broadcast shop user state',
+    { userId, error: broadcastError }
+  )
   expect(createPushNotifications).toHaveBeenCalledTimes(1)
-  expect(publishPurchase).toHaveBeenCalledWith('purchased')
+  expect(publisher.notify).toHaveBeenCalledWith('purchased')
   expect(
     jest.mocked(createPushNotifications).mock.invocationCallOrder[0]
-  ).toBeLessThan(publishPurchase.mock.invocationCallOrder[0])
+  ).toBeLessThan(publisher.notify.mock.invocationCallOrder[0])
+})
+
+it('broadcasts the renewal and purchase balances in order before returning with a push pending', async () => {
+  await expireGrantOverPaidMembership(-HOUR_MS, true)
+  jest.mocked(broadcastUpdatedUser).mockClear()
+  jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+  jest.mocked(getNotificationDestinationsForUser).mockReturnValueOnce({
+    sendToBrowser: false,
+    sendToMobile: true,
+    sendToEmail: false,
+    urlToManageThisNotification: '',
+  })
+  let release!: () => void
+  const pending = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  jest.mocked(createPushNotifications).mockReturnValueOnce(pending)
+  let published: Promise<void> | undefined
+  jest
+    .mocked(checkout.runShopCheckout)
+    .mockImplementation((id, membership, buy, publisher) =>
+      runShopCheckout(id, membership, buy, publisher, (work) => {
+        published = work
+      })
+    )
+  try {
+    await purchase({ itemId: 'avatar-golden-border' }, { uid: userId })
+    const afterRenewal = 100000 - SUPPORTER_TIERS.basic.price
+    const broadcasts = jest.mocked(broadcastUpdatedUser).mock
+    expect(
+      broadcasts.calls.flatMap(([u]) =>
+        u.balance === undefined ? [] : [u.balance]
+      )
+    ).toEqual([afterRenewal, afterRenewal - 25000])
+    expect(createPushNotifications).toHaveBeenCalledTimes(1)
+    expect(
+      broadcasts.invocationCallOrder[broadcasts.calls.length - 1]
+    ).toBeLessThan(
+      jest.mocked(createPushNotifications).mock.invocationCallOrder[0]
+    )
+  } finally {
+    release()
+    await published
+  }
 })
 
 it('uses the restored paid credit for a purchase made at the free expiry', async () => {

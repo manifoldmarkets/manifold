@@ -8,13 +8,13 @@ import {
   publishExpiryNotice,
 } from './membership-expiry-notice'
 import { getUserEntitlements } from './supabase/entitlements'
-import { broadcastUpdatedUser } from './websockets/helpers'
+import { broadcastShopUserState } from './shop-broadcast'
 import { DAY_MS } from 'common/util/time'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
 } from './supabase/init'
-import { broadcastUserUpdates, UserUpdate } from './supabase/users'
+import { UserUpdate } from './supabase/users'
 import { runTxnOutsideBetQueue } from './txn/run-txn'
 import { getPrivateUser, log } from 'shared/utils'
 import { MembershipSubscriptionData, Notification } from 'common/notification'
@@ -134,17 +134,17 @@ export async function renewDueMembership(
   return { ...result, type: 'renewed', newExpiresTime }
 }
 
-export async function publishMembershipRenewal(renewal: MembershipRenewal) {
-  if (renewal.grant) {
-    broadcastUpdatedUser({
-      id: renewal.userId,
-      entitlements: renewal.grant.entitlements,
-    })
-    await publishExpiryNotice(renewal.grant.notice)
-  }
+export function broadcastMembershipRenewal(renewal: MembershipRenewal) {
+  broadcastShopUserState(renewal.userId, {
+    balanceUpdates:
+      renewal.type === 'grant-started' ? [] : renewal.balanceUpdates,
+    entitlements: renewal.grant?.entitlements,
+  })
+}
+
+export async function notifyMembershipRenewal(renewal: MembershipRenewal) {
+  if (renewal.grant) await publishExpiryNotice(renewal.grant.notice)
   if (renewal.type === 'grant-started') return
-  if (renewal.balanceUpdates.length)
-    broadcastUserUpdates(renewal.balanceUpdates)
   try {
     await createMembershipNotification(renewal)
   } catch (error) {
@@ -152,6 +152,11 @@ export async function publishMembershipRenewal(renewal: MembershipRenewal) {
       `Failed to send ${renewal.type} notification for user ${renewal.userId}: ${error}`
     )
   }
+}
+
+export async function publishMembershipRenewal(renewal: MembershipRenewal) {
+  broadcastMembershipRenewal(renewal)
+  await notifyMembershipRenewal(renewal)
 }
 
 async function createMembershipNotification({

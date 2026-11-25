@@ -1,12 +1,15 @@
+import { APIError } from 'common/api/utils'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import {
+  ExpiryNoticeDelivery,
   publishExpiryNotice,
   writeTransitionExpiryNotice,
 } from 'shared/membership-expiry-notice'
 import {
   advanceGrants,
+  broadcastGrantTransition,
   grantRetryOptions,
-  publishGrantTransition,
+  notifyGrantTransition,
 } from 'shared/membership-grants'
 import { log } from 'shared/monitoring/log'
 import type { SupabaseTransaction } from 'shared/supabase/init'
@@ -16,58 +19,88 @@ export async function runShopCheckout<T>(
   userId: string,
   isMembershipPurchase: boolean,
   purchase: (tx: SupabaseTransaction, now: number) => Promise<T>,
-  publishPurchase: (result: T) => void | Promise<unknown>,
+  publisher: {
+    broadcast: (result: T) => void
+    notify?: (result: T) => Promise<unknown>
+  },
   onAfterCommit?: (published: Promise<void>) => void
 ) {
-  const afterCommit: (() => void | Promise<unknown>)[] = []
-  try {
-    const result = await betsQueue.enqueueFn(async () => {
-      while (true) {
-        const attempt = await runTransactionWithRetries(
-          async (tx) => {
-            const now = Date.now()
-            const transition = await advanceGrants(tx, userId, now, {
-              allowRowMismatch: !isMembershipPurchase,
-              deferExpiryNotices: true,
-            })
-            // Commit a start or restoration even if the purchase is later refused.
-            if (transition.started || transition.ended) return { transition }
-            return { purchase: await purchase(tx, now) }
-          },
-          3,
-          grantRetryOptions
-        )
-        const { transition } = attempt
-        if (!transition) return attempt.purchase
-        afterCommit.push(() => publishGrantTransition(userId, transition))
-        for (const { row, grantId } of transition.deferredNotices ?? []) {
-          afterCommit.push(async () => {
-            const notice = await runTransactionWithRetries((tx) =>
-              writeTransitionExpiryNotice(tx, userId, row, grantId, Date.now())
-            )
-            await publishExpiryNotice(notice)
-          })
+  const settleCheckout = async (tx: SupabaseTransaction) => {
+    const now = Date.now()
+    const transition = await advanceGrants(tx, userId, now, {
+      allowRowMismatch: !isMembershipPurchase,
+      deferExpiryNotices: true,
+    })
+    let outcome: { result: T } | { error: APIError }
+    try {
+      outcome = { result: await tx.tx((savepoint) => purchase(savepoint, now)) }
+    } catch (error) {
+      // The savepoint discarded the purchase. Keep a grant change on refusal.
+      if (
+        !(error instanceof APIError) ||
+        !(transition.started || transition.ended)
+      )
+        throw error
+      outcome = { error }
+    }
+    const notices: NonNullable<ExpiryNoticeDelivery>[] = []
+    for (const { row, grantId } of transition.deferredNotices ?? []) {
+      const notice = await writeTransitionExpiryNotice(
+        tx,
+        userId,
+        row,
+        grantId,
+        now
+      )
+      if (notice) notices.push(notice)
+    }
+    return { transition, outcome, notices }
+  }
+
+  const { transition, outcome, notices } =
+    await betsQueue.enqueueFn(async () => {
+      const committed = await runTransactionWithRetries(
+        settleCheckout,
+        3,
+        grantRetryOptions
+      )
+      // Publish absolute state before another checkout can acquire this queue slot.
+      broadcastGrantTransition(userId, committed.transition)
+      if ('result' in committed.outcome) {
+        try {
+          publisher.broadcast(committed.outcome.result)
+        } catch (error) {
+          log.error('Failed to broadcast shop purchase', { userId, error })
         }
       }
+      return committed
     }, [userId])
-    afterCommit.push(() => publishPurchase(result))
-    return result
-  } finally {
-    // A declined purchase can still have committed grant transitions.
-    const published = publishCheckoutUpdates(userId, afterCommit)
-    onAfterCommit?.(published)
-  }
+
+  const notifications: (() => Promise<unknown>)[] = [
+    () => notifyGrantTransition(transition),
+    ...notices.map((notice) => () => publishExpiryNotice(notice)),
+  ]
+  const { notify } = publisher
+  if ('result' in outcome && notify)
+    notifications.push(() => notify(outcome.result))
+  const published = publishCheckoutNotifications(userId, notifications)
+  onAfterCommit?.(published)
+  if ('error' in outcome) throw outcome.error
+  return outcome.result
 }
 
-async function publishCheckoutUpdates(
+async function publishCheckoutNotifications(
   userId: string,
-  afterCommit: (() => void | Promise<unknown>)[]
+  notifications: (() => Promise<unknown>)[]
 ) {
-  for (const publish of afterCommit) {
+  for (const notify of notifications) {
     try {
-      await publish()
+      await notify()
     } catch (error) {
-      log.error('Failed to publish shop checkout update', { userId, error })
+      log.error('Failed to publish shop checkout notification', {
+        userId,
+        error,
+      })
     }
   }
 }

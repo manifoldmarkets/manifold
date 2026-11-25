@@ -39,8 +39,8 @@ import {
   getActiveSupporterEntitlements,
   getUserEntitlements,
 } from 'shared/supabase/entitlements'
-import { broadcastUserUpdates, type UserUpdate } from 'shared/supabase/users'
-import { broadcastUpdatedUser } from 'shared/websockets/helpers'
+import { UserUpdate } from 'shared/supabase/users'
+import { broadcastShopUserState } from 'shared/shop-broadcast'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
 // holding locks open during expensive scans.
@@ -545,15 +545,9 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     balanceUpdates: _balanceUpdates,
     notice: _notice,
     ...response
-  } = await runShopCheckout(
-    auth.uid,
-    isSupporterTierPurchase,
-    purchase,
-    ({ balanceUpdates, entitlements, notice }) => {
-      if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
-      broadcastUpdatedUser({ id: auth.uid, entitlements })
-      return publishExpiryNotice(notice)
-    }
-  )
+  } = await runShopCheckout(auth.uid, isSupporterTierPurchase, purchase, {
+    broadcast: (result) => broadcastShopUserState(auth.uid, result),
+    notify: ({ notice }) => publishExpiryNotice(notice),
+  })
   return response
 }

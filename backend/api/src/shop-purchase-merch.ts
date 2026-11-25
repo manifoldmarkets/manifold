@@ -17,7 +17,8 @@ import {
 } from 'common/holiday-sale'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { broadcastUserUpdates, UserUpdate } from 'shared/supabase/users'
+import { UserUpdate } from 'shared/supabase/users'
+import { broadcastShopUserState } from 'shared/shop-broadcast'
 import { runShopCheckout } from './helpers/shop-checkout'
 
 export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
@@ -256,7 +257,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
         balanceUpdates,
       }
     },
-    ({ balanceUpdates }) => broadcastUserUpdates(balanceUpdates)
+    { broadcast: (result) => broadcastShopUserState(auth.uid, result) }
   )
 
   // Phase 2: Create Printful order outside the DB transaction.

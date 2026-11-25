@@ -7,8 +7,9 @@ import {
   planGrantTransition,
 } from 'common/membership-grants'
 import {
+  broadcastMembershipRenewal,
   MembershipRenewal,
-  publishMembershipRenewal,
+  notifyMembershipRenewal,
   renewDueMembership,
 } from './membership-renewal'
 import { SupporterTier } from 'common/supporter-config'
@@ -18,7 +19,7 @@ import {
 } from './supabase/init'
 import { getSupporterRow, getUserEntitlements } from './supabase/entitlements'
 import { transactWithRetries } from './transact-with-retries'
-import { broadcastUpdatedUser } from './websockets/helpers'
+import { broadcastShopUserState } from './shop-broadcast'
 import {
   getMembershipGrantBySource,
   heldGrants,
@@ -180,13 +181,33 @@ export async function endDueMembershipGrant(
   return due ? advanceGrants(tx, userId, now) : null
 }
 
+type GrantTransitionUpdates = Pick<
+  Awaited<ReturnType<typeof advanceGrants>>,
+  'entitlements' | 'renewal' | 'notice'
+>
+
+export function broadcastGrantTransition(
+  userId: string,
+  { entitlements, renewal }: GrantTransitionUpdates
+) {
+  if (entitlements) broadcastShopUserState(userId, { entitlements })
+  if (renewal) broadcastMembershipRenewal(renewal)
+}
+
+export async function notifyGrantTransition({
+  renewal,
+  notice,
+}: GrantTransitionUpdates) {
+  if (renewal) await notifyMembershipRenewal(renewal)
+  if (notice) await publishExpiryNotice(notice)
+}
+
 export async function publishGrantTransition(
   userId: string,
-  { entitlements, renewal, notice }: Awaited<ReturnType<typeof advanceGrants>>
+  transition: GrantTransitionUpdates
 ) {
-  if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
-  if (renewal) await publishMembershipRenewal(renewal)
-  if (notice) await publishExpiryNotice(notice)
+  broadcastGrantTransition(userId, transition)
+  await notifyGrantTransition(transition)
 }
 
 export async function processUserMembershipGrants(
@@ -278,8 +299,8 @@ export async function grantMembershipDays(
           : undefined
       return {
         result: { grant, outcome, reason },
-        renewal: change?.renewal,
-        notice: change?.notice,
+        renewal: change?.renewal ?? null,
+        notice: change?.notice ?? null,
         entitlements:
           inserted && !change?.renewal?.grant
             ? change?.entitlements ?? (await getUserEntitlements(tx, userId))
@@ -288,8 +309,6 @@ export async function grantMembershipDays(
     },
     grantRetryOptions
   )
-  if (entitlements) broadcastUpdatedUser({ id: userId, entitlements })
-  if (renewal) await publishMembershipRenewal(renewal)
-  if (notice) await publishExpiryNotice(notice)
+  await publishGrantTransition(userId, { entitlements, renewal, notice })
   return result
 }
