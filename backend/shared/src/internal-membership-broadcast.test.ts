@@ -1,6 +1,6 @@
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
-import { internalMembershipBroadcast } from './internal-membership-broadcast'
+import { internalMembershipBroadcast } from 'api/internal-membership-broadcast'
 
 const mockReadUser = jest.fn()
 jest.mock('shared/supabase/init', () => ({

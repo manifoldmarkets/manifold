@@ -8,6 +8,7 @@ import { getMembershipGrants } from 'api/get-membership-grants'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { shopPurchase } from 'api/shop-purchase'
 import { shopPurchaseMerch } from 'api/shop-purchase-merch'
+import { cancelMerchOrder } from 'api/cancel-merch-order'
 import * as checkout from 'api/helpers/shop-checkout'
 import * as holidaySale from 'common/holiday-sale'
 import { shopCancelSubscription } from 'api/shop-cancel-subscription'
@@ -202,7 +203,7 @@ beforeAll(async () => {
   await db.exec(`create table users(id text primary key, balance integer default 100000, cash_balance integer default 0, total_deposits integer default 100000, total_cash_deposits integer default 0, data jsonb);
  create table system_trading_status(token text primary key, status boolean not null);
  create table txns(id bigint generated always as identity primary key, created_time timestamptz default now(), amount integer, from_id text, from_type text, to_id text, to_type text, token text, category text, data jsonb);
- create table shop_orders(user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now(), metadata jsonb, printful_order_id text, printful_status text);
+ create table shop_orders(id uuid primary key default gen_random_uuid(), user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now(), metadata jsonb, printful_order_id text, printful_status text);
  create table merch_stock_status(item_id text primary key, out_of_stock boolean);
  insert into merch_stock_status values ('merch-wordmark-tshirt', false);
  create table user_notifications(user_id text, notification_id text, data jsonb, primary key(user_id,notification_id));
@@ -817,13 +818,13 @@ it.each([
 )
 
 function mockPrintful(
-  order = Response.json({ result: { id: 42, status: 'draft' } })
+  order = async () => Response.json({ result: { id: 42, status: 'draft' } })
 ) {
   return jest
     .spyOn(global, 'fetch')
     .mockRejectedValue(new Error('Unexpected Printful request'))
     .mockResolvedValueOnce(Response.json({ result: [{ rate: '1' }] }))
-    .mockResolvedValueOnce(order)
+    .mockImplementationOnce(order)
 }
 
 async function buyMerch(expectedTotal?: number) {
@@ -1339,9 +1340,44 @@ describe.each(ceilingCases)('$item checkout', ({ price, buy }) => {
   )
 })
 
+it.each(['FAILED', 'CANCELLED'])(
+  'refunds a merch order exactly once when Printful fails (final status %s)',
+  async (status) => {
+    jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
+    const error = new Error('Printful unavailable')
+    mockPrintful(async () => {
+      if (status === 'CANCELLED') {
+        const { id } = await pg.one<{ id: string }>(
+          'select id from shop_orders'
+        )
+        await (cancelMerchOrder as Handler)(
+          { orderId: id },
+          { uid: ENV_CONFIG.adminIds[0] }
+        )
+      }
+      throw error
+    })
+
+    await expect(buyMerch(5100)).rejects.toBe(error)
+    expect(await rows('select status from shop_orders')).toEqual([{ status }])
+    expect(
+      await rows('select from_id, to_id, amount from txns order by id')
+    ).toEqual([
+      { from_id: userId, to_id: 'BANK', amount: 5100 },
+      { from_id: 'BANK', to_id: userId, amount: 5100 },
+    ])
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 100000 }])
+    expect(
+      jest.mocked(broadcastUpdatedUser).mock.calls.map(([u]) => u.balance)
+    ).toEqual([94900, 100000])
+  }
+)
+
 it('only broadcasts the committed charge when the merch refund status update fails', async () => {
   jest.spyOn(holidaySale, 'getActiveHolidaySale').mockReturnValue(undefined)
-  mockPrintful(new Response('order failed', { status: 500 }))
+  mockPrintful(async () => new Response('order failed', { status: 500 }))
   jest.spyOn(console, 'error').mockImplementation(() => {})
   await db.exec(
     "alter table shop_orders add constraint reject_failed_status check (status <> 'FAILED')"

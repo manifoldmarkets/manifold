@@ -262,7 +262,7 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
   )
 
   // Phase 2: Create Printful order outside the DB transaction.
-  // If this fails, auto-refund the user and mark the order as FAILED.
+  // If this fails while the order is still pending, refund it and mark it FAILED.
   let printfulOrder: { id: number; status: string }
   try {
     printfulOrder = await createPrintfulOrder(printfulToken, {
@@ -273,7 +273,6 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
       packingSlipMessage: `@${username} (uid: ${auth.uid})`,
     })
   } catch (err) {
-    // Auto-refund: create a reverse txn to return mana, then mark order FAILED
     const refundTxn: TxnData = {
       category: 'SHOP_PURCHASE',
       fromType: 'BANK',
@@ -293,17 +292,28 @@ export const shopPurchaseMerch: APIHandler<'shop-purchase-merch'> = async (
     }
     await betsQueue.enqueueFn(async () => {
       const balanceUpdates = await runTransactionWithRetries(async (tx) => {
+        const order = await tx.oneOrNone<{ id: string }>(
+          `UPDATE shop_orders SET status = 'FAILED'
+           WHERE txn_id = $1 AND status = 'PENDING_FULFILLMENT'
+           RETURNING id`,
+          [txnId]
+        )
+        if (!order) return null
+
         const updates: UserUpdate[] = []
         await runTxnOutsideBetQueue(tx, refundTxn, false, (rows) =>
           updates.push(...rows)
         )
-        await tx.none(
-          `UPDATE shop_orders SET status = 'FAILED' WHERE txn_id = $1`,
-          [txnId]
-        )
         return updates
       })
-      broadcastShopUserState(auth.uid, { balanceUpdates })
+      if (balanceUpdates) {
+        broadcastShopUserState(auth.uid, { balanceUpdates })
+      } else {
+        console.warn(
+          '[shop-purchase-merch] Skipped refund for non-pending or missing order',
+          { txnId }
+        )
+      }
     }, [auth.uid])
     throw err
   }
