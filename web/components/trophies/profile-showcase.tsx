@@ -425,6 +425,7 @@ export function ShowcaseBadge(props: {
             <TrophyBadgeImage
               trophyId={badge.art.trophyId}
               milestone={badge.art.milestone}
+              rankTier={badge.rankTier}
               className={isLarge ? 'h-7 w-7' : 'h-5 w-5'}
               emojiClassName={isLarge ? 'text-lg' : 'text-sm'}
             />

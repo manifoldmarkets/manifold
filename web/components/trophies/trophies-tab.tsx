@@ -506,7 +506,8 @@ const ACHIEVEMENT_IMAGE_KEYS = [
 ] as const
 
 const ACHIEVEMENT_IMAGES: Record<string, string> = Object.fromEntries(
-  ACHIEVEMENT_IMAGE_KEYS.map((k) => [k, `/achievement-badges/${k}.png`])
+  // 256 px WebP versions; the large PNGs stay for the press kit (press.tsx).
+  ACHIEVEMENT_IMAGE_KEYS.map((k) => [k, `/achievement-badges/${k}.webp`])
 )
 
 type AchievementBucket =
@@ -753,7 +754,7 @@ function AchievementsSection(props: {
                   percentile={a.percentile}
                   imageSrc={
                     ACHIEVEMENT_IMAGES[a.id] ||
-                    '/achievement-badges/totalVolumeMana.png'
+                    '/achievement-badges/totalVolumeMana.webp'
                   }
                   bucket={bucket}
                 />

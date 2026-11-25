@@ -210,6 +210,8 @@ export function TrophyCard(props: {
         <TrophyBadgeImage
           trophyId={definition.id}
           milestone={viewing}
+          // The held rank's pin replaces the top (prismatic) tier's art.
+          rankTier={viewing.tier === 'prismatic' ? heldTier : null}
           className="h-24 w-24"
           emojiClassName="text-5xl"
         />
