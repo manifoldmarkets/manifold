@@ -52,7 +52,10 @@ export function boostMarket(params: any) {
   return call(getApiUrl('boost-market'), 'POST', params)
 }
 
-export function markAllNotifications(params: any) {
+export async function markAllNotifications(params: any) {
+  // The notifications page calls this as it loads, often before Firebase has
+  // restored the session, which would send it without a token.
+  await auth.authStateReady()
   return call(getApiUrl('markallnotifications'), 'POST', params)
 }
 

@@ -18,10 +18,16 @@ function getStorageProxy(store: Storage): Store | undefined {
     setItem: (key: string, value: string) => {
       try {
         store.setItem(key, value)
-      } catch (e) {
-        store.clear()
-        // try again
-        store.setItem(key, value)
+      } catch {
+        // Probably over quota: make room and try once more. Saving is
+        // best-effort, so never throw. Callers often save from inside a React
+        // state update, where a throw takes down the whole page.
+        try {
+          store.clear()
+          store.setItem(key, value)
+        } catch (e) {
+          console.warn(`Could not save ${key} to storage`, e)
+        }
       }
     },
     removeItem: (key: string) => store.removeItem(key),
