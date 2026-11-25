@@ -205,6 +205,29 @@ describe('league level', () => {
 })
 
 describe('progress', () => {
+  it('shows known trophy stats while achievements are unavailable', () => {
+    const trophies = {
+      starter: { starterTrades: 0, starterMarkets: 0, starterDays: 0 },
+      storedPeakNetWorth: 600_000,
+      ranks: [{ trophyId: 'net-worth', rank: 1, value: 510_000 }],
+    }
+    const stats = getTrophyDisplayStats(undefined, trophies)
+    expect(formatNetWorthPeak(netWorth, stats[netWorth.statKey])).toBe(
+      'Peak M600K'
+    )
+    expect(stats.starterTrades).toBe(0)
+    expect(stats.totalTradesCount).toBeUndefined()
+    expect(
+      getTrophyDisplayStats(undefined, {
+        ...trophies,
+        storedPeakNetWorth: null,
+      }).peakNetWorth
+    ).toBe(510_000)
+    expect(
+      getTrophyDisplayStats(undefined, undefined).peakNetWorth
+    ).toBeUndefined()
+  })
+
   it('uses the higher Net Worth peak as trophies and achievements refresh independently', () => {
     const achievements = { peakNetWorth: 499_999, totalTradesCount: 12 }
     const starter = { starterTrades: 3, starterMarkets: 2, starterDays: 1 }

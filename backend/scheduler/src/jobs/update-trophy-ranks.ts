@@ -1,5 +1,4 @@
 import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
-import type { Row } from 'common/supabase/utils'
 import {
   MARKET_CREATED_MIN_TRADERS,
   MAX_TROPHY_RANK,
@@ -12,6 +11,7 @@ import { EPSILON } from 'common/util/math'
 import {
   createSupabaseDirectClient,
   pgp,
+  READ_ONLY_REPEATABLE_MODE,
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import {
@@ -21,8 +21,7 @@ import {
   TROPHY_SNAPSHOT_NET_WORTH,
   trophyLikedCommentsQuery,
 } from 'shared/supabase/trophy-eligibility'
-import { bulkInsertQuery } from 'shared/supabase/utils'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { transactWithRetries } from 'shared/transact-with-retries'
 import { log } from 'shared/utils'
 
 const valueQueries: Record<string, string> = {
@@ -96,65 +95,77 @@ const valueQueries: Record<string, string> = {
 
 // PostgreSQL numeric sorts NaN above Infinity.
 const finiteValue = `value > '-Infinity'::numeric and value < 'Infinity'::numeric`
-const mode = new pgp.txMode.TransactionMode({
-  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+const writeMode = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.readCommitted,
   readOnly: false,
 })
 
 export async function updateTrophyRanks() {
   const started = Date.now()
-  const { summaries, peakCandidates, computedTime } =
-    await runTransactionWithRetries(publishTrophyRanks, 3, { mode })
-  for (const summary of summaries) log(summary)
-  // READ COMMITTED sees any higher peak a claim recorded since the sample.
-  let updatedPeaks = 0
-  if (peakCandidates.length) {
-    const result = await createSupabaseDirectClient().result(
-      `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
-       select p.user_id, p.value, $[computedTime]
-       from jsonb_to_recordset($[peakCandidates:json]::jsonb) as p(user_id text, value numeric)
-       join users u on u.id = p.user_id
-       order by p.user_id
-       ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
-      { peakCandidates, computedTime }
+  await createSupabaseDirectClient().task(async (session) => {
+    // Acquire before opening the snapshot so a waiting publisher samples anew.
+    await session.one(
+      "select pg_advisory_lock(hashtext('update-trophy-ranks'))"
     )
-    updatedPeaks = result.rowCount
-  }
-  log(
-    `Raised ${updatedPeaks} net worth peaks from ${peakCandidates.length} candidates`
-  )
+    try {
+      const snapshot = await session.tx(
+        { mode: READ_ONLY_REPEATABLE_MODE },
+        readTrophyRanks
+      )
+      const updatedPeaks = await transactWithRetries(
+        session,
+        3,
+        (tx) => publishTrophyRanks(tx, snapshot),
+        { mode: writeMode }
+      )
+      for (const summary of snapshot.summaries) log(summary)
+      log(
+        `Raised ${updatedPeaks} net worth peaks from ${snapshot.peakCandidates.length} candidates`
+      )
+    } finally {
+      await session.one(
+        "select pg_advisory_unlock(hashtext('update-trophy-ranks'))"
+      )
+    }
+  })
   log(`Updated trophy ranks in ${Date.now() - started}ms`)
 }
 
-async function publishTrophyRanks(tx: SupabaseTransaction) {
-  // Serialize publications. All rank sources use this transaction's snapshot.
-  await tx.one("select pg_advisory_xact_lock(hashtext('update-trophy-ranks'))")
-  const computedTime = new Date().toISOString()
-  await tx.none(
-    `create temp table trophy_net_worth_sample on commit drop as
+// Read the portfolio once for both consumers. A null rank identifies a peak
+// candidate, including highs set by users who do not qualify for a title.
+const withNetWorthPeaks = (holders: string) =>
+  `with trophy_net_worth_sample as materialized (
      select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value,
        u.balance as spendable_balance, (u.data->'lastBetTime')::bigint as last_bet_time
      from user_portfolio_history_latest uphl join users u on u.id = uphl.user_id
-     where ${TROPHY_FRESH_PORTFOLIO_FILTER}`
-  )
+     where ${TROPHY_FRESH_PORTFOLIO_FILTER}
+   ), holders as (${holders})
+   select user_id, value, rank from holders
+   union all
+   select sample.user_id, sample.value::text, null as rank from trophy_net_worth_sample sample
+   left join user_net_worth_peaks peak on peak.user_id = sample.user_id
+   where sample.value > coalesce(peak.peak_net_worth, 0) and ${finiteValue}`
 
+// Preserve exact PostgreSQL numerics when passing the snapshot back for writing.
+type Score = { user_id: string; value: string }
+
+async function readTrophyRanks(tx: SupabaseTransaction) {
+  const computedTime = new Date().toISOString()
   const summaries: string[] = []
-  const ranks: Row<'trophy_ranks'>[] = []
+  const ranks: (Score & { trophy_id: string; rank: number })[] = []
+  const peakCandidates: Score[] = []
   for (const def of RANKED_TROPHY_DEFINITIONS) {
     const query = valueQueries[def.id]
     if (!query) throw new Error(`Missing trophy rank query for ${def.id}`)
-    const rows = await tx.manyOrNone<{
-      user_id: string
-      value: number
-      rank: number
-    }>(
-      `with scores as (${query}), ranked as (
+    const holders = `with scores as (${query}), ranked as (
          select scores.*, rank() over (order by value desc) as rank
          from scores join users person on person.id = scores.user_id
          where value >= $[threshold] and ${finiteValue} and ${TROPHY_PERSON_FILTER}
            and not exists (select 1 from trophy_rank_exclusions e where e.user_id = scores.user_id)
        )
-       select user_id, value, rank from ranked where rank <= $[maxRank] order by rank`,
+       select user_id, value::text, rank from ranked where rank <= $[maxRank]`
+    const rows = await tx.manyOrNone<Score & { rank: number | null }>(
+      def.id === 'net-worth' ? withNetWorthPeaks(holders) : holders,
       {
         threshold: getTopMilestone(def).threshold,
         maxRank: MAX_TROPHY_RANK,
@@ -165,34 +176,54 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
         minReferralTrades: REFERRAL_MIN_TRADES,
       }
     )
-    for (const row of rows) {
-      ranks.push({ ...row, trophy_id: def.id, computed_time: computedTime })
+    let holderCount = 0
+    let cutoff = Infinity
+    for (const { user_id, value, rank } of rows) {
+      if (rank === null) {
+        peakCandidates.push({ user_id, value })
+      } else {
+        ranks.push({ user_id, value, rank, trophy_id: def.id })
+        holderCount++
+        cutoff = Math.min(cutoff, Number(value))
+      }
     }
     summaries.push(
-      `${def.id}: ${rows.length} holders, cutoff ${
-        rows[rows.length - 1]?.value ?? 'none'
+      `${def.id}: ${holderCount} holders, cutoff ${
+        holderCount ? cutoff : 'none'
       }`
     )
   }
-  // Keep the sampled numeric exact across the round trip to Postgres.
-  const peakCandidates = await tx.manyOrNone<{
-    user_id: string
-    value: string
-  }>(
-    `select sample.user_id, sample.value::text as value from trophy_net_worth_sample sample
-     left join user_net_worth_peaks peak on peak.user_id = sample.user_id
-     where sample.value > coalesce(peak.peak_net_worth, 0) and ${finiteValue}`
-  )
-  // All scans are done before rank inserts lock their holders' users rows.
-  // Write the singleton first so a publisher with a stale snapshot gets a
-  // retryable serialization failure before it can insert duplicate ranks.
-  await tx.none(
-    `insert into trophy_rank_state (computed_time) values ($1)
-     on conflict (id) do update set computed_time = excluded.computed_time`,
-    [computedTime]
+  return { summaries, peakCandidates, ranks, computedTime }
+}
+
+async function publishTrophyRanks(
+  tx: SupabaseTransaction,
+  {
+    peakCandidates,
+    ranks,
+    computedTime,
+  }: Awaited<ReturnType<typeof readTrophyRanks>>
+) {
+  // A user can be removed between the snapshot and publication. Keep each
+  // surviving parent row through commit when inserting its dependent rows.
+  const peaks = await tx.result(
+    `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
+     select p.user_id, p.value, $[computedTime]
+     from jsonb_to_recordset($[peakCandidates:json]::jsonb) as p(user_id text, value numeric)
+     join users u on u.id = p.user_id
+     order by p.user_id for key share of u
+     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
+    { peakCandidates, computedTime }
   )
   await tx.none('delete from trophy_ranks')
-  await tx.none(bulkInsertQuery('trophy_ranks', ranks, false))
+  await tx.none(
+    `insert into trophy_ranks (user_id, trophy_id, value, rank, computed_time)
+     select r.user_id, r.trophy_id, r.value, r.rank, $[computedTime]
+     from jsonb_to_recordset($[ranks:json]::jsonb) as r(user_id text, trophy_id text, value numeric, rank int)
+     join users u on u.id = r.user_id
+     order by r.user_id for key share of u`,
+    { ranks, computedTime }
+  )
   await tx.none(
     `insert into user_trophy_rank_peaks as peak
        (user_id, trophy_id, best_rank, first_ranked_time, best_rank_time)
@@ -202,5 +233,10 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
        best_rank_time = excluded.best_rank_time
      where excluded.best_rank < peak.best_rank`
   )
-  return { summaries, peakCandidates, computedTime }
+  await tx.none(
+    `insert into trophy_rank_state (computed_time) values ($1)
+     on conflict (id) do update set computed_time = excluded.computed_time`,
+    [computedTime]
+  )
+  return peaks.rowCount
 }

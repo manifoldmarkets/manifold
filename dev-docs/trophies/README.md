@@ -36,7 +36,7 @@ Equal scores share a rank. First place holds #1, ranks 2–5 hold Mega and ranks
 | `trophy_rank_state`      | Public timestamp of the latest publication, including a run with no holders |
 | `user_trophy_rank_peaks` | Public best numeric rank, first ranked time and time of the best rank       |
 
-The job samples net worth once and publishes ranks, best ranks and the publication time in one repeatable-read transaction. After commit, it records sampled net worth highs that still exceed the stored peaks. `get-user-trophies` reads ranks, peaks, claims, starter progress and pins in one snapshot.
+A session advisory lock serializes nightly publishers. Each run samples net worth and computes all ranks in one read-only, repeatable-read transaction. A read-committed transaction publishes the sampled highs, ranks, best ranks and publication time together. A higher peak recorded by a concurrent claim wins. `get-user-trophies` reads ranks, peaks, claims, starter progress and pins in one snapshot.
 
 To exclude another holder, insert their user ID and a reason. Dev needs its own rows for any desired exclusions.
 
