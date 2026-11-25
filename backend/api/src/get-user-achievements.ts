@@ -11,6 +11,7 @@ import {
   REFERRAL_MIN_TRADES,
   getLeagueLevel,
 } from 'common/trophies'
+import { EPSILON } from 'common/util/math'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
@@ -45,6 +46,7 @@ export async function loadUserAchievements(
       userId,
       MARKET_CREATED_MIN_TRADERS,
       REFERRAL_MIN_TRADES,
+      EPSILON,
     ]),
     loadTrades(pg, userId),
     getRankPopulation(pg),
@@ -258,7 +260,7 @@ const STATS_QUERY = `with
       sum(coalesce((ucm.data->>'totalAmountSold')::numeric, 0)
         + coalesce((ucm.data->>'totalAmountInvested')::numeric, 0)) as total_volume_mana,
       count(*) filter (where coalesce(ucm.profit, 0) > 0) as profitable_markets_count,
-      count(*) filter (where ucm.profit > 0 and ucm.profit < 'Infinity'::numeric
+      count(*) filter (where ucm.profit > $4 and ucm.profit < 'Infinity'::numeric
         and c.resolution is not null
         and c.resolution <> 'CANCEL' and not coalesce(c.deleted, false)) as resolved_profitable_markets,
       count(*) filter (where coalesce(ucm.profit, 0) < 0) as unprofitable_markets_count,

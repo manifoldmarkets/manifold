@@ -136,7 +136,7 @@ beforeAll(async () => {
     create table user_stats (user_id text primary key, trades int);
     create table user_stats_baseline (user_id text primary key, trades int);
     create table user_referrals_profit (id text, total_referrals int, total_referred_profit numeric);
-    create table contract_comments (comment_id text primary key, user_id text, data jsonb);
+    create table contract_comments (comment_id text primary key, contract_id text not null, user_id text, data jsonb);
     create table old_post_comments (comment_id text, user_id text, data jsonb);
     create table user_contract_metrics (user_id text, contract_id text, answer_id text, profit numeric, data jsonb);
     create table contracts (
@@ -858,11 +858,13 @@ describe('nightly trophy ranks', () => {
           ('expired', 'm1', null, now() - interval '1 hour'),
           ('resolved-answer', 'multi', 'done', null),
           ('missing-answer', 'multi', 'missing', null),
+          ('unfunded', 'm1', null, null),
           ('live-market', 'm1', null, null),
           ('live-answer', 'multi', 'open', now() + interval '1 hour')
         ) orders(holder, market, answer_id, expires_at);
-      insert into users (id, data)
-        select user_id, jsonb_build_object('lastBetTime', (extract(epoch from created_time) * 1000)::bigint)
+      insert into users (id, balance, data)
+        select user_id, case when user_id = 'unfunded' then 0 else 1 end,
+          jsonb_build_object('lastBetTime', (extract(epoch from created_time) * 1000)::bigint)
         from contract_bets;
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
         select id, 500000, 0 from users;
@@ -900,6 +902,11 @@ describe('nightly trophy ranks', () => {
         'repeatable read',
         'repeatable read',
       ])
+      expect(
+        writes.mock.calls.filter(([sql]) =>
+          sql.includes('delete from trophy_ranks')
+        )
+      ).toHaveLength(1)
       expect(await rows('select id from trophy_rank_state')).toEqual([
         { id: true },
       ])
@@ -919,6 +926,7 @@ describe('nightly trophy ranks', () => {
     await addUser('liker')
     await addUser('invalid', { data: { lastBetTime: Date.now() - DAY } })
     await db.exec(`
+      update users set balance = 1 where id in ('maker', 'liker');
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
         values ('maker', 510000, 0), ('liker', 510000, 5000), ('invalid', 'NaN', 0);
       insert into user_net_worth_peaks values ('maker', 2000000, now() - interval '1 day');
@@ -936,17 +944,21 @@ describe('nightly trophy ranks', () => {
         values ('poll', 'maker', 'MANA', 'none', 'public', 10),
                ('bounty', 'maker', 'MANA', 'none', 'public', 10);
       insert into contracts (id, creator_id, token, mechanism, resolution, visibility, unique_bettor_count, deleted)
-        values ('deleted', 'maker', 'MANA', 'cpmm-1', 'YES', 'public', 10, true);
+        values ('deleted', 'maker', 'MANA', 'cpmm-1', 'YES', 'public', 10, true),
+               ('break-even', 'maker', 'MANA', 'cpmm-1', 'YES', 'public', 1, false);
       insert into user_contract_metrics (user_id, contract_id, profit)
         select 'maker', id, case id when 'market-2001' then 'NaN'::numeric
-          when 'market-2002' then 'Infinity'::numeric else 1 end
+          when 'market-2002' then 'Infinity'::numeric
+          when 'break-even' then ((0.1::float8 + 0.2::float8) - 0.3::float8)::numeric
+          else 1 end
         from contracts where resolution = 'YES';
 
       insert into contract_comments
-        select 'comment-' || i, 'maker', '{}'::jsonb from generate_series(1, 997) i;
+        select 'comment-' || i, 'm1', 'maker', '{}'::jsonb from generate_series(1, 997) i;
       insert into contract_comments values
-        ('deleted-comment', 'maker', '{"deleted":true}'), ('hidden-comment', 'maker', '{"hidden":true}'),
-        ('other-market-comment', 'other-author', '{}');
+        ('deleted-comment', 'm1', 'maker', '{"deleted":true}'), ('hidden-comment', 'm1', 'maker', '{"hidden":true}'),
+        ('other-market-comment', 'm1', 'other-author', '{}'),
+        ('deleted-market-comment', 'deleted', 'maker', '{}'), ('missing-market-comment', 'missing', 'maker', '{}');
       insert into old_post_comments
         select 'post-comment-' || i, 'maker', '{}'::jsonb from generate_series(1, 3) i;
       insert into old_post_comments values
@@ -972,7 +984,7 @@ describe('nightly trophy ranks', () => {
       creatorTraders: 12001,
       marketsCreatedWithTraders: 250,
       resolvedProfitableMarkets: 2000,
-      profitableMarketsCount: 2003,
+      profitableMarketsCount: 2004,
       likedComments: 1000,
       leagueLevel: 11,
     })

@@ -6,6 +6,7 @@ import {
   REFERRAL_MIN_TRADES,
   getTopMilestone,
 } from 'common/trophies'
+import { EPSILON } from 'common/util/math'
 import { pgp, SupabaseTransaction } from 'shared/supabase/init'
 import {
   TROPHY_FRESH_PORTFOLIO_FILTER,
@@ -29,7 +30,8 @@ const valueQueries: Record<string, string> = {
       or (select true from contract_bets b
         join contracts c on c.id = b.contract_id
         left join answers a on a.id = b.answer_id and a.contract_id = c.id
-        where b.user_id = n.user_id and not b.is_filled and not b.is_cancelled
+        where n.spendable_balance >= 1 and b.user_id = n.user_id
+          and not b.is_filled and not b.is_cancelled
           and (b.expires_at is null or b.expires_at > now())
           and c.resolution is null and (c.close_time is null or c.close_time > now())
           and c.mechanism <> 'none' and not coalesce(c.deleted, false)
@@ -42,7 +44,7 @@ const valueQueries: Record<string, string> = {
   'profitable-markets': `select ucm.user_id, count(*) as value
     from user_contract_metrics ucm
     join contracts c on c.id = ucm.contract_id
-    where ucm.answer_id is null and ucm.profit > 0 and ucm.profit < 'Infinity'::numeric
+    where ucm.answer_id is null and ucm.profit > $[epsilon] and ucm.profit < 'Infinity'::numeric
       and c.token = 'MANA'
       and c.resolution is not null and c.resolution <> 'CANCEL'
       and not coalesce(c.deleted, false)
@@ -99,10 +101,17 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
   // Serialize publications. All rank sources use this transaction's snapshot.
   await tx.one("select pg_advisory_xact_lock(hashtext('update-trophy-ranks'))")
   const computedTime = new Date().toISOString()
+  // A publisher that waited on the lock can have a stale snapshot. Make it
+  // hit a retryable serialization failure before it can insert duplicate ranks.
+  await tx.none(
+    `insert into trophy_rank_state (computed_time) values ($1)
+     on conflict (id) do update set computed_time = excluded.computed_time`,
+    [computedTime]
+  )
   await tx.none(
     `create temp table trophy_net_worth_sample on commit drop as
      select uphl.user_id, uphl.balance + uphl.investment_value as value,
-       (u.data->>'lastBetTime')::bigint as last_bet_time
+       u.balance as spendable_balance, (u.data->>'lastBetTime')::bigint as last_bet_time
      from user_portfolio_history_latest uphl join users u on u.id = uphl.user_id
      where ${TROPHY_FRESH_PORTFOLIO_FILTER}`
   )
@@ -137,6 +146,7 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
         threshold: getTopMilestone(def).threshold,
         maxRank: MAX_TROPHY_RANK,
         activeDays: NET_WORTH_RANK_ACTIVE_DAYS,
+        epsilon: EPSILON,
         minTraders: MARKET_CREATED_MIN_TRADERS,
         minReferralTrades: REFERRAL_MIN_TRADES,
       }
@@ -168,8 +178,7 @@ async function publishTrophyRanks(tx: SupabaseTransaction) {
      where excluded.best_rank < peak.best_rank`
   )
   await tx.none(
-    `insert into trophy_rank_state (computed_time) values ($1)
-     on conflict (id) do update set computed_time = excluded.computed_time`,
+    'update trophy_rank_state set computed_time = $1 where id = true',
     [computedTime]
   )
   return summaries

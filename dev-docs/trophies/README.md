@@ -14,13 +14,13 @@ The main scheduler runs `update-trophy-ranks` at 4:10 AM Los Angeles time after 
 | ------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Net Worth          | Latest qualifying portfolio snapshot for an active trader                                                     |
 | Prediction Streak  | Longest of the paid bonus streak, longest ended streak and current streak, from the 3:40 AM transactions view |
-| Profitable Markets | Resolved, undeleted, non-cancelled mana markets with positive finite profit on the user's market summary      |
-| Markets Created    | Public, undeleted mana markets created with at least 10 traders, excluding polls and bounties                 |
+| Profitable Markets | Resolved, undeleted, non-cancelled mana markets where the user's finite summary profit exceeds M0.00000001    |
+| Markets Created    | Public, undeleted mana markets you created with at least 10 traders, excluding polls and bounties             |
 | Creator Popularity | All-time creator traders, counted once per market                                                             |
 | Liked Comments     | Distinct visible market or legacy post comments by the holder that another eligible person liked              |
 | Leagues            | Gold, Platinum and Diamond score 1, 2 and 3. Each Masters season adds one to 3                                |
 
-For Net Worth, an active trader has placed a trade in the last 90 days or has an open limit order on a market that is still trading. The order must have remaining quantity, be uncancelled and unexpired, and be on an unresolved answer if it specifies one. Filling an older order does not restart the 90-day window.
+For Net Worth, an active trader has placed a trade in the last 90 days or has an open limit order on a market that is still trading. To qualify through an order, the holder needs at least M1 in spendable mana. The order must have remaining quantity, be uncancelled and unexpired, and be on an unresolved answer if it specifies one. Filling an older order does not restart the 90-day window.
 
 Ranked accounts must be people. Bots, deleted accounts and users with active bans other than mod alerts are ineligible. SQL-managed entries in `trophy_rank_exclusions` also exclude holders. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
 
@@ -46,6 +46,12 @@ insert into
 values
   ('<user ID>', '<reason>');
 ```
+
+## Known limitations
+
+- The portfolio writer reads positions before it reads cash. A sale between those reads can put both the sold position and its proceeds in one snapshot, inflating Net Worth. During the manual review of the top 25, check each holder's sales against their snapshot time.
+- The writer updates its in-memory portfolio before the history insert succeeds. If the insert fails and the portfolio stays the same on the next run, the writer can advance `last_calculated` on the old row. Stale values can then pass the 72-hour freshness check for claims, peaks and ranks.
+- Two legacy multiple-choice markets in production have `isResolved` set in their data and a null contract `resolution`. Profitable Markets skips both, so profitable holders receive no credit for either market.
 
 ## Onboarding and rewards
 

@@ -15,7 +15,9 @@ export const TROPHY_PERSON_FILTER = `not person.is_bot
 
 export const TROPHY_VISIBLE_COMMENT_FILTER = `(exists (
     select 1 from contract_comments cc
+    join contracts c on c.id = cc.contract_id
     where cc.comment_id = r.content_id and cc.user_id = r.content_owner_id
+      and not coalesce(c.deleted, false)
       and not coalesce((cc.data->>'deleted')::boolean, false)
       and not coalesce((cc.data->>'hidden')::boolean, false)
   ) or exists (

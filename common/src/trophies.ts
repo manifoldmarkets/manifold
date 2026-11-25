@@ -282,7 +282,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'markets-created',
     label: 'Markets Created',
     description:
-      "Public markets you created that 10 or more people traded (polls and bounties don't count)",
+      "Public markets you created with at least 10 traders (polls and bounties don't count)",
     category: 'creating',
     statKey: 'marketsCreatedWithTraders',
     unit: 'markets',
