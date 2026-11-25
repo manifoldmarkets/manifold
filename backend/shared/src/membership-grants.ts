@@ -2,6 +2,7 @@ import {
   capGrantDuration,
   getMembershipGrantView,
   GrantSupporterRow,
+  GrantTransitionMode,
   MembershipGrant,
   MembershipGrantResult,
   PausedPaid,
@@ -107,18 +108,19 @@ async function writeSupporterRow(
     new Date(next.expiresTime!),
     next.autoRenew,
     next.metadata ?? null,
+    next.enabled,
   ]
   if (previous) {
     // Keep the original database timestamp (including its sub-ms precision).
     await tx.one(
-      `update user_entitlements set entitlement_id = $2, enabled = true,
-      expires_time = $4, auto_renew = $5, metadata = $6 where user_id = $1 and entitlement_id = $7 returning entitlement_id`,
+      `update user_entitlements set entitlement_id = $2, enabled = $7,
+      expires_time = $4, auto_renew = $5, metadata = $6 where user_id = $1 and entitlement_id = $8 returning entitlement_id`,
       [...values, previous.entitlementId]
     )
   } else {
     await tx.one(
       `insert into user_entitlements (user_id, entitlement_id, granted_time, expires_time, auto_renew, metadata, enabled)
-      values ($1,$2,$3,$4,$5,$6,true) returning entitlement_id`,
+      values ($1,$2,$3,$4,$5,$6,$7) returning entitlement_id`,
       values
     )
   }
@@ -156,11 +158,12 @@ const mana: MembershipBillingRail = {
 async function advanceGrants(
   tx: SupabaseTransaction,
   userId: string,
-  now: number
+  now: number,
+  mode: GrantTransitionMode = 'advance'
 ) {
   const row = await getSupporterRow(tx, userId, true)
   const grants = await heldGrants(tx, userId)
-  const { ended, start, restored } = planGrantTransition(row, grants, now)
+  const { ended, start, restored } = planGrantTransition(row, grants, now, mode)
   if (ended)
     await tx.one(
       `update membership_grants set status = 'used', ended_time = $2
@@ -192,13 +195,14 @@ async function advanceGrants(
 
 export async function processUserMembershipGrants(
   pg: SupabaseDirectClientTimeout,
-  userId: string
+  userId: string,
+  mode: GrantTransitionMode = 'advance'
 ) {
   const { change, entitlements } = await transactWithRetries(
     pg,
     5,
     async (tx) => {
-      const change = await advanceGrants(tx, userId, Date.now())
+      const change = await advanceGrants(tx, userId, Date.now(), mode)
       const entitlements =
         change.started || change.ended
           ? await getUserEntitlements(tx, userId)

@@ -13,8 +13,10 @@ export const MAX_FREE_MEMBERSHIP_HELD_MS = 30 * DAY_MS
 export type PausedPaid = {
   rail: 'mana'
   tier: SupporterTier
+  // Signed time to expiry. A negative value preserves time already overdue.
   remainingMs: number
   autoRenew: boolean
+  enabled?: boolean
   grantedTime: number
 }
 
@@ -106,14 +108,18 @@ export function planGrantStart(
   )
     return null
   if (row?.expiresTime !== undefined) milliseconds(row.expiresTime)
-  const paid = row && getSupporterEntitlement([row], now)
+  const current = row && getSupporterEntitlement([row], now)
+  const outstanding =
+    row?.autoRenew && row.expiresTime !== undefined && row.expiresTime <= now
+  const paid = current ?? (outstanding ? row : null)
   const paidTier = TIER_ORDER.find(
     (tier) => SUPPORTER_TIERS[tier].id === paid?.entitlementId
   )
   const eligible = grants.filter(
     (g) =>
       g.status === 'banked' &&
-      (!paidTier ||
+      (!current ||
+        !paidTier ||
         SUPPORTER_TIERS[g.tier].order >= SUPPORTER_TIERS[paidTier].order)
   )
   eligible.sort(
@@ -133,8 +139,9 @@ export function planGrantStart(
       ? {
           rail: 'mana',
           tier: paidTier,
-          remainingMs: Math.max(0, paid.expiresTime - now),
+          remainingMs: paid.expiresTime - now,
           autoRenew: paid.autoRenew,
+          enabled: paid.enabled,
           grantedTime: paid.grantedTime,
         }
       : null
@@ -151,37 +158,48 @@ export function planGrantStart(
 
 export function planGrantEnd(
   grant: MembershipGrant,
-  now: number
+  now: number,
+  early = false
 ): { newRow: GrantSupporterRow | null } | null {
-  if (grant.status !== 'active' || milliseconds(now) < endTime(grant))
+  if (
+    grant.status !== 'active' ||
+    (milliseconds(now) < endTime(grant) && !early)
+  )
     return null
   const paid = grant.pausedPaid
   return {
     newRow: paid
       ? {
           entitlementId: SUPPORTER_TIERS[paid.tier].id,
-          enabled: true,
+          enabled: paid.enabled ?? true,
           autoRenew: paid.autoRenew,
           grantedTime: paid.grantedTime,
-          expiresTime: milliseconds(now + milliseconds(paid.remainingMs)),
+          expiresTime: milliseconds(
+            now + milliseconds(paid.remainingMs, Number.MIN_SAFE_INTEGER)
+          ),
         }
       : null,
   }
 }
+
+export type GrantTransitionMode = 'advance' | 'end-active'
 
 // A single instant for the end and next start keeps paused milliseconds intact,
 // even when the scheduler is late. Only the final supporter row is written.
 export function planGrantTransition(
   row: GrantSupporterRow | null,
   grants: MembershipGrant[],
-  now: number
+  now: number,
+  mode: GrantTransitionMode = 'advance'
 ) {
   const active = grants.find((g) => g.status === 'active')
   if (String(row?.metadata?.membershipGrantId ?? '') !== (active?.id ?? ''))
     throw new Error('Membership grant and supporter row disagree')
-  const end = active && planGrantEnd(active, now)
+  const end = active && planGrantEnd(active, now, mode === 'end-active')
   if (active && !end) return { ended: null, start: null, restored: null }
   const restored = end ? end.newRow : row
+  if (mode === 'end-active')
+    return { ended: active ?? null, start: null, restored }
   const start = planGrantStart(
     restored,
     grants.filter((g) => g !== active),
@@ -201,14 +219,28 @@ export function getMembershipGrantView(
 ) {
   const active = grants.find((g) => g.status === 'active')
   const paused = active?.pausedPaid
+  const transition = active && planGrantTransition(row, grants, endTime(active))
+  const next = transition?.start
+    ? { kind: 'free' as const, tier: transition.start.grant.tier }
+    : paused && paused.remainingMs <= 0 && paused.autoRenew
+    ? { kind: 'renewal' as const, tier: paused.tier }
+    : paused && paused.remainingMs > 0
+    ? { kind: 'paid' as const, tier: paused.tier }
+    : null
   return {
+    next,
     active: active
-      ? { tier: active.tier, endsTime: endTime(active), source: active.source }
+      ? {
+          id: active.id,
+          tier: active.tier,
+          endsTime: endTime(active),
+          source: active.source,
+        }
       : null,
     paid: paused
       ? {
           tier: paused.tier,
-          daysLeft: Math.ceil(milliseconds(paused.remainingMs) / DAY_MS),
+          daysLeft: Math.max(0, Math.ceil(paused.remainingMs / DAY_MS)),
           autoRenew: paused.autoRenew,
         }
       : null,
@@ -234,6 +266,16 @@ export function getMembershipGrantView(
 }
 
 export type MembershipGrantView = ReturnType<typeof getMembershipGrantView>
+
+export function nextMembershipMessage(
+  next: NonNullable<MembershipGrantView['next']>
+) {
+  const name = SUPPORTER_TIERS[next.tier].name
+  if (next.kind === 'free') return `Your banked free ${name} days start next.`
+  if (next.kind === 'renewal')
+    return `Your paid ${name} membership is then due for renewal.`
+  return `Your paid ${name} membership resumes then.`
+}
 
 export function membershipGrantLockMessage(
   tier: SupporterTier,

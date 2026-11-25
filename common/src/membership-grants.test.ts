@@ -59,14 +59,24 @@ describe('membership grant transitions', () => {
     for (const oldTier of TIER_ORDER)
       for (const tier of TIER_ORDER)
         for (let i = 0; i < 40; i++) {
-          const remaining = random() + 1
+          const sample = random()
+          const remaining = [
+            sample + 1,
+            -(sample % (25 * HOUR_MS)),
+            -25 * HOUR_MS - sample,
+          ][i % 3]
           const paid = row(oldTier, remaining, i % 2 === 0)
           const banked = grant({
             tier,
             durationMs: (random() % MAX_FREE_MEMBERSHIP_HELD_MS) + 1,
           })
           const start = planGrantStart(paid, [banked], now)
-          if (SUPPORTER_TIERS[oldTier].order > SUPPORTER_TIERS[tier].order) {
+          const hasAccess =
+            remaining > 0 || (paid.autoRenew && remaining > -25 * HOUR_MS)
+          if (
+            hasAccess &&
+            SUPPORTER_TIERS[oldTier].order > SUPPORTER_TIERS[tier].order
+          ) {
             expect(start).toBeNull()
             continue
           }
@@ -83,7 +93,12 @@ describe('membership grant transitions', () => {
           expect(planGrantEnd(active, active.endsTime! - 1)).toBeNull()
           const end = active.endsTime! + random()
           const restored = planGrantEnd(active, end)!.newRow
-          expect(restored).toEqual({ ...paid, expiresTime: end + remaining })
+          if (hasAccess || paid.autoRenew) {
+            expect(start.pausedPaid?.remainingMs).toBe(remaining)
+            expect(restored).toEqual({ ...paid, expiresTime: end + remaining })
+          } else {
+            expect(restored).toBeNull()
+          }
           for (const target of TIER_ORDER) {
             const id = SUPPORTER_TIERS[target].id
             expect(membershipChangeCredit(start.newRow, id, now)).toBe(0)
@@ -118,22 +133,57 @@ describe('membership grant transitions', () => {
     expect(planGrantStart(null, banked.slice(0, 3), now)?.grant.id).toBe('4')
   })
 
-  it('treats the 25 hour grace boundary exactly and restores a renewal due immediately', () => {
+  it('restores a renewal with exactly one millisecond of grace left', () => {
     const grace = row('premium', -25 * HOUR_MS + 1)
     expect(planGrantStart(grace, [grant()], now)).toBeNull()
     const active = activate(
       planGrantStart(grace, [grant({ tier: 'premium' })], now)!
     )
-    expect(active.pausedPaid?.remainingMs).toBe(0)
+    expect(active.pausedPaid?.remainingMs).toBe(-25 * HOUR_MS + 1)
     expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
       ...grace,
-      expiresTime: active.endsTime,
+      expiresTime: active.endsTime! - 25 * HOUR_MS + 1,
     })
+  })
+
+  it('allows a lower grant after grace and restores the outstanding higher-tier renewal', () => {
+    for (const overdue of [-25 * HOUR_MS, -50 * HOUR_MS]) {
+      const paid = row('premium', overdue)
+      const start = planGrantStart(paid, [grant({ tier: 'basic' })], now)!
+      expect(start.pausedPaid).toMatchObject({
+        tier: 'premium',
+        remainingMs: overdue,
+        autoRenew: true,
+      })
+      const active = activate(start)
+      expect(getMembershipGrantView(start.newRow, [active], now)).toMatchObject(
+        {
+          paid: { daysLeft: 0 },
+          next: { kind: 'renewal', tier: 'premium' },
+        }
+      )
+      expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
+        ...paid,
+        expiresTime: active.endsTime! + overdue,
+      })
+    }
+  })
+
+  it('retains the enabled state of a disabled row with an outstanding renewal', () => {
+    const paid = { ...row('premium', -HOUR_MS), enabled: false }
+    const start = planGrantStart(paid, [grant({ tier: 'basic' })], now)!
+    const active = activate(start)
+    expect(planGrantEnd(active, active.endsTime!)?.newRow).toEqual({
+      ...paid,
+      expiresTime: active.endsTime! - HOUR_MS,
+    })
+  })
+
+  it('discards lapsed rows with no outstanding renewal', () => {
     for (const lapsed of [
-      row('premium', -25 * HOUR_MS),
-      { ...grace, expiresTime: 0 },
+      row('premium', -25 * HOUR_MS, false),
       row('premium', 0, false),
-      { ...grace, enabled: false },
+      { ...row('premium', DAY_MS), enabled: false },
       null,
     ]) {
       const start = planGrantStart(lapsed, [grant()], now)!
@@ -190,7 +240,9 @@ describe('membership grant transitions', () => {
     )
     expect(view.isLocked).toBe(true)
     expect(view.paid).toEqual({ tier: 'basic', daysLeft: 2, autoRenew: false })
+    expect(view.next).toEqual({ kind: 'free', tier: 'plus' })
     expect(view.active).toEqual({
+      id: start.grant.id,
       tier: 'plus',
       endsTime: now + 3 * DAY_MS,
       source: 'trophy',

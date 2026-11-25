@@ -15,6 +15,7 @@ export const getNotifications: APIHandler<'get-notifications'> = async (
       select data, (data->'createdTime')::bigint as created_time
       from user_notifications
       where user_id = $1
+      and not (data ? 'deliveryOnly')
       and (data->>'markedAsRead')::boolean = false
 
       union all
@@ -23,6 +24,7 @@ export const getNotifications: APIHandler<'get-notifications'> = async (
         select data, (data->'createdTime')::bigint as created_time
         from user_notifications
         where user_id = $1
+        and not (data ? 'deliveryOnly')
         and (data->>'markedAsRead')::boolean is distinct from false
         and ($3::bigint is null or (data->'createdTime')::bigint > $3)
         order by created_time desc

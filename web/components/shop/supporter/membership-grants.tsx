@@ -3,37 +3,26 @@ import { useEvent } from 'client-common/hooks/use-event'
 import {
   MembershipGrantView,
   membershipGrantLockMessage,
+  nextMembershipMessage,
 } from 'common/membership-grants'
 import { SUPPORTER_TIERS, TIER_ORDER } from 'common/supporter-config'
 import { User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
+import { getUserSafe } from 'web/lib/supabase/users'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 
-export function useMembershipGrants(
-  user: User | null | undefined,
-  enabled = true
-) {
+export function useMembershipGrants(user: User | null | undefined) {
   const { data, refresh } = useAPIGetter(
     'get-membership-grants',
     user ? { userId: user.id } : undefined,
     [],
-    `membership-grants-${user?.id}`,
-    enabled
+    `membership-grants-${user?.id}`
   )
   const view = user && data?.userId === user.id ? data : undefined
   const refreshView = useEvent(refresh)
   useEffect(() => {
-    if (user && enabled) refreshView()
-  }, [user?.id, user?.entitlements, enabled, refreshView])
-
-  // A scheduler broadcast may originate outside the API websocket process.
-  useEffect(() => {
-    if (!enabled || (!view?.isLocked && !view?.banked.length)) return
-    const timer = setInterval(() => {
-      if (!document.hidden) refreshView()
-    }, 60_000)
-    return () => clearInterval(timer)
-  }, [enabled, view?.isLocked, view?.banked.length, refreshView])
+    if (user) refreshView()
+  }, [user?.id, user?.entitlements, refreshView])
 
   const owned = user?.entitlements?.find(
     (e) => e.metadata?.membershipGrantId != null
@@ -41,14 +30,41 @@ export function useMembershipGrants(
   const tier = TIER_ORDER.find(
     (t) => SUPPORTER_TIERS[t].id === owned?.entitlementId
   )
-  const active =
-    view?.active ??
-    (tier && owned?.expiresTime
+  const cached =
+    tier && owned?.expiresTime !== undefined
       ? { tier, endsTime: owned.expiresTime }
-      : undefined)
-  const lockMessage =
-    active && membershipGrantLockMessage(active.tier, active.endsTime)
-  return { view, lockMessage, refresh: refreshView }
+      : null
+  const active = view ? view.active : cached
+  const mismatch =
+    !!view &&
+    (view.active?.id !== owned?.metadata?.membershipGrantId ||
+      view.active?.tier !== cached?.tier ||
+      view.active?.endsTime !== cached?.endsTime)
+  const userId = user?.id
+  const refreshEntitlements = useEvent(() => {
+    if (userId && mismatch) getUserSafe(userId).catch(console.error)
+  })
+  useEffect(() => {
+    if (mismatch) refreshEntitlements()
+  }, [userId, mismatch, refreshEntitlements])
+
+  // Keep checking even past the advertised end until the scheduler releases the row.
+  const poll = !!active || !!view?.banked.length || mismatch
+  useEffect(() => {
+    if (!poll) return
+    const timer = setInterval(() => {
+      if (!document.hidden) {
+        refreshView()
+        refreshEntitlements()
+      }
+    }, 60_000)
+    return () => clearInterval(timer)
+  }, [poll, refreshView, refreshEntitlements])
+
+  const lockMessage = active
+    ? membershipGrantLockMessage(active.tier, active.endsTime)
+    : undefined
+  return { view, active, lockMessage, refresh: refreshView }
 }
 
 export function MembershipGrantsPanel({
@@ -73,11 +89,16 @@ export function MembershipGrantsPanel({
           From {active.source}.
         </p>
       )}
+      {view.next && <p>{nextMembershipMessage(view.next)}</p>}
       {paid && (
         <p>
-          Then your {SUPPORTER_TIERS[paid.tier].name} membership resumes with{' '}
-          {paid.daysLeft} {paid.daysLeft === 1 ? 'day' : 'days'} left.{' '}
-          {paid.autoRenew ? 'It renews automatically.' : "It doesn't renew."}
+          Paid {SUPPORTER_TIERS[paid.tier].name} is paused with{' '}
+          {paid.daysLeft > 0
+            ? `${paid.daysLeft} ${paid.daysLeft === 1 ? 'day' : 'days'} left`
+            : paid.autoRenew
+            ? 'renewal due'
+            : 'no paid time left'}
+          . {paid.autoRenew ? 'It renews automatically.' : "It doesn't renew."}
         </p>
       )}
       {paid?.autoRenew && (

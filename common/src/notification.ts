@@ -1,3 +1,7 @@
+import {
+  nextMembershipMessage,
+  type MembershipGrantView,
+} from './membership-grants'
 import { Bet } from 'common/bet'
 import { ContractToken, OutcomeType } from 'common/contract'
 import { groupBy } from 'lodash'
@@ -571,6 +575,7 @@ export type MembershipSubscriptionData = {
   expiryReason?: 'cancelled' | 'insufficient_balance' | 'free_days'
   grantEndsTime?: number
   paidTierName?: string
+  nextMembership?: MembershipGrantView['next']
   daysUntilExpiry?: number
   newExpiresTime?: number // Only for renewals
 }
@@ -579,13 +584,15 @@ export function freeDaysExpiryMessage(
   tierName: string,
   endsTime: number,
   amount: number,
-  paidTierName?: string
+  next?: MembershipGrantView['next'] | string
 ) {
   const until = new Date(endsTime).toLocaleDateString()
   return (
     `Your free ${tierName} days end on ${until}. ` +
-    (paidTierName
-      ? `Your ${paidTierName} membership picks up again then.`
+    (typeof next === 'string'
+      ? `Your ${next} membership picks up again then.`
+      : next
+      ? nextMembershipMessage(next)
       : `Keep ${tierName} for M${amount.toLocaleString('en-US')}/month.`)
   )
 }

@@ -9,10 +9,13 @@ import { shopPurchase } from 'api/shop-purchase'
 import { shopCancelSubscription } from 'api/shop-cancel-subscription'
 import { processMembershipRenewals } from 'scheduler/jobs/process-membership-renewals'
 import { checkSubscriptionExpiry } from 'scheduler/jobs/check-subscription-expiry'
-import { insertNotificationToSupabase } from './supabase/notifications'
-import { runTxnInBetQueue } from './txn/run-txn'
+import { createPushNotifications } from './create-push-notifications'
+import { getNotifications } from 'api/get-notifications'
+import { getShopStats } from 'api/get-shop-stats'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { membershipGrantLockMessage } from 'common/membership-grants'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import {
   grantMembershipDays,
   processUserMembershipGrants,
@@ -28,6 +31,7 @@ import { broadcastUpdatedUser } from './websockets/helpers'
 
 jest.mock('./websockets/helpers', () => ({ broadcastUpdatedUser: jest.fn() }))
 jest.mock('./supabase/init', () => ({
+  pgp: jest.requireActual('pg-promise')(),
   SERIAL_MODE: { tiLevel: 'serializable' },
   createSupabaseDirectClient: jest.fn(),
 }))
@@ -42,24 +46,20 @@ jest.mock('shared/utils', () => ({
   getPrivateUser: jest.fn(async () => ({ id: 'member' })),
   getUser: jest.fn(async () => ({ id: 'member', balance: 100000 })),
 }))
-jest.mock('shared/supabase/notifications', () => ({
-  insertNotificationToSupabase: jest.fn(),
+jest.mock('shared/websockets/server', () => ({
+  broadcast: jest.fn(),
 }))
 jest.mock('shared/create-push-notifications', () => ({
   createPushNotifications: jest.fn(),
 }))
 jest.mock('common/user-notification-preferences', () => ({
-  getNotificationDestinationsForUser: () => ({
+  getNotificationDestinationsForUser: jest.fn(() => ({
     sendToBrowser: true,
-    sendToMobile: false,
-  }),
+    sendToMobile: true,
+  })),
 }))
 jest.mock('shared/helpers/fn-queue', () => ({
   betsQueue: { enqueueFn: (fn: () => unknown) => fn() },
-}))
-jest.mock('shared/txn/run-txn', () => ({
-  runTxnOutsideBetQueue: jest.fn(),
-  runTxnInBetQueue: jest.fn(),
 }))
 
 // Execute production SQL against the real migration. Match the direct client's
@@ -70,6 +70,12 @@ const rows = async (sql: string, params?: unknown) =>
   (await db.query(pgp.as.format(sql, params))).rows
 const tx = {
   manyOrNone: rows,
+  async multi(sql: string) {
+    return (await db.exec(sql)).map((result) => result.rows)
+  },
+  async map(sql: string, params: unknown, fn: (row: unknown) => unknown) {
+    return (await rows(sql, params)).map(fn)
+  },
   async oneOrNone(sql: string, params?: unknown) {
     const result = await rows(sql, params)
     if (result.length > 1) throw new Error('Expected at most one row')
@@ -118,23 +124,35 @@ const supporter = () =>
 
 beforeAll(async () => {
   db = new PGlite({ parsers: { 1184: (v: string) => v, 20: Number } })
-  await db.exec(`create table users(id text primary key);
+  await db.exec(`create table users(id text primary key, balance integer default 100000, cash_balance integer default 0, total_deposits integer default 100000, total_cash_deposits integer default 0);
+ create table txns(id bigint generated always as identity primary key, created_time timestamptz default now(), amount integer, from_id text, from_type text, to_id text, to_type text, token text, category text, data jsonb);
+ create table shop_orders(user_id text, item_id text, price_mana integer, txn_id bigint, status text, quantity integer default 1, created_time timestamptz default now());
+ create table user_notifications(user_id text, notification_id text, data jsonb, primary key(user_id,notification_id));
  create table user_entitlements(user_id text, entitlement_id text, granted_time timestamptz not null default now(), expires_time timestamptz, enabled boolean default true, auto_renew boolean default false, metadata jsonb, primary key(user_id,entitlement_id));
  insert into users values ('member');`)
-  await db.exec(
-    readFileSync(
-      join(
-        __dirname,
-        '../../supabase/migrations/2026112503_membership_grants.sql'
-      ),
-      'utf8'
-    )
+  const migration = readFileSync(
+    join(
+      __dirname,
+      '../../supabase/migrations/2026112503_membership_grants.sql'
+    ),
+    'utf8'
   )
+  await db.exec(migration)
+  await db.exec(
+    'create role anon; create role authenticated; grant all on membership_grants to anon, authenticated'
+  )
+  await db.exec(migration)
+  expect(
+    await rows(`select grantee from information_schema.role_table_grants where
+    table_name = 'membership_grants' and grantee in ('anon','authenticated')`)
+  ).toEqual([])
   jest.mocked(createSupabaseDirectClient).mockReturnValue(pg)
 }, 30000)
 beforeEach(async () => {
   jest.clearAllMocks()
-  await db.exec('truncate membership_grants, user_entitlements')
+  await db.exec(
+    'truncate membership_grants, user_entitlements, txns, shop_orders, user_notifications; update users set balance = 100000, total_deposits = 100000'
+  )
 })
 afterEach(() => {
   jest.restoreAllMocks()
@@ -224,9 +242,193 @@ it('excludes a grant-owned row from mana renewals even with auto_renew set', asy
     "update user_entitlements set auto_renew = true, expires_time = now() - interval '1 second'"
   )
   await processMembershipRenewals()
-  expect(runTxnInBetQueue).not.toHaveBeenCalled()
+  expect(await rows('select * from txns')).toEqual([])
   expect((await supporter())?.autoRenew).toBe(true)
 })
+
+// PGlite has one connection. Exercise both committed orders, including the next
+// daily scan when the first scan ran before the grant released its row.
+it.each([
+  [24, true],
+  [24, false],
+  [48, true],
+  [48, false],
+] as const)(
+  'preserves a %ih overdue renewal and charges once (scan first = %p)',
+  async (hours, scanFirst) => {
+    const end = Date.now()
+    const start = end - input.durationMs
+    const clock = jest.spyOn(Date, 'now').mockReturnValue(start)
+    const remaining = -hours * HOUR_MS
+    await rows(
+      `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+    values ($1,'supporter-plus',$2,true)`,
+      [userId, new Date(start + remaining)]
+    )
+    const issued = await grantMembershipDays(pg, input)
+    expect(issued.grant.pausedPaid).toMatchObject({
+      remainingMs: remaining,
+      autoRenew: true,
+    })
+    clock.mockReturnValue(end)
+    if (scanFirst) {
+      await processMembershipRenewals()
+      expect(await rows('select * from txns')).toHaveLength(0)
+    }
+    expect((await supporter())?.metadata?.membershipGrantId).toBe(
+      issued.grant.id
+    )
+    expect(await processUserMembershipGrants(pg, userId)).toEqual({
+      ended: issued.grant.id,
+      started: null,
+    })
+    expect(await supporter()).toMatchObject({
+      expiresTime: end + remaining,
+      autoRenew: true,
+      metadata: undefined,
+    })
+    await processMembershipRenewals()
+    await processMembershipRenewals()
+    const price = SUPPORTER_TIERS.plus.price
+    expect(
+      await rows('select balance from users where id = $1', [userId])
+    ).toEqual([{ balance: 100000 - price }])
+    expect(await rows('select from_id, category, amount from txns')).toEqual([
+      { from_id: userId, category: 'MEMBERSHIP_PAYMENT', amount: price },
+    ])
+    expect(
+      await rows('select entitlement_id, metadata from user_entitlements')
+    ).toEqual([{ entitlement_id: 'supporter-plus', metadata: null }])
+    expect(await rows('select status from membership_grants')).toEqual([
+      { status: 'used' },
+    ])
+    expect((await supporter())?.expiresTime).toBe(end + 30 * DAY_MS)
+  }
+)
+
+it('broadcasts the membership debit only for the committed checkout attempt', async () => {
+  const insert = jest.spyOn(tx, 'none')
+  insert.mockRejectedValueOnce(
+    Object.assign(new Error('retry order insert'), { code: '40001' })
+  )
+  await purchase({ itemId: 'supporter-basic' }, { uid: userId })
+  expect(await rows('select amount from txns')).toEqual([
+    { amount: SUPPORTER_TIERS.basic.price },
+  ])
+  const debits = jest
+    .mocked(broadcastUpdatedUser)
+    .mock.calls.filter(([user]) => user.balance !== undefined)
+  expect(debits).toHaveLength(1)
+  expect(debits[0][0].balance).toBe(100000 - SUPPORTER_TIERS.basic.price)
+})
+
+it('ends early for rollback, restores paid time, and leaves banked grants untouched on retries', async () => {
+  const now = Date.now()
+  jest.spyOn(Date, 'now').mockReturnValue(now)
+  await rows(
+    `insert into user_entitlements(user_id, entitlement_id, expires_time, auto_renew)
+    values ($1,'supporter-basic',$2,true)`,
+    [userId, new Date(now - HOUR_MS)]
+  )
+  const active = await grantMembershipDays(pg, input)
+  await grantMembershipDays(pg, { ...input, sourceId: 'next' })
+  expect(await processUserMembershipGrants(pg, userId, 'end-active')).toEqual({
+    ended: active.grant.id,
+    started: null,
+  })
+  expect(await processUserMembershipGrants(pg, userId, 'end-active')).toEqual({
+    ended: null,
+    started: null,
+  })
+  expect(await supporter()).toMatchObject({
+    entitlementId: 'supporter-basic',
+    expiresTime: now - HOUR_MS,
+    autoRenew: true,
+    metadata: undefined,
+  })
+  expect(
+    await rows('select status from membership_grants order by id')
+  ).toEqual([{ status: 'used' }, { status: 'banked' }])
+})
+
+it('shows the next banked Pro grant before paused paid Plus in the notice and owner view', async () => {
+  await rows(
+    `insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew)
+    values ($1,'supporter-basic',now()+interval '20 days',true)`,
+    [userId]
+  )
+  await grantMembershipDays(pg, {
+    ...input,
+    tier: 'premium',
+    durationMs: 2.5 * DAY_MS,
+  })
+  await grantMembershipDays(pg, { ...input, sourceId: 'banked-pro' })
+  const next = { kind: 'free', tier: 'plus' }
+  expect(
+    await (getMembershipGrants as Handler)({}, { uid: userId })
+  ).toMatchObject({ next })
+  await checkSubscriptionExpiry()
+  expect(
+    await rows(
+      "select data->'data'->'nextMembership' as next from user_notifications"
+    )
+  ).toEqual([{ next }])
+  expect(jest.mocked(createPushNotifications).mock.calls[0][0][0][3]).toContain(
+    'banked free Pro days start next'
+  )
+})
+
+it('counts free access separately from the paused paid tier and renewal choice', async () => {
+  const stats = getShopStats as (p: { limitDays: number }) => Promise<unknown>
+  await rows(
+    `insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew)
+    values ($1,'supporter-basic',now()+interval '20 days',true)`,
+    [userId]
+  )
+  await grantMembershipDays(pg, { ...input, tier: 'premium' })
+  await rows("insert into users (id) values ('free-only')")
+  await grantMembershipDays(pg, { ...input, userId: 'free-only' })
+  expect(await stats({ limitDays: 1 })).toMatchObject({
+    freeDayMembers: 2,
+    subscribersByTier: [{ tier: 'basic', count: 1, autoRenewCount: 1 }],
+  })
+  await cancel({}, { uid: userId })
+  expect(await stats({ limitDays: 1 })).toMatchObject({
+    freeDayMembers: 2,
+    subscribersByTier: [{ tier: 'basic', count: 1, autoRenewCount: 0 }],
+  })
+})
+
+it.each([true, false])(
+  'sends one mobile-only paid expiry notice across reruns (auto-renew = %p)',
+  async (autoRenew) => {
+    const prefs = jest.mocked(getNotificationDestinationsForUser)
+    const mobileOnly = {
+      sendToEmail: false,
+      sendToBrowser: false,
+      sendToMobile: true,
+      urlToManageThisNotification: '',
+    }
+    prefs.mockReturnValueOnce(mobileOnly).mockReturnValueOnce(mobileOnly)
+    await rows('update users set balance = 0')
+    await rows(
+      `insert into user_entitlements(user_id,entitlement_id,expires_time,auto_renew)
+    values ($1,'supporter-basic',now()+interval '2.5 days',$2)`,
+      [userId, autoRenew]
+    )
+    await checkSubscriptionExpiry()
+    await checkSubscriptionExpiry()
+    expect(createPushNotifications).toHaveBeenCalledTimes(1)
+    expect(
+      await rows('select notification_id from user_notifications')
+    ).toHaveLength(1)
+    const inbox = getNotifications as (
+      p: { limit: number },
+      auth: { uid: string }
+    ) => Promise<unknown>
+    expect(await inbox({ limit: 10 }, { uid: userId })).toEqual([])
+  }
+)
 
 it.each([false, true])(
   'sends a free-days expiry notice (paid membership paused = %p)',
@@ -241,25 +443,34 @@ it.each([false, true])(
       durationMs: 2.5 * DAY_MS,
     })
     await checkSubscriptionExpiry()
-    expect(insertNotificationToSupabase).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sourceSlug: '/membership',
+    await checkSubscriptionExpiry()
+    expect(await rows('select data from user_notifications')).toEqual([
+      {
         data: expect.objectContaining({
-          expiryReason: 'free_days',
-          tierName: 'Pro',
-          amount: 2500,
-          grantEndsTime: issued.grant.endsTime,
-          paidTierName: paid ? 'Plus' : undefined,
+          sourceSlug: '/membership',
+          data: expect.objectContaining({
+            expiryReason: 'free_days',
+            tierName: 'Pro',
+            amount: 2500,
+            grantEndsTime: issued.grant.endsTime,
+            nextMembership: paid ? { kind: 'paid', tier: 'basic' } : null,
+          }),
         }),
-      }),
-      pg
-    )
+      },
+    ])
+    expect(createPushNotifications).toHaveBeenCalledTimes(1)
   }
 )
 
 it('restricts grants to admins and exposes the private ledger only through the owner view', async () => {
   const issue = adminGrantMembershipDays as (
-    props: { userId: string; tier: 'basic'; days: number; note: string },
+    props: {
+      userId: string
+      tier: 'basic'
+      days: number
+      note: string
+      key: string
+    },
     auth: { uid: string }
   ) => Promise<unknown>
   const view = getMembershipGrants as Handler
@@ -268,6 +479,7 @@ it('restricts grants to admins and exposes the private ledger only through the o
     tier: 'basic' as const,
     days: 2,
     note: 'internal support note',
+    key: 'support-ticket-42',
   }
   await expect(issue(request, { uid: userId })).rejects.toMatchObject({
     code: 403,
@@ -275,6 +487,11 @@ it('restricts grants to admins and exposes the private ledger only through the o
   expect(await issue(request, { uid: ENV_CONFIG.adminIds[0] })).toMatchObject({
     outcome: 'started',
   })
+  expect(await issue(request, { uid: ENV_CONFIG.adminIds[0] })).toMatchObject({
+    outcome: 'duplicate',
+    grant: { sourceId: request.key },
+  })
+  expect(await rows('select id from membership_grants')).toHaveLength(1)
   await expect(view({ userId }, { uid: 'other' })).rejects.toMatchObject({
     code: 403,
   })

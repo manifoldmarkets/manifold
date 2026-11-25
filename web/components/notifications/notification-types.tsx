@@ -2797,7 +2797,7 @@ function MembershipSubscriptionNotification(props: {
           tierName,
           data.grantEndsTime,
           amount,
-          data.paidTierName
+          data.nextMembership ?? data.paidTierName
         )
       : undefined
 

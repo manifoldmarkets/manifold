@@ -119,10 +119,7 @@ import {
   promoStatSizeClass,
 } from 'web/components/shop/giveaway-promo-card'
 import { NewBadge } from 'web/components/shop/new-badge'
-import {
-  MembershipGrantsPanel,
-  useMembershipGrants,
-} from 'web/components/shop/supporter/membership-grants'
+import { useMembershipGrants } from 'web/components/shop/supporter/membership-grants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
@@ -2230,9 +2227,10 @@ function SupporterCard(props: {
 }) {
   const { entitlements } = props
   const user = useUser()
+  const { view, active } = useMembershipGrants(user)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
 
-  const currentTier = getUserSupporterTier(entitlements)
+  const currentTier = active?.tier ?? getUserSupporterTier(entitlements)
   const supporterEntitlement = getSupporterEnt(entitlements)
   const isSupporter = currentTier !== null
 
@@ -2341,7 +2339,9 @@ function SupporterCard(props: {
                 <span className="text-lg font-bold">Manifold Membership</span>
               </Row>
               <span className="text-primary-600 text-sm font-medium group-hover:underline">
-                {isSupporter
+                {active
+                  ? 'View membership →'
+                  : isSupporter
                   ? isAutoRenewing
                     ? 'Manage Subscription →'
                     : 'Resubscribe →'
@@ -2429,7 +2429,7 @@ function SupporterCard(props: {
               </Row>
 
               {/* Right: Renewal/expiry info (only show if supporter) */}
-              {isSupporter && renewalDate && (
+              {!active && isSupporter && renewalDate && (
                 <Col className="items-end gap-0.5">
                   <div className="text-ink-500 text-xs">
                     {isAutoRenewing ? 'Renews' : 'Expires'}
@@ -2446,6 +2446,23 @@ function SupporterCard(props: {
               )}
             </Row>
           </div>
+
+          {active && (
+            <p className="text-sm">
+              Free {SUPPORTER_TIERS[active.tier].name} days until{' '}
+              {new Date(active.endsTime).toLocaleDateString()}.
+              {view?.paid &&
+                ` Your paid ${
+                  SUPPORTER_TIERS[view.paid.tier].name
+                } membership is paused.`}
+            </p>
+          )}
+          {view && (active || view.banked.length > 0) && (
+            <p className="text-ink-500 text-sm">
+              {view.banked.length} banked{' '}
+              {view.banked.length === 1 ? 'grant' : 'grants'}
+            </p>
+          )}
 
           {/* Mini Tier Selector (interactive with hover) — hidden for existing subscribers */}
           {!isSupporter && (
@@ -2554,7 +2571,6 @@ function SupporterModal(props: {
 }) {
   const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
   const user = useUser()
-  const grants = useMembershipGrants(user, open)
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
@@ -2619,8 +2635,9 @@ function SupporterModal(props: {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      await grants.refresh()
-      toast.success('Automatic renewal is off.')
+      toast.success(
+        'Subscription cancelled. Your membership will remain active until the end of the current period.'
+      )
       setConfirmingCancel(false)
     } catch (e: any) {
       toast.error(e.message || 'Failed to cancel subscription')
@@ -2859,11 +2876,6 @@ function SupporterModal(props: {
             </div>
           </div>
 
-          <MembershipGrantsPanel
-            view={grants.view}
-            cancelling={cancelling}
-            turnOffRenewal={handleCancelSubscription}
-          />
           {/* Horizontal Tier Selector */}
           <TierSelector
             currentTier={currentTier}
@@ -2873,7 +2885,6 @@ function SupporterModal(props: {
             onHover={setHoveredTier}
             onHoverEnd={() => setHoveredTier(null)}
             effectiveBalance={effectiveBalance}
-            lockMessage={grants.lockMessage}
             variant="modal"
           />
 
@@ -2887,7 +2898,6 @@ function SupporterModal(props: {
               disabled={!user || !!purchasing || cancelling}
               entitlements={entitlements}
               currentEntitlement={currentEntitlement}
-              lockMessage={grants.lockMessage}
               isAutoRenewing={isAutoRenewing}
               onClick={() => setConfirmingPurchase(activeTier)}
               onCancelClick={() => setConfirmingCancel(true)}
@@ -2921,7 +2931,6 @@ function SupporterModal(props: {
             currentTier={currentTier}
             daysRemaining={daysRemaining}
             currentEntitlement={currentEntitlement}
-            lockMessage={grants.lockMessage}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)

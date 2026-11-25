@@ -1,4 +1,6 @@
-create table
+begin;
+
+create table if not exists
   membership_grants (
     id bigint generated always as identity primary key,
     user_id text not null references users (id) on delete cascade,
@@ -30,10 +32,25 @@ create table
     )
   );
 
-create unique index membership_grants_one_active on membership_grants (user_id)
+create unique index if not exists membership_grants_one_active on membership_grants (user_id)
 where
   status = 'active';
 
-create index membership_grants_status_ends on membership_grants (status, ends_time);
+create index if not exists membership_grants_status_ends on membership_grants (status, ends_time);
 
-alter table membership_grants enable row level security;
+do $$
+declare
+  r text;
+begin
+  if not (select relrowsecurity from pg_class where oid = 'membership_grants'::regclass) then
+    alter table membership_grants enable row level security;
+  end if;
+  foreach r in array array['anon', 'authenticated'] loop
+    if exists (select 1 from pg_roles where rolname = r) then
+      execute format('revoke all on membership_grants from %I', r);
+    end if;
+  end loop;
+end
+$$;
+
+commit;

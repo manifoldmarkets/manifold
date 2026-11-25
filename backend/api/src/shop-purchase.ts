@@ -38,6 +38,7 @@ import {
   getActiveSupporterEntitlements,
   getUserEntitlements,
 } from 'shared/supabase/entitlements'
+import { broadcastUserUpdates, type UserUpdate } from 'shared/supabase/users'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 
 // Runs large read-only aggregate queries OUTSIDE the write transaction to avoid
@@ -350,6 +351,7 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     // Create transaction using the standard pattern (skip if price is 0, e.g., downgrade fully covered by credit)
+    const balanceUpdates: UserUpdate[] = []
     let txnId: string | null = null
     if (price > 0) {
       const discountPercent = Math.round(shopDiscount * 100)
@@ -398,7 +400,14 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
             },
           }
 
-      const txn = await runTxnOutsideBetQueue(tx, txnData)
+      const txn = await runTxnOutsideBetQueue(
+        tx,
+        txnData,
+        false,
+        isSupporterTierPurchase
+          ? (updates) => balanceUpdates.push(...updates)
+          : undefined
+      )
       txnId = txn.id
     }
 
@@ -532,16 +541,20 @@ export const shopPurchase: APIHandler<'shop-purchase'> = async (
     }
 
     return {
+      balanceUpdates,
       success: true as const,
       entitlement,
       entitlements,
       upgradeCredit,
     }
   }
-  const result = await betsQueue.enqueueFn(
-    () => runTransactionWithRetries(purchase),
-    [auth.uid]
-  )
+  const result = await betsQueue.enqueueFn(async () => {
+    const { balanceUpdates, ...result } = await runTransactionWithRetries(
+      purchase
+    )
+    if (balanceUpdates.length) broadcastUserUpdates(balanceUpdates)
+    return result
+  }, [auth.uid])
 
   // Entitlements live outside the users row, so nothing else tells the
   // user's open pages (e.g. Yap's member check) that they changed.

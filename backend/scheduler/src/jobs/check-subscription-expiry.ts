@@ -4,6 +4,8 @@ import {
   SUPPORTER_TIERS,
   SupporterTier,
 } from 'common/supporter-config'
+import { readMembershipGrantView } from 'shared/membership-grants'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { DAY_MS } from 'common/util/time'
 import { getPrivateUser, log } from 'shared/utils'
 import {
@@ -48,18 +50,21 @@ async function createSubscriptionExpiringNotification(
   amount: number,
   daysUntilExpiry: number,
   reason: NonNullable<MembershipSubscriptionData['expiryReason']>,
-  grant?: { endsTime: number; paidTierName?: string }
+  grant?: {
+    endsTime: number
+    next: MembershipSubscriptionData['nextMembership']
+  }
 ) {
   const pg = createSupabaseDirectClient()
   const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
+  if (!privateUser) return false
 
   const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
     privateUser,
     'membership_subscription'
   )
 
-  if (!sendToBrowser && !sendToMobile) return
+  if (!sendToBrowser && !sendToMobile) return false
 
   // Deterministic ID prevents duplicate notifications if the job reruns on the same day
   const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD
@@ -72,7 +77,7 @@ async function createSubscriptionExpiringNotification(
     type: 'expiring_soon',
     expiryReason: reason,
     grantEndsTime: grant?.endsTime,
-    paidTierName: grant?.paidTierName,
+    nextMembership: grant?.next,
     daysUntilExpiry,
   }
 
@@ -93,19 +98,17 @@ async function createSubscriptionExpiringNotification(
     data: notificationData,
   }
 
-  if (sendToBrowser) {
-    await insertNotificationToSupabase(notification, pg)
-  }
+  const inserted = await insertNotificationToSupabase(
+    notification,
+    pg,
+    sendToBrowser
+  )
+  if (!inserted) return false
 
   if (sendToMobile) {
     const title = `${tierName} Membership Expiring Soon`
     const body = grant
-      ? freeDaysExpiryMessage(
-          tierName,
-          grant.endsTime,
-          amount,
-          grant.paidTierName
-        )
+      ? freeDaysExpiryMessage(tierName, grant.endsTime, amount, grant.next)
       : reason === 'cancelled'
       ? `Your ${tierName} membership expires in ${daysUntilExpiry} day${
           daysUntilExpiry === 1 ? '' : 's'
@@ -116,6 +119,7 @@ async function createSubscriptionExpiringNotification(
 
     await createPushNotifications([[privateUser, notification, title, body]])
   }
+  return true
 }
 
 // Whole days until an entitlement expires, rounded up.
@@ -146,13 +150,9 @@ export async function checkSubscriptionExpiry() {
     expires_time: string
     auto_renew: boolean
     grant_id: string | null
-    paid_tier: SupporterTier | null
   }>(
-    `SELECT e.user_id, entitlement_id, expires_time, auto_renew, e.metadata->>'membershipGrantId' as grant_id,
-       g.paused_paid->>'tier' as paid_tier
+    `SELECT e.user_id, entitlement_id, expires_time, auto_renew, e.metadata->>'membershipGrantId' as grant_id
      FROM user_entitlements e
-     LEFT JOIN membership_grants g ON g.user_id = e.user_id AND g.status = 'active'
-       AND g.id::text = e.metadata->>'membershipGrantId'
      WHERE entitlement_id = ANY($1)
      AND expires_time IS NOT NULL
      AND expires_time > $2
@@ -180,23 +180,24 @@ export async function checkSubscriptionExpiry() {
     // Free days and cancelled subscriptions both end without a renewal charge.
     if (entitlement.grant_id || !auto_renew) {
       try {
-        await createSubscriptionExpiringNotification(
+        const view = entitlement.grant_id
+          ? await runTransactionWithRetries((tx) =>
+              readMembershipGrantView(tx, user_id, Date.now())
+            )
+          : null
+        if (entitlement.grant_id && view?.active?.id !== entitlement.grant_id)
+          continue
+        const inserted = await createSubscriptionExpiringNotification(
           user_id,
-          entitlement.grant_id
-            ? SUPPORTER_TIERS[tierInfo.tier].name
-            : tierInfo.name,
+          view?.active ? SUPPORTER_TIERS[view.active.tier].name : tierInfo.name,
           tierInfo.price,
           days,
-          entitlement.grant_id ? 'free_days' : 'cancelled',
-          entitlement.grant_id
-            ? {
-                endsTime: Date.parse(expires_time),
-                paidTierName: entitlement.paid_tier
-                  ? SUPPORTER_TIERS[entitlement.paid_tier].name
-                  : undefined,
-              }
+          view?.active ? 'free_days' : 'cancelled',
+          view?.active
+            ? { endsTime: view.active.endsTime, next: view.next }
             : undefined
         )
+        if (!inserted) continue
         notifiedCount++
         log(
           `Notified user ${user_id} about ${tierInfo.name} expiring (${
@@ -222,13 +223,14 @@ export async function checkSubscriptionExpiry() {
 
     if (user.balance < tierInfo.price) {
       try {
-        await createSubscriptionExpiringNotification(
+        const inserted = await createSubscriptionExpiringNotification(
           user_id,
           tierInfo.name,
           tierInfo.price,
           days,
           'insufficient_balance'
         )
+        if (!inserted) continue
         notifiedCount++
         log(
           `Notified user ${user_id} about ${tierInfo.name} expiring (insufficient balance: ${user.balance} < ${tierInfo.price})`

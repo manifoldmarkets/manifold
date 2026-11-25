@@ -4693,6 +4693,7 @@ export const API = (_apiTypeCheck = {
         userId: z.string().min(1),
         tier: z.enum(['basic', 'plus', 'premium']),
         days: z.number().int().min(1).max(90),
+        key: z.string().min(1).max(100),
         note: z.string().trim().min(1),
       })
       .strict(),
@@ -4921,6 +4922,7 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      freeDayMembers: number
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number
