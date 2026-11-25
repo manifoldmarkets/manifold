@@ -16,12 +16,18 @@ jest.mock('api/helpers/endpoint', () => ({
 jest.mock('api/helpers/rate-limit', () => ({
   onlyUsersWhoCanPerformAction: (_action: string, handler: unknown) => handler,
 }))
-jest.mock('shared/supabase/init', () => ({
-  createSupabaseDirectClient: jest.fn(),
-  pgp: jest.requireActual('pg-promise')(),
-  SERIAL_MODE: {},
-  READ_ONLY_REPEATABLE_MODE: {},
-}))
+jest.mock('shared/supabase/init', () => {
+  const pgp = jest.requireActual<typeof pgPromise>('pg-promise')()
+  return {
+    createSupabaseDirectClient: jest.fn(),
+    pgp,
+    SERIAL_MODE: {},
+    READ_ONLY_REPEATABLE_MODE: new pgp.txMode.TransactionMode({
+      tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+      readOnly: true,
+    }),
+  }
+})
 jest.mock('shared/supabase/users', () => ({ broadcastUserUpdates: jest.fn() }))
 jest.mock('api/get-user-achievements', () => ({
   loadUserAchievements: jest.fn(),
@@ -219,11 +225,10 @@ beforeAll(async () => {
     // Single-connection PGlite can build the same partial index only offline.
     await db.exec(sql.replace('create index concurrently', 'create index'))
   }
-  jest
-    .mocked(createSupabaseDirectClient)
-    .mockReturnValue(
-      client as unknown as ReturnType<typeof createSupabaseDirectClient>
-    )
+  jest.mocked(createSupabaseDirectClient).mockReturnValue({
+    ...client,
+    task: (fn: (session: typeof client) => Promise<unknown>) => fn(client),
+  } as unknown as ReturnType<typeof createSupabaseDirectClient>)
 })
 
 afterAll(async () => {
@@ -806,6 +811,12 @@ describe('admin unclaim', () => {
 })
 
 describe('nightly trophy ranks', () => {
+  const publisherLocks = () =>
+    rows(
+      `select granted from pg_locks where locktype = 'advisory' and mode = 'ExclusiveLock'
+       and objid = hashtext('update-trophy-ranks')::oid`
+    )
+
   it('publishes an empty ranking when an active user has no portfolio snapshot', async () => {
     await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
     await rows("update users set balance = 600000 where id = 'u'")
@@ -885,17 +896,19 @@ describe('nightly trophy ranks', () => {
       insert into user_portfolio_history_latest (user_id, balance, investment_value)
         values ('u', 510000, 0);
     `)
-    // PGlite has one connection. Run the claim immediately after the rank
-    // transaction commits, while the nightly peak candidate is still pending.
+    // PGlite has one connection. Interleave the claim after the snapshot
+    // closes and before publication begins, with the publisher lock still held.
     const tx = client.tx
     const publication = jest
       .spyOn(client, 'tx')
       .mockImplementationOnce(async (...args) => {
+        expect(await publisherLocks()).toEqual([{ granted: true }])
         const result = await tx(...args)
+        expect(await publisherLocks()).toEqual([{ granted: true }])
         expect(await trophiesOf('u')).toMatchObject({
-          ranks: [{ trophyId: 'net-worth', rank: 1, value: 510000 }],
-          rankPeaks: [{ trophyId: 'net-worth', bestRank: 1 }],
-          ranksComputedTime: expect.any(Number),
+          ranks: [],
+          rankPeaks: [],
+          ranksComputedTime: null,
           storedPeakNetWorth: 400000,
         })
         await rows(
@@ -908,8 +921,11 @@ describe('nightly trophy ranks', () => {
       await updateTrophyRanks()
       expect(await trophiesOf('u')).toMatchObject({
         ranks: [{ trophyId: 'net-worth', rank: 1, value: 510000 }],
+        rankPeaks: [{ trophyId: 'net-worth', bestRank: 1 }],
+        ranksComputedTime: expect.any(Number),
         storedPeakNetWorth: 600000,
       })
+      expect(await publisherLocks()).toEqual([])
     } finally {
       publication.mockRestore()
     }
@@ -1048,18 +1064,38 @@ describe('nightly trophy ranks', () => {
     ).toEqual([{ user_id: 'live-answer' }, { user_id: 'live-market' }])
   })
 
-  it('retries the entire repeatable-read publication after a serialization failure or deadlock', async () => {
+  it('rolls back the sampled peaks and ranks together when publication fails', async () => {
+    await addUser('u', { data: { lastBetTime: Date.now() - DAY } })
+    await db.exec(`
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        values ('u', 510000, 0);
+      alter table trophy_rank_state add constraint reject_publication check (false);
+    `)
+    try {
+      await expect(updateTrophyRanks()).rejects.toMatchObject({ code: '23514' })
+      expect(await trophiesOf('u')).toMatchObject({
+        ranks: [],
+        rankPeaks: [],
+        ranksComputedTime: null,
+        storedPeakNetWorth: null,
+      })
+      expect(await publisherLocks()).toEqual([])
+    } finally {
+      await db.exec(
+        'alter table trophy_rank_state drop constraint reject_publication'
+      )
+    }
+  })
+
+  it('retries only the write transaction after a serialization failure or deadlock', async () => {
     const none = client.none
     const codes = ['40001', '40P01']
-    const isolationLevels: string[] = []
+    const transactions = jest.spyOn(client, 'tx')
     const writes = jest
       .spyOn(client, 'none')
       .mockImplementation(async (sql, params) => {
         if (sql.includes('insert into trophy_rank_state')) {
-          const { transaction_isolation } = await client.one(
-            'show transaction_isolation'
-          )
-          isolationLevels.push(transaction_isolation)
+          expect(await publisherLocks()).toEqual([{ granted: true }])
           const code = codes.shift()
           if (code)
             throw Object.assign(new Error('publication conflict'), { code })
@@ -1068,21 +1104,27 @@ describe('nightly trophy ranks', () => {
       })
     try {
       await updateTrophyRanks()
-      expect(isolationLevels).toEqual([
-        'repeatable read',
-        'repeatable read',
-        'repeatable read',
+      expect(
+        transactions.mock.calls.map(([options]) =>
+          (options as { mode: { begin(): string } }).mode.begin()
+        )
+      ).toEqual([
+        'begin isolation level repeatable read read only',
+        'begin isolation level read committed read write',
+        'begin isolation level read committed read write',
+        'begin isolation level read committed read write',
       ])
       expect(
         writes.mock.calls.filter(([sql]) =>
           sql.includes('delete from trophy_ranks')
         )
-      ).toHaveLength(1)
+      ).toHaveLength(3)
       expect(await rows('select id from trophy_rank_state')).toEqual([
         { id: true },
       ])
     } finally {
       writes.mockRestore()
+      transactions.mockRestore()
     }
   })
 

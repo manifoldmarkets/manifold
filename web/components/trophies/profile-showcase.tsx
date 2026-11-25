@@ -24,7 +24,6 @@ import {
   getMaxShowcasePins,
   getTrophyDisplayStats,
   getTrophyPinId,
-  getTrophyStatValue,
 } from 'common/trophies'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -89,7 +88,7 @@ export function ProfileShowcase(props: {
     : []
   const badges = sortBadges([
     ...getTrophyBadges(
-      achievements && getTrophyDisplayStats(achievements, trophies),
+      getTrophyDisplayStats(achievements, trophies),
       claims,
       held
     ),
@@ -300,19 +299,19 @@ const sortBadges = (badges: ShowcaseBadgeData[]) =>
 
 // Each badge shows the trophy's highest claimed milestone.
 function getTrophyBadges(
-  stats: TrophyStats | undefined,
+  stats: TrophyStats,
   claims: TrophyClaim[],
   held: ReturnType<typeof getHeldTrophyTitles>
 ): ShowcaseBadgeData[] {
   return TROPHY_DEFINITIONS.flatMap((def) => {
     const milestone = getHighestClaimedMilestone(def, claims)
     if (!milestone) return []
-    const stat = stats ? getTrophyStatValue(def, stats) : undefined
+    const stat = stats[def.statKey]
     return [
       getTrophyShowcaseBadge(
         def,
         milestone,
-        stat,
+        Number.isFinite(stat) ? stat : undefined,
         held.find((h) => h.definition.id === def.id)
       ),
     ]
