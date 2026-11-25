@@ -1,0 +1,27 @@
+/* Keep overflow cues narrow enough to leave the adjacent label readable. */
+.rail > div::before,
+.rail > div::after {
+  width: 14px;
+}
+
+.rail > button {
+  @apply bg-canvas-0 w-6 rounded-md;
+}
+
+.rail > button svg {
+  @apply text-ink-600 h-4 w-4;
+}
+
+/* Keep the shared tablist's keyboard and panel behavior. */
+.views [role='tab'] {
+  @apply text-ink-600 m-0 h-11 items-center px-0 py-0 text-xs font-semibold sm:text-sm;
+}
+
+.views [role='tab']:hover,
+.views [role='tab'][aria-selected='true'] {
+  @apply text-ink-1000;
+}
+
+.views [role='tab'][aria-selected='true'] {
+  @apply border-primary-700 font-bold;
+}
