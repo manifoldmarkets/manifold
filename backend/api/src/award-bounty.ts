@@ -1,4 +1,4 @@
-import { type APIHandler } from './helpers/endpoint'
+import { APIError, type APIHandler } from './helpers/endpoint'
 import { createBountyAwardedNotification } from 'shared/create-notification'
 import { getContract } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -11,6 +11,8 @@ export const awardBounty: APIHandler<
   const { contractId, commentId, amount } = props
   const pg = createSupabaseDirectClient()
   const comment = await getComment(pg, commentId)
+  if (comment.contractId !== contractId)
+    throw new APIError(400, 'Comment does not belong to this market')
 
   const txn = await doAwardBounty({
     contractId,
