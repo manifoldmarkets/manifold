@@ -6,7 +6,7 @@ import {
   NotificationReason,
 } from 'common/notification'
 import { User } from 'common/user'
-import { Dictionary, first, groupBy, sortBy } from 'lodash'
+import { Dictionary, first, groupBy, maxBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
@@ -44,9 +44,12 @@ export function useNotifications(
   const [notifications, setNotifications] = usePersistentLocalState<
     Notification[] | undefined
   >(undefined, 'notifications-' + userId)
-  const [latestCreatedTime, setLatestCreatedTime] = usePersistentLocalState<
-    number | undefined
-  >(undefined, 'latest-notification-time-' + userId)
+  // Taken from the cached list, not saved on its own, so it can't get ahead
+  // of notifications that failed to save.
+  const latestCreatedTime = maxBy(
+    notifications,
+    (n) => n.createdTime
+  )?.createdTime
 
   const markAllAsSeen = () => {
     if (!notifications) return
@@ -95,16 +98,7 @@ export function useNotifications(
             }
           }
 
-          const updatedNotifications = trimCachedNotifications(
-            Array.from(byId.values()),
-            maxCached
-          )
-          const newLatestCreatedTime = Math.max(
-            ...updatedNotifications.map((n) => n.createdTime),
-            latestCreatedTime ?? 0
-          )
-          setLatestCreatedTime(newLatestCreatedTime)
-          return updatedNotifications
+          return trimCachedNotifications(Array.from(byId.values()), maxCached)
         })
       })
     }
@@ -114,16 +108,16 @@ export function useNotifications(
     topics: [`user-notifications/${userId}`],
     onBroadcast: ({ data }) => {
       console.log('new notification', data)
-      setNotifications((notifs) => {
-        const newNotification = data.notification as Notification
-        setLatestCreatedTime((prevTime) =>
-          Math.max(prevTime ?? 0, newNotification.createdTime)
-        )
-        return trimCachedNotifications(
-          [newNotification, ...(notifs ?? [])],
-          maxCached
-        )
-      })
+      const newNotification = data.notification as Notification
+      setNotifications((notifs) =>
+        // The fetch may have returned it already.
+        notifs?.some((n) => n.id === newNotification.id)
+          ? notifs
+          : trimCachedNotifications(
+              [newNotification, ...(notifs ?? [])],
+              maxCached
+            )
+      )
     },
   })
   useApiSubscription({
