@@ -9,6 +9,7 @@ import {
   BetReplyNotificationData,
   BettingStreakData,
   ContractResolutionData,
+  getLiquidityPayoutText,
   getShownLiquidityPayout,
   LeagueChangeData,
   MarketMovementData,
@@ -1000,10 +1001,10 @@ export const createContractResolvedNotifications = async (
         resolutionData
       const liquidityPayout = getShownLiquidityPayout(resolutionData)
       const liquidityString = liquidityPayout
-        ? ` You got ${formatMoneyEmail(
+        ? ` ${getLiquidityPayoutText(
             liquidityPayout,
-            token
-          )} back from the liquidity you added.`
+            formatMoneyEmail(Math.abs(liquidityPayout), token)
+          )}.`
         : ''
       const betterThan = (totalShareholders ?? 0) - (profitRank ?? 0)
       const comparison =

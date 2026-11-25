@@ -106,12 +106,15 @@ export const getMarketResolutionEmail = (
     userLiquidityPayout: liquidityPayout,
     token: contract.token,
   })
-  const liquidityPayoutText = shownLiquidityPayout
-    ? ` (plus ${formatMoneyEmail(
-        shownLiquidityPayout,
-        contract.token
-      )} back from the liquidity you added)`
-    : ''
+  const liquidityAmountText = formatMoneyEmail(
+    Math.abs(shownLiquidityPayout),
+    contract.token
+  )
+  const liquidityPayoutText = !shownLiquidityPayout
+    ? ''
+    : shownLiquidityPayout > 0
+    ? ` (plus ${liquidityAmountText} back from the liquidity you added)`
+    : ` (less ${liquidityAmountText} of the liquidity you withdrew, taken back)`
 
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment

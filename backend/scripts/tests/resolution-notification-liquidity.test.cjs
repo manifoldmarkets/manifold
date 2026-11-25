@@ -13,7 +13,9 @@ const getNotificationFixes = (...args) =>
   JSON.parse(JSON.stringify(loaded.getNotificationFixes(...args)))
 
 const T0 = Date.parse('2026-11-25T04:01:25.206Z')
+let nextId = 0
 const payout = (over) => ({
+  id: `p${nextId++}`,
   userId: 'gen',
   contractId: 'dwts',
   answerId: null,
@@ -29,6 +31,7 @@ const notification = (over) => ({
   createdTime: T0 + 1478,
   outcome: '6RCqntZh6l',
   userPayout: 356.88,
+  fixed: false,
   ...over,
 })
 
@@ -148,5 +151,83 @@ test('leaves a stored payout below the liquidity share alone, unless cancelled',
   assert.deepEqual(
     fixes.map((f) => [f.notificationId, f.userPayout]),
     [['cancelled', -200]]
+  )
+})
+
+test('leaves notifications alone when both come after the second payout', () => {
+  // The first resolution's notification was written after the market had
+  // been unresolved and resolved again: both notifications fall after the
+  // second payout, so neither can be placed by time. (The first payout is
+  // outside their window, so only the shared payout gives this away.)
+  const { fixes, doubtful } = getNotificationFixes(
+    [
+      notification({
+        notificationId: 'first',
+        createdTime: T0 + 661_000,
+        userPayout: 100,
+      }),
+      notification({
+        notificationId: 'second',
+        createdTime: T0 + 662_000,
+        userPayout: 100,
+      }),
+    ],
+    [
+      payout({ deposit: 40 }),
+      payout({ createdTime: T0 + 660_000, deposit: 20 }),
+    ]
+  )
+  assert.deepEqual(fixes, [])
+  assert.deepEqual(
+    doubtful.map((d) => d.notification.notificationId),
+    ['first', 'second']
+  )
+})
+
+test('leaves a notification alone when an earlier payout in its window has none', () => {
+  // Only one notification survives, written after the second payout: it may
+  // belong to either resolution.
+  const { fixes, doubtful } = getNotificationFixes(
+    [notification({ createdTime: T0 + 61_000, userPayout: 100 })],
+    [payout({ deposit: 40 }), payout({ createdTime: T0 + 60_000, deposit: 20 })]
+  )
+  assert.deepEqual(fixes, [])
+  assert.equal(doubtful.length, 1)
+})
+
+test('a notification fixed before still accounts for its own payout', () => {
+  const { fixes, doubtful } = getNotificationFixes(
+    [
+      notification({
+        notificationId: 'done',
+        createdTime: T0 + 400,
+        userPayout: 0,
+        fixed: true,
+      }),
+      notification({
+        notificationId: 'next',
+        createdTime: T0 + 60_400,
+        userPayout: 20,
+      }),
+    ],
+    [payout({ deposit: 40 }), payout({ createdTime: T0 + 60_000, deposit: 20 })]
+  )
+  assert.deepEqual(doubtful, [])
+  assert.deepEqual(
+    fixes.map((f) => [f.notificationId, f.userPayout, f.userLiquidityPayout]),
+    [['next', 0, 20]]
+  )
+})
+
+test('moves a negative liquidity share on a cancelled market', () => {
+  // Cancelling takes back liquidity the user had withdrawn: M$80 of trades
+  // refunded, M$30 of withdrawn liquidity taken back, notified as M$50.
+  const { fixes } = getNotificationFixes(
+    [notification({ outcome: 'CANCEL', userPayout: 50 })],
+    [payout({ deposit: -30 })]
+  )
+  assert.deepEqual(
+    fixes.map((f) => [f.userPayout, f.userLiquidityPayout]),
+    [[80, -30]]
   )
 })

@@ -7,6 +7,8 @@
 // Run after the API that writes userLiquidityPayout is deployed: notifications
 // sent before that deploy and after this runs would stay wrong. Notifications
 // that already have userLiquidityPayout are skipped, so it's safe to re-run.
+// A notification that can't be paired with its payout for certain is listed
+// as DOUBTFUL and left alone.
 //
 // Dry run (default), last 90 days:
 //   yarn ts-node backfill-resolution-notification-liquidity.ts
@@ -15,7 +17,7 @@
 // Apply:
 //   yarn ts-node backfill-resolution-notification-liquidity.ts --apply
 
-import { chunk, sumBy, uniq } from 'lodash'
+import { chunk, groupBy, sumBy, uniq } from 'lodash'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -23,6 +25,8 @@ import {
 import { DAY_MS } from 'common/util/time'
 import { runScript } from './run-script'
 import {
+  CLOCK_SKEW_MS,
+  DoubtfulNotification,
   getNotificationFixes,
   MAX_NOTIFICATION_DELAY_MS,
   NotificationFix,
@@ -31,6 +35,7 @@ import {
 } from './resolution-notification-liquidity'
 
 const DEFAULT_DAYS = 90
+const USER_BATCH = 100
 const UPDATE_BATCH = 500
 // The house's liquidity isn't a person's, and it has more notifications than
 // anyone to search.
@@ -57,110 +62,111 @@ runScript(async ({ pg }) => {
     ).toISOString()}`
   )
 
+  // Who was paid anything for their liquidity, and on which markets: one pass
+  // over the period.
+  const pairs = await pg.manyOrNone<{ user_id: string; contract_id: string }>(
+    `select distinct to_id as user_id, from_id as contract_id
+     from txns
+     where category = 'CONTRACT_RESOLUTION_PAYOUT'
+       and created_time >= millis_to_ts($1)
+       and (data->'data'->>'deposit')::numeric <> 0
+       and to_id <> all($2)`,
+    [since, HOUSE_IDS]
+  )
+  const contractsByUser = groupBy(pairs, (p) => p.user_id)
+  const userIds = Object.keys(contractsByUser)
+  console.log(
+    `${pairs.length} user/market pairs with liquidity payouts, ${userIds.length} users`
+  )
+
   const allFixes: NotificationFix[] = []
-  let doubtfulCount = 0
-  const end = Date.now()
-  for (let start = since; start < end; start += DAY_MS) {
-    const dayEnd = Math.min(start + DAY_MS, end)
-
-    // Payouts that included some of the user's liquidity, this day
-    const liquidityPayouts = await pg.manyOrNone<{
-      user_id: string
-      contract_id: string
-    }>(
-      `select distinct to_id as user_id, from_id as contract_id
-       from txns
-       where category = 'CONTRACT_RESOLUTION_PAYOUT'
-         and created_time >= millis_to_ts($1) and created_time < millis_to_ts($2)
-         and (data->'data'->>'deposit')::numeric > 0
-         and to_id <> all($3)`,
-      [start, dayEnd, HOUSE_IDS]
+  const allDoubtful: DoubtfulNotification[] = []
+  for (const users of chunk(userIds, USER_BATCH)) {
+    const wanted = new Set(
+      users.flatMap((u) =>
+        contractsByUser[u].map((p) => `${u}|${p.contract_id}`)
+      )
     )
-    if (liquidityPayouts.length === 0) continue
-    const userIds = liquidityPayouts.map((p) => p.user_id)
-    const contractIds = liquidityPayouts.map((p) => p.contract_id)
-
-    // Every payout to those users on those markets around this day, including
-    // ones without a deposit, so each notification finds its own resolution.
-    const payouts = await pg.map<ResolutionPayout>(
-      `select t.to_id, t.from_id, t.data->'data'->>'answerId' as answer_id,
-              ts_to_millis(t.created_time) as created_time,
-              coalesce((t.data->'data'->>'deposit')::numeric, 0) as deposit
-       from txns t
-       join unnest($1::text[], $2::text[]) as k(user_id, contract_id)
-         on t.to_id = k.user_id and t.from_id = k.contract_id
-       where t.category = 'CONTRACT_RESOLUTION_PAYOUT'
-         and t.created_time >= millis_to_ts($3)
-         and t.created_time < millis_to_ts($4)`,
-      [
-        userIds,
-        contractIds,
-        start - MAX_NOTIFICATION_DELAY_MS,
-        dayEnd + MAX_NOTIFICATION_DELAY_MS,
-      ],
-      (r) => ({
-        userId: r.to_id,
-        contractId: r.from_id,
-        answerId: r.answer_id ?? null,
-        createdTime: Number(r.created_time),
-        deposit: Number(r.deposit),
-      })
+    const contractIds = uniq(
+      users.flatMap((u) => contractsByUser[u].map((p) => p.contract_id))
     )
+    const isWanted = (userId: string, contractId: string) =>
+      wanted.has(`${userId}|${contractId}`)
 
-    const notifications = await pg.map<ResolutionNotification>(
-      `select n.user_id, n.notification_id,
-              n.data->>'sourceContractId' as contract_id,
-              n.data->'data'->>'answerId' as answer_id,
-              n.data->'data'->>'outcome' as outcome,
-              (n.data->>'createdTime')::bigint as created_time,
-              (n.data->'data'->>'userPayout')::numeric as user_payout
-       from user_notifications n
-       join unnest($1::text[], $2::text[]) as k(user_id, contract_id)
-         on n.user_id = k.user_id and n.data->>'sourceContractId' = k.contract_id
-       where n.data->>'sourceType' = 'contract'
-         and n.data->>'sourceUpdateType' = 'resolved'
-         and n.data->'data' ? 'userPayout'
-         and not (n.data->'data' ? 'userLiquidityPayout')
-         and (n.data->>'createdTime')::bigint >= $3
-         and (n.data->>'createdTime')::bigint < $4`,
-      [userIds, contractIds, start, dayEnd + MAX_NOTIFICATION_DELAY_MS],
-      (r) => ({
-        userId: r.user_id,
-        notificationId: r.notification_id,
-        contractId: r.contract_id,
-        answerId: r.answer_id ?? null,
-        outcome: r.outcome ?? null,
-        createdTime: Number(r.created_time),
-        userPayout: Number(r.user_payout),
-      })
-    )
+    // Every payout to them on those markets, including ones without a
+    // deposit, so each notification finds its own resolution.
+    const payouts = (
+      await pg.map<ResolutionPayout>(
+        `select id, to_id, from_id, data->'data'->>'answerId' as answer_id,
+                ts_to_millis(created_time) as created_time,
+                coalesce((data->'data'->>'deposit')::numeric, 0) as deposit
+         from txns
+         where category = 'CONTRACT_RESOLUTION_PAYOUT'
+           and to_id = any($1) and from_id = any($2)
+           and created_time >= millis_to_ts($3)`,
+        [users, contractIds, since - MAX_NOTIFICATION_DELAY_MS],
+        (r) => ({
+          id: r.id,
+          userId: r.to_id,
+          contractId: r.from_id,
+          answerId: r.answer_id ?? null,
+          createdTime: Number(r.created_time),
+          deposit: Number(r.deposit),
+        })
+      )
+    ).filter((p) => isWanted(p.userId, p.contractId))
+
+    // Every resolution notification of theirs on those markets, including
+    // ones already fixed, which account for their own payouts.
+    const notifications = (
+      await pg.map<ResolutionNotification>(
+        `select user_id, notification_id,
+                data->>'sourceContractId' as contract_id,
+                data->'data'->>'answerId' as answer_id,
+                data->'data'->>'outcome' as outcome,
+                (data->>'createdTime')::bigint as created_time,
+                (data->'data'->>'userPayout')::numeric as user_payout,
+                data->'data' ? 'userLiquidityPayout' as fixed
+         from user_notifications
+         where user_id = any($1)
+           and data->>'sourceContractId' = any($2)
+           and data->>'sourceType' = 'contract'
+           and data->>'sourceUpdateType' = 'resolved'
+           and data->'data' ? 'userPayout'
+           and (data->>'createdTime')::bigint >= $3`,
+        [users, contractIds, since - CLOCK_SKEW_MS],
+        (r) => ({
+          userId: r.user_id,
+          notificationId: r.notification_id,
+          contractId: r.contract_id,
+          answerId: r.answer_id ?? null,
+          outcome: r.outcome ?? null,
+          createdTime: Number(r.created_time),
+          userPayout: Number(r.user_payout),
+          fixed: r.fixed === true,
+        })
+      )
+    ).filter((n) => isWanted(n.userId, n.contractId))
 
     const { fixes, doubtful } = getNotificationFixes(notifications, payouts)
-    for (const { notification, deposit } of doubtful) {
-      console.log(
-        `[DOUBTFUL] ${notification.userId}/${notification.notificationId} ` +
-          `on ${notification.contractId}: userPayout ${notification.userPayout} ` +
-          `below the liquidity's ${deposit}; left alone`
-      )
-    }
-    doubtfulCount += doubtful.length
-    // A notification sent shortly after midnight can be found on two days.
-    const seen = new Set(allFixes.map((f) => `${f.userId}|${f.notificationId}`))
-    const newFixes = fixes.filter(
-      (f) => !seen.has(`${f.userId}|${f.notificationId}`)
-    )
-    allFixes.push(...newFixes)
+    allFixes.push(...fixes)
+    allDoubtful.push(...doubtful)
     console.log(
-      `${new Date(start).toISOString().slice(0, 10)}: ` +
-        `${liquidityPayouts.length} liquidity payouts, ` +
-        `${notifications.length} notifications checked, ${newFixes.length} to fix`
+      `${users.length} users: ${payouts.length} payouts, ` +
+        `${notifications.length} notifications, ${fixes.length} to fix, ` +
+        `${doubtful.length} doubtful`
     )
   }
 
+  for (const { notification: n, reason } of allDoubtful) {
+    console.log(
+      `[DOUBTFUL] ${n.userId}/${n.notificationId} on ${n.contractId}: ${reason}; left alone`
+    )
+  }
   console.log(
     `Summary: ${allFixes.length} notifications to fix for ` +
       `${uniq(allFixes.map((f) => f.userId)).length} users, ` +
-      `${doubtfulCount} doubtful left alone. ` +
+      `${allDoubtful.length} doubtful left alone. ` +
       `Liquidity moved out of userPayout: ${sumBy(
         allFixes,
         (f) => f.userLiquidityPayout

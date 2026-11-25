@@ -8,8 +8,10 @@ import {
   CharityGiveawayNotificationData,
   ContractResolutionData,
   ExtraPurchasedManaData,
+  getLiquidityPayoutText,
   getShownLiquidityPayout,
   getSourceUrl,
+  isShownAmount,
   MembershipSubscriptionData,
   Notification,
   PaymentCompletedData,
@@ -1020,6 +1022,7 @@ export function MarketResolvedNotification(props: {
     sourceContractCreatorUsername,
   } = notification
   const {
+    outcome,
     userInvestment,
     userPayout,
     userLiquidityPayout,
@@ -1027,6 +1030,8 @@ export function MarketResolvedNotification(props: {
     totalShareholders,
     token,
   } = (data as ContractResolutionData) ?? {}
+  // sourceText is the displayed resolution, 'N/A' for a cancellation
+  const isCancel = outcome === 'CANCEL' || sourceText === 'CANCEL'
   const profit = userPayout - userInvestment
   const liquidityPayout = getShownLiquidityPayout({
     userLiquidityPayout,
@@ -1038,31 +1043,36 @@ export function MarketResolvedNotification(props: {
     profitRank && totalShareholders && betterThan > 0
       ? `you outperformed ${betterThan} other${betterThan > 1 ? 's' : ''}!`
       : ''
-  const tradeTitle =
-    sourceText === 'CANCEL' && userInvestment > 0 ? (
+  const tradeTitle = isCancel ? (
+    userInvestment > 0 ? (
       <>
         Your {formatMoney(userInvestment, token)} invested has been returned to
         you
       </>
-    ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
+    ) : isShownAmount(userPayout, token) && userPayout < 0 ? (
       <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
-    ) : profitable ? (
-      <>
-        Your {formatMoney(userInvestment, token)} won{' '}
-        <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
-        profit
-        {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
-      </>
-    ) : userInvestment > 0 ? (
-      <>
-        You lost {formatMoney(Math.abs(profit), token)}
-        {comparison ? `, but ${comparison}` : ``}
-      </>
+    ) : isShownAmount(userPayout, token) ? (
+      <>Your {formatMoney(userPayout, token)} in losses has been returned</>
     ) : null
+  ) : profitable ? (
+    <>
+      Your {formatMoney(userInvestment, token)} won{' '}
+      <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
+      profit
+      {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
+    </>
+  ) : userInvestment > 0 ? (
+    <>
+      You lost {formatMoney(Math.abs(profit), token)}
+      {comparison ? `, but ${comparison}` : ``}
+    </>
+  ) : null
   const liquidityTitle = liquidityPayout ? (
     <>
-      You got {formatMoney(liquidityPayout, token)} back from the liquidity you
-      added
+      {getLiquidityPayoutText(
+        liquidityPayout,
+        formatMoney(Math.abs(liquidityPayout), token)
+      )}
     </>
   ) : null
   const secondaryTitle =
@@ -1127,44 +1137,43 @@ export function MarketResolvedNotification(props: {
     ? MANIFOLD_AVATAR_URL
     : notification.sourceUserAvatarUrl
 
-  const content =
-    sourceText === 'CANCEL' ? (
-      <>
-        <NotificationUserLink
-          userId={sourceId}
-          name={resolverName}
-          username={resolverUsername}
-        />{' '}
-        cancelled {isChildOfGroup && <span>the question</span>}
-        {!isChildOfGroup && (
-          <span>
-            {' '}
-            <PrimaryNotificationLink
-              text={sourceContractTitle}
-              truncatedLength={'xl'}
-            />
-          </span>
-        )}
-      </>
-    ) : (
-      <>
-        <NotificationUserLink
-          userId={sourceId}
-          name={resolverName}
-          username={resolverUsername}
-        />{' '}
-        resolved {isChildOfGroup && <span>the question</span>}
-        {!isChildOfGroup && (
-          <span>
-            <PrimaryNotificationLink
-              text={sourceContractTitle}
-              truncatedLength={'xl'}
-            />
-          </span>
-        )}{' '}
-        to {resolutionDescription()}
-      </>
-    )
+  const content = isCancel ? (
+    <>
+      <NotificationUserLink
+        userId={sourceId}
+        name={resolverName}
+        username={resolverUsername}
+      />{' '}
+      cancelled {isChildOfGroup && <span>the question</span>}
+      {!isChildOfGroup && (
+        <span>
+          {' '}
+          <PrimaryNotificationLink
+            text={sourceContractTitle}
+            truncatedLength={'xl'}
+          />
+        </span>
+      )}
+    </>
+  ) : (
+    <>
+      <NotificationUserLink
+        userId={sourceId}
+        name={resolverName}
+        username={resolverUsername}
+      />{' '}
+      resolved {isChildOfGroup && <span>the question</span>}
+      {!isChildOfGroup && (
+        <span>
+          <PrimaryNotificationLink
+            text={sourceContractTitle}
+            truncatedLength={'xl'}
+          />
+        </span>
+      )}{' '}
+      to {resolutionDescription()}
+    </>
+  )
 
   const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
   const userReview = useReview(notification.sourceId, notification.userId)
@@ -1211,7 +1220,7 @@ export function MarketResolvedNotification(props: {
                 ...notification,
                 sourceUserAvatarUrl: resolverAvatarUrl,
               }}
-              symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
+              symbol={isCancel ? '🚫' : profitable ? '💰' : '☑️'}
             />
             {!!secondaryTitle && (
               <div

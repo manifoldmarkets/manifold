@@ -485,15 +485,29 @@ export type ContractResolutionData = {
   token?: ContractToken
 }
 
-// The return on the user's liquidity when it's worth a line of its own
-// (formatMoney floors mana to whole units), else 0.
+// Whether an amount shows as other than 0: formatMoney rounds mana toward 0 to
+// whole units.
+export const isShownAmount = (amount: number, token?: ContractToken) =>
+  Number.isFinite(amount) && Math.abs(amount) >= (token === 'CASH' ? 0.01 : 1)
+
+// The return on the user's liquidity when it's worth a line of its own, else
+// 0. Negative when cancelling the market took back liquidity the user had
+// withdrawn.
 export const getShownLiquidityPayout = (
   data: Pick<ContractResolutionData, 'userLiquidityPayout' | 'token'>
 ) => {
   const amount = data.userLiquidityPayout ?? 0
-  if (!Number.isFinite(amount)) return 0
-  return amount >= (data.token === 'CASH' ? 0.01 : 1) ? amount : 0
+  return isShownAmount(amount, data.token) ? amount : 0
 }
+
+// formattedAmount: the absolute amount, formatted.
+export const getLiquidityPayoutText = (
+  amount: number,
+  formattedAmount: string
+) =>
+  amount > 0
+    ? `You got ${formattedAmount} back from the liquidity you added`
+    : `${formattedAmount} of the liquidity you withdrew was taken back`
 
 export type UniqueBettorData = {
   bet: Bet

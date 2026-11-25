@@ -7,11 +7,13 @@ import { groupBy, maxBy } from 'lodash'
 
 // One CONTRACT_RESOLUTION_PAYOUT txn: one per user per resolution.
 export type ResolutionPayout = {
+  id: string
   userId: string
   contractId: string
   answerId: string | null
   createdTime: number
-  // The liquidity's share of the payout
+  // The liquidity's share of the payout. Negative when cancelling a market
+  // takes back liquidity the user had withdrawn.
   deposit: number
 }
 
@@ -23,6 +25,9 @@ export type ResolutionNotification = {
   createdTime: number
   outcome: string | null
   userPayout: number
+  // Already has userLiquidityPayout: not changed again, but still the
+  // notification of its own resolution.
+  fixed: boolean
 }
 
 export type NotificationFix = {
@@ -31,6 +36,11 @@ export type NotificationFix = {
   oldUserPayout: number
   userPayout: number
   userLiquidityPayout: number
+}
+
+export type DoubtfulNotification = {
+  notification: ResolutionNotification
+  reason: string
 }
 
 // The notification is written after the resolution's transaction commits, and
@@ -50,33 +60,61 @@ const key = (p: {
 // answer) before it: a market resolved, unresolved and resolved again has a
 // payout and a notification for each resolution. Payouts must include those
 // with no deposit, or a later resolution that paid the user's liquidity
-// nothing would be mistaken for the earlier one.
+// nothing would be mistaken for the earlier one. Notifications must include
+// those already fixed, as they account for their own payouts.
+//
+// Timing alone can't place a notification that was written after the next
+// resolution's payout, so a pairing is only trusted when it's one to one: no
+// other notification takes the same payout, and every earlier payout in the
+// notification's window has a notification of its own. Anything else is
+// reported and left alone.
 export const getNotificationFixes = (
   notifications: ResolutionNotification[],
   payouts: ResolutionPayout[]
 ) => {
   const payoutsByKey = groupBy(payouts, key)
-  const fixes: NotificationFix[] = []
-  // Pairs where the stored payout is below the liquidity's share: a trade
-  // payout can't be negative unless the market was cancelled, so the pairing
-  // is doubtful. Left alone and reported.
-  const doubtful: { notification: ResolutionNotification; deposit: number }[] =
-    []
-  for (const n of notifications) {
-    const payout = maxBy(
-      (payoutsByKey[key(n)] ?? []).filter(
-        (p) => p.createdTime <= n.createdTime + CLOCK_SKEW_MS
-      ),
-      (p) => p.createdTime
+  const pairs = notifications.map((n) => {
+    const window = (payoutsByKey[key(n)] ?? []).filter(
+      (p) =>
+        p.createdTime <= n.createdTime + CLOCK_SKEW_MS &&
+        n.createdTime - p.createdTime <= MAX_NOTIFICATION_DELAY_MS
     )
-    if (!payout) continue
-    if (n.createdTime - payout.createdTime > MAX_NOTIFICATION_DELAY_MS) continue
+    return { n, window, payout: maxBy(window, (p) => p.createdTime) }
+  })
+  const claims = groupBy(
+    pairs.filter((p) => p.payout),
+    (p) => p.payout?.id
+  )
+
+  const fixes: NotificationFix[] = []
+  const doubtful: DoubtfulNotification[] = []
+  for (const { n, window, payout } of pairs) {
+    if (!payout || n.fixed) continue
     const { deposit } = payout
-    if (!Number.isFinite(deposit) || deposit <= 0) continue
+    if (!Number.isFinite(deposit) || deposit === 0) continue
     if (!Number.isFinite(n.userPayout)) continue
+    if (claims[payout.id].length > 1) {
+      doubtful.push({
+        notification: n,
+        reason: `shares payout ${payout.id} with another notification`,
+      })
+      continue
+    }
+    const unclaimed = window.find((p) => p !== payout && !claims[p.id])
+    if (unclaimed) {
+      doubtful.push({
+        notification: n,
+        reason: `earlier payout ${unclaimed.id} has no notification`,
+      })
+      continue
+    }
     const tradePayout = n.userPayout - deposit
+    // A trade payout is negative only when a cancellation takes back sales.
     if (tradePayout < -1e-6 && n.outcome !== 'CANCEL') {
-      doubtful.push({ notification: n, deposit })
+      doubtful.push({
+        notification: n,
+        reason: `userPayout ${n.userPayout} is below the liquidity's ${deposit}`,
+      })
       continue
     }
     fixes.push({
