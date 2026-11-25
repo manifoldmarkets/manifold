@@ -2,6 +2,7 @@ import { PlusIcon } from '@heroicons/react/solid'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { ComponentProps, ReactNode } from 'react'
+import type { BdlLeagueKey } from 'common/bdl/leagues'
 import {
   AnySportKey,
   CURATED_SPORTS,
@@ -130,6 +131,7 @@ export function SportMarkets(props: {
   upcoming: UpcomingMarketRef[]
   sportsByKey: Record<string, SportInfo>
   enabled: boolean
+  league?: BdlLeagueKey | null
 }) {
   const { sport, upcoming, sportsByKey, enabled } = props
   return (
@@ -140,15 +142,18 @@ export function SportMarkets(props: {
       <UpcomingMarkets
         key={sport === 'all' ? 'all' : sport.key}
         refs={upcoming}
+        league={props.league}
         sport={sport === 'all' ? 'all' : sport.key}
         showSport={sport === 'all'}
         sportsByKey={sportsByKey}
       />
-      <SportsMarketSections
-        sport={sport}
-        enabled={enabled}
-        className="min-w-0"
-      />
+      {props.league === undefined && (
+        <SportsMarketSections
+          sport={sport}
+          enabled={enabled}
+          className="min-w-0"
+        />
+      )}
       <MakeAMarket sport={sport} />
     </Col>
   )

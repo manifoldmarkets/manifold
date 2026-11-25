@@ -35,20 +35,24 @@ const empty = (userId: string | undefined): State => ({
   error: false,
 })
 
-async function fetchMetrics(userId: string, ids: string[]) {
+async function fetchMetrics(
+  userId: string,
+  ids: string[],
+  includeBinary: boolean
+) {
   const out: Record<string, ContractMetric[]> = {}
   for (let offset = 0; offset < ids.length; offset += CHUNK) {
+    const query = db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('user_id', userId)
+      .in('contract_id', ids.slice(offset, offset + CHUNK))
     const { data } = await run(
-      db
-        .from('user_contract_metrics')
-        .select('data')
-        .eq('user_id', userId)
-        .in('contract_id', ids.slice(offset, offset + CHUNK))
-        .not('answer_id', 'is', null)
+      includeBinary ? query : query.not('answer_id', 'is', null)
     )
     for (const row of data) {
       const metric = row.data as ContractMetric
-      if (!metric?.contractId || !metric.answerId) continue
+      if (!metric?.contractId || (!includeBinary && !metric.answerId)) continue
       ;(out[metric.contractId] ??= []).push(metric)
     }
   }
@@ -76,7 +80,7 @@ async function fetchOrders(userId: string, ids: string[]) {
  * focus and after a bet from a card. Games with a stake get live updates
  * over the per-contract metrics and orders topics.
  */
-export function useGamePositions(gameIds: string[]) {
+export function useGamePositions(gameIds: string[], includeBinary = false) {
   const user = useUser()
   const userId = user?.id
   const idsKey = JSON.stringify([...new Set(gameIds)].sort())
@@ -112,7 +116,7 @@ export function useGamePositions(gameIds: string[]) {
     const startedAt = Date.now()
     try {
       const [metrics, orders] = await Promise.all([
-        fetchMetrics(account, ids),
+        fetchMetrics(account, ids, includeBinary),
         fetchOrders(account, ids),
       ])
       if (
@@ -163,7 +167,7 @@ export function useGamePositions(gameIds: string[]) {
     const startedAt = Date.now()
     try {
       const [metrics, orders] = await Promise.all([
-        fetchMetrics(account, [id]),
+        fetchMetrics(account, [id], includeBinary),
         fetchOrders(account, [id]),
       ])
       if (!mounted.current || session !== epoch.current) return
@@ -213,7 +217,7 @@ export function useGamePositions(gameIds: string[]) {
       window.removeEventListener('focus', refresh)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [userId, idsKey, refresh])
+  }, [userId, idsKey, includeBinary, refresh])
 
   const current = state.userId === userId ? state : empty(userId)
 
@@ -284,7 +288,8 @@ export function useGamePositions(gameIds: string[]) {
           )
           for (const metric of updated) {
             // Sold-out answers stay: they carry the realised profit.
-            if (metric.answerId) byAnswer.set(metric.answerId, metric)
+            if (metric.answerId || includeBinary)
+              byAnswer.set(metric.answerId, metric)
           }
           return {
             ...old,

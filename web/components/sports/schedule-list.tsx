@@ -59,6 +59,7 @@ const isSession = (item: FeedItem): item is RaceSessionEvent =>
  * views expose pagination explicitly so an empty result is not a dead end.
  */
 export function GameFeed(props: {
+  navigationView?: 'schedule' | 'live'
   games: ScheduleGame[]
   loading: boolean
   hasMore: boolean
@@ -97,7 +98,10 @@ export function GameFeed(props: {
     empty,
   } = props
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>('all')
+  const [localFilter, setFilter] = useState<'all' | 'live' | 'liked' | 'mine'>(
+    'all'
+  )
+  const filter = props.navigationView === 'live' ? 'live' : localFilter
   const [date, setDate] = useState('all')
   const [sort, setSort] = useState('time')
   const [featuredId, setFeaturedId] = useState<string>()
@@ -253,7 +257,12 @@ export function GameFeed(props: {
       </Col>
     )
   }
-  if (everything.length === 0) return <>{empty}</>
+  if (
+    everything.length === 0 ||
+    (props.navigationView === 'live' &&
+      !everything.some((item) => item.status === 'live'))
+  )
+    return <>{empty}</>
 
   return (
     <div className="min-w-0">
@@ -364,42 +373,49 @@ export function GameFeed(props: {
                     count: positions.loading ? undefined : stakedCount,
                   },
                 ] as const
-              ).map((item) => (
-                <button
-                  key={item.value}
-                  type="button"
-                  aria-pressed={filter === item.value}
-                  onClick={() => {
-                    setFilter(item.value)
-                    setDate('all')
-                  }}
-                  className={clsx(
-                    'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
-                    filter === item.value
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
-                  )}
-                >
-                  {item.value === 'live' && (
-                    <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
-                  )}
-                  {item.value === 'liked' && (
-                    <HeartIcon className="h-3.5 w-3.5" />
-                  )}
-                  {item.value === 'mine' && (
-                    <TicketIcon className="h-3.5 w-3.5" />
-                  )}
-                  {item.value === 'all' ? (
-                    // Four chips: keep them on one line on small phones.
-                    <>
-                      All<span className="hidden sm:inline"> games</span>
-                    </>
-                  ) : (
-                    item.label
-                  )}
-                  <span className="text-xs opacity-70">{item.count}</span>
-                </button>
-              ))}
+              )
+                .filter(
+                  (item) =>
+                    !props.navigationView ||
+                    (props.navigationView === 'schedule' &&
+                      (item.value === 'all' || item.value === 'liked'))
+                )
+                .map((item) => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    aria-pressed={filter === item.value}
+                    onClick={() => {
+                      setFilter(item.value)
+                      setDate('all')
+                    }}
+                    className={clsx(
+                      'flex min-h-[40px] items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold sm:px-3 sm:text-sm',
+                      filter === item.value
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-canvas-0 text-ink-600 hover:bg-canvas-100'
+                    )}
+                  >
+                    {item.value === 'live' && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                    )}
+                    {item.value === 'liked' && (
+                      <HeartIcon className="h-3.5 w-3.5" />
+                    )}
+                    {item.value === 'mine' && (
+                      <TicketIcon className="h-3.5 w-3.5" />
+                    )}
+                    {item.value === 'all' ? (
+                      // Four chips: keep them on one line on small phones.
+                      <>
+                        All<span className="hidden sm:inline"> games</span>
+                      </>
+                    ) : (
+                      item.label
+                    )}
+                    <span className="text-xs opacity-70">{item.count}</span>
+                  </button>
+                ))}
             </div>
             {/* Keep this strip's space in Live so the filter row stays put. */}
             <Carousel
@@ -460,13 +476,15 @@ export function GameFeed(props: {
                   {sessions.length > 0 ? 'events' : 'games'}
                 </span>
               )}
-              <button
-                type="button"
-                className="text-primary-700 min-h-[32px] shrink-0 whitespace-nowrap font-semibold"
-                onClick={reset}
-              >
-                Reset filters
-              </button>
+              {(props.navigationView !== 'live' || !!query) && (
+                <button
+                  type="button"
+                  className="text-primary-700 min-h-[32px] shrink-0 whitespace-nowrap font-semibold"
+                  onClick={reset}
+                >
+                  Reset filters
+                </button>
+              )}
             </div>
           )}
           {likes.error && (
@@ -550,13 +568,15 @@ export function GameFeed(props: {
                 ? 'Tap a price to back a team. Your picks and open orders show up here.'
                 : 'Try another date, team, or filter.'}
             </p>
-            <button
-              type="button"
-              onClick={needsSignIn ? firebaseLogin : reset}
-              className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
-            >
-              {needsSignIn ? 'Sign in' : 'Show all games'}
-            </button>
+            {(props.navigationView !== 'live' || !!query) && (
+              <button
+                type="button"
+                onClick={needsSignIn ? firebaseLogin : reset}
+                className="text-primary-700 mt-3 min-h-[40px] text-sm font-bold"
+              >
+                {needsSignIn ? 'Sign in' : 'Show all games'}
+              </button>
+            )}
           </div>
         )}
         {live.length > 0 && (
