@@ -3806,6 +3806,21 @@ export type Database = {
           }
         ]
       }
+      trophy_rank_state: {
+        Row: {
+          computed_time: string
+          id: boolean
+        }
+        Insert: {
+          computed_time: string
+          id?: boolean
+        }
+        Update: {
+          computed_time?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
       trophy_ranks: {
         Row: {
           computed_time: string

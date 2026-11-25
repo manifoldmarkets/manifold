@@ -212,8 +212,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'peakNetWorth',
     unit: 'mana',
     ranked: true,
-    rankNote:
-      'Ranked nightly by current net worth, among people who traded in the last 90 days',
+    rankNote: `Ranked nightly by current net worth if the holder traded in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days or has an open limit order`,
     milestones: [
       m('minnow', 'Minnow', '\u{1F41F}', 2_500, 'green'),
       m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'blue'),
@@ -281,7 +280,8 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'markets-created',
     label: 'Markets Created',
-    description: 'Public markets you created that 10 or more people traded',
+    description:
+      "Public markets you created that 10 or more people traded (polls and bounties don't count)",
     category: 'creating',
     statKey: 'marketsCreatedWithTraders',
     unit: 'markets',
@@ -461,6 +461,7 @@ export function getHeldTrophyTitles(ranks: TrophyRank[]) {
             definition,
             tier,
             rank: held.rank,
+            value: held.value,
             title: getTrophyRankTitle(definition, tier),
           },
         ]

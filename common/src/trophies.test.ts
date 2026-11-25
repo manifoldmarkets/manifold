@@ -156,6 +156,7 @@ describe('nightly ranks', () => {
       definition: netWorth,
       tier: 'super',
       rank: 12,
+      value: 500_000,
       title: 'Super Whale',
     })
     expect(getTrophyRankTitle(netWorth, 'mega')).toBe('Mega Whale')

@@ -32,7 +32,7 @@ import {
   takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
-import { TrophyRankChip, TrophyRankRing } from './trophy-rank'
+import { formatRankValue, TrophyRankChip, TrophyRankRing } from './trophy-rank'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   useCurrentSeason,
@@ -159,12 +159,13 @@ export function ProfileShowcase(props: {
     <>
       {held.length > 0 && (
         <Row className="mb-1.5 flex-wrap items-center gap-1.5">
-          {held.map(({ definition, tier, rank }) => (
+          {held.map(({ definition, tier, rank, value }) => (
             <TrophyRankChip
               key={definition.id}
               definition={definition}
               tier={tier}
               rank={rank}
+              value={value}
               computedTime={trophies.ranksComputedTime}
             />
           ))}
@@ -324,16 +325,21 @@ export function getTrophyShowcaseBadge(
   held?: ReturnType<typeof getHeldTrophyTitles>[number]
 ): ShowcaseBadgeData {
   const value = stat === undefined ? undefined : formatTrophyValue(def, stat)
+  const peak =
+    def.id === 'net-worth' && value !== undefined ? `Peak M${value}` : undefined
   return {
     id: getTrophyPinId(def.id),
-    label: held?.title ?? milestone.name,
+    label: held
+      ? `${held.title} · ${formatRankValue(def, held.value)}`
+      : milestone.name,
     rankTier: held?.tier,
-    stat: value,
+    stat: peak ?? (held ? undefined : value),
     detail: held
       ? `${def.label} · #${held.rank}. ${def.rankNote}`
       : value === undefined
       ? def.label
-      : `${def.label}: ${value}${
+      : peak ??
+        `${def.label}: ${value}${
           def.formatPrefix || def.unit === 'league' ? '' : ` ${def.unit}`
         }`,
     emoji: milestone.emoji,

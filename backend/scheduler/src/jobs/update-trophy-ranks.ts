@@ -6,18 +6,21 @@ import {
   REFERRAL_MIN_TRADES,
   getTopMilestone,
 } from 'common/trophies'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { TROPHY_PERSON_FILTER } from 'shared/supabase/trophy-eligibility'
+import { createSupabaseDirectClient, pgp } from 'shared/supabase/init'
+import {
+  TROPHY_PERSON_FILTER,
+  TROPHY_VISIBLE_COMMENT_FILTER,
+} from 'shared/supabase/trophy-eligibility'
 import { bulkInsertQuery } from 'shared/supabase/utils'
 import { log } from 'shared/utils'
 
 const valueQueries: Record<string, string> = {
-  'net-worth': `select p.user_id, p.balance + p.investment_value as value
-    from user_portfolio_history_latest p
-    join users u on u.id = p.user_id
-    where (u.data->>'lastBetTime')::bigint between
+  'net-worth': `select n.user_id, n.value from trophy_net_worth_sample n
+    where n.last_bet_time between
       extract(epoch from (now() - make_interval(days => $[activeDays]))) * 1000
-      and extract(epoch from now()) * 1000`,
+      and extract(epoch from now()) * 1000
+      or exists (select 1 from contract_bets b where b.user_id = n.user_id
+        and not b.is_filled and not b.is_cancelled)`,
   // Migration 2026112212 takes the same greatest of bonus, ended, and current
   // streaks as get-user-achievements. Its 03:40 refresh precedes this job.
   'prediction-streak': `select user_id, longest_betting_streak as value
@@ -27,11 +30,12 @@ const valueQueries: Record<string, string> = {
     join contracts c on c.id = ucm.contract_id
     where ucm.answer_id is null and ucm.profit > 0 and c.token = 'MANA'
       and c.resolution is not null and c.resolution <> 'CANCEL'
+      and not coalesce(c.deleted, false)
     group by ucm.user_id`,
   'markets-created': `select creator_id as user_id, count(*) as value
-    from contracts
+    from contracts c
     where visibility = 'public' and not coalesce(deleted, false) and token = 'MANA'
-      and unique_bettor_count >= $[minTraders]
+      and c.mechanism <> 'none' and unique_bettor_count >= $[minTraders]
     group by creator_id`,
   'creator-traders': `select id as user_id, (data->'creatorTraders'->>'allTime')::numeric as value
     from users`,
@@ -40,6 +44,7 @@ const valueQueries: Record<string, string> = {
     join users person on person.id = r.user_id
     where r.content_type = 'comment' and r.reaction_type = 'like'
       and r.user_id <> r.content_owner_id and ${TROPHY_PERSON_FILTER}
+      and ${TROPHY_VISIBLE_COMMENT_FILTER}
     group by r.content_owner_id`,
   // Ready for the referrals flag. Unranked definitions never run their query.
   referrals: `select person.data->>'referredByUserId' as user_id, count(*) as value
@@ -59,20 +64,32 @@ const valueQueries: Record<string, string> = {
     from leagues group by user_id`,
 }
 
+// PostgreSQL numeric sorts NaN above Infinity.
+const finiteValue = `value > '-Infinity'::numeric and value < 'Infinity'::numeric`
+const mode = new pgp.txMode.TransactionMode({
+  tiLevel: pgp.txMode.isolationLevel.repeatableRead,
+  readOnly: false,
+})
+
 export async function updateTrophyRanks() {
   const started = Date.now()
   const pg = createSupabaseDirectClient()
-  const summaries = await pg.tx(async (tx) => {
-    // Serialize overlapping runs before sampling, so a retry cannot publish an older result.
+  const summaries = await pg.tx({ mode }, async (tx) => {
+    // Serialize publications. All rank sources use this transaction's snapshot.
     await tx.one(
       "select pg_advisory_xact_lock(hashtext('update-trophy-ranks'))"
     )
     const computedTime = new Date().toISOString()
     await tx.none(
+      `create temp table trophy_net_worth_sample on commit drop as
+       select u.id as user_id, u.balance + coalesce(p.investment_value, 0) as value,
+         (u.data->>'lastBetTime')::bigint as last_bet_time
+       from users u left join user_portfolio_history_latest p on p.user_id = u.id`
+    )
+    await tx.none(
       `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
-       select p.user_id, p.balance + p.investment_value, $1
-       from user_portfolio_history_latest p join users u on u.id = p.user_id
-       where p.balance + p.investment_value > 0
+       select user_id, value, $1 from trophy_net_worth_sample
+       where value > 0 and ${finiteValue}
        on conflict (user_id) do update set
          peak_net_worth = excluded.peak_net_worth, peak_time = excluded.peak_time
        where excluded.peak_net_worth > user_net_worth_peaks.peak_net_worth`,
@@ -92,7 +109,7 @@ export async function updateTrophyRanks() {
         `with scores as (${query}), ranked as (
            select scores.*, rank() over (order by value desc) as rank
            from scores join users person on person.id = scores.user_id
-           where value >= $[threshold] and ${TROPHY_PERSON_FILTER}
+           where value >= $[threshold] and ${finiteValue} and ${TROPHY_PERSON_FILTER}
              and not exists (select 1 from trophy_rank_exclusions e where e.user_id = scores.user_id)
          )
          select user_id, value, rank from ranked where rank <= $[maxRank] order by rank`,
@@ -129,6 +146,11 @@ export async function updateTrophyRanks() {
          best_rank = least(peak.best_rank, excluded.best_rank),
          best_rank_time = excluded.best_rank_time
        where excluded.best_rank < peak.best_rank`
+    )
+    await tx.none(
+      `insert into trophy_rank_state (computed_time) values ($1)
+       on conflict (id) do update set computed_time = excluded.computed_time`,
+      [computedTime]
     )
     return summaries
   })

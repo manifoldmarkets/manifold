@@ -12,7 +12,10 @@ import {
   getLeagueLevel,
 } from 'common/trophies'
 import { HOUR_MS, MINUTE_MS } from 'common/util/time'
-import { TROPHY_PERSON_FILTER } from 'shared/supabase/trophy-eligibility'
+import {
+  TROPHY_PERSON_FILTER,
+  TROPHY_VISIBLE_COMMENT_FILTER,
+} from 'shared/supabase/trophy-eligibility'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
@@ -223,8 +226,10 @@ const STATS_QUERY = `with
       and exists (select 1 from users referrer where referrer.id = $1)
   ),
   portfolio as (
-    select balance + investment_value as net_worth
-    from user_portfolio_history_latest where user_id = $1
+    select u.balance + coalesce(p.investment_value, 0) as net_worth
+    from users u
+    left join user_portfolio_history_latest p on p.user_id = u.id
+    where u.id = $1
   ),
   liked as (
     select count(distinct r.content_id) as liked_comments
@@ -232,6 +237,7 @@ const STATS_QUERY = `with
     join users person on person.id = r.user_id
     where r.content_owner_id = $1 and r.content_type = 'comment' and r.reaction_type = 'like'
       and r.user_id <> $1 and ${TROPHY_PERSON_FILTER}
+      and ${TROPHY_VISIBLE_COMMENT_FILTER}
   ),
   mod_tickets as (
     select count(*) as mod_tickets_resolved
@@ -253,7 +259,7 @@ const STATS_QUERY = `with
         + coalesce((ucm.data->>'totalAmountInvested')::numeric, 0)) as total_volume_mana,
       count(*) filter (where coalesce(ucm.profit, 0) > 0) as profitable_markets_count,
       count(*) filter (where coalesce(ucm.profit, 0) > 0 and c.resolution is not null
-        and c.resolution <> 'CANCEL') as resolved_profitable_markets,
+        and c.resolution <> 'CANCEL' and not coalesce(c.deleted, false)) as resolved_profitable_markets,
       count(*) filter (where coalesce(ucm.profit, 0) < 0) as unprofitable_markets_count,
       max(ucm.profit) filter (where coalesce(ucm.profit, 0) > 0) as largest_profitable_trade_value,
       min(ucm.profit) filter (where coalesce(ucm.profit, 0) < 0) as largest_unprofitable_trade_value
@@ -288,7 +294,7 @@ const STATS_QUERY = `with
         where c.visibility = 'public' and not coalesce(c.deleted, false)
       ) as total_markets_created,
       count(*) filter (where c.visibility = 'public' and not coalesce(c.deleted, false)
-        and c.unique_bettor_count >= $2) as markets_created_with_traders,
+        and c.mechanism <> 'none' and c.unique_bettor_count >= $2) as markets_created_with_traders,
       coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
     from contracts c
     where c.creator_id = $1 and c.token = 'MANA'
@@ -400,7 +406,7 @@ const STATS_QUERY = `with
   -- One row even when there is no users row (e.g. an imported comment's
   -- author): the parts that only need the id still count.
   from (select 1) base
-  left join portfolio on true
+  left join portfolio on portfolio.net_worth > '-Infinity'::numeric and portfolio.net_worth < 'Infinity'::numeric
   left join user_net_worth_peaks peaks on peaks.user_id = $1
   left join liked on true
   left join metrics on true

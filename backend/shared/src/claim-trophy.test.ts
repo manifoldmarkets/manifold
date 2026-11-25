@@ -1,13 +1,8 @@
 // Onboarding trophy rewards: claiming a milestone pays its mana once,
 // in the same transaction that records the claim.
 //
-// The real claim-trophy, get-user-trophies and unclaim-trophy handlers run
-// here, with the real starter count, tier multiplier and payout
-// (runTxnOutsideBetQueue). Their SQL runs, as pg-promise formats it, in an
-// in-memory PostgreSQL built from the trophy migrations plus minimal
-// users, contracts, contract_bets, txns, user_entitlements, leagues and
-// leagues_season_end_times tables. A
-// transaction that fails is rolled back. No live database or network is used.
+// Runs the claim, profile and nightly rank SQL against in-memory PostgreSQL
+// with the trophy migrations and the achievement materialized views.
 import { PGlite } from '@electric-sql/pglite'
 import * as fs from 'fs'
 import * as path from 'path'
@@ -48,6 +43,7 @@ import { setShowcasePins } from 'api/set-showcase-pins'
 import { unclaimTrophy } from 'api/unclaim-trophy'
 import { APIResponse } from 'common/api/schema'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { RANKED_TROPHY_DEFINITIONS, getTrophyStatValue } from 'common/trophies'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
 import { updateTrophyRanks } from 'scheduler/jobs/update-trophy-ranks'
@@ -83,7 +79,10 @@ const client = {
   },
   multi: async (sql: string) => (await db.exec(sql)).map((r) => r.rows),
   tx: async (...args: unknown[]) => {
-    await db.exec('begin')
+    const { mode } = args[0] as { mode?: unknown }
+    await db.exec(
+      mode instanceof pgp.txMode.TransactionMode ? mode.begin() : 'begin'
+    )
     try {
       const result = await (
         args[args.length - 1] as (tx: unknown) => Promise<unknown>
@@ -131,13 +130,18 @@ beforeAll(async () => {
       ended_by text
     );
     create table user_portfolio_history_latest (
-      user_id text primary key, balance numeric not null, investment_value numeric not null
+      user_id text primary key, balance numeric not null, investment_value numeric not null,
+      spice_balance numeric default 0, total_deposits numeric default 0
     );
-    create table mv_ach_txns_achievements (user_id text, longest_betting_streak int);
-    create table user_contract_metrics (user_id text, contract_id text, answer_id text, profit numeric);
+    create table user_stats (user_id text primary key, trades int);
+    create table user_stats_baseline (user_id text primary key, trades int);
+    create table user_referrals_profit (id text, total_referrals int, total_referred_profit numeric);
+    create table contract_comments (comment_id text primary key, user_id text, data jsonb);
+    create table old_post_comments (comment_id text, user_id text);
+    create table user_contract_metrics (user_id text, contract_id text, answer_id text, profit numeric, data jsonb);
     create table contracts (
       id text primary key, token text not null, creator_id text, resolution text,
-      visibility text, deleted boolean, unique_bettor_count int
+      visibility text, deleted boolean, unique_bettor_count int, mechanism text, data jsonb
     );
     create table contract_bets (
       bet_id text primary key,
@@ -146,7 +150,9 @@ beforeAll(async () => {
       amount numeric not null,
       created_time timestamptz not null,
       is_redemption boolean not null default false,
-      is_api boolean
+      is_api boolean,
+      is_filled boolean,
+      is_cancelled boolean
     );
     create table txns (
       id text primary key default md5(random()::text),
@@ -179,6 +185,7 @@ beforeAll(async () => {
       division integer not null,
       cohort text not null,
       user_id text not null,
+      mana_earned numeric,
       primary key (user_id, season)
     );
     insert into contracts (id, token) values
@@ -186,6 +193,12 @@ beforeAll(async () => {
     insert into leagues_season_end_times values (11, 'complete'), (12, 'active');
   `)
   const dir = path.resolve(__dirname, '../../supabase/migrations')
+  await db.exec(
+    fs.readFileSync(
+      path.join(dir, '../achievement_materialized_views.sql'),
+      'utf8'
+    )
+  )
   for (const file of MIGRATIONS) {
     const sql = fs.readFileSync(path.join(dir, file), 'utf8')
     // Single-connection PGlite can build the same partial index only offline.
@@ -206,6 +219,12 @@ let betId = 0
 beforeEach(async () => {
   await db.exec(`
     delete from user_portfolio_history_latest;
+    delete from trophy_rank_state;
+    delete from user_reactions;
+    delete from contract_comments;
+    delete from old_post_comments;
+    delete from user_contract_metrics;
+    delete from contracts where creator_id is not null;
     delete from user_trophy_milestones;
     delete from user_trophy_rewards;
     delete from user_showcase;
@@ -215,6 +234,7 @@ beforeEach(async () => {
     delete from user_entitlements;
     delete from users;
     delete from leagues;
+    refresh materialized view mv_ach_txns_achievements;
   `)
   jest.mocked(broadcastUserUpdates).mockClear()
 })
@@ -760,6 +780,105 @@ describe('admin unclaim', () => {
 })
 
 describe('nightly trophy ranks', () => {
+  it('publishes a timestamp even when nobody qualifies', async () => {
+    await addUser('u')
+    expect((await trophiesOf('u')).ranksComputedTime).toBeNull()
+    await updateTrophyRanks()
+    expect(await rows('select * from trophy_ranks')).toEqual([])
+    expect(Number.isFinite((await trophiesOf('u')).ranksComputedTime)).toBe(
+      true
+    )
+  })
+
+  it('agrees with the live achievement stats for every ranked trophy', async () => {
+    const { loadUserAchievements: loadLive } = jest.requireActual<
+      typeof import('api/get-user-achievements')
+    >('api/get-user-achievements')
+    await addUser('maker', {
+      data: {
+        lastBetTime: Date.now() - 91 * DAY,
+        currentBettingStreak: 1001,
+        creatorTraders: { allTime: 12001 },
+      },
+    })
+    await addUser('liker')
+    await addUser('invalid', { data: { lastBetTime: Date.now() - DAY } })
+    await db.exec(`
+      update users set balance = 510000 where id in ('maker', 'liker');
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        values ('liker', 1, 5000);
+      update users set balance = 'NaN' where id = 'invalid';
+      insert into user_net_worth_peaks values ('maker', 2000000, now() - interval '1 day');
+      insert into contract_bets (bet_id, user_id, contract_id, amount, created_time, is_filled, is_cancelled)
+      values ('open', 'maker', 'm1', 0, now(), false, false),
+             ('ordinary', 'liker', 'm1', 10, now(), null, null),
+             ('filled', 'liker', 'm1', 10, now(), true, false),
+             ('cancelled', 'liker', 'm1', 0, now(), false, true);
+
+      insert into contracts (id, creator_id, token, mechanism, resolution, visibility, unique_bettor_count)
+        select 'market-' || i, 'maker', 'MANA', 'cpmm-1', 'YES', 'public',
+          case when i <= 250 then 10 else 9 end
+        from generate_series(1, 2000) i;
+      insert into contracts (id, creator_id, token, mechanism, visibility, unique_bettor_count)
+        values ('poll', 'maker', 'MANA', 'none', 'public', 10),
+               ('bounty', 'maker', 'MANA', 'none', 'public', 10);
+      insert into contracts (id, creator_id, token, mechanism, resolution, visibility, unique_bettor_count, deleted)
+        values ('deleted', 'maker', 'MANA', 'cpmm-1', 'YES', 'public', 10, true);
+      insert into user_contract_metrics (user_id, contract_id, profit)
+        select 'maker', id, 1 from contracts where resolution = 'YES';
+
+      insert into contract_comments
+        select 'comment-' || i, 'maker', '{}'::jsonb from generate_series(1, 997) i;
+      insert into contract_comments values
+        ('deleted-comment', 'maker', '{"deleted":true}'), ('hidden-comment', 'maker', '{"hidden":true}');
+      insert into old_post_comments
+        select 'post-comment-' || i, 'maker' from generate_series(1, 3) i;
+      insert into user_reactions (content_owner_id, content_id, content_type, reaction_type, user_id)
+        select 'maker', comment_id, 'comment', 'like', 'liker' from contract_comments
+        union all
+        select 'maker', comment_id, 'comment', 'like', 'liker' from old_post_comments;
+
+      insert into leagues (season, division, cohort, user_id)
+        select i, 6, 'c1', 'maker' from generate_series(1, 8) i;
+      refresh materialized view mv_ach_txns_achievements;
+    `)
+    await updateTrophyRanks()
+    const live = await loadLive('maker')
+    expect(live).toMatchObject({
+      netWorth: 510000,
+      peakNetWorth: 2000000,
+      longestBettingStreak: 1001,
+      creatorTraders: 12001,
+      marketsCreatedWithTraders: 250,
+      resolvedProfitableMarkets: 2000,
+      profitableMarketsCount: 2001,
+      likedComments: 1000,
+      leagueLevel: 11,
+    })
+    const { ranks } = await trophiesOf('maker')
+    expect(ranks).toHaveLength(RANKED_TROPHY_DEFINITIONS.length)
+    for (const def of RANKED_TROPHY_DEFINITIONS) {
+      expect(ranks).toContainEqual({
+        trophyId: def.id,
+        rank: 1,
+        value:
+          def.id === 'net-worth'
+            ? live.netWorth
+            : getTrophyStatValue(def, live),
+      })
+    }
+    expect((await trophiesOf('liker')).ranks).toEqual([])
+    expect(await loadLive('liker')).toMatchObject({
+      netWorth: 515000,
+      peakNetWorth: 515000,
+    })
+    expect((await trophiesOf('invalid')).ranks).toEqual([])
+    expect((await loadLive('invalid')).netWorth).toBe(0)
+    expect(
+      await rows("select * from user_net_worth_peaks where user_id = 'invalid'")
+    ).toEqual([])
+  })
+
   it('replaces held ranks, preserving ties, best ranks and net worth peaks', async () => {
     const active = { data: { lastBetTime: Date.now() - DAY } }
     for (const id of ['a', 'b', 'house', 'bot', 'banned'])
@@ -767,8 +886,9 @@ describe('nightly trophy ranks', () => {
     await addUser('inactive', { data: { lastBetTime: Date.now() - 91 * DAY } })
     await addUser('deleted', { data: { ...active.data, userDeleted: true } })
     await db.exec(`
-      insert into user_portfolio_history_latest
-        select id, 450000, 50000 from users;
+      update users set balance = 450000;
+      insert into user_portfolio_history_latest (user_id, balance, investment_value)
+        select id, 123, 50000 from users;
       update users set is_bot = true where id = 'bot';
       insert into user_bans (user_id, ban_type) values ('banned', 'trading'), ('a', 'modAlert');
       insert into trophy_rank_exclusions (user_id, reason) values ('house', 'Organisation');
@@ -786,9 +906,7 @@ describe('nightly trophy ranks', () => {
       { user_id: 'a', rank: 1 },
       { user_id: 'b', rank: 1 },
     ])
-    await db.exec(
-      "update user_portfolio_history_latest set balance = 400000 where user_id = 'a'"
-    )
+    await db.exec("update users set balance = 400000 where id = 'a'")
     await updateTrophyRanks()
     const next = await trophiesOf('a')
     expect(next.ranks).toEqual([])

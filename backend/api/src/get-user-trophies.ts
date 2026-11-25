@@ -50,8 +50,8 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
        where user_id = $1 and trophy_id in ($2:csv)`,
       [userId, rankedIds]
     )
-    const { computed } = await tx.one<{ computed: string | null }>(
-      'select max(computed_time) as computed from trophy_ranks'
+    const state = await tx.oneOrNone<{ computed_time: string }>(
+      'select computed_time from trophy_rank_state where id'
     )
     return {
       claims,
@@ -62,8 +62,7 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
       rewarded,
       ranks,
       rankPeaks,
-      ranksComputedTime:
-        computed === null ? null : new Date(computed).valueOf(),
+      ranksComputedTime: state ? new Date(state.computed_time).valueOf() : null,
     }
   })
 }

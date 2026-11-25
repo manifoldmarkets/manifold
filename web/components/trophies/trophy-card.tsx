@@ -222,6 +222,7 @@ export function TrophyCard(props: {
         definition={definition}
         tier={heldTier}
         rank={rank.rank}
+        value={rank.value}
         computedTime={ranksComputedTime}
       />
     ) : peakTier ? (
@@ -236,6 +237,8 @@ export function TrophyCard(props: {
         {rankLabel}
         <span className="text-ink-500 text-center text-xs">
           {definition.label}
+          {definition.id === 'net-worth' &&
+            ` · ${formatStat(definition, currentValue)}`}
         </span>
       </Col>
     )
@@ -436,6 +439,7 @@ function formatStat(
   value: number,
   accountCreatedTime?: number
 ) {
+  if (def.id === 'net-worth') return `Peak M${formatTrophyValue(def, value)}`
   if (def.unit === 'years') {
     return days(
       accountCreatedTime

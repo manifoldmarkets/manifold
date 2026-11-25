@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import {
   TrophyDefinition,
   TrophyRankTier,
+  formatTrophyValue,
   getTrophyRankTitle,
 } from 'common/trophies'
 import { Tooltip } from 'web/components/widgets/tooltip'
@@ -13,22 +14,30 @@ const rankRing = (tier: TrophyRankTier) =>
     ? 'ring-slate-400 dark:ring-slate-300'
     : 'ring-amber-500 dark:ring-amber-400'
 
+export function formatRankValue(def: TrophyDefinition, value: number) {
+  return (def.id === 'net-worth' ? 'M' : '') + formatTrophyValue(def, value)
+}
+
 export function TrophyRankChip(props: {
   definition: TrophyDefinition
   tier: TrophyRankTier
   rank: number
+  value: number
   computedTime: number | null
 }) {
-  const { definition, tier, rank, computedTime } = props
+  const { definition, tier, rank, value, computedTime } = props
+  const title = getTrophyRankTitle(definition, tier)
+  const score = formatRankValue(definition, value)
   const updated =
     computedTime == null
       ? ''
       : ` · Updated ${new Date(computedTime).toLocaleString()}`
+  const description = `${title} · ${definition.label} · #${rank} · ${score}. ${definition.rankNote}${updated}`
   return (
-    <Tooltip
-      text={`${definition.label} · #${rank}. ${definition.rankNote}${updated}`}
-    >
-      <span
+    <Tooltip text={description} showOnFocus>
+      <button
+        type="button"
+        aria-label={description}
         className={clsx(
           'bg-canvas-50 text-ink-800 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1',
           rankRing(tier)
@@ -39,9 +48,9 @@ export function TrophyRankChip(props: {
             👑
           </span>
         )}
-        {getTrophyRankTitle(definition, tier)}
+        {title} · {score}
         {tier !== 'crown' && ` · #${rank}`}
-      </span>
+      </button>
     </Tooltip>
   )
 }
