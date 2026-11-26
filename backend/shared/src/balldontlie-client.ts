@@ -210,6 +210,12 @@ function retryAt(headers: Headers, now: number) {
   return Date.parse(raw) || 0
 }
 
+/** Capture a page's clock when its body is decoded; deliver only verified rows. */
+export type BdlPageTiming<T> = {
+  now: () => number
+  onPage: (rows: readonly T[], receivedAt: number) => void
+}
+
 export type BdlClientOptions = {
   key?: string
   clock?: BdlClock
@@ -262,9 +268,10 @@ export function createBdlClient(options: BdlClientOptions = {}) {
   if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 32)
     throw new Error('[sports-bdl-client] Invalid attempt count')
 
-  const get = async (
+  const read = async (
     path: string,
-    params: BdlParams = {}
+    params: BdlParams,
+    onBodyReceived?: () => void
   ): Promise<BdlAttempt> => {
     const url = bdlUrl(path, params)
     const slug = matchBdlEndpoint(path)?.league
@@ -366,7 +373,11 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         }
         body = null
       } finally {
-        await accounting
+        try {
+          if (res.ok && body !== undefined) onBodyReceived?.()
+        } finally {
+          await accounting
+        }
       }
       if (
         key &&
@@ -385,11 +396,14 @@ export function createBdlClient(options: BdlClientOptions = {}) {
     }
   }
 
+  const get = (path: string, params: BdlParams = {}) => read(path, params)
+
   /** Adapters supply the endpoint cap and check every row against the requested identifiers. */
   const getAll = async <T>(
     path: string,
     params: BdlParams,
-    { maxPages, matches }: { maxPages: number; matches: (row: T) => boolean }
+    { maxPages, matches }: { maxPages: number; matches: (row: T) => boolean },
+    timing?: BdlPageTiming<T>
   ): Promise<T[]> => {
     if (!Number.isSafeInteger(maxPages) || maxPages < 1)
       throw new Error('[sports-bdl-client] Invalid page cap')
@@ -407,7 +421,17 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         ...params,
         ...(cursor != null ? { cursor } : {}),
       }
-      const { body } = await get(path, pageParams)
+      // A consumer can detect a clock retreat between successive cursor pages.
+      if (i > 0) timing?.now()
+      let receivedAt: number | undefined
+      const { body } = await read(
+        path,
+        pageParams,
+        timing &&
+          (() => {
+            receivedAt = timing.now()
+          })
+      )
       const page = body as {
         data?: T[]
         meta?: { next_cursor?: unknown }
@@ -418,6 +442,8 @@ export function createBdlClient(options: BdlClientOptions = {}) {
         throw new Error(
           '[sports-bdl-client] Provider ignored the requested filter'
         )
+      if (timing && receivedAt !== undefined)
+        timing.onPage(page.data, receivedAt)
       rows.push(...page.data)
       const next = page.meta?.next_cursor
       if (next == null || next === '') return rows
