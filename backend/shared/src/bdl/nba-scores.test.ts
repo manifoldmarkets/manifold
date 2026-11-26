@@ -332,8 +332,16 @@ it.each([
         status_state: 'final',
         home_team_score: 24,
         visitor_team_score: 24,
+        home_team_q1: 7,
+        home_team_q2: 3,
+        home_team_q3: 7,
         home_team_q4: 7,
+        home_team_ot: 0,
+        visitor_team_q1: 7,
+        visitor_team_q2: 7,
+        visitor_team_q3: 7,
         visitor_team_q4: 3,
+        visitor_team_ot: 0,
       })
     wire = [row]
     now = Date.parse(start) + 4 * 3_600_000

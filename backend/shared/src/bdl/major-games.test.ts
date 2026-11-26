@@ -117,6 +117,50 @@ function localClient(response: (url: URL) => Page) {
 }
 const dateFor = (league: MajorLeague) => schedules[league].slateDate
 
+it('certifies recorded NFL shutouts, overtime wins and ties only when quarter scores reconcile', async () => {
+  const { data }: Page = JSON.parse(
+    readFileSync(
+      join(
+        __dirname,
+        '../../test/fixtures/bdl/nfl/games__recorded-scoreless-quarters.json'
+      ),
+      'utf8'
+    )
+  )
+  const eligible = async (raw: Raw) => {
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(String(raw.date)))
+    const { client } = localClient(() => ({ data: [raw] }))
+    const [game] = await fetchMajorGames(
+      client,
+      'nfl',
+      day,
+      day,
+      new Set([Number(raw.id)])
+    )
+    return game.eligible
+  }
+  const [shutout, overtime, tied] = data
+  expect(await Promise.all(data.map(eligible))).toEqual([true, true, true])
+  for (const row of [
+    { ...shutout, home_team_score: 30 }, // Published 31, visitor's quarter fields are all null.
+    { ...shutout, visitor_team_q4: '0' },
+    { ...shutout, visitor_team_q4: undefined },
+    { ...shutout, home_team_q1: null, home_team_q2: null, home_team_q3: 31 },
+    { ...shutout, home_team_ot: 6, home_team_score: 37 },
+    { ...overtime, home_team_q4: 3, home_team_score: 12 }, // Totals match but regulation was not tied.
+    { ...overtime, home_team_ot: -3, home_team_score: 10 },
+    { ...overtime, summary: 'Game forfeited' },
+    { ...tied, status: 'Final' }, // The regulation tie alone is insufficient.
+    { ...tied, home_team_ot: null, visitor_team_ot: null },
+  ])
+    expect(await eligible(row)).toBe(false)
+})
+
 it.each([
   ['nhl', { game_state: 'LIVE' }],
   ['nhl', { period: 3, time_remaining: '08:15' }],

@@ -145,6 +145,42 @@ export function matchesMajorStage(
   return true
 }
 
+function completedNflScore(row: Row, status: string) {
+  const overtime = /^Final\s*\/\s*OT$/i.test(status)
+  if (!overtime && !/^Final$/i.test(status)) return false
+
+  // One version of the feed uses explicit null for a scoreless quarter, even
+  // all four for a shutout. An absent field or a malformed number is different.
+  const regulation: number[] = []
+  const observedQuarters = new Set<number>()
+  let observedOvertime = false
+  for (const side of ['home_team', 'visitor_team']) {
+    let points = 0
+    for (const quarter of [1, 2, 3, 4]) {
+      const raw = row[side + '_q' + quarter]
+      if (raw === null) continue
+      const n = score(raw)
+      if (n === null) return false
+      points += n
+      observedQuarters.add(quarter)
+    }
+    regulation.push(points)
+    const rawOt = row[side + '_ot']
+    const otPoints = rawOt === null ? 0 : score(rawOt)
+    if (otPoints === null || (!overtime && otPoints > 0)) return false
+    observedOvertime ||= rawOt !== null
+    if (points + otPoints !== score(row[side + '_score'])) return false
+  }
+  return (
+    observedQuarters.size >= 2 &&
+    (overtime
+      ? observedOvertime &&
+        regulation[0] === regulation[1] &&
+        (row.home_team_score !== 0 || row.visitor_team_score !== 0)
+      : regulation[0] !== regulation[1])
+  )
+}
+
 /** The final enum is shared with adjudications. Certify only a played,
  * ordinary final in the league's wire format; leave shortened games for review. */
 function ordinaryFinal(league: MajorLeague, row: Row) {
@@ -185,11 +221,7 @@ function ordinaryFinal(league: MajorLeague, row: Row) {
     case 'mlb':
       return status === 'STATUS_FINAL' && period >= 9
     case 'nfl':
-      return (
-        finalLabel.test(status) &&
-        score(row.home_team_q4) !== null &&
-        score(row.visitor_team_q4) !== null
-      )
+      return completedNflScore(row, status)
   }
 }
 
