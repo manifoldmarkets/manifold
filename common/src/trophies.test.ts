@@ -7,7 +7,8 @@ import {
   TROPHY_STAT_KEYS,
   RANKED_TROPHY_DEFINITIONS,
   formatLeagueRemaining,
-  formatNetWorthPeak,
+  getNetWorthStatus,
+  TROPHY_TIER_ORDER,
   getLeagueLevel,
   getHeldTrophyTitles,
   getPeakRankTier,
@@ -79,16 +80,28 @@ describe('trophy definitions', () => {
     }
   })
 
-  it('has one kept milestone per colour on every lifetime ladder', () => {
-    for (const def of TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))) {
-      expect(def.milestones.map((m) => m.tier)).toEqual([
-        'green',
-        'blue',
-        'purple',
-        'crimson',
-        'gold',
-        'prismatic',
-      ])
+  it('assigns the Spectrum in order on every main ladder', () => {
+    const spectrum = [
+      'green',
+      'teal',
+      'blue',
+      'indigo',
+      'purple',
+      'pink',
+      'crimson',
+      'orange',
+      'gold',
+      'prismatic',
+    ]
+    expect(TROPHY_TIER_ORDER).toEqual([...spectrum].reverse())
+    for (const def of getTrophyDefinitionsFor(false)) {
+      const expected =
+        def.id === 'net-worth'
+          ? spectrum.filter((t) => t !== 'teal')
+          : def.id === 'charity-donated'
+          ? ['green', 'blue', 'purple', 'crimson', 'gold', 'prismatic']
+          : spectrum
+      expect(def.milestones.map((m) => m.tier)).toEqual(expected)
     }
   })
 
@@ -173,18 +186,20 @@ describe('nightly ranks', () => {
 describe('league level', () => {
   const leagues = getTrophyDefinition('leagues')!
   it.each([
-    [0, 0, 0, 0, 0, 'No Gold season yet'],
-    [2, 0, 0, 0, 1, 'Gold'],
-    [3, 2, 0, 0, 2, 'Platinum'],
-    [3, 2, 1, 0, 3, 'Diamond'],
-    [3, 2, 1, 1, 4, '1 Masters season'],
-    [8, 8, 8, 8, 11, '8 Masters seasons'],
-    [-1, NaN, Infinity, -Infinity, 0, 'No Gold season yet'],
-    [1, 0, 0, -1, 1, 'Gold'],
+    [0, 0, 0, 0, 0, 0, 'No Silver season yet'],
+    [1, 0, 0, 0, 0, 1, 'Silver'],
+    [2, 2, 0, 0, 0, 2, 'Gold'],
+    [3, 3, 2, 0, 0, 3, 'Platinum'],
+    [3, 3, 2, 1, 0, 4, 'Diamond'],
+    [3, 3, 2, 1, 1, 5, '1 Masters season'],
+    [8, 8, 8, 8, 8, 12, '8 Masters seasons'],
+    [-1, -1, NaN, Infinity, -Infinity, 0, 'No Silver season yet'],
+    [1, 1, 0, 0, -1, 2, 'Gold'],
   ] as const)(
-    'maps season counts %s/%s/%s/%s to level %s',
-    (gold, platinum, diamond, masters, expected, label) => {
+    'maps season counts %s/%s/%s/%s/%s to level %s',
+    (silver, gold, platinum, diamond, masters, expected, label) => {
       const level = getLeagueLevel({
+        seasonsSilverOrHigher: silver,
         seasonsGoldOrHigher: gold,
         seasonsPlatinumOrHigher: platinum,
         seasonsDiamondOrHigher: diamond,
@@ -196,11 +211,12 @@ describe('league level', () => {
   )
 
   it('counts actual Masters seasons still needed from every lower division', () => {
-    expect(formatLeagueRemaining(0, 1)).toBe('a Gold season')
-    expect(formatLeagueRemaining(1, 2)).toBe('a Platinum season')
-    expect(formatLeagueRemaining(2, 3)).toBe('a Diamond season')
-    expect(formatLeagueRemaining(0, 4)).toBe('1 more Masters season')
-    expect(formatLeagueRemaining(4, 6)).toBe('2 more Masters seasons')
+    expect(formatLeagueRemaining(0, 1)).toBe('a Silver season')
+    expect(formatLeagueRemaining(1, 2)).toBe('a Gold season')
+    expect(formatLeagueRemaining(2, 3)).toBe('a Platinum season')
+    expect(formatLeagueRemaining(3, 4)).toBe('a Diamond season')
+    expect(formatLeagueRemaining(0, 5)).toBe('1 more Masters season')
+    expect(formatLeagueRemaining(5, 7)).toBe('2 more Masters seasons')
   })
 })
 
@@ -212,9 +228,8 @@ describe('progress', () => {
       ranks: [{ trophyId: 'net-worth', rank: 1, value: 510_000 }],
     }
     const stats = getTrophyDisplayStats(undefined, trophies)
-    expect(formatNetWorthPeak(netWorth, stats[netWorth.statKey])).toBe(
-      'Peak M600K'
-    )
+    expect(stats.netWorth).toBeUndefined()
+    expect(stats.peakNetWorth).toBe(600_000)
     expect(stats.starterTrades).toBe(0)
     expect(stats.totalTradesCount).toBeUndefined()
     expect(
@@ -229,7 +244,11 @@ describe('progress', () => {
   })
 
   it('uses the higher Net Worth peak as trophies and achievements refresh independently', () => {
-    const achievements = { peakNetWorth: 499_999, totalTradesCount: 12 }
+    const achievements = {
+      netWorth: 5_000,
+      peakNetWorth: 499_999,
+      totalTradesCount: 12,
+    }
     const starter = { starterTrades: 3, starterMarkets: 2, starterDays: 1 }
     const trophies = {
       starter,
@@ -258,7 +277,7 @@ describe('progress', () => {
     expect(stats.peakNetWorth).toBe(500_000)
     expect(
       getClaimableMilestones(stats, [], [netWorth]).map((m) => m.milestone.id)
-    ).toContain('whale')
+    ).toEqual(['minnow', 'pufferfish'])
 
     const refreshedAchievements = { ...achievements, peakNetWorth: 510_000 }
     expect(
@@ -269,15 +288,15 @@ describe('progress', () => {
 
   it('treats missing and non-finite stats as zero', () => {
     expect(getTrophyStatValue(netWorth, {})).toBe(0)
-    expect(getTrophyStatValue(netWorth, { peakNetWorth: NaN })).toBe(0)
-    expect(getTrophyStatValue(netWorth, { peakNetWorth: Infinity })).toBe(0)
+    expect(getTrophyStatValue(netWorth, { netWorth: NaN })).toBe(0)
+    expect(getTrophyStatValue(netWorth, { netWorth: Infinity })).toBe(0)
   })
 
   it('finds the highest and next milestone at a threshold boundary', () => {
     expect(getHighestMilestone(netWorth, 2_499)).toBeNull()
     expect(getNextMilestone(netWorth, 2_499)?.id).toBe('minnow')
     expect(getHighestMilestone(netWorth, 2_500)?.id).toBe('minnow')
-    expect(getNextMilestone(netWorth, 2_500)?.id).toBe('goldfish')
+    expect(getNextMilestone(netWorth, 2_500)?.id).toBe('pufferfish')
     expect(getHighestMilestone(netWorth, 1e12)?.id).toBe('whale')
     expect(getNextMilestone(netWorth, 1e12)).toBeNull()
   })
@@ -293,6 +312,7 @@ describe('claims', () => {
     const toClaim = getMilestonesToClaim(netWorth, 'swordfish', 30_000)
     expect(toClaim?.map((m) => m.id)).toEqual([
       'minnow',
+      'pufferfish',
       'goldfish',
       'swordfish',
     ])
@@ -320,37 +340,37 @@ describe('claims', () => {
   })
 
   it('counts reached milestones that are not claimed yet', () => {
-    const stats = { peakNetWorth: 30_000 }
-    // Three Net Worth milestones plus Newcomer are reached.
-    expect(countUnclaimedReachedMilestones(stats, [])).toBe(4)
+    const stats = { netWorth: 30_000 }
+    // Four Net Worth milestones plus Newcomer are reached.
+    expect(countUnclaimedReachedMilestones(stats, [])).toBe(5)
     expect(
       countUnclaimedReachedMilestones(stats, [
         claim('net-worth', 'minnow'),
         claim('account-age', 'newcomer'),
       ])
-    ).toBe(2)
+    ).toBe(3)
   })
 
   it('counts a claimed milestone as earned after its stat drops', () => {
-    const stats = { peakNetWorth: 30_000 }
-    expect(countEarnedMilestones(stats, [])).toBe(4)
+    const stats = { netWorth: 30_000 }
+    expect(countEarnedMilestones(stats, [])).toBe(5)
     // Lucky (10 profitable markets) stays earned once claimed.
     expect(
       countEarnedMilestones(stats, [claim('profitable-markets', 'lucky')])
-    ).toBe(5)
-    expect(countEarnedMilestones(stats, [claim('net-worth', 'minnow')])).toBe(4)
+    ).toBe(6)
+    expect(countEarnedMilestones(stats, [claim('net-worth', 'minnow')])).toBe(5)
   })
 })
 
 describe('claimable milestones', () => {
   it('returns no pairs when no threshold has been reached', () => {
-    expect(
-      getClaimableMilestones({ peakNetWorth: 2_499 }, [], [netWorth])
-    ).toEqual([])
+    expect(getClaimableMilestones({ netWorth: 2_499 }, [], [netWorth])).toEqual(
+      []
+    )
   })
 
   it('returns the reached, unclaimed pairs even with retired claim ids', () => {
-    const stats = { peakNetWorth: 30_000 }
+    const stats = { netWorth: 30_000 }
     const claims = [
       claim(netWorth.id, 'minnow'),
       claim(netWorth.id, 'retired-milestone'),
@@ -360,6 +380,7 @@ describe('claimable milestones', () => {
     expect(ready).toEqual([
       { definition: netWorth, milestone: netWorth.milestones[1] },
       { definition: netWorth, milestone: netWorth.milestones[2] },
+      { definition: netWorth, milestone: netWorth.milestones[3] },
     ])
     expect(ready).toHaveLength(
       countUnclaimedReachedMilestones(stats, claims, [netWorth])
@@ -369,7 +390,7 @@ describe('claimable milestones', () => {
   it.each([false, true])(
     'matches the badge count with starter eligibility %s',
     (starter) => {
-      const stats = { starterTrades: 3, peakNetWorth: 2_500 }
+      const stats = { starterTrades: 3, netWorth: 2_500 }
       const claims = [claim('starter-trades', 'first-trade')]
       const defs = getTrophyDefinitionsFor(starter)
       const ready = getClaimableMilestones(stats, claims, defs)
@@ -386,7 +407,7 @@ describe('claimable milestones', () => {
 })
 
 describe('trophy unlock toasts', () => {
-  const stats = { peakNetWorth: 30_000, totalTradesCount: 100 }
+  const stats = { netWorth: 30_000, totalTradesCount: 100 }
   const ready = getClaimableMilestones(
     stats,
     [],
@@ -411,6 +432,7 @@ describe('trophy unlock toasts', () => {
       'net-worth/swordfish',
       'total-trades/rookie',
       'total-trades/regular',
+      'total-trades/dabbler',
     ])
     const { milestones, newKeys, moreCount } = selectTrophyUnlockToasts(
       ready,
@@ -422,6 +444,7 @@ describe('trophy unlock toasts', () => {
     ])
     expect(newKeys).toEqual([
       'net-worth/minnow',
+      'net-worth/pufferfish',
       'net-worth/goldfish',
       'account-age/newcomer',
     ])
@@ -458,6 +481,15 @@ describe('account anniversaries', () => {
     const at = (s: string) => new Date(s).valueOf()
     expect(getAccountAnniversaryTime(at('2023-03-01T00:00:00Z'), 1)).toBe(
       at('2024-03-01T00:00:00Z')
+    )
+    expect(getAccountAnniversaryTime(at('2024-01-31T12:00:00Z'), 1 / 12)).toBe(
+      at('2024-02-29T12:00:00Z')
+    )
+    expect(getAccountAnniversaryTime(at('2023-01-31T12:00:00Z'), 1 / 4)).toBe(
+      at('2023-04-30T12:00:00Z')
+    )
+    expect(getAccountAnniversaryTime(at('2024-08-31T12:00:00Z'), 3 / 2)).toBe(
+      at('2026-02-28T12:00:00Z')
     )
     // A Feb 29 signup turns one on Feb 28, and four on Feb 29.
     expect(getAccountAnniversaryTime(at('2024-02-29T12:00:00Z'), 1)).toBe(
@@ -525,19 +557,33 @@ describe('showcase pins', () => {
   })
 })
 
-describe('formatNetWorthPeak', () => {
+describe('Net Worth status', () => {
+  const claims = [claim('net-worth', 'orca')]
   it.each([
-    [550_000, 700_000, 'Peak M700K'],
-    [800_000, 700_000, 'Peak M800K'],
-    [550_000, undefined, 'Peak M550K'],
-    [undefined, 700_000, 'Peak M700K'],
-    [undefined, undefined, undefined],
+    [510_000, 'whale', null],
+    [250_000, 'orca', null],
+    [5_000, 'pufferfish', 'orca'],
+    [2_499, null, 'orca'],
   ] as const)(
-    'formats achievements peak %s with held value %s',
-    (peak, held, label) => {
-      expect(formatNetWorthPeak(netWorth, peak, held)).toBe(label)
+    'shows the current tier at %s and keeps a higher best as history',
+    (value, current, best) => {
+      const stats = { netWorth: value, peakNetWorth: 251_000 }
+      const status = getNetWorthStatus(stats, claims)
+      expect(status.current?.id ?? null).toBe(current)
+      expect(status.previousBest?.id ?? null).toBe(best)
+      expect(countEarnedMilestones(stats, claims, [netWorth])).toBe(
+        countReachedMilestones(stats, [netWorth])
+      )
     }
   )
+
+  it('keeps the best from the stored peak even if only Minnow was claimed', () => {
+    const status = getNetWorthStatus({ netWorth: 0, peakNetWorth: 250_000 }, [
+      claim('net-worth', 'minnow'),
+    ])
+    expect(status.current).toBeNull()
+    expect(status.previousBest?.id).toBe('orca')
+  })
 })
 
 describe('formatTrophyValue', () => {

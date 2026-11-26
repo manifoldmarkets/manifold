@@ -68,6 +68,7 @@ export async function loadUserAchievements(
   ) as Record<RankKey, Rank>
 
   const seasons = {
+    seasonsSilverOrHigher: Number(result?.seasons_silver_or_higher ?? 0),
     seasonsGoldOrHigher: Number(result?.seasons_gold_or_higher ?? 0),
     seasonsPlatinumOrHigher: Number(result?.seasons_platinum_or_higher ?? 0),
     seasonsDiamondOrHigher: Number(result?.seasons_diamond_or_higher ?? 0),
@@ -184,6 +185,7 @@ type StatsRow = {
   markets_created_with_traders: number | null
   referred_traders: number | null
   resolved_profitable_markets: number | null
+  seasons_silver_or_higher: number | null
   seasons_gold_or_higher: number | null
   creator_traders: number | null
   total_referrals: number | null
@@ -271,6 +273,7 @@ const STATS_QUERY = `with
   -- From leagues directly: the user_league_info view ranks every cohort.
   leagues_cte as (
     select
+      count(*) filter (where division >= 2) as seasons_silver_or_higher,
       count(*) filter (where division >= 3) as seasons_gold_or_higher,
       count(*) filter (where division >= 4) as seasons_platinum_or_higher,
       count(*) filter (where division >= 5) as seasons_diamond_or_higher,
@@ -299,42 +302,27 @@ const STATS_QUERY = `with
     where c.creator_id = $[userId] and c.token = 'MANA'
   ),
   account_age as (
-    -- Whole years since signup, plus the share of the current year,
-    -- rounded down to four places (under an hour), all in UTC. A year is complete when
-    -- created_time plus that many calendar years has passed (so a
-    -- Feb 29 signup completes one on Feb 28), and the whole part and the
-    -- share come from the same anniversaries, so the Account Age trophy
-    -- is never reached early.
-    select a.whole + floor(
-        10000 * extract(epoch from (a.now_utc - a.last_anniversary))
-        / extract(epoch from (a.next_anniversary - a.last_anniversary))
-      ) / 10000 as account_age_years
-    from (
-      select
-        y.now_utc,
-        y.whole,
-        y.created + make_interval(years => y.whole) as last_anniversary,
-        y.created + make_interval(years => y.whole + 1) as next_anniversary
-      from (
-        select
-          x.now_utc,
-          x.created,
-          x.k
-            + (x.created + make_interval(years => x.k + 1) <= x.now_utc)::int
-            - (x.created + make_interval(years => x.k) > x.now_utc)::int
-            as whole
-        from (
-          select
-            now() at time zone 'UTC' as now_utc,
-            u.created_time at time zone 'UTC' as created,
-            extract(year from age(
-              now() at time zone 'UTC', u.created_time at time zone 'UTC'
-            ))::int as k
-          from users u
-          where u.id = $[userId]
-        ) x
-      ) y
-    ) a
+    -- Count whole UTC calendar months from signup, clamping month-end dates.
+    -- Interpolate only between adjacent monthly anniversaries. A threshold
+    -- of n/12 years is crossed exactly on the nth monthly anniversary.
+    with signup as (
+      select now() at time zone 'UTC' as today, created_time at time zone 'UTC' as created
+      from users where id = $[userId]
+    ), calendar as (
+      select *, ((extract(year from today) - extract(year from created)) * 12
+        + extract(month from today) - extract(month from created))::int as months
+      from signup
+    ), elapsed as (
+      select *, months - (created + make_interval(months => months) > today)::int as whole
+      from calendar
+    ), anniversaries as (
+      select today, whole, created + make_interval(months => whole) as previous,
+        created + make_interval(months => whole + 1) as following
+      from elapsed
+    )
+    select (whole + floor(10000 * extract(epoch from (today - previous))
+      / extract(epoch from (following - previous))) / 10000) / 12 as account_age_years
+    from anniversaries
   ),
   -- The longest of: any streak a bonus was paid for, the longest ended
   -- streak (kept by reset-betting-streaks) and the current one. Accounts
@@ -362,6 +350,7 @@ const STATS_QUERY = `with
     created.markets_created_with_traders,
     referrals.referred_traders,
     metrics.resolved_profitable_markets,
+    leagues_cte.seasons_silver_or_higher,
     leagues_cte.seasons_gold_or_higher,
     creators.creator_traders,
     referrals.total_referrals,

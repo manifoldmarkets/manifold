@@ -6,6 +6,7 @@ import {
   TrophyRankTier,
   formatTrophyValue,
   getTrophyRankTitle,
+  getNetWorthStatus,
 } from 'common/trophies'
 import { Tooltip } from 'web/components/widgets/tooltip'
 
@@ -25,6 +26,7 @@ export function TrophyRankChip(props: {
   value: number
   computedTime: number | null
   hideScore?: boolean
+  netWorthStatus?: ReturnType<typeof getNetWorthStatus>
 }) {
   const { definition, tier, rank, value, computedTime, hideScore } = props
   const title = getTrophyRankTitle(definition, tier)
@@ -33,7 +35,15 @@ export function TrophyRankChip(props: {
     computedTime == null
       ? ''
       : ` · Updated ${new Date(computedTime).toLocaleString()}`
-  const description = `${title} · ${definition.label} · #${rank} · ${score}. ${definition.rankNote}${updated}`
+  const status = props.netWorthStatus
+  const currentLabel =
+    status && status.current?.tier !== 'prismatic'
+      ? ` · Now: ${status.current?.name ?? 'below Minnow'}`
+      : ''
+  const bestLabel = status?.previousBest
+    ? ` · Best: ${status.previousBest.name}`
+    : ''
+  const description = `${title} · ${definition.label} · #${rank} · ${score}. ${definition.rankNote}${updated}${currentLabel}${bestLabel}`
   return (
     <Tooltip text={description} showOnFocus>
       <button
@@ -51,8 +61,11 @@ export function TrophyRankChip(props: {
           </span>
         )}
         {title}
-        {!hideScore && ` · ${score}`}
         {tier !== 'crown' && ` · #${rank}`}
+        {currentLabel}
+        {!hideScore &&
+          ` · ${status ? formatRankValue(definition, status.value) : score}`}
+        {bestLabel}
       </button>
     </Tooltip>
   )

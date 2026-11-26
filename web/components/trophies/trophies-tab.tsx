@@ -19,6 +19,7 @@ import {
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getHighestClaimedMilestone,
+  getNetWorthStatus,
   getMilestone,
   getTrophyDefinition,
   getTotalPossibleMilestones,
@@ -137,6 +138,7 @@ export function TrophiesTab(props: {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
+      if (trophyId === 'net-worth') retryAchievements()
       setClaimingId(null)
     }
   }
@@ -219,8 +221,8 @@ export function TrophiesTab(props: {
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
   const stats = getTrophyDisplayStats(achievements, trophies)
+  const netWorth = getNetWorthStatus(stats, claims)
   const progressList = computeAllTrophyProgress(stats, earnableDefs)
-  // Reached or claimed: a claim stays even if the stat drops back.
   const reached = countEarnedMilestones(stats, claims, earnableDefs)
   const total = getTotalPossibleMilestones(earnableDefs)
   const claimedCount = countClaimedMilestones(claims)
@@ -239,6 +241,8 @@ export function TrophiesTab(props: {
     : TROPHY_DEFINITIONS.filter(
         (d) =>
           claimedIdsByTrophy.get(d.id)?.size ||
+          (d.id === 'net-worth' &&
+            (netWorth.current || netWorth.previousBest)) ||
           (d.ranked &&
             (ranks.some((r) => r.trophyId === d.id) ||
               rankPeaks.some((p) => p.trophyId === d.id)))
@@ -296,7 +300,7 @@ export function TrophiesTab(props: {
       {isOwnProfile && (
         <ShowcaseSlotTracker
           claimedCount={claimedCount}
-          reachedCount={reached}
+          reachedCount={claimedCount + unclaimedCount}
         />
       )}
 
@@ -311,6 +315,7 @@ export function TrophiesTab(props: {
             </div>
             <TrophyGrid
               progressList={progressList}
+              previousBestNetWorth={netWorth.previousBest}
               ranks={ranks}
               rankPeaks={rankPeaks}
               ranksComputedTime={ranksComputedTime}
@@ -371,7 +376,7 @@ function StatsRefreshNotice(props: { onRetry: () => void }) {
 
 function ShowcaseSlotTracker(props: {
   claimedCount: number
-  reachedCount: number // earned, whether claimed or not
+  reachedCount: number // permanent claims plus currently claimable milestones
 }) {
   const { claimedCount, reachedCount } = props
   const maxClaims = SHOWCASE_SLOT_UNLOCKS[SHOWCASE_SLOT_UNLOCKS.length - 1]

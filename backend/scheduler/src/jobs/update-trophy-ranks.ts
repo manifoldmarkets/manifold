@@ -85,10 +85,11 @@ const valueQueries: Record<string, string> = {
     group by person.data->>'referredByUserId'`,
   // Keep this mapping identical to getLeagueLevel in common/trophies.
   leagues: `select user_id, case
-      when count(*) filter (where division = 6) > 0 then 3 + count(*) filter (where division = 6)
-      when max(division) >= 5 then 3
-      when max(division) >= 4 then 2
-      when max(division) >= 3 then 1
+      when count(*) filter (where division = 6) > 0 then 4 + count(*) filter (where division = 6)
+      when max(division) >= 5 then 4
+      when max(division) >= 4 then 3
+      when max(division) >= 3 then 2
+      when max(division) >= 2 then 1
       else 0 end as value
     from leagues group by user_id`,
 }

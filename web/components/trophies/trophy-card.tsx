@@ -17,7 +17,6 @@ import {
   type TrophyRankTier,
   MAX_TROPHY_RANK,
   formatLeagueRemaining,
-  formatNetWorthPeak,
   getPeakRankTier,
   getTopMilestone,
   getTrophyRankTier,
@@ -43,6 +42,7 @@ export function TrophyGrid(props: {
   ranks: TrophyRank[]
   rankPeaks: TrophyRankPeak[]
   ranksComputedTime: number | null
+  previousBestNetWorth?: TrophyMilestone | null
   claimedIdsByTrophy: Map<string, Set<string>>
   rewarded: TrophyMilestoneRef[]
   isOwnProfile?: boolean
@@ -78,7 +78,12 @@ export function TrophyGrid(props: {
         if (!progress) return null
         return (
           <TrophyCard
-            key={def.id}
+            key={
+              def.id === 'net-worth'
+                ? `net-worth/${progress.highestMilestone?.id ?? 'none'}`
+                : def.id
+            }
+            previousBestNetWorth={props.previousBestNetWorth}
             definition={def}
             progress={progress}
             rank={props.ranks.find((r) => r.trophyId === def.id)}
@@ -107,6 +112,7 @@ export function TrophyCard(props: {
   rank?: TrophyRank
   peakTier: TrophyRankTier | null
   ranksComputedTime: number | null
+  previousBestNetWorth?: TrophyMilestone | null
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
   rewarded: TrophyMilestoneRef[]
@@ -138,21 +144,20 @@ export function TrophyCard(props: {
   const claiming = claimingId === definition.id
   const { currentValue, highestMilestone } = progress
 
-  // The owner sees every milestone and which they have reached; a visitor
-  // sees only the ones the owner claimed.
+  const isNetWorth = definition.id === 'net-worth'
+  const best = isNetWorth ? props.previousBestNetWorth : null
+  // Visitors see the current Net Worth tier even before it is claimed.
   const shown = isOwnProfile
     ? milestones
+    : isNetWorth
+    ? [highestMilestone ?? best].filter((m): m is TrophyMilestone => !!m)
     : milestones.filter((m) => claimedIds.has(m.id))
-  // A claim stays earned even if the stat drops back below it.
   const isEarned = (m: TrophyMilestone) =>
-    claimedIds.has(m.id) ||
-    (!!isOwnProfile && isMilestoneReached(m, currentValue))
-  const startIdx = Math.max(
-    highestMilestone
-      ? shown.findIndex((m) => m.id === highestMilestone.id)
-      : -1,
-    findLastIndex(shown, (m) => claimedIds.has(m.id))
-  )
+    isNetWorth
+      ? isMilestoneReached(m, currentValue)
+      : claimedIds.has(m.id) ||
+        (!!isOwnProfile && isMilestoneReached(m, currentValue))
+  const startIdx = findLastIndex(shown, isEarned)
   // Start on the highest milestone earned, or the first one.
   const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
   // Claims can be removed (admin unclaim) while the card is showing.
@@ -183,7 +188,6 @@ export function TrophyCard(props: {
 
   if (!viewing) return null
 
-  const peak = formatNetWorthPeak(definition, currentValue, rank?.value)
   const isReached = isMilestoneReached(viewing, currentValue)
   const isClaimed = claimedIds.has(viewing.id)
   const earned = isEarned(viewing)
@@ -198,7 +202,9 @@ export function TrophyCard(props: {
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < shown.length - 1
   const progressPct =
-    viewing.threshold > 0 ? Math.min(currentValue / viewing.threshold, 1) : 1
+    viewing.threshold > 0
+      ? Math.max(0, Math.min(currentValue / viewing.threshold, 1))
+      : 1
 
   const badge = (
     <TrophyRankRing tier={heldTier}>
@@ -212,6 +218,11 @@ export function TrophyCard(props: {
         <TrophyBadgeImage
           trophyId={definition.id}
           milestone={viewing}
+          rankTier={
+            viewing.tier === 'prismatic' && (!isNetWorth || earned)
+              ? heldTier
+              : null
+          }
           className="h-24 w-24"
           emojiClassName="text-5xl"
         />
@@ -240,7 +251,7 @@ export function TrophyCard(props: {
         {rankLabel}
         <span className="text-ink-500 text-center text-xs">
           {definition.label}
-          {peak && ` · ${peak}`}
+          {best && ` · Best: ${best.name}`}
         </span>
       </Col>
     )
@@ -291,11 +302,14 @@ export function TrophyCard(props: {
           {viewing.name}
         </span>
 
-        <span className="text-ink-500 text-center text-xs">
-          {definition.label}
-          {' · '}
-          {peak ?? formatStat(definition, currentValue, accountCreatedTime)}
-        </span>
+        <Tooltip text={definition.description}>
+          <span className="text-ink-500 text-center text-xs">
+            {definition.label}
+            {' · '}
+            {formatStat(definition, currentValue, accountCreatedTime)}
+            {best && ` · Best: ${best.name}`}
+          </span>
+        </Tooltip>
 
         {!isClaimed && <TrophyRewardChip amount={rewardAmount} />}
 
@@ -342,7 +356,10 @@ export function TrophyCard(props: {
           </button>
         ) : isClaimed ? (
           // An unpaid reward comes first, even right after a claim.
-          isOwnProfile && unpaidReward && onClaim ? (
+          isOwnProfile &&
+          unpaidReward &&
+          (!isNetWorth || isReached) &&
+          onClaim ? (
             <button
               className={clsx(
                 'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
@@ -388,8 +405,12 @@ export function TrophyCard(props: {
               definition,
               currentValue,
               viewing.threshold,
-              accountCreatedTime &&
-                getAccountAnniversaryTime(accountCreatedTime, viewing.threshold)
+              definition.unit === 'years' && accountCreatedTime
+                ? getAccountAnniversaryTime(
+                    accountCreatedTime,
+                    viewing.threshold
+                  )
+                : undefined
             )}
             {definition.unit !== 'league' && ' to go'}
           </span>

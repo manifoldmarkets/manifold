@@ -64,7 +64,7 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         const toClaim = getMilestonesToClaim(def, milestoneId, value)
         if (toClaim) return toClaim
         const needed =
-          def.unit === 'league'
+          def.unit === 'league' || def.unit === 'years'
             ? formatTrophyValue(def, milestone.threshold)
             : `${milestone.threshold.toLocaleString()} ${def.unit}`
         throw new APIError(
@@ -112,7 +112,7 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
 
         const toClaim =
           verifiedMilestones ??
-          milestonesForValue(await recordNetWorthPeak(tx, auth.uid))
+          milestonesForValue(await readNetWorthAndRecordPeak(tx, auth.uid))
 
         // One row per milestone. A repeated or concurrent claim inserts
         // nothing the second time, and a claim can never be lowered.
@@ -210,23 +210,27 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
     }
   )
 
-async function recordNetWorthPeak(tx: SupabaseTransaction, userId: string) {
-  await tx.none(
-    `insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
-     select user_id, value, now() from (
-       select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value
-       from user_portfolio_history_latest uphl
-       where uphl.user_id = $1 and ${TROPHY_FRESH_PORTFOLIO_FILTER}
-     ) snapshot
-     where value > 0 and value < 'Infinity'::numeric
-     ${TROPHY_NET_WORTH_PEAK_CONFLICT}`,
+// Read the same latest value as get-user-achievements. Only fresh snapshots
+// can raise the permanent peak. Both operations see the same statement snapshot.
+async function readNetWorthAndRecordPeak(
+  tx: SupabaseTransaction,
+  userId: string
+) {
+  const snapshot = await tx.oneOrNone<{ value: number }>(
+    `with snapshot as (
+       select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value,
+         ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
+       from user_portfolio_history_latest uphl where uphl.user_id = $1
+     ), record_peak as (
+       insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
+       select user_id, value, now() from snapshot
+       where is_fresh and value > 0 and value < 'Infinity'::numeric
+       ${TROPHY_NET_WORTH_PEAK_CONFLICT}
+     )
+     select value from snapshot where value > '-Infinity'::numeric and value < 'Infinity'::numeric`,
     [userId]
   )
-  const peak = await tx.oneOrNone<{ peak_net_worth: number }>(
-    'select floor(peak_net_worth) as peak_net_worth from user_net_worth_peaks where user_id = $1',
-    [userId]
-  )
-  const value = peak?.peak_net_worth ?? 0
+  const value = Number(snapshot?.value ?? 0)
   return Number.isFinite(value) ? value : 0
 }
 

@@ -49,6 +49,7 @@ import { setShowcasePins } from 'api/set-showcase-pins'
 import { unclaimTrophy } from 'api/unclaim-trophy'
 import { APIResponse } from 'common/api/schema'
 import { BANNED_TRADING_USER_IDS, ENV_CONFIG } from 'common/envs/constants'
+import * as trophies from 'common/trophies'
 import { RANKED_TROPHY_DEFINITIONS, getTrophyStatValue } from 'common/trophies'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
@@ -668,7 +669,12 @@ describe('Newcomer rewards', () => {
       `update users set data = '{"bonusEligibility": "verified"}' where id = 'flagged'`
     )
     const paid = await claim('flagged', 'account-age', 'established')
-    expect(paid.newlyClaimed.map((c) => c.milestoneId)).toEqual(['established'])
+    expect(paid.newlyClaimed.map((c) => c.milestoneId)).toEqual([
+      'settling-in',
+      'committed',
+      'half-year',
+      'established',
+    ])
     expect(paid.rewardAmount).toBe(25)
 
     const retry = await claim('flagged', 'account-age', 'newcomer')
@@ -721,16 +727,77 @@ describe('other trophies', () => {
     })
   })
 
-  it('claims Net Worth from a stored peak without a current snapshot or reward', async () => {
+  it('crosses Account Age thresholds on the UTC calendar anniversary', async () => {
+    await addUser('u')
+    // now() is fixed within a transaction. PostgreSQL interval addition
+    // supplies the expected boundary, including for short months and leap days.
+    await client.tx(async () => {
+      for (const months of [1, 3, 6, 12, 18, 24, 36, 48, 60]) {
+        for (const offset of [-1, 0, 1]) {
+          const [signup] = await rows(
+            `update users set created_time = (now() at time zone 'UTC'
+               - make_interval(months => $1) + $2 * interval '1 millisecond') at time zone 'UTC'
+             where id = 'u'
+             returning (created_time at time zone 'UTC') + make_interval(months => $1)
+               <= (now() at time zone 'UTC') as reached`,
+            [months, offset]
+          )
+          const { accountAgeYears } = await loadLive('u')
+          expect(accountAgeYears >= months / 12).toBe(signup.reached)
+        }
+      }
+    })
+  })
+
+  it('refuses a Net Worth claim backed only by a stored peak', async () => {
     await addUser('u')
     await rows("insert into user_net_worth_peaks values ('u', 20000, now())")
-    const result = await claim('u', 'net-worth', 'goldfish')
-    expect(result.newlyClaimed.map((c) => c.milestoneId)).toEqual([
-      'minnow',
-      'goldfish',
-    ])
-    expect(result.rewardAmount).toBe(0)
-    expect(await rewardTxns('u')).toHaveLength(0)
+    await expect(claim('u', 'net-worth', 'goldfish')).rejects.toMatchObject({
+      code: 403,
+    })
+    expect(await claimRows('u')).toEqual([])
+  })
+
+  it('checks the latest snapshot on every claim and pays a configured reward only once', async () => {
+    await addUser('u')
+    const netWorth = trophies.getTrophyDefinition('net-worth')!
+    // Net Worth currently has no payouts. Exercise the one-time ledger with
+    // a reward on this tier so a duplicate payment would be observable.
+    const definition = jest
+      .spyOn(trophies, 'getTrophyDefinition')
+      .mockReturnValue({
+        ...netWorth,
+        milestones: netWorth.milestones.map((m) =>
+          m.id === 'minnow' ? { ...m, rewardMana: 25 } : m
+        ),
+      })
+    try {
+      await rows(
+        "insert into user_portfolio_history_latest (user_id, balance, investment_value) values ('u', 2499, 1)"
+      )
+      const first = await claim('u', 'net-worth', 'minnow')
+      expect(first.newlyClaimed.map((c) => c.milestoneId)).toEqual(['minnow'])
+      expect(first.rewardAmount).toBe(25)
+      await rows(
+        "update user_portfolio_history_latest set investment_value = 0 where user_id = 'u'"
+      )
+      await expect(claim('u', 'net-worth', 'minnow')).rejects.toMatchObject({
+        code: 403,
+      })
+      expect(await trophiesOf('u')).toMatchObject({
+        claims: first.claims,
+        storedPeakNetWorth: 2500,
+      })
+      await rows(
+        "update user_portfolio_history_latest set investment_value = 1 where user_id = 'u'"
+      )
+      const retry = await claim('u', 'net-worth', 'minnow')
+      expect(retry.newlyClaimed).toEqual([])
+      expect(retry.rewardAmount).toBe(0)
+      expect(await rewardTxns('u')).toHaveLength(1)
+    } finally {
+      definition.mockRestore()
+    }
   })
 })
 
@@ -974,7 +1041,7 @@ describe('nightly trophy ranks', () => {
     await claim('u', 'net-worth', 'whale')
   })
 
-  it('floors an existing fractional peak before displaying it or granting a claim', async () => {
+  it('floors a fractional peak for history and refuses a claim without a snapshot', async () => {
     await addUser('u')
     await rows(
       `insert into user_net_worth_peaks values ('u', 499999.99999999999, now())`
@@ -1128,6 +1195,24 @@ describe('nightly trophy ranks', () => {
     }
   })
 
+  it('counts Silver and higher divisions in live League levels', async () => {
+    await addUser('u')
+    for (const [division, level] of [
+      [1, 0],
+      [2, 1],
+      [3, 2],
+      [4, 3],
+      [5, 4],
+      [6, 5],
+    ]) {
+      await rows(
+        "insert into leagues (season, division, cohort, user_id) values ($1, $1, 'c', 'u')",
+        [division]
+      )
+      expect((await loadLive('u')).leagueLevel).toBe(level)
+    }
+  })
+
   it('agrees with the live achievement stats for every ranked trophy', async () => {
     await addUser('maker', {
       data: {
@@ -1217,7 +1302,7 @@ describe('nightly trophy ranks', () => {
       profitableMarketsCount: 2004,
       likedComments: 1000,
       referredTraders: 1,
-      leagueLevel: 11,
+      leagueLevel: 12,
     })
     const { ranks } = await trophiesOf('maker')
     expect(ranks).toHaveLength(RANKED_TROPHY_DEFINITIONS.length)
@@ -1225,10 +1310,7 @@ describe('nightly trophy ranks', () => {
       expect(ranks).toContainEqual({
         trophyId: def.id,
         rank: 1,
-        value:
-          def.id === 'net-worth'
-            ? live.netWorth
-            : getTrophyStatValue(def, live),
+        value: getTrophyStatValue(def, live),
       })
     }
     expect((await trophiesOf('liker')).ranks).toEqual([])

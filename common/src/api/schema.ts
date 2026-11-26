@@ -3273,6 +3273,7 @@ export const API = (_apiTypeCheck = {
       marketsCreatedWithTraders: number
       referredTraders: number
       resolvedProfitableMarkets: number
+      seasonsSilverOrHigher: number
       seasonsGoldOrHigher: number
       leagueLevel: number
       creatorTraders: number

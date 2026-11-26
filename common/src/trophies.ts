@@ -1,6 +1,6 @@
 // Trophies: named milestones on a user's long-running stats (net worth, trades,
 // streaks, markets created...). Users claim a milestone once they reach it,
-// keep it forever, and can pin trophies to their profile.
+// and can pin trophies to their profile. Claims last. Net Worth badges track the latest snapshot.
 //
 // The stats come from `get-user-achievements`, apart from the "Getting
 // started" trophies, whose stats `get-user-trophies` counts live. Claims live
@@ -19,23 +19,20 @@ import {
   roundTierBonus,
 } from 'common/supporter-config'
 
-export type TrophyTier =
-  | 'green'
-  | 'blue'
-  | 'purple'
-  | 'crimson'
-  | 'gold'
-  | 'prismatic'
-
 // Best first.
-export const TROPHY_TIER_ORDER: TrophyTier[] = [
+export const TROPHY_TIER_ORDER = [
   'prismatic',
   'gold',
+  'orange',
   'crimson',
+  'pink',
   'purple',
+  'indigo',
   'blue',
+  'teal',
   'green',
-]
+] as const
+export type TrophyTier = (typeof TROPHY_TIER_ORDER)[number]
 
 export type TrophyMilestone = {
   // Stored in user_trophy_milestones.milestone_id. Never change an id once
@@ -119,6 +116,7 @@ export const NET_WORTH_SNAPSHOT_MAX_AGE_HOURS = 72
 // Live achievement fields and starter stats used by the trophy ladders.
 export const TROPHY_STAT_KEYS = [
   ...STARTER_STAT_KEYS,
+  'netWorth',
   'peakNetWorth',
   'totalTradesCount',
   'longestBettingStreak',
@@ -208,19 +206,22 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'net-worth',
     label: 'Net Worth',
     description:
-      'Your highest portfolio snapshot value (mana balance plus open positions), recorded nightly and when you claim',
+      'Your net worth right now (mana plus open positions, from the latest nightly snapshot). If you drop below a tier, your badge drops with you. Your best tier is kept as history.',
     category: 'trading',
-    statKey: 'peakNetWorth',
+    statKey: 'netWorth',
     unit: 'mana',
     ranked: true,
-    rankNote: `Ranked nightly by net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. An account qualifies if it has placed a trade or order in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days, or has an open order that can still fill`,
+    rankNote: `Ranked nightly by current net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. An account qualifies if it has placed a trade or order in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days, or has an open order that can still fill`,
     milestones: [
-      m('minnow', 'Minnow', '\u{1F41F}', 2_500, 'green'),
-      m('goldfish', 'Goldfish', '\u{1F421}', 10_000, 'blue'),
-      m('swordfish', 'Swordfish', '\u{1F420}', 25_000, 'purple'),
-      m('shark', 'Shark', '\u{1F988}', 100_000, 'crimson'),
-      m('orca', 'Orca', '\u{1F42C}', 250_000, 'gold'),
-      m('whale', 'Whale', '\u{1F433}', 500_000, 'prismatic'),
+      m('minnow', 'Minnow', '🐟', 2_500, 'green'),
+      m('pufferfish', 'Pufferfish', '🐡', 5_000, 'blue'),
+      m('goldfish', 'Goldfish', '🐠', 10_000, 'indigo'),
+      m('swordfish', 'Swordfish', '🗡', 25_000, 'purple'),
+      m('barracuda', 'Barracuda', '🐟', 50_000, 'pink'),
+      m('shark', 'Shark', '🦈', 100_000, 'crimson'),
+      m('manta-ray', 'Manta Ray', '🌊', 175_000, 'orange'),
+      m('orca', 'Orca', '🐬', 250_000, 'gold'),
+      m('whale', 'Whale', '🐳', 500_000, 'prismatic'),
     ],
   },
   {
@@ -232,30 +233,39 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'totalTradesCount',
     unit: 'trades',
     milestones: [
-      m('rookie', 'Rookie', '\u{1F3AF}', 10, 'green'),
-      m('regular', 'Regular', '\u{1F4CA}', 100, 'blue'),
-      m('hustler', 'Hustler', '\u{1F4B9}', 500, 'purple'),
-      m('grinder', 'Grinder', '\u{26CF}', 2_500, 'crimson'),
-      m('machine', 'Machine', '\u{2699}', 10_000, 'gold'),
-      m('terminator', 'Terminator', '\u{1F916}', 25_000, 'prismatic'),
+      m('rookie', 'Rookie', '🎯', 10, 'green'),
+      m('dabbler', 'Dabbler', '📝', 25, 'teal'),
+      m('regular', 'Regular', '📊', 100, 'blue'),
+      m('enthusiast', 'Enthusiast', '💻', 250, 'indigo'),
+      m('hustler', 'Hustler', '💹', 500, 'purple'),
+      m('day-trader', 'Day Trader', '🖥', 1_000, 'pink'),
+      m('grinder', 'Grinder', '⛏', 2_500, 'crimson'),
+      m('workhorse', 'Workhorse', '🐎', 5_000, 'orange'),
+      m('machine', 'Machine', '⚙', 10_000, 'gold'),
+      m('terminator', 'Terminator', '🤖', 25_000, 'prismatic'),
     ],
   },
   {
     id: 'prediction-streak',
     label: 'Prediction Streak',
-    description: 'Longest streak of consecutive days placing a bet',
+    description:
+      'Your longest-ever streak of consecutive days placing a bet. You keep it after the streak ends.',
     category: 'trading',
     statKey: 'longestBettingStreak',
     unit: 'days',
     ranked: true,
     rankNote: 'Ranked nightly by longest prediction streak',
     milestones: [
-      m('spark', 'Spark', '\u{2728}', 7, 'green'),
-      m('ember', 'Ember', '\u{1F525}', 30, 'blue'),
-      m('blaze', 'Blaze', '\u{1F4A5}', 100, 'purple'),
-      m('inferno', 'Inferno', '\u{1F30B}', 365, 'crimson'),
-      m('eternal-flame', 'Eternal Flame', '\u{2600}', 730, 'gold'),
-      m('phoenix', 'Phoenix', '\u{1F426}\u{200D}\u{1F525}', 1_000, 'prismatic'),
+      m('kindling', 'Kindling', '🪵', 3, 'green'),
+      m('spark', 'Spark', '✨', 7, 'teal'),
+      m('flame', 'Flame', '🕯', 14, 'blue'),
+      m('ember', 'Ember', '🔥', 30, 'indigo'),
+      m('bonfire', 'Bonfire', '🏕', 60, 'purple'),
+      m('blaze', 'Blaze', '💥', 100, 'pink'),
+      m('wildfire', 'Wildfire', '🌪', 200, 'crimson'),
+      m('inferno', 'Inferno', '🌋', 365, 'orange'),
+      m('eternal-flame', 'Eternal Flame', '☀', 730, 'gold'),
+      m('phoenix', 'Phoenix', '🐦\u200d🔥', 1_000, 'prismatic'),
     ],
   },
   {
@@ -270,12 +280,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     rankNote:
       'Ranked nightly by profitable resolved markets, excluding cancellations',
     milestones: [
-      m('lucky', 'Lucky', '\u{1F340}', 10, 'green'),
-      m('savvy', 'Savvy', '\u{1F9E0}', 50, 'blue'),
-      m('sharp', 'Sharp', '\u{1F52A}', 250, 'purple'),
-      m('sage', 'Sage', '\u{1F9D9}', 500, 'crimson'),
-      m('clairvoyant', 'Clairvoyant', '\u{1F441}', 1_000, 'gold'),
-      m('oracle', 'Oracle', '\u{1F52E}', 2_000, 'prismatic'),
+      m('lucky', 'Lucky', '🍀', 10, 'green'),
+      m('steady', 'Steady', '⚖', 25, 'teal'),
+      m('savvy', 'Savvy', '🧠', 50, 'blue'),
+      m('shrewd', 'Shrewd', '🦊', 100, 'indigo'),
+      m('tactician', 'Tactician', '♞', 250, 'purple'),
+      m('sage', 'Sage', '🧙', 400, 'pink'),
+      m('seer', 'Seer', '👁', 500, 'crimson'),
+      m('sharpe', 'Sharpe', '🗡', 750, 'orange'),
+      m('clairvoyant', 'Clairvoyant', '👁', 1_000, 'gold'),
+      m('oracle', 'Oracle', '🔮', 2_000, 'prismatic'),
     ],
   },
   {
@@ -290,12 +304,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     rankNote:
       'Ranked nightly by public mana markets created with at least 10 traders',
     milestones: [
-      m('apprentice', 'Apprentice', '\u{1F528}', 1, 'green'),
-      m('journeyman', 'Journeyman', '\u{1F6E0}', 3, 'blue'),
-      m('builder', 'Builder', '\u{1F3D7}', 10, 'purple'),
-      m('architect', 'Architect', '\u{1F4D0}', 25, 'crimson'),
-      m('city-planner', 'City Planner', '\u{1F306}', 100, 'gold'),
-      m('titan', 'Titan', '\u{1F3D4}', 250, 'prismatic'),
+      m('apprentice', 'Apprentice', '🧱', 1, 'green'),
+      m('tinkerer', 'Tinkerer', '🔧', 2, 'teal'),
+      m('journeyman', 'Journeyman', '🔨', 3, 'blue'),
+      m('craftsman', 'Craftsman', '🏠', 5, 'indigo'),
+      m('builder', 'Builder', '🏡', 10, 'purple'),
+      m('architect', 'Architect', '🏢', 25, 'pink'),
+      m('engineer', 'Engineer', '🏗', 50, 'crimson'),
+      m('city-planner', 'City Planner', '🏙', 100, 'orange'),
+      m('visionary', 'Visionary', '🌆', 150, 'gold'),
+      m('titan', 'Titan', '🏔', 250, 'prismatic'),
     ],
   },
   {
@@ -311,12 +329,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     rankNote:
       'Ranked nightly by traders on your markets, counted once per market',
     milestones: [
-      m('noticed', 'Noticed', '\u{1F440}', 10, 'green'),
-      m('recognized', 'Recognized', '\u{1F44B}', 150, 'blue'),
-      m('notable', 'Notable', '\u{1F465}', 500, 'purple'),
-      m('popular', 'Popular', '\u{1F4E2}', 1_500, 'crimson'),
-      m('famous', 'Famous', '\u{2B50}', 3_000, 'gold'),
-      m('icon', 'Icon', '\u{1F3AC}', 12_000, 'prismatic'),
+      m('noticed', 'Noticed', '👀', 10, 'green'),
+      m('discovered', 'Discovered', '🔍', 50, 'teal'),
+      m('recognized', 'Recognized', '👋', 150, 'blue'),
+      m('rising-star', 'Rising Star', '🌠', 300, 'indigo'),
+      m('notable', 'Notable', '⭐', 500, 'purple'),
+      m('headliner', 'Headliner', '🎭', 1_000, 'pink'),
+      m('popular', 'Popular', '📣', 1_500, 'crimson'),
+      m('famous', 'Famous', '🌟', 3_000, 'orange'),
+      m('celebrity', 'Celebrity', '📸', 6_000, 'gold'),
+      m('icon', 'Icon', '🎬', 12_000, 'prismatic'),
     ],
   },
   {
@@ -329,31 +351,40 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     ranked: true,
     rankNote: 'Ranked nightly by distinct comments liked by other people',
     milestones: [
-      m('well-said', 'Well Said', '\u{1F44D}', 1, 'green'),
-      m('conversationalist', 'Conversationalist', '\u{1F4AD}', 10, 'blue'),
-      m('debater', 'Debater', '\u{1F5E3}', 50, 'purple'),
-      m('commentator', 'Commentator', '\u{1F4DD}', 150, 'crimson'),
-      m('influencer', 'Influencer', '\u{1F4F0}', 400, 'gold'),
-      m('pundit', 'Pundit', '\u{1F4E3}', 1_000, 'prismatic'),
+      m('well-said', 'Well Said', '💬', 1, 'green'),
+      m('chatterbox', 'Chatterbox', '🗨', 3, 'teal'),
+      m('conversationalist', 'Conversationalist', '💭', 10, 'blue'),
+      m('quotable', 'Quotable', '📌', 25, 'indigo'),
+      m('debater', 'Debater', '🗣', 50, 'purple'),
+      m('columnist', 'Columnist', '📰', 100, 'pink'),
+      m('commentator', 'Commentator', '🎙', 150, 'crimson'),
+      m('thought-leader', 'Thought Leader', '💡', 250, 'orange'),
+      m('influencer', 'Influencer', '💖', 400, 'gold'),
+      m('pundit', 'Pundit', '🏛', 1_000, 'prismatic'),
     ],
   },
   {
     id: 'leagues',
     label: 'Leagues',
     description:
-      'Your best league seasons: Gold, Platinum and Diamond, then seasons in Masters',
+      'Reach Silver or higher in a league season, then Gold, Platinum and Diamond. Each season in Masters counts.',
     category: 'prestige',
     statKey: 'leagueLevel',
     unit: 'league',
     ranked: true,
-    rankNote: 'Ranked nightly by best division and number of Masters seasons',
+    rankNote:
+      'Ranked nightly by best division from Silver up. Each Masters season adds one level above Diamond.',
     milestones: [
-      m('gold-season', 'Gold Season', '\u{1F947}', 1, 'green'),
-      m('platinum-season', 'Platinum Season', '\u{2B50}', 2, 'blue'),
-      m('diamond-season', 'Diamond Season', '\u{1F48E}', 3, 'purple'),
-      m('contender', 'Contender', '\u{1F94A}', 4, 'crimson'),
-      m('champion', 'Champion', '\u{1F3C6}', 6, 'gold'),
-      m('goat', 'GOAT', '\u{1F410}', 11, 'prismatic'),
+      m('silver-season', 'Silver Season', '🥈', 1, 'green'),
+      m('gold-season', 'Gold Season', '🥇', 2, 'teal'),
+      m('platinum-season', 'Platinum Season', '💿', 3, 'blue'),
+      m('diamond-season', 'Diamond Season', '💎', 4, 'indigo'),
+      m('contender', 'Contender', '🥊', 5, 'purple'),
+      m('challenger', 'Challenger', '⚔', 6, 'pink'),
+      m('champion', 'Champion', '🏆', 7, 'crimson'),
+      m('dynasty', 'Dynasty', '🏛', 9, 'orange'),
+      m('legend', 'Legend', '🌟', 10, 'gold'),
+      m('goat', 'GOAT', '🐐', 12, 'prismatic'),
     ],
   },
   {
@@ -366,12 +397,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     ranked: false,
     rankNote: 'Ranked nightly by invited people who made at least 10 trades',
     milestones: [
-      m('networker', 'Networker', '\u{1F91D}', 1, 'green'),
-      m('connector', 'Connector', '\u{1F517}', 3, 'blue'),
-      m('recruiter', 'Recruiter', '\u{1F4E8}', 5, 'purple'),
-      m('evangelist', 'Evangelist', '\u{1F4E1}', 10, 'crimson'),
-      m('pied-piper', 'Pied Piper', '\u{1F3B5}', 25, 'gold'),
-      m('ambassador', 'Ambassador', '\u{1F3C7}', 50, 'prismatic'),
+      m('networker', 'Networker', '🤝', 1, 'green'),
+      m('plus-one', 'Plus One', '👥', 2, 'teal'),
+      m('connector', 'Connector', '🔗', 3, 'blue'),
+      m('recruiter', 'Recruiter', '📋', 5, 'indigo'),
+      m('organizer', 'Organizer', '🚩', 7, 'purple'),
+      m('evangelist', 'Evangelist', '📡', 10, 'pink'),
+      m('promoter', 'Promoter', '🎉', 15, 'crimson'),
+      m('talent-scout', 'Talent Scout', '🔭', 25, 'orange'),
+      m('movement-builder', 'Movement Builder', '✊', 35, 'gold'),
+      m('ambassador', 'Ambassador', '🌍', 50, 'prismatic'),
     ],
   },
   {
@@ -382,18 +417,16 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      m('newcomer', 'Newcomer', '\u{1F331}', 0, 'green', 25),
-      m('established', 'Established', '\u{1F333}', 1, 'blue'),
-      m('veteran', 'Veteran', '\u{1F396}', 2, 'purple'),
-      m('elder', 'Elder', '\u{1F474}', 3, 'crimson'),
-      m('old-guard', 'Old Guard', '\u{1F6E1}', 4, 'gold'),
-      m(
-        'founding-member',
-        'Founding Member',
-        '\u{1F3DB}\u{FE0F}',
-        5,
-        'prismatic'
-      ),
+      m('newcomer', 'Newcomer', '🌱', 0, 'green', 25),
+      m('settling-in', 'Settling In', '🌿', 1 / 12, 'teal'),
+      m('committed', 'Committed', '🪴', 1 / 4, 'blue'),
+      m('half-year', 'Half Year', '🌳', 1 / 2, 'indigo'),
+      m('established', 'Established', '🌲', 1, 'purple'),
+      m('seasoned', 'Seasoned', '🍂', 3 / 2, 'pink'),
+      m('veteran', 'Veteran', '🍁', 2, 'crimson'),
+      m('elder', 'Elder', '🌰', 3, 'orange'),
+      m('old-guard', 'Old Guard', '🏛', 4, 'gold'),
+      m('founding-member', 'Founding Member', '🌌', 5, 'prismatic'),
     ],
   },
   {
@@ -406,12 +439,12 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     unit: 'donated',
     formatPrefix: '$',
     milestones: [
-      m('donor', 'Donor', '\u{1F49A}', 10, 'green'),
-      m('supporter', 'Supporter', '\u{1F499}', 50, 'blue'),
-      m('patron', 'Patron', '\u{1F49C}', 100, 'purple'),
-      m('philanthropist', 'Philanthropist', '\u{2764}', 250, 'crimson'),
-      m('humanitarian', 'Humanitarian', '\u{1F49B}', 500, 'gold'),
-      m('benefactor', 'Benefactor', '\u{1F496}', 1_000, 'prismatic'),
+      m('donor', 'Donor', '💚', 10, 'green'),
+      m('supporter', 'Supporter', '💙', 50, 'blue'),
+      m('patron', 'Patron', '💜', 100, 'purple'),
+      m('philanthropist', 'Philanthropist', '❤', 250, 'crimson'),
+      m('humanitarian', 'Humanitarian', '💛', 500, 'gold'),
+      m('benefactor', 'Benefactor', '💝', 1_000, 'prismatic'),
     ],
   },
 ]
@@ -506,6 +539,7 @@ export const getPeakRankTier = (peaks: TrophyRankPeak[], trophyId: string) =>
 
 // Keep this mapping identical to the leagues query in update-trophy-ranks.ts.
 export function getLeagueLevel(counts: {
+  seasonsSilverOrHigher: number
   seasonsGoldOrHigher: number
   seasonsPlatinumOrHigher: number
   seasonsDiamondOrHigher: number
@@ -513,18 +547,25 @@ export function getLeagueLevel(counts: {
 }) {
   const hasSeason = (n: number) => Number.isFinite(n) && n >= 1
   if (hasSeason(counts.seasonsMasters))
-    return 3 + Math.floor(counts.seasonsMasters)
-  if (hasSeason(counts.seasonsDiamondOrHigher)) return 3
-  if (hasSeason(counts.seasonsPlatinumOrHigher)) return 2
-  return hasSeason(counts.seasonsGoldOrHigher) ? 1 : 0
+    return 4 + Math.floor(counts.seasonsMasters)
+  if (hasSeason(counts.seasonsDiamondOrHigher)) return 4
+  if (hasSeason(counts.seasonsPlatinumOrHigher)) return 3
+  if (hasSeason(counts.seasonsGoldOrHigher)) return 2
+  return hasSeason(counts.seasonsSilverOrHigher) ? 1 : 0
 }
 
-const leagueNames = ['No Gold season yet', 'Gold', 'Platinum', 'Diamond']
+const leagueNames = [
+  'No Silver season yet',
+  'Silver',
+  'Gold',
+  'Platinum',
+  'Diamond',
+]
 const mastersUnit = (n: number) => `Masters season${n === 1 ? '' : 's'}`
 
 export function formatLeagueRemaining(current: number, target: number) {
-  if (target <= 3) return `a ${leagueNames[target]} season`
-  const remaining = Math.max(0, target - Math.max(3, current))
+  if (target <= 4) return `a ${leagueNames[target]} season`
+  const remaining = Math.max(0, target - Math.max(4, current))
   return `${remaining} more ${mastersUnit(remaining)}`
 }
 
@@ -826,13 +867,12 @@ export function selectTrophyUnlockToasts(
   return { milestones, moreCount: highest.size - milestones.length, newKeys }
 }
 
-/** The moment an account created at createdTime is `years` years old, in
- * UTC, as get-user-achievements counts it (Postgres interval addition): a
- * Feb 29 signup turns one on Feb 28. */
+/** UTC signup anniversary at a whole number of calendar months, expressed
+ * in years. Clamp the day to month end, as Postgres interval addition does. */
 export function getAccountAnniversaryTime(createdTime: number, years: number) {
   const d = new Date(createdTime)
-  const year = d.getUTCFullYear() + years
-  const month = d.getUTCMonth()
+  const year = d.getUTCFullYear()
+  const month = d.getUTCMonth() + Math.round(years * 12)
   const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate()
   return Date.UTC(
     year,
@@ -845,8 +885,7 @@ export function getAccountAnniversaryTime(createdTime: number, years: number) {
   )
 }
 
-/** Milestones reached or already claimed: a claim is kept even if the stat
- * later drops below its threshold. */
+/** Earned tiers reflect current net worth. Other claimed tiers stay earned. */
 export function countEarnedMilestones(
   stats: TrophyStats,
   claims: TrophyClaim[],
@@ -857,7 +896,9 @@ export function countEarnedMilestones(
     const value = getTrophyStatValue(def, stats)
     const claimed = getClaimedMilestoneIds(claims, def.id)
     count += def.milestones.filter(
-      (m) => isMilestoneReached(m, value) || claimed.has(m.id)
+      (m) =>
+        isMilestoneReached(m, value) ||
+        (def.id !== 'net-worth' && claimed.has(m.id))
     ).length
   }
   return count
@@ -885,6 +926,12 @@ export const getTrophyBadgeImagePath = (
   trophyId: string,
   milestoneId: string
 ) => `/trophy-badges/${trophyId}/${milestoneId}.webp`
+
+/** Rank pins share the milestone art directory. */
+export const getTrophyRankBadgeImagePath = (
+  trophyId: string,
+  tier: TrophyRankTier
+) => getTrophyBadgeImagePath(trophyId, tier)
 
 export const getTrophyPinId = (trophyId: string) =>
   `${TROPHY_PIN_PREFIX}${trophyId}`
@@ -921,16 +968,19 @@ export function getShowcasePinsError(
 // Display
 // ---------------------------------------------------------------------------
 
-export function formatNetWorthPeak(
-  def: TrophyDefinition,
-  achievementsPeak: number | undefined,
-  heldValue?: number
-) {
-  if (def.id !== 'net-worth') return undefined
-  const peak = getNetWorthPeak(achievementsPeak, heldValue)
-  return peak === undefined
-    ? undefined
-    : `Peak M${formatTrophyValue(def, peak)}`
+// A claim is also evidence of a past tier, including one reached with a
+// snapshot too old to update the stored peak. It never raises the current tier.
+export function getNetWorthStatus(stats: TrophyStats, claims: TrophyClaim[]) {
+  const def = DEFINITIONS_BY_ID.get('net-worth')!
+  const value = getTrophyStatValue(def, stats)
+  const current = getHighestMilestone(def, value)
+  const claimed = getHighestClaimedMilestone(def, claims)
+  const best = getHighestMilestone(
+    def,
+    getNetWorthPeak(stats.peakNetWorth, claimed?.threshold) ?? 0
+  )
+  const previousBest = best && best.threshold > value ? best : null
+  return { current, previousBest, value }
 }
 
 // Rounded down by default, so a stat never shows a threshold it hasn't
@@ -944,8 +994,10 @@ export function formatTrophyValue(
   const round = rounding === 'up' ? Math.ceil : Math.floor
   if (def.unit === 'league') {
     const level = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0
-    return leagueNames[level] ?? `${level - 3} ${mastersUnit(level - 3)}`
+    return leagueNames[level] ?? `${level - 4} ${mastersUnit(level - 4)}`
   }
+  if (def.unit === 'years' && value > 0 && value < 2)
+    return `${round(value * 12)}mo`
   if (def.unit === 'years') return `${(round(value * 10) / 10).toFixed(1)}yr`
   // Whole numbers: volume and dollar stats come with decimals.
   const whole = round(value).toLocaleString('en-US')

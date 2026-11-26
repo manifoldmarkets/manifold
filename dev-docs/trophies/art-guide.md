@@ -1,35 +1,16 @@
 # Trophy badge art
 
-Each milestone has one image: a 3D clay-style subject on a transparent background. The page draws the tier-coloured circle, glow and ring around it in code (`trophy-card.tsx`, `profile-showcase.tsx`), so the art stays the same if tier colours change. Every milestone must have art: `common/src/trophies-art.test.ts` fails CI otherwise. The emoji only shows if an image fails to load.
+Each trophy forms an ordered series of clay subjects. Generate the milestones lowest first, keeping the motif, camera angle, proportions and lighting consistent as the subject grows more impressive. Use the trophy's series note and previously finished images for reference. The top milestone anchors its Super, Mega and #1 pins.
 
-| File                                                     | What                                                                              |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `web/public/trophy-badges/<trophyId>/<milestoneId>.webp` | The served images, 256 px (`getTrophyBadgeImagePath` in `common/src/trophies.ts`) |
-| `badge-art-manifest.json`                                | Every milestone's subject: what each image shows                                  |
-| `badge-art-brief.md`                                     | The brief given to the image model: style, transparency, file layout              |
-| `convert-badge-art.cjs`                                  | Turns the generated 1024 px PNGs into the served WebP files                       |
+| File                      | Purpose                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------- |
+| `badge-art-manifest.json` | Ordered milestone subjects, series notes, retained clay references and rank-pin subjects |
+| `badge-art-brief.md`      | Clay v3 material, composition, tier accents and review instructions                      |
+| `convert-badge-art.cjs`   | Converts transparent 1024 px PNGs into the 256 px WebPs served by the site               |
 
-## How the current set was made (22 Nov 2026)
+## Producing and checking a badge
 
-By GPT through the Codex CLI's built-in image generation (`image_gen`), in four batches: a 7-image pilot across all six tiers, then about 29 at a time. The model looked at each image and regenerated any with text, a background or the wrong subject.
-
-```sh
-# In an empty folder holding badge-art-brief.md and a batch file, e.g. batch-a.json:
-codex exec --skip-git-repo-check -m gpt-6.2-astra -c model_reasoning_effort=medium \
-  -s workspace-write - < badge-art-brief.md
-# Images land in out/<trophyId>/<milestoneId>.png; then, from the repo root:
-node dev-docs/trophies/convert-badge-art.cjs <that folder>/out
-```
-
-Point the brief at the batch file in place of `badge-art-manifest.json`. Codex writes only inside the folder it runs in.
-
-## Adding a milestone
-
-1. Add its subject to `badge-art-manifest.json`: one clear object or creature, no text, readable at 20 px in the showcase pill.
-2. Generate it with the brief, convert it, and check it on its tier circle in both themes. The art test fails until the image is committed.
-
-## Style rules
-
-- One subject, centred, about 80% of the frame, soft studio light from the top left.
-- Accent colour by tier: green emerald, blue sapphire, purple amethyst, crimson ruby, gold amber, prismatic iridescent.
-- Real transparency: no floor, backdrop or shadow under the subject, no border or ring, no text.
+1. Follow the brief for the series. Keep one clear subject on real transparency. The site draws the tier colour, ring and glow. Assets marked `keep` are existing clay images.
+2. Save source PNGs under `out/<trophyId>/`, then run `node dev-docs/trophies/convert-badge-art.cjs <path-to-out>` from the repo root.
+3. Check the result on its tier circle in light and dark themes, both on the card and at the 20 px showcase size. Compare it with the steps on either side.
+4. Run the common trophy tests. Every milestone needs `web/public/trophy-badges/<trophyId>/<milestoneId>.webp`. Each ranked trophy also needs `super.webp`, `mega.webp` and `crown.webp` in that directory. When an image fails to load, the badge displays the milestone emoji.
