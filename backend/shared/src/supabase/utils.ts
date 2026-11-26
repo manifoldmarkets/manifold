@@ -15,9 +15,7 @@ export function getInsertQuery<
   const columnNames = Object.keys(values)
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const query = pgp.helpers.insert(values, cs)
-  // Hack to properly cast values.
-  const q = query.replace(/::(\w*)'/g, "'::$1")
-  return q + ` returning *`
+  return query + ` returning *`
 }
 
 export async function insert<
@@ -38,9 +36,7 @@ export function bulkInsertQuery<
   const columnNames = Object.keys(values[0])
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const query = pgp.helpers.insert(values, cs)
-  // Hack to properly cast values.
-  const q = query.replace(/::(\w*)'/g, "'::$1")
-  return returnData ? `${q} returning *` : q
+  return returnData ? `${query} returning *` : query
 }
 
 export async function bulkInsert<
@@ -74,14 +70,12 @@ export async function update<
   if (!(idField in values)) {
     throw new Error(`missing ${idField} in values for ${columnNames}`)
   }
-  const clause = pgp.as.format(
-    `${idField} = $1`,
-    values[idField as keyof ColumnValues]
-  )
+  const clause = pgp.as.format(`$1:alias = $2`, [
+    idField,
+    values[idField as keyof ColumnValues],
+  ])
   const query = pgp.helpers.update(values, cs) + ` WHERE ${clause}`
-  // Hack to properly cast values.
-  const q = query.replace(/::(\w*)'/g, "'::$1")
-  return await db.one<Row<T>>(q + ` returning *`)
+  return await db.one<Row<T>>(query + ` returning *`)
 }
 
 export function bulkUpdateQuery<
@@ -97,28 +91,51 @@ export function bulkUpdateQuery<
   const allColumns = [...idFields, ...updateColumns]
   const cs = new pgp.helpers.ColumnSet(updateColumns, { table })
 
-  // Format values array to ensure correct column order
-  const formattedValues = values
-    .map(
-      (row) =>
-        `(${allColumns
-          .map((col) => {
-            const val = row[col as keyof ColumnValues]
-            return typeof val === 'string' ? `'${val}'` : val
-          })
-          .join(',')})`
-    )
-    .join(',')
+  // A VALUES list carries no column types, so lead with a row of typed nulls
+  // taken from the table's own row type: Postgres then resolves each column
+  // to the table's type and coerces the literals below to it. The null ids
+  // never match the join, so this row updates nothing.
+  const typedNulls = pgp.as.format('($1:raw)', [
+    allColumns
+      .map((col) => pgp.as.format('(null::$1:alias).$2:alias', [table, col]))
+      .join(','),
+  ])
+  const formattedValues = values.map((row) =>
+    pgp.as.format('($1:csv)', [
+      allColumns.map((col) => {
+        const val = row[col as keyof ColumnValues]
+        // Writing these values out by hand used to make the query invalid, so
+        // the update failed. Keep failing: pg-promise would otherwise write
+        // undefined as NULL and NaN/Infinity as numeric values.
+        if (val === undefined) {
+          throw new Error(
+            `bulkUpdateQuery: a ${table} row has no value for ${col}`
+          )
+        }
+        if (typeof val === 'number' && !Number.isFinite(val)) {
+          throw new Error(
+            `bulkUpdateQuery: non-finite ${col} (${val}) for ${table}`
+          )
+        }
+        return val
+      }),
+    ])
+  )
 
-  const clause = idFields.map((f) => `v.${f} = t.${f}`).join(' and ')
-  const columnDefs = allColumns.map((c) => `"${c}"`).join(',')
+  const clause = idFields
+    .map((f) => pgp.as.format('v.$1:alias = t.$1:alias', [f]))
+    .join(' and ')
 
-  const query =
-    `update ${table} as t set ${cs.assignColumns({ from: 'v' })} ` +
-    `from (values ${formattedValues}) as v(${columnDefs}) ` +
-    `WHERE ${clause}`
-  // Hack to properly cast values.
-  return query.replace(/::(\w*)'/g, "'::$1")
+  return pgp.as.format(
+    `update $1:alias as t set $2:raw from (values $3:raw) as v($4:name) where $5:raw`,
+    [
+      table,
+      cs.assignColumns({ from: 'v' }),
+      [typedNulls, ...formattedValues].join(','),
+      allColumns,
+      clause,
+    ]
+  )
 }
 
 export async function bulkUpdate<
@@ -167,8 +184,6 @@ export function bulkUpsertQuery<
   const columnNames = Object.keys(values[0])
   const cs = new pgp.helpers.ColumnSet(columnNames, { table })
   const baseQuery = pgp.helpers.insert(values, cs)
-  // Hack to properly cast values.
-  const baseQueryReplaced = baseQuery.replace(/::(\w*)'/g, "'::$1")
 
   const primaryKey = Array.isArray(idField) ? idField.join(', ') : idField
   const upsertAssigns = updateColumnExpressions
@@ -188,7 +203,7 @@ export function bulkUpsertQuery<
         .join(',')
     : cs.assignColumns({ from: 'excluded', skip: idField })
   return (
-    `${baseQueryReplaced} on ` +
+    `${baseQuery} on ` +
     (onConflict ? onConflict : `conflict(${primaryKey})`) +
     ' ' +
     (upsertAssigns ? `do update set ${upsertAssigns}` : `do nothing`)
@@ -203,18 +218,18 @@ export function bulkUpdateDataQuery<T extends TableName>(
   if (updates.length === 0) return 'select 1 where false'
 
   const values = updates
-    .map(
-      (update) =>
-        `(${
-          typeof update.id === 'string' ? `'${update.id}'` : update.id
-        }, '${JSON.stringify(update)}'::jsonb)`
+    .map((update) =>
+      pgp.as.format('($1, $2::jsonb)', [update.id, JSON.stringify(update)])
     )
     .join(',\n')
 
-  return `update ${table} as c
+  return pgp.as.format(
+    `update $1:alias as c
     set data = data || v.update
-    from (values ${values}) as v(id, update)
-    where c.id = v.id`
+    from (values $2:raw) as v(id, update)
+    where c.id = v.id`,
+    [table, values]
+  )
 }
 
 export async function bulkUpdateData<T extends TableName>(

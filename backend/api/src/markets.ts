@@ -69,5 +69,5 @@ export const getMarkets: APIHandler<'markets'> = async ({
     limit && lim(limit)
   )
   const query = renderSql(q)
-  return await pg.map(query, [], (r) => toLiteMarket(r.data))
+  return await pg.map(query, undefined, (r) => toLiteMarket(r.data))
 }

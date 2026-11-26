@@ -169,7 +169,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   )
 
   if (DEBUG_FEED) {
-    const explain = await pg.many(`explain analyze ${sortQueries[0]}`, [])
+    const explain = await pg.many(
+      `explain analyze ${sortQueries[0]}`,
+      undefined
+    )
     log('explain:', explain.map((q) => q['QUERY PLAN']).join('\n'))
   }
   const startTime = Date.now()
@@ -183,7 +186,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     ...sortQueries.map((sortQuery) =>
       pg.map(
         sortQuery,
-        [],
+        undefined,
         (r) =>
           ({
             contract: convertContract(r),
@@ -193,7 +196,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     ),
     pg.map(
       followedQuery,
-      [],
+      undefined,
       (r) =>
         ({
           contract: convertContract(r),

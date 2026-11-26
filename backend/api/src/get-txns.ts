@@ -56,5 +56,5 @@ export const getTxnsMain = async (props: {
     limit(limitValue, offset)
   )
 
-  return await pg.map(query, [], (row) => toPublicTxn(convertTxn(row)))
+  return await pg.map(query, undefined, (row) => toPublicTxn(convertTxn(row)))
 }

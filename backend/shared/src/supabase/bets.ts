@@ -147,7 +147,7 @@ export const getBetsWithFilter = async (
   )
   // console.log('getBetsWithFilter query:\n', query)
 
-  return await pg.map(query, {}, convertBet)
+  return await pg.map(query, undefined, convertBet)
 }
 
 export const getBetsRepliedToComment = async (
@@ -212,7 +212,7 @@ const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
     expires_at: bet.expiresAt ? millisToTs(bet.expiresAt) : null,
     bet_id: 'id' in bet ? bet.id : undefined,
     created_time: millisToTs(bet.createdTime),
-    data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
+    data: JSON.stringify(removeUndefinedProps(bet)),
   })
 
 export const cancelLimitOrdersQuery = (limitOrders: LimitBet[]) => {

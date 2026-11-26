@@ -23,7 +23,7 @@ export const getGroups: APIHandler<'groups'> = async (props) => {
       orderBy('created_time', 'desc'),
       limitClause(limit)
     ),
-    [],
+    undefined,
     convertGroup
   )
 

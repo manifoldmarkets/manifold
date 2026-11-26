@@ -16,26 +16,19 @@ export const searchDashboards = MaybeAuthedEndpoint(async (req) => {
 
   const pg = createSupabaseDirectClient()
 
-  const searchDashboardSql = getSearchDashboardSQL({
-    term,
-    offset,
-    limit,
-  })
+  const searchDashboardSql = getSearchDashboardSQL({ term })
   const dashboards = await pg.map(
     searchDashboardSql,
-    [term],
+    [term, limit, offset],
     convertDashboardSqltoTS
   )
 
   return (dashboards ?? []) as unknown as Json
 })
 
-function getSearchDashboardSQL(input: {
-  term: string
-  offset: number
-  limit: number
-}) {
-  const { term, offset, limit } = input
+// $1 = term, $2 = limit, $3 = offset
+function getSearchDashboardSQL(input: { term: string }) {
+  const { term } = input
 
   let query = ''
   const emptyTerm = term.length === 0
@@ -57,5 +50,5 @@ function getSearchDashboardSQL(input: {
         ORDER BY importance_score DESC, created_time DESC
       `
   }
-  return query + `LIMIT ${limit} OFFSET ${offset}`
+  return query + `LIMIT $2 OFFSET $3`
 }

@@ -48,23 +48,23 @@ export async function updateUserMetricPeriods(
     with recent_bets as (
       select distinct contract_id
       from contract_bets
-      where created_time > now() - interval '${daysAgo} day'
+      where created_time > now() - interval $1
     ),
     recent_contracts as (
       select distinct id as contract_id
       from contracts
-      where resolution_time > now() - interval '${daysAgo} day'
+      where resolution_time > now() - interval $1
     ),
     recent_answers as (
       select distinct a.contract_id
       from answers a
-      where a.resolution_time > now() - interval '${daysAgo} day'
+      where a.resolution_time > now() - interval $1
     ),
     recent_perp_events as (
       select distinct contract_id
       from contract_perp_events
       where user_id is not null
-        and applied_ts > now() - interval '${perpDaysAgo} day'
+        and applied_ts > now() - interval $2
     ),
     open_perp_contracts as (
       select distinct contract_id
@@ -83,7 +83,7 @@ export async function updateUserMetricPeriods(
       select contract_id from open_perp_contracts
     ) as combined_contracts;
     `,
-        [],
+        [`${daysAgo} day`, `${perpDaysAgo} day`],
         (r) => r.contract_id as string
       )
   log('Loading active users...')
@@ -105,11 +105,11 @@ export async function updateUserMetricPeriods(
             from contract_perp_events e
             where e.contract_id = ucm.contract_id
               and e.user_id = ucm.user_id
-              and e.applied_ts > now() - interval '${perpDaysAgo} day'
+              and e.applied_ts > now() - interval $2
           )
         )
       `,
-        [activeContractIds],
+        [activeContractIds, `${perpDaysAgo} day`],
         (r) => r.user_id as string
       )
 

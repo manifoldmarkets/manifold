@@ -58,7 +58,7 @@ export const getFollowedReposts = async (
             and coalesce((contract_comments.data->'deleted')::boolean, false) = false
             and contracts.outcome_type != 'STONK'
             and contracts.visibility = 'public'
-            ${userBlockSql}
+            $4:raw
             and contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)
      group by
         contracts.data,
@@ -81,7 +81,9 @@ export const getFollowedReposts = async (
         order by posts.created_time desc
         offset $2 limit $3
 `,
-    [userId, offset, limit],
+    // userBlockSql is already-formatted SQL; :raw inserts it without re-scanning
+    // it for placeholders.
+    [userId, offset, limit, userBlockSql],
     (r) => {
       const {
         contract_data,
@@ -178,7 +180,7 @@ export const getTopicReposts = async (
              and coalesce((contract_comments.data->'deleted')::boolean, false) = false
              and contracts.outcome_type != 'STONK' 
              and contracts.visibility = 'public'
-             ${userBlockSql}
+             $6:raw
              and contracts.id not in (select contract_id from user_disinterests where user_id = $3 and contract_id = contracts.id)
         group by
            contracts.id,
@@ -197,7 +199,14 @@ export const getTopicReposts = async (
         order by avg(group_score  * contracts.conversion_score) desc
         offset $4 limit $5
 `,
-    [userInterestTopicIds, userInterestWeights, userId, offset, limit],
+    [
+      userInterestTopicIds,
+      userInterestWeights,
+      userId,
+      offset,
+      limit,
+      userBlockSql,
+    ],
     (r) => {
       const {
         contract_data,

@@ -36,7 +36,7 @@ export const getUsers: APIHandler<'users'> = async ({
     q.push(where('created_time < $1', beforeUser.created_time))
   }
 
-  return await pg.map(renderSql(q), [], (r) =>
+  return await pg.map(renderSql(q), undefined, (r) =>
     toUserAPIResponse(convertUser(r))
   )
 }

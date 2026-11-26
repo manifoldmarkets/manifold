@@ -190,12 +190,22 @@ export const incrementBalance = async (
     return undefined
   }
 
+  for (const [k, v] of updates) {
+    // Interpolating NaN/Infinity used to fail the query; keep failing rather
+    // than writing a non-finite balance.
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      throw new Error(`incrementBalance: ${k} delta must be finite, got ${v}`)
+    }
+  }
   const result = await db.one(
-    `update users set ${updates
-      .map(([k, v]) => `${k} = ${k} + ${v}`)
-      .join(',')} where id = $1
-    returning id, ${updates.map(([k]) => k).join(', ')}`,
-    [id]
+    `update users set $2:raw where id = $1 returning id, $3:name`,
+    [
+      id,
+      updates
+        .map(([k, v]) => pgp.as.format('$1:alias = $1:alias + $2', [k, v]))
+        .join(','),
+      updates.map(([k]) => k),
+    ]
   )
 
   const userUpdate = removeUndefinedProps({

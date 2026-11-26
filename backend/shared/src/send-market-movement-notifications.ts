@@ -41,19 +41,19 @@ export async function sendMarketMovementNotifications(debug = false) {
   // Perps use oracle-driven price movements which get their own notification
   // path (update-perps + notifications/perps.ts); exclude from this job.
   const where = `
-  where c.last_bet_time > now() - interval '${nowPeriodHoursAgoStart} hours'
+  where c.last_bet_time > now() - interval $1
   and c.resolution_time is null
   and c.deleted = false
-  and c.created_time < now() - interval '${pastPeriodHoursAgoStart} hours'
+  and c.created_time < now() - interval $2
   and coalesce(c.data->>'mechanism', '') <> 'perp'`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c ${where};
     select * from answers a
     where a.contract_id in (select id from contracts c ${where})
-    and a.created_time < now() - interval '${pastPeriodHoursAgoStart} hours';
+    and a.created_time < now() - interval $2;
     `,
-    []
+    [`${nowPeriodHoursAgoStart} hours`, `${pastPeriodHoursAgoStart} hours`]
   )
   const allContracts = results[0].map(convertContract)
   const sumToOneContractIds = allContracts
@@ -233,7 +233,7 @@ async function createMarketMovementNotifications(
     WHERE
       contract_id = ANY($1)
       AND user_id = ANY($2)
-      AND created_time > now() - interval '${pastPeriodHoursAgoStart} hours';
+      AND created_time > now() - interval $3;
 
     SELECT
       contract_id,
@@ -242,7 +242,7 @@ async function createMarketMovementNotifications(
     WHERE
       contract_id = ANY($1)
       AND user_id = ANY($2)
-      AND last_page_view_ts > now() - interval '${nowPeriodHoursAgoStart} hours';
+      AND last_page_view_ts > now() - interval $4;
 
     SELECT distinct on (contract_id, user_id)
       contract_id,
@@ -252,10 +252,15 @@ async function createMarketMovementNotifications(
     WHERE
       contract_id = ANY($1)
       AND user_id = ANY($2)
-      AND created_time > now() - interval '${pastPeriodHoursAgoStart} hours'
+      AND created_time > now() - interval $3
       order by contract_id, user_id, created_time desc;
     `,
-    [contractIds, userIds]
+    [
+      contractIds,
+      userIds,
+      `${pastPeriodHoursAgoStart} hours`,
+      `${nowPeriodHoursAgoStart} hours`,
+    ]
   )
 
   const recentMovementNotifications = results[0] as MovementRecord[]

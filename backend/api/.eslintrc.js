@@ -27,6 +27,7 @@ module.exports = {
           },
         ],
         'unused-imports/no-unused-imports': 'warn',
+        'no-restricted-syntax': require('../shared/eslint-sql-quote-rule'),
         'no-constant-condition': 'off',
       },
     },

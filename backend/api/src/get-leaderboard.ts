@@ -72,7 +72,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
       limit(limitValue)
     )
-    return await pg.map(query, [], (r) => ({
+    return await pg.map(query, undefined, (r) => ({
       userId: r.user_id,
       score: r.score,
     }))
@@ -96,7 +96,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       orderBy('score desc nulls last'),
       limit(limitValue)
     )
-    return await pg.map(query, [], (r) => ({
+    return await pg.map(query, undefined, (r) => ({
       userId: r.user_id,
       score: r.score,
     }))
@@ -134,7 +134,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     limit(limitValue)
   )
 
-  return await pg.map(query, [], (r) => ({
+  return await pg.map(query, undefined, (r) => ({
     userId: r.user_id,
     score: parseFloat(r.score),
   }))
