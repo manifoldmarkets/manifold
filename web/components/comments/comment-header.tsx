@@ -47,6 +47,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { commenterAndBettorMatch, roundThreadColor } from './comment'
+import { AiCommentLabel } from './ai-comment-label'
 import { CommentEditHistoryButton } from './comment-edit-history-button'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
@@ -117,6 +118,7 @@ export function FeedCommentHeader(props: {
             />
           </UserHovercard>
           {comment.isModComment && <ModCommentLabel />}
+          {comment.isAiComment && <AiCommentLabel className="ml-1.5 mr-1" />}
           {!commenterIsBettor || !isReplyToBet ? null : isLimitBet ? (
             <span className={'ml-1'}>
               {betAmount === betOrderAmount ? 'filled' : 'opened'} a{' '}

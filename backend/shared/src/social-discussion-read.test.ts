@@ -43,7 +43,11 @@ import { Request } from 'express'
 import { API } from 'common/api/schema'
 import { ContractComment } from 'common/comment'
 import { FIREBASE_CONFIG } from 'common/envs/constants'
-import { SocialPost, SocialPostDetail } from 'common/social-post'
+import {
+  SocialPost,
+  SocialPostDetail,
+  quoteSocialPost,
+} from 'common/social-post'
 import { SUPPORTER_TIERS } from 'common/supporter-config'
 import { PrivateUser, User } from 'common/user'
 import { UserEntitlement } from 'common/shop/types'
@@ -2524,5 +2528,61 @@ describe('how the lists are read', () => {
     const forComment = await run(statements[2])
     expect(forComment.comments).toBeLessThan(50)
     expect(forComment.visited).toBeLessThan(50)
+  })
+})
+
+describe('a comment its author marked as written by AI', () => {
+  const read = async (row: SocialRow) =>
+    (await hydrateSocialPosts(pg, [row], anyone, true, true))[0]
+  // A top-level Yap post by Erin that quotes a comment from its market.
+  const quoteOf = async (commentId: string) => {
+    const id = 'quotes-' + commentId
+    await rows(
+      `insert into social_posts (id, user_id, text, root_id, source_contract_id, source_comment_id)
+       values ($1, 'erin', 'look', $1, 'market', $2)`,
+      [id, commentId]
+    )
+    return (await stored(id))!
+  }
+
+  test('keeps its label on Yap: with no post yet, as its post, and wherever it is quoted', async () => {
+    await ensureSocialSource(pg, { contractId: 'market' })
+    await insertComment('by-ai', { user: 'bob', data: { isAiComment: true } })
+    await insertComment('by-person', { user: 'bob' })
+
+    const ai = await read((await findPendingCommentPost(pg, 'by-ai'))!)
+    const person = await read((await findPendingCommentPost(pg, 'by-person'))!)
+    expect(ai.isAiComment).toBe(true)
+    expect(person).not.toHaveProperty('isAiComment')
+
+    // Its post, once made, reads the same.
+    await pg.tx((tx) => materializeSocialPost(tx, 'mc-by-ai'))
+    const copy = await read((await stored('mc-by-ai'))!)
+    expect(copy.isAiComment).toBe(true)
+
+    // Quoting its post, or the comment itself from its market, says so too.
+    expect(quoteSocialPost(copy).isAiComment).toBe(true)
+    expect(quoteSocialPost(person)).not.toHaveProperty('isAiComment')
+    const quotesAi = await read(await quoteOf('by-ai'))
+    const quotesPerson = await read(await quoteOf('by-person'))
+    expect(quotesAi.source).toMatchObject({
+      kind: 'comment',
+      isAiComment: true,
+    })
+    expect(quotesPerson.source).toMatchObject({ kind: 'comment' })
+    expect(quotesPerson.source).not.toHaveProperty('isAiComment')
+    // The quoting post is Erin's own words, so it carries no label itself.
+    expect(quotesAi).not.toHaveProperty('isAiComment')
+  })
+
+  test('a copy taken off Yap shows nothing of the comment, the label included', async () => {
+    await ensureSocialSource(pg, { contractId: 'market' })
+    await insertComment('by-ai', { user: 'bob', data: { isAiComment: true } })
+    await pg.tx((tx) => materializeSocialPost(tx, 'mc-by-ai'))
+    await rows(`update social_posts set deleted_time=now() where id='mc-by-ai'`)
+    const copy = await read((await stored('mc-by-ai'))!)
+    expect(copy.removed).toBe('author')
+    expect(copy).not.toHaveProperty('isAiComment')
+    expect(quoteSocialPost(copy)).not.toHaveProperty('isAiComment')
   })
 })

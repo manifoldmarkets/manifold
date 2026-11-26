@@ -150,6 +150,8 @@ export type SocialQuote = {
   markets?: Contract[]
   includesQuote?: boolean
   unavailable?: boolean
+  // The quoted comment, or the Yap copy of one, is marked as written by AI
+  isAiComment?: boolean
 }
 
 export type SocialPostSource = z.infer<typeof socialPostSourceSchema>
@@ -177,6 +179,8 @@ export type SocialPost = {
   replyPreviews: SocialPost[]
   discussionCreatorId?: string | null
   marketCommentId?: string | null
+  // A copy of a market comment its author marked as written by AI
+  isAiComment?: boolean
   canonicalKey?: string | null
   feedTimeMs?: number
   repostCount?: number
@@ -246,4 +250,5 @@ export const quoteSocialPost = (post: SocialPost): SocialQuote => ({
   includesQuote:
     !post.removed && !!post.source && post.source.kind !== 'market',
   unavailable: !!post.removed,
+  ...(!post.removed && post.isAiComment ? { isAiComment: true } : {}),
 })

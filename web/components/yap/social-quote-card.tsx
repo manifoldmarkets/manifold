@@ -5,6 +5,7 @@ import { SocialAvatar } from './social-avatar'
 import { SocialUserLink } from './social-user-link'
 import { SocialImageCarousel } from './social-image-carousel'
 import { SocialRichContent } from './social-rich-content'
+import { AiCommentLabel } from '../comments/ai-comment-label'
 
 export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
   if (quote.kind === 'market') return null
@@ -39,6 +40,7 @@ export function SocialQuoteCard({ quote }: { quote: SocialQuote }) {
             label="handle"
             className="text-ink-600 min-w-0 truncate"
           />
+          {quote.isAiComment && <AiCommentLabel />}
         </div>
       )}
       {quote.richContent ? (

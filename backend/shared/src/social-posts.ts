@@ -838,9 +838,10 @@ export async function hydrateSocialPosts(
       : Promise.resolve([]),
     // Hidden on its market does not make a comment unavailable here: only a
     // moderator's hide reaches Yap, through hidden_time on the post.
-    pg.manyOrNone<{ comment_id: string; available: boolean }>(
+    pg.manyOrNone<{ comment_id: string; available: boolean; is_ai: boolean }>(
       `select cc.comment_id,(c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
-       and ${visibleMarketComment('cc')}) as available
+       and ${visibleMarketComment('cc')}) as available,
+       coalesce((cc.data->>'isAiComment')::boolean,false) as is_ai
        from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=any($1::text[])`,
       [rows.map((r) => r.market_comment_id).filter(Boolean)]
     ),
@@ -987,6 +988,7 @@ export async function hydrateSocialPosts(
           : bet
           ? displayUser(bet.author)
           : undefined,
+        ...(comment?.data?.isAiComment === true ? { isAiComment: true } : {}),
         contractId: contract.id,
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),
@@ -1035,9 +1037,16 @@ export async function hydrateSocialPosts(
         unavailable: true,
       }
     }
+    // A copy of a market comment carries that comment's "AI comment" label.
+    const isAiComment =
+      !removed &&
+      !!row.market_comment_id &&
+      !!linkedComments.find((c) => c.comment_id === row.market_comment_id)
+        ?.is_ai
     return {
       id: row.id,
       marketCommentId: row.market_comment_id,
+      ...(isAiComment ? { isAiComment } : {}),
       discussionCreatorId: sourceMarket?.creator_id,
       canonicalKey: row.canonical_key,
       feedTimeMs: socialTimestampMillis(row.feed_time ?? row.created_time),
