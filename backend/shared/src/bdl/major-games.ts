@@ -133,6 +133,98 @@ function team(league: MajorLeague, value: unknown): Team {
 const unknownOpponent = /^(tbd|tba|to be (determined|announced))$/i
 const exhibition =
   /\b(pre[ -]?season|spring training|exhibition|all[ -]?stars?|pro bowl|rising stars)\b/i
+
+export function matchesMajorStage(
+  league: MajorLeague,
+  phase: string,
+  game: MajorGame
+) {
+  if (league === 'nfl' && game.season < 2027) return false
+  if (/regular season/i.test(phase)) return game.postseason === false
+  if (/playoffs|world series/i.test(phase)) return game.postseason === true
+  return true
+}
+
+function completedNflScore(row: Row, status: string) {
+  const overtime = /^Final\s*\/\s*OT$/i.test(status)
+  if (!overtime && !/^Final$/i.test(status)) return false
+
+  // One version of the feed uses explicit null for a scoreless quarter, even
+  // all four for a shutout. An absent field or a malformed number is different.
+  const regulation: number[] = []
+  const observedQuarters = new Set<number>()
+  let observedOvertime = false
+  for (const side of ['home_team', 'visitor_team']) {
+    let points = 0
+    for (const quarter of [1, 2, 3, 4]) {
+      const raw = row[side + '_q' + quarter]
+      if (raw === null) continue
+      const n = score(raw)
+      if (n === null) return false
+      points += n
+      observedQuarters.add(quarter)
+    }
+    regulation.push(points)
+    const rawOt = row[side + '_ot']
+    const otPoints = rawOt === null ? 0 : score(rawOt)
+    if (otPoints === null || (!overtime && otPoints > 0)) return false
+    observedOvertime ||= rawOt !== null
+    if (points + otPoints !== score(row[side + '_score'])) return false
+  }
+  return (
+    observedQuarters.size >= 2 &&
+    (overtime
+      ? observedOvertime &&
+        regulation[0] === regulation[1] &&
+        (row.home_team_score !== 0 || row.visitor_team_score !== 0)
+      : regulation[0] !== regulation[1])
+  )
+}
+
+/** The final enum is shared with adjudications. Certify only a played,
+ * ordinary final in the league's wire format; leave shortened games for review. */
+function ordinaryFinal(league: MajorLeague, row: Row) {
+  const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
+  const status = typeof row.status === 'string' ? row.status.trim() : ''
+  const period = isId(row.period) ? row.period : 0
+  if (
+    [row.summary, row.period_detail].some(
+      (label) =>
+        typeof label === 'string' &&
+        /\b(forfeit(?:ed|ure)?|no contest|abandoned|suspended|postponed)\b/i.test(
+          label
+        )
+    )
+  )
+    return false
+  switch (league) {
+    case 'nba':
+      return (
+        finalLabel.test(status) &&
+        period >= 4 &&
+        (row.time == null ||
+          (typeof row.time === 'string' &&
+            (finalLabel.test(row.time.trim()) ||
+              /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
+      )
+    case 'nhl':
+      return (
+        typeof row.game_state === 'string' &&
+        /^(OFF|FINAL|OVER)$/.test(row.game_state) &&
+        period >= 3 &&
+        (period > 3 || row.time_remaining === '00:00')
+      )
+    case 'wnba':
+      // The feed labels both canceled games and played games "post". An
+      // unplayed game has period zero; the final clock may show "10:00".
+      return status === 'post' && period >= 4
+    case 'mlb':
+      return status === 'STATUS_FINAL' && period >= 9
+    case 'nfl':
+      return completedNflScore(row, status)
+  }
+}
+
 function mapGame(league: MajorLeague, row: Row): MajorGame {
   if (!isId(row.id) || !isId(row.season))
     throw new Error('[sports-bdl-' + league + '] Invalid game ID or season')
@@ -303,21 +395,8 @@ export async function fetchMajorGames(
           games.delete(id)
           continue
         }
-        if (scoreIds && league === 'nba' && game.status === 'final') {
-          const row = raw as Row
-          const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
-          // A terminal enum can also cover an adjudication. Recorded ordinary
-          // NBA finals have completed regulation and have no running clock.
-          game.eligible &&=
-            typeof row.status === 'string' &&
-            finalLabel.test(row.status.trim()) &&
-            isId(row.period) &&
-            row.period >= 4 &&
-            (row.time == null ||
-              (typeof row.time === 'string' &&
-                (finalLabel.test(row.time.trim()) ||
-                  /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
-        }
+        if (scoreIds && game.status === 'final')
+          game.eligible &&= ordinaryFinal(league, raw as Row)
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
         if (prior && JSON.stringify(prior) !== JSON.stringify(game)) {

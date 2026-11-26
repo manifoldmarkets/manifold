@@ -2,13 +2,13 @@
 // is not resolved, ask for its sport's scores when /admin/sports says one is
 // due (live scores per sport or game, finals once a game is due to end), write
 // live scores onto the markets, and resolve when the provider marks a game
-// completed. The same tick also refreshes opted-in NBA scores from BDL.
-// NBA payout reads committed finals independently of either provider.
+// completed. The same tick also refreshes opted-in US major league scores from BDL.
+// BDL payout reads committed finals independently of either provider.
 
 import { MINUTE_MS } from 'common/util/time'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
-import { NbaPollAttempts, pollNbaScores } from 'shared/bdl/nba-scores'
-import { settlePendingNbaGames } from 'shared/bdl/settle-nba-game'
+import { MajorPollAttempts, pollMajorScores } from 'shared/bdl/nba-scores'
+import { settlePendingMajorGames } from 'shared/bdl/settle-nba-game'
 import { log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { hasOddsApiKey } from 'shared/the-odds-api-client'
@@ -20,9 +20,9 @@ import {
 // When each sport was last polled, for this process's lifetime.
 const state = newScorePollState()
 let warnedNoKey = false
-const nbaLastAttempts: NbaPollAttempts = new Map()
-let nbaWork: Promise<void> | undefined
-let settlingNba = false
+const majorLastAttempts: MajorPollAttempts = new Map()
+let majorWork: Promise<void> | undefined
+let settlingMajors = false
 let nextSettlementScan = 0
 let afterSettlementId = ''
 
@@ -46,11 +46,11 @@ let nextRunId = 0
 
 export async function resolveOddsSportsMarkets() {
   // The existing tick drives both sources. Waiting for a BDL quota slot must
-  // neither delay Odds resolution nor start a second NBA read on the next tick.
+  // neither delay Odds resolution nor start a second BDL read on the next tick.
   if (
     isSportsBdlEnabled() &&
     (process.env.BALLDONTLIE_API_KEY || process.env.BDL_FIXTURE_DIR) &&
-    !nbaWork
+    !majorWork
   ) {
     const controller = new AbortController()
     let timer: NodeJS.Timeout
@@ -58,45 +58,45 @@ export async function resolveOddsSportsMarkets() {
       timer = setTimeout(() => {
         controller.abort()
         log.error(
-          '[sports-bdl-nba] score poll exceeded its three-minute deadline'
+          '[sports-bdl-major] score poll exceeded its three-minute deadline'
         )
         resolve()
       }, RUN_DEADLINE_MS)
     })
-    const work = pollNbaScores(
+    const work = pollMajorScores(
       createSupabaseDirectClient(),
-      nbaLastAttempts,
+      majorLastAttempts,
       controller.signal
     )
-    nbaWork = Promise.race([work, deadline])
+    majorWork = Promise.race([work, deadline])
       .catch((error) =>
-        log.error(`[sports-bdl-nba] score poll failed: ${error}`)
+        log.error(`[sports-bdl-major] score poll failed: ${error}`)
       )
       .finally(() => {
         clearTimeout(timer)
-        nbaWork = undefined
+        majorWork = undefined
       })
   }
   // Native post-commit notifications may take time. They never hold the score poll.
   if (
     isSportsBdlEnabled() &&
-    !settlingNba &&
+    !settlingMajors &&
     Date.now() >= nextSettlementScan
   ) {
-    settlingNba = true
+    settlingMajors = true
     nextSettlementScan = Date.now() + MINUTE_MS
-    void Promise.resolve(nbaWork)
+    void Promise.resolve(majorWork)
       .then(() =>
-        settlePendingNbaGames(createSupabaseDirectClient(), afterSettlementId)
+        settlePendingMajorGames(createSupabaseDirectClient(), afterSettlementId)
       )
       .then((next) => {
         afterSettlementId = next
       })
       .catch((error) =>
-        log.error('[sports-bdl-nba] settlement scan failed: ' + error)
+        log.error('[sports-bdl-major] settlement scan failed: ' + error)
       )
       .finally(() => {
-        settlingNba = false
+        settlingMajors = false
       })
   }
   if (!hasOddsApiKey()) {
@@ -104,7 +104,7 @@ export async function resolveOddsSportsMarkets() {
       log('[sports-odds-resolve] THE_ODDS_API_KEY not set — skipping')
       warnedNoKey = true
     }
-    return nbaWork
+    return majorWork
   }
   const run = { id: `${Date.now()}-${++nextRunId}` }
   current = run

@@ -1,3 +1,4 @@
+import { MAJOR_LEAGUES, MajorLeague } from 'common/bdl/major-leagues'
 import { groupBy } from 'lodash'
 import { isSportsBdlEnabled } from 'common/bdl/rollout'
 import { MULTI_CPMM_MECHANISMS_SQL } from 'common/contract'
@@ -21,11 +22,10 @@ import { getCompetitionSwitches } from '../supabase/sports-competition-switches'
 import { getScorePollingSettings } from '../supabase/sports-score-polling'
 import { updateSportsScore } from '../update-sports-score'
 import { isProd, log } from '../utils'
-import { fetchMajorGames, MajorGame } from './major-games'
+import { fetchMajorGames, MajorGame, matchesMajorStage } from './major-games'
 
-const nbaMoneyline = {
+const majorMoneyline = {
   sportsProvider: 'bdl',
-  sportsLeagueKey: 'nba',
   sportsMarketType: 'moneyline',
   sportsStartKnown: true,
 } as const
@@ -35,27 +35,33 @@ const easternDay = new Intl.DateTimeFormat('en-CA', {
 type Market = {
   id: string
   event: string
+  league: MajorLeague
   competition: string
+  fundedPhase: string | null
   start: string
   closeMs: number
   home: string
   away: string
 }
 
-async function nbaPolling(pg: SupabaseDirectClient, markets: Market[]) {
+async function majorPolling(pg: SupabaseDirectClient, markets: Market[]) {
   const [switches, settings] = await Promise.all([
     getCompetitionSwitches(pg),
     getScorePollingSettings(pg, [
       pollingTarget.finals,
-      pollingTarget.league('nba'),
+      ...new Set(markets.map((m) => pollingTarget.league(m.league))),
       ...markets.map((m) => pollingTarget.game(m.id)),
     ]),
   ])
   return (market: Market) => {
     const start = parseSportsKickoffMs(market.start)
-    const phase = calendarEntriesOverlapping(start, start).find(
-      (p) => p.bdlLeagueKey === 'nba' && p.competitionId === market.competition
+    const phases = calendarEntriesOverlapping(start, start).filter(
+      (p) =>
+        p.bdlLeagueKey === market.league &&
+        p.competitionId === market.competition &&
+        (market.fundedPhase === null || p.phase === market.fundedPhase)
     )
+    const phase = phases.length === 1 ? phases[0] : undefined
     if (
       !phase ||
       !autoCreates(phase, switches) ||
@@ -65,9 +71,9 @@ async function nbaPolling(pg: SupabaseDirectClient, markets: Market[]) {
     const now = Date.now()
     const closeTime = market.closeMs
     const live =
-      now < closeTime ? bdlLiveInterval('nba', market.id, settings) : 0
+      now < closeTime ? bdlLiveInterval(market.league, market.id, settings) : 0
     const finals = finalsPollInterval(
-      { sport: 'nba', startTime: start, closeTime },
+      { sport: market.league, startTime: start, closeTime },
       now,
       settings.finals
     )
@@ -75,8 +81,8 @@ async function nbaPolling(pg: SupabaseDirectClient, markets: Market[]) {
   }
 }
 
-export function nbaScorePatch(
-  market: Pick<Market, 'home' | 'away'>,
+export function majorScorePatch(
+  market: Pick<Market, 'home' | 'away' | 'league'>,
   game: MajorGame | undefined,
   receivedAt: number
 ) {
@@ -87,7 +93,13 @@ export function nbaScorePatch(
     (game.status !== 'in_progress' && game.status !== 'final') ||
     game.homeScore === null ||
     game.awayScore === null ||
-    (game.status === 'final' && game.homeScore === game.awayScore)
+    (game.status === 'final' &&
+      game.homeScore === game.awayScore &&
+      !(
+        market.league === 'nfl' &&
+        game.postseason === false &&
+        game.season >= 2027
+      ))
   )
     return null
   const same =
@@ -105,13 +117,15 @@ export function nbaScorePatch(
   }
 }
 
-export type NbaPollAttempts = Map<string, { live?: number; finals?: number }>
+export type MajorPollAttempts = Map<string, { live?: number; finals?: number }>
+export type NbaPollAttempts = MajorPollAttempts
 
-/** One NBA slate read supplies every due market on that Eastern game day. */
-export async function pollNbaScores(
+/** One slate read per league supplies every due market on that Eastern game day. */
+export async function pollMajorScores(
   pg: SupabaseDirectClient,
-  lastAttempts: NbaPollAttempts,
-  signal?: AbortSignal
+  lastAttempts: MajorPollAttempts,
+  signal?: AbortSignal,
+  leagues: readonly MajorLeague[] = MAJOR_LEAGUES
 ) {
   const active = () => !signal?.aborted && isSportsBdlEnabled()
   if (
@@ -121,8 +135,9 @@ export async function pollNbaScores(
     return
   const now = Date.now()
   const markets = await pg.manyOrNone<Market>(
-    `select id, data->>'sportsEventId' as event,
+    `select id, data->>'sportsEventId' as event, data->>'sportsLeagueKey' as league,
             data->>'sportsCompetitionId' as competition, data->>'sportsStartTimestamp' as start,
+            data->>'sportsCompetitionPhase' as "fundedPhase",
             data->>'sportsHomeTeamId' as home, data->>'sportsAwayTeamId' as away,
             (extract(epoch from close_time)*1000)::double precision as "closeMs"
        from contracts
@@ -132,15 +147,21 @@ export async function pollNbaScores(
         and data->>'sportsLiveStatus' is distinct from 'FINISHED'
         and coalesce(data->'sportsFixture', 'false'::jsonb) = 'false'::jsonb
         and mechanism in ${MULTI_CPMM_MECHANISMS_SQL}
+        and data->>'sportsLeagueKey' = any($4::text[])
         and close_time between $3::timestamptz - interval '3 days' and $3::timestamptz + interval '8 hours'`,
-    [MANIFOLD_SPORTS_USER_IDS, JSON.stringify(nbaMoneyline), new Date(now)]
+    [
+      MANIFOLD_SPORTS_USER_IDS,
+      JSON.stringify(majorMoneyline),
+      new Date(now),
+      leagues,
+    ]
   )
   if (!active()) return
   const currentIds = new Set(markets.map((m) => m.id))
   for (const id of lastAttempts.keys())
     if (!currentIds.has(id)) lastAttempts.delete(id)
   if (!markets.length) return
-  const interval = await nbaPolling(pg, markets)
+  const interval = await majorPolling(pg, markets)
   if (!active()) return
   // A pending permission read inside the shared limiter must also release its
   // place when this run expires, even if its database connection stays stuck.
@@ -151,7 +172,7 @@ export async function pollNbaScores(
     const parsed = parseBdlEventId(market.event)
     const start = parseSportsKickoffMs(market.start)
     if (
-      parsed?.league !== 'nba' ||
+      parsed?.league !== market.league ||
       parsed.suffix ||
       !(start <= now) ||
       !/^[1-9]\d*$/.test(market.home) ||
@@ -183,7 +204,10 @@ export async function pollNbaScores(
   })
   const enabled = async (candidates: typeof eligible, liveOnly = false) => {
     if (!active()) return false
-    const polling = await Promise.race([nbaPolling(pg, candidates), abandoned])
+    const polling = await Promise.race([
+      majorPolling(pg, candidates),
+      abandoned,
+    ])
     return (
       active() &&
       !!polling &&
@@ -198,18 +222,19 @@ export async function pollNbaScores(
   }
   const broadcasts: {
     market: (typeof eligible)[number]
-    patch: NonNullable<ReturnType<typeof nbaScorePatch>>
+    patch: NonNullable<ReturnType<typeof majorScorePatch>>
   }[] = []
-  for (const [day, slate] of Object.entries(
-    groupBy(eligible, (m) => m.slate)
+  for (const slate of Object.values(
+    groupBy(eligible, (m) => m.league + ':' + m.slate)
   )) {
+    const { league, slate: day } = slate[0]
     if (!active()) return
     const due = slate.filter((m) => m.liveDue || m.finalsDue)
     if (!due.length) continue
     const client = createBdlClient({
       role: isProd() ? 'scheduler' : 'dev',
       key: process.env.BALLDONTLIE_API_KEY,
-      enabledLeagues: new Set(['nba']),
+      enabledLeagues: new Set([league]),
       isLeagueEnabled: () => enabled(due),
     })
     for (const market of due) {
@@ -222,9 +247,9 @@ export async function pollNbaScores(
     const readStartedAt = Date.now()
     let games: MajorGame[]
     try {
-      games = await fetchMajorGames(client, 'nba', day, day, ids)
+      games = await fetchMajorGames(client, league, day, day, ids)
     } catch (error) {
-      log.error('[sports-bdl-nba] score read failed for ' + day + ': ' + error)
+      log.error(`[sports-bdl-${league}] score read failed for ${day}: ${error}`)
       continue
     }
     const receivedAt = Date.now()
@@ -232,8 +257,8 @@ export async function pollNbaScores(
     for (const market of slate) {
       if (!active()) return
       const game = byId.get(market.gameId)
-      if (!game) continue
-      const patch = nbaScorePatch(market, game, receivedAt)
+      if (!game || !matchesMajorStage(league, market.phase, game)) continue
+      const patch = majorScorePatch(market, game, receivedAt)
       if (!patch) continue
       const final = patch.sportsLiveStatus === 'FINISHED'
       if (!final && !market.liveDue) continue
@@ -248,9 +273,13 @@ export async function pollNbaScores(
         sportsAwayTeam: same ? game.away.name : game.home.name,
       }
       const identity = {
-        ...nbaMoneyline,
+        ...majorMoneyline,
+        sportsLeagueKey: league,
         sportsEventId: market.event,
         sportsCompetitionId: market.competition,
+        ...(market.fundedPhase === null
+          ? {}
+          : { sportsCompetitionPhase: market.fundedPhase }),
         sportsStartTimestamp: market.start,
         sportsHomeTeamId: market.home,
         sportsAwayTeamId: market.away,
@@ -277,7 +306,7 @@ export async function pollNbaScores(
         if (written) broadcasts.push({ market, patch })
       } catch (error) {
         log.error(
-          `[sports-bdl-nba] score update failed for ${market.id}: ${error}`
+          `[sports-bdl-${league}] score update failed for ${market.id}: ${error}`
         )
       }
     }
@@ -293,11 +322,15 @@ export async function pollNbaScores(
         await publishSportsLiveScore(market.id, patch)
     } catch (error) {
       log.error(
-        '[sports-bdl-nba] score broadcast failed for ' +
-          market.id +
-          ': ' +
-          error
+        `[sports-bdl-${market.league}] score broadcast failed for ${market.id}: ${error}`
       )
     }
   }
 }
+
+/** The NBA pilot can still be replayed independently of other enabled leagues. */
+export const pollNbaScores = (
+  pg: SupabaseDirectClient,
+  attempts: MajorPollAttempts,
+  signal?: AbortSignal
+) => pollMajorScores(pg, attempts, signal, ['nba'])

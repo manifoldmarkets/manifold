@@ -1,0 +1,94 @@
+{
+  "data": [
+    {
+      "id": 424043,
+      "date": "2025-10-19T17:00:00.000Z",
+      "season": 2025,
+      "postseason": false,
+      "status": "Final",
+      "status_state": "final",
+      "home_team_score": 31,
+      "home_team_q1": 7,
+      "home_team_q2": 14,
+      "home_team_q3": 10,
+      "home_team_q4": null,
+      "home_team_ot": null,
+      "visitor_team_score": 0,
+      "visitor_team_q1": null,
+      "visitor_team_q2": null,
+      "visitor_team_q3": null,
+      "visitor_team_q4": null,
+      "visitor_team_ot": null,
+      "home_team": {
+        "id": 14,
+        "full_name": "Kansas City Chiefs",
+        "abbreviation": "KC"
+      },
+      "visitor_team": {
+        "id": 16,
+        "full_name": "Las Vegas Raiders",
+        "abbreviation": "LV"
+      }
+    },
+    {
+      "id": 424095,
+      "date": "2025-11-16T14:30:00.000Z",
+      "season": 2025,
+      "postseason": false,
+      "status": "Final/OT",
+      "status_state": "final",
+      "home_team_score": 16,
+      "home_team_q1": 3,
+      "home_team_q2": 3,
+      "home_team_q3": null,
+      "home_team_q4": 7,
+      "home_team_ot": 3,
+      "visitor_team_score": 13,
+      "visitor_team_q1": 3,
+      "visitor_team_q2": 3,
+      "visitor_team_q3": 7,
+      "visitor_team_q4": null,
+      "visitor_team_ot": null,
+      "home_team": {
+        "id": 5,
+        "full_name": "Miami Dolphins",
+        "abbreviation": "MIA"
+      },
+      "visitor_team": {
+        "id": 21,
+        "full_name": "Washington Commanders",
+        "abbreviation": "WSH"
+      }
+    },
+    {
+      "id": 1392288,
+      "date": "2026-10-11T17:00:00.000Z",
+      "season": 2026,
+      "postseason": false,
+      "status": "Final/OT",
+      "status_state": "final",
+      "home_team_score": 27,
+      "home_team_q1": 6,
+      "home_team_q2": 6,
+      "home_team_q3": 7,
+      "home_team_q4": 8,
+      "home_team_ot": 0,
+      "visitor_team_score": 27,
+      "visitor_team_q1": 3,
+      "visitor_team_q2": 0,
+      "visitor_team_q3": 10,
+      "visitor_team_q4": 14,
+      "visitor_team_ot": 0,
+      "home_team": {
+        "id": 21,
+        "full_name": "Washington Commanders",
+        "abbreviation": "WSH"
+      },
+      "visitor_team": {
+        "id": 20,
+        "full_name": "New York Giants",
+        "abbreviation": "NYG"
+      }
+    }
+  ]
+}

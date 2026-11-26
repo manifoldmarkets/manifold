@@ -8,7 +8,7 @@ import type {
   SupabaseTransaction,
 } from '../supabase/init'
 import { getContract } from '../utils'
-import { settleNbaGame, settlePendingNbaGames } from './settle-nba-game'
+import { settleMajorGame, settlePendingMajorGames } from './settle-nba-game'
 
 jest.mock('../odds-markets', () => ({ sportsCreator: jest.fn() }))
 jest.mock('../resolve-market-helpers', () => ({
@@ -108,7 +108,6 @@ beforeEach(() => {
       async (_market, _user, _creator, args, _stage, guard) => {
         if (!guard) throw new Error('no transaction guard')
         await guard(current, tx)
-        expect(args.resolutions).toEqual({ [args.outcome]: 100 })
         paid.push(args.outcome)
         return { contract: current, userUpdates: [] }
       }
@@ -120,13 +119,67 @@ afterEach(() => {
   else process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED = master
 })
 it('pays the funded Philadelphia answer from the stored final after restart', async () => {
-  await settleNbaGame(pg, id)
+  await settleMajorGame(pg, id)
   expect(paid).toEqual([home.id])
+  expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual({
+    outcome: home.id,
+    resolutions: { [home.id]: 100 },
+  })
   expect(oneOrNone).toHaveBeenCalledWith(
     expect.stringMatching(/^select .*enabled for share$/i),
     [competition, phase]
   )
 })
+
+it.each([
+  ['nhl', 'nhl-2026-27', phase, '2026-11-20', 5, 1],
+  ['wnba', 'wnba-2027', 'Season (BDL)', '2027-08-14', 79, 81],
+  ['mlb', 'mlb-2027', phase, '2027-08-14', 7, 0],
+  ['nfl', 'nfl-regular-2027', phase, '2027-11-22', 24, 24],
+] as const)(
+  'pays the %s funded native answers according to its winner rules and exact switch',
+  async (league, comp, fundedPhase, day, homeScore, awayScore) => {
+    const start = day + 'T18:00:00.000Z'
+    const at = Date.parse(start) + 4 * 3600_000
+    jest.spyOn(Date, 'now').mockReturnValue(at + 1)
+    const observation = {
+      ...facts,
+      sportsLeagueKey: league,
+      sportsCompetitionId: comp,
+      sportsCompetitionPhase: fundedPhase,
+      sportsEventId: `bdl:${league}:101`,
+      sportsStartTimestamp: start,
+      sportsLiveUpdatedTime: at,
+      sportsHomeScore: homeScore,
+      sportsAwayScore: awayScore,
+    }
+    current = fixture({
+      ...observation,
+      sportsFinalObservation: observation,
+      closeTime: at - 1,
+    })
+    jest.mocked(getContract).mockResolvedValue(current)
+    const legacy = fundedPhase.replace(' (BDL)', '')
+    jest.mocked(getCompetitionSwitches).mockResolvedValue({
+      [comp + ':' + fundedPhase]: true,
+      [comp + ':' + legacy]: false,
+    })
+    await settleMajorGame(pg, id)
+    const winner = homeScore > awayScore ? home.id : away.id
+    expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual(
+      homeScore === awayScore
+        ? {
+            outcome: 'CHOOSE_MULTIPLE',
+            resolutions: { [home.id]: 50, [away.id]: 50 },
+          }
+        : { outcome: winner, resolutions: { [winner]: 100 } }
+    )
+    expect(oneOrNone).toHaveBeenCalledWith(
+      expect.stringContaining('enabled for share'),
+      [comp, fundedPhase]
+    )
+  }
+)
 it('keeps the funded winner if the verified scoreboard listed the teams in reverse', async () => {
   const swapped = {
     ...facts,
@@ -139,7 +192,7 @@ it('keeps the funded winner if the verified scoreboard listed the teams in rever
   }
   current = fixture({ ...swapped, sportsFinalObservation: swapped })
   jest.mocked(getContract).mockResolvedValue(current)
-  await settleNbaGame(pg, id)
+  await settleMajorGame(pg, id)
   expect(paid).toEqual([home.id])
 })
 const invalid = [
@@ -191,47 +244,48 @@ it.each(invalid)(
   async (_name, fields) => {
     current = fixture(fields)
     jest.mocked(getContract).mockResolvedValueOnce(current)
-    await settleNbaGame(pg, id)
+    await settleMajorGame(pg, id)
     expect(resolveMarketHelper).not.toHaveBeenCalled()
-    await expect(settleNbaGame(pg, id)).rejects.toThrow(/changed/)
+    await expect(settleMajorGame(pg, id)).rejects.toThrow(/changed/)
     expect(paid).toEqual([])
   }
 )
 it('holds when the admin disables after the enabled precheck but before the payout transaction', async () => {
   oneOrNone.mockResolvedValueOnce(null)
-  await expect(settleNbaGame(pg, id)).rejects.toThrow(/disabled/)
+  await expect(settleMajorGame(pg, id)).rejects.toThrow(/disabled/)
   expect(oneOrNone).toHaveBeenCalledWith(expect.stringContaining('for share'), [
     competition,
     phase,
   ])
   expect(paid).toEqual([])
-  await settleNbaGame(pg, id)
+  await settleMajorGame(pg, id)
   expect(paid).toEqual([home.id])
 })
 it('requires an explicit phase and honors a master shutdown while the guard awaits its read', async () => {
   jest.mocked(getCompetitionSwitches).mockResolvedValueOnce({})
-  await settleNbaGame(pg, id)
+  await settleMajorGame(pg, id)
   expect(resolveMarketHelper).not.toHaveBeenCalled()
   oneOrNone.mockImplementationOnce(async () => {
     delete process.env.NEXT_PUBLIC_SPORTS_BDL_ENABLED
     return { enabled: true }
   })
-  await expect(settleNbaGame(pg, id)).rejects.toThrow(/disabled/)
+  await expect(settleMajorGame(pg, id)).rejects.toThrow(/disabled/)
   expect(paid).toEqual([])
-  await settlePendingNbaGames(pg)
+  await settlePendingMajorGames(pg)
   expect(manyOrNone).not.toHaveBeenCalled()
 })
 it('rotates a bounded page of holds and lets an unrelated funded market proceed on the next page', async () => {
   const held = Array.from({ length: 20 }, (_, i) => ({ id: 'hold-' + i }))
   manyOrNone.mockResolvedValueOnce(held).mockResolvedValueOnce([{ id }])
-  const cursor = await settlePendingNbaGames(pg)
+  const cursor = await settlePendingMajorGames(pg)
   expect(cursor).toBe('hold-19')
   expect(paid).toEqual([])
-  expect(await settlePendingNbaGames(pg, cursor)).toBe('')
+  expect(await settlePendingMajorGames(pg, cursor)).toBe('')
   expect(manyOrNone.mock.calls[1][1]).toEqual([
     MANIFOLD_SPORTS_USER_IDS,
     cursor,
     expect.any(String),
+    expect.arrayContaining(['nba', 'nhl', 'mlb', 'nfl', 'wnba']),
   ])
   expect(paid).toEqual([home.id])
 })

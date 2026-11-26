@@ -2,7 +2,12 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { selectOpeningLine } from 'common/bdl/opening-line'
 import { createBdlClient } from '../balldontlie-client'
-import { fetchMajorGames, fetchMajorOdds, MajorLeague } from './major-games'
+import {
+  fetchMajorGames,
+  fetchMajorOdds,
+  MajorLeague,
+  matchesMajorStage,
+} from './major-games'
 
 type Raw = Record<string, unknown>
 type Page = { data: Raw[]; meta?: { next_cursor: number | null } }
@@ -111,6 +116,85 @@ function localClient(response: (url: URL) => Page) {
   return { client, urls }
 }
 const dateFor = (league: MajorLeague) => schedules[league].slateDate
+
+it('certifies recorded NFL shutouts, overtime wins and ties only when quarter scores reconcile', async () => {
+  const { data }: Page = JSON.parse(
+    readFileSync(
+      join(
+        __dirname,
+        '../../test/fixtures/bdl/nfl/games__recorded-scoreless-quarters.json'
+      ),
+      'utf8'
+    )
+  )
+  const eligible = async (raw: Raw) => {
+    const day = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date(String(raw.date)))
+    const { client } = localClient(() => ({ data: [raw] }))
+    const [game] = await fetchMajorGames(
+      client,
+      'nfl',
+      day,
+      day,
+      new Set([Number(raw.id)])
+    )
+    return game.eligible
+  }
+  const [shutout, overtime, tied] = data
+  expect(await Promise.all(data.map(eligible))).toEqual([true, true, true])
+  for (const row of [
+    { ...shutout, home_team_score: 30 }, // Published 31, visitor's quarter fields are all null.
+    { ...shutout, visitor_team_q4: '0' },
+    { ...shutout, visitor_team_q4: undefined },
+    { ...shutout, home_team_q1: null, home_team_q2: null, home_team_q3: 31 },
+    { ...shutout, home_team_ot: 6, home_team_score: 37 },
+    { ...overtime, home_team_q4: 3, home_team_score: 12 }, // Totals match but regulation was not tied.
+    { ...overtime, home_team_ot: -3, home_team_score: 10 },
+    { ...overtime, summary: 'Game forfeited' },
+    { ...tied, status: 'Final' }, // The regulation tie alone is insufficient.
+    { ...tied, home_team_ot: null, visitor_team_ot: null },
+  ])
+    expect(await eligible(row)).toBe(false)
+})
+
+it.each([
+  ['nhl', { game_state: 'LIVE' }],
+  ['nhl', { period: 3, time_remaining: '08:15' }],
+  ['wnba', { status: 'post', period: 0 }],
+  ['mlb', { status: 'STATUS_SUSPENDED' }],
+  ['mlb', { status: 'STATUS_FINAL', period: 5 }],
+  ['nfl', { status: 'Forfeit', home_team_q4: 0, visitor_team_q4: 0 }],
+] as const)(
+  'holds a contradictory or shortened %s final even with scores and the terminal enum',
+  async (league, override) => {
+    const raw = {
+      ...fixture(league, 'games').data[0],
+      status_state: 'final',
+      ...override,
+    }
+    const { client } = localClient(() => ({ data: [raw] }))
+    const day = dateFor(league)
+    const [game] = await fetchMajorGames(
+      client,
+      league,
+      day,
+      day,
+      new Set([schedules[league].id])
+    )
+    expect(game.eligible).toBe(false)
+  }
+)
+
+it('keeps the recorded 2026 NFL slate outside a 2027 regular-season opt-in', async () => {
+  const { client } = localClient(() => fixture('nfl', 'games'))
+  const day = dateFor('nfl')
+  const [game] = await fetchMajorGames(client, 'nfl', day, day)
+  expect(matchesMajorStage('nfl', 'Regular Season (BDL)', game)).toBe(false)
+})
 
 it.each(leagues)(
   'maps the %s schedule, filter and entrant identity',
