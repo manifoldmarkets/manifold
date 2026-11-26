@@ -790,7 +790,7 @@ export async function hydrateSocialPosts(
       [rows.map((r) => r.source_contract_id).filter(Boolean)]
     ),
     pg.manyOrNone(
-      `select cc.comment_id, cc.user_id, cc.data,
+      `select cc.comment_id, cc.user_id, cc.contract_id, cc.data,
       json_build_object('id', u.id, 'name', u.name, 'username', u.username, 'avatarUrl', coalesce(u.data->>'avatarUrl',''),
         'entitlements', (select coalesce(json_agg(e), '[]'::json) from user_entitlements e where e.user_id=u.id)) as author
       from contract_comments cc join users u on u.id=cc.user_id
@@ -838,8 +838,15 @@ export async function hydrateSocialPosts(
       : Promise.resolve([]),
     // Hidden on its market does not make a comment unavailable here: only a
     // moderator's hide reaches Yap, through hidden_time on the post.
-    pg.manyOrNone<{ comment_id: string; available: boolean; is_ai: boolean }>(
-      `select cc.comment_id,(c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
+    pg.manyOrNone<{
+      comment_id: string
+      user_id: string
+      contract_id: string
+      available: boolean
+      is_ai: boolean
+    }>(
+      `select cc.comment_id, cc.user_id, cc.contract_id,
+       (c.visibility='public' and not coalesce((c.data->>'deleted')::boolean,false)
        and ${visibleMarketComment('cc')}) as available,
        coalesce((cc.data->>'isAiComment')::boolean,false) as is_ai
        from contract_comments cc join contracts c on c.id=cc.contract_id where cc.comment_id=any($1::text[])`,
@@ -899,6 +906,9 @@ export async function hydrateSocialPosts(
     const blocked =
       viewer.blocked.includes(row.user_id) ||
       viewer.blocked.includes(root.user_id)
+    const linked = row.market_comment_id
+      ? linkedComments.find((c) => c.comment_id === row.market_comment_id)
+      : undefined
     const removed = blocked
       ? 'blocked'
       : row.deleted_time
@@ -913,9 +923,7 @@ export async function hydrateSocialPosts(
               m.id === row.source_contract_id &&
               !viewer.blocked.includes(m.creator_id ?? '')
           )) ||
-        (row.market_comment_id &&
-          !linkedComments.find((c) => c.comment_id === row.market_comment_id)
-            ?.available)
+        (row.market_comment_id && !linked?.available)
       ? 'moderator'
       : null
     const richDoc = richDocs.get(row.id)
@@ -988,7 +996,10 @@ export async function hydrateSocialPosts(
           : bet
           ? displayUser(bet.author)
           : undefined,
-        ...(comment?.data?.isAiComment === true ? { isAiComment: true } : {}),
+        ...(comment?.data?.isAiComment === true &&
+        comment.contract_id === row.source_contract_id
+          ? { isAiComment: true }
+          : {}),
         contractId: contract.id,
         url:
           contractPath(contract) + (comment ? `#${row.source_comment_id}` : ''),
@@ -1040,9 +1051,9 @@ export async function hydrateSocialPosts(
     // A copy of a market comment carries that comment's "AI comment" label.
     const isAiComment =
       !removed &&
-      !!row.market_comment_id &&
-      !!linkedComments.find((c) => c.comment_id === row.market_comment_id)
-        ?.is_ai
+      linked?.is_ai &&
+      linked.user_id === row.user_id &&
+      (!row.source_contract_id || row.source_contract_id === linked.contract_id)
     return {
       id: row.id,
       marketCommentId: row.market_comment_id,

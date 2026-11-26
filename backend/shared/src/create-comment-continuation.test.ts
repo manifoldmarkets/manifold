@@ -306,6 +306,21 @@ test('a failure on the Yap side leaves an ordinary market comment', async () => 
   expect(onCreateCommentOnContract).toHaveBeenCalledTimes(1)
 })
 
+test('an ordinary user can mark a comment as written by AI', async () => {
+  const { result } = await comment({ content, isAiComment: true })
+  expect(result).toHaveProperty('isAiComment', true)
+  expect(storedComment()).toHaveProperty('isAiComment', true)
+})
+
+test.each([{}, { isAiComment: false }])(
+  'a comment submitted with %j omits the AI flag',
+  async (props) => {
+    const { result } = await comment({ content, ...props })
+    expect(result).not.toHaveProperty('isAiComment')
+    expect(storedComment()).not.toHaveProperty('isAiComment')
+  }
+)
+
 test('only admins and moderators can post a mod comment', async () => {
   await expect(comment({ content, isModComment: true })).rejects.toMatchObject({
     code: 403,

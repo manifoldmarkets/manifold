@@ -16,6 +16,7 @@ import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { AiCommentLabel } from './comments/ai-comment-label'
 import { LikeAndDislikeComment } from './comments/comment-actions'
 import { NextRouter, useRouter } from 'next/router'
 import { User } from 'common/user'
@@ -695,6 +696,7 @@ const CommentLog = memo(function FeedComment(props: {
             />
           </Row>
         </UserHovercard>
+        {comment.isAiComment && <AiCommentLabel />}
         <div className="-ml-1">{isReply ? 'replied' : 'commented'}</div>
         <Row className="text-ink-400">
           <RelativeTimestamp time={createdTime} shortened />
@@ -853,6 +855,7 @@ function MultiTopicPillSelector(props: {
             type="text"
             className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 my-1 ml-2 w-40 rounded-md border-none text-xs"
             placeholder="Search topics"
+            // eslint-disable-next-line jsx-a11y/no-autofocus
             autoFocus={filterMode === 'custom-topics'} // Autofocus if in custom mode
             value={query}
             onChange={(e) => setQuery(e.target.value)}

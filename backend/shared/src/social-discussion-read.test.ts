@@ -2535,12 +2535,12 @@ describe('a comment its author marked as written by AI', () => {
   const read = async (row: SocialRow) =>
     (await hydrateSocialPosts(pg, [row], anyone, true, true))[0]
   // A top-level Yap post by Erin that quotes a comment from its market.
-  const quoteOf = async (commentId: string) => {
-    const id = 'quotes-' + commentId
+  const quoteOf = async (commentId: string, contractId = 'market') => {
+    const id = `quotes-${contractId}-${commentId}`
     await rows(
       `insert into social_posts (id, user_id, text, root_id, source_contract_id, source_comment_id)
-       values ($1, 'erin', 'look', $1, 'market', $2)`,
-      [id, commentId]
+       values ($1, 'erin', 'look', $1, $2, $3)`,
+      [id, contractId, commentId]
     )
     return (await stored(id))!
   }
@@ -2573,16 +2573,63 @@ describe('a comment its author marked as written by AI', () => {
     expect(quotesPerson.source).not.toHaveProperty('isAiComment')
     // The quoting post is Erin's own words, so it carries no label itself.
     expect(quotesAi).not.toHaveProperty('isAiComment')
+
+    const wrongMarket = await read(await quoteOf('by-ai', 'other'))
+    expect(wrongMarket.source).toMatchObject({
+      kind: 'comment',
+      text: 'comment by-ai',
+    })
+    expect(wrongMarket.source).not.toHaveProperty('isAiComment')
   })
 
-  test('a copy taken off Yap shows nothing of the comment, the label included', async () => {
+  test.each([
+    { mismatch: 'author', user: 'dave', market: 'market' },
+    { mismatch: 'market', user: 'bob', market: 'other' },
+  ])(
+    'a linked post with a different $mismatch has no label',
+    async ({ user, market }) => {
+      await ensureSocialSource(pg, { contractId: 'market' })
+      await insertComment('by-ai', { user: 'bob', data: { isAiComment: true } })
+      await pg.tx((tx) => materializeSocialPost(tx, 'mc-by-ai'))
+      await rows(
+        `update social_posts set user_id=$1, source_contract_id=$2 where id='mc-by-ai'`,
+        [user, market]
+      )
+      const post = await read((await stored('mc-by-ai'))!)
+      expect(post.removed).toBeNull()
+      expect(post).not.toHaveProperty('isAiComment')
+    }
+  )
+
+  test('a quote keeps the label until the copy is taken off Yap', async () => {
     await ensureSocialSource(pg, { contractId: 'market' })
     await insertComment('by-ai', { user: 'bob', data: { isAiComment: true } })
-    await pg.tx((tx) => materializeSocialPost(tx, 'mc-by-ai'))
+    jest
+      .mocked(getActiveSupporterEntitlements)
+      .mockResolvedValueOnce([
+        { entitlementId: SUPPORTER_TIERS.basic.id, enabled: true },
+      ] as UserEntitlement[])
+    const response = await createSocialPost(
+      API['create-social-post'].props.parse({
+        content: { text: 'look at this', marketIds: [] },
+        source: { postId: 'mc-by-ai' },
+      }),
+      signedIn('erin'),
+      req
+    )
+    const quote = 'result' in response ? response.result : response
+    expect((await open(quote.id)).post.source).toMatchObject({
+      kind: 'post',
+      isAiComment: true,
+    })
+
     await rows(`update social_posts set deleted_time=now() where id='mc-by-ai'`)
     const copy = await read((await stored('mc-by-ai'))!)
     expect(copy.removed).toBe('author')
     expect(copy).not.toHaveProperty('isAiComment')
     expect(quoteSocialPost(copy)).not.toHaveProperty('isAiComment')
+    const { post } = await open(quote.id)
+    expect(post.source).toMatchObject({ kind: 'post', unavailable: true })
+    expect(post.source).not.toHaveProperty('isAiComment')
   })
 })

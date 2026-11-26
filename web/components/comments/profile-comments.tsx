@@ -18,6 +18,7 @@ import { Avatar } from '../widgets/avatar'
 import { Content } from '../widgets/editor'
 import { Input } from '../widgets/input'
 import { PaginationNextPrev } from '../widgets/pagination'
+import { AiCommentLabel } from './ai-comment-label'
 
 type Key = {
   slug: string
@@ -190,6 +191,9 @@ function ProfileComment(props: {
               noLink={true}
             />
           </UserHovercard>{' '}
+          {comment.commentType === 'contract' && comment.isAiComment && (
+            <AiCommentLabel className="mr-1" />
+          )}
           <RelativeTimestamp time={createdTime} />
         </div>
         <Content content={content || text} size="sm" />

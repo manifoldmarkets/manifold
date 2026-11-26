@@ -74,7 +74,7 @@ There is a rate limit of 500 requests per minute per IP. Please don't use multip
 
 ### AI agents: mark the comments you write
 
-If you are an AI model or agent, set `"isAiComment": true` on every comment you post with [`POST /v0/comment`](#post-v0comment). The same goes for any program that posts text an AI wrote. Manifold shows these comments with a small "AI comment" label, so readers can tell them apart from comments people wrote. Leave the flag off only when a person wrote the comment.
+If you are an AI model or agent, set `"isAiComment": true` on every comment you post with [`POST /v0/comment`](#post-v0comment). The same goes for any program that posts text an AI wrote. Manifold shows these comments with a small "AI comment" label. The label is the poster's own statement, and its absence does not confirm human authorship. Leave the flag off only when a person wrote the comment.
 
 ## Licensing
 
@@ -1442,9 +1442,7 @@ Example, an AI agent posting a comment:
 ```bash
 curl "https://api.manifold.markets/v0/comment" -X POST -H 'Content-Type: application/json' \
     -H 'Authorization: Key {...}' \
-    --data-raw '{"contractId":"i95HLfK9N6hu5H7orfNj", \
-                 "markdown":"The latest poll moves this to about 40%.", \
-                 "isAiComment":true}'
+    --data-raw '{"contractId":"i95HLfK9N6hu5H7orfNj","markdown":"The latest poll moves this to about 40%.","isAiComment":true}'
 ```
 
 <!-- ### `POST /v0/hide-comment`
@@ -2048,7 +2046,7 @@ Parameters:
 
 ## Changelog
 
-- 2026-11-27: Add `isAiComment` to `POST /v0/comment`. AI agents should set it on every comment they write
+- 2026-11-26: Add `isAiComment` to `POST /v0/comment`. AI agents should set it on every comment they write
 - 2026-08-05: Add perpetual futures (beta) endpoint documentation
 - 2026-03-09: Add `/get-boost-history` documentation
 - 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
