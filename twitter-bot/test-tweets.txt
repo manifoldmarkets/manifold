@@ -1,0 +1,60 @@
+# One test per line:  what it tests | author (blank = you) | tweet | optional note from the requester
+# Add real tweets anywhere. Lines starting with # are ignored.
+
+# --- Dates and "by" ---
+"by" + year: should ask which reading | | Bitcoin hits 150k by 2027
+"by the end of": should NOT ask about the date | | Bitcoin hits 150k by the end of 2027
+"by" + weekday: should ask | | Apple announces a foldable iPhone by Friday
+relative date: should work out the exact date and show it | | Taylor Swift announces a new tour next Tuesday
+abbreviation EOY: should treat as end of year | | BTC 🚀 200k EOY
+"within": window, no "by" question | | OpenAI releases GPT-6 within 6 months
+"on" a date: single moment, not a window | | The S&P 500 closes above 7000 on Dec 31, 2026
+no deadline: should ask for one | | Humans will land on Mars eventually
+
+# --- Vague words and thresholds ---
+vague word: should ask what "crash" means | | The housing market is going to crash soon
+numeric "around": should push back with yes/no options | | Gold will be around $3000 by summer
+"no one in the car": should ask empty car vs no driver | elonmusk | Tesla robotaxis with no one in the car in Austin by the end of 2026
+
+# --- Market type ---
+open-ended, multiple outcomes: should push back to yes/no | | Who wins the Super Bowl this season?
+two claims joined by "and": one combined market, don't ask which | | BTC to 150k and ETH flips it by the end of 2027
+conditional: should ask how to handle the "if" | | If the Fed cuts in December, stocks rip in Q1
+
+# --- Not predictions ---
+opinion: should decline | | AI is overhyped
+sarcasm: should decline (or ask) | | Sure, and I'm sure GPT-6 ships tomorrow 🙄
+already happened: should decline | | Trump wins the 2024 election
+
+# --- Sources and the tweet's author ---
+company claim: source must not be Elon's or Tesla's X posts | elonmusk | Tesla will have unsupervised FSD in every US city by the end of 2027 | hold up format; public rides; cities over 100k
+only the author can verify: should ask for a verifiable resolution source | | I'll run a marathon under 4 hours by the end of next year
+negative prediction: keep the framing, don't flip it | | The Lakers won't make the playoffs this season
+
+# --- Requester's note ---
+note conflicts with the tweet: should ask which prediction | someguy | Bitcoin will crash below 50k by the end of 2026 | actually I think it hits 200k
+note sets the wording: should use the requester's question | someguy | Nvidia will be the first $10T company by the end of 2027 | call it "Will Nvidia hit $10T first?"
+
+# --- Policies ---
+violence against a person: PENDING Tod's call | someguy | Someone's going to take that CEO out before the year is over
+death from natural causes: PENDING Tod's call | someguy | Warren Buffett won't live to see 2028
+
+# --- Other languages ---
+Spanish: should handle it and ask about "en 2027" | | Bitcoin va a superar los 100k en 2027
+
+# --- Real tweets (from Stefanie's screenshots) ---
+real: "this week", date unknown | jackunheard | James Talarico is going to end his campaign this week. Bookmark this.
+real: vague "record numbers" | jackunheard | Abdul El-Sayed is going to lose in record numbers. Bookmark this. | | 2026-10-28
+real: deadline already passed (World Cup final was July 2026) | jackunheard | USA is winning the World Cup 🇺🇸 Bookmark this. | | 2026-07-02
+real: claim about the past, not a prediction | jackunheard | Abdul just lost because of this video. Bookmark this | | 2026-10-09
+real: vague hype, no objective measure: should decline | jackunheard | Happy New Year! This is going to be the greatest year this country has ever seen. Bookmark this. I promise you. 🇺🇸 Everyone stay safe. | | 2026-01-01
+real: already happened (2024 election) | EdKrassen | Kamala Harris is gonna win this thing. Mark my words. | | 2024-07-28
+real: clear and countable | rabois | if GOP wins at least 5 of those races you will never post about elections again. ig GOP doesn't win at least 5 of those races i won't post about elections again. | the races are the US Senate races in Ohio, Texas, Michigan, Iowa, Alaska and Kansas | 2026-10-31
+real: old tweet, "within 10-20 years" from 2021 | fchollet | Within 10-20 years, nearly every branch of science will be, for all intents and purposes, a branch of computer science. | | 2021-05-03
+real: two deadlines + vague "beat all fields" | elonmusk | Your prediction was conservative. AI will beat all fields by the end of next year or maybe 2028, at the latest. | | 2026-09-22
+real: announcement whose date has passed | elonmusk | Starting April 15th, only verified accounts will be eligible to be in For You recommendations. | | 2023-03-28
+real: unmeasurable | elonmusk | My prediction is that this will be the only platform you can trust | | 2023-03-28
+
+# --- Shared by testers (Nov 2026) ---
+real: bet thread, deadline passed (midterms Nov 3) | Geiger_Capital | $50k even? Republicans control the House, you win. Democrats control the House, I win. Done. 🤝 | | 2026-04-07
+real: four chained claims + "as a result" | LiquidData | Hot Take: Not only will Jeremiah Smith NOT win the Heisman Trophy, Ohio State WON’T make the CFP. As a result, Ryan Day will be fired and Marcus Freeman will be the new boss in Columbus. You heard it here first. Thoughts? #cfb #iufb | | 2026-10-08
