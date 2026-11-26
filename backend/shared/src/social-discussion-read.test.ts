@@ -2608,6 +2608,26 @@ describe('a comment its author marked as written by AI', () => {
     }
   )
 
+  test('a copy takes no label from its comment once that comment cannot be seen', async () => {
+    const card = await ensureSocialSource(pg, { contractId: 'market' })
+    await ensureSocialSource(pg, { contractId: 'other' })
+    // The other market's comment goes in first, so a lookup of the first row
+    // with this id finds it and the copy is not taken for removed below.
+    await insertComment('shared-id', { contract: 'other' })
+    await insertComment('shared-id', { data: { isAiComment: true } })
+    const [entry] = await listCardComments(pg, card, anyone, undefined, 1)
+    const copy = entry.pending!
+    expect(copy.source_contract_id).toBe('market')
+    expect((await read(copy)).isAiComment).toBe(true)
+    // Its market goes private. Another market's comment with the same id is
+    // still public, so which row decides whether the copy shows predates
+    // this label; the label itself is never read from the hidden comment.
+    await rows(`update contracts set visibility='private' where id='market'`)
+    const after = await read(copy)
+    expect(after.removed).toBeNull()
+    expect(after).not.toHaveProperty('isAiComment')
+  })
+
   test.each([
     { mismatch: 'author', user: 'dave', market: 'market' },
     { mismatch: 'market', user: 'bob', market: 'other' },

@@ -1048,11 +1048,14 @@ export async function hydrateSocialPosts(
         unavailable: true,
       }
     }
-    // A copy of a market comment carries that comment's "AI comment" label.
+    // A copy of a market comment carries that comment's "AI comment" label,
+    // read only from its own comment (same id, author and market) while that
+    // comment can still be seen.
     const isAiComment =
       !removed &&
       linkedComments.find(
         (c) =>
+          c.available &&
           c.comment_id === row.market_comment_id &&
           c.user_id === row.user_id &&
           (!row.source_contract_id || c.contract_id === row.source_contract_id)
