@@ -10,7 +10,10 @@ export function AiCommentLabel(props: { className?: string }) {
   return (
     <Tooltip
       text={description}
-      className={clsx('inline-flex shrink-0', props.className)}
+      className={clsx(
+        'pointer-events-auto inline-flex shrink-0',
+        props.className
+      )}
     >
       <span
         aria-hidden="true"

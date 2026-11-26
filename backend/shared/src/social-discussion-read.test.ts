@@ -2583,6 +2583,32 @@ describe('a comment its author marked as written by AI', () => {
   })
 
   test.each([
+    [false, true],
+    [true, false],
+    [true, true],
+  ])(
+    'copies of the same comment id use their own AI flags (market=%s, other=%s)',
+    async (marketAi, otherAi) => {
+      const copyOn = async (contract: string, isAiComment: boolean) => {
+        const card = await ensureSocialSource(pg, { contractId: contract })
+        await insertComment('shared-id', { contract, data: { isAiComment } })
+        const [entry] = await listCardComments(pg, card, anyone, undefined, 1)
+        return entry.pending!
+      }
+      const copies = [
+        await copyOn('market', marketAi),
+        await copyOn('other', otherAi),
+      ]
+      // Both copies see the same linked rows, in whichever order SQL returns.
+      const posts = await hydrateSocialPosts(pg, copies, anyone)
+      expect(posts.map((post) => post.isAiComment)).toEqual([
+        marketAi || undefined,
+        otherAi || undefined,
+      ])
+    }
+  )
+
+  test.each([
     { mismatch: 'author', user: 'dave', market: 'market' },
     { mismatch: 'market', user: 'bob', market: 'other' },
   ])(

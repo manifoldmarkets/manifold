@@ -675,7 +675,10 @@ const CommentLog = memo(function FeedComment(props: {
         })
       }}
     >
-      <Row id={comment.id} className="items-center gap-2 text-sm">
+      <Row
+        id={comment.id}
+        className="flex-wrap items-center gap-x-2 gap-y-1 text-sm"
+      >
         <UserHovercard userId={userId}>
           <Row className="items-center gap-2 font-semibold">
             <Avatar

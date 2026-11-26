@@ -1051,9 +1051,12 @@ export async function hydrateSocialPosts(
     // A copy of a market comment carries that comment's "AI comment" label.
     const isAiComment =
       !removed &&
-      linked?.is_ai &&
-      linked.user_id === row.user_id &&
-      (!row.source_contract_id || row.source_contract_id === linked.contract_id)
+      linkedComments.find(
+        (c) =>
+          c.comment_id === row.market_comment_id &&
+          c.user_id === row.user_id &&
+          (!row.source_contract_id || c.contract_id === row.source_contract_id)
+      )?.is_ai
     return {
       id: row.id,
       marketCommentId: row.market_comment_id,
