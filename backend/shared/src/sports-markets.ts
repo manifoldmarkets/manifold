@@ -1,4 +1,4 @@
-import { nbaAnswerIds } from './bdl/nba-answers'
+import { majorAnswerIds } from './bdl/nba-answers'
 import { camelCase } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import { getUser, log as logger, revalidateStaticProps } from 'shared/utils'
@@ -1128,6 +1128,7 @@ export interface SportsContractParams
     | 'sportsProvider'
     | 'sportsLeagueKey'
     | 'sportsCompetitionId'
+    | 'sportsCompetitionPhase'
     | 'sportsHomeTeamId'
     | 'sportsAwayTeamId'
     | 'openingLineSource'
@@ -1309,6 +1310,7 @@ export async function createSportsContract(
         sportsProvider: params.sportsProvider,
         sportsLeagueKey: params.sportsLeagueKey,
         sportsCompetitionId: params.sportsCompetitionId,
+        sportsCompetitionPhase: params.sportsCompetitionPhase,
         sportsHomeTeamId: params.sportsHomeTeamId,
         sportsAwayTeamId: params.sportsAwayTeamId,
         openingLineSource: params.openingLineSource,
@@ -1335,13 +1337,13 @@ export async function createSportsContract(
     const multi = contract as CPMMMultiContract
     if (
       params.sportsProvider === 'bdl' &&
-      params.sportsLeagueKey === 'nba' &&
+      isMajorLeague(params.sportsLeagueKey ?? '') &&
       params.sportsMarketType === 'moneyline' &&
       params.sportsEntrantIds
     ) {
-      const binding = nbaAnswerIds(multi)
+      const binding = majorAnswerIds(multi)
       if (!binding || binding.away !== multi.answers[0].id)
-        throw new Error('Invalid NBA entrant or funded answer')
+        throw new Error('Invalid BDL entrant or funded answer')
       Object.assign(contract, {
         sportsFundedAnswerIds: [binding.away, binding.home],
       })

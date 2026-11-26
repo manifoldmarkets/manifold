@@ -67,7 +67,12 @@ import {
   existingMajorGroups,
   majorCreationHold,
 } from './major-creation-store'
-import { fetchMajorGames, fetchMajorOdds, MajorGame } from './major-games'
+import {
+  fetchMajorGames,
+  fetchMajorOdds,
+  MajorGame,
+  matchesMajorStage,
+} from './major-games'
 import { getMajorSettings } from './major-settings'
 
 export type MajorCreationOptions = {
@@ -111,7 +116,7 @@ function eligiblePhases(
     (phase) =>
       phase.bdlLeagueKey === league &&
       phase.provider === 'bdl' &&
-      (!game || matchesGameStage(phase, game))
+      (!game || matchesMajorStage(league, phase.phase, game))
   )
   const enabled = applicable.filter(
     (phase) =>
@@ -123,13 +128,6 @@ function eligiblePhases(
   // A schedule window can span several phases. For a particular game, every
   // indistinguishable phase covering its kickoff must permit creation.
   return game && enabled.length !== applicable.length ? [] : enabled
-}
-
-function matchesGameStage(phase: SportsCalendarEntry, game: MajorGame) {
-  if (/regular season/i.test(phase.phase)) return game.postseason === false
-  if (/playoffs|world series/i.test(phase.phase))
-    return game.postseason === true
-  return true
 }
 
 function gameMarket(
@@ -171,13 +169,13 @@ function gameMarket(
     sportsProvider: 'bdl',
     sportsLeagueKey: league,
     sportsCompetitionId: phase.competitionId,
+    sportsCompetitionPhase: phase.phase,
     sportsLeague: SPORT_LEAGUE_LABEL[league],
     sportsHomeTeam: home,
     sportsAwayTeam: away,
     sportsHomeTeamId: String(game.home.id),
     sportsAwayTeamId: String(game.away.id),
-    sportsEntrantIds:
-      league === 'nba' ? [game.away.id, game.home.id] : undefined,
+    sportsEntrantIds: [game.away.id, game.home.id],
     sportsStartKnown: true,
     openingLineSource: line.source,
     openingProbs: line.probs,

@@ -2,7 +2,12 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { selectOpeningLine } from 'common/bdl/opening-line'
 import { createBdlClient } from '../balldontlie-client'
-import { fetchMajorGames, fetchMajorOdds, MajorLeague } from './major-games'
+import {
+  fetchMajorGames,
+  fetchMajorOdds,
+  MajorLeague,
+  matchesMajorStage,
+} from './major-games'
 
 type Raw = Record<string, unknown>
 type Page = { data: Raw[]; meta?: { next_cursor: number | null } }
@@ -111,6 +116,41 @@ function localClient(response: (url: URL) => Page) {
   return { client, urls }
 }
 const dateFor = (league: MajorLeague) => schedules[league].slateDate
+
+it.each([
+  ['nhl', { game_state: 'LIVE' }],
+  ['nhl', { period: 3, time_remaining: '08:15' }],
+  ['wnba', { status: 'post', period: 0 }],
+  ['mlb', { status: 'STATUS_SUSPENDED' }],
+  ['mlb', { status: 'STATUS_FINAL', period: 5 }],
+  ['nfl', { status: 'Forfeit', home_team_q4: 0, visitor_team_q4: 0 }],
+] as const)(
+  'holds a contradictory or shortened %s final even with scores and the terminal enum',
+  async (league, override) => {
+    const raw = {
+      ...fixture(league, 'games').data[0],
+      status_state: 'final',
+      ...override,
+    }
+    const { client } = localClient(() => ({ data: [raw] }))
+    const day = dateFor(league)
+    const [game] = await fetchMajorGames(
+      client,
+      league,
+      day,
+      day,
+      new Set([schedules[league].id])
+    )
+    expect(game.eligible).toBe(false)
+  }
+)
+
+it('keeps the recorded 2026 NFL slate outside a 2027 regular-season opt-in', async () => {
+  const { client } = localClient(() => fixture('nfl', 'games'))
+  const day = dateFor('nfl')
+  const [game] = await fetchMajorGames(client, 'nfl', day, day)
+  expect(matchesMajorStage('nfl', 'Regular Season (BDL)', game)).toBe(false)
+})
 
 it.each(leagues)(
   'maps the %s schedule, filter and entrant identity',

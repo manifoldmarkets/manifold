@@ -133,6 +133,66 @@ function team(league: MajorLeague, value: unknown): Team {
 const unknownOpponent = /^(tbd|tba|to be (determined|announced))$/i
 const exhibition =
   /\b(pre[ -]?season|spring training|exhibition|all[ -]?stars?|pro bowl|rising stars)\b/i
+
+export function matchesMajorStage(
+  league: MajorLeague,
+  phase: string,
+  game: MajorGame
+) {
+  if (league === 'nfl' && game.season < 2027) return false
+  if (/regular season/i.test(phase)) return game.postseason === false
+  if (/playoffs|world series/i.test(phase)) return game.postseason === true
+  return true
+}
+
+/** The final enum is shared with adjudications. Certify only a played,
+ * ordinary final in the league's wire format; leave shortened games for review. */
+function ordinaryFinal(league: MajorLeague, row: Row) {
+  const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
+  const status = typeof row.status === 'string' ? row.status.trim() : ''
+  const period = isId(row.period) ? row.period : 0
+  if (
+    [row.summary, row.period_detail].some(
+      (label) =>
+        typeof label === 'string' &&
+        /\b(forfeit(?:ed|ure)?|no contest|abandoned|suspended|postponed)\b/i.test(
+          label
+        )
+    )
+  )
+    return false
+  switch (league) {
+    case 'nba':
+      return (
+        finalLabel.test(status) &&
+        period >= 4 &&
+        (row.time == null ||
+          (typeof row.time === 'string' &&
+            (finalLabel.test(row.time.trim()) ||
+              /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
+      )
+    case 'nhl':
+      return (
+        typeof row.game_state === 'string' &&
+        /^(OFF|FINAL|OVER)$/.test(row.game_state) &&
+        period >= 3 &&
+        (period > 3 || row.time_remaining === '00:00')
+      )
+    case 'wnba':
+      // The feed labels both canceled games and played games "post". An
+      // unplayed game has period zero; the final clock may show "10:00".
+      return status === 'post' && period >= 4
+    case 'mlb':
+      return status === 'STATUS_FINAL' && period >= 9
+    case 'nfl':
+      return (
+        finalLabel.test(status) &&
+        score(row.home_team_q4) !== null &&
+        score(row.visitor_team_q4) !== null
+      )
+  }
+}
+
 function mapGame(league: MajorLeague, row: Row): MajorGame {
   if (!isId(row.id) || !isId(row.season))
     throw new Error('[sports-bdl-' + league + '] Invalid game ID or season')
@@ -303,21 +363,8 @@ export async function fetchMajorGames(
           games.delete(id)
           continue
         }
-        if (scoreIds && league === 'nba' && game.status === 'final') {
-          const row = raw as Row
-          const finalLabel = /^final(?:\s*\/\s*\d*ot)?$/i
-          // A terminal enum can also cover an adjudication. Recorded ordinary
-          // NBA finals have completed regulation and have no running clock.
-          game.eligible &&=
-            typeof row.status === 'string' &&
-            finalLabel.test(row.status.trim()) &&
-            isId(row.period) &&
-            row.period >= 4 &&
-            (row.time == null ||
-              (typeof row.time === 'string' &&
-                (finalLabel.test(row.time.trim()) ||
-                  /^0?0:00(?:\.0+)?$/.test(row.time.trim()))))
-        }
+        if (scoreIds && game.status === 'final')
+          game.eligible &&= ordinaryFinal(league, raw as Row)
         if (game.slateDate < fromDate || game.slateDate > toDate) continue
         const prior = games.get(game.id)
         if (prior && JSON.stringify(prior) !== JSON.stringify(game)) {

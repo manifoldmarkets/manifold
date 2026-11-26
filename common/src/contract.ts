@@ -432,6 +432,8 @@ export type Sports = {
   sportsProvider?: import('./sports-provider').SportsProvider
   sportsLeagueKey?: import('./bdl/leagues').BdlLeagueKey
   sportsCompetitionId?: string
+  /** Calendar phase selected when funding this provider game. */
+  readonly sportsCompetitionPhase?: string
   sportsHomeTeamId?: string
   sportsAwayTeamId?: string
   openingLineSource?: import('./sports-kickoff-interface').OpeningLineSource
@@ -475,7 +477,7 @@ export type Sports = {
    * resolver matches results by id, never by name.
    */
   sportsEntrantIds?: (number | null)[]
-  /** The native answers issued to these NBA entrants at initial funding, by index. */
+  /** The native answers issued to these game entrants at initial funding, by index. */
   readonly sportsFundedAnswerIds?: string[]
   /**
    * A field event's session: when the pipeline first saw the provider mark

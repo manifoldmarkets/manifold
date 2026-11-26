@@ -71,6 +71,7 @@ jest.mock('./major-creation-store', () => ({
   canceledMajorContractIds: jest.fn(),
 }))
 jest.mock('./major-games', () => ({
+  ...jest.requireActual('./major-games'),
   fetchMajorGames: jest.fn(),
   fetchMajorOdds: jest.fn(),
 }))
@@ -183,6 +184,7 @@ it('creates a priced market with its stored line, fixed answers, notified budget
     log: [{ ante: 175, contractId: 'created-bdl:nba:1' }],
   })
   expect(save.mock.calls[0][2]).toMatchObject({
+    sportsCompetitionPhase: 'Regular Season (BDL)',
     question: 'Away at Home, Oct 23',
     sportsProvider: 'bdl',
     sportsEventId: 'bdl:nba:1',

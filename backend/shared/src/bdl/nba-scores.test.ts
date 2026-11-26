@@ -11,10 +11,10 @@ import { createSupabaseDirectClient } from '../supabase/init'
 import { hasOddsApiKey } from '../the-odds-api-client'
 import { fetchMajorGames } from './major-games'
 import * as nbaScores from './nba-scores'
-import { nbaScorePatch } from './nba-scores'
-import { settlePendingNbaGames } from './settle-nba-game'
+import { majorScorePatch } from './nba-scores'
+import { settlePendingMajorGames } from './settle-nba-game'
 jest.mock('./settle-nba-game', () => ({
-  settlePendingNbaGames: jest.fn().mockResolvedValue(''),
+  settlePendingMajorGames: jest.fn().mockResolvedValue(''),
 }))
 
 jest.mock('../balldontlie-client', () => ({
@@ -249,6 +249,130 @@ it('shortens the exact equality millisecond when closing a recorded final', asyn
   expect(publishSportsLiveScore).toHaveBeenCalledTimes(1)
 })
 
+// The WNBA and MLB rows are replayed in their next registered regular season.
+// The NFL case uses an explicitly synthetic 2027 tie with completed quarters.
+it.each([
+  [
+    'nhl',
+    'nhl-2026-27',
+    phase,
+    '2026-11-20T02:40:00.000Z',
+    57,
+    60,
+    'Seattle Kraken',
+    'Vancouver Canucks',
+    5,
+    1,
+  ],
+  [
+    'wnba',
+    'wnba-2027',
+    'Season (BDL)',
+    '2027-08-14T00:00:00.000Z',
+    1,
+    12,
+    'New York Liberty',
+    'Los Angeles Sparks',
+    85,
+    81,
+  ],
+  [
+    'mlb',
+    'mlb-2027',
+    phase,
+    '2027-08-14T02:07:00.000Z',
+    13,
+    28,
+    'Los Angeles Angels',
+    'Texas Rangers',
+    7,
+    0,
+  ],
+  [
+    'nfl',
+    'nfl-regular-2027',
+    phase,
+    '2027-11-22T18:00:00.000Z',
+    3,
+    5,
+    'Buffalo Bills',
+    'Miami Dolphins',
+    24,
+    24,
+  ],
+] as const)(
+  'certifies only the opted-in %s phase through the native score tick',
+  async (
+    league,
+    comp,
+    fundedPhase,
+    start,
+    homeId,
+    awayId,
+    homeName,
+    awayName,
+    homeScore,
+    awayScore
+  ) => {
+    const row: Row = JSON.parse(
+      readFileSync(
+        join(
+          __dirname,
+          '../../test/fixtures/bdl',
+          league,
+          'games__recorded-major-slate.json'
+        ),
+        'utf8'
+      )
+    ).data[0]
+    if (league !== 'nhl') Object.assign(row, { date: start, season: 2027 })
+    if (league === 'nfl')
+      Object.assign(row, {
+        status: 'Final/OT',
+        status_state: 'final',
+        home_team_score: 24,
+        visitor_team_score: 24,
+        home_team_q4: 7,
+        visitor_team_q4: 3,
+      })
+    wire = [row]
+    now = Date.parse(start) + 4 * 3_600_000
+    const id = await market({
+      sportsEventId: `bdl:${league}:${row.id}`,
+      sportsLeagueKey: league,
+      sportsCompetitionId: comp,
+      sportsCompetitionPhase: fundedPhase,
+      sportsHomeTeam: homeName,
+      sportsAwayTeam: awayName,
+      sportsHomeTeamId: String(homeId),
+      sportsAwayTeamId: String(awayId),
+      sportsStartTimestamp: start,
+    })
+    await db.query('update contracts set close_time=$1 where id=$2', [
+      new Date(now - 1),
+      id,
+    ])
+    await nbaScores.pollMajorScores(pg, new Map())
+    expect(requests).toHaveLength(0)
+    // An enabled phase of a different league cannot authorize this read.
+    await db.query(
+      'insert into sports_competition_switches values($1,$2,true,null,null)',
+      [comp, fundedPhase]
+    )
+    await nbaScores.pollMajorScores(pg, new Map())
+    expect(requests.map((r) => r.pathname)).toEqual(
+      Array(league === 'wnba' ? 2 : 1).fill(`/${league}/v1/games`)
+    )
+    expect((await stored(id)).sportsFinalObservation).toMatchObject({
+      sportsLeagueKey: league,
+      sportsCompetitionPhase: fundedPhase,
+      sportsHomeScore: homeScore,
+      sportsAwayScore: awayScore,
+      sportsLiveStatus: 'FINISHED',
+    })
+  }
+)
+
 it('keeps scheduled, unknown, malformed, replaced and conflicted siblings out of the healthy score', async () => {
   const healthy = await market()
   const badRows: Row[] = [
@@ -435,7 +559,7 @@ it.each(['candidate scan', 'quota permission', 'provider response'])(
       }
     if (stage === 'provider response') beforeResponse = stall
     const timers = jest.spyOn(global, 'setTimeout')
-    const polls = jest.spyOn(nbaScores, 'pollNbaScores')
+    const polls = jest.spyOn(nbaScores, 'pollMajorScores')
     const first = resolveOddsSportsMarkets()
     await entered.promise
     const coalesced = resolveOddsSportsMarkets()
@@ -546,7 +670,7 @@ it('shares a verified final with slower siblings without advancing their poll cl
     ['game:' + fast, 'game:' + disabled]
   )
   const attempts: nbaScores.NbaPollAttempts = new Map()
-  const poll = () => nbaScores.pollNbaScores(pg, attempts)
+  const poll = () => nbaScores.pollMajorScores(pg, attempts)
   const firstAt = now
   await poll()
   now += 60_000
@@ -590,12 +714,12 @@ it('does not switch a requesting market to a finals check that was not due after
   const id = await market()
   now = Date.parse('2026-11-21T20:10:00Z')
   const attempts: nbaScores.NbaPollAttempts = new Map()
-  await nbaScores.pollNbaScores(pg, attempts)
+  await nbaScores.pollMajorScores(pg, attempts)
   now += 60_000
   wire = [final]
   beforeResponse = () =>
     db.exec('update sports_score_polling set interval_seconds=0')
-  await nbaScores.pollNbaScores(pg, attempts)
+  await nbaScores.pollMajorScores(pg, attempts)
   expect(requests).toHaveLength(2)
   expect((await stored(id)).sportsLiveStatus).toBe('IN_PLAY')
   expect((await stored(id)).closeTime).toBeUndefined()
@@ -706,7 +830,9 @@ it('orients the recorded Detroit final by provider IDs independently of answer o
     date,
     new Set([21717855])
   )
-  expect(nbaScorePatch({ home: '9', away: '2' }, game, now)).toMatchObject({
+  expect(
+    majorScorePatch({ league: 'nba', home: '9', away: '2' }, game, now)
+  ).toMatchObject({
     sportsHomeScore: 121,
     sportsAwayScore: 113,
     sportsLiveStatus: 'FINISHED',
@@ -725,15 +851,15 @@ it('continues the next native score tick while a previous settlement is still de
   const pending = new Promise<string>((resolve) => {
     complete = resolve
   })
-  jest.mocked(settlePendingNbaGames).mockReturnValueOnce(pending)
+  jest.mocked(settlePendingMajorGames).mockReturnValueOnce(pending)
   try {
     await resolveOddsSportsMarkets()
-    expect(settlePendingNbaGames).toHaveBeenCalledTimes(1)
+    expect(settlePendingMajorGames).toHaveBeenCalledTimes(1)
     now += 61_000
     wire = [{ ...wire[0], home_team_score: 42 }]
     await resolveOddsSportsMarkets()
     expect((await stored(id)).sportsHomeScore).toBe(42)
-    expect(settlePendingNbaGames).toHaveBeenCalledTimes(1)
+    expect(settlePendingMajorGames).toHaveBeenCalledTimes(1)
   } finally {
     complete('')
   }

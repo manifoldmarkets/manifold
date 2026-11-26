@@ -1,7 +1,7 @@
 import type { MultiContract, Sports } from 'common/contract'
 
 /** Native answer IDs for the two verified provider entrants, at funding or on reread. */
-export function nbaAnswerIds(
+export function majorAnswerIds(
   contract: MultiContract & Partial<Sports>,
   teams: Partial<Sports> = contract
 ) {
