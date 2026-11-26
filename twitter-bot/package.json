@@ -1,0 +1,17 @@
+{
+  "name": "manifold-twitter-bot",
+  "version": "1.0.0",
+  "description": "AskManifold: an X bot that turns tagged predictions into Manifold markets.",
+  "scripts": {
+    "start": "node src/bot.js",
+    "try": "node src/try.js",
+    "batch": "node src/batch.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
+    "dotenv": "^18.0.9",
+    "twitter-api-v2": "^1.31.0"
+  },
+  "type": "module",
+  "private": true
+}

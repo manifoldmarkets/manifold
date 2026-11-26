@@ -1,0 +1,4 @@
+node_modules
+.env
+state.json
+test-results.md
