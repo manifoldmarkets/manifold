@@ -462,6 +462,12 @@ export type Sports = {
   sportsEventId: string
   sportsLeague: string
   /**
+   * An esports series market's tournament facts, as the provider sent them:
+   * stage, round, teams and result. Tournament pages take their layout from
+   * these (common/esports/structure.ts).
+   */
+  esportsSeries?: import('./esports/types').EsportsSeriesFacts
+  /**
    * A pipeline game market's teams, as the provider named them. The resolver
    * reads scores by these names, whichever way round a score feed lists them.
    */
