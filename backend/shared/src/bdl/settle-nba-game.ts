@@ -58,6 +58,7 @@ function payout(c: Contract) {
     !event ||
     !isMajorLeague(event.league) ||
     event.league !== observation.sportsLeagueKey ||
+    'entrantIds' in event ||
     event.suffix ||
     market.sportsFixture ||
     market.sportsAttentionReason ||

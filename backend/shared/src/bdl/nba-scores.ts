@@ -118,6 +118,7 @@ export function majorScorePatch(
 }
 
 export type MajorPollAttempts = Map<string, { live?: number; finals?: number }>
+export type NbaPollAttempts = MajorPollAttempts
 
 /** One slate read per league supplies every due market on that Eastern game day. */
 export async function pollMajorScores(

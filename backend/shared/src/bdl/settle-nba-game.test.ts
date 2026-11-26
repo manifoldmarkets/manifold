@@ -160,12 +160,10 @@ it.each([
     })
     jest.mocked(getContract).mockResolvedValue(current)
     const legacy = fundedPhase.replace(' (BDL)', '')
-    jest
-      .mocked(getCompetitionSwitches)
-      .mockResolvedValue({
-        [comp + ':' + fundedPhase]: true,
-        [comp + ':' + legacy]: false,
-      })
+    jest.mocked(getCompetitionSwitches).mockResolvedValue({
+      [comp + ':' + fundedPhase]: true,
+      [comp + ':' + legacy]: false,
+    })
     await settleMajorGame(pg, id)
     const winner = homeScore > awayScore ? home.id : away.id
     expect(jest.mocked(resolveMarketHelper).mock.calls[0][3]).toEqual(
