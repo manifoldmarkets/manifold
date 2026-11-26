@@ -85,6 +85,7 @@ export const RepostModal = (props: {
     : playContract && (comment || bet)
     ? {
         kind: comment ? 'comment' : 'bet',
+        ...(comment?.isAiComment ? { isAiComment: true } : {}),
         contractId: playContract.id,
         url: contractPath(playContract) + (comment ? '#' + comment.id : ''),
         text: comment

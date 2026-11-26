@@ -46,6 +46,7 @@ import {
   useShouldBlockDestiny,
   useUser,
 } from 'web/hooks/use-user'
+import { AiCommentLabel } from './comments/ai-comment-label'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
 import { Col } from './layout/col'
@@ -816,6 +817,7 @@ const CommentLog = memo(function FeedComment(props: {
               displayContext="feed"
             />
           </UserHovercard>{' '}
+          {comment.isAiComment && <AiCommentLabel className="mr-1" />}
           commented
         </span>
         <RelativeTimestamp time={createdTime} />

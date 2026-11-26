@@ -39,6 +39,9 @@ export type Comment<T extends AnyCommentType = AnyCommentType> = {
   isApi?: boolean
   // Posted by a mod or admin acting as a moderator (shows a "Mod comment" label)
   isModComment?: boolean
+  // Its author says an AI wrote it (shows an "AI comment" label). Set by the
+  // poster, usually an AI agent using the API; Manifold does not detect it.
+  isAiComment?: boolean
 } & T
 
 export type OnContract = {

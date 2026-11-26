@@ -363,6 +363,9 @@ export const API = (_apiTypeCheck = {
         replyToBetId: z.string().optional(),
         // Mods and admins only
         isModComment: z.boolean().optional(),
+        // Anyone. AI agents are asked to set it on every comment they write
+        // (docs/docs/api.md); the comment then shows an "AI comment" label.
+        isAiComment: z.boolean().optional(),
       })
       .strict(),
   },

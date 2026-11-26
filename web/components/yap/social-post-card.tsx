@@ -42,6 +42,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { useSocialLikePress } from './use-social-like-press'
 import { useSocialEditWindow } from './use-social-edit-window'
+import { AiCommentLabel } from '../comments/ai-comment-label'
 
 export function SocialPostCard(
   props: Parameters<typeof SocialPostCardContent>[0]
@@ -294,6 +295,7 @@ function SocialPostCardContent({
               label="handle"
               className="text-ink-600 min-w-0 truncate"
             />
+            {post.isAiComment && <AiCommentLabel />}
             <span className="text-ink-600" aria-hidden="true">
               ·
             </span>

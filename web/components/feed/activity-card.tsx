@@ -38,6 +38,7 @@ import { MoneyDisplay } from 'web/components/bet/money-display'
 import { Content } from 'web/components/widgets/editor'
 import { UserLink } from 'web/components/widgets/user-link'
 import { UserHovercard } from 'web/components/user/user-hovercard'
+import { AiCommentLabel } from 'web/components/comments/ai-comment-label'
 import { LikeAndDislikeComment } from 'web/components/comments/comment-actions'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { ClickFrame } from 'web/components/widgets/click-frame'
@@ -617,6 +618,7 @@ const CommentLog = memo(function CommentLog(props: {
             <span className="text-ink-900 font-semibold">
               {commenter?.name ?? userName}
             </span>
+            {comment.isAiComment && <AiCommentLabel />}
             <span className="text-ink-500">
               {isReply ? 'replied' : 'commented'}
             </span>

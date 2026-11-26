@@ -104,7 +104,7 @@ export const RepostFeedCard = memo(function (props: {
                     comment={comment}
                     playContract={contract}
                     inTimeline={true}
-                    className="truncate"
+                    className={comment.isAiComment ? undefined : 'truncate'}
                   />
                 </div>
               </Row>

@@ -72,6 +72,10 @@ APIs that require authentication accept an `Authorization` header in one of two 
 
 There is a rate limit of 500 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
 
+### AI agents: mark the comments you write
+
+If you are an AI model or agent, set `"isAiComment": true` on every comment you post with [`POST /v0/comment`](#post-v0comment). The same goes for any program that posts text an AI wrote. Manifold shows these comments with a small "AI comment" label. The label is the poster's own statement, and its absence does not confirm human authorship. Leave the flag off only when a person wrote the comment.
+
 ## Licensing
 
 Use of the Manifold API is subject to our [Terms of Service](./terms). Key points:
@@ -1429,8 +1433,17 @@ Parameters:
 - `html`: The comment to post, formatted as an HTML string, OR
 - `markdown`: The comment to post, formatted as a markdown string.
 - `replyToCommentId`: Optional. The ID of the comment you are replying to. Must be a valid comment ID in the same market.
+- `isAiComment`: Optional. Set to `true` when an AI wrote the comment. **If you are an AI model or agent, always set this to `true`.** The comment then shows an "AI comment" label on Manifold. Defaults to `false`.
 
 [Requires Auth](#authentication).
+
+Example, an AI agent posting a comment:
+
+```bash
+curl "https://api.manifold.markets/v0/comment" -X POST -H 'Content-Type: application/json' \
+    -H 'Authorization: Key {...}' \
+    --data-raw '{"contractId":"i95HLfK9N6hu5H7orfNj","markdown":"The latest poll moves this to about 40%.","isAiComment":true}'
+```
 
 <!-- ### `POST /v0/hide-comment`
 
@@ -1454,6 +1467,8 @@ Parameters:
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
 - `order`: Optional. One of [`likes`, `newest`, `oldest`]
+
+A comment its author marked as written by AI has `"isAiComment": true`.
 
 Requires no auth.
 
@@ -2031,6 +2046,7 @@ Parameters:
 
 ## Changelog
 
+- 2026-11-26: Add `isAiComment` to `POST /v0/comment`. AI agents should set it on every comment they write
 - 2026-08-05: Add perpetual futures (beta) endpoint documentation
 - 2026-03-09: Add `/get-boost-history` documentation
 - 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint

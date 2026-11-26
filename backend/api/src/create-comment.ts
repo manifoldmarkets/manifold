@@ -45,6 +45,7 @@ export const createComment: APIHandler<'comment'> =
       replyToAnswerId,
       replyToBetId,
       isModComment,
+      isAiComment,
     } = props
     if (isModComment && !isModId(auth.uid) && !isAdminId(auth.uid)) {
       throw new APIError(403, 'Only moderators can post mod comments')
@@ -60,6 +61,7 @@ export const createComment: APIHandler<'comment'> =
       replyToAnswerId,
       replyToBetId,
       isModComment,
+      isAiComment,
     })
     return {
       result: created.result,
@@ -103,6 +105,7 @@ export const createCommentOnContractInternal = async (
     replyToBetId?: string
     isRepost?: boolean
     isModComment?: boolean
+    isAiComment?: boolean
     socialPostId?: string
     // Callers that must link the comment before it exists can assign its id
     id?: string
@@ -122,6 +125,7 @@ export const createCommentOnContractInternal = async (
     socialPostId,
     id,
     isModComment,
+    isAiComment,
   } = options
 
   const pg = createSupabaseDirectClient()
@@ -184,6 +188,7 @@ export const createCommentOnContractInternal = async (
     isRepost,
     socialPostId,
     isModComment: isModComment || undefined,
+    isAiComment: isAiComment || undefined,
   } as ContractComment)
   await db
     .none(

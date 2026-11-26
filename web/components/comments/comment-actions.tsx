@@ -18,6 +18,7 @@ import { Modal, MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { Tooltip } from '../widgets/tooltip'
 import { PrivateUser, User } from 'common/user'
+import { AiCommentLabel } from './ai-comment-label'
 import { RepostModal } from './repost-modal'
 import { Bet } from 'common/bet'
 
@@ -149,7 +150,9 @@ export function CommentActions(props: {
         >
           <Col>
             <span className={'text-primary-700 mb-4 line-clamp-2 text-lg'}>
-              @{comment.userUsername}: {richTextToString(comment.content)}
+              @{comment.userUsername}
+              {comment.isAiComment && <AiCommentLabel className="ml-1" />}:{' '}
+              {richTextToString(comment.content)}
             </span>
             <BuyPanel
               contract={liveContract as any}
