@@ -78,7 +78,8 @@ export function TrophiesTab(props: {
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
   const [dialog, setDialog] = useState<TrophyDialog | null>(null)
 
-  // After a first claim. The tab's own link scrolls to AboutTrophies.
+  // After a first claim. The tab's "How trophies work" link opens the same
+  // explainer with no trophy to highlight afterwards.
   const openExplainer = (trophyId: string) => {
     setDialog({ step: 'explainer', trophyId })
     track('trophy explainer shown', { source: 'first claim' })
@@ -284,13 +285,16 @@ export function TrophiesTab(props: {
           <div className="text-ink-500 text-sm">
             Earn trophies by trading, creating markets and being active. Claim
             them to pin them to your profile.{' '}
-            <a
-              href={`#${ABOUT_TROPHIES_ID}`}
+            <button
+              type="button"
               className="text-primary-600 hover:underline"
-              onClick={() => track('trophy explainer shown', { source: 'tab' })}
+              onClick={() => {
+                setDialog({ step: 'explainer' })
+                track('trophy explainer shown', { source: 'tab' })
+              }}
             >
               How trophies work
-            </a>
+            </button>
           </div>
         )}
       </Col>
@@ -361,17 +365,12 @@ export function TrophiesTab(props: {
   )
 }
 
-const ABOUT_TROPHIES_ID = 'about-trophies'
-
-// The one place the page explains trophies, in general terms. Copy is Tod's,
-// verbatim (11/28).
+// A quiet note at the foot of the tab; the "How trophies work" link opens the
+// explainer modal instead. Copy is Tod's, verbatim (11/28).
 function AboutTrophies(props: { ranksComputedTime: number | null }) {
   const { ranksComputedTime } = props
   return (
-    <Col
-      id={ABOUT_TROPHIES_ID}
-      className="border-ink-200 text-ink-600 scroll-mt-20 gap-2 border-t pt-4 text-sm"
-    >
+    <Col className="border-ink-200 text-ink-600 gap-2 border-t pt-4 text-sm">
       <span className="text-ink-900 font-semibold">About trophies</span>
       <p>
         Trophies are awarded for your achievements on Manifold. Most trophies
