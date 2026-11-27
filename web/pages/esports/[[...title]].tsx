@@ -35,6 +35,17 @@ const ESPORTS_SPORT = 'esports'
 const first = (q: string | string[] | undefined) =>
   Array.isArray(q) ? q[0] : q
 
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+// With the rollout off, every /esports URL answers 404, not a 200 with the
+// not-found screen on it. The flag is set at build time, like the page's own
+// check below, so the two always agree.
+export async function getStaticProps() {
+  return isSportsBdlEnabled() ? { props: {} } : { notFound: true }
+}
+
 /**
  * Esports tournaments instead of a season's games. /esports/<game> leads
  * with the game's top tournament still to finish (`orderTournaments`), laid
@@ -54,7 +65,10 @@ function EsportsPage() {
   const router = useRouter()
   const raw = first(router.query.title)?.toLowerCase()
   const game = esportsGameByKey(raw)
-  const unknown = router.isReady && !!raw && !game
+  // The page is built per URL, so the server knows the game in it as well:
+  // waiting on `router.isReady` here would render one thing on the server
+  // and another on the first client render.
+  const unknown = !!raw && !game
   const eventId = Number(first(router.query.event))
 
   useEffect(() => {
