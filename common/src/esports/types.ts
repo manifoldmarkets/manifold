@@ -49,8 +49,9 @@ export type EsportsStageSignal = {
   labelCounts?: Record<string, number>
   /**
    * Sent values that disagreed between captures. The latest capture wins; when
-   * the latest captures tie and disagree, the value is left unset and the
-   * stage is shown as a list.
+   * the latest captures tie and disagree, the value is left unset. If it is
+   * one that picks the layout (the stage's type, name, format or rounds
+   * count), the stage is shown as a list.
    */
   problems?: string[]
 }
@@ -135,10 +136,24 @@ export type SwissRecord = {
   /** Results in the order played. Counted only from trusted finals. */
   results: ('W' | 'L')[]
   /**
-   * Only from evidence. 'through' when the team plays in a stage of the same
-   * event that starts after this stage's last series. 'out' only when the
-   * stage is done, the provider sent a promotion count, and exactly that many
-   * teams are through. Otherwise null: never from a fixed win threshold.
+   * Only from evidence, never from a fixed win threshold.
+   *
+   * 'through', in one of two ways:
+   * 1. A later stage. The team itself has a series with a known start in
+   *    another stage of the same event, and every known start in that stage
+   *    is after this stage's last known start. A series of its own with no
+   *    start doesn't count, nor do other teams' series, nor series sent with
+   *    no stage.
+   * 2. The promotion count, used only when no team is through by a later
+   *    stage. The provider sent a count for this stage, every series in the
+   *    stage is final with a trusted winner, and the teams with the most
+   *    wins, as many as the count, all have more wins than every other team.
+   *
+   * 'out' only when every series in the stage is final, the provider sent a
+   * promotion count, and exactly that many teams are through: every other
+   * team is then out.
+   *
+   * Otherwise null.
    */
   status: 'through' | 'out' | null
 }
