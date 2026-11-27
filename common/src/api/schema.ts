@@ -79,6 +79,7 @@ import {
   SportsSubtopic,
 } from 'common/sports-schedule'
 import { SportsLeaderboards } from 'common/sports-leaderboards'
+import type { EsportsTournamentView } from 'common/esports/types'
 import { rolloutSportsScoreSchema } from 'common/sports-scoreboard'
 import { ElectionLeaderboards } from 'common/election-leaderboards'
 import { CompetitionSwitchState } from 'common/sports-calendar'
@@ -217,6 +218,22 @@ const expectedCreationSetting = z
   .strict()
   .nullable()
   .optional()
+
+/** A series' official market, laid over what the provider reported. */
+export type EsportsMarketOverlay = {
+  contractId: string
+  slug: string
+  creatorUsername: string
+  /**
+   * In market order. `teamId` is set only when the market has two answers and
+   * they name the series' two teams in order, so a price can be a bet button.
+   */
+  answers: { id: string; text: string; prob: number; teamId: number | null }[]
+  volume: number
+  uniqueBettorCount: number
+  closeTime: number | null
+  isResolved: boolean
+}
 
 export const API = (_apiTypeCheck = {
   'refresh-all-clients': {
@@ -5326,6 +5343,34 @@ export const API = (_apiTypeCheck = {
     props: z.object({}).strict(),
     // `topics` is absent from an API that predates it.
     returns: {} as { sports: SportInfo[]; topics?: SportsSubtopic[] },
+  },
+  // One esports game's tournaments, laid out from the series the provider
+  // reported, with each series' official market beside it. Prices move over
+  // websockets after the first load, so a short shared cache is enough.
+  'get-esports-tournaments': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    props: z
+      .object({ game: z.enum(['cs', 'valorant', 'lol', 'dota']) })
+      .strict(),
+    returns: {} as {
+      tournaments: EsportsTournamentView[]
+      /** By series id. A series whose market wasn't found has no entry. */
+      markets: Record<string, EsportsMarketOverlay>
+      /**
+       * True when the game has more series in the window than one read
+       * holds. Some series are then missing, so every stage is a plain
+       * list: no standings, no team through or out, no champion.
+       */
+      truncated?: boolean
+      /**
+       * True when a series market's stored facts didn't read. That series is
+       * left out, so as with `truncated`, every stage is a plain list.
+       */
+      incomplete?: boolean
+    },
   },
   // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
   // under Sports, and with `userId` where that user stands on them. The
