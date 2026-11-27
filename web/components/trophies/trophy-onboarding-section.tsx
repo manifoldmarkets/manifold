@@ -7,7 +7,7 @@ import {
   TrophyPrizeAccount,
   getClaimableOnboardingMilestones,
   getNextOnboardingMilestone,
-  getTrophyClaimPrize,
+  getOwnMilestonePrize,
   getStarterMilestoneHint,
 } from 'common/trophies'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -57,7 +57,7 @@ export function TrophyOnboardingSection(props: {
               {prizeAccount && (
                 <TrophyPrizeChip
                   className="mt-0.5"
-                  prize={getTrophyClaimPrize(
+                  prize={getOwnMilestonePrize(
                     definition,
                     milestone,
                     rewarded,

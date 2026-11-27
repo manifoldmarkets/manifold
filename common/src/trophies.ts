@@ -834,6 +834,24 @@ export function getTrophyClaimPrize(
   )
 }
 
+/**
+ * This milestone's own unpaid prize, without the lower ones a claim would also
+ * collect. For lists that show each milestone on its own row, so the amounts
+ * don't add up twice.
+ */
+export function getOwnMilestonePrize(
+  definition: TrophyDefinition,
+  milestone: TrophyMilestone,
+  rewarded: TrophyMilestoneRef[],
+  account: TrophyPrizeAccount
+): TrophyPrizeTotal {
+  if (getClaimedMilestoneIds(rewarded, definition.id).has(milestone.id))
+    return addPrizeTotals([])
+  return addPrizeTotals(
+    getMilestonePrizesFor(definition, [milestone], account).map((p) => p.prize)
+  )
+}
+
 // Rank titles with a prize, best first. The #1 crown is its own prize.
 export const RANK_PRIZE_TIERS = ['mega', 'super'] as const
 export type TrophyRankPrizeTier = (typeof RANK_PRIZE_TIERS)[number]
