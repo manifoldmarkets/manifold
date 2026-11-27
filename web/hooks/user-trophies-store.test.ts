@@ -164,6 +164,34 @@ describe('user trophies store: one entry per profile and viewer', () => {
     assert.equal(shown(OWNER)?.starter?.pushEnabled, 1)
   })
 
+  it('files a refresh by whoever signed in while it waited for a read in flight', async () => {
+    const { session, requests, network, store, shown, read } =
+      setup(ANON_VIEWER)
+    let release = () => {}
+    network.hold = new Promise<void>((resolve) => (release = resolve))
+    const inFlight = read(OWNER)
+    const refreshing = store.refresh(OWNER)
+    await Promise.resolve()
+
+    // The owner signs in while the visitor's read is still out.
+    session.viewerId = OWNER
+    release()
+    await inFlight
+    await refreshing
+    assert.deepEqual(requests, [
+      { userId: OWNER, as: ANON_VIEWER },
+      { userId: OWNER, as: OWNER },
+    ])
+    // The owner's answer is under the owner, and the signed-out entry never
+    // held the private stats.
+    assert.equal(shown(OWNER)?.starter?.pushEnabled, 1)
+    assert.equal(
+      store.getSnapshot(store.keyOf(OWNER, ANON_VIEWER))?.data?.starter
+        ?.pushEnabled,
+      0
+    )
+  })
+
   it("adds a claim to the current viewer's entry, and saves pins as the owner only", async () => {
     const { session, saves, network, store, shown, read } = setup(OWNER)
     await read(OWNER)

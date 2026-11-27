@@ -203,10 +203,11 @@ export function createUserTrophiesStore(deps: UserTrophiesStoreDeps) {
 
   async function refresh(userId: string) {
     await deps.whenViewerKnown()
-    const key = keyOf(userId)
     // A read already in flight may have taken its snapshot before rollover.
-    await getEntry(key).loading
-    return load(userId, key)
+    await getEntry(keyOf(userId)).loading
+    // Key the new read by whoever is signed in now: the viewer can change
+    // during the wait, and the request goes out with the new credentials.
+    return load(userId, keyOf(userId))
   }
 
   /** Adds claims returned by claim-trophy. */
