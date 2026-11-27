@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { formatJustTime } from 'client-common/lib/time'
 import { EsportsMarketOverlay } from 'common/api/schema'
@@ -21,6 +21,8 @@ import { seriesNote } from './series-note'
 
 export type SeriesRecord = { wins: number; losses: number }
 type Side = 0 | 1
+/** What a price stood for when it was clicked: this answer, for this team. */
+type BetTicket = { contractId: string; answerId: string; teamId: number }
 
 /**
  * One series, two sides: the teams, the score once there is one, and each
@@ -36,7 +38,20 @@ export function SeriesRow(props: {
 }) {
   const { series, market, records, className } = props
   const user = useUser()
-  const [betOn, setBetOn] = useState<Side>()
+  // The bet is on the answer that was clicked, not on a side of the row: a
+  // refresh can swap the sides or untie the answers from the teams while the
+  // dialog is loading. If the market no longer ties that answer to that team,
+  // the dialog closes instead of opening on another team.
+  const [ticket, setTicket] = useState<BetTicket>()
+  const ticketHolds =
+    !!ticket &&
+    market?.contractId === ticket.contractId &&
+    market.answers.some(
+      (a) => a.id === ticket.answerId && a.teamId === ticket.teamId
+    )
+  useEffect(() => {
+    if (ticket && !ticketHolds) setTicket(undefined)
+  }, [ticket, ticketHolds])
   const teams = [series.team1, series.team2] as const
   const scores = [series.score?.team1, series.score?.team2] as const
   const answers = teams.map(
@@ -50,16 +65,21 @@ export function SeriesRow(props: {
 
   const price = (s: Side, className?: string) => {
     const answer = answers[s]
-    if (!canBet || !answer) return null
+    const team = teams[s]
+    if (!canBet || !market || !answer || !team) return null
     return (
       <PriceChip
         prob={answer.prob}
-        label={`Bet on ${teams[s]?.name}`}
+        label={`Bet on ${team.name}`}
         className={className}
         onClick={() => {
           if (!user) return firebaseLogin()
           track('bet intent', { location: 'esports series' })
-          setBetOn(s)
+          setTicket({
+            contractId: market.contractId,
+            answerId: answer.id,
+            teamId: team.id,
+          })
         }}
       />
     )
@@ -174,11 +194,11 @@ export function SeriesRow(props: {
           {score(1)}
         </Row>
       </div>
-      {betOn != null && market && (
+      {ticket && ticketHolds && (
         <SportsVersusBetDialog
-          contractId={market.contractId}
-          initialAnswerId={answers[betOn]?.id}
-          onClose={() => setBetOn(undefined)}
+          contractId={ticket.contractId}
+          initialAnswerId={ticket.answerId}
+          onClose={() => setTicket(undefined)}
         />
       )}
     </div>
