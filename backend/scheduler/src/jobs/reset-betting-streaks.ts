@@ -27,9 +27,12 @@ export const resetBettingStreaksInternal = async () => {
     `update users
     set data = data ||
       case when (data->'streakForgiveness')::numeric > 0 then
+        -- Count the save too: the Close Call trophy reads streakFreezesUsed.
         jsonb_build_object(
           'streakForgiveness', (data->'streakForgiveness')::numeric - 1,
-          'lastStreakFreezeTime', ts_to_millis(now())
+          'lastStreakFreezeTime', ts_to_millis(now()),
+          'streakFreezesUsed',
+            coalesce((data->>'streakFreezesUsed')::int, 0) + 1
         )
       else
         -- Keep the longest streak (the Prediction Streak trophy reads it):

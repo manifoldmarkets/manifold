@@ -8,8 +8,9 @@
 // the authority on what can be claimed (claim-trophy recomputes the stat); the
 // helpers here are shared so the web shows the same answer.
 //
-// Starter accounts can collect a one-time reward for Newcomer and each
-// "Getting started" milestone. All accounts can claim Newcomer.
+// The "Getting started" trophies are for new accounts only (see
+// isStarterTrophyAccount); every other trophy is for everyone. What a
+// milestone pays is in trophy-prizes.ts.
 
 import { minBy, sortBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
@@ -18,6 +19,7 @@ import {
   getEffectiveBonusMultiplier,
   roundTierBonus,
 } from 'common/supporter-config'
+import { formatMoney } from 'common/util/format'
 
 // Best first.
 export const TROPHY_TIER_ORDER = [
@@ -71,21 +73,57 @@ export const CATEGORY_ORDER: TrophyCategory[] = [
 ]
 
 // Stats of the "Getting started" trophies, counted live by get-user-trophies
-// from the account's first bets (see getStarterStats in backend/api). The
-// unit is a market-day: a market and Pacific day in which the account's buys,
-// not via the API and in a mana market, add up to M10 or more.
-// - starterTrades: market-days, so buying and selling the same market again
-//   the same day does not count again
+// (see getStarterStats in backend/api).
+//
+// From the account's first bets, not via the API and in mana markets. The
+// unit is a market-day: a market and Pacific day.
+// - starterTrades: market-days whose buys add up to M10 or more, so buying
+//   and selling the same market again the same day does not count again
 // - starterMarkets: distinct markets among them
 // - starterDays: distinct days among them
+// - starterSells: market-days whose sells add up to M10 or more
+// - starterLimitOrders: limit orders of M10 or more, filled or not. Quick
+//   orders that expire at once (slippage protection) don't count
+//
+// From the account, each counted only as far as its top milestone:
+// - starterWins: resolved mana markets, not cancelled and not its own, where
+//   it made a profit (the Profitable Markets rule)
+// - topicsFollowed: topics followed
+// - pushEnabled: 1 once push notifications are on
+// - starterPopularMarkets: its public markets with
+//   STARTER_QUESTION_MIN_TRADERS traders or more
+// - starterReferrals: people who signed up with its referral
+// - paidMembership: 1 once it has paid for a membership; free days don't count
 export const STARTER_STAT_KEYS = [
   'starterTrades',
   'starterMarkets',
   'starterDays',
+  'starterWins',
+  'topicsFollowed',
+  'starterSells',
+  'starterLimitOrders',
+  'pushEnabled',
+  'starterPopularMarkets',
+  'starterReferrals',
+  'paidMembership',
 ] as const
 export type StarterStatKey = (typeof STARTER_STAT_KEYS)[number]
 export type StarterStats = Record<StarterStatKey, number>
+export const EMPTY_STARTER_STATS: StarterStats = {
+  starterTrades: 0,
+  starterMarkets: 0,
+  starterDays: 0,
+  starterWins: 0,
+  topicsFollowed: 0,
+  starterSells: 0,
+  starterLimitOrders: 0,
+  pushEnabled: 0,
+  starterPopularMarkets: 0,
+  starterReferrals: 0,
+  paidMembership: 0,
+}
 export const STARTER_MIN_TRADE_AMOUNT = 10
+export const STARTER_QUESTION_MIN_TRADERS = 5
 
 // Accounts created at or after this time get the "Getting started" trophies.
 // null switches them off: they are hidden, and claim-trophy refuses them.
@@ -120,6 +158,7 @@ export const TROPHY_STAT_KEYS = [
   'peakNetWorth',
   'totalTradesCount',
   'longestBettingStreak',
+  'streakFreezesUsed',
   'resolvedProfitableMarkets',
   'marketsCreatedWithTraders',
   'creatorTraders',
@@ -163,14 +202,14 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'starter-trades',
     label: 'First Trades',
-    description:
-      'Trades of M10 or more, counting each market once a day. Each milestone pays mana once',
+    description: 'Trades of M10 or more, counting each market once a day',
     category: 'starter',
     statKey: 'starterTrades',
     unit: 'trades',
     milestones: [
       m('first-trade', 'First Trade', '\u{1F423}', 1, 'green', 50),
       m('hat-trick', 'Hat Trick', '\u{1F3A9}', 3, 'green', 50),
+      m('high-five', 'High Five', '\u{1F64C}', 5, 'teal'),
       m('getting-going', 'Getting Going', '\u{1F6B2}', 10, 'blue', 100),
       m('in-the-groove', 'In the Groove', '\u{1F3B6}', 25, 'purple', 150),
     ],
@@ -178,29 +217,113 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   {
     id: 'starter-markets',
     label: 'Markets Explored',
-    description:
-      'Different markets you have traded M10 or more in on a day. Each milestone pays mana once',
+    description: 'Different markets you have traded M10 or more in on a day',
     category: 'starter',
     statKey: 'starterMarkets',
     unit: 'markets',
     milestones: [
       m('curious', 'Curious', '\u{1F9ED}', 3, 'green', 50),
       m('explorer', 'Explorer', '\u{1F5FA}', 10, 'blue', 100),
+      m('globetrotter', 'Globetrotter', '\u{1F30E}', 25, 'indigo'),
+      m('cartographer', 'Cartographer', '\u{1F310}', 50, 'purple'),
     ],
   },
   {
     id: 'starter-days',
     label: 'Days Active',
-    description:
-      'Days you traded M10 or more in a market. Each milestone pays mana once',
+    description: 'Days you traded M10 or more in a market',
     category: 'starter',
     statKey: 'starterDays',
     unit: 'days',
     milestones: [
       m('back-again', 'Back Again', '\u{1F44B}', 2, 'green', 100),
       m('three-days', 'Three Days', '\u{1F4C5}', 3, 'green', 100),
+      m('five-days', 'Five Days', '\u{1F31E}', 5, 'teal'),
       m('full-week', 'Full Week', '\u{1F5D3}', 7, 'blue', 150),
+      m('ten-days', 'Ten Days', '\u{1F51F}', 10, 'purple'),
     ],
+  },
+  {
+    id: 'starter-wins',
+    label: 'Wins',
+    description:
+      "Resolved markets where you made a profit. Your own and cancelled markets don't count",
+    category: 'starter',
+    statKey: 'starterWins',
+    unit: 'wins',
+    milestones: [
+      m('called-it', 'Called It', '\u{2705}', 1, 'blue'),
+      m('hot-hand', 'Hot Hand', '\u{1F3C0}', 3, 'purple'),
+    ],
+  },
+  {
+    id: 'starter-topics',
+    label: 'Topics',
+    description: 'Topics you follow',
+    category: 'starter',
+    statKey: 'topicsFollowed',
+    unit: 'topics',
+    milestones: [
+      m('pick-your-topics', 'Pick Your Topics', '\u{1F9E9}', 3, 'green'),
+    ],
+  },
+  {
+    id: 'starter-sells',
+    label: 'First Sale',
+    description: 'Sales of M10 or more, counting each market once a day',
+    category: 'starter',
+    statKey: 'starterSells',
+    unit: 'sales',
+    milestones: [m('first-sale', 'First Sale', '\u{1F4B0}', 1, 'teal')],
+  },
+  {
+    id: 'starter-limit-orders',
+    label: 'Limit Order',
+    description: 'Limit orders of M10 or more',
+    category: 'starter',
+    statKey: 'starterLimitOrders',
+    unit: 'limit orders',
+    milestones: [m('limit-order', 'Limit Order', '\u{1F3A3}', 1, 'blue')],
+  },
+  {
+    id: 'starter-push',
+    label: 'Stay in the Loop',
+    description: 'Push notifications turned on in the app',
+    category: 'starter',
+    statKey: 'pushEnabled',
+    unit: 'devices',
+    milestones: [
+      m('stay-in-the-loop', 'Stay in the Loop', '\u{1F514}', 1, 'indigo'),
+    ],
+  },
+  {
+    id: 'starter-questions',
+    label: 'First Question',
+    description: `Public questions you asked that reached ${STARTER_QUESTION_MIN_TRADERS} traders`,
+    category: 'starter',
+    statKey: 'starterPopularMarkets',
+    unit: 'questions',
+    milestones: [
+      m('first-question', 'First Question', '\u{2753}', 1, 'purple'),
+    ],
+  },
+  {
+    id: 'starter-referrals',
+    label: 'Bring a Friend',
+    description: 'People who signed up with your invite',
+    category: 'starter',
+    statKey: 'starterReferrals',
+    unit: 'friends',
+    milestones: [m('bring-a-friend', 'Bring a Friend', '\u{1F48C}', 1, 'pink')],
+  },
+  {
+    id: 'starter-membership',
+    label: 'Member',
+    description: "Memberships you paid for. Free days don't count",
+    category: 'starter',
+    statKey: 'paidMembership',
+    unit: 'memberships',
+    milestones: [m('member', 'Member', '\u{1F4B3}', 1, 'gold')],
   },
 
   {
@@ -266,6 +389,17 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
       m('eternal-flame', 'Eternal Flame', '☀', 730, 'gold'),
       m('phoenix', 'Phoenix', '🐦\u200d🔥', 1_000, 'prismatic'),
     ],
+  },
+  {
+    id: 'streak-saves',
+    label: 'Close Call',
+    // Counted by reset-betting-streaks from the deploy that added it.
+    description: 'Times a streak freeze saved your streak',
+    category: 'trading',
+    statKey: 'streakFreezesUsed',
+    unit: 'saves',
+    ranked: false,
+    milestones: [m('close-call', 'Close Call', '\u{1F9CA}', 1, 'teal')],
   },
   {
     id: 'profitable-markets',
@@ -570,6 +704,15 @@ export function getTrophyDefinitionsFor(
     : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
 }
 
+/** The top milestone threshold of a starter stat: counting past it changes
+ * nothing, so the live count can stop there. 0 if no trophy measures it. */
+export function getStarterStatCap(key: StarterStatKey): number {
+  const thresholds = TROPHY_DEFINITIONS.filter(
+    (d) => isStarterTrophy(d) && d.statKey === key
+  ).flatMap((d) => d.milestones.map((m) => m.threshold))
+  return Math.max(0, ...thresholds.filter((t) => Number.isFinite(t)))
+}
+
 // One-time welcome rewards keep the quest reductions. Capping them at face
 // value lets future members claim now without missing out on mana.
 export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
@@ -758,6 +901,94 @@ export function getNextOnboardingMilestone(
     minBy(candidates, ({ milestone, value }) => milestone.threshold - value) ??
     null
   )
+}
+
+// What to do for the next "Getting started" milestone, and where.
+export type StarterMilestoneHint = { text: string; cta: string; href: string }
+
+export function getStarterMilestoneHint(next: {
+  definition: TrophyDefinition
+  milestone: TrophyMilestone
+  value: number
+}): StarterMilestoneHint {
+  const { definition, milestone, value } = next
+  const gap = milestone.threshold - value
+  const remaining = Number.isFinite(gap) ? Math.max(1, Math.ceil(gap)) : 1
+  const minimum = `${formatMoney(STARTER_MIN_TRADE_AMOUNT)} or more`
+  const market = { cta: 'Find a market', href: '/home' }
+  switch (definition.statKey) {
+    case 'starterDays':
+      return {
+        ...market,
+        text:
+          remaining === 1
+            ? `Trade ${minimum} on another day`
+            : `Trade ${minimum} on ${remaining} more days`,
+      }
+    case 'starterMarkets':
+      return {
+        ...market,
+        text:
+          remaining === 1
+            ? `Trade ${minimum} in one more market`
+            : `Trade ${minimum} in ${remaining} more markets`,
+      }
+    case 'starterWins':
+      return {
+        ...market,
+        text:
+          remaining === 1
+            ? 'Make a profit on a market that resolves'
+            : `Make a profit on ${remaining} more markets that resolve`,
+      }
+    case 'starterSells':
+      return { ...market, text: `Sell ${minimum} of a position` }
+    case 'starterLimitOrders':
+      return { ...market, text: `Place a limit order of ${minimum}` }
+    case 'topicsFollowed':
+      return {
+        cta: 'Browse topics',
+        href: '/browse',
+        text:
+          remaining === 1
+            ? 'Follow one more topic'
+            : `Follow ${remaining} more topics`,
+      }
+    case 'pushEnabled':
+      return {
+        cta: 'Notifications',
+        href: '/notifications',
+        text: 'Turn on push notifications in the app',
+      }
+    case 'starterPopularMarkets':
+      return {
+        cta: 'Ask a question',
+        href: '/create',
+        text: `Ask a question that gets ${STARTER_QUESTION_MIN_TRADERS} traders`,
+      }
+    case 'starterReferrals':
+      return {
+        cta: 'Invite a friend',
+        href: '/referrals',
+        text: 'Invite a friend who signs up',
+      }
+    case 'paidMembership':
+      return {
+        cta: 'See memberships',
+        href: '/membership',
+        text: 'Become a member',
+      }
+    default:
+      return {
+        ...market,
+        text:
+          milestone.threshold === 1
+            ? `Make a trade of ${minimum}`
+            : `Make ${remaining} more ${
+                remaining === 1 ? 'trade' : 'trades'
+              } of ${minimum}, one per market per day`,
+      }
+  }
 }
 
 const isKnownClaim = (claim: TrophyClaim) => {

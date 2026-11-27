@@ -12,6 +12,27 @@ import {
 const publicFile = (path: string) =>
   existsSync(resolve(__dirname, '../../web/public' + path))
 
+// Art pending: milestones added on 28 Nov 2026 (starter ladders v3 and Close
+// Call) that show their emoji until badge art is made. Remove an entry when
+// its WebP lands; the last test below fails if one is left behind.
+const ART_PENDING: readonly string[] = [
+  'starter-trades/high-five',
+  'starter-markets/globetrotter',
+  'starter-markets/cartographer',
+  'starter-days/five-days',
+  'starter-days/ten-days',
+  'starter-wins/called-it',
+  'starter-wins/hot-hand',
+  'starter-topics/pick-your-topics',
+  'starter-sells/first-sale',
+  'starter-limit-orders/limit-order',
+  'starter-push/stay-in-the-loop',
+  'starter-questions/first-question',
+  'starter-referrals/bring-a-friend',
+  'starter-membership/member',
+  'streak-saves/close-call',
+]
+
 // Every milestone has badge art (dev-docs/trophies/art-guide.md). The page
 // falls back to the emoji, so a missing image would otherwise go unnoticed.
 describe('trophy badge art', () => {
@@ -32,12 +53,14 @@ describe('trophy badge art', () => {
     expect(clashes).toEqual([])
   })
 
-  it('exists for every milestone', () => {
-    const missing = TROPHY_DEFINITIONS.flatMap((def) =>
+  // Both ways: a milestone without art must be listed as pending, and a
+  // pending entry must be a defined milestone that still has no art.
+  it('exists for every milestone except those listed as art pending', () => {
+    const withoutArt = TROPHY_DEFINITIONS.flatMap((def) =>
       def.milestones
-        .map((m) => getTrophyBadgeImagePath(def.id, m.id))
-        .filter((path) => !publicFile(path))
+        .filter((m) => !publicFile(getTrophyBadgeImagePath(def.id, m.id)))
+        .map((m) => `${def.id}/${m.id}`)
     )
-    expect(missing).toEqual([])
+    expect(withoutArt.sort()).toEqual([...ART_PENDING].sort())
   })
 })

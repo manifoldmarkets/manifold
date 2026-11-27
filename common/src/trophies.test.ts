@@ -1,8 +1,14 @@
+import { formatMoney } from './util/format'
+import { MILESTONE_PRIZES } from './trophy-prizes'
 import {
+  EMPTY_STARTER_STATS,
   LEAGUE_SHOWCASE_PIN,
   MAX_SHOWCASE_PINS,
   ONBOARDING_MILESTONES,
   STARTER_STAT_KEYS,
+  StarterStats,
+  getStarterMilestoneHint,
+  getStarterStatCap,
   TROPHY_DEFINITIONS,
   TROPHY_STAT_KEYS,
   RANKED_TROPHY_DEFINITIONS,
@@ -100,9 +106,34 @@ describe('trophy definitions', () => {
           ? spectrum.filter((t) => t !== 'teal')
           : def.id === 'charity-donated'
           ? ['green', 'blue', 'purple', 'crimson', 'gold', 'prismatic']
+          : def.id === 'streak-saves'
+          ? ['teal']
           : spectrum
       expect(def.milestones.map((m) => m.tier)).toEqual(expected)
     }
+  })
+
+  it('never steps down a colour within a ladder', () => {
+    const spectrum: string[] = [...TROPHY_TIER_ORDER].reverse()
+    for (const def of TROPHY_DEFINITIONS) {
+      const steps = def.milestones.map((m) => spectrum.indexOf(m.tier))
+      expect([def.id, Math.min(...steps) >= 0]).toEqual([def.id, true])
+      expect([def.id, steps]).toEqual([
+        def.id,
+        [...steps].sort((a, b) => a - b),
+      ])
+    }
+  })
+
+  it('counts 12 lifetime trophies and 11 getting started trophies', () => {
+    const count = (defs: typeof TROPHY_DEFINITIONS) => [
+      defs.length,
+      defs.reduce((sum, d) => sum + d.milestones.length, 0),
+    ]
+    expect(count(getTrophyDefinitionsFor(false))).toEqual([12, 106])
+    expect(count(TROPHY_DEFINITIONS.filter(isStarterTrophy))).toEqual([11, 23])
+    expect(count(TROPHY_DEFINITIONS)).toEqual([23, 129])
+    expect(ONBOARDING_MILESTONES).toHaveLength(24)
   })
 
   it('only measure known stats', () => {
@@ -221,7 +252,7 @@ describe('league level', () => {
 describe('progress', () => {
   it('shows known trophy stats while achievements are unavailable', () => {
     const trophies = {
-      starter: { starterTrades: 0, starterMarkets: 0, starterDays: 0 },
+      starter: EMPTY_STARTER_STATS,
       storedPeakNetWorth: 600_000,
       ranks: [{ trophyId: 'net-worth', rank: 1, value: 510_000 }],
     }
@@ -247,7 +278,12 @@ describe('progress', () => {
       peakNetWorth: 499_999,
       totalTradesCount: 12,
     }
-    const starter = { starterTrades: 3, starterMarkets: 2, starterDays: 1 }
+    const starter = {
+      ...EMPTY_STARTER_STATS,
+      starterTrades: 3,
+      starterMarkets: 2,
+      starterDays: 1,
+    }
     const trophies = {
       starter,
       storedPeakNetWorth: null,
@@ -619,7 +655,7 @@ describe('getting started trophies', () => {
     expect(getTrophyRewardMultiplier(tier)).toBe(multiplier)
   })
 
-  it('pay a positive finite reward on every starter milestone and Newcomer', () => {
+  it('are onboarding milestones, each with its own prize in MILESTONE_PRIZES', () => {
     expect(starterDefs.length).toBeGreaterThan(0)
     for (const def of TROPHY_DEFINITIONS) {
       for (const m of def.milestones) {
@@ -632,21 +668,48 @@ describe('getting started trophies', () => {
               definition.id === def.id && milestone.id === m.id
           )
         ).toBe(onboarding)
-        if (onboarding) {
-          expect(Number.isFinite(m.rewardMana)).toBe(true)
-          expect(m.rewardMana).toBeGreaterThan(0)
-        } else {
-          expect(m.rewardMana).toBeUndefined()
+        if (isStarterTrophy(def)) {
+          const prize = MILESTONE_PRIZES[def.id]?.[m.id]
+          expect([def.id, m.id, Object.keys(prize ?? {}).length > 0]).toEqual([
+            def.id,
+            m.id,
+            true,
+          ])
         }
       }
     }
   })
 
-  it('measure only the live starter stats', () => {
+  it('measure only the live starter stats, one trophy per stat', () => {
     const keys = new Set<string>(STARTER_STAT_KEYS)
     for (const def of TROPHY_DEFINITIONS) {
       expect(keys.has(def.statKey)).toBe(isStarterTrophy(def))
     }
+    expect(starterDefs.map((d) => d.statKey).sort()).toEqual(
+      [...STARTER_STAT_KEYS].sort()
+    )
+    expect(Object.keys(EMPTY_STARTER_STATS)).toEqual([...STARTER_STAT_KEYS])
+    expect(new Set(Object.values(EMPTY_STARTER_STATS))).toEqual(new Set([0]))
+  })
+
+  it('cap each live count at the top milestone of its stat', () => {
+    expect(
+      Object.fromEntries(
+        STARTER_STAT_KEYS.map((key) => [key, getStarterStatCap(key)])
+      )
+    ).toEqual({
+      starterTrades: 25,
+      starterMarkets: 50,
+      starterDays: 10,
+      starterWins: 3,
+      topicsFollowed: 3,
+      starterSells: 1,
+      starterLimitOrders: 1,
+      pushEnabled: 1,
+      starterPopularMarkets: 1,
+      starterReferrals: 1,
+      paidMembership: 1,
+    })
   })
 
   it('are only for accounts created at or after the start time', () => {
@@ -683,13 +746,14 @@ describe('getting started trophies', () => {
     expect(toClaim?.map((m) => m.id)).toEqual([
       'first-trade',
       'hat-trick',
+      'high-five',
       'getting-going',
     ])
     expect(getRewardManaTotal(toClaim ?? [])).toBe(200)
     expect(
       getTrophyClaimReward(
         trades,
-        trades.milestones[2],
+        trades.milestones[3],
         [claim(trades.id, 'first-trade')],
         getTrophyRewardMultiplier('reduced')
       )
@@ -698,16 +762,25 @@ describe('getting started trophies', () => {
 })
 
 describe('onboarding milestones', () => {
-  const zero = { starterTrades: 0, starterMarkets: 0, starterDays: 0 }
-  const all = { starterTrades: 25, starterMarkets: 10, starterDays: 7 }
+  const zero = EMPTY_STARTER_STATS
+  const all = Object.fromEntries(
+    STARTER_STAT_KEYS.map((key) => [key, getStarterStatCap(key)])
+  ) as StarterStats
   const newcomer = claim('account-age', 'newcomer')
+  const toClaim = (m: (typeof ONBOARDING_MILESTONES)[number]) =>
+    claim(m.definition.id, m.milestone.id)
 
   it('starts with Newcomer and lists only unclaimed reached milestones in definition order', () => {
-    const ids = (stats: typeof zero | null, claims: TrophyClaim[]) =>
+    const ids = (stats: StarterStats | null, claims: TrophyClaim[]) =>
       getClaimableOnboardingMilestones(stats, claims).map((m) => m.milestone.id)
     expect(ids(null, [])).toEqual([])
     expect(ids(zero, [])).toEqual(['newcomer'])
-    const stats = { starterTrades: 3, starterMarkets: 3, starterDays: 2 }
+    const stats = {
+      ...zero,
+      starterTrades: 3,
+      starterMarkets: 3,
+      starterDays: 2,
+    }
     expect(ids(stats, [])).toEqual([
       'newcomer',
       'first-trade',
@@ -718,13 +791,30 @@ describe('onboarding milestones', () => {
     expect(
       ids(stats, [newcomer, claim('starter-trades', 'first-trade')])
     ).toEqual(['hat-trick', 'curious', 'back-again'])
+    // Newcomer and the three ladders (14 milestones) come first.
+    expect(ids(all, ONBOARDING_MILESTONES.slice(0, 15).map(toClaim))).toEqual([
+      'called-it',
+      'hot-hand',
+      'pick-your-topics',
+      'first-sale',
+      'limit-order',
+      'stay-in-the-loop',
+      'first-question',
+      'bring-a-friend',
+      'member',
+    ])
   })
 
   it('selects the smallest remaining gap, breaking ties in definition order', () => {
     expect(getNextOnboardingMilestone(zero, [newcomer])?.milestone.id).toBe(
       'first-trade'
     )
-    const stats = { starterTrades: 1, starterMarkets: 2, starterDays: 1 }
+    const stats = {
+      ...zero,
+      starterTrades: 1,
+      starterMarkets: 2,
+      starterDays: 1,
+    }
     expect(getNextOnboardingMilestone(stats, [])?.milestone.id).toBe('curious')
     expect(
       getNextOnboardingMilestone({ ...stats, starterMarkets: 1 }, [])?.milestone
@@ -733,12 +823,101 @@ describe('onboarding milestones', () => {
   })
 
   it('skips earned milestones even after a stat drops, and finishes when all are reached', () => {
-    const claims = ONBOARDING_MILESTONES.map(({ definition, milestone }) =>
-      claim(definition.id, milestone.id)
-    )
+    const claims = ONBOARDING_MILESTONES.map(toClaim)
     expect(getClaimableOnboardingMilestones(all, claims)).toEqual([])
     expect(getNextOnboardingMilestone(zero, claims)).toBeNull()
     expect(getNextOnboardingMilestone(all, [])).toBeNull()
     expect(getNextOnboardingMilestone(null, [])).toBeNull()
+  })
+
+  it('tells the account what to do for the next milestone of every starter stat', () => {
+    const hint = (trophyId: string, milestoneId: string, value: number) => {
+      const definition = getTrophyDefinition(trophyId)!
+      const milestone = definition.milestones.find((m) => m.id === milestoneId)!
+      return getStarterMilestoneHint({ definition, milestone, value })
+    }
+    const min = `${formatMoney(10)} or more`
+    const market = { cta: 'Find a market', href: '/home' }
+    expect(hint('starter-trades', 'first-trade', 0)).toEqual({
+      ...market,
+      text: `Make a trade of ${min}`,
+    })
+    expect(hint('starter-trades', 'high-five', 3).text).toBe(
+      `Make 2 more trades of ${min}, one per market per day`
+    )
+    expect(hint('starter-trades', 'high-five', 4).text).toBe(
+      `Make 1 more trade of ${min}, one per market per day`
+    )
+    expect(hint('starter-markets', 'cartographer', 25).text).toBe(
+      `Trade ${min} in 25 more markets`
+    )
+    expect(hint('starter-markets', 'curious', 2).text).toBe(
+      `Trade ${min} in one more market`
+    )
+    expect(hint('starter-days', 'ten-days', 7).text).toBe(
+      `Trade ${min} on 3 more days`
+    )
+    expect(hint('starter-days', 'back-again', 1).text).toBe(
+      `Trade ${min} on another day`
+    )
+    expect(hint('starter-wins', 'called-it', 0)).toEqual({
+      ...market,
+      text: 'Make a profit on a market that resolves',
+    })
+    expect(hint('starter-wins', 'hot-hand', 1).text).toBe(
+      'Make a profit on 2 more markets that resolve'
+    )
+    expect(hint('starter-sells', 'first-sale', 0)).toEqual({
+      ...market,
+      text: `Sell ${min} of a position`,
+    })
+    expect(hint('starter-limit-orders', 'limit-order', 0)).toEqual({
+      ...market,
+      text: `Place a limit order of ${min}`,
+    })
+    expect(hint('starter-topics', 'pick-your-topics', 0)).toEqual({
+      cta: 'Browse topics',
+      href: '/browse',
+      text: 'Follow 3 more topics',
+    })
+    expect(hint('starter-topics', 'pick-your-topics', 2).text).toBe(
+      'Follow one more topic'
+    )
+    expect(hint('starter-push', 'stay-in-the-loop', 0)).toEqual({
+      cta: 'Notifications',
+      href: '/notifications',
+      text: 'Turn on push notifications in the app',
+    })
+    expect(hint('starter-questions', 'first-question', 0)).toEqual({
+      cta: 'Ask a question',
+      href: '/create',
+      text: 'Ask a question that gets 5 traders',
+    })
+    expect(hint('starter-referrals', 'bring-a-friend', 0)).toEqual({
+      cta: 'Invite a friend',
+      href: '/referrals',
+      text: 'Invite a friend who signs up',
+    })
+    expect(hint('starter-membership', 'member', 0)).toEqual({
+      cta: 'See memberships',
+      href: '/membership',
+      text: 'Become a member',
+    })
+    // A stat that isn't finite still asks for one more.
+    expect(hint('starter-days', 'back-again', NaN).text).toBe(
+      `Trade ${min} on another day`
+    )
+  })
+
+  it('has a hint of its own for every starter stat', () => {
+    const texts = TROPHY_DEFINITIONS.filter(isStarterTrophy).map(
+      (definition) =>
+        getStarterMilestoneHint({
+          definition,
+          milestone: definition.milestones[0],
+          value: 0,
+        }).text
+    )
+    expect(new Set(texts).size).toBe(STARTER_STAT_KEYS.length)
   })
 })
