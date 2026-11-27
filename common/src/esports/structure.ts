@@ -108,6 +108,13 @@ const held = (list: Series[]) => {
   const n = list.filter((s) => s.status === 'final' && !s.winnerId).length
   return n ? [`Finished series with no trusted result, not counted: ${n}.`] : []
 }
+/** A finished series won by one of its two teams. */
+const isTrustedResult = (s: Series) =>
+  s.status === 'final' &&
+  !!s.team1 &&
+  !!s.team2 &&
+  s.team1.id !== s.team2.id &&
+  (s.winnerId === s.team1.id || s.winnerId === s.team2.id)
 const after = (name: string, prefix: string) =>
   name.startsWith(prefix + ' ') ? name.slice(prefix.length + 1) : name
 /** The widest range a Date holds. A start outside it isn't a time. */
@@ -142,11 +149,20 @@ function poolCount(list: Series[]) {
   return new Set(pool.values()).size
 }
 
+/** The sent values `classifyStage` reads, as a conflict names them. */
+const LAYOUT_FIELDS = {
+  type: 'type',
+  name: 'name',
+  format: 'format',
+  roundsCount: 'rounds count',
+}
+
 /**
  * One signal per stage. When captures disagree on a sent value, the latest
  * capture wins. When the latest captures themselves disagree, nothing settles
  * it: the value is left empty, never taken from whichever series has the
- * higher ID, and a disagreement on the type, name or format is a `conflict`.
+ * higher ID, and a disagreement on a value that picks the layout (the type,
+ * name, format or rounds count) is a `conflict`.
  */
 export function stageSignals(
   series: Series[],
@@ -206,8 +222,8 @@ export function stageSignals(
     const format = told('format')
     const promotionCount = told('promotionCount')
     const labels = rows.flatMap((s) => (s.round ? [s.round] : []))
-    const conflicts = ['type', 'name', 'format'].flatMap((field) =>
-      field in unsettled ? [`${field} (${unsettled[field]})`] : []
+    const conflicts = Object.entries(LAYOUT_FIELDS).flatMap(([field, word]) =>
+      field in unsettled ? [`${word} (${unsettled[field]})`] : []
     )
     return {
       game,
@@ -319,22 +335,27 @@ export function classifyStage(sig: StageSignal): T.StageClassification {
     return only('round') ? out('swiss', `The stage is ${source}.`) : mixed()
   if (type === 'group') {
     const { roundsCount: n, teamCount: teams = 0, pools } = sig
-    // A round robin needs at least teams - 1 rounds. Fewer means Swiss
-    // pairing, but only where the pairings join every team: teams split into
-    // sets that never meet are separate pools, each its own round robin.
-    if (!(rounds.length && only('round') && n && n < teams - 1))
-      return out('group-table', `The stage is ${source}.`)
-    return pools === 1
+    // A table and a Swiss board both rank the stage's teams as one field, so
+    // the pairings must join every team into one pool. Teams in sets that
+    // never meet may be separate groups, each with its own table, or the
+    // first rounds of a Swiss stage: nothing says which, so neither is drawn.
+    if (pools !== 1)
+      return out(
+        'list',
+        pools
+          ? `The stage is ${source}, but its pairings form separate pools; ` +
+              "the format isn't clear yet."
+          : `The stage is ${source}, but none of its pairings is known; ` +
+              "the format isn't clear yet."
+      )
+    // A round robin needs at least teams - 1 rounds. Fewer means Swiss.
+    return rounds.length && only('round') && n && n < teams - 1
       ? out(
           'swiss',
           `The stage is ${source} with ${n} numbered rounds for ${teams} ` +
             'teams, too few for a round robin.'
         )
-      : out(
-          'group-table',
-          `The stage is ${source} with too few numbered rounds for a round ` +
-            "robin, but its pairings don't join every team into one pool."
-        )
+      : out('group-table', `The stage is ${source}.`)
   }
   return out(
     'list',
@@ -375,9 +396,10 @@ function swissView(
     [...records.values()],
     [(r) => -r.wins, 'losses', 'team.name']
   )
-  // "Through" is evidence only: the team plays in a stage that starts after
-  // this one or, failing that, the provider's promotion count cuts the final
-  // records cleanly: every result counted and a gap in wins below the cut.
+  // "Through" is evidence only. First, the team's own series in a later
+  // stage. Only when no team has one, the provider's promotion count: every
+  // series here is a trusted result, and the teams with the most wins, as
+  // many as the count, all have more wins than every team below them.
   const problems = held(series)
   const sentCut = sig.promotionCount
   const cut =
@@ -388,8 +410,7 @@ function swissView(
   const top = cut === null ? [] : rows.slice(0, cut)
   const worst = Math.min(...top.map((r) => r.wins))
   const clean =
-    done &&
-    !problems.length &&
+    series.every(isTrustedResult) &&
     cut !== null &&
     top.length === cut &&
     rows.slice(cut).every((r) => r.wins < worst)
@@ -714,16 +735,26 @@ export function buildTournamentViews(
     })
     const results = stages.map((rows, i) => {
       const { last } = spans[i]
-      const later = stages.filter((_, j) => {
+      const later = stages.filter((other, j) => {
         const { first } = spans[j]
-        return first !== undefined && last !== undefined && first > last
+        return (
+          other[0].stage !== null &&
+          first !== undefined &&
+          last !== undefined &&
+          first > last
+        )
       })
+      // A team is in a later stage only by its own series there with a known
+      // start. Its series with no start may have been played before this
+      // stage, and the other teams' starts say nothing about it. Series sent
+      // with no stage aren't a later stage either.
+      const datedLater = later.flat().filter((s) => s.startTimeMs !== null)
       const signal = signals[stageKey(rows[0])]
       return buildStage(
         signal,
         rows,
         event.tournament.name,
-        new Set(teamsOf(later.flat()).map((t) => t.id)),
+        new Set(teamsOf(datedLater).map((t) => t.id)),
         derive
       )
     })

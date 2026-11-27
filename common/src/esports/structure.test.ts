@@ -86,7 +86,7 @@ const cupTeam = (id: number) => ({ id, name: `Team ${id}` })
 /** Team `a` beat team `b` 2-0 in a best of three, on January `day`. */
 const made = (
   id: number,
-  stage: Row,
+  stage: Row | null,
   round: string | null,
   a: number,
   b: number,
@@ -176,6 +176,12 @@ describe('classifyStage', () => {
     ],
     [{ stageType: 'swiss' }, 'swiss', /sent as "swiss"/],
     [{ stageType: 'swiss', roundLabels: ['Round 1'] }, 'swiss', /sent as/],
+    // Sent as Swiss, it is Swiss from round one, pairings joined up or not.
+    [
+      { stageType: 'swiss', roundLabels: ['Round 1'], pools: 8 },
+      'swiss',
+      /sent as "swiss"/,
+    ],
     [
       {
         stageType: 'group',
@@ -186,12 +192,16 @@ describe('classifyStage', () => {
       /named "Swiss Stage"/,
     ],
     [{ stageLabel: 'Swiss Stage' }, 'swiss', /named "Swiss Stage"/],
-    [{ stageLabel: 'Group A' }, 'group-table', /named "Group A"/],
-    [{ format: 'round_robin' }, 'group-table', /sent as "round robin"/],
-    [{ format: 'playoff' }, 'list', /sent as "playoff" with no bracket/],
-    [{ stageType: 'group' }, 'group-table', /sent as "group"/],
+    [{ stageLabel: 'Group A', pools: 1 }, 'group-table', /named "Group A"/],
     [
-      { stageType: 'group', roundLabels: ['Opening matches'] },
+      { format: 'round_robin', pools: 1 },
+      'group-table',
+      /sent as "round robin"/,
+    ],
+    [{ format: 'playoff' }, 'list', /sent as "playoff" with no bracket/],
+    [{ stageType: 'group', pools: 1 }, 'group-table', /sent as "group"/],
+    [
+      { stageType: 'group', roundLabels: ['Opening matches'], pools: 1 },
       'group-table',
       /sent as "group"/,
     ],
@@ -245,10 +255,10 @@ describe('classifyStage', () => {
     expect(result.reason).toMatch(reason)
   })
 
-  // A group stage with numbered rounds is Swiss only when it has too few
-  // rounds to be a round robin and its pairings join every team into one
-  // pool. Recorded: 16 teams over 5 rounds is Swiss, 6 teams over 5 rounds is
-  // a round robin.
+  // A group stage is a table or a Swiss board only when its pairings join
+  // every team into one pool. Then it is Swiss when it has numbered rounds,
+  // too few for a round robin. Recorded: 16 teams over 5 rounds is Swiss, 6
+  // teams over 5 rounds is a round robin.
   test.each([
     [16, 5, 1, 'swiss'],
     [17, 5, 1, 'swiss'],
@@ -256,11 +266,15 @@ describe('classifyStage', () => {
     [8, 7, 1, 'group-table'],
     [5, 5, 1, 'group-table'],
     [16, null, 1, 'group-table'],
-    // Too few rounds, but the teams are in pools that never meet, or nothing
-    // says how many pools there are.
-    [8, 3, 2, 'group-table'],
-    [16, 5, 8, 'group-table'],
-    [16, 5, undefined, 'group-table'],
+    // The teams are in pools that never meet: separate groups, or a Swiss
+    // stage's first rounds. Whatever the rounds count says, it is a list.
+    [8, 3, 2, 'list'],
+    [16, 5, 8, 'list'],
+    [8, 7, 2, 'list'],
+    [16, null, 2, 'list'],
+    // Nor a board when no team is named, or nothing says how they pair.
+    [0, 5, 0, 'list'],
+    [16, 5, undefined, 'list'],
   ] as const)(
     'group, %s teams, %s rounds, %s pools: %s',
     (teams, rounds, pools, template) => {
@@ -321,6 +335,20 @@ describe('classifyStage', () => {
       { format: 'round_robin', stageLabel: 'Swiss Stage' },
       /named "Swiss Stage" but sent as "round robin"/,
     ],
+    // A group stage whose pairings don't join its teams into one pool.
+    [
+      { stageType: 'group', pools: 2 },
+      /sent as "group", but its pairings form separate pools; the format isn't clear yet/,
+    ],
+    [
+      { stageLabel: 'Group Stage', roundLabels: ['Round 1'], pools: 8 },
+      /named "Group Stage", but its pairings form separate pools/,
+    ],
+    [
+      { format: 'round_robin', pools: 0 },
+      /sent as "round robin", but none of its pairings is known/,
+    ],
+    [{ stageType: 'group' }, /none of its pairings is known/],
     // A final or a third-place series alone ends either kind of bracket.
     [
       { stageType: 'playoff', roundLabels: ['Grand Final'] },
@@ -565,7 +593,70 @@ describe('Swiss', () => {
     ])
   })
 
-  test('through and out come from the promotion count when the cut is clean', () => {
+  test('a team is through only by its own dated series in a later stage (made-up rows)', () => {
+    // The review's case: Team 1 played a qualifier series on January 1 whose
+    // start wasn't sent, then lost in the Swiss stage on January 2. Another
+    // qualifier pairing, Team 3 against Team 5, starts on January 3.
+    const swiss = cupStage(1, 'Swiss', 'swiss', 1)
+    const qualifier = cupStage(2, 'Qualifier', 'playoff')
+    const statuses = (ownDay: number | null, more: Row[] = []) => {
+      const [event] = build(
+        facts([
+          made(1, qualifier, null, 1, 2, ownDay),
+          made(2, qualifier, null, 3, 5, 3),
+          made(3, swiss, 'Round 1', 3, 1, 2),
+          made(4, swiss, 'Round 1', 2, 4, 2),
+          ...more,
+        ])
+      )
+      expect(event.stages[0].label).toBe('Swiss')
+      return as(event.stages[0].view, 'swiss')
+        .buckets.flatMap((b) => b.teams)
+        .map((r) => [r.team.id, r.status])
+    }
+    // Team 3's own series starts after the Swiss stage. Teams 1 and 2 have
+    // only the undated one, and Team 3's start says nothing about theirs.
+    const onlyTeam3 = [
+      [2, null],
+      [3, 'through'],
+      [1, null],
+      [4, null],
+    ]
+    expect(statuses(null)).toEqual(onlyTeam3)
+    // With its start sent, the qualifier began before the Swiss stage's last
+    // series: it isn't a later stage, for Team 3 either.
+    expect(statuses(1)).toEqual([
+      [2, null],
+      [3, null],
+      [1, null],
+      [4, null],
+    ])
+    // Sent as starting after the Swiss stage, it is evidence for all three.
+    expect(statuses(4)).toEqual([
+      [2, 'through'],
+      [3, 'through'],
+      [1, 'through'],
+      [4, null],
+    ])
+    // A later series sent with no stage is not a later stage.
+    expect(statuses(null, [made(5, null, null, 4, 6, 5)])).toEqual(onlyTeam3)
+    // A team named in a later stage's series whose start isn't known yet is
+    // not through, and one with a start is.
+    const playoffs = cupStage(3, 'Playoffs', 'playoff', 2)
+    expect(
+      statuses(1, [
+        made(5, playoffs, 'Semifinal', 4, 2, null),
+        made(6, playoffs, 'Semifinal', 3, 7, 6),
+      ])
+    ).toEqual([
+      [2, null],
+      [3, 'through'],
+      [1, null],
+      [4, null],
+    ])
+  })
+
+  test('the promotion count marks teams only when every result is trusted and the cut is clean', () => {
     const promote = (promotionCount: number): EsportsStageMeta[] => [
       {
         game: 'cs',
@@ -586,6 +677,37 @@ describe('Swiss', () => {
     ])
     // Six would split teams that all have three wins.
     expect(statuses(6)).toEqual(Array(16).fill(null))
+    // A count that isn't a whole number above zero is no count.
+    for (const count of [0, -8, 7.5, Number.NaN, Infinity])
+      expect(statuses(count)).toEqual(Array(16).fill(null))
+    // Nor two stage rows that disagree on it.
+    const nobody = (
+      series: EsportsSeriesFacts[],
+      meta: EsportsStageMeta[] = promote(8)
+    ) =>
+      expect(
+        as(only(series, meta).view, 'swiss')
+          .buckets.flatMap((b) => b.teams)
+          .map((r) => r.status)
+      ).toEqual(Array(16).fill(null))
+    nobody(read(R.bucharestGroup), [...promote(8), ...promote(9)])
+
+    // The count stands on the stage's own results, so every series must be a
+    // trusted result. One held as a forfeit, one still to be played, or one
+    // whose winner is neither team, and it marks nobody.
+    const forfeit = (row: Row) =>
+      row.id === 18041433 ? { ...row, status: 'defwin' } : row
+    nobody(read(R.bucharestGroup, forfeit))
+    nobody(read(R.bucharestGroup, unlabelled(18041433)))
+    // TYLOO's one win, over 9z: without it the top eight still all have more
+    // wins than the rest, so only the bad result holds the count back.
+    nobody(
+      read(R.bucharestGroup).map((s) =>
+        s.id === 18041477 ? { ...s, winnerId: 999999 } : s
+      )
+    )
+    // Without a count, results alone mark nobody.
+    nobody(read(R.bucharestGroup), [])
   })
 
   test('captures disagree on the stage type, and a forfeit is not a result', () => {
@@ -847,43 +969,224 @@ describe('Swiss', () => {
     expect(mixed([upper, quarter])).toMatch(/mix vocabularies/)
   })
 
-  test('two round-robin pools in one "group" stage are a table, not Swiss (made-up rows)', () => {
-    // Eight teams, three numbered rounds: too few for one round robin of
-    // eight, exactly enough for two pools of four that never meet.
-    const group = cupStage(1, 'Group Stage', 'group', 1, 3)
-    const pool = (first: number, id: number) => {
+  test('pools that never meet are a list: neither one table nor Swiss (made-up rows)', () => {
+    // The review's case: eight teams in two complete round robins of four,
+    // in one "group" stage. One table would rank the two pool winners, both
+    // 3-0, first and second of eight.
+    const pool = (stage: Row, first: number, id: number) => {
       const [a, b, c, d] = [first, first + 1, first + 2, first + 3]
       return [
-        made(id, group, 'Round 1', a, b),
-        made(id + 1, group, 'Round 1', c, d),
-        made(id + 2, group, 'Round 2', a, c),
-        made(id + 3, group, 'Round 2', b, d),
-        made(id + 4, group, 'Round 3', a, d),
-        made(id + 5, group, 'Round 3', b, c),
+        made(id, stage, 'Round 1', a, b),
+        made(id + 1, stage, 'Round 1', c, d),
+        made(id + 2, stage, 'Round 2', a, c),
+        made(id + 3, stage, 'Round 2', b, d),
+        made(id + 4, stage, 'Round 3', a, d),
+        made(id + 5, stage, 'Round 3', b, c),
       ]
     }
-    const pools = [...pool(1, 1), ...pool(5, 7)]
-    const { classification, signal, view } = only(facts(pools))
-    expect(signal).toMatchObject({ teamCount: 8, roundsCount: 3, pools: 2 })
-    expect(classification).toEqual({
+    const pools = (rounds: number | null) => {
+      const group = cupStage(1, 'Group Stage', 'group', 1, rounds)
+      return { group, rows: [...pool(group, 1, 1), ...pool(group, 5, 7)] }
+    }
+    // Three rounds are too few for one round robin of eight, seven are
+    // enough, and no count says nothing. Two pools are a list all the same.
+    for (const rounds of [3, 7, null]) {
+      const { classification, signal, view } = only(facts(pools(rounds).rows))
+      expect(signal).toMatchObject({
+        teamCount: 8,
+        roundsCount: rounds,
+        pools: 2,
+      })
+      expect(classification).toEqual({
+        template: 'list',
+        reason:
+          'The stage is sent as "group", but its pairings form separate ' +
+          "pools; the format isn't clear yet.",
+        unknownLabels: [],
+      })
+      expect(as(view, 'list').days.flatMap((d) => d.series)).toHaveLength(12)
+    }
+    // One series across the two pools joins them. Now three rounds for
+    // eight teams is Swiss pairing, and seven rounds is one table.
+    const joined = (rounds: number | null) => {
+      const { group, rows } = pools(rounds)
+      return only(facts([...rows, made(13, group, 'Round 3', 4, 5)]))
+    }
+    expect(joined(3).signal).toMatchObject({ pools: 1 })
+    expect(joined(3).classification.template).toBe('swiss')
+    expect(joined(7).classification).toEqual({
       template: 'group-table',
-      reason:
-        'The stage is sent as "group" with too few numbered rounds for a ' +
-        "round robin, but its pairings don't join every team into one pool.",
+      reason: 'The stage is sent as "group".',
       unknownLabels: [],
     })
-    expect(as(view, 'group-table').rows).toHaveLength(8)
-    // One series across the two pools joins them: now the pairing is Swiss.
-    const joined = only(facts([...pools, made(13, group, 'Round 3', 4, 5)]))
-    expect(joined.signal).toMatchObject({ pools: 1 })
-    expect(joined.classification.template).toBe('swiss')
-    // A Swiss stage sent as "group" is a table until its pairings join up:
-    // after round one, sixteen teams are still eight separate pairs.
-    const roundOne = only(
-      read(R.bucharestGroup, (row) => (row.round === 'Round 1' ? row : null))
+    expect(as(joined(7).view, 'group-table').rows).toHaveLength(8)
+  })
+
+  test('a Swiss stage sent as "group" is a list until its pairings join up', () => {
+    // The review's case, from the recorded PGL Masters Bucharest stage: after
+    // round one its sixteen teams are eight separate pairs. A table would
+    // rank them as one group of sixteen.
+    const rounds = (last: number) =>
+      read(R.bucharestGroup, (row) =>
+        Number(String(row.round).replace('Round ', '')) <= last ? row : null
+      )
+    const upTo = (last: number) => only(rounds(last))
+    const roundOne = upTo(1)
+    expect(roundOne.signal).toMatchObject({
+      stageType: 'group',
+      teamCount: 16,
+      roundsCount: 5,
+      pools: 8,
+    })
+    expect(roundOne.classification).toEqual({
+      template: 'list',
+      reason:
+        'The stage is sent as "group", but its pairings form separate ' +
+        "pools; the format isn't clear yet.",
+      unknownLabels: [],
+    })
+    expect(
+      as(roundOne.view, 'list').days.flatMap((d) => d.series)
+    ).toHaveLength(8)
+    expect(roundOne.event.champion).toBeNull()
+    // Round two's pairings join all sixteen, and the stage is Swiss from
+    // then on, as the whole stage was before.
+    expect(
+      [1, 2, 3, 4, 5].map((last) => [
+        stageSignals(rounds(last))[0].pools,
+        upTo(last).classification.template,
+      ])
+    ).toEqual([
+      [8, 'list'],
+      [1, 'swiss'],
+      [1, 'swiss'],
+      [1, 'swiss'],
+      [1, 'swiss'],
+    ])
+    expect(upTo(5)).toEqual(only(read(R.bucharestGroup)))
+    expect(upTo(5).classification.reason).toBe(
+      'The stage is sent as "group" with 5 numbered rounds for 16 teams, ' +
+        'too few for a round robin.'
     )
-    expect(roundOne.signal).toMatchObject({ pools: 8 })
-    expect(roundOne.classification.template).toBe('group-table')
+  })
+
+  test('the latest captures disagree on the rounds count: a list (made-up rows)', () => {
+    // The review's case: eight teams, all joined by their pairings, in three
+    // numbered rounds. A rounds count of three makes the stage Swiss and a
+    // count of seven makes it one round robin.
+    const group = (rounds: number) =>
+      cupStage(1, 'Group Stage', 'group', 1, rounds)
+    const pairs = [
+      [1, 2],
+      [3, 4],
+      [5, 6],
+      [7, 8],
+      [1, 3],
+      [5, 7],
+      [2, 4],
+      [6, 8],
+      [1, 5],
+      [3, 7],
+      [2, 6],
+      [4, 8],
+    ]
+    const rows = (rounds: number, from: number, to: number) =>
+      pairs
+        .slice(from, to)
+        .map(([a, b], i) =>
+          made(
+            from + i + 1,
+            group(rounds),
+            `Round ${Math.floor((from + i) / 4) + 1}`,
+            a,
+            b
+          )
+        )
+    const at = 5000
+    const reason =
+      "The latest captures disagree on the stage's rounds count (3 and 7)."
+    // Whichever of the two has the higher series IDs.
+    for (const [low, high] of [
+      [3, 7],
+      [7, 3],
+    ]) {
+      const tied = only([
+        ...facts(rows(low, 0, 6), at),
+        ...facts(rows(high, 6, 12), at),
+      ])
+      expect(tied.signal).toMatchObject({
+        stageType: 'group',
+        teamCount: 8,
+        pools: 1,
+        roundsCount: null,
+        problems: [
+          "The stage's roundsCount was sent as 3 and 7 in its latest " +
+            'captures; none is used.',
+        ],
+      })
+      expect(tied.classification).toEqual({
+        template: 'list',
+        reason,
+        unknownLabels: [],
+      })
+      expect(tied.view.kind).toBe('list')
+    }
+    // Rows with no capture time are tied as well.
+    expect(
+      only([...facts(rows(3, 0, 6)), ...facts(rows(7, 6, 12))]).classification
+        .reason
+    ).toBe(reason)
+    // One later capture settles it, either way.
+    const settled = (latest: number) =>
+      only([
+        ...facts(rows(3, 0, 6), at),
+        ...facts(rows(7, 6, 11), at),
+        ...facts(rows(latest, 11, 12), at + 1),
+      ])
+    expect(settled(3).classification.template).toBe('swiss')
+    expect(settled(7).classification.template).toBe('group-table')
+    expect(settled(7).signal.problems).toEqual([
+      "The stage's roundsCount was sent as 7 and 3; using 7, the latest.",
+    ])
+    // The tie is a list whatever else the stage sends: nothing is laid out
+    // from a stage the provider describes two ways at once.
+    const swiss = (rounds: number, id: number) =>
+      made(id, cupStage(1, 'Swiss Stage', 'swiss', 1, rounds), 'Round 1', id, 9)
+    expect(
+      only([...facts([swiss(5, 1)], at), ...facts([swiss(7, 2)], at)])
+        .classification
+    ).toEqual({
+      template: 'list',
+      reason:
+        "The latest captures disagree on the stage's rounds count (5 and 7).",
+      unknownLabels: [],
+    })
+  })
+
+  test('a stage sent as "swiss" is Swiss from round one', () => {
+    // The same eight separate pairs, in a stage the provider calls Swiss.
+    const roundOne = only(
+      read(R.pglStage1, (row) => (row.round === 'Round 1' ? row : null))
+    )
+    expect(roundOne.signal).toMatchObject({
+      stageType: 'swiss',
+      teamCount: 16,
+      pools: 8,
+    })
+    expect(roundOne.classification).toEqual({
+      template: 'swiss',
+      reason: 'The stage is sent as "swiss".',
+      unknownLabels: [],
+    })
+    expect(
+      as(roundOne.view, 'swiss').buckets.map((b) => [
+        `${b.wins}-${b.losses}`,
+        b.teams.length,
+      ])
+    ).toEqual([
+      ['1-0', 8],
+      ['0-1', 8],
+    ])
   })
 
   test('Valorant Swiss stage: chosen by name, no result counted', () => {
@@ -938,11 +1241,17 @@ describe('groups', () => {
       series: null,
     })
     expect(ids(gsl.unplaced ?? [])).toEqual([17665155])
-    // With only the opening matches labelled, nothing says GSL yet.
+    // With only the opening matches reported, nothing says GSL yet, and two
+    // pairs that haven't met aren't one table either.
     const opening = read(R.thunderpickGroupA).filter(
       (s) => s.round === 'Opening matches'
     )
-    expect(only(opening).classification.template).toBe('group-table')
+    expect(only(opening).classification).toMatchObject({
+      template: 'list',
+      reason:
+        'The stage is sent as "group", but its pairings form separate ' +
+        "pools; the format isn't clear yet.",
+    })
   })
 
   test('group table: wins, losses and map difference', () => {
