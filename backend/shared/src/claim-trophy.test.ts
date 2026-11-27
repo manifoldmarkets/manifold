@@ -176,9 +176,9 @@ beforeAll(async () => {
     );
     create table answers (id text primary key, contract_id text, resolution text);
     create table perp_orders (user_id text not null, created_time timestamptz not null);
+    create table group_members (group_id text not null, member_id text not null);
+    create table private_users (id text primary key, data jsonb not null);
     create table system_trading_status (token text primary key, status boolean not null);
-    -- Empty: a membership grant that starts finds nobody to notify.
-    create table private_users (id text primary key, data jsonb);
     insert into system_trading_status values ('MANA', true), ('CASH', false);
     create table contract_bets (
       bet_id text primary key,
@@ -418,9 +418,11 @@ describe('starter stats', () => {
     await bet('u', 'cash1', 30, 2) // not a mana market
 
     expect((await trophiesOf('u')).starter).toEqual({
+      ...trophies.EMPTY_STARTER_STATS,
       starterTrades: 3,
       starterMarkets: 2,
       starterDays: 2,
+      starterSells: 1,
     })
   })
 
@@ -429,6 +431,7 @@ describe('starter stats', () => {
     await bet('u', 'm1', 5, 0)
     await bet('u', 'm1', 5, 0)
     expect((await trophiesOf('u')).starter).toEqual({
+      ...trophies.EMPTY_STARTER_STATS,
       starterTrades: 1,
       starterMarkets: 1,
       starterDays: 1,
@@ -796,6 +799,23 @@ describe('other trophies', () => {
     await expect(claim('u', 'referrals', 'networker')).rejects.toMatchObject({
       code: 403,
     })
+  })
+
+  it('claims Close Call once a streak freeze has saved the streak', async () => {
+    await addUser('u', { createdTime: START - 1 })
+    expect((await loadLive('u')).streakFreezesUsed).toBe(0)
+    jest.mocked(loadUserAchievements).mockImplementationOnce(loadLive)
+    await expect(
+      claim('u', 'streak-saves', 'close-call')
+    ).rejects.toMatchObject({ code: 403 })
+
+    await rows(
+      `update users set data = data || '{"streakFreezesUsed": 2}' where id = 'u'`
+    )
+    expect((await loadLive('u')).streakFreezesUsed).toBe(2)
+    jest.mocked(loadUserAchievements).mockImplementationOnce(loadLive)
+    const { newlyClaimed } = await claim('u', 'streak-saves', 'close-call')
+    expect(newlyClaimed.map((c) => c.milestoneId)).toEqual(['close-call'])
   })
 
   it('crosses Account Age thresholds on the UTC calendar anniversary', async () => {

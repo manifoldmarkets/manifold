@@ -114,6 +114,9 @@ export type User = {
   longestBettingStreak?: number
   streakForgiveness: number
   lastStreakFreezeTime?: number // timestamp when a streak freeze was last used
+  // Times a freeze saved the streak, counted by reset-betting-streaks since
+  // the Close Call trophy shipped (Nov 2026).
+  streakFreezesUsed?: number
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   // Set when a reader closes the /perps explainer. Until then the page opens

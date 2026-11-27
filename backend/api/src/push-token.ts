@@ -11,6 +11,7 @@ import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
 import { getPrivateUser, getUser, log } from 'shared/utils'
+import { isStarterTrophyAccount } from 'common/trophies'
 import { hasFullBonusAccess } from 'common/user'
 
 // for mobile or something?
@@ -58,6 +59,11 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
     )
     const newPrivateUser = convertPrivateUser(updatedRow)
     if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
+      // Accounts with the "Getting started" trophies collect Stay in the
+      // Loop for turning push on, so they don't get this bonus as well.
+      if (isStarterTrophyAccount(user.createdTime)) {
+        return { newPrivateUser, txn: null }
+      }
       // Only pay push notification bonus to users with full bonus access
       // (identity-verified, grandfathered, or purchase/admin-'eligible')
       if (hasFullBonusAccess(user)) {

@@ -47,6 +47,27 @@ describe('trophy prizes', () => {
     }
   })
 
+  it('names only defined trophies and milestones in MILESTONE_PRIZES', () => {
+    const defined = new Set(
+      TROPHY_DEFINITIONS.flatMap((def) =>
+        def.milestones.map((m) => `${def.id}/${m.id}`)
+      )
+    )
+    const unknown = Object.entries(MILESTONE_PRIZES).flatMap(
+      ([trophyId, byMilestone]) =>
+        Object.keys(byMilestone)
+          .map((milestoneId) => `${trophyId}/${milestoneId}`)
+          .filter((key) => !defined.has(key))
+    )
+    expect(unknown).toEqual([])
+    // An own prize is never empty: a typo there would pay nothing.
+    for (const byMilestone of Object.values(MILESTONE_PRIZES)) {
+      for (const prize of Object.values(byMilestone)) {
+        expect(isEmptyPrizeTotal(totalPrizes([prize]))).toBe(false)
+      }
+    }
+  })
+
   it('pays something for every lifetime milestone, for new and old accounts', () => {
     for (const def of TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))) {
       for (const m of def.milestones) {

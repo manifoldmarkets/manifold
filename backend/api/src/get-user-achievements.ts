@@ -109,6 +109,7 @@ export async function loadUserAchievements(
       result?.largest_unprofitable_trade_value ?? 0
     ),
     longestBettingStreak: Number(result?.longest_betting_streak ?? 0),
+    streakFreezesUsed: Number(result?.streak_freezes_used ?? 0),
     modTicketsResolved: Number(result?.mod_tickets_resolved ?? 0),
     charityDonatedMana: Number(result?.charity_donated_mana ?? 0),
     ranks,
@@ -204,6 +205,7 @@ type StatsRow = {
   largest_profitable_trade_value: number | null
   largest_unprofitable_trade_value: number | null
   longest_betting_streak: number | null
+  streak_freezes_used: number | null
   mod_tickets_resolved: number | null
   charity_donated_mana: number | null
   ranks_json: Partial<Record<RankKey, number | null>> | null
@@ -212,7 +214,10 @@ type StatsRow = {
 // Every part reads only this user's rows through an index on the user.
 const STATS_QUERY = `with
   creators as (
-    select (data->'creatorTraders'->>'allTime')::int as creator_traders
+    select (data->'creatorTraders'->>'allTime')::int as creator_traders,
+      -- Streak freezes that saved a streak, counted by reset-betting-streaks
+      -- since the Close Call trophy shipped.
+      coalesce((data->>'streakFreezesUsed')::int, 0) as streak_freezes_used
     from users
     where id = $[userId]
   ),
@@ -369,6 +374,7 @@ const STATS_QUERY = `with
     metrics.largest_profitable_trade_value,
     metrics.largest_unprofitable_trade_value,
     longest_streak.longest_betting_streak,
+    creators.streak_freezes_used,
     mod_tickets.mod_tickets_resolved,
     charity.charity_donated_mana,
     json_build_object(

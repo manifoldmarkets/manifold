@@ -3311,6 +3311,9 @@ export const API = (_apiTypeCheck = {
       largestProfitableTradeValue: number
       largestUnprofitableTradeValue: number
       longestBettingStreak: number
+      // Times a streak freeze saved the streak, counted since the Close Call
+      // trophy shipped.
+      streakFreezesUsed: number
       largestLeagueSeasonEarnings: number
       modTicketsResolved: number
       charityDonatedMana: number
