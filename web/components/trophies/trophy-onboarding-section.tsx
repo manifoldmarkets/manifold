@@ -5,25 +5,27 @@ import {
   StarterStats,
   TrophyClaim,
   TrophyMilestoneRef,
+  TrophyPrizeAccount,
   getClaimableOnboardingMilestones,
   getNextOnboardingMilestone,
-  getTrophyClaimReward,
+  getTrophyClaimPrize,
 } from 'common/trophies'
 import { formatMoney } from 'common/util/format'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 import { TrophyBadgeImage } from './trophy-badge-image'
-import { TrophyRewardChip } from './trophy-reward-chip'
+import { TrophyPrizeChip } from './trophy-prize-chip'
 
 export function TrophyOnboardingSection(props: {
   starter: StarterStats
   claims: TrophyClaim[]
   rewarded: TrophyMilestoneRef[]
-  multiplier: number
+  // The account's standing, to show what each milestone pays it.
+  prizeAccount: TrophyPrizeAccount | undefined
   claimingId: string | null
   onClaim: (trophyId: string, milestoneId: string) => void
 }) {
-  const { starter, claims, rewarded, multiplier, claimingId, onClaim } = props
+  const { starter, claims, rewarded, prizeAccount, claimingId, onClaim } = props
   const ready = getClaimableOnboardingMilestones(starter, claims)
   const next = ready.length ? null : getNextOnboardingMilestone(starter, claims)
   if (!ready.length && !next) return null
@@ -52,14 +54,17 @@ export function TrophyOnboardingSection(props: {
                 {milestone.name}
               </div>
               <div className="text-ink-500 text-xs">{definition.label}</div>
-              <TrophyRewardChip
-                amount={getTrophyClaimReward(
-                  definition,
-                  milestone,
-                  rewarded,
-                  multiplier
-                )}
-              />
+              {prizeAccount && (
+                <TrophyPrizeChip
+                  className="mt-0.5"
+                  prize={getTrophyClaimPrize(
+                    definition,
+                    milestone,
+                    rewarded,
+                    prizeAccount
+                  )}
+                />
+              )}
             </div>
             {next ? (
               <Link

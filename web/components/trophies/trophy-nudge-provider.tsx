@@ -2,12 +2,12 @@ import Link from 'next/link'
 import { createContext, ReactNode, useContext, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
-import { getTrophyClaimReward, selectTrophyUnlockToasts } from 'common/trophies'
+import { getTrophyClaimPrize, selectTrophyUnlockToasts } from 'common/trophies'
 import { useClaimableTrophies } from 'web/hooks/use-claimable-trophies'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useTrophyRewardMultiplier } from 'web/hooks/use-trophy-reward-multiplier'
+import { useTrophyPrizeAccount } from 'web/hooks/use-trophy-prize-account'
 import { refreshUserTrophies } from 'web/hooks/use-user-trophies'
-import { formatTrophyReward } from './trophy-reward-chip'
+import { formatPrizeText } from './trophy-prize-chip'
 
 const NAV_FRESH_MS = 5 * 60_000
 const BET_REFRESH_MS = 30_000
@@ -19,7 +19,7 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
   const username = user?.username
   const lastBetTime = user?.lastBetTime ?? 0
   const hasStarterStats = !!trophies?.starter
-  const multiplier = useTrophyRewardMultiplier()
+  const prizeAccount = useTrophyPrizeAccount()
   const visible = useIsPageVisible()
 
   useEffect(() => {
@@ -101,14 +101,17 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
         </Link>
       ))
     for (const { definition, milestone } of milestones) {
-      const amount = getTrophyClaimReward(
-        definition,
-        milestone,
-        trophies.rewarded,
-        multiplier
-      )
-      const claim =
-        amount > 0 ? `claim ${formatTrophyReward(amount)}` : 'claim trophy'
+      const prize = prizeAccount
+        ? formatPrizeText(
+            getTrophyClaimPrize(
+              definition,
+              milestone,
+              trophies.rewarded,
+              prizeAccount
+            )
+          )
+        : []
+      const claim = prize.length ? `claim ${prize.join(' + ')}` : 'claim trophy'
       showToast(
         `${milestone.emoji} Trophy unlocked: ${milestone.name} · ${claim}`
       )
@@ -120,7 +123,7 @@ export function TrophyNudgeProvider(props: { children: ReactNode }) {
         } ready to claim`
       )
     }
-  }, [userId, username, trophies, achievements, ready, multiplier, visible])
+  }, [userId, username, trophies, achievements, ready, prizeAccount, visible])
 
   return (
     <TrophyCountContext.Provider value={ready.length}>

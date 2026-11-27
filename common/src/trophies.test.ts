@@ -27,6 +27,8 @@ import {
   getTrophyPrizeStanding,
   getTrophyRewardMultiplier,
   isRankPrizeRewardId,
+  summarizeMembershipResults,
+  toPrizeTotal,
   getTrophyDefinitionsFor,
   getTrophyDisplayStats,
   isStarterTrophy,
@@ -1004,6 +1006,42 @@ describe('membership prize results', () => {
         outcome: 'started',
       })
     ).toBe('1 day of Pro: started')
+  })
+
+  it('add up parts that share a tier and an outcome, best tier first', () => {
+    const results = [
+      { tier: 'basic', days: 1, grantedDays: 1, outcome: 'banked' },
+      { tier: 'basic', days: 2, grantedDays: 2, outcome: 'banked' },
+      { tier: 'basic', days: 7, grantedDays: 0, outcome: 'capped' },
+      { tier: 'plus', days: 2, grantedDays: 2, outcome: 'banked' },
+      { tier: 'plus', days: 7, grantedDays: 7, outcome: 'started' },
+      { tier: 'plus', days: 3, grantedDays: 1.5, outcome: 'banked' },
+    ] as const
+    const summary = summarizeMembershipResults([...results])
+    expect(summary).toEqual([
+      { tier: 'plus', days: 7, grantedDays: 7, outcome: 'started' },
+      { tier: 'plus', days: 5, grantedDays: 3.5, outcome: 'banked' },
+      { tier: 'basic', days: 3, grantedDays: 3, outcome: 'banked' },
+      { tier: 'basic', days: 7, grantedDays: 0, outcome: 'capped' },
+    ])
+    expect(summary.map(formatMembershipResult)).toEqual([
+      '7 days of Pro: started',
+      '5 days of Pro: saved for later (3.5 days, 30-day limit)',
+      '3 days of Plus: saved for later',
+      '7 days of Plus: 30-day limit reached',
+    ])
+    expect(summarizeMembershipResults([])).toEqual([])
+    // No days are lost or made by adding up.
+    expect(summary.reduce((sum, r) => sum + r.days, 0)).toBe(
+      results.reduce((sum, r) => sum + r.days, 0)
+    )
+    expect(
+      toPrizeTotal({ mana: 50, freezes: 1, membership: [...results] })
+    ).toEqual({
+      mana: 50,
+      freezes: 1,
+      membership: results.map(({ tier, days }) => ({ tier, days })),
+    })
   })
 
   it('say when the holding cap cut a grant short, rounding down', () => {

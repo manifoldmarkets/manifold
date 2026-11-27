@@ -196,8 +196,8 @@ export function addTrophyClaims(userId: string, claims: TrophyClaim[]) {
   })
 }
 
-/** Adds paid starter rewards returned by claim-trophy. Rewards are never
- * removed, so they merge. */
+/** Adds the paid milestones returned by claim-trophy. A paid prize is never
+ * unpaid, so they merge. */
 export function addTrophyRewards(
   userId: string,
   // Missing from a stage 1 API's response (mid-deploy).

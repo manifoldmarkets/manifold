@@ -11,7 +11,7 @@
 // Every milestone pays its prize once, to any account (see trophy-prizes.ts
 // for the amounts). The "Getting started" trophies are for new accounts only.
 
-import { minBy, sortBy } from 'lodash'
+import { groupBy, minBy, sortBy, sumBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import {
   EffectiveTier,
@@ -734,6 +734,52 @@ const MEMBERSHIP_OUTCOME_TEXT: Record<TrophyMembershipOutcome, string> = {
   pending: 'on its way',
   skipped: 'needs a paid membership',
 }
+
+const MEMBERSHIP_TIER_DISPLAY_ORDER: TrophyMembershipPrize['tier'][] = [
+  'premium',
+  'plus',
+  'basic',
+  'paid-tier',
+]
+const MEMBERSHIP_OUTCOME_DISPLAY_ORDER: TrophyMembershipOutcome[] = [
+  'started',
+  'banked',
+  'pending',
+  'capped',
+  'duplicate',
+  'skipped',
+]
+
+/**
+ * Adds up the membership parts that share a tier and an outcome, best tier
+ * first: a claim of a whole ladder has up to eight parts, too many to list.
+ */
+export function summarizeMembershipResults(
+  results: TrophyMembershipResult[]
+): TrophyMembershipResult[] {
+  const groups = Object.values(
+    groupBy(results, (r) => `${r.tier}/${r.outcome}`)
+  )
+  return sortBy(
+    groups.map((group) => ({
+      tier: group[0].tier,
+      days: sumBy(group, 'days'),
+      grantedDays: sumBy(group, (r) =>
+        Number.isFinite(r.grantedDays) ? r.grantedDays : 0
+      ),
+      outcome: group[0].outcome,
+    })),
+    (r) => MEMBERSHIP_TIER_DISPLAY_ORDER.indexOf(r.tier),
+    (r) => MEMBERSHIP_OUTCOME_DISPLAY_ORDER.indexOf(r.outcome)
+  )
+}
+
+/** The prize a claim paid as a plain total, without the grant outcomes. */
+export const toPrizeTotal = (prize: TrophyClaimPrize): TrophyPrizeTotal => ({
+  mana: prize.mana,
+  freezes: prize.freezes,
+  membership: prize.membership.map(({ tier, days }) => ({ tier, days })),
+})
 
 /** One short line per membership part, e.g. "3 days of Plus: started". */
 export function formatMembershipResult(result: TrophyMembershipResult) {

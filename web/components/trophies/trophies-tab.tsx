@@ -13,6 +13,8 @@ import {
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
+  EMPTY_CLAIM_PRIZE,
+  TrophyClaimPrize,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countEarnedMilestones,
@@ -26,6 +28,8 @@ import {
   getTrophyDefinitionsFor,
   getTrophyDisplayStats,
   getTrophyPinId,
+  isEmptyClaimPrize,
+  toPrizeTotal,
 } from 'common/trophies'
 import {
   formatMoney,
@@ -38,8 +42,11 @@ import { openShowcasePicker } from 'web/components/trophies/open-showcase-picker
 import { TrophyGrid } from 'web/components/trophies/trophy-card'
 import { TrophyClaimModal, TrophyDialog } from './trophy-claim-modal'
 import { TrophyOnboardingSection } from './trophy-onboarding-section'
-import { formatTrophyReward } from './trophy-reward-chip'
-import { useTrophyRewardMultiplier } from 'web/hooks/use-trophy-reward-multiplier'
+import { formatPrizeText } from './trophy-prize-chip'
+import {
+  collectsTrophyPrizes,
+  useTrophyPrizeAccount,
+} from 'web/hooks/use-trophy-prize-account'
 import { useUser } from 'web/hooks/use-user'
 import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
@@ -72,7 +79,9 @@ export function TrophiesTab(props: {
 
   const currentUser = useUser()
   const isAdmin = !!currentUser && isAdminId(currentUser.id)
-  const rewardMultiplier = useTrophyRewardMultiplier()
+  // The signed-in account's standing. Prizes show on your own profile only.
+  const viewerPrizeAccount = useTrophyPrizeAccount()
+  const prizeAccount = isOwnProfile ? viewerPrizeAccount : undefined
 
   const [claimingId, setClaimingId] = useState<string | null>(null)
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
@@ -94,14 +103,18 @@ export function TrophiesTab(props: {
     if (claimingId || !trophies || !isOwnProfile) return
     setClaimingId(trophyId)
     try {
-      const { claims, newlyClaimed, rewardAmount, rewarded } = await api(
-        'claim-trophy',
-        {
-          userId,
-          trophyId,
-          milestoneId,
-        }
-      )
+      const response = await api('claim-trophy', {
+        userId,
+        trophyId,
+        milestoneId,
+      })
+      const { claims, newlyClaimed, rewarded } = response
+      // An API from before prizes reports only the mana (mid-deploy).
+      const prize: TrophyClaimPrize = response.prize ?? {
+        ...EMPTY_CLAIM_PRIZE,
+        mana: response.rewardAmount ?? 0,
+      }
+      const paid = !isEmptyClaimPrize(prize)
       addTrophyClaims(userId, claims)
       addTrophyRewards(userId, rewarded)
       if (trophyId === 'net-worth') void refreshUserTrophies(userId)
@@ -114,26 +127,32 @@ export function TrophiesTab(props: {
         definition &&
         (getHighestClaimedMilestone(definition, newlyClaimed) ??
           getMilestone(definition, milestoneId))
-      if (milestone && (first || rewardAmount > 0)) {
+      if (milestone && (first || paid)) {
         setJustClaimed(null)
         setDialog({
           step: 'celebration',
           trophyId,
           milestone,
           more: Math.max(0, newlyClaimed.length - 1),
-          rewardAmount: rewardAmount ?? 0,
+          prize,
           first,
+          collected: newlyClaimed.length === 0,
         })
         track('trophy claim modal shown', {
           trophyId,
           milestoneId: milestone.id,
           first,
-          rewardAmount,
+          rewardAmount: prize.mana,
+          freezes: prize.freezes,
+          membershipDays: prize.membership.reduce((sum, m) => sum + m.days, 0),
         })
       } else {
         setJustClaimed(trophyId)
-        if (rewardAmount > 0)
-          toast.success(`+${formatTrophyReward(rewardAmount)} trophy reward`)
+        if (paid) {
+          toast.success(
+            `Trophy prize: ${formatPrizeText(toPrizeTotal(prize)).join(' · ')}`
+          )
+        }
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
@@ -158,7 +177,7 @@ export function TrophiesTab(props: {
       starter={starterStats}
       claims={trophies.claims}
       rewarded={trophies.rewarded}
-      multiplier={rewardMultiplier}
+      prizeAccount={prizeAccount}
       claimingId={claimingId}
       onClaim={handleClaim}
     />
@@ -166,7 +185,7 @@ export function TrophiesTab(props: {
   const modal = dialog && isOwnProfile && trophies && (
     <TrophyClaimModal
       dialog={dialog}
-      showManaRewards={!!starterStats && rewardMultiplier > 0}
+      showPrizes={collectsTrophyPrizes(prizeAccount)}
       onClose={() => {
         if (dialog.step === 'explainer' && dialog.trophyId) {
           setJustClaimed(dialog.trophyId)
@@ -326,9 +345,7 @@ export function TrophiesTab(props: {
               claimedIdsByTrophy={claimedIdsByTrophy}
               rewarded={trophies.rewarded}
               isOwnProfile={isOwnProfile}
-              rewardMultiplier={
-                isOwnProfile && starter ? rewardMultiplier : undefined
-              }
+              prizeAccount={prizeAccount}
               onClaim={handleClaim}
               claimingId={claimingId}
               justClaimedId={justClaimed}
