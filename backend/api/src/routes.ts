@@ -103,6 +103,7 @@ import { internalWriteOraclePrice } from './internal-write-oracle-price'
 import { getPerpPositions } from './get-perp-positions'
 import { getPerpQuote } from './get-perp-quote'
 import { internalPerpBroadcast } from './internal-perp-broadcast'
+import { internalMembershipBroadcast } from './internal-membership-broadcast'
 import { internalSportsBroadcast } from './internal-sports-broadcast'
 import { getPerpFundingEvents } from './get-perp-funding-events'
 import { getPerpEvents } from './get-perp-events'
@@ -344,6 +345,8 @@ import { getMerchOrders } from './get-merch-orders'
 import { getMerchStockStatus } from './get-merch-stock-status'
 import { getUserMerchOrders } from './get-user-merch-orders'
 import { toggleMerchStock } from './toggle-merch-stock'
+import { getMembershipGrants } from './get-membership-grants'
+import { adminGrantMembershipDays } from './admin-grant-membership-days'
 import { shopCancelSubscription } from './shop-cancel-subscription'
 import { shopPurchase } from './shop-purchase'
 import { shopPurchaseMerch } from './shop-purchase-merch'
@@ -512,6 +515,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-perp-positions': getPerpPositions,
   'get-perp-quote': getPerpQuote,
   'internal-perp-broadcast': internalPerpBroadcast,
+  'internal-membership-broadcast': internalMembershipBroadcast,
   'internal-sports-broadcast': internalSportsBroadcast,
   'get-perp-funding-events': getPerpFundingEvents,
   'get-perp-events': getPerpEvents,
@@ -695,6 +699,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'shop-shipping-rates': shopShippingRates,
   'shop-reset-all': shopResetAll,
   'shop-toggle': shopToggle,
+  'get-membership-grants': getMembershipGrants,
+  'admin-grant-membership-days': adminGrantMembershipDays,
   'shop-cancel-subscription': shopCancelSubscription,
   'shop-update-metadata': shopUpdateMetadata,
   'claim-charity-champion': claimCharityChampion,

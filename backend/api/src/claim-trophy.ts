@@ -7,24 +7,28 @@ import {
   getStarterStats,
   getTrophyClaims,
 } from 'api/helpers/trophies'
-import { resolveEffectiveTier, roundTierBonus } from 'common/supporter-config'
 import {
+  PUSH_BONUS_MILESTONE,
+  TrophyClaimPrize,
   TrophyDefinition,
+  TrophyMembershipResult,
+  TrophyMilestonePrize,
   formatTrophyValue,
+  getClaimedMilestonesUpTo,
   getMilestone,
+  getMilestonePrizesFor,
   getMilestonesToClaim,
-  getRewardManaTotal,
   getTrophyDefinition,
-  getTrophyRewardMultiplier,
   getTrophyStatValue,
   isStarterTrophy,
   isStarterTrophyAccount,
 } from 'common/trophies'
+import { isEmptyPrizeTotal } from 'common/trophy-prizes'
 import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
-import { TrophyRewardTxn } from 'common/txn'
-import { User, UserBan } from 'common/user'
-import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
+import { UserBan } from 'common/user'
+import { log } from 'shared/monitoring/log'
 import {
+  SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -34,7 +38,16 @@ import {
   TROPHY_SNAPSHOT_NET_WORTH,
 } from 'shared/supabase/trophy-eligibility'
 import { UserUpdate, broadcastUserUpdates } from 'shared/supabase/users'
-import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
+import {
+  NO_TROPHY_PRIZES_PAID,
+  PaidTrophyPrizes,
+  getAccountPrizeStanding,
+  getTrophyMembershipResults,
+  isLegacyBannedTrader,
+  payTrophyPrizes,
+  settleTrophyMembershipPrizes,
+} from 'shared/trophy-prizes'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { loadUserAchievements } from './get-user-achievements'
 
 export const claimTrophy: APIHandler<'claim-trophy'> =
@@ -72,14 +85,22 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           `You haven't reached ${milestone.name} yet: it needs ${needed}`
         )
       }
-      // Net Worth records the snapshot used for the claim inside the transaction.
+      // A milestone claimed earlier keeps its prize: collecting it needs no
+      // new proof, though the stat may have dropped since (a deleted market,
+      // a lost referral). Net Worth is the exception. A tier pays only while
+      // the account is at or above it, and the transaction checks the
+      // snapshot it records.
+      const isNetWorth = def.id === 'net-worth'
+      const collecting =
+        !isNetWorth &&
+        (await readClaimedMilestoneIds(pg, auth.uid, def.id)).has(milestoneId)
       const verifiedMilestones =
-        def.id === 'net-worth'
+        isNetWorth || collecting
           ? undefined
           : milestonesForValue(await getStatValue(def, auth.uid))
 
       const userUpdates: UserUpdate[] = []
-      const { inserted, rewardAmount } = await pg.tx(async (tx) => {
+      const { inserted, paid } = await pg.tx(async (tx) => {
         // Lock the user first, as quest rewards do.
         const locked = await tx.one<{
           bonus_eligibility: string | null
@@ -110,9 +131,22 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           throw new APIError(403, 'You are banned from claiming trophies')
         }
 
-        const toClaim =
-          verifiedMilestones ??
-          milestonesForValue(await readNetWorthAndRecordPeak(tx, auth.uid))
+        let toClaim = verifiedMilestones
+        if (collecting) {
+          // Only what is claimed, read again under the lock: never a lower
+          // milestone that isn't, which would need the stat checked.
+          const claimed = await readClaimedMilestoneIds(tx, auth.uid, def.id)
+          if (!claimed.has(milestoneId)) {
+            throw new APIError(
+              409,
+              `${milestone.name} is no longer claimed. Reload and claim it again.`
+            )
+          }
+          toClaim = getClaimedMilestonesUpTo(def, milestone, claimed)
+        }
+        toClaim ??= milestonesForValue(
+          await readNetWorthAndRecordPeak(tx, auth.uid)
+        )
 
         // One row per milestone. A repeated or concurrent claim inserts
         // nothing the second time, and a claim can never be lowered.
@@ -128,87 +162,160 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           [auth.uid, def.id, toClaim.map((m) => m.id)]
         )
 
-        const rewardable = toClaim.filter((m) => (m.rewardMana ?? 0) > 0)
-        if (!isStarterAccount || locked.is_bot || rewardable.length === 0) {
-          return { inserted, rewardAmount: 0 }
+        // Bots can claim, but get no prizes. Nor do the accounts banned from
+        // trading before user_bans existed, which have no ban row to stop
+        // them above.
+        if (locked.is_bot || isLegacyBannedTrader(auth.uid)) {
+          return { inserted, paid: NO_TROPHY_PRIZES_PAID }
         }
 
-        // Membership takes precedence over a flag and pays the base reward.
-        // Without membership, restricted accounts get zero and reduced get 0.2x.
-        const entitlements = await getActiveSupporterEntitlements(tx, auth.uid)
-        const effectiveTier = resolveEffectiveTier({
-          entitlements,
-          bonusEligibility: toBonusEligibility(locked.bonus_eligibility),
+        const { effectiveTier, standing } = await getAccountPrizeStanding(
+          tx,
+          auth.uid,
+          locked.bonus_eligibility
+        )
+        // A milestone that would pay this account nothing is left out: it
+        // stays unpaid rather than used up, so claiming again (directly, or
+        // via a higher milestone) pays it if the account's standing changes.
+        const prizes = await withoutRepeatedPushBonus(
+          tx,
+          auth.uid,
+          def,
+          getMilestonePrizesFor(def, toClaim, { isStarterAccount, standing })
+        )
+        if (!prizes.length) return { inserted, paid: NO_TROPHY_PRIZES_PAID }
+
+        // Mana and freezes are paid here. Membership days are only marked
+        // pending: they are granted below, once this has committed.
+        const paid = await payTrophyPrizes(tx, {
+          userId: auth.uid,
+          trophyId: def.id,
+          prizes: prizes.map(({ milestone, base, prize }) => ({
+            rewardId: milestone.id,
+            name: milestone.name,
+            baseMana: base.mana,
+            prize,
+          })),
+          effectiveTier,
+          multiplier: standing.manaMultiplier,
+          describe: (names) => `Trophy reward: ${names.join(', ')}`,
+          // Balance updates are broadcast after commit.
+          onUserUpdates: (u) => userUpdates.push(...u),
         })
-        const multiplier = getTrophyRewardMultiplier(effectiveTier)
-        // Nothing to pay: leave the rewards unpaid rather than used up, so
-        // claiming again (directly, or via a higher milestone) pays them if
-        // the account's standing changes.
-        if (
-          !(roundTierBonus(getRewardManaTotal(rewardable) * multiplier) > 0)
-        ) {
-          return { inserted, rewardAmount: 0 }
-        }
-
-        // Rewards are keyed separately from claims and never deleted, so a
-        // milestone pays once even if its claim is removed and made again.
-        // Only the rows inserted here are paid.
-        const newlyRewarded = await tx.manyOrNone<{ milestone_id: string }>(
-          `insert into user_trophy_rewards (user_id, trophy_id, milestone_id)
-           select $1, $2, unnest($3::text[])
-           on conflict (user_id, trophy_id, milestone_id) do nothing
-           returning milestone_id`,
-          [auth.uid, def.id, rewardable.map((m) => m.id)]
-        )
-        const newIds = new Set(newlyRewarded.map((r) => r.milestone_id))
-        const paid = rewardable.filter((m) => newIds.has(m.id))
-        const baseAmount = getRewardManaTotal(paid)
-        const amount = roundTierBonus(baseAmount * multiplier)
-        if (!Number.isFinite(amount) || !(amount > 0)) {
-          return { inserted, rewardAmount: 0 }
-        }
-
-        const rewardTxn: Omit<TrophyRewardTxn, 'id' | 'createdTime'> = {
-          fromId: 'BANK',
-          fromType: 'BANK',
-          toId: auth.uid,
-          toType: 'USER',
-          amount,
-          token: 'M$',
-          category: 'TROPHY_REWARD',
-          description: `Trophy reward: ${paid.map((m) => m.name).join(', ')}`,
-          data: {
-            trophyId: def.id,
-            milestoneIds: paid.map((m) => m.id),
-            baseAmount,
-            effectiveTier,
-            multiplier,
-          },
-        }
-        // The user row is locked above, so don't queue. Balance updates are
-        // broadcast after commit.
-        const txn = await runTxnOutsideBetQueue(tx, rewardTxn, false, (u) =>
-          userUpdates.push(...u)
-        )
-        await tx.none(
-          `update user_trophy_rewards set txn_id = $4
-           where user_id = $1 and trophy_id = $2 and milestone_id = any($3::text[])`,
-          [auth.uid, def.id, paid.map((m) => m.id), txn.id]
-        )
-        return { inserted, rewardAmount: amount }
+        return { inserted, paid }
       })
       if (userUpdates.length) broadcastUserUpdates(userUpdates)
+      if (paid.streakForgiveness !== null) {
+        broadcastUpdatedUser({
+          id: auth.uid,
+          streakForgiveness: paid.streakForgiveness,
+        })
+      }
+
+      // Granting membership days takes the user's bet queue slot and its own
+      // transaction, so it runs here: after commit, outside both. This also
+      // retries any part an earlier claim left pending. A part that fails now
+      // stays pending for the next claim or the scheduler's sweep.
+      await settleTrophyMembershipPrizes(pg, { userId: auth.uid })
+      const prize: TrophyClaimPrize = {
+        mana: paid.mana,
+        freezes: paid.freezes,
+        membership: await getMembershipResults(def.id, auth.uid, paid),
+      }
 
       return {
         newlyClaimed: inserted.map(convertTrophyClaim),
         claims: await getTrophyClaims(pg, auth.uid),
-        rewardAmount,
-        rewarded: isStarterAccount
-          ? await getRewardedMilestones(pg, auth.uid)
-          : [],
+        rewardAmount: prize.mana,
+        prize,
+        rewarded: await getRewardedMilestones(pg, auth.uid),
       }
     }
   )
+
+async function readClaimedMilestoneIds(
+  pg: SupabaseDirectClient,
+  userId: string,
+  trophyId: string
+) {
+  const rows = await pg.manyOrNone<{ milestone_id: string }>(
+    `select milestone_id from user_trophy_milestones
+     where user_id = $1 and trophy_id = $2`,
+    [userId, trophyId]
+  )
+  return new Set(rows.map((r) => r.milestone_id))
+}
+
+// Stay in the Loop replaces the push notification bonus older accounts were
+// paid. An account that has that bonus is paid no mana for the milestone, at
+// any time: the bonus txn is never deleted. The rest of the prize still pays.
+async function withoutRepeatedPushBonus(
+  tx: SupabaseTransaction,
+  userId: string,
+  def: TrophyDefinition,
+  prizes: TrophyMilestonePrize[]
+) {
+  const isPushPrize = (p: TrophyMilestonePrize) =>
+    def.id === PUSH_BONUS_MILESTONE.trophyId &&
+    p.milestone.id === PUSH_BONUS_MILESTONE.milestoneId &&
+    p.prize.mana > 0
+  if (!prizes.some(isPushPrize)) return prizes
+  const bonus = await tx.oneOrNone(
+    `select 1 from txns
+     where category = 'PUSH_NOTIFICATION_BONUS' and to_id = $1 limit 1`,
+    [userId]
+  )
+  if (!bonus) return prizes
+  return prizes
+    .map((p) =>
+      isPushPrize(p)
+        ? {
+            ...p,
+            base: { ...p.base, mana: 0 },
+            prize: { ...p.prize, mana: 0 },
+          }
+        : p
+    )
+    .filter((p) => !isEmptyPrizeTotal(p.prize))
+}
+
+// What became of the membership days this claim paid, in ladder order. The
+// payout has committed, so a failed read reports them as still on their way.
+async function getMembershipResults(
+  trophyId: string,
+  userId: string,
+  paid: PaidTrophyPrizes
+): Promise<TrophyMembershipResult[]> {
+  const results = await getTrophyMembershipResults(
+    createSupabaseDirectClient(),
+    userId,
+    trophyId,
+    paid.membership.map((m) => m.rewardId)
+  ).catch((error) => {
+    log.error('Failed to read trophy membership results', { userId, error })
+    return new Map<string, TrophyMembershipResult>()
+  })
+  return [
+    ...paid.membership.map(
+      (m): TrophyMembershipResult =>
+        results.get(m.rewardId) ?? {
+          tier: m.tier ?? 'paid-tier',
+          days: m.days,
+          grantedDays: 0,
+          outcome: m.status,
+        }
+    ),
+    // Left unpaid: collectable once the account pays for a membership.
+    ...paid.unpaidForPaidTier.map(
+      (m): TrophyMembershipResult => ({
+        tier: m.tier,
+        days: m.days,
+        grantedDays: 0,
+        outcome: 'skipped',
+      })
+    ),
+  ]
+}
 
 // Read the same latest value as get-user-achievements. Only fresh snapshots
 // can raise the permanent peak. Both operations see the same statement snapshot.
@@ -243,17 +350,3 @@ async function getStatValue(def: TrophyDefinition, userId: string) {
   }
   return getTrophyStatValue(def, await loadUserAchievements(userId))
 }
-
-type BonusEligibility = NonNullable<User['bonusEligibility']>
-const BONUS_ELIGIBILITY_VALUES: BonusEligibility[] = [
-  'verified',
-  'grandfathered',
-  'eligible',
-  'ineligible',
-  'requires_verification',
-]
-
-const toBonusEligibility = (
-  value: string | null
-): BonusEligibility | undefined =>
-  BONUS_ELIGIBILITY_VALUES.find((v) => v === value)

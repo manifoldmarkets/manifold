@@ -2,9 +2,13 @@ import clsx from 'clsx'
 import { useEffect, useState } from 'react'
 
 import {
+  TrophyClaimPrize,
+  TrophyMembershipOutcome,
   TrophyMilestone,
+  formatMembershipResult,
   getMilestone,
   getTrophyDefinition,
+  summarizeMembershipResults,
 } from 'common/trophies'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -13,17 +17,18 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { ShowcaseBadge, getTrophyShowcaseBadge } from './profile-showcase'
 import { TrophyBadgeImage } from './trophy-badge-image'
-import { formatTrophyReward } from './trophy-reward-chip'
+import { formatTrophyMana } from './trophy-prize-chip'
 import { TROPHY_TIER_STYLES } from './trophy-styles'
 
 export function TrophyClaimModal(props: {
   dialog: TrophyDialog
-  showManaRewards: boolean
+  // Whether the account's standing lets it collect prizes.
+  showPrizes: boolean
   onClose: () => void
   onExplain: (trophyId: string) => void
   onPin: (trophyId: string) => void
 }) {
-  const { dialog, showManaRewards, onClose, onExplain, onPin } = props
+  const { dialog, showPrizes, onClose, onExplain, onPin } = props
   const firstClaim = dialog.step === 'celebration' && dialog.first
   const onContinue = firstClaim ? () => onExplain(dialog.trophyId) : onClose
   return (
@@ -34,7 +39,11 @@ export function TrophyClaimModal(props: {
       size={dialog.step === 'explainer' ? 'md' : 'sm'}
       closeButtonPosition="inside"
       ariaLabel={
-        dialog.step === 'explainer' ? 'How trophies work' : 'Trophy unlocked'
+        dialog.step === 'explainer'
+          ? 'How trophies work'
+          : dialog.collected
+          ? 'Your prize'
+          : 'Trophy unlocked'
       }
       className="bg-canvas-0 text-ink-900 rounded-t-2xl px-5 py-6 sm:rounded-2xl"
     >
@@ -45,17 +54,15 @@ export function TrophyClaimModal(props: {
             milestone={dialog.milestone}
           />
           <div>
-            <p className="text-ink-500 text-sm font-medium">Trophy unlocked</p>
+            <p className="text-ink-500 text-sm font-medium">
+              {dialog.collected ? 'Your prize' : 'Trophy unlocked'}
+            </p>
             <h2 className="text-2xl font-bold">{dialog.milestone.name}</h2>
             {dialog.more > 0 && (
               <p className="text-ink-600 text-sm">and {dialog.more} more</p>
             )}
           </div>
-          {dialog.rewardAmount > 0 && (
-            <span className="rounded-full bg-teal-100 px-3 py-1 text-sm font-semibold text-teal-700">
-              +{formatTrophyReward(dialog.rewardAmount)} added to your balance
-            </span>
-          )}
+          <ClaimPrizeList prize={dialog.prize} />
           <div className="mt-2 flex flex-wrap justify-center gap-2">
             {!dialog.first && (
               <Button
@@ -72,17 +79,57 @@ export function TrophyClaimModal(props: {
           </div>
         </div>
       ) : (
-        <TrophyExplainer showManaRewards={showManaRewards} onClose={onClose} />
+        <TrophyExplainer showPrizes={showPrizes} onClose={onClose} />
       )}
     </Modal>
   )
 }
 
-function TrophyExplainer(props: {
-  showManaRewards: boolean
-  onClose: () => void
-}) {
-  const { showManaRewards, onClose } = props
+// Membership days that were added, or will be, read as a gain. The rest say
+// plainly that nothing was added.
+const ADDED_OUTCOMES: TrophyMembershipOutcome[] = [
+  'started',
+  'banked',
+  'pending',
+]
+
+/** What the claim added, one short line each. */
+function ClaimPrizeList(props: { prize: TrophyClaimPrize }) {
+  const { mana, freezes, membership } = props.prize
+  const lines: { text: string; muted?: boolean }[] = [
+    ...(mana > 0
+      ? [{ text: `+${formatTrophyMana(mana)} added to your balance` }]
+      : []),
+    ...(freezes > 0
+      ? [{ text: `+${freezes} streak ${freezes === 1 ? 'freeze' : 'freezes'}` }]
+      : []),
+    ...summarizeMembershipResults(membership).map((result) => ({
+      text: formatMembershipResult(result),
+      muted: !ADDED_OUTCOMES.includes(result.outcome),
+    })),
+  ]
+  if (!lines.length) return null
+  return (
+    <ul className="flex flex-col items-center gap-1.5">
+      {lines.map(({ text, muted }) => (
+        <li
+          key={text}
+          className={clsx(
+            'rounded-xl px-3 py-1 text-sm',
+            muted
+              ? 'bg-ink-100 text-ink-600 font-medium'
+              : 'bg-teal-100 font-semibold text-teal-700'
+          )}
+        >
+          {text}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function TrophyExplainer(props: { showPrizes: boolean; onClose: () => void }) {
+  const { showPrizes, onClose } = props
   return (
     <div className="flex flex-col gap-3 [text-wrap:pretty]">
       <ExplainerBadges />
@@ -91,7 +138,12 @@ function TrophyExplainer(props: {
         Trophies mark what you do on Manifold: trades, markets you create,
         comments, streaks and more.
       </p>
-      {showManaRewards && <p>Some trophies pay mana when you claim them.</p>}
+      {showPrizes && (
+        <p>
+          Each milestone pays a prize once when you claim it: mana, streak
+          freezes or free membership days.
+        </p>
+      )}
       <p>
         Claim each one here, then pin your favourites to your profile, like
         this:
@@ -209,8 +261,11 @@ export type TrophyDialog =
       trophyId: string
       milestone: TrophyMilestone
       more: number
-      rewardAmount: number
+      prize: TrophyClaimPrize
       first: boolean
+      // Collecting the prize of a milestone claimed earlier: nothing new is
+      // unlocked.
+      collected: boolean
     }
   | { step: 'explainer'; trophyId?: string }
 

@@ -20,6 +20,7 @@ export function TierSelector({
   onHoverEnd,
   effectiveBalance,
   variant = 'page',
+  lockMessage,
 }: {
   currentTier: SupporterTier | null
   selectedTier: SupporterTier
@@ -28,6 +29,7 @@ export function TierSelector({
   onHover: (tier: SupporterTier) => void
   onHoverEnd: () => void
   effectiveBalance: number
+  lockMessage?: string
   variant?: TierSelectorVariant
 }) {
   const activeTier = hoveredTier ?? selectedTier
@@ -45,6 +47,8 @@ export function TierSelector({
         return (
           <button
             key={tier}
+            disabled={!!lockMessage}
+            title={lockMessage}
             onClick={() => onSelect(tier)}
             onMouseEnter={() => onHover(tier)}
             onMouseLeave={onHoverEnd}

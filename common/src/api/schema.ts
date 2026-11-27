@@ -1,3 +1,7 @@
+import type {
+  MembershipGrantResult,
+  MembershipGrantView,
+} from 'common/membership-grants'
 import {
   socialPostDraftSchema,
   socialPostEditSchema,
@@ -56,6 +60,7 @@ import {
   MAX_SHOWCASE_PINS,
   type StarterStats,
   type TrophyClaim,
+  type TrophyClaimPrize,
   type TrophyMilestoneRef,
   type TrophyRank,
   type TrophyRankPeak,
@@ -1506,6 +1511,19 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         quote: perpQuoteSchema,
+      })
+      .strict(),
+  },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-membership-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        userId: z.string().min(1),
       })
       .strict(),
   },
@@ -3293,6 +3311,9 @@ export const API = (_apiTypeCheck = {
       largestProfitableTradeValue: number
       largestUnprofitableTradeValue: number
       longestBettingStreak: number
+      // Times a streak freeze saved the streak, counted since the Close Call
+      // trophy shipped.
+      streakFreezesUsed: number
       largestLeagueSeasonEarnings: number
       modTicketsResolved: number
       charityDonatedMana: number
@@ -3310,6 +3331,9 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // The owner gets the private starter stats too, so the client waits for
+    // sign-in to settle before it asks.
+    preferAuth: true,
     returns: {} as {
       ranks: TrophyRank[]
       rankPeaks: TrophyRankPeak[]
@@ -3323,10 +3347,10 @@ export const API = (_apiTypeCheck = {
       // Effective season used for the league lookup, even when league is null.
       season: number
       // Counts for the "Getting started" trophies, or null for accounts that
-      // don't get them (see isStarterTrophyAccount).
+      // don't get them (see isStarterTrophyAccount). Only the owner gets the
+      // private ones as they are (getPublicStarterStats).
       starter: StarterStats | null
-      // Milestones whose reward has been paid, for accounts that get the
-      // starter trophies.
+      // Milestones whose prize has been paid. A milestone pays once.
       rewarded: TrophyMilestoneRef[]
     },
     props: z
@@ -3349,7 +3373,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Claims a reached milestone and every lower one, paying any reward once.
+  // Claims a reached milestone and every lower one, paying each prize once.
   'claim-trophy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3357,8 +3381,12 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       newlyClaimed: TrophyClaim[]
       claims: TrophyClaim[]
-      // Mana paid for the newly claimed milestones, after the tier multiplier.
+      // Mana this claim paid, after the account's multiplier. Same as
+      // prize.mana; kept for clients from before prizes.
       rewardAmount: number
+      // Everything this claim paid: mana, streak freezes and free membership
+      // days, with what became of each membership grant.
+      prize: TrophyClaimPrize
       rewarded: TrophyMilestoneRef[]
     },
     props: z
@@ -4748,6 +4776,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         itemId: z.string(),
+        expectedPrice: z.number().finite().nonnegative().optional(),
       })
       .strict(),
     returns: {} as {
@@ -4768,6 +4797,28 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
+  'get-membership-grants': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ userId: z.string().optional() }).strict(),
+    returns: {} as MembershipGrantView & { userId: string },
+  },
+  'admin-grant-membership-days': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string().min(1),
+        tier: z.enum(['basic', 'plus', 'premium']),
+        days: z.number().int().min(1).max(90),
+        key: z.string().min(1).max(100),
+        note: z.string().trim().min(1),
+      })
+      .strict(),
+    returns: {} as MembershipGrantResult,
   },
   'shop-cancel-subscription': {
     method: 'POST',
@@ -4836,6 +4887,7 @@ export const API = (_apiTypeCheck = {
         itemId: z.string(),
         variantId: z.string(),
         shippingCost: z.number().int().min(0),
+        expectedTotal: z.number().finite().nonnegative().optional(),
         shipping: z.object({
           name: z.string().max(200),
           address1: z.string().max(200),
@@ -4992,6 +5044,7 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      freeDayMembers: number
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number

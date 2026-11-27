@@ -10,6 +10,7 @@ import {
   RANKED_TROPHY_DEFINITIONS,
   type TrophyRank,
   type TrophyRankPeak,
+  getPublicStarterStats,
 } from 'common/trophies'
 import type { League } from 'common/leagues'
 import {
@@ -18,9 +19,10 @@ import {
 } from 'shared/supabase/init'
 import { getEffectiveCurrentSeason } from 'shared/supabase/leagues'
 
-export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
-  userId,
-}) => {
+export const getUserTrophies: APIHandler<'get-user-trophies'> = async (
+  { userId },
+  auth
+) => {
   const pg = createSupabaseDirectClient()
   // A snapshot that sees a pin saved after rollover must also see the new
   // season and the membership that made the pin eligible.
@@ -35,10 +37,16 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
     // Only new accounts get the starter trophies, so only they pay for the
     // live count.
     const isStarterAccount = await getIsStarterTrophyAccount(tx, userId)
-    const starter = isStarterAccount ? await getStarterStats(tx, userId) : null
-    const rewarded = isStarterAccount
-      ? await getRewardedMilestones(tx, userId)
-      : []
+    const stats = isStarterAccount ? await getStarterStats(tx, userId) : null
+    // The endpoint is public. Whether push is on, and whether the account
+    // has paid for a membership, are for its owner: anyone else sees only
+    // what its claims already show.
+    const starter =
+      stats && auth?.uid !== userId
+        ? getPublicStarterStats(stats, claims)
+        : stats
+    // Every account's milestones pay a prize once.
+    const rewarded = await getRewardedMilestones(tx, userId)
     const rankedIds = RANKED_TROPHY_DEFINITIONS.map((def) => def.id)
     const ranks = await tx.manyOrNone<TrophyRank>(
       `select trophy_id as "trophyId", rank, value from trophy_ranks

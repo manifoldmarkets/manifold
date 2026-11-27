@@ -12,6 +12,7 @@ import {
   type TrophyDefinition,
   type TrophyMilestone,
   type TrophyMilestoneRef,
+  type TrophyPrizeAccount,
   type TrophyRank,
   type TrophyRankPeak,
   type TrophyRankTier,
@@ -23,16 +24,24 @@ import {
   getTrophyRankTitle,
   formatTrophyValue,
   getAccountAnniversaryTime,
+  getMilestonePrizesFor,
   getTrophyBadgeImagePath,
-  getTrophyClaimReward,
+  getTrophyClaimPrize,
+  getTrophyCollectPrize,
   isMilestoneReached,
 } from 'common/trophies'
+import { EMPTY_PRIZE_TOTAL, isEmptyPrizeTotal } from 'common/trophy-prizes'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
 import { TrophyRankChip, TrophyRankRing, formatRankValue } from './trophy-rank'
-import { TrophyRewardChip, formatTrophyReward } from './trophy-reward-chip'
+import {
+  PrizeChipParts,
+  TrophyPrizeChip,
+  formatPrizeText,
+  getPrizeChipParts,
+} from './trophy-prize-chip'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 
@@ -45,9 +54,9 @@ export function TrophyGrid(props: {
   claimedIdsByTrophy: Map<string, Set<string>>
   rewarded: TrophyMilestoneRef[]
   isOwnProfile?: boolean
-  // The viewer's reward multiplier, to show what a milestone pays them. Set
-  // only for the owner of a new account.
-  rewardMultiplier?: number
+  // The owner's standing, to show what each milestone pays them. Not set on
+  // someone else's profile, which shows no prizes.
+  prizeAccount?: TrophyPrizeAccount
   onClaim?: (trophyId: string, milestoneId: string) => void
   claimingId?: string | null
   justClaimedId?: string | null
@@ -61,7 +70,7 @@ export function TrophyGrid(props: {
     claimedIdsByTrophy,
     rewarded,
     isOwnProfile,
-    rewardMultiplier,
+    prizeAccount,
     onClaim,
     claimingId,
     justClaimedId,
@@ -90,7 +99,7 @@ export function TrophyGrid(props: {
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
             rewarded={rewarded}
             isOwnProfile={isOwnProfile}
-            rewardMultiplier={rewardMultiplier}
+            prizeAccount={prizeAccount}
             onClaim={onClaim}
             claimingId={claimingId}
             justClaimed={justClaimedId === def.id}
@@ -114,7 +123,7 @@ export function TrophyCard(props: {
   claimedIds: Set<string>
   rewarded: TrophyMilestoneRef[]
   isOwnProfile?: boolean
-  rewardMultiplier?: number
+  prizeAccount?: TrophyPrizeAccount
   onClaim?: (trophyId: string, milestoneId: string) => void
   claimingId?: string | null
   justClaimed?: boolean
@@ -129,7 +138,7 @@ export function TrophyCard(props: {
     claimedIds,
     rewarded,
     isOwnProfile,
-    rewardMultiplier,
+    prizeAccount,
     onClaim,
     claimingId,
     justClaimed,
@@ -187,13 +196,32 @@ export function TrophyCard(props: {
   const isReached = isMilestoneReached(viewing, currentValue)
   const isClaimed = claimedIds.has(viewing.id)
   const earned = isEarned(viewing)
-  const rewardAmount = getTrophyClaimReward(
-    definition,
-    viewing,
-    rewarded,
-    rewardMultiplier ?? 0
+  // What a claim would collect: this milestone's prize and those of unpaid
+  // lower ones. Collecting on a milestone claimed earlier pays only for
+  // claimed ones (claim-trophy doesn't check the stat again then); Net Worth
+  // is claimed afresh each time. Only the owner sees prizes.
+  const claimPrize = !(isOwnProfile && prizeAccount)
+    ? EMPTY_PRIZE_TOTAL
+    : isClaimed && !isNetWorth
+    ? getTrophyCollectPrize(
+        definition,
+        viewing,
+        claimedIds,
+        rewarded,
+        prizeAccount
+      )
+    : getTrophyClaimPrize(definition, viewing, rewarded, prizeAccount)
+  const unpaidPrize = !isEmptyPrizeTotal(claimPrize)
+  // A milestone still ahead shows its own prize, which doesn't shrink as the
+  // ones below it are collected.
+  const isPaid = rewarded.some(
+    (r) => r.trophyId === definition.id && r.milestoneId === viewing.id
   )
-  const unpaidReward = rewardAmount > 0
+  const ownPrize =
+    isOwnProfile && prizeAccount && !isPaid
+      ? getMilestonePrizesFor(definition, [viewing], prizeAccount)[0]?.prize
+      : undefined
+  const chipPrize = isReached ? claimPrize : ownPrize ?? EMPTY_PRIZE_TOTAL
   const style = TROPHY_TIER_STYLES[viewing.tier]
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < shown.length - 1
@@ -304,7 +332,7 @@ export function TrophyCard(props: {
           {best && ` · Best: ${best.name}`}
         </span>
 
-        {!isClaimed && <TrophyRewardChip amount={rewardAmount} />}
+        {!isClaimed && <TrophyPrizeChip prize={chipPrize} />}
 
         <MilestoneDots
           milestones={shown}
@@ -348,24 +376,30 @@ export function TrophyCard(props: {
             {claiming ? 'Claiming...' : `Claim ${viewing.name}`}
           </button>
         ) : isClaimed ? (
-          // An unpaid reward comes first, even right after a claim.
+          // An unpaid prize comes first, even right after a claim.
           isOwnProfile &&
-          unpaidReward &&
+          unpaidPrize &&
           (!isNetWorth || isReached) &&
           onClaim ? (
             <button
               className={clsx(
-                'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
+                'mt-1 flex w-full flex-wrap justify-center gap-x-1 rounded-lg bg-gradient-to-r px-2 py-1.5 text-xs font-semibold leading-tight transition-all',
                 claimingId ? 'cursor-wait opacity-75' : 'hover:brightness-110',
                 style.gradient,
                 style.buttonText
               )}
               onClick={() => onClaim(definition.id, viewing.id)}
               disabled={!!claimingId}
+              aria-label={`Collect ${formatPrizeText(claimPrize).join(', ')}`}
             >
-              {claiming
-                ? 'Collecting...'
-                : `Collect ${formatTrophyReward(rewardAmount)}`}
+              {claiming ? (
+                'Collecting...'
+              ) : (
+                <>
+                  <span>Collect</span>
+                  <PrizeChipParts parts={getPrizeChipParts(claimPrize)} />
+                </>
+              )}
             </button>
           ) : justClaimed && onPinToProfile ? (
             <button

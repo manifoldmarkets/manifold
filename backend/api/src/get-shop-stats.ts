@@ -41,7 +41,8 @@ export type ShopStats = {
     quantity: number
     revenue: number
   }[]
-  // Current active subscriber counts by tier
+  freeDayMembers: number
+  // Current paid subscriber counts by tier
   subscribersByTier: {
     tier: 'basic' | 'plus' | 'premium'
     count: number
@@ -172,21 +173,26 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     autoRenewCount: number
   }>(
     `
-    select 
-      case 
-        when entitlement_id = 'supporter-basic' then 'basic'
-        when entitlement_id = 'supporter-plus' then 'plus'
-        when entitlement_id = 'supporter-premium' then 'premium'
-      end as tier,
-      count(*)::int as count,
-      count(*) filter (where auto_renew = true)::int as "autoRenewCount"
-    from user_entitlements
-    where entitlement_id in ('supporter-basic', 'supporter-plus', 'supporter-premium')
-      and enabled = true
-      and (expires_time is null or expires_time > now())
-    group by entitlement_id
-    order by entitlement_id
-    `
+    select tier, count(*)::int as count,
+      count(*) filter (where auto_renew)::int as "autoRenewCount"
+    from (
+      select substr(entitlement_id, length('supporter-') + 1) as tier, auto_renew
+      from user_entitlements
+      where entitlement_id = any($1) and metadata->>'membershipGrantId' is null
+        and (auto_renew or expires_time is null or expires_time > now())
+      union all
+      select paused_paid->>'tier', (paused_paid->>'autoRenew')::boolean
+      from membership_grants
+      where status = 'active' and ((paused_paid->>'remainingMs')::bigint > 0
+        or (paused_paid->>'autoRenew')::boolean)
+    ) paid
+    group by tier order by tier
+    `,
+    [SUBSCRIPTION_ITEM_IDS]
+  )
+  const { freeDayMembers } = await pg.one<{ freeDayMembers: number }>(
+    `select count(*)::int as "freeDayMembers" from membership_grants
+     where status = 'active' and ends_time > now()`
   )
 
   // Get subscription counts over time (new subscriptions per day)
@@ -247,6 +253,7 @@ export const getShopStats: APIHandler<'get-shop-stats'> = async (props) => {
     digitalGoodsSales: digitalGoodsSales ?? [],
     ticketSales: ticketSales ?? [],
     merchSales: merchSales ?? [],
+    freeDayMembers,
     subscribersByTier: subscribersByTier ?? [],
     subscriptionsOverTime: subscriptionsOverTime ?? [],
   }

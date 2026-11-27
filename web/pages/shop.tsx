@@ -5,6 +5,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/solid'
 import { DAY_MS } from 'common/util/time'
+import { formatMembershipDate } from 'common/membership-grants'
 import {
   SHOP_ITEMS,
   ShopItem,
@@ -98,7 +99,8 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useOptimisticEntitlements } from 'web/hooks/use-optimistic-entitlements'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
+import { getUserSafe } from 'web/lib/supabase/users'
 import Custom404 from './404'
 import {
   BenefitsTable,
@@ -119,11 +121,61 @@ import {
   promoStatSizeClass,
 } from 'web/components/shop/giveaway-promo-card'
 import { NewBadge } from 'web/components/shop/new-badge'
+import { useMembershipGrants } from 'web/components/shop/supporter/membership-grants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useStoreReviewNudge } from 'web/hooks/use-store-review-nudge'
 import { useActiveHolidaySale } from 'web/hooks/use-holiday-sale'
 import { getAnimationLocationText } from 'common/shop/display-config'
 import { getTotalPrizePool } from 'common/sweepstakes'
+
+function getChangedPrice(error: unknown, field: 'price' | 'total' = 'price') {
+  if (!(error instanceof APIError) || error.code !== 409) return
+  const { details } = error
+  if (!details || typeof details !== 'object') return
+  const price =
+    field === 'price' && 'price' in details
+      ? details.price
+      : 'total' in details
+      ? details.total
+      : undefined
+  if (typeof price === 'number' && Number.isFinite(price) && price >= 0)
+    return price
+}
+
+function usePurchaseQuote(liveAmount: number) {
+  const [quote, setQuote] = useState<{ amount: number; repriced?: boolean }>()
+
+  const applyPriceChange = (error: unknown) => {
+    const amount = getChangedPrice(error)
+    if (amount === undefined) return false
+    // A late response belongs only to the quote that was submitted.
+    setQuote((current) =>
+      current && current === quote ? { amount, repriced: true } : current
+    )
+    return true
+  }
+
+  return {
+    open: !!quote,
+    amount: quote?.amount ?? liveAmount,
+    repriced: quote?.repriced,
+    capture: (amount = liveAmount) => setQuote({ amount }),
+    close: () => setQuote(undefined),
+    applyPriceChange,
+  }
+}
+
+async function showPurchaseError(
+  error: unknown,
+  fallback: string,
+  userId: string
+) {
+  toast.error(
+    error instanceof Error && error.message ? error.message : fallback
+  )
+  if (error instanceof APIError && error.code === 409)
+    await getUserSafe(userId).catch(console.error)
+}
 
 // Check if user owns the item (not expired), regardless of enabled status
 const isEntitlementOwned = (e: UserEntitlement) => {
@@ -902,7 +954,6 @@ export default function ShopPage() {
         {merchHasNewItems && (
           <MerchSection
             user={user}
-            entitlements={effectiveEntitlements}
             purchasedMerchIds={purchasedMerchIds}
             outOfStockIds={outOfStockIds}
             isItemNewToUser={isItemNewToUser}
@@ -926,7 +977,6 @@ export default function ShopPage() {
         {!merchHasNewItems && (
           <MerchSection
             user={user}
-            entitlements={effectiveEntitlements}
             purchasedMerchIds={purchasedMerchIds}
             outOfStockIds={outOfStockIds}
             isItemNewToUser={isItemNewToUser}
@@ -1064,7 +1114,6 @@ function HolidaySaleShopNote() {
 
 function MerchSection(props: {
   user: User | null | undefined
-  entitlements: UserEntitlement[]
   purchasedMerchIds: Set<string>
   outOfStockIds: Set<string>
   isItemNewToUser: (item: ShopItem) => boolean
@@ -1074,7 +1123,6 @@ function MerchSection(props: {
 }) {
   const {
     user,
-    entitlements,
     purchasedMerchIds,
     outOfStockIds,
     isItemNewToUser,
@@ -1104,7 +1152,6 @@ function MerchSection(props: {
             key={item.id}
             item={item}
             user={user}
-            allEntitlements={entitlements}
             alreadyPurchased={purchasedMerchIds.has(item.id)}
             outOfStock={outOfStockIds.has(item.id)}
             isNew={isItemNewToUser(item)}
@@ -1119,27 +1166,18 @@ function MerchSection(props: {
 function MerchItemCard(props: {
   item: ShopItem
   user: User | null | undefined
-  allEntitlements?: UserEntitlement[]
   alreadyPurchased?: boolean
   outOfStock?: boolean
   isNew?: boolean
   onPurchased?: () => void
 }) {
-  const {
-    item,
-    user,
-    allEntitlements,
-    alreadyPurchased,
-    outOfStock,
-    isNew,
-    onPurchased,
-  } = props
+  const { item, user, alreadyPurchased, outOfStock, isNew, onPurchased } = props
   const tryOfferReview = useStoreReviewNudge('shop-order')
   // Same rule the API charges by: supporter discount, or the holiday sale's
   // merch discount if bigger.
   const holidaySale = useActiveHolidaySale()
   const { fraction: shopDiscount, sale: discountSale } = getShopDiscount(
-    getBenefit(allEntitlements, 'shopDiscount', 0),
+    getBenefit(user?.entitlements, 'shopDiscount', 0),
     holidaySale
   )
   const discountedPrice = applyShopDiscount(item.price, shopDiscount)
@@ -1186,7 +1224,9 @@ function MerchItemCard(props: {
     item.defaultImageIndex ?? 0
   )
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
-  const [showShippingModal, setShowShippingModal] = useState(false)
+  const [shippingCheckout, setShippingCheckout] = useState<{
+    quotedItemPrice?: number
+  }>()
   const [purchasing, setPurchasing] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [fetchingRates, setFetchingRates] = useState(false)
@@ -1207,18 +1247,23 @@ function MerchItemCard(props: {
     taxNumber: '',
     email: '',
   })
-  const [showConfirmOrderModal, setShowConfirmOrderModal] = useState(false)
+  const shippingMana = selectedShipping
+    ? Math.round(parseFloat(selectedShipping.rate) * 100)
+    : 0
+  const confirmation = usePurchaseQuote(discountedPrice)
+  const itemPrice = shippingCheckout?.quotedItemPrice ?? confirmation.amount
+  const total = itemPrice + shippingMana
   const [countdown, setCountdown] = useState(5)
 
   useEffect(() => {
-    if (!showConfirmOrderModal) {
+    if (!confirmation.open) {
       setCountdown(5)
       return
     }
     if (countdown <= 0) return
     const timer = setTimeout(() => setCountdown((c) => c - 1), 1000)
     return () => clearTimeout(timer)
-  }, [showConfirmOrderModal, countdown])
+  }, [confirmation.open, countdown])
 
   const canPurchase = user && user.balance >= discountedPrice
   const variants = item.variants ?? []
@@ -1325,9 +1370,14 @@ function MerchItemCard(props: {
 
   const handleProceedToShipping = () => {
     setShowPurchaseModal(false)
-    setShowShippingModal(true)
+    setShippingCheckout({})
     setShippingRates(null)
     setSelectedShipping(null)
+  }
+
+  const closeShipping = () => {
+    setShippingCheckout(undefined)
+    confirmation.close()
   }
 
   const handleGetShippingRates = async () => {
@@ -1362,13 +1412,13 @@ function MerchItemCard(props: {
   }
 
   const handleSubmitOrder = async () => {
-    if (!user || !selectedSize || !selectedShipping) return
+    if (!user || !shippingCheckout || !selectedShipping || !confirmation.open)
+      return
     const variant = findSelectedVariant()
     if (!variant) return
 
     setPurchasing(true)
     try {
-      const shippingMana = Math.round(parseFloat(selectedShipping.rate) * 100)
       const { email, ...restShipping } = shippingInfo
       const shippingPayload = email.trim()
         ? { ...restShipping, email: email.trim() }
@@ -1377,11 +1427,11 @@ function MerchItemCard(props: {
         itemId: item.id,
         variantId: variant.printfulSyncVariantId,
         shippingCost: shippingMana,
+        expectedTotal: total,
         shipping: shippingPayload,
       })
       toast.success(`Order placed! Order ID: ${result.printfulOrderId}`)
-      setShowConfirmOrderModal(false)
-      setShowShippingModal(false)
+      closeShipping()
       setSelectedSize(null)
       setShippingRates(null)
       setSelectedShipping(null)
@@ -1399,9 +1449,19 @@ function MerchItemCard(props: {
       onPurchased?.()
       // Let the success toast land before the OS modal pops over it.
       setTimeout(tryOfferReview, 3000)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to place order')
-      setShowConfirmOrderModal(false)
+    } catch (e) {
+      const quotedTotal = getChangedPrice(e, 'total')
+      if (quotedTotal !== undefined && quotedTotal >= shippingMana) {
+        // A response can arrive after the buyer has started another checkout.
+        setShippingCheckout((current) =>
+          current === shippingCheckout
+            ? { quotedItemPrice: quotedTotal - shippingMana }
+            : current
+        )
+      } else {
+        confirmation.close()
+      }
+      await showPurchaseError(e, 'Failed to place order', user.id)
     } finally {
       setPurchasing(false)
     }
@@ -1574,7 +1634,10 @@ function MerchItemCard(props: {
               {colors.map((color) => (
                 <button
                   key={color}
-                  onClick={() => setSelectedColor(color)}
+                  onClick={() => {
+                    if (color !== selectedColor) closeShipping()
+                    setSelectedColor(color)
+                  }}
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedColor === color
@@ -1599,7 +1662,10 @@ function MerchItemCard(props: {
               {sizesForSelection.map((variant) => (
                 <button
                   key={variant.size}
-                  onClick={() => setSelectedSize(variant.size)}
+                  onClick={() => {
+                    if (variant.size !== selectedSize) closeShipping()
+                    setSelectedSize(variant.size)
+                  }}
                   className={clsx(
                     'rounded-md border px-2 py-0.5 text-xs font-medium transition-all',
                     selectedSize === variant.size
@@ -1777,11 +1843,11 @@ function MerchItemCard(props: {
 
       {/* Shipping address modal */}
       <MerchCheckoutModal
-        open={showShippingModal}
-        setOpen={setShowShippingModal}
+        open={!!shippingCheckout}
+        setOpen={closeShipping}
         actions={
           <>
-            <Button color="gray" onClick={() => setShowShippingModal(false)}>
+            <Button color="gray" onClick={closeShipping}>
               Back
             </Button>
             <Button
@@ -1794,15 +1860,11 @@ function MerchItemCard(props: {
               }
               onClick={() => {
                 setAcceptedTerms(false)
-                setShowConfirmOrderModal(true)
+                confirmation.capture(itemPrice)
               }}
             >
-              Place Order ({formatMoney(discountedPrice)}
-              {selectedShipping &&
-                ` + ${formatMoney(
-                  Math.round(parseFloat(selectedShipping.rate) * 100)
-                )} shipping`}
-              )
+              Place Order ({formatMoney(itemPrice)}
+              {selectedShipping && ` + ${formatMoney(shippingMana)} shipping`})
             </Button>
           </>
         }
@@ -2031,14 +2093,11 @@ function MerchItemCard(props: {
 
       {/* Final confirmation modal */}
       <MerchCheckoutModal
-        open={showConfirmOrderModal}
-        setOpen={setShowConfirmOrderModal}
+        open={confirmation.open}
+        setOpen={confirmation.close}
         actions={
           <>
-            <Button
-              color="gray"
-              onClick={() => setShowConfirmOrderModal(false)}
-            >
+            <Button color="gray" onClick={confirmation.close}>
               Go Back
             </Button>
             <Button
@@ -2107,8 +2166,8 @@ function MerchItemCard(props: {
             <Row className="justify-between">
               <span className="text-ink-500">Item price:</span>
               <span className="font-medium">
-                {formatMoney(discountedPrice)}
-                {hasDiscount && (
+                {formatMoney(itemPrice)}
+                {itemPrice < item.price && (
                   <span className="text-ink-400 ml-1 text-xs line-through">
                     {formatMoney(item.price)}
                   </span>
@@ -2118,23 +2177,21 @@ function MerchItemCard(props: {
             {selectedShipping && (
               <Row className="justify-between">
                 <span className="text-ink-500">Shipping:</span>
-                <span className="font-medium">
-                  {formatMoney(
-                    Math.round(parseFloat(selectedShipping.rate) * 100)
-                  )}
-                </span>
+                <span className="font-medium">{formatMoney(shippingMana)}</span>
               </Row>
             )}
             <Row className="justify-between text-base font-semibold">
-              <span>Total (mana):</span>
-              <span className="text-teal-600">
-                {formatMoney(
-                  discountedPrice +
-                    (selectedShipping
-                      ? Math.round(parseFloat(selectedShipping.rate) * 100)
-                      : 0)
-                )}
-              </span>
+              {shippingCheckout?.quotedItemPrice === undefined ? (
+                <>
+                  <span>Total (mana):</span>
+                  <span className="text-teal-600">{formatMoney(total)}</span>
+                </>
+              ) : (
+                <span role="status">
+                  The price is now M${total.toLocaleString('en-US')} including
+                  shipping.
+                </span>
+              )}
             </Row>
           </Col>
 
@@ -2226,9 +2283,10 @@ function SupporterCard(props: {
 }) {
   const { entitlements } = props
   const user = useUser()
+  const { view, active } = useMembershipGrants(user)
   const [hoveredTier, setHoveredTier] = useState<SupporterTier | null>(null)
 
-  const currentTier = getUserSupporterTier(entitlements)
+  const currentTier = active?.tier ?? getUserSupporterTier(entitlements)
   const supporterEntitlement = getSupporterEnt(entitlements)
   const isSupporter = currentTier !== null
 
@@ -2337,7 +2395,9 @@ function SupporterCard(props: {
                 <span className="text-lg font-bold">Manifold Membership</span>
               </Row>
               <span className="text-primary-600 text-sm font-medium group-hover:underline">
-                {isSupporter
+                {active
+                  ? 'View membership →'
+                  : isSupporter
                   ? isAutoRenewing
                     ? 'Manage Subscription →'
                     : 'Resubscribe →'
@@ -2425,7 +2485,7 @@ function SupporterCard(props: {
               </Row>
 
               {/* Right: Renewal/expiry info (only show if supporter) */}
-              {isSupporter && renewalDate && (
+              {!active && isSupporter && renewalDate && (
                 <Col className="items-end gap-0.5">
                   <div className="text-ink-500 text-xs">
                     {isAutoRenewing ? 'Renews' : 'Expires'}
@@ -2442,6 +2502,23 @@ function SupporterCard(props: {
               )}
             </Row>
           </div>
+
+          {active && (
+            <p className="text-sm">
+              Free {SUPPORTER_TIERS[active.tier].name} days until{' '}
+              {formatMembershipDate(active.endsTime)}.
+              {view?.paid &&
+                ` Your paid ${
+                  SUPPORTER_TIERS[view.paid.tier].name
+                } membership is paused.`}
+            </p>
+          )}
+          {view && (active || view.banked.length > 0) && (
+            <p className="text-ink-500 text-sm">
+              {view.banked.length} banked{' '}
+              {view.banked.length === 1 ? 'grant' : 'grants'}
+            </p>
+          )}
 
           {/* Mini Tier Selector (interactive with hover) — hidden for existing subscribers */}
           {!isSupporter && (
@@ -2550,6 +2627,7 @@ function SupporterModal(props: {
 }) {
   const { open, setOpen, entitlements, onPurchaseComplete, initialTier } = props
   const user = useUser()
+  const grants = useMembershipGrants(user)
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
   const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
@@ -2595,6 +2673,8 @@ function SupporterModal(props: {
     const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
+      // Memberships get no discount; the only drift is upgrade credit
+      // shrinking by the second, so no price ceiling here.
       const result = await api('shop-purchase', { itemId: item.id })
       // Update parent state with new entitlements for immediate UI update
       if (onPurchaseComplete) {
@@ -2603,8 +2683,8 @@ function SupporterModal(props: {
       setPurchasedTier(tier)
       setShowCelebration(true)
       toast.success('Thank you for your support!')
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to purchase')
+    } catch (e) {
+      await showPurchaseError(e, 'Failed to purchase', user.id)
     } finally {
       setPurchasing(null)
     }
@@ -2876,7 +2956,7 @@ function SupporterModal(props: {
               loading={purchasing === TIER_ITEMS[activeTier].id || cancelling}
               disabled={!user || !!purchasing || cancelling}
               entitlements={entitlements}
-              currentExpiresTime={currentEntitlement?.expiresTime}
+              currentEntitlement={currentEntitlement}
               isAutoRenewing={isAutoRenewing}
               onClick={() => setConfirmingPurchase(activeTier)}
               onCancelClick={() => setConfirmingCancel(true)}
@@ -2909,8 +2989,10 @@ function SupporterModal(props: {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
+            grantView={grants.view}
+            lockMessage={grants.lockMessage}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
               setConfirmingPurchase(null)
@@ -5579,18 +5661,18 @@ function ShopItemCard(props: {
     getToggleVersion,
     localStreakBonus,
   } = props
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [purchasing, setPurchasing] = useState(false)
 
   // Same rule the API charges by: supporter discount, or the holiday sale's
   // shop discount if bigger. (Memberships never reach this card.)
   const holidaySale = useActiveHolidaySale()
   const { fraction: shopDiscount } = getShopDiscount(
-    getBenefit(allEntitlements, 'shopDiscount', 0),
+    getBenefit(user?.entitlements, 'shopDiscount', 0),
     holidaySale
   )
   const discountedPrice = applyShopDiscount(item.price, shopDiscount)
   const hasDiscount = shopDiscount > 0 && !owned
+  const confirmation = usePurchaseQuote(discountedPrice)
 
   const canPurchase = user && user.balance >= discountedPrice
   // Items are toggleable unless they're always enabled (like supporter badges)
@@ -5614,17 +5696,23 @@ function ShopItemCard(props: {
   const isSeasonalUnavailable =
     item.seasonalAvailability && !isSeasonalItemAvailable(item)
 
+  const openPurchaseConfirmation = () => confirmation.capture()
+
   const handlePurchase = async () => {
-    if (!user) return
+    if (!user || !confirmation.open) return
 
     setPurchasing(true)
     try {
-      const result = await api('shop-purchase', { itemId: item.id })
+      const result = await api('shop-purchase', {
+        itemId: item.id,
+        expectedPrice: confirmation.amount,
+      })
       toast.success(`Purchased ${item.name}!`)
-      setShowConfirmModal(false)
+      confirmation.close()
       onPurchaseComplete(item.id, result.entitlements)
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to purchase item')
+    } catch (e) {
+      confirmation.applyPriceChange(e)
+      await showPurchaseError(e, 'Failed to purchase item', user.id)
     } finally {
       setPurchasing(false)
     }
@@ -5938,7 +6026,7 @@ function ShopItemCard(props: {
                       size="xs"
                       color="indigo-outline"
                       disabled={!user}
-                      onClick={() => setShowConfirmModal(true)}
+                      onClick={openPurchaseConfirmation}
                     >
                       Add more time
                     </Button>
@@ -6012,7 +6100,7 @@ function ShopItemCard(props: {
                         size="sm"
                         color="indigo"
                         disabled={!user}
-                        onClick={() => setShowConfirmModal(true)}
+                        onClick={openPurchaseConfirmation}
                       >
                         Buy
                       </Button>
@@ -6045,7 +6133,7 @@ function ShopItemCard(props: {
                       size="sm"
                       color="indigo"
                       disabled={!user}
-                      onClick={() => setShowConfirmModal(true)}
+                      onClick={openPurchaseConfirmation}
                       className="w-full"
                     >
                       Buy
@@ -6065,34 +6153,47 @@ function ShopItemCard(props: {
         </Card>
       </div>
 
-      <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>
+      <Modal open={confirmation.open} setOpen={confirmation.close}>
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
-            Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            {hasDiscount || item.originalPrice ? (
+            {confirmation.repriced ? (
               <>
-                <span className="text-ink-400 line-through">
-                  {formatMoney(item.originalPrice ?? item.price)}
-                </span>{' '}
-                <span className="font-semibold text-teal-600">
-                  {formatMoney(discountedPrice)}
-                </span>
-                <span className="ml-1 text-xs text-green-600">
-                  (
-                  {Math.round(
-                    (1 - discountedPrice / (item.originalPrice ?? item.price)) *
-                      100
-                  )}
-                  % off)
-                </span>
+                The price is now{' '}
+                <strong>M${confirmation.amount.toLocaleString('en-US')}</strong>{' '}
+                for <strong>{item.name}</strong>.
               </>
             ) : (
-              <span className="font-semibold text-teal-600">
-                {formatMoney(item.price)}
-              </span>
+              <>
+                Are you sure you want to purchase <strong>{item.name}</strong>{' '}
+                for{' '}
+                {confirmation.amount < (item.originalPrice ?? item.price) ? (
+                  <>
+                    <span className="text-ink-400 line-through">
+                      {formatMoney(item.originalPrice ?? item.price)}
+                    </span>{' '}
+                    <span className="font-semibold text-teal-600">
+                      {formatMoney(confirmation.amount)}
+                    </span>
+                    <span className="ml-1 text-xs text-green-600">
+                      (
+                      {Math.round(
+                        (1 -
+                          confirmation.amount /
+                            (item.originalPrice ?? item.price)) *
+                          100
+                      )}
+                      % off)
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-semibold text-teal-600">
+                    {formatMoney(confirmation.amount)}
+                  </span>
+                )}
+                ?
+              </>
             )}
-            ?
           </p>
 
           {/* Preview in modal too with actual user data */}
@@ -6111,7 +6212,7 @@ function ShopItemCard(props: {
             </p>
           )}
           <Row className="justify-end gap-2">
-            <Button color="gray" onClick={() => setShowConfirmModal(false)}>
+            <Button color="gray" onClick={confirmation.close}>
               Cancel
             </Button>
             <Button

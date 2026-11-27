@@ -1,6 +1,7 @@
 import { GiftIcon, SparklesIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { TRADED_TERM } from 'common/envs/constants'
+import { formatMembershipDate } from 'common/membership-grants'
 import {
   AirdropData,
   BetFillData,
@@ -10,6 +11,7 @@ import {
   ExtraPurchasedManaData,
   getSourceUrl,
   MembershipSubscriptionData,
+  freeDaysExpiryMessage,
   Notification,
   PaymentCompletedData,
   PrizeDrawingNotificationData,
@@ -1862,14 +1864,14 @@ function LiquidityReturnedNotification(props: {
   )
 }
 
-function ReferralProgramNotification(props: {
+function ReferralProgramNotification(_props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
   return null
-  // const { notification, highlighted, setHighlighted } = props
+  // const { notification, highlighted, setHighlighted } = _props
   // const [showModal, setShowModal] = useState(false)
   // const user = useUser()
   // return (
@@ -2790,13 +2792,22 @@ function MembershipSubscriptionNotification(props: {
   const newExpiresTime = data?.newExpiresTime
 
   const isRenewal = type === 'renewed'
+  const freeDays =
+    data?.expiryReason === 'free_days' && data.grantEndsTime != null
+      ? freeDaysExpiryMessage(
+          tierName,
+          data.grantEndsTime,
+          amount,
+          data.nextMembership ?? data.paidTierName
+        )
+      : undefined
 
   const subtitle = isRenewal
     ? newExpiresTime
-      ? `Your membership will renew again on ${new Date(
-          newExpiresTime
-        ).toLocaleDateString()}`
+      ? `Paid through ${formatMembershipDate(newExpiresTime)}`
       : undefined
+    : type === 'expiring_soon'
+    ? undefined
     : `Add funds to resubscribe at the shop`
 
   return (
@@ -2805,7 +2816,7 @@ function MembershipSubscriptionNotification(props: {
       isChildOfGroup={isChildOfGroup}
       highlighted={highlighted}
       setHighlighted={setHighlighted}
-      link="/shop"
+      link={freeDays ? '/membership' : '/shop'}
       icon={
         <NotificationIcon
           symbol={isRenewal ? '✨' : '⚠️'}
@@ -2818,7 +2829,18 @@ function MembershipSubscriptionNotification(props: {
       }
       subtitle={subtitle}
     >
-      {isRenewal ? (
+      {type === 'expiring_soon' ? (
+        <span>
+          {freeDays ??
+            `Your ${tierName} membership expires in ${
+              data?.daysUntilExpiry ?? 3
+            } days.${
+              data?.expiryReason === 'insufficient_balance'
+                ? ` You need ${formatMoney(amount)} to renew.`
+                : ''
+            }`}
+        </span>
+      ) : isRenewal ? (
         <span>
           Your <span className="font-semibold">{tierName}</span> membership was
           auto-renewed for{' '}

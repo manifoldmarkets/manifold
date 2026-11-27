@@ -194,6 +194,7 @@ type ShopStats = {
     quantity: number
     revenue: number
   }[]
+  freeDayMembers: number
   subscribersByTier: {
     tier: 'basic' | 'plus' | 'premium'
     count: number
@@ -586,6 +587,7 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
     digitalGoodsSales,
     ticketSales,
     merchSales = [],
+    freeDayMembers,
     subscribersByTier,
     subscriptionsOverTime,
   } = shopStats
@@ -750,8 +752,9 @@ function PurchasesTab(props: { shopStats?: ShopStats }) {
       <Spacer h={4} />
       <h3 className="text-lg font-semibold">Current Subscribers</h3>
       <p className="text-ink-500 mb-4">
-        <b>{totalSubscribers}</b> active subscribers ({totalAutoRenew}{' '}
-        auto-renewing)
+        <b>{totalSubscribers}</b> paid subscribers ({totalAutoRenew}{' '}
+        auto-renewing).{' '}
+        {freeDayMembers != null && `${freeDayMembers} members using free days.`}
       </p>
       <div className="mb-8 grid grid-cols-3 gap-4">
         {(['basic', 'plus', 'premium'] as const).map((tier) => {

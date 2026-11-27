@@ -4,6 +4,7 @@ import clsx from 'clsx'
 import { sumBy } from 'lodash'
 import { FaStar } from 'react-icons/fa'
 import { DAY_MS } from 'common/util/time'
+import { formatMembershipDate } from 'common/membership-grants'
 import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { REFERRAL_AMOUNT } from 'common/economy'
@@ -16,6 +17,7 @@ import {
   EffectiveTier,
   EFFECTIVE_TIER_LABELS,
   TIER_BENEFITS,
+  TIER_ORDER,
   getUserSupporterTier,
   getSupporterEntitlement,
 } from 'common/supporter-config'
@@ -30,6 +32,10 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Modal } from 'web/components/layout/modal'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { refreshUserEntitlements } from 'client-common/hooks/use-websocket-user'
+import {
+  MembershipGrantsPanel,
+  useMembershipGrants,
+} from 'web/components/shop/supporter/membership-grants'
 import { useUser } from 'web/hooks/use-user'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
@@ -48,11 +54,17 @@ import Custom404 from 'web/pages/404'
 
 export default function SupporterPage() {
   const user = useUser()
+  const grants = useMembershipGrants(user)
   const isAdminOrMod = useAdminOrMod()
 
   const [purchasing, setPurchasing] = useState<string | null>(null)
   const [showCelebration, setShowCelebration] = useState(false)
-  const [purchasedTier, setPurchasedTier] = useState<SupporterTier | null>(null)
+  const [purchaseSummary, setPurchaseSummary] = useState<{
+    paidTier: SupporterTier
+    grant?: { tier: SupporterTier; endsTime: number }
+  }>()
+  const celebrationTier =
+    purchaseSummary?.grant?.tier ?? purchaseSummary?.paidTier
   const [confirmingPurchase, setConfirmingPurchase] =
     useState<SupporterTier | null>(null)
   const [confirmingCancel, setConfirmingCancel] = useState(false)
@@ -92,10 +104,12 @@ export default function SupporterPage() {
       )
     : 0
   const renewalDate = currentEntitlement?.expiresTime
-    ? new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
-        month: 'short',
-        day: 'numeric',
-      })
+    ? currentEntitlement.metadata?.membershipGrantId != null
+      ? formatMembershipDate(currentEntitlement.expiresTime)
+      : new Date(currentEntitlement.expiresTime).toLocaleDateString(undefined, {
+          month: 'short',
+          day: 'numeric',
+        })
     : null
 
   const refreshMembership = async () => {
@@ -126,15 +140,28 @@ export default function SupporterPage() {
     const item = TIER_ITEMS[tier]
     setPurchasing(item.id)
     try {
-      await api('shop-purchase', { itemId: item.id })
-      setPurchasedTier(tier)
+      const { entitlement } = await api('shop-purchase', { itemId: item.id })
+      const grantTier =
+        entitlement?.metadata?.membershipGrantId != null
+          ? TIER_ORDER.find(
+              (t) => SUPPORTER_TIERS[t].id === entitlement.entitlementId
+            )
+          : undefined
+      setPurchaseSummary({
+        paidTier: tier,
+        grant:
+          grantTier && entitlement?.expiresTime !== undefined
+            ? { tier: grantTier, endsTime: entitlement.expiresTime }
+            : undefined,
+      })
       setShowCelebration(true)
       toast.success('Thank you for your support!')
       await refreshMembership()
     } catch (e: any) {
       toast.error(e.message || 'Failed to purchase')
       // 409: the membership changed since this page loaded, so show it
-      if (e instanceof APIError && e.code === 409) {
+      if (e instanceof APIError && (e.code === 409 || e.code === 403)) {
+        await grants.refresh()
         await refreshMembership()
       }
     } finally {
@@ -147,9 +174,8 @@ export default function SupporterPage() {
     setCancelling(true)
     try {
       await api('shop-cancel-subscription', {})
-      toast.success(
-        'Subscription cancelled. Your membership will remain active until the end of the current period.'
-      )
+      await grants.refresh()
+      toast.success('Automatic renewal is off.')
       setConfirmingCancel(false)
       await refreshMembership()
     } catch (e: any) {
@@ -290,6 +316,12 @@ export default function SupporterPage() {
           </Row>
         </div>
 
+        <MembershipGrantsPanel
+          view={grants.view}
+          cancelling={cancelling}
+          turnOffRenewal={handleCancelSubscription}
+        />
+
         {/* Horizontal Tier Selector */}
         <TierSelector
           currentTier={currentTier}
@@ -299,6 +331,7 @@ export default function SupporterPage() {
           onHover={setHoveredTier}
           onHoverEnd={() => setHoveredTier(null)}
           effectiveBalance={effectiveBalance}
+          lockMessage={grants.lockMessage}
           variant="page"
         />
 
@@ -334,7 +367,8 @@ export default function SupporterPage() {
             onClick={() => setConfirmingPurchase(activeTier)}
             onCancelClick={() => setConfirmingCancel(true)}
             entitlements={user?.entitlements}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
+            lockMessage={grants.lockMessage}
             isAutoRenewing={isAutoRenewing}
           />
         )}
@@ -361,7 +395,9 @@ export default function SupporterPage() {
             tier={confirmingPurchase}
             currentTier={currentTier}
             daysRemaining={daysRemaining}
-            currentExpiresTime={currentEntitlement?.expiresTime}
+            currentEntitlement={currentEntitlement}
+            lockMessage={grants.lockMessage}
+            grantView={grants.view}
             loading={purchasing === TIER_ITEMS[confirmingPurchase].id}
             onConfirm={() => {
               handlePurchase(confirmingPurchase)
@@ -378,53 +414,62 @@ export default function SupporterPage() {
           <div className="mb-4 text-5xl">🎉</div>
           <h2 className="mb-6 text-2xl font-bold">
             You're now a{' '}
-            {purchasedTier && (
+            {celebrationTier && (
               <>
                 <TierBadge
-                  tier={purchasedTier}
-                  animate={purchasedTier === 'premium'}
+                  tier={celebrationTier}
+                  animate={celebrationTier === 'premium'}
                 />{' '}
-                Manifold {SUPPORTER_TIERS[purchasedTier].name}
+                Manifold {SUPPORTER_TIERS[celebrationTier].name}
               </>
             )}{' '}
             member!
           </h2>
 
+          {purchaseSummary?.grant && (
+            <p className="text-ink-600 mb-6">
+              Your free {SUPPORTER_TIERS[purchaseSummary.grant.tier].name} days
+              run until {formatMembershipDate(purchaseSummary.grant.endsTime)}.
+              Your paid {SUPPORTER_TIERS[purchaseSummary.paidTier].name}{' '}
+              membership starts when your free days end.
+            </p>
+          )}
+
           <Col className="mb-6 gap-2 text-left">
-            {purchasedTier && (
+            {celebrationTier && (
               <>
                 <BenefitRow
                   icon="🎯"
-                  label={`${SUPPORTER_BENEFITS[purchasedTier].questMultiplier}x quest rewards`}
+                  label={`${SUPPORTER_BENEFITS[celebrationTier].questMultiplier}x quest rewards`}
                 />
-                {SUPPORTER_BENEFITS[purchasedTier].shopDiscount > 0 && (
+                {SUPPORTER_BENEFITS[celebrationTier].shopDiscount > 0 && (
                   <BenefitRow
                     icon="💎"
                     label={`${Math.round(
-                      SUPPORTER_BENEFITS[purchasedTier].shopDiscount * 100
+                      SUPPORTER_BENEFITS[celebrationTier].shopDiscount * 100
                     )}% off shop items`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes > 1 && (
+                {SUPPORTER_BENEFITS[celebrationTier].maxStreakFreezes > 1 && (
                   <BenefitRow
                     icon="❄️"
-                    label={`${SUPPORTER_BENEFITS[purchasedTier].maxStreakFreezes} max streak freezes`}
+                    label={`${SUPPORTER_BENEFITS[celebrationTier].maxStreakFreezes} max streak freezes`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].freeLoanRate > 0.01 && (
+                {SUPPORTER_BENEFITS[celebrationTier].freeLoanRate > 0.01 && (
                   <BenefitRow
                     icon="💰"
                     label={`${Math.round(
-                      SUPPORTER_BENEFITS[purchasedTier].freeLoanRate * 100
+                      SUPPORTER_BENEFITS[celebrationTier].freeLoanRate * 100
                     )}% daily free loans`}
                   />
                 )}
-                {SUPPORTER_BENEFITS[purchasedTier].marginLoanAccess && (
+                {SUPPORTER_BENEFITS[celebrationTier].marginLoanAccess && (
                   <BenefitRow
                     icon="📈"
                     label={`${
-                      SUPPORTER_BENEFITS[purchasedTier].maxLoanNetWorthPercent +
-                      1
+                      SUPPORTER_BENEFITS[celebrationTier]
+                        .maxLoanNetWorthPercent + 1
                     }x leverage boost`}
                   />
                 )}

@@ -1,32 +1,34 @@
 import Link from 'next/link'
 
 import {
-  STARTER_MIN_TRADE_AMOUNT,
   StarterStats,
   TrophyClaim,
   TrophyMilestoneRef,
+  TrophyPrizeAccount,
   getClaimableOnboardingMilestones,
   getNextOnboardingMilestone,
-  getTrophyClaimReward,
+  getOwnMilestonePrize,
+  getStarterMilestoneHint,
 } from 'common/trophies'
-import { formatMoney } from 'common/util/format'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
 import { TrophyBadgeImage } from './trophy-badge-image'
-import { TrophyRewardChip } from './trophy-reward-chip'
+import { TrophyPrizeChip } from './trophy-prize-chip'
 
 export function TrophyOnboardingSection(props: {
   starter: StarterStats
   claims: TrophyClaim[]
   rewarded: TrophyMilestoneRef[]
-  multiplier: number
+  // The account's standing, to show what each milestone pays it.
+  prizeAccount: TrophyPrizeAccount | undefined
   claimingId: string | null
   onClaim: (trophyId: string, milestoneId: string) => void
 }) {
-  const { starter, claims, rewarded, multiplier, claimingId, onClaim } = props
+  const { starter, claims, rewarded, prizeAccount, claimingId, onClaim } = props
   const ready = getClaimableOnboardingMilestones(starter, claims)
   const next = ready.length ? null : getNextOnboardingMilestone(starter, claims)
   if (!ready.length && !next) return null
+  const hint = next && getStarterMilestoneHint(next)
 
   return (
     <section className="border-ink-200 bg-canvas-0 rounded-xl border px-3 py-3 sm:px-4">
@@ -52,26 +54,31 @@ export function TrophyOnboardingSection(props: {
                 {milestone.name}
               </div>
               <div className="text-ink-500 text-xs">{definition.label}</div>
-              <TrophyRewardChip
-                amount={getTrophyClaimReward(
-                  definition,
-                  milestone,
-                  rewarded,
-                  multiplier
-                )}
-              />
+              {prizeAccount && (
+                <TrophyPrizeChip
+                  className="mt-0.5"
+                  prize={getOwnMilestonePrize(
+                    definition,
+                    milestone,
+                    rewarded,
+                    prizeAccount
+                  )}
+                />
+              )}
             </div>
-            {next ? (
+            {hint ? (
               <Link
-                href="/home"
+                href={hint.href}
                 className={buttonClass('sm', 'indigo')}
                 onClick={() =>
                   track('trophies find a market clicked', {
                     source: 'next trophy',
+                    trophyId: definition.id,
+                    href: hint.href,
                   })
                 }
               >
-                Find a market
+                {hint.cta}
               </Link>
             ) : (
               <Button
@@ -83,11 +90,9 @@ export function TrophyOnboardingSection(props: {
                 Claim
               </Button>
             )}
-            {next && (
+            {next && hint && (
               <div className="w-full">
-                <p className="text-ink-600 text-sm">
-                  {getOnboardingHint(next)}
-                </p>
+                <p className="text-ink-600 text-sm">{hint.text}</p>
                 <progress
                   aria-label={`${milestone.name} progress`}
                   value={next.value}
@@ -101,26 +106,4 @@ export function TrophyOnboardingSection(props: {
       </ul>
     </section>
   )
-}
-
-function getOnboardingHint(
-  next: NonNullable<ReturnType<typeof getNextOnboardingMilestone>>
-) {
-  const remaining = next.milestone.threshold - next.value
-  const minimum = `${formatMoney(STARTER_MIN_TRADE_AMOUNT)} or more`
-  if (next.definition.statKey === 'starterDays') {
-    return remaining === 1
-      ? `Trade ${minimum} on another day`
-      : `Trade ${minimum} on ${remaining} more days`
-  }
-  if (next.definition.statKey === 'starterMarkets') {
-    return remaining === 1
-      ? `Trade ${minimum} in one more market`
-      : `Trade ${minimum} in ${remaining} more markets`
-  }
-  return next.milestone.threshold === 1
-    ? `Make a trade of ${minimum}`
-    : `Make ${remaining} more ${
-        remaining === 1 ? 'trade' : 'trades'
-      } of ${minimum}, one per market per day`
 }

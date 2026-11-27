@@ -31,6 +31,7 @@ import { denormalizeAnswers } from './denormalize-answers'
 import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob as createCronJob, JobContext } from './helpers'
 import { pollPollResolutions } from './poll-poll-resolutions'
+import { processMembershipGrants } from './process-membership-grants'
 import { processMembershipRenewals } from './process-membership-renewals'
 import { checkSubscriptionExpiry } from './check-subscription-expiry'
 import { expirePersonalizedManaOffers } from './expire-personalized-mana-offers'
@@ -57,6 +58,7 @@ import { scoreContracts } from './score-contracts'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
+import { settleTrophyPrizes } from './settle-trophy-prizes'
 import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateTrophyRanks } from './update-trophy-ranks'
@@ -302,6 +304,16 @@ export function createJobs(jobSet: SchedulerJobSet) {
       // looks for changes on an hourly timescale.
       '0 40 6 * * *',
       updateClassificationAudit
+    ),
+    createJob(
+      'process-membership-grants',
+      '0 */2 * * * *',
+      processMembershipGrants
+    ),
+    createJob(
+      'settle-trophy-prizes',
+      '30 */2 * * * *', // every 2 minutes, between membership grant runs
+      settleTrophyPrizes
     ),
     createJob(
       'process-membership-renewals',

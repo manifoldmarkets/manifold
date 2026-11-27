@@ -7,6 +7,7 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 import dayjs from 'dayjs'
 import { formatMoney } from 'common/util/format'
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
+import { isStarterTrophyAccount } from 'common/trophies'
 import { api } from 'web/lib/api/api'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { nativeToWebMessageType } from 'common/native-message'
@@ -97,7 +98,11 @@ export function PushNotificationsModal(props: {
     }
   }, [open])
 
-  const bonusEligible = hasFullBonusAccess(user) && !privateUser.pushToken
+  // New accounts earn the Stay in the Loop trophy instead of this bonus (see
+  // set-push-token).
+  const getsTrophy = isStarterTrophyAccount(user.createdTime)
+  const bonusEligible =
+    hasFullBonusAccess(user) && !getsTrophy && !privateUser.pushToken
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -117,6 +122,11 @@ export function PushNotificationsModal(props: {
           <span className={'text-ink-700'}>
             Get the most out of Manifold: replies, breaking market news, and
             direct messages.
+          </span>
+        )}
+        {!showHowToEnableInSettings && getsTrophy && !privateUser.pushToken && (
+          <span className={'text-ink-700'}>
+            Unlocks the Stay in the Loop trophy.
           </span>
         )}
         {showHowToEnableInSettings ? (

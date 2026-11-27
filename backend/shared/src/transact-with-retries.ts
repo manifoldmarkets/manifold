@@ -25,6 +25,8 @@ export type TransactionRetryOptions = {
    * deliberately induced from the same error code arising anywhere else.
    */
   tag?: string
+  /** Additional transaction conflicts known to be safe to retry for this caller. */
+  isRetryableError?: (error: unknown) => boolean
   /**
    * Transaction mode: SERIAL_MODE unless given. 'default' runs at Postgres's
    * default READ COMMITTED level, for a caller that wants the deadlock retry
@@ -77,7 +79,8 @@ export async function transactWithRetries<T>(
           : undefined
       const isRetryable =
         code === '40001' || // serialization_failure
-        code === '40P01' // deadlock_detected
+        code === '40P01' || // deadlock_detected
+        options?.isRetryableError?.(error)
 
       if (!isRetryable || attempt >= maxAttempts) {
         const line = `Attempt ${attempt} of ${maxAttempts} failed: ${message}`
