@@ -117,12 +117,18 @@ export const getEsportsTournaments: APIHandler<
   // picked that market per event id; this is the same rule again, in case
   // two rows for one series ever reach here. If the capture the query picked
   // doesn't read, the series is left out: an older capture never stands in.
+  // A series left out could be anyone's win or loss, so then no standings
+  // are derived at all.
   const chosen = new Map<number, Candidate>()
+  let unreadable = 0
   for (const row of found.slice(0, MAX_SERIES)) {
     const event = parseBdlEventId(row.event_id)
     if (event?.league !== game || event.suffix !== undefined) continue
     const facts = readSeriesFacts(row.series, game, event.id)
-    if (!facts) continue
+    if (!facts) {
+      unreadable++
+      continue
+    }
     const candidate = { facts, row }
     const held = chosen.get(facts.id)
     if (!held || isLaterCapture(candidate, held))
@@ -133,11 +139,18 @@ export const getEsportsTournaments: APIHandler<
     const overlay = toMarketOverlay(facts, row)
     if (overlay) markets[facts.id] = overlay
   }
+  if (unreadable)
+    log.warn(
+      'get-esports-tournaments: stored series facts did not read: standings not derived',
+      { game, unreadable }
+    )
   const series = [...chosen.values()].map((c) => c.facts)
+  const derive = !truncated && unreadable === 0
   return {
-    tournaments: buildTournamentViews(series, [], { derive: !truncated }),
+    tournaments: buildTournamentViews(series, [], { derive }),
     markets,
     ...(truncated ? { truncated } : {}),
+    ...(unreadable ? { incomplete: true } : {}),
   }
 }
 

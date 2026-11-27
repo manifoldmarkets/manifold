@@ -216,6 +216,7 @@ describe('get-esports-tournaments', () => {
     tournaments: unknown[]
     markets: Record<string, { contractId: string }>
     truncated?: boolean
+    incomplete?: boolean
   }>
   const realBuilder = () =>
     jest
@@ -306,11 +307,31 @@ describe('get-esports-tournaments', () => {
       row('bdl:cs:111', [facts(111)]),
       row('not-an-event-id', facts(112)),
     ])
-    const { tournaments, markets, truncated } = await get({ game: 'cs' })
+    const { tournaments, markets, truncated, incomplete } = await get({
+      game: 'cs',
+    })
     expect(tournaments).toEqual([facts(101)])
     expect(Object.keys(markets)).toEqual(['101'])
     expect(markets['101']).toMatchObject({ contractId: 'bdl:cs:101' })
     expect(truncated).toBeUndefined()
+    // Five of this game's series markets (103, 106, 109, 110, 111) carry
+    // facts that don't read, so no standings are derived. The map market,
+    // the other game's id and the malformed id aren't series of this game.
+    expect(incomplete).toBe(true)
+    expect(buildTournamentViews).toHaveBeenLastCalledWith([facts(101)], [], {
+      derive: false,
+    })
+  })
+
+  it('derives standings when every series market reads', async () => {
+    manyOrNone.mockResolvedValue([
+      row('bdl:cs:101', facts(101)),
+      // Not series of this game: they cost nothing.
+      row('bdl:cs:102:map1', facts(102)),
+      row('not-an-event-id', facts(112)),
+    ])
+    const { incomplete } = await get({ game: 'cs' })
+    expect(incomplete).toBeUndefined()
     expect(buildTournamentViews).toHaveBeenLastCalledWith([facts(101)], [], {
       derive: true,
     })
@@ -380,9 +401,15 @@ describe('get-esports-tournaments', () => {
       row('bdl:cs:102', change(facts(102))),
       row('bdl:cs:103', facts(103)),
     ])
-    const { tournaments, markets } = await get({ game: 'cs' })
+    const { tournaments, markets, incomplete } = await get({ game: 'cs' })
     expect(tournaments).toEqual([facts(101), facts(103)])
     expect(Object.keys(markets)).toEqual(['101', '103'])
+    expect(incomplete).toBe(true)
+    expect(buildTournamentViews).toHaveBeenLastCalledWith(
+      [facts(101), facts(103)],
+      [],
+      { derive: false }
+    )
   })
 
   it('keeps whole facts, with what they may leave out read as empty', async () => {
@@ -536,8 +563,46 @@ describe('get-esports-tournaments', () => {
     ])
   })
 
-  it('counts no win from a forfeit and loses no page to a bad blob', async () => {
-    // Both halves of the review's finding, through the real builder.
+  it('counts no win from a forfeit', async () => {
+    realBuilder()
+    const [aces, lunacy] = [
+      { id: 3, name: 'Aces', code: null },
+      { id: 4, name: 'Lunacy', code: null },
+    ]
+    manyOrNone.mockResolvedValue([
+      row('bdl:cs:101', won(101)),
+      row(
+        'bdl:cs:102',
+        won(102, {
+          team1: aces,
+          team2: lunacy,
+          winnerId: aces.id,
+          rawStatus: 'defwin',
+          review: 'forfeit',
+        })
+      ),
+    ])
+    const { tournaments, incomplete } = await get({ game: 'cs' })
+    expect(incomplete).toBeUndefined()
+    const [event] = tournaments as EsportsTournamentView[]
+    const [{ view }] = event.stages
+    if (view.kind !== 'swiss') throw Error(`expected swiss, got ${view.kind}`)
+    expect(
+      view.buckets.map((b) => [
+        `${b.wins}-${b.losses}`,
+        b.teams.map((t) => t.team.name),
+      ])
+    ).toEqual([
+      ['1-0', ['Team Vitality']],
+      ['0-0', ['Aces', 'Lunacy']],
+      ['0-1', ['Team Spirit']],
+    ])
+  })
+
+  it('loses no page to a bad blob, and draws no standings without it', async () => {
+    // The second review's case: a series whose stored facts don't read could
+    // be a win or a loss for anyone, so every stage is a list and the
+    // response says the read is incomplete.
     realBuilder()
     const [aces, lunacy] = [
       { id: 3, name: 'Aces', code: null },
@@ -557,24 +622,12 @@ describe('get-esports-tournaments', () => {
       ),
       row('bdl:cs:103', omit(facts(103), 'startTimeMs')),
     ])
-    const { tournaments } = await get({ game: 'cs' })
+    const { tournaments, incomplete } = await get({ game: 'cs' })
+    expect(incomplete).toBe(true)
     const [event] = tournaments as EsportsTournamentView[]
     expect(tournaments).toHaveLength(1)
-    const [{ view }] = event.stages
-    if (view.kind !== 'swiss') throw Error(`expected swiss, got ${view.kind}`)
-    expect(
-      view.buckets.map((b) => [
-        `${b.wins}-${b.losses}`,
-        b.teams.map((t) => t.team.name),
-      ])
-    ).toEqual([
-      ['1-0', ['Team Vitality']],
-      ['0-0', ['Aces', 'Lunacy']],
-      ['0-1', ['Team Spirit']],
-    ])
-    expect(view.problems).toEqual([
-      'Finished series with no trusted result, not counted: 1.',
-    ])
+    expect(event.stages.map((s) => s.view.kind)).toEqual(['list'])
+    expect(event.champion).toBeNull()
   })
 
   // A stand-in for the database: what the query's own text asks of the
@@ -694,9 +747,10 @@ describe('get-esports-tournaments', () => {
           row('bdl:cs:102', facts(102)),
         ])
       )
-      const { tournaments, markets } = await get({ game: 'cs' })
+      const { tournaments, markets, incomplete } = await get({ game: 'cs' })
       expect(tournaments).toEqual([facts(102)])
       expect(Object.keys(markets)).toEqual(['102'])
+      expect(incomplete).toBe(true)
     })
   })
 

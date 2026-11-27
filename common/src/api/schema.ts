@@ -5365,6 +5365,11 @@ export const API = (_apiTypeCheck = {
        * list: no standings, no team through or out, no champion.
        */
       truncated?: boolean
+      /**
+       * True when a series market's stored facts didn't read. That series is
+       * left out, so as with `truncated`, every stage is a plain list.
+       */
+      incomplete?: boolean
     },
   },
   // A sport's leaderboards ('all' for every sport), or with `topic` a topic's
