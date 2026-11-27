@@ -14,8 +14,9 @@
 //   tier first and the pass stops at its first failure, so a lesser prize
 //   can't take the room under the holding cap that a better one is owed.
 //   The days can be granted minutes or hours after the prize was judged, so
-//   the account is checked again first (canStillGrantMembership): one that
-//   could no longer be paid has the part recorded as skipped instead.
+//   the account is checked again (canStillGrantMembership) for every part,
+//   inside the grant's own transaction: a ban or flag that lands before that
+//   transaction starts stops the grant, and the part is recorded as skipped.
 //
 // Free days count towards the 30-day holding cap, and what doesn't fit is
 // lost. Behind free days that are already running, the room under a full cap
@@ -154,10 +155,12 @@ export async function getAccountPrizeStanding(
   const effectiveTier = resolveTrophyPrizeTier({
     entitlements,
     bonusEligibility: eligibility,
-    // Only a flagged or bonus-blocked account needs the answer.
-    hasPaidMembership:
-      isPrizeStandingCut(eligibility) &&
-      !!(await getPaidSupporterTier(tx, userId)),
+    // Only a flagged or bonus-blocked account needs the answer. It includes a
+    // paid membership set aside behind free days, which no entitlement shows
+    // once those days run out and before the scheduler restores it.
+    paidTier: isPrizeStandingCut(eligibility)
+      ? await getPaidSupporterTier(tx, userId)
+      : null,
   })
   return { effectiveTier, standing: getTrophyPrizeStanding(effectiveTier) }
 }
@@ -448,19 +451,9 @@ export async function settleTrophyMembershipPrizes(
       (r) => -(SUPPORTER_TIERS[r.membership_tier]?.order ?? 0),
       (r) => -r.membership_days
     )
-    // Checked once a pass for each kind of prize, not once a part: a claim
-    // of a whole ladder has eight.
-    const checks = new Map<boolean, Promise<boolean>>()
-    const canGrant = (isRankPrize: boolean) => {
-      const check =
-        checks.get(isRankPrize) ??
-        canStillGrantMembership(pg, userId, isRankPrize)
-      checks.set(isRankPrize, check)
-      return check
-    }
     for (const row of ordered) {
       try {
-        const outcome = await settleRow(pg, row, canGrant)
+        const outcome = await settleRow(pg, row)
         settled.push({
           userId,
           trophyId: row.trophy_id,
@@ -513,8 +506,7 @@ export const MIN_GRANT_ROOM_MS = HOUR_MS
 
 async function settleRow(
   pg: SupabaseDirectClientTimeout,
-  row: PendingRow,
-  canGrant: (isRankPrize: boolean) => Promise<boolean>
+  row: PendingRow
 ): Promise<SettledTrophyMembership['outcome']> {
   const { user_id, trophy_id, milestone_id, membership_tier } = row
   const days = row.membership_days
@@ -533,21 +525,6 @@ async function settleRow(
      where user_id = $1 and source = $2 and source_id = $3`,
     [user_id, source, sourceId]
   )
-  if (!granted && !(await canGrant(!!rankTier))) {
-    // Final: the part is not granted later if the account recovers. As with
-    // the cap below, a grant that has appeared since is left to its maker.
-    await pg.none(
-      `update user_trophy_rewards
-       set membership_status = 'skipped', membership_settled_time = now()
-       where user_id = $1 and trophy_id = $2 and milestone_id = $3
-         and membership_status = 'pending'
-         and not exists (
-           select 1 from membership_grants g
-           where g.user_id = $1 and g.source = $4 and g.source_id = $5)`,
-      [...key, source, sourceId]
-    )
-    return 'skipped'
-  }
   if (!granted && !(await hasRoomUnderCap(pg, user_id, durationMs))) {
     // No grant is made, so this row is the receipt. If a grant for it has
     // appeared since the check above, its maker records the outcome instead.
@@ -572,7 +549,27 @@ async function settleRow(
     source,
     sourceId,
     note: `Trophy prize ${trophy_id}/${milestone_id}.`,
+    // Asked for this part alone, in the grant's transaction and after its
+    // wait for the user's queue slot. The answer and the grant share one
+    // snapshot, so a ban or a flag that is in before that transaction starts
+    // stops the grant.
+    precondition: (tx) => canStillGrantMembership(tx, user_id, !!rankTier),
   })
+  if (result.outcome === 'ineligible') {
+    // Final: the part is not granted later if the account recovers. As with
+    // the cap above, a grant that has appeared since is left to its maker.
+    await pg.none(
+      `update user_trophy_rewards
+       set membership_status = 'skipped', membership_settled_time = now()
+       where user_id = $1 and trophy_id = $2 and milestone_id = $3
+         and membership_status = 'pending'
+         and not exists (
+           select 1 from membership_grants g
+           where g.user_id = $1 and g.source = $4 and g.source_id = $5)`,
+      [...key, source, sourceId]
+    )
+    return 'skipped'
+  }
   const outcome = getGrantedOutcome(result)
   // Only a pending row is marked, so whichever caller grants first records
   // the outcome and a slower duplicate changes nothing. A grant that was made
@@ -606,7 +603,7 @@ async function settleRow(
  * for a rank title.
  */
 async function canStillGrantMembership(
-  pg: SupabaseDirectClientTimeout,
+  pg: SupabaseDirectClient,
   userId: string,
   isRankPrize: boolean
 ) {

@@ -1,6 +1,6 @@
 # Free membership days
 
-A reward calls `grantMembershipDays` with a stable user, source and source ID. The private `membership_grants` ledger keeps that receipt after use. Replaying a source returns the original grant. Admin callers supply a stable `key` of 1–100 characters for each award and reuse it on retries. `grantMembershipDays` takes the user's `betsQueue` slot, so call it before entering that slot, never from inside it.
+A reward calls `grantMembershipDays` with a stable user, source and source ID. The private `membership_grants` ledger keeps that receipt after use. Replaying a source returns the original grant. Admin callers supply a stable `key` of 1–100 characters for each award and reuse it on retries. `grantMembershipDays` takes the user's `betsQueue` slot, so call it before entering that slot, never from inside it. A caller can pass a `precondition`. It runs inside the grant's transaction, after the lookup of an existing grant and before anything is written. If it returns false, no grant is made, nothing is written and the outcome is `ineligible`. Trophy prizes use it to check the account again.
 
 A banked grant can start when its tier equals or exceeds the current paid tier, including its 25-hour renewal grace. Among eligible grants the highest tier starts first, then the oldest. The total held ahead includes banked durations and the unspent portion of the active grant. `MAX_FREE_MEMBERSHIP_HELD_MS` is 30 days. A partial award records the reduction in its note.
 

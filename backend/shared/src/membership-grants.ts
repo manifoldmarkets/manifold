@@ -264,21 +264,38 @@ type MembershipGrantInput = {
   note?: string
 }
 
+// A caller's own condition on a new grant. It is asked inside the grant's
+// transaction, after the wait for the user's queue slot and before anything
+// is written, so the answer and the grant share one snapshot. false: no grant
+// is made and nothing is written. A grant that already exists is returned as
+// a duplicate without asking. It can run more than once (retries).
+type MembershipGrantPrecondition = (tx: SupabaseTransaction) => Promise<boolean>
+
+export type MembershipGrantRefusal = { grant: null; outcome: 'ineligible' }
+
 // Idempotent per (userId, source, sourceId). Takes the user's betsQueue slot
 // so a renewal it settles broadcasts in order with checkouts: never call it
 // from inside that user's slot (betsQueue isn't re-entrant; it would deadlock).
 export function grantMembershipDays(
   pg: SupabaseDirectClientTimeout,
+  input: MembershipGrantInput & { precondition: MembershipGrantPrecondition }
+): Promise<MembershipGrantResult | MembershipGrantRefusal>
+export function grantMembershipDays(
+  pg: SupabaseDirectClientTimeout,
   input: MembershipGrantInput
-): Promise<MembershipGrantResult> {
-  return runQueuedGrantTransition<MembershipGrantResult>(input.userId, () =>
-    commitMembershipDays(pg, input)
-  )
+): Promise<MembershipGrantResult>
+export function grantMembershipDays(
+  pg: SupabaseDirectClientTimeout,
+  input: MembershipGrantInput & { precondition?: MembershipGrantPrecondition }
+) {
+  return runQueuedGrantTransition<
+    MembershipGrantResult | MembershipGrantRefusal
+  >(input.userId, () => commitMembershipDays(pg, input))
 }
 
 function commitMembershipDays(
   pg: SupabaseDirectClientTimeout,
-  input: MembershipGrantInput
+  input: MembershipGrantInput & { precondition?: MembershipGrantPrecondition }
 ) {
   const { userId, tier, source, sourceId } = input
   return transactWithRetries(
@@ -295,6 +312,11 @@ function commitMembershipDays(
             grant: existing,
             outcome: 'duplicate' as const,
           },
+          change: null,
+        }
+      if (input.precondition && !(await input.precondition(tx)))
+        return {
+          result: { grant: null, outcome: 'ineligible' as const },
           change: null,
         }
       const { durationMs, reductionNote } = capGrantDuration(

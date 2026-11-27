@@ -1130,20 +1130,39 @@ describe('trophy prize standing', () => {
     bonusEligibility: Parameters<
       typeof resolveTrophyPrizeTier
     >[0]['bonusEligibility'],
-    hasPaidMembership = entitlements.some((e) => !('metadata' in e))
-  ) =>
-    resolveTrophyPrizeTier({
-      entitlements,
-      bonusEligibility,
-      hasPaidMembership,
-      now,
-    })
+    paidTier: 'basic' | 'plus' | null = entitlements.some(
+      (e) => !('metadata' in e)
+    )
+      ? 'basic'
+      : null
+  ) => resolveTrophyPrizeTier({ entitlements, bonusEligibility, paidTier, now })
 
   it('lets a paid membership outrank a flag or a bonus block', () => {
     expect(tier([paid], 'requires_verification')).toBe('basic')
     expect(tier([paid], 'ineligible')).toBe('basic')
     // Paid time set aside while free days run still counts.
-    expect(tier([free], 'requires_verification', true)).toBe('basic')
+    expect(tier([free], 'requires_verification', 'basic')).toBe('basic')
+    // Its free days can be of a higher tier than it pays for.
+    expect(
+      tier(
+        [{ ...free, entitlementId: 'supporter-premium' }],
+        'ineligible',
+        'plus'
+      )
+    ).toBe('premium')
+  })
+
+  // Free days have run out and the scheduler has not restored the paid
+  // membership yet: nothing is active, and it is still a paying member.
+  it('keeps a paying member at its paid tier while no entitlement is active', () => {
+    const lapsed = { ...free, expiresTime: now - 1000 }
+    expect(tier([lapsed], 'requires_verification', 'plus')).toBe('plus')
+    expect(tier([], 'requires_verification', 'plus')).toBe('plus')
+    expect(tier([], 'ineligible', 'basic')).toBe('basic')
+    // With nothing paid, the flag stands.
+    expect(tier([lapsed], 'requires_verification', null)).toBe('restricted')
+    // An unflagged account needs no paid tier to be paid in full.
+    expect(tier([lapsed], 'verified', null)).toBe('free')
   })
 
   it('does not let free membership days outrank a flag or a bonus block', () => {

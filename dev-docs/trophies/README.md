@@ -98,7 +98,7 @@ Prizes are in the Prizes section below. The eligibility cutoff is 1 November 202
 
 Navigation and the Trophies tab share claim counts and unlock notifications. Missing badge art falls back to the milestone emoji.
 
-`get-user-trophies` is public. It returns `pushEnabled` and `paidMembership` as they are only to the account's owner (`preferAuth`, so the page waits for sign-in). Anyone else gets what the account's claims already show: 1 once Stay in the Loop or Member is claimed, otherwise 0 (`getPublicStarterStats`).
+`get-user-trophies` is public. It returns `pushEnabled` and `paidMembership` as they are only to the account's owner (`preferAuth`, so the page waits for sign-in). Anyone else gets what the account's claims already show: 1 once Stay in the Loop or Member is claimed, otherwise 0 (`getPublicStarterStats`). The page keeps what it was sent per profile and per viewer (`web/hooks/user-trophies-store.ts`), so a sign-in, a sign-out or an account switch reads the profile again as the new viewer.
 
 ## Prizes
 
@@ -123,7 +123,7 @@ Standing follows `getPrizeStanding`, from the account's effective tier at the ti
 | Bonus-blocked (`reduced`)             | 0.2x | Yes     | No              |
 | Flagged (`restricted`)                | 0    | No      | No              |
 
-Membership pays no more than 1x. A membership the account pays for counts ahead of a flag or a bonus block, as it does for other bonuses. Free membership days don't (`resolveTrophyPrizeTier`): prizes pay free days, and a flagged account holding some would otherwise collect in full and keep itself topped up. A paid membership set aside while free days run still counts. Quests, streaks and referrals still treat free days as a membership. A milestone that would pay the account nothing is not recorded, so it can be collected later.
+Membership pays no more than 1x. A membership the account pays for counts ahead of a flag or a bonus block, as it does for other bonuses. Free membership days don't (`resolveTrophyPrizeTier`): prizes pay free days, and a flagged account holding some would otherwise collect in full and keep itself topped up. A paid membership set aside while free days run still counts, including in the gap after those days run out and before the scheduler restores it, when no entitlement is active. Quests, streaks and referrals still treat free days as a membership. A milestone that would pay the account nothing is not recorded, so it can be collected later.
 
 Freezes go to `users.data.streakForgiveness` with no cap. The shop's limit applies to purchases only. Free membership days keep every benefit.
 
@@ -154,7 +154,7 @@ An account's pending rows are granted best tier first. A grant that fails leaves
 2. The main scheduler's `settle-trophy-prizes` job runs every two minutes. It takes up to 100 accounts with a pending row that is due, oldest first, and settles all their pending rows. A row is due one minute after it was written. After a failed pass the account waits 2, 4, 8 minutes and so on, up to 6 hours, and each failure is logged as an error. The job asks the API to broadcast a membership it started, as the membership grant job does.
 3. The nightly rank job settles the accounts it pays, and any holder with a title prize still pending from an earlier night.
 
-The account is checked again before a pending part is granted, since that can be minutes or hours after the prize was judged. A bot, a deleted account, one in `BANNED_TRADING_USER_IDS`, one with a ban that stops a claim (posting or trading), or one whose standing no longer allows membership days has the part recorded as `skipped` and gets no grant. A rank title part uses the rank job's rules instead: any ban but a mod alert, and `trophy_rank_exclusions`. `skipped` is final. A grant an earlier attempt already made is still recorded as it is.
+The account is checked again for every pending part, since the grant can come minutes or hours after the prize was judged. The check is `grantMembershipDays`' `precondition`: it runs inside the grant's own transaction, after the wait for the user's queue slot, so nothing can land between the check and the grant. A bot, a deleted account, one in `BANNED_TRADING_USER_IDS`, one with a ban that stops a claim (posting or trading), or one whose standing no longer allows membership days has the part recorded as `skipped` and gets no grant. A rank title part uses the rank job's rules instead: any ban but a mod alert, and `trophy_rank_exclusions`. `skipped` is final. A grant an earlier attempt already made is still recorded as it is.
 
 `claim-trophy` returns `prize: { mana, freezes, membership: [{ tier, days, grantedDays, outcome }] }` beside `rewardAmount`. `outcome` can also be `pending` (still to be granted) or `skipped` (not granted: days of a paid tier the account doesn't have, or an account that could no longer be paid). `rewarded` lists paid milestones for every account, in `claim-trophy` and `get-user-trophies`.
 

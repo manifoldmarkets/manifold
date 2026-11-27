@@ -1790,6 +1790,45 @@ describe('trophy prizes', () => {
       })
     })
 
+    it('pay a flagged paying member in full once its free days have run out, before the paid ones are back', async () => {
+      await addOldUser('member', { bonusEligibility: 'requires_verification' })
+      await rows(
+        `insert into user_entitlements (user_id, entitlement_id, expires_time)
+         values ('member', 'supporter-basic', now() + interval '10 days')`
+      )
+      await gift('member', 'premium')
+      // The free days ended a minute ago. The scheduler has not run yet, so
+      // the paid Plus days are still set aside and no entitlement is active.
+      await db.exec(`
+        update membership_grants
+          set started_time = now() - interval '5 days', ends_time = now() - interval '1 minute'
+          where user_id = 'member';
+        update user_entitlements set expires_time = now() - interval '1 minute'
+          where user_id = 'member';
+      `)
+      expect(
+        await rows(
+          `select 1 from user_entitlements where user_id = 'member' and expires_time > now()`
+        )
+      ).toEqual([])
+
+      const result = await enthusiast('member')
+      expect(result.prize).toMatchObject({ mana: 50, freezes: 3 })
+      // Paid as the Plus member it is, and none of its days are skipped.
+      expect((await rewardTxns('member'))[0].data.data).toMatchObject({
+        effectiveTier: 'basic',
+        multiplier: 1,
+      })
+      expect(result.prize.membership.map((m) => m.outcome).sort()).toEqual([
+        'banked',
+        'started',
+      ])
+      expect(await prizeRows('member', 'total-trades')).toMatchObject({
+        regular: { status: 'granted' },
+        enthusiast: { status: 'granted' },
+      })
+    })
+
     it('pay an unflagged account holding free days in full', async () => {
       await addOldUser('old')
       await gift('old', 'basic')
@@ -2306,8 +2345,8 @@ describe('trophy prizes', () => {
           await change('old')
           await ageRewards('old')
           await settleTrophyPrizes()
-          // Only the attempt that failed: no grant was tried for it again.
-          expect(grant).toHaveBeenCalledTimes(1)
+          // The grant was asked for, and refused in its own transaction.
+          expect(grant).toHaveBeenCalledTimes(2)
           expect(
             (await prizeRows('old', 'total-trades')).regular
           ).toMatchObject(skippedRow)
@@ -2319,7 +2358,7 @@ describe('trophy prizes', () => {
           await ageRewards('old')
           await settleTrophyPrizes()
           await claim('old', 'account-age', 'newcomer')
-          expect(grant).toHaveBeenCalledTimes(1)
+          expect(grant).toHaveBeenCalledTimes(2)
           expect(
             (await prizeRows('old', 'total-trades')).regular
           ).toMatchObject(skippedRow)
@@ -2348,17 +2387,75 @@ describe('trophy prizes', () => {
 
       it("are not granted by a bot's later claim", async () => {
         await addOldUser('old')
-        const grant = failGrantOnce()
+        failGrantOnce()
         expect((await regular('old')).prize.membership).toEqual([pending])
         await rows(`update users set is_bot = true where id = 'old'`)
         // The claim settles what is pending, after paying the bot nothing.
         const next = await claim('old', 'account-age', 'newcomer')
         expect(next.prize).toEqual(NOTHING)
-        expect(grant).toHaveBeenCalledTimes(1)
         expect((await prizeRows('old', 'total-trades')).regular).toMatchObject(
           skippedRow
         )
         expect(await grantRows('old')).toEqual([])
+      })
+
+      // The check is made in the grant's transaction, not before it: what
+      // lands while the grant waits for the user's queue slot still counts.
+      it('are skipped when a ban lands while the grant waits in the queue', async () => {
+        await addOldUser('old')
+        const real = membershipGrants.grantMembershipDays
+        grantSpy = jest
+          .spyOn(membershipGrants, 'grantMembershipDays')
+          .mockImplementation(async (db, input) => {
+            // Settlement has decided to grant. The ban commits before the
+            // grant's transaction begins.
+            await banFrom('trading')(input.userId)
+            return real(db, input)
+          })
+        const result = await regular('old')
+        // The rest of the prize was paid before the ban.
+        expect(result.prize).toEqual({
+          mana: 0,
+          freezes: 3,
+          membership: [
+            { tier: 'basic', days: 1, grantedDays: 0, outcome: 'skipped' },
+          ],
+        })
+        expect((await prizeRows('old', 'total-trades')).regular).toMatchObject(
+          skippedRow
+        )
+        expect(await grantRows('old')).toEqual([])
+        expect(
+          await rows(`select * from user_entitlements where user_id = 'old'`)
+        ).toEqual([])
+      })
+
+      it('are checked part by part: a ban between two parts stops the second', async () => {
+        await addOldUser('old')
+        const real = membershipGrants.grantMembershipDays
+        let calls = 0
+        grantSpy = jest
+          .spyOn(membershipGrants, 'grantMembershipDays')
+          .mockImplementation(async (db, input) => {
+            if (++calls === 2) await banFrom('posting')(input.userId)
+            return real(db, input)
+          })
+        // Enthusiast's two days are granted first, then Regular's one.
+        expect((await enthusiast('old')).prize.membership).toEqual([
+          { tier: 'basic', days: 1, grantedDays: 0, outcome: 'skipped' },
+          { tier: 'basic', days: 2, grantedDays: 2, outcome: 'started' },
+        ])
+        expect(calls).toBe(2)
+        expect(await prizeRows('old', 'total-trades')).toMatchObject({
+          enthusiast: { status: 'granted', outcome: 'started' },
+          regular: skippedRow,
+        })
+        expect(await grantRows('old')).toEqual([
+          expect.objectContaining({
+            source_id: 'total-trades/enthusiast',
+            status: 'active',
+          }),
+        ])
       })
 
       it('are still recorded when the grant was made before the change', async () => {
@@ -2396,6 +2493,86 @@ describe('trophy prizes', () => {
           ).toMatchObject({ status: 'granted', outcome: 'started' })
         }
       )
+    })
+
+    describe('grantMembershipDays with a precondition', () => {
+      const input = {
+        userId: 'old',
+        tier: 'basic' as const,
+        durationMs: 2 * DAY,
+        source: 'test',
+        sourceId: 'gift',
+      }
+
+      it('writes nothing and says so when the precondition fails', async () => {
+        await addOldUser('old')
+        const precondition = jest.fn(async () => false)
+        expect(
+          await membershipGrants.grantMembershipDays(pg(), {
+            ...input,
+            precondition,
+          })
+        ).toEqual({ grant: null, outcome: 'ineligible' })
+        expect(precondition).toHaveBeenCalledTimes(1)
+        expect(await grantRows('old')).toEqual([])
+        expect(
+          await rows(`select * from user_entitlements where user_id = 'old'`)
+        ).toEqual([])
+        // Nothing was recorded, so the same source can be granted later.
+        expect(
+          (await membershipGrants.grantMembershipDays(pg(), input)).outcome
+        ).toBe('started')
+      })
+
+      it('asks inside the transaction that makes the grant', async () => {
+        await addOldUser('old')
+        const seen: unknown[] = []
+        const result = await membershipGrants.grantMembershipDays(pg(), {
+          ...input,
+          precondition: async (tx) => {
+            // Asked before the grant is written.
+            seen.push(
+              await tx.manyOrNone(
+                `select source_id from membership_grants where user_id = 'old'`
+              )
+            )
+            return true
+          },
+        })
+        expect(seen).toEqual([[]])
+        expect(result.outcome).toBe('started')
+        expect(await grantRows('old')).toHaveLength(1)
+
+        // What it writes is undone with the grant's transaction when it fails.
+        await expect(
+          membershipGrants.grantMembershipDays(pg(), {
+            ...input,
+            sourceId: 'another',
+            precondition: async (tx) => {
+              await tx.none(
+                `insert into user_bans (user_id, ban_type) values ('old', 'modAlert')`
+              )
+              throw new Error('Precondition failed to read')
+            },
+          })
+        ).rejects.toThrow('Precondition failed to read')
+        expect(await rows(`select 1 from user_bans`)).toEqual([])
+        expect(await grantRows('old')).toHaveLength(1)
+      })
+
+      it('returns an existing grant without asking', async () => {
+        await addOldUser('old')
+        await membershipGrants.grantMembershipDays(pg(), input)
+        const precondition = jest.fn(async () => false)
+        expect(
+          await membershipGrants.grantMembershipDays(pg(), {
+            ...input,
+            precondition,
+          })
+        ).toMatchObject({ outcome: 'duplicate', grant: { status: 'active' } })
+        expect(precondition).not.toHaveBeenCalled()
+        expect(await grantRows('old')).toHaveLength(1)
+      })
     })
 
     it('are granted once when a retry finds the grant already made', async () => {

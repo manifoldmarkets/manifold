@@ -17,6 +17,8 @@ import { ENV } from 'common/envs/constants'
 import { UserEntitlement } from 'common/shop/types'
 import {
   EffectiveTier,
+  SupporterTier,
+  TIER_ORDER,
   getEffectiveBonusMultiplier,
   resolveEffectiveTier,
 } from 'common/supporter-config'
@@ -788,17 +790,22 @@ export const isPrizeStandingCut = (bonusEligibility: BonusEligibility) =>
 export function resolveTrophyPrizeTier(args: {
   entitlements: UserEntitlement[] | undefined
   bonusEligibility: BonusEligibility
-  // Whether the account pays for a membership, including one set aside while
-  // free days run. Only read when the account is flagged or bonus-blocked.
-  hasPaidMembership: boolean
+  // The tier of the membership the account pays for, or null. It includes one
+  // set aside while free days run. Only read when the account is flagged or
+  // bonus-blocked.
+  paidTier: SupporterTier | null
   now?: number
 }): EffectiveTier {
-  const { bonusEligibility, hasPaidMembership, now } = args
-  const entitlements =
-    isPrizeStandingCut(bonusEligibility) && !hasPaidMembership
-      ? undefined
-      : args.entitlements
-  return resolveEffectiveTier({ entitlements, bonusEligibility, now })
+  const { entitlements, bonusEligibility, paidTier, now } = args
+  if (!isPrizeStandingCut(bonusEligibility))
+    return resolveEffectiveTier({ entitlements, bonusEligibility, now })
+  if (!paidTier)
+    return resolveEffectiveTier({ entitlements: undefined, bonusEligibility })
+  // A paying member, whatever the entitlements show. Paid time set aside
+  // behind free days has no entitlement of its own, and none at all is active
+  // between those days running out and the scheduler restoring it.
+  const tier = resolveEffectiveTier({ entitlements, bonusEligibility, now })
+  return TIER_ORDER.some((t) => t === tier) ? tier : paidTier
 }
 
 /** Active entitlements that are not free membership days. */

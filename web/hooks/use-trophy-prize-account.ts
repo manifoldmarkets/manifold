@@ -35,7 +35,7 @@ export function useTrophyPrizeAccount(): TrophyPrizeAccount | undefined {
                 bonusEligibility,
                 // A paid membership set aside while free days run isn't
                 // public. The server counts it; the page can't.
-                hasPaidMembership: !!getUserSupporterTier(
+                paidTier: getUserSupporterTier(
                   getPaidEntitlements(entitlements)
                 ),
               })
