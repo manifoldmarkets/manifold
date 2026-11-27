@@ -5,6 +5,8 @@ import {
   esportsEvents,
   parseRound,
   stageSignals,
+  type BuildOptions,
+  type StageSignal,
 } from './structure'
 import {
   RECORDED,
@@ -16,7 +18,6 @@ import type {
   BracketView,
   EsportsSeriesFacts,
   EsportsStageMeta,
-  EsportsStageSignal,
   StageTemplate,
   StageView,
 } from './types'
@@ -37,8 +38,11 @@ const read = (
       (changed && readEsportsSeries(stage.game, changed, observedAtMs)) ?? []
     )
   })
-const build = (series: EsportsSeriesFacts[], meta?: EsportsStageMeta[]) =>
-  buildTournamentViews(series, meta)
+const build = (
+  series: EsportsSeriesFacts[],
+  meta?: EsportsStageMeta[],
+  options?: BuildOptions
+) => buildTournamentViews(series, meta, options)
 const only = (series: EsportsSeriesFacts[], meta?: EsportsStageMeta[]) => {
   const views = build(series, meta)
   expect(views).toHaveLength(1)
@@ -58,7 +62,7 @@ const names = (teams: { team: { name: string } }[]) =>
   teams.map((t) => t.team.name)
 const ids = (series: (EsportsSeriesFacts | null)[]) =>
   series.map((s) => s?.id ?? null)
-const signal = (changes: Partial<EsportsStageSignal>): EsportsStageSignal => ({
+const signal = (changes: Partial<StageSignal>): StageSignal => ({
   game: 'cs',
   tournamentId: 1,
   stageId: 1,
@@ -70,6 +74,43 @@ const signal = (changes: Partial<EsportsStageSignal>): EsportsStageSignal => ({
   roundLabels: [],
   ...changes,
 })
+// Made-up CS2 rows, for what the recordings don't hold. One tournament, "Cup".
+const cupStage = (
+  id: number,
+  name: string,
+  stage_type: string | null,
+  stage_order: number | null = null,
+  rounds_count: number | null = null
+): Row => ({ id, name: `Cup ${name}`, stage_type, stage_order, rounds_count })
+const cupTeam = (id: number) => ({ id, name: `Team ${id}` })
+/** Team `a` beat team `b` 2-0 in a best of three, on January `day`. */
+const made = (
+  id: number,
+  stage: Row,
+  round: string | null,
+  a: number,
+  b: number,
+  day: number | null = id
+): Row => ({
+  id,
+  tournament: { id: 1, name: 'Cup', tier: 's' },
+  stage,
+  round,
+  team1: cupTeam(a),
+  team2: cupTeam(b),
+  team1_score: 2,
+  team2_score: 0,
+  winner: cupTeam(a),
+  best_of: 3,
+  status: 'finished',
+  status_state: 'final',
+  start_time:
+    day === null
+      ? null
+      : `2026-01-${String(day).padStart(2, '0')}T10:00:00.000Z`,
+})
+const facts = (rows: Row[], observedAtMs: number | null = null) =>
+  rows.flatMap((row) => readEsportsSeries('cs', row, observedAtMs) ?? [])
 const unlabelled = (id: number) => (row: Row) =>
   row.id !== id
     ? row
@@ -124,7 +165,7 @@ describe('round labels', () => {
 })
 
 describe('classifyStage', () => {
-  test.each<[Partial<EsportsStageSignal>, StageTemplate, RegExp]>([
+  test.each<[Partial<StageSignal>, StageTemplate, RegExp]>([
     [{ stageId: null }, 'list', /No stage was sent/],
     [{}, 'list', /No stage type was sent/],
     [{ stageType: 'league' }, 'list', /Unknown stage type "league"/],
@@ -205,28 +246,38 @@ describe('classifyStage', () => {
   })
 
   // A group stage with numbered rounds is Swiss only when it has too few
-  // rounds to be a round robin. Recorded: 16 teams over 5 rounds is Swiss,
-  // 6 teams over 5 rounds is a round robin.
+  // rounds to be a round robin and its pairings join every team into one
+  // pool. Recorded: 16 teams over 5 rounds is Swiss, 6 teams over 5 rounds is
+  // a round robin.
   test.each([
-    [16, 5, 'swiss'],
-    [17, 5, 'swiss'],
-    [6, 5, 'group-table'],
-    [8, 7, 'group-table'],
-    [5, 5, 'group-table'],
-    [16, null, 'group-table'],
-  ] as const)('group, %s teams, %s rounds: %s', (teams, rounds, template) => {
-    const result = classifyStage(
-      signal({
-        stageType: 'group',
-        roundLabels: ['Round 1', 'Round 2', 'Round 3'],
-        teamCount: teams,
-        roundsCount: rounds,
-      })
-    )
-    expect(result.template).toBe(template)
-  })
+    [16, 5, 1, 'swiss'],
+    [17, 5, 1, 'swiss'],
+    [6, 5, 1, 'group-table'],
+    [8, 7, 1, 'group-table'],
+    [5, 5, 1, 'group-table'],
+    [16, null, 1, 'group-table'],
+    // Too few rounds, but the teams are in pools that never meet, or nothing
+    // says how many pools there are.
+    [8, 3, 2, 'group-table'],
+    [16, 5, 8, 'group-table'],
+    [16, 5, undefined, 'group-table'],
+  ] as const)(
+    'group, %s teams, %s rounds, %s pools: %s',
+    (teams, rounds, pools, template) => {
+      const result = classifyStage(
+        signal({
+          stageType: 'group',
+          roundLabels: ['Round 1', 'Round 2', 'Round 3'],
+          teamCount: teams,
+          roundsCount: rounds,
+          pools,
+        })
+      )
+      expect(result.template).toBe(template)
+    }
+  )
 
-  test.each<[Partial<EsportsStageSignal>, RegExp]>([
+  test.each<[Partial<StageSignal>, RegExp]>([
     [
       { stageType: 'swiss', roundLabels: ['Upper bracket final'] },
       /sent as "swiss" but has bracket round labels/,
@@ -269,6 +320,25 @@ describe('classifyStage', () => {
     [
       { format: 'round_robin', stageLabel: 'Swiss Stage' },
       /named "Swiss Stage" but sent as "round robin"/,
+    ],
+    // A final or a third-place series alone ends either kind of bracket.
+    [
+      { stageType: 'playoff', roundLabels: ['Grand Final'] },
+      /only a final or third-place series/,
+    ],
+    [{ roundLabels: ['3rd place'] }, /only a final or third-place series/],
+    [
+      { stageType: 'playoff', roundLabels: ['Final', 'Third place match'] },
+      /only a final or third-place series/,
+    ],
+    // The latest captures disagree on what picks the layout.
+    [
+      {
+        stageType: 'swiss',
+        roundLabels: ['Round 1'],
+        conflict: "The latest captures disagree on the stage's type (a and b).",
+      },
+      /latest captures disagree on the stage's type/,
     ],
   ])('falls back to a list: %j', (changes, reason) => {
     const result = classifyStage(signal(changes))
@@ -389,12 +459,23 @@ describe('Swiss', () => {
     expect(rows.every((r) => r.status === null)).toBe(true)
   })
 
-  test('through and out come from who plays in a later stage', () => {
-    const [event] = build([
+  test('through comes from who plays in a later stage, out from the promotion count too', () => {
+    const promote = (promotionCount: number): EsportsStageMeta[] => [
+      {
+        game: 'cs',
+        stageId: 9268,
+        tournamentId: 18615,
+        format: null,
+        sequence: null,
+        promotionCount,
+      },
+    ]
+    const all = [
       ...read(R.bucharestGroup),
       ...read(R.bucharestPlayoffs),
       ...read(R.bucharestDecider),
-    ])
+    ]
+    const [event] = build(all)
     expect(event.stages.map((s) => s.label)).toEqual([
       'Group Stage',
       'Playoffs',
@@ -413,15 +494,28 @@ describe('Swiss', () => {
       'Natus Vincere',
       'Nemiga',
     ])
-    expect(rows.filter((r) => r.status === 'out')).toHaveLength(8)
+    // Eight teams with fewer wins are not "out": nothing says eight go through.
+    expect(rows.filter((r) => r.status === 'out')).toEqual([])
+    const statuses = (series: EsportsSeriesFacts[], count: number) =>
+      as(build(series, promote(count))[0].stages[0].view, 'swiss')
+        .buckets.flatMap((b) => b.teams)
+        .map((r) => r.status)
+    // With the provider's count of eight, all eight are named: the rest are out.
+    expect(statuses(all, 8)).toEqual([
+      ...Array(8).fill('through'),
+      ...Array(8).fill('out'),
+    ])
+    // A count the named teams don't match leaves the others undecided.
+    expect(statuses(all, 9).filter((s) => s === 'out')).toEqual([])
+    expect(statuses(all, 6).filter((s) => s === 'out')).toEqual([])
 
-    // While the playoffs are only partly known, the others are not "out":
-    // some of them have as many wins as a team that is through.
-    const [partial] = build([
+    // While the playoffs are only partly known, the others are not "out",
+    // count or no count: four of the eight are still to be named.
+    const partial = [
       ...read(R.bucharestGroup),
       ...read(R.bucharestPlayoffs).slice(0, 2),
-    ])
-    const early = as(partial.stages[0].view, 'swiss').buckets.flatMap(
+    ]
+    const early = as(build(partial)[0].stages[0].view, 'swiss').buckets.flatMap(
       (b) => b.teams
     )
     expect(names(early.filter((r) => r.status === 'through'))).toEqual([
@@ -431,6 +525,44 @@ describe('Swiss', () => {
       'Nemiga',
     ])
     expect(early.filter((r) => r.status === 'out')).toEqual([])
+    expect(statuses(partial, 8).filter((s) => s === 'out')).toEqual([])
+  })
+
+  test('a stage is later only by its start times, not by where it is shown (made-up rows)', () => {
+    // A qualifier with no stage order is shown after the Swiss stage, which
+    // has one. Played the day before, it proves nothing about the Swiss stage.
+    const swiss = cupStage(1, 'Swiss', 'swiss', 1)
+    const qualifier = cupStage(2, 'Qualifier', 'playoff')
+    const statuses = (qualifierDay: number | null) => {
+      const [event] = build(
+        facts([
+          made(1, qualifier, null, 1, 2, qualifierDay),
+          made(2, swiss, 'Round 1', 1, 3, 2),
+          made(3, swiss, 'Round 1', 2, 4, 2),
+        ])
+      )
+      expect(event.stages.map((s) => s.label)).toEqual(['Swiss', 'Qualifier'])
+      return as(event.stages[0].view, 'swiss')
+        .buckets.flatMap((b) => b.teams)
+        .map((r) => [r.team.id, r.status])
+    }
+    const nobody = [
+      [1, null],
+      [2, null],
+      [3, null],
+      [4, null],
+    ]
+    expect(statuses(1)).toEqual(nobody)
+    // Nor a stage that starts at the same moment, or whose start isn't known.
+    expect(statuses(2)).toEqual(nobody)
+    expect(statuses(null)).toEqual(nobody)
+    // Played the day after, it is a later stage: its two teams went through.
+    expect(statuses(3)).toEqual([
+      [1, 'through'],
+      [2, 'through'],
+      [3, null],
+      [4, null],
+    ])
   })
 
   test('through and out come from the promotion count when the cut is clean', () => {
@@ -610,6 +742,148 @@ describe('Swiss', () => {
       [3, 'out'],
       [4, 'out'],
     ])
+    // With no promotion count the gap in wins below Team 1 proves nothing:
+    // it is through, and nobody is out.
+    expect(statuses(null)).toEqual([
+      [1, 'through'],
+      [2, null],
+      [3, null],
+      [4, null],
+    ])
+  })
+
+  test('the latest captures disagree on the stage type: a list, whichever ID is higher (made-up rows)', () => {
+    const swiss = cupStage(1, 'Main Stage', 'swiss')
+    const playoff = { ...swiss, stage_type: 'playoff' }
+    const at = 5000
+    const tied = (low: Row, high: Row) =>
+      only([
+        ...facts([made(1, low, 'Round 1', 1, 2)], at),
+        ...facts([made(2, high, 'Round 1', 3, 4)], at),
+      ])
+    for (const stage of [tied(playoff, swiss), tied(swiss, playoff)]) {
+      expect(stage.classification).toEqual({
+        template: 'list',
+        reason:
+          "The latest captures disagree on the stage's type (playoff and swiss).",
+        unknownLabels: [],
+      })
+      expect(stage.signal.stageType).toBeNull()
+      expect(stage.signal.problems).toEqual([
+        "The stage's type was sent as playoff and swiss in its latest " +
+          'captures; none is used.',
+      ])
+      expect(stage.view.kind).toBe('list')
+    }
+    // Rows with no capture time are tied as well.
+    const untimed = only(
+      facts([
+        made(1, playoff, 'Round 1', 1, 2),
+        made(2, swiss, 'Round 1', 3, 4),
+      ])
+    )
+    expect(untimed.classification.template).toBe('list')
+    // One later capture settles it, as before.
+    const settled = only([
+      ...facts([made(1, playoff, 'Round 1', 1, 2)], at),
+      ...facts([made(2, swiss, 'Round 1', 3, 4)], at + 1),
+    ])
+    expect(settled.classification.template).toBe('swiss')
+    expect(settled.signal.problems).toEqual([
+      "The stage's type was sent as swiss and playoff; using swiss, the latest.",
+    ])
+    // So does a later capture that agrees with one of the two tied ones.
+    const outvoted = only([
+      ...facts([made(1, playoff, 'Round 1', 1, 2)], at),
+      ...facts([made(2, swiss, 'Round 1', 3, 4)], at),
+      ...facts([made(3, swiss, 'Round 2', 1, 3)], at + 1),
+    ])
+    expect(outvoted.classification.template).toBe('swiss')
+
+    // The name picks the layout where no type is sent, so a tie on it is the
+    // same: "Swiss Stage" against "Group Stage" is neither.
+    const named = (name: string) => cupStage(1, name, null)
+    const renamed = only([
+      ...facts([made(1, named('Swiss Stage'), null, 1, 2)], at),
+      ...facts([made(2, named('Group Stage'), null, 3, 4)], at),
+    ])
+    expect(renamed.classification).toMatchObject({
+      template: 'list',
+      reason:
+        "The latest captures disagree on the stage's name " +
+        '(Cup Group Stage and Cup Swiss Stage).',
+    })
+    // Two stage rows that disagree on the format have no capture time at all.
+    const stageRow = (format: string): EsportsStageMeta => ({
+      game: 'cs',
+      stageId: 1,
+      tournamentId: 1,
+      format,
+      sequence: 1,
+      promotionCount: null,
+    })
+    const untyped = facts([
+      made(1, cupStage(1, 'Main Stage', null), null, 1, 2),
+    ])
+    expect(
+      only(untyped, [stageRow('round_robin'), stageRow('playoff')])
+        .classification
+    ).toMatchObject({
+      template: 'list',
+      reason:
+        "The latest captures disagree on the stage's format " +
+        '(playoff and round_robin).',
+    })
+    expect(
+      only(untyped, [stageRow('round_robin'), stageRow('round_robin')])
+        .classification.template
+    ).toBe('group-table')
+
+    // Round labels from two vocabularies are a list in any order, tied or not.
+    const mixed = (rows: Row[]) => only(facts(rows, at)).classification.reason
+    const quarter = made(1, playoff, 'Quarterfinal', 1, 2)
+    const upper = made(2, playoff, 'Upper bracket semifinal', 3, 4)
+    expect(mixed([quarter, upper])).toMatch(/mix vocabularies/)
+    expect(mixed([upper, quarter])).toMatch(/mix vocabularies/)
+  })
+
+  test('two round-robin pools in one "group" stage are a table, not Swiss (made-up rows)', () => {
+    // Eight teams, three numbered rounds: too few for one round robin of
+    // eight, exactly enough for two pools of four that never meet.
+    const group = cupStage(1, 'Group Stage', 'group', 1, 3)
+    const pool = (first: number, id: number) => {
+      const [a, b, c, d] = [first, first + 1, first + 2, first + 3]
+      return [
+        made(id, group, 'Round 1', a, b),
+        made(id + 1, group, 'Round 1', c, d),
+        made(id + 2, group, 'Round 2', a, c),
+        made(id + 3, group, 'Round 2', b, d),
+        made(id + 4, group, 'Round 3', a, d),
+        made(id + 5, group, 'Round 3', b, c),
+      ]
+    }
+    const pools = [...pool(1, 1), ...pool(5, 7)]
+    const { classification, signal, view } = only(facts(pools))
+    expect(signal).toMatchObject({ teamCount: 8, roundsCount: 3, pools: 2 })
+    expect(classification).toEqual({
+      template: 'group-table',
+      reason:
+        'The stage is sent as "group" with too few numbered rounds for a ' +
+        "round robin, but its pairings don't join every team into one pool.",
+      unknownLabels: [],
+    })
+    expect(as(view, 'group-table').rows).toHaveLength(8)
+    // One series across the two pools joins them: now the pairing is Swiss.
+    const joined = only(facts([...pools, made(13, group, 'Round 3', 4, 5)]))
+    expect(joined.signal).toMatchObject({ pools: 1 })
+    expect(joined.classification.template).toBe('swiss')
+    // A Swiss stage sent as "group" is a table until its pairings join up:
+    // after round one, sixteen teams are still eight separate pairs.
+    const roundOne = only(
+      read(R.bucharestGroup, (row) => (row.round === 'Round 1' ? row : null))
+    )
+    expect(roundOne.signal).toMatchObject({ pools: 8 })
+    expect(roundOne.classification.template).toBe('group-table')
   })
 
   test('Valorant Swiss stage: chosen by name, no result counted', () => {
@@ -781,12 +1055,72 @@ describe('brackets', () => {
     ])
     expect(bracket.columns.every((c) => c.placeholders === 0)).toBe(true)
     expect(bracket.champion?.name).toBe('FURIA')
-    // The third-place series is a bracket with no final, so no champion.
-    const third = as(decider.view, 'single-elim')
-    expect(columns(third)).toEqual([['final', 0, '3rd place', 1]])
-    expect(third.champion).toBeNull()
+    // The third-place series is a stage of its own. Alone it doesn't say
+    // which kind of bracket it ends, so it is a list.
+    expect(decider.classification).toEqual({
+      template: 'list',
+      reason:
+        'Round labels name only a final or third-place series, not the ' +
+        'bracket it ends.',
+      unknownLabels: [],
+    })
+    expect(ids(as(decider.view, 'list').days.flatMap((d) => d.series))).toEqual(
+      [18041399]
+    )
     expect(event.champion).toEqual({ id: 631, name: 'FURIA', code: 'FURIA' })
     expect(event.status).toBe('finished')
+  })
+
+  test('a final alone is a list with no champion (made-up rows)', () => {
+    // A double elimination event can send exactly this row too.
+    const playoffs = cupStage(1, 'Playoffs', 'playoff', 1)
+    const final = only(facts([made(1, playoffs, 'Grand Final', 1, 2)]))
+    expect(final.classification).toMatchObject({
+      template: 'list',
+      reason:
+        'Round labels name only a final or third-place series, not the ' +
+        'bracket it ends.',
+    })
+    expect(final.view.kind).toBe('list')
+    expect(final.event).toMatchObject({ status: 'finished', champion: null })
+    // With a semifinal reported as well, the labels name a knockout.
+    const knockout = only(
+      facts([
+        made(1, playoffs, 'Semifinal', 1, 3),
+        made(2, playoffs, 'Semifinal', 2, 4),
+        made(3, playoffs, 'Grand Final', 1, 2),
+      ])
+    )
+    expect(knockout.classification.template).toBe('single-elim')
+    expect(knockout.event.champion?.name).toBe('Team 1')
+  })
+
+  test('two finals that disagree: no champion, whichever ID is higher (made-up rows)', () => {
+    const playoffs = cupStage(1, 'Playoffs', 'playoff', 1)
+    const semifinals = [
+      made(1, playoffs, 'Semifinal', 1, 3),
+      made(2, playoffs, 'Semifinal', 2, 4),
+    ]
+    // The same two teams at the same time, each row with its own winner.
+    const champion = (finals: Row[]) => {
+      const { view, event } = only(facts([...semifinals, ...finals]))
+      const bracket = as(view, 'single-elim')
+      expect(event.champion).toEqual(bracket.champion)
+      return bracket.champion?.name ?? null
+    }
+    const final = (id: number, winner: number, loser: number, day = 5) =>
+      made(id, playoffs, 'Grand Final', winner, loser, day)
+    expect(champion([final(5, 1, 2), final(6, 2, 1)])).toBeNull()
+    expect(champion([final(5, 2, 1), final(6, 1, 2)])).toBeNull()
+    // Nor when one is played later: nothing says the later one decides.
+    expect(champion([final(5, 1, 2), final(6, 2, 1, 6)])).toBeNull()
+    // Nor when one of them has no trusted result.
+    const forfeit = { ...final(6, 1, 2), status: 'defwin' }
+    expect(champion([final(5, 1, 2), forfeit])).toBeNull()
+    // Two that agree are one result, and one final is itself.
+    expect(champion([final(5, 1, 2), final(6, 1, 2)])).toBe('Team 1')
+    expect(champion([final(5, 2, 1), final(6, 2, 1, 6)])).toBe('Team 2')
+    expect(champion([final(5, 2, 1)])).toBe('Team 2')
   })
 
   test('no champion while anything in the event is still to come', () => {
@@ -924,14 +1258,83 @@ describe('brackets', () => {
     ).toBe(true)
   })
 
-  test('a series with no start time cannot be ordered, so it gets no links', () => {
+  test('a series with no start time cannot be ordered, so its teams get no links', () => {
     const undated = (row: Row) =>
       row.id === 18041397 ? { ...row, start_time: null } : row
     const { view, event } = only(read(R.bucharestPlayoffs, undated))
     const bracket = as(view, 'single-elim')
     expect(link(bracket, 18041397)).toEqual([])
-    expect(bracket.links).toHaveLength(4)
+    // Nor do the finalists' other series: the final could sit anywhere among
+    // them. Both semifinals are theirs, so no line is left on this bracket.
+    expect(bracket.links).toEqual([])
+    expect(bracket.problems).toEqual([
+      "FURIA has series that can't be put in order by start time, so they " +
+        'get no lines.',
+      "Nemiga has series that can't be put in order by start time, so they " +
+        'get no lines.',
+    ])
     expect(event.champion).toBeNull()
+  })
+
+  test('no line skips a series with no start time (made-up rows)', () => {
+    // Team 1 wins its quarterfinal, loses a semifinal that has no start time,
+    // then plays for third place. Its quarterfinal win doesn't lead there.
+    const playoffs = cupStage(1, 'Playoffs', 'playoff', 1)
+    const rows = (semifinalDay: number | null) => [
+      made(1, playoffs, 'Quarterfinal', 1, 2),
+      made(2, playoffs, 'Quarterfinal', 3, 4),
+      made(3, playoffs, 'Quarterfinal', 5, 6),
+      made(4, playoffs, 'Quarterfinal', 7, 8),
+      made(5, playoffs, 'Semifinal', 3, 1, semifinalDay),
+      made(6, playoffs, 'Semifinal', 5, 7),
+      made(7, playoffs, '3rd place', 7, 1),
+      made(8, playoffs, 'Grand final', 3, 5),
+    ]
+    const dated = as(only(facts(rows(5))).view, 'single-elim')
+    expect(dated.links).toHaveLength(6)
+    expect(link(dated, 7)).toEqual([])
+    expect(dated.problems).toEqual([])
+
+    const bracket = as(only(facts(rows(null))).view, 'single-elim')
+    expect(link(bracket, 7)).toEqual([])
+    // Teams 1 and 3 played the undated semifinal, so none of their series
+    // has a line. The other semifinal keeps its two.
+    expect(bracket.links).toEqual([
+      { from: 3, to: 6, carries: 'winner' },
+      { from: 4, to: 6, carries: 'winner' },
+    ])
+    expect(bracket.problems).toEqual([
+      "Team 1 has series that can't be put in order by start time, so they " +
+        'get no lines.',
+      "Team 3 has series that can't be put in order by start time, so they " +
+        'get no lines.',
+    ])
+    // Two of a team's series at the same time can't be ordered either.
+    const sameTime = as(only(facts(rows(1))).view, 'single-elim')
+    expect(sameTime.links.some((l) => [1, 5].includes(l.from))).toBe(false)
+    expect(sameTime.problems).toEqual([
+      "Team 1 has series that can't be put in order by start time, so they " +
+        'get no lines.',
+    ])
+  })
+
+  test('no line skips a series that is not on the board yet (made-up rows)', () => {
+    // Team 1's semifinal has no round label yet, so it has no place on the
+    // board. The line from its quarterfinal doesn't jump to the final.
+    const playoffs = cupStage(1, 'Playoffs', 'playoff', 1)
+    const bracket = as(
+      only(
+        facts([
+          made(1, playoffs, 'Quarterfinal', 1, 2),
+          made(2, playoffs, 'Quarterfinal', 3, 4),
+          made(3, playoffs, null, 1, 3),
+          made(4, playoffs, 'Grand final', 1, 5),
+        ])
+      ).view,
+      'single-elim'
+    )
+    expect(ids(bracket.unplaced ?? [])).toEqual([3])
+    expect(bracket.links).toEqual([])
   })
 
   test('an upcoming series has no label yet, so it is left unplaced', () => {
@@ -1065,6 +1468,167 @@ describe('list fallbacks', () => {
       '2025-06-26',
       'tbd',
     ])
+  })
+})
+
+describe('odd input', () => {
+  const all = () => Object.values(R).flatMap((stage) => read(stage))
+
+  test.each([Number.NaN, Infinity, -Infinity, 1e300, -1e300])(
+    'a start time of %s is no start time',
+    (startTimeMs) => {
+      const odd = read(R.bucharestPlayoffs).map((s) =>
+        s.id === 18041397 ? { ...s, startTimeMs } : s
+      )
+      const sent = only(
+        read(R.bucharestPlayoffs, (row) =>
+          row.id === 18041397 ? { ...row, start_time: null } : row
+        )
+      )
+      expect(only(odd)).toEqual(sent)
+      // In a list it goes under "tbd", where a date would have thrown.
+      const list = as(
+        only(
+          read(R.gamersClubPlayoffs).map((s) =>
+            s.id === 60668 ? { ...s, startTimeMs } : s
+          )
+        ).view,
+        'list'
+      )
+      const last = list.days[list.days.length - 1]
+      expect(last.date).toBe('tbd')
+      expect(last.series.map((s) => [s.id, s.startTimeMs])).toEqual([
+        [60668, null],
+      ])
+      // Every recorded stage, every start time odd: nothing throws.
+      const views = build(all().map((s) => ({ ...s, startTimeMs })))
+      expect(views.length).toBeGreaterThan(0)
+      expect(esportsEvents(all().map((s) => ({ ...s, startTimeMs })))).toEqual(
+        expect.any(Array)
+      )
+    }
+  )
+
+  // Values the types allow and the reader would never send.
+  test.each<[string, (s: EsportsSeriesFacts, i: number) => EsportsSeriesFacts]>(
+    [
+      ['a capture time of NaN', (s) => ({ ...s, observedAtMs: Number.NaN })],
+      [
+        'capture times of plus and minus infinity',
+        (s, i) => ({ ...s, observedAtMs: i % 2 ? Infinity : -Infinity }),
+      ],
+      ['a winner who is neither team', (s) => ({ ...s, winnerId: -1 })],
+      ['a team against itself', (s) => ({ ...s, team2: s.team1 })],
+      ['no teams', (s) => ({ ...s, team1: null, team2: null })],
+      ['every series the same ID', (s) => ({ ...s, id: 1 })],
+      [
+        'every team the same ID',
+        (s) => ({
+          ...s,
+          team1: s.team1 && { ...s.team1, id: 1 },
+          team2: s.team2 && { ...s.team2, id: 1 },
+        }),
+      ],
+      [
+        'empty names',
+        (s) => ({
+          ...s,
+          tournament: { ...s.tournament, name: '' },
+          stage: s.stage && { ...s.stage, name: '' },
+          round: '',
+        }),
+      ],
+      [
+        'odd stage numbers',
+        (s) => ({
+          ...s,
+          stage: s.stage && {
+            ...s.stage,
+            order: Number.NaN,
+            roundsCount: Infinity,
+          },
+          position: Number.NaN,
+          bestOf: -1,
+        }),
+      ],
+      [
+        'odd scores',
+        (s) => ({
+          ...s,
+          score: { team1: Number.NaN, team2: Infinity },
+        }),
+      ],
+      [
+        'one stage ID for every stage',
+        (s) => ({
+          ...s,
+          stage: s.stage && { ...s.stage, id: 1 },
+        }),
+      ],
+      [
+        'one tournament for everything',
+        (s) => ({
+          ...s,
+          tournament: { id: 1, name: 'Cup', tier: null },
+        }),
+      ],
+      ['every label a final', (s) => ({ ...s, round: 'Grand final' })],
+      ['every status in progress', (s) => ({ ...s, status: 'in_progress' })],
+    ]
+  )('%s does not throw', (_, change) => {
+    const odd = all().map(change)
+    expect(build(odd)).toEqual(expect.any(Array))
+    expect(build(odd, [], { derive: false })).toEqual(expect.any(Array))
+    expect(stageSignals(odd)).toEqual(expect.any(Array))
+  })
+})
+
+describe('derive: false', () => {
+  test('every stage is a list, and nothing is worked out from the series', () => {
+    const series = [
+      ...read(R.bucharestGroup),
+      ...read(R.bucharestPlayoffs),
+      ...read(R.bucharestDecider),
+      ...read(R.starladderPlayoffs),
+      ...read(R.thunderpickGroupA),
+    ]
+    // Worked out by default: layouts, teams through and two champions.
+    const derived = build(series)
+    expect(
+      derived.flatMap((v) => v.stages.map((s) => s.classification.template))
+    ).toEqual(
+      expect.arrayContaining([
+        'swiss',
+        'single-elim',
+        'double-elim',
+        'group-gsl',
+      ])
+    )
+    expect(derived.filter((v) => v.champion)).toHaveLength(2)
+    expect(build(series, [], { derive: true })).toEqual(derived)
+
+    const plain = build(series, [], { derive: false })
+    expect(plain.map((v) => v.tournament.id)).toEqual(
+      derived.map((v) => v.tournament.id)
+    )
+    const stages = plain.flatMap((v) => v.stages)
+    expect(stages).toHaveLength(5)
+    for (const stage of stages) {
+      expect(stage.classification).toEqual({
+        template: 'list',
+        reason: 'Standings not derived: incomplete data',
+        unknownLabels: [],
+      })
+      expect(stage.view.kind).toBe('list')
+    }
+    expect(plain.every((v) => v.champion === null)).toBe(true)
+    // The series themselves, their labels and their states are all still there.
+    expect(
+      stages.flatMap((s) => as(s.view, 'list').days.flatMap((d) => d.series))
+    ).toHaveLength(series.length)
+    expect(stages.map((s) => [s.label, s.state])).toEqual(
+      derived.flatMap((v) => v.stages.map((s) => [s.label, s.state]))
+    )
   })
 })
 

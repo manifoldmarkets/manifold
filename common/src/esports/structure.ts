@@ -4,6 +4,8 @@ import {
   countBy,
   groupBy,
   keyBy,
+  max,
+  min,
   sortBy,
   sum,
   sumBy,
@@ -14,6 +16,26 @@ import {
 import type * as T from './types'
 
 type Series = T.EsportsSeriesFacts
+/**
+ * A stage's signal, with two things only its series can tell: why the layout
+ * can't be read when the latest captures disagree, and how many separate
+ * pools its pairings form.
+ */
+export type StageSignal = T.EsportsStageSignal & {
+  /** Set when the latest captures disagree on a field that picks the layout. */
+  conflict?: string
+  /** Sets of teams joined by any series: 1 when every team is linked. */
+  pools?: number
+}
+export type BuildOptions = {
+  /**
+   * False when the series handed in may be incomplete, as after a capped
+   * read: every stage is then a plain list, with no standings, no team
+   * through or out and no champion.
+   */
+  derive?: boolean
+}
+const NOT_DERIVED = 'Standings not derived: incomplete data'
 type GslRound = 'opening' | 'winners' | 'elimination' | 'decider'
 type Round = {
   /** The vocabulary a label belongs to. `double` names a bracket lane. */
@@ -88,27 +110,72 @@ const held = (list: Series[]) => {
 }
 const after = (name: string, prefix: string) =>
   name.startsWith(prefix + ' ') ? name.slice(prefix.length + 1) : name
+/** The widest range a Date holds. A start outside it isn't a time. */
+const MAX_TIME_MS = 8.64e15
+/** Each series with a start that is a real time, or none: never NaN or ∞. */
+const timed = (series: Series[]) =>
+  series.map((s) =>
+    s.startTimeMs === null || Math.abs(s.startTimeMs) <= MAX_TIME_MS
+      ? s
+      : { ...s, startTimeMs: null }
+  )
+const capturedAt = (s: Series) =>
+  typeof s.observedAtMs === 'number' && Number.isFinite(s.observedAtMs)
+    ? s.observedAtMs
+    : 0
 /** Each series once, at its latest capture. */
 const latestCaptures = (series: Series[]) =>
   uniqBy(
-    sortBy(series, (s) => -(s.observedAtMs ?? 0)),
+    sortBy(timed(series), (s) => -capturedAt(s)),
     (s) => `${s.game}:${s.id}`
   )
+/** How many separate sets of teams the pairings form. One means one pool. */
+function poolCount(list: Series[]) {
+  const pool = new Map<number, number>()
+  for (const { id } of teamsOf(list)) pool.set(id, id)
+  for (const { team1, team2 } of list) {
+    const a = team1 ? pool.get(team1.id) : undefined
+    const b = team2 ? pool.get(team2.id) : undefined
+    if (a === undefined || b === undefined || a === b) continue
+    for (const [team, joined] of pool) if (joined === b) pool.set(team, a)
+  }
+  return new Set(pool.values()).size
+}
 
-/** One signal per stage. When captures disagree, the latest one wins. */
+/**
+ * One signal per stage. When captures disagree on a sent value, the latest
+ * capture wins. When the latest captures themselves disagree, nothing settles
+ * it: the value is left empty, never taken from whichever series has the
+ * higher ID, and a disagreement on the type, name or format is a `conflict`.
+ */
 export function stageSignals(
   series: Series[],
   meta: T.EsportsStageMeta[] = []
-): T.EsportsStageSignal[] {
-  const metaByStage = keyBy(meta, (m) => `${m.game}:${m.stageId}`)
+): StageSignal[] {
+  const metaByStage = groupBy(meta, (m) => `${m.game}:${m.stageId}`)
   const stages = groupBy(latestCaptures(series), stageKey)
   return Object.values(stages).map((rows) => {
-    const latest = sortBy(rows, [(s) => -(s.observedAtMs ?? 0), (s) => -s.id])
+    const latest = sortBy(rows, [(s) => -capturedAt(s), (s) => -s.id])
     const { game, tournament, stage } = latest[0]
     const problems: string[] = []
+    const unsettled: Record<string, string> = {}
     const sent = <K extends keyof NonNullable<Series['stage']>>(field: K) => {
-      const seen = uniq(latest.map((s) => s.stage?.[field] ?? null))
-      const values = seen.filter((v) => v !== null)
+      const having = latest.flatMap((s) => {
+        const value = s.stage?.[field] ?? null
+        return value === null ? [] : [{ value, at: capturedAt(s) }]
+      })
+      const values = uniq(having.map((h) => h.value))
+      const newest = uniq(
+        having.filter((h) => h.at === having[0].at).map((h) => h.value)
+      )
+      if (newest.length > 1) {
+        unsettled[field] = sortBy(newest).join(' and ')
+        problems.push(
+          `The stage's ${field} was sent as ${unsettled[field]} in its ` +
+            'latest captures; none is used.'
+        )
+        return null
+      }
       if (values.length > 1)
         problems.push(
           `The stage's ${field} was sent as ${values.join(' and ')}; ` +
@@ -116,32 +183,61 @@ export function stageSignals(
         )
       return values.length ? values[0] : null
     }
-    const extra = stage ? metaByStage[`${game}:${stage.id}`] : undefined
+    // A `tournament_stages` row has no capture time, so two rows for one
+    // stage that disagree can't be settled either.
+    const extra = stage ? metaByStage[`${game}:${stage.id}`] ?? [] : []
+    const told = <K extends 'format' | 'sequence' | 'promotionCount'>(
+      field: K
+    ) => {
+      const values = uniq(extra.map((m) => m[field])).filter(
+        (v): v is NonNullable<T.EsportsStageMeta[K]> => v !== null
+      )
+      if (values.length < 2) return values.length ? values[0] : null
+      unsettled[field] = sortBy(values).join(' and ')
+      problems.push(
+        `The stage's ${field} was sent as ${unsettled[field]}; none is used.`
+      )
+      return null
+    }
     const stageName = sent('name')
+    const stageType = sent('type')
+    const stageOrder = sent('order') ?? told('sequence')
+    const roundsCount = sent('roundsCount')
+    const format = told('format')
+    const promotionCount = told('promotionCount')
     const labels = rows.flatMap((s) => (s.round ? [s.round] : []))
+    const conflicts = ['type', 'name', 'format'].flatMap((field) =>
+      field in unsettled ? [`${field} (${unsettled[field]})`] : []
+    )
     return {
       game,
       tournamentId: tournament.id,
       stageId: stage?.id ?? null,
       stageName,
       stageLabel: stageName && after(stageName, tournament.name),
-      stageType: sent('type'),
-      stageOrder: sent('order') ?? extra?.sequence ?? null,
-      format: extra?.format ?? null,
-      promotionCount: extra?.promotionCount ?? null,
+      stageType,
+      stageOrder,
+      format,
+      promotionCount,
       roundLabels: uniq(labels),
-      roundsCount: sent('roundsCount'),
+      roundsCount,
       teamCount: teamsOf(rows).length,
       labelCounts: countBy(labels),
       problems,
+      pools: poolCount(rows),
+      ...(conflicts.length > 0
+        ? {
+            conflict:
+              "The latest captures disagree on the stage's " +
+              `${conflicts.join(' and its ')}.`,
+          }
+        : {}),
     }
   })
 }
 
 /** Picks the layout from the stage's signals. Anything unclear is a list. */
-export function classifyStage(
-  sig: T.EsportsStageSignal
-): T.StageClassification {
+export function classifyStage(sig: StageSignal): T.StageClassification {
   const rounds = sig.roundLabels.map(parseRound)
   const has = (family: Round['family']) =>
     rounds.some((r) => r.family === family)
@@ -156,6 +252,7 @@ export function classifyStage(
     unknownLabels,
   })
   if (sig.stageId === null) return out('list', 'No stage was sent.')
+  if (sig.conflict) return out('list', sig.conflict)
   if (unknownLabels.length)
     return out('list', `Unknown round labels: ${unknownLabels.join(', ')}.`)
 
@@ -205,24 +302,39 @@ export function classifyStage(
   }
   if (has('single') || has('final')) {
     if (type === 'swiss' || type === 'group') return clash('knockout')
-    return only('single', 'final', 'round')
-      ? out('single-elim', 'Round labels name knockout rounds only.')
-      : mixed()
+    if (!only('single', 'final', 'round')) return mixed()
+    // A final or a third-place series alone ends a single or a double
+    // elimination bracket alike, so it names neither.
+    return rounds.every((r) => r.lane === 'final')
+      ? out(
+          'list',
+          'Round labels name only a final or third-place series, not the ' +
+            'bracket it ends.'
+        )
+      : out('single-elim', 'Round labels name knockout rounds only.')
   }
 
   // Only "Round N", "Opening matches" or no labels: the stage type decides.
   if (type === 'swiss')
     return only('round') ? out('swiss', `The stage is ${source}.`) : mixed()
   if (type === 'group') {
-    const { roundsCount: n, teamCount: teams = 0 } = sig
-    // A round robin needs at least teams - 1 rounds. Fewer means Swiss pairing.
-    return rounds.length && only('round') && n && n < teams - 1
+    const { roundsCount: n, teamCount: teams = 0, pools } = sig
+    // A round robin needs at least teams - 1 rounds. Fewer means Swiss
+    // pairing, but only where the pairings join every team: teams split into
+    // sets that never meet are separate pools, each its own round robin.
+    if (!(rounds.length && only('round') && n && n < teams - 1))
+      return out('group-table', `The stage is ${source}.`)
+    return pools === 1
       ? out(
           'swiss',
           `The stage is ${source} with ${n} numbered rounds for ${teams} ` +
             'teams, too few for a round robin.'
         )
-      : out('group-table', `The stage is ${source}.`)
+      : out(
+          'group-table',
+          `The stage is ${source} with too few numbered rounds for a round ` +
+            "robin, but its pairings don't join every team into one pool."
+        )
   }
   return out(
     'list',
@@ -263,24 +375,31 @@ function swissView(
     [...records.values()],
     [(r) => -r.wins, 'losses', 'team.name']
   )
-  // Status is evidence only: who plays in a later stage, or failing that the
-  // provider's promotion count. Anything read off the records ("out", or the
-  // promotion cut) also needs every result counted, every promoted team
-  // named and a clean gap in wins below them.
+  // "Through" is evidence only: the team plays in a stage that starts after
+  // this one or, failing that, the provider's promotion count cuts the final
+  // records cleanly: every result counted and a gap in wins below the cut.
   const problems = held(series)
+  const sentCut = sig.promotionCount
+  const cut =
+    sentCut !== null && Number.isSafeInteger(sentCut) && sentCut > 0
+      ? sentCut
+      : null
   const later = rows.filter((r) => laterTeams.has(r.team.id))
-  const cut = sig.promotionCount ?? 0
-  const top = later.length || !done ? later : rows.slice(0, cut)
-  const rest = rows.filter((r) => !top.includes(r))
+  const top = cut === null ? [] : rows.slice(0, cut)
   const worst = Math.min(...top.map((r) => r.wins))
   const clean =
     done &&
     !problems.length &&
-    top.length > 0 &&
-    top.length >= cut &&
-    rest.every((r) => r.wins < worst)
-  if (later.length || clean) top.forEach((r) => (r.status = 'through'))
-  if (clean) rest.forEach((r) => (r.status = 'out'))
+    cut !== null &&
+    top.length === cut &&
+    rows.slice(cut).every((r) => r.wins < worst)
+  const through = later.length ? later : clean ? top : []
+  through.forEach((r) => (r.status = 'through'))
+  // "Out" needs the provider's own count as well: the stage is done and
+  // exactly that many teams are through, so every promoted team is named.
+  // Without the count, a gap in wins never puts a team out.
+  if (done && cut !== null && through.length === cut)
+    rows.forEach((r) => (r.status = r.status ?? 'out'))
 
   const record = (team: T.EsportsTeamRef | null) => {
     const r = records.get(team?.id ?? 0)
@@ -407,31 +526,61 @@ function bracketView(
     c.series.forEach((s) => laneOf.set(s.id, c.round.lane))
   const links: T.BracketView['links'] = []
   const problems = held(list)
+  // "Previous" is by start time, over every series the team has in the stage,
+  // on the board or not. A team with a series that has no start time, or two
+  // at the same time, can't be put in order: that series could sit anywhere
+  // among the others, so none of the team's series gets a line, in or out.
+  const startsOf = groupBy(
+    list.flatMap((s) =>
+      teamsOf([s]).map((team) => ({ team, start: s.startTimeMs }))
+    ),
+    'team.id'
+  )
+  const unordered = Object.values(startsOf)
+    .filter((appearances) => {
+      const starts = appearances.map((a) => a.start)
+      return starts.includes(null) || uniq(starts).length < starts.length
+    })
+    .map((appearances) => appearances[0].team)
+  for (const team of sortBy(unordered, 'name'))
+    problems.push(
+      `${team.name} has series that can't be put in order by start time, ` +
+        'so they get no lines.'
+    )
+  const loose = (s: Series) =>
+    teamsOf([s]).some((team) => unordered.some((u) => u.id === team.id))
   const last = new Map<number, Series>()
-  const dated = columns.flatMap((c) => c.series).filter((s) => s.startTimeMs)
-  for (const s of byStart(dated))
+  for (const s of byStart(list.filter((s) => s.startTimeMs !== null)))
     for (const team of teamsOf([s])) {
       const from = last.get(team.id)
+      last.set(team.id, s)
       const to = laneOf.get(s.id)
-      const drops = laneOf.get(from?.id ?? 0) === 'upper' && to === 'lower'
-      if (from?.winnerId === team.id)
+      const fromLane = from && laneOf.get(from.id)
+      // Both ends need a place on the board and an order nobody doubts.
+      if (!from || !to || !fromLane || loose(from) || loose(s)) continue
+      if (from.winnerId === team.id)
         links.push({ from: from.id, to: s.id, carries: 'winner' })
-      else if (from?.winnerId && drops)
+      else if (from.winnerId && fromLane === 'upper' && to === 'lower')
         links.push({ from: from.id, to: s.id, carries: 'loser' })
       else if (
-        from?.winnerId &&
+        from.winnerId &&
         from.round !== s.round &&
         !(to === 'final' && roundOf(s)?.rank === 2)
       )
         problems.push(
           `${team.name} plays "${s.round}" after losing "${from.round}".`
         )
-      last.set(team.id, s)
     }
+  // A champion needs one deciding final. Several series labelled the final
+  // count as one only when they are the same two teams and every one of them
+  // has the same trusted winner: nothing orders them otherwise.
   const finals = columns.find(isFinal)?.series ?? []
-  const decider = finals[finals.length - 1]
-  const decided =
-    teamsOf(finals).length === 2 && finals.every((s) => s.winnerId !== null)
+  const winners = uniq(finals.map((s) => s.winnerId))
+  const finalists = teamsOf(finals)
+  const champion =
+    finalists.length === 2 && winners.length === 1
+      ? finalists.find((team) => team.id === winners[0]) ?? null
+      : null
   return {
     kind,
     columns: columns.map((c) => ({
@@ -442,10 +591,7 @@ function bracketView(
       placeholders: c.placeholders,
     })),
     links,
-    champion:
-      (decided &&
-        teamsOf(finals).find((team) => team.id === decider?.winnerId)) ||
-      null,
+    champion,
     unplaced: byStart(list.filter((s) => !s.round)),
     problems,
   }
@@ -465,12 +611,15 @@ function listView(list: Series[]): T.ListView {
 }
 
 function buildStage(
-  signal: T.EsportsStageSignal,
+  signal: StageSignal,
   list: Series[],
   eventName: string,
-  laterTeams: Set<number>
+  laterTeams: Set<number>,
+  derive: boolean
 ): T.EsportsStageResult {
-  const classification = classifyStage(signal)
+  const classification: T.StageClassification = derive
+    ? classifyStage(signal)
+    : { template: 'list', reason: NOT_DERIVED, unknownLabels: [] }
   const state = list.every((s) => s.status === 'final')
     ? 'done'
     : list.every((s) => s.status === 'scheduled')
@@ -506,7 +655,7 @@ const MAX_SPLIT_GAP_MS = 30 * 24 * 60 * 60 * 1000
  */
 export function esportsEvents(series: Series[]): EsportsEvent[] {
   const key = (s: Series) => `${s.game}:${s.tournament.id}`
-  const tournaments = Object.values(groupBy(series, key))
+  const tournaments = Object.values(groupBy(timed(series), key))
   const end = (list: Series[]) =>
     Math.max(...list.map((s) => s.startTimeMs ?? -Infinity))
   const baseOf = (rows: Series[]) => {
@@ -532,11 +681,17 @@ export function esportsEvents(series: Series[]): EsportsEvent[] {
   })
 }
 
-/** Every tournament in `series` as ordered stages, each with its own layout. */
+/**
+ * Every tournament in `series` as ordered stages, each with its own layout.
+ * With `derive: false` each stage is a plain list and nothing is worked out
+ * from the series: for a read that may have missed some of them.
+ */
 export function buildTournamentViews(
   series: Series[],
-  meta: T.EsportsStageMeta[] = []
+  meta: T.EsportsStageMeta[] = [],
+  options: BuildOptions = {}
 ): T.EsportsTournamentView[] {
+  const derive = options.derive ?? true
   const latest = latestCaptures(series)
   const signals = keyBy(stageSignals(latest, meta), (sig) =>
     [sig.game, sig.tournamentId, sig.stageId ?? 'none'].join(':')
@@ -550,10 +705,27 @@ export function buildTournamentViews(
       startOf,
       (rows) => rows[0].stage?.id,
     ])
+    // A stage comes after another only by the clock: its first known start is
+    // later than the other's last known start. The order the stages are
+    // shown in, and the provider's stage order, don't prove it.
+    const spans = stages.map((rows) => {
+      const starts = rows.flatMap((s) => s.startTimeMs ?? [])
+      return { first: min(starts), last: max(starts) }
+    })
     const results = stages.map((rows, i) => {
-      const later = teamsOf(stages.slice(i + 1).flat()).map((t) => t.id)
+      const { last } = spans[i]
+      const later = stages.filter((_, j) => {
+        const { first } = spans[j]
+        return first !== undefined && last !== undefined && first > last
+      })
       const signal = signals[stageKey(rows[0])]
-      return buildStage(signal, rows, event.tournament.name, new Set(later))
+      return buildStage(
+        signal,
+        rows,
+        event.tournament.name,
+        new Set(teamsOf(later.flat()).map((t) => t.id)),
+        derive
+      )
     })
     // The champion is the winner of the last bracket's final, and only once
     // nothing in the event starts after that final.
