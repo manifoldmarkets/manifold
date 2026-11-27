@@ -10,7 +10,7 @@ jest.mock('common/esports/structure', () => ({
   buildTournamentViews: jest.fn((facts: unknown[]) => facts),
 }))
 
-import { omit } from 'lodash'
+import { omit, orderBy, uniqBy } from 'lodash'
 
 import { buildTournamentViews } from 'common/esports/structure'
 import { EsportsTournamentView } from 'common/esports/types'
@@ -240,19 +240,50 @@ describe('get-esports-tournaments', () => {
       tournaments: [],
       markets: {},
     })
-    const [sql, params] = manyOrNone.mock.calls[0]
-    expect(sql).toContain("starts_with(c.data->>'sportsEventId', $3)")
-    expect(sql).toContain("c.data ? 'esportsSeries'")
-    expect(sql).toContain('c.creator_id = any($4)')
-    expect(sql).toContain("c.visibility = 'public'")
-    expect(sql).toContain("c.token = 'MANA'")
-    expect(sql).toContain('coalesce(c.deleted, false) = false')
-    expect(sql).toContain('limit $5')
+    const [sql, params] = manyOrNone.mock.calls[0] as [string, unknown[]]
+    // The inner query: the window's markets, one per event id.
+    const inner = sql.slice(
+      sql.indexOf('select distinct on'),
+      sql.lastIndexOf(') s')
+    )
+    expect(inner).toContain("c.data->>'sportsEventId' is not null")
+    expect(inner).toContain("starts_with(c.data->>'sportsEventId', $3)")
+    expect(inner).toContain("c.data ? 'esportsSeries'")
+    expect(inner).toContain('c.creator_id = any($4)')
+    expect(inner).toContain("c.visibility = 'public'")
+    expect(inner).toContain("c.token = 'MANA'")
+    expect(inner).toContain('coalesce(c.deleted, false) = false')
+    expect(inner).toContain("c.resolution is distinct from 'CANCEL'")
+    expect(inner).toContain('c.close_time > $1 and c.close_time < $2')
+    // The latest capture of each series is picked before the cap is applied:
+    // the capture time first, read only where it is a number, then the same
+    // tie-breaks as the code's own.
+    expect(inner).toContain("select distinct on (c.data->>'sportsEventId')")
+    expect(inner).toMatch(
+      new RegExp(
+        [
+          "order by c\\.data->>'sportsEventId',",
+          "case when jsonb_typeof\\(c\\.data->'esportsSeries'->'observedAtMs'\\) = 'number'",
+          "then \\(c\\.data->'esportsSeries'->'observedAtMs'\\)::numeric",
+          'end desc nulls last,',
+          'c\\.close_time desc,',
+          'c\\.id desc\\s*$',
+        ].join('\\s+')
+      )
+    )
+    expect(inner).not.toContain('limit')
+    expect(sql.slice(sql.lastIndexOf(') s'))).toMatch(
+      /^\) s\s+order by s\.close_time desc, s\.id desc\s+limit \$5$/
+    )
     // Three answers are enough to tell a market that isn't two-sided.
     expect(sql).toMatch(
-      /where x\.contract_id = c\.id\s+order by x\.index\s+limit 3/
+      /where x\.contract_id = s\.id\s+order by x\.index\s+limit 3/
     )
-    const [from, to, prefix, creators, limit] = params
+    const [from, to, prefix, creators, limit] = params as [
+      Date,
+      Date,
+      ...unknown[]
+    ]
     expect(prefix).toBe('bdl:cs:')
     expect(creators).toEqual(MANIFOLD_SPORTS_USER_IDS)
     expect(to.getTime() - from.getTime()).toBe(90 * 24 * 60 * 60 * 1000)
@@ -413,9 +444,10 @@ describe('get-esports-tournaments', () => {
   })
 
   it('lets a winner stand only on a final series with nothing held, won by one of its teams', async () => {
+    const lost = { winnerId: spirit.id, score: { team1: 1, team2: 2 } }
     const cases: [number, Facts, number | null][] = [
       [101, won(101), vitality.id],
-      [102, won(102, { winnerId: spirit.id }), spirit.id],
+      [102, won(102, lost), spirit.id],
       // The review's case: a forfeit stored with its winner filled in.
       [103, won(103, { rawStatus: 'defwin', review: 'forfeit' }), null],
       [104, won(104, { review: 'score' }), null],
@@ -435,6 +467,73 @@ describe('get-esports-tournaments', () => {
     expect(tournaments).toEqual(
       cases.map(([, stored, winnerId]) => ({ ...stored, winnerId }))
     )
+  })
+
+  it('lets a winner stand only on a score that says so', async () => {
+    const score = (team1: number, team2: number, extra: Facts = {}) => ({
+      score: { team1, team2 },
+      ...extra,
+    })
+    const spiritWon = { winnerId: spirit.id }
+    const cases: [number, Facts, number | null][] = [
+      // The review's case: a 2-0 final that names the team with no wins.
+      [101, won(101, spiritWon), null],
+      [102, won(102, score(0, 2)), null],
+      [103, won(103, score(0, 2, spiritWon)), spirit.id],
+      [104, won(104, score(2, 1)), vitality.id],
+      // No score, or a level one, names nobody.
+      [105, won(105, { score: null }), null],
+      [106, won(106, score(1, 1)), null],
+      [107, won(107, score(2, 2, spiritWon)), null],
+      // A best of 3 is won with exactly two: not one, not three.
+      [108, won(108, score(1, 0)), null],
+      [109, won(109, score(3, 1)), null],
+      // A best of 5 with three, a best of 1 with one.
+      [110, won(110, score(3, 2, { bestOf: 5 })), vitality.id],
+      [111, won(111, score(1, 3, { bestOf: 5, ...spiritWon })), spirit.id],
+      [112, won(112, score(2, 0, { bestOf: 5 })), null],
+      [113, won(113, score(4, 1, { bestOf: 5 })), null],
+      [114, won(114, score(1, 0, { bestOf: 1 })), vitality.id],
+      [115, won(115, score(13, 11, { bestOf: 1 })), null],
+      // Any other format has no number of wins to check: the higher score
+      // is all that is asked of it.
+      [116, won(116, score(4, 3, { bestOf: 7 })), vitality.id],
+      [117, won(117, score(3, 4, { bestOf: 7 })), null],
+      [118, won(118, score(2, 0, { bestOf: null })), vitality.id],
+    ]
+    manyOrNone.mockResolvedValue(
+      cases.map(([id, stored]) => row(`bdl:cs:${id}`, stored))
+    )
+    const { tournaments } = await get({ game: 'cs' })
+    expect(tournaments).toEqual(
+      cases.map(([, stored, winnerId]) => ({ ...stored, winnerId }))
+    )
+  })
+
+  it('counts no win for a team the score says lost', async () => {
+    // The review's case through the real builder: a stored 2-0 final that
+    // names Team Spirit, who won no map, gave Spirit a Swiss win.
+    realBuilder()
+    manyOrNone.mockResolvedValue([
+      row('bdl:cs:101', won(101, { winnerId: spirit.id })),
+    ])
+    const { tournaments } = await get({ game: 'cs' })
+    const [event] = tournaments as EsportsTournamentView[]
+    const [{ view }] = event.stages
+    if (view.kind !== 'swiss') throw Error(`expected swiss, got ${view.kind}`)
+    expect(
+      view.buckets.map((b) => [
+        `${b.wins}-${b.losses}`,
+        b.teams.map((t) => t.team.name),
+      ])
+    ).toEqual([['0-0', ['Team Spirit', 'Team Vitality']]])
+    expect(view.problems).toEqual([
+      'Finished series with no trusted result, not counted: 1.',
+    ])
+    // The series itself is still there, with its score and no winner.
+    expect(view.series).toMatchObject([
+      { id: 101, score: { team1: 2, team2: 0 }, winnerId: null },
+    ])
   })
 
   it('counts no win from a forfeit and loses no page to a bad blob', async () => {
@@ -478,9 +577,40 @@ describe('get-esports-tournaments', () => {
     ])
   })
 
+  // A stand-in for the database: what the query's own text asks of the
+  // markets in its window. Where it picks `distinct on` the event id, one
+  // market per event id: the latest capture first, then the latest close,
+  // then the greater id. Then the rows by close time and id, newest first,
+  // and no more of them than the limit it is given. The query's text was
+  // checked against Postgres itself, on made-up rows; this stand-in is here
+  // so that dropping the pick from the query fails a test.
+  const asQuery =
+    (table: ReturnType<typeof row>[]) =>
+    async (sql: string, params: unknown[]) => {
+      const captured = (r: (typeof table)[number]) => {
+        const at = (r.series as Facts | null)?.observedAtMs
+        return typeof at === 'number' ? at : -Infinity
+      }
+      const closes = (r: (typeof table)[number]) => Date.parse(r.close_time)
+      const picked = sql.includes(
+        "select distinct on (c.data->>'sportsEventId')"
+      )
+        ? uniqBy(
+            orderBy(table, [captured, closes, 'id'], ['desc', 'desc', 'desc']),
+            'event_id'
+          )
+        : table
+      return orderBy(picked, [closes, 'id'], ['desc', 'desc']).slice(
+        0,
+        params[4] as number
+      )
+    }
+
   describe('several markets on one series', () => {
     const early = '2026-11-29T12:00:00.000Z'
     const late = '2026-11-30T12:00:00.000Z'
+    // The query returns one market per event id. Here it hands back every
+    // market, to see the code make the same pick as a second guard.
     const pick = async (rows: ReturnType<typeof row>[]) => {
       const picked: { facts: Facts; market: string }[] = []
       // Whatever order the rows come in.
@@ -549,6 +679,25 @@ describe('get-esports-tournaments', () => {
       expect(tournaments).toEqual([facts(101, { observedAtMs: 9, round: 'b' })])
       expect(markets).toEqual({})
     })
+
+    it('leaves a series out when its latest capture does not read', async () => {
+      // The query picks by capture time alone, so the later capture is the
+      // only one that comes back. An older one that reads never stands in.
+      manyOrNone.mockImplementation(
+        asQuery([
+          row('bdl:cs:101', won(101, { observedAtMs: 1000 }), 'old'),
+          row(
+            'bdl:cs:101',
+            omit(facts(101, { observedAtMs: 2000 }), 'startTimeMs'),
+            'new'
+          ),
+          row('bdl:cs:102', facts(102)),
+        ])
+      )
+      const { tournaments, markets } = await get({ game: 'cs' })
+      expect(tournaments).toEqual([facts(102)])
+      expect(Object.keys(markets)).toEqual(['102'])
+    })
   })
 
   describe('the row cap', () => {
@@ -594,6 +743,119 @@ describe('get-esports-tournaments', () => {
       expect(jest.mocked(log.warn).mock.calls[0][1]).toEqual({
         game: 'cs',
         MAX_SERIES: CAP,
+      })
+    })
+
+    describe('a corrected series when the markets cross the cap', () => {
+      // The review's case: recorded series 19142550, HEROIC 0-1 Imperial in
+      // a best of 1, was corrected to a forfeit. The older market still
+      // says Imperial won.
+      const id = 19142550
+      const heroic = { id: 739, name: 'HEROIC', code: 'HERO' }
+      const imperial = { id: 1353, name: 'Imperial', code: 'IMP' }
+      const result = {
+        team1: heroic,
+        team2: imperial,
+        bestOf: 1,
+        score: { team1: 0, team2: 1 },
+        winnerId: imperial.id,
+      }
+      const forfeit = { rawStatus: 'defwin', review: 'forfeit' }
+      const first = '2026-11-01T12:00:00.000Z'
+      const last = '2026-11-30T12:00:00.000Z'
+      const stale = (closes: string) =>
+        row(
+          `bdl:cs:${id}`,
+          won(id, { ...result, observedAtMs: 1000 }),
+          'old',
+          closes
+        )
+      const corrected = (closes: string) =>
+        row(
+          `bdl:cs:${id}`,
+          won(id, { ...result, ...forfeit, observedAtMs: 2000 }),
+          'new',
+          closes
+        )
+      const read = async (table: ReturnType<typeof row>[]) => {
+        manyOrNone.mockImplementation(asQuery(table))
+        const { tournaments, markets, truncated } = await get({ game: 'cs' })
+        const shown = (tournaments as Facts[]).filter((f) => f.id === id)
+        return {
+          truncated: truncated ?? false,
+          series: tournaments.length,
+          shown,
+          market: markets[id]?.contractId,
+        }
+      }
+      const forfeited = [
+        won(id, { ...result, ...forfeit, observedAtMs: 2000, winnerId: null }),
+      ]
+
+      it('shows the correction however many other markets there are', async () => {
+        // The correction's market closes before every other market, so by
+        // close time it is the last row of all.
+        const pair = [stale(last), corrected(first)]
+        // 2,000 markets: the two on this series and 1,998 others.
+        expect(await read([...pair, ...many(CAP - 2)])).toEqual({
+          truncated: false,
+          series: CAP - 1,
+          shown: forfeited,
+          market: 'new',
+        })
+        // One more market, 2,001 in all. Picked after the cap, the correction
+        // was the row cut, and the older market made Imperial the winner
+        // again. Picked before it, these are 2,000 series: a whole read.
+        expect(await read([...pair, ...many(CAP - 1)])).toEqual({
+          truncated: false,
+          series: CAP,
+          shown: forfeited,
+          market: 'new',
+        })
+      })
+
+      it('drops the series whole, never back to its older capture, when the cap cuts it', async () => {
+        // 2,001 series: the cap cuts the one whose market closes first, and
+        // that is the correction's.
+        const cut = await read([stale(last), corrected(first), ...many(CAP)])
+        expect(cut).toEqual({
+          truncated: true,
+          series: CAP,
+          shown: [],
+          market: undefined,
+        })
+        // Where the correction's market closes last instead, the series is
+        // kept, as corrected.
+        const kept = await read([stale(first), corrected(last), ...many(CAP)])
+        expect(kept).toEqual({
+          truncated: true,
+          series: CAP,
+          shown: forfeited,
+          market: 'new',
+        })
+      })
+
+      it('counts the cap in series, not in markets', async () => {
+        // 2,000 series with two markets each is 4,000 markets and a whole
+        // read. Each series is its later capture.
+        const twice = many(CAP).flatMap((market) => [
+          market,
+          {
+            ...market,
+            id: `${market.id}:again`,
+            series: { ...(market.series as Facts), observedAtMs: 2000 },
+          },
+        ])
+        manyOrNone.mockImplementation(asQuery(twice))
+        const { tournaments, markets, truncated } = await get({ game: 'cs' })
+        expect(truncated).toBeUndefined()
+        expect(tournaments).toHaveLength(CAP)
+        expect(
+          (tournaments as Facts[]).every((f) => f.observedAtMs === 2000)
+        ).toBe(true)
+        expect(
+          Object.values(markets).every((m) => m.contractId.endsWith(':again'))
+        ).toBe(true)
       })
     })
 

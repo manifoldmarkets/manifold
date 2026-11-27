@@ -17,7 +17,7 @@ import { type APIHandler } from './helpers/endpoint'
 // A tournament's series close within weeks of each other, so one window
 // around today holds the tournament being played, the last one and the next.
 const WINDOW_DAYS = 45
-// More markets than this in the window and the read is cut short. A stage
+// More series than this in the window and the read is cut short. A stage
 // missing some of its series would show wrong standings, so nothing is worked
 // out from a cut read: every stage is a plain list.
 const MAX_SERIES = 2000
@@ -49,33 +49,51 @@ export const getEsportsTournaments: APIHandler<
   // accounts' markets are series. The first six conditions repeat
   // contracts_sports_schedule_idx's own, so the planner can range-scan it by
   // close time; where that index isn't built yet it reads by creator and
-  // close time instead. Three answers are enough to tell a market that isn't
-  // one team against another. One row past the cap tells a cut read.
+  // close time instead.
+  //
+  // The inner query keeps one market per event id, the one whose facts were
+  // captured last, with the same tie-breaks as isLaterCapture below. That is
+  // settled before the cap, so the cap can drop a whole series but can never
+  // leave a series showing an older capture of itself. A capture time that
+  // isn't a JSON number sorts last, as no capture time does, and is never
+  // cast. One row past the cap tells a cut read. Three answers are enough to
+  // tell a market that isn't one team against another.
   const found = await pg.manyOrNone<SeriesRow>(
-    `select c.id, c.slug, c.close_time, c.resolution,
-            c.data->>'sportsEventId' as event_id,
-            c.data->>'creatorUsername' as creator_username,
-            c.data->'esportsSeries' as series,
-            c.data->'volume' as volume,
-            c.data->'uniqueBettorCount' as unique_bettor_count,
+    `select s.id, s.slug, s.close_time, s.resolution, s.event_id,
+            s.creator_username, s.series, s.volume, s.unique_bettor_count,
             (select jsonb_agg(
                       jsonb_build_object('id', a.id, 'text', a.text, 'prob', a.prob)
                       order by a.index)
              from (select x.id, x.text, x.prob, x.index from answers x
-                   where x.contract_id = c.id
+                   where x.contract_id = s.id
                    order by x.index
                    limit 3) a) as answers
-     from contracts c
-     where c.data->>'sportsEventId' is not null
-       and c.visibility = 'public'
-       and c.token = 'MANA'
-       and coalesce(c.deleted, false) = false
-       and c.resolution is distinct from 'CANCEL'
-       and c.close_time > $1 and c.close_time < $2
-       and starts_with(c.data->>'sportsEventId', $3)
-       and c.data ? 'esportsSeries'
-       and c.creator_id = any($4)
-     order by c.close_time desc, c.id desc
+     from (
+       select distinct on (c.data->>'sportsEventId')
+              c.id, c.slug, c.close_time, c.resolution,
+              c.data->>'sportsEventId' as event_id,
+              c.data->>'creatorUsername' as creator_username,
+              c.data->'esportsSeries' as series,
+              c.data->'volume' as volume,
+              c.data->'uniqueBettorCount' as unique_bettor_count
+       from contracts c
+       where c.data->>'sportsEventId' is not null
+         and c.visibility = 'public'
+         and c.token = 'MANA'
+         and coalesce(c.deleted, false) = false
+         and c.resolution is distinct from 'CANCEL'
+         and c.close_time > $1 and c.close_time < $2
+         and starts_with(c.data->>'sportsEventId', $3)
+         and c.data ? 'esportsSeries'
+         and c.creator_id = any($4)
+       order by c.data->>'sportsEventId',
+                case when jsonb_typeof(c.data->'esportsSeries'->'observedAtMs') = 'number'
+                     then (c.data->'esportsSeries'->'observedAtMs')::numeric
+                end desc nulls last,
+                c.close_time desc,
+                c.id desc
+     ) s
+     order by s.close_time desc, s.id desc
      limit $5`,
     [
       new Date(now - WINDOW_DAYS * DAY_MS),
@@ -95,7 +113,10 @@ export const getEsportsTournaments: APIHandler<
   // One market per series, among those whose event id is exactly
   // `bdl:<game>:<id>` and whose stored facts name that same match. Where
   // several carry the series, the latest capture is the one to believe, and
-  // the market shown is the one those facts came from.
+  // the market shown is the one those facts came from. The query has already
+  // picked that market per event id; this is the same rule again, in case
+  // two rows for one series ever reach here. If the capture the query picked
+  // doesn't read, the series is left out: an older capture never stands in.
   const chosen = new Map<number, Candidate>()
   for (const row of found.slice(0, MAX_SERIES)) {
     const event = parseBdlEventId(row.event_id)
@@ -146,6 +167,8 @@ const STATUSES: readonly EsportsSeriesStatus[] = [
   'in_progress',
   'final',
 ]
+/** Best-of formats one team must win outright, by (bestOf + 1) / 2 wins. */
+const DECISIVE_FORMATS: readonly number[] = [1, 3, 5]
 type Json = Record<string, unknown>
 const asObject = (v: unknown): Json | undefined =>
   v !== null && typeof v === 'object' && !Array.isArray(v)
@@ -213,8 +236,10 @@ const readScore = (v: unknown) => {
  * as a result. What is returned holds the facts' own fields and no others.
  *
  * A winner stands only on what makes a result: a final series with nothing
- * held and two different teams, won by one of them. Otherwise the series
- * stays, with no winner.
+ * held and two different teams, won by one of them, with a score that says
+ * so. The winner's score must be the higher of the two and, in a best of 1,
+ * 3 or 5, exactly the wins that format takes. Otherwise the series stays,
+ * with no winner.
  */
 function readSeriesFacts(
   value: unknown,
@@ -248,14 +273,26 @@ function readSeriesFacts(
     observedAtMs: orAbsent(readTime)(s.observedAtMs),
   })
   if (!facts) return null
-  const { team1, team2, winnerId } = facts
+  const { team1, team2, winnerId, score, bestOf } = facts
+  // The winner's score, then the other team's.
+  const scores =
+    !team1 || !team2 || team1.id === team2.id || !score
+      ? null
+      : winnerId === team1.id
+      ? [score.team1, score.team2]
+      : winnerId === team2.id
+      ? [score.team2, score.team1]
+      : null
+  const winsNeeded =
+    bestOf !== null && DECISIVE_FORMATS.includes(bestOf)
+      ? (bestOf + 1) / 2
+      : null
   const won =
     facts.review === null &&
     facts.status === 'final' &&
-    !!team1 &&
-    !!team2 &&
-    team1.id !== team2.id &&
-    (winnerId === team1.id || winnerId === team2.id)
+    !!scores &&
+    scores[0] > scores[1] &&
+    (winsNeeded === null || scores[0] === winsNeeded)
   return { ...facts, winnerId: won ? winnerId : null }
 }
 

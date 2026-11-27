@@ -5360,8 +5360,8 @@ export const API = (_apiTypeCheck = {
       /** By series id. A series whose market wasn't found has no entry. */
       markets: Record<string, EsportsMarketOverlay>
       /**
-       * True when the game has more series markets in the window than one
-       * read holds. Some series are then missing, so every stage is a plain
+       * True when the game has more series in the window than one read
+       * holds. Some series are then missing, so every stage is a plain
        * list: no standings, no team through or out, no champion.
        */
       truncated?: boolean
