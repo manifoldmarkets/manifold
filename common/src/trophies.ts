@@ -13,9 +13,11 @@
 
 import { groupBy, minBy, sortBy, sumBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
+import { UserEntitlement } from 'common/shop/types'
 import {
   EffectiveTier,
   getEffectiveBonusMultiplier,
+  resolveEffectiveTier,
 } from 'common/supporter-config'
 import { MAX_FREE_MEMBERSHIP_HELD_MS } from 'common/membership-grants'
 import {
@@ -594,6 +596,42 @@ export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
 /** What this effective tier collects of a trophy prize. */
 export const getTrophyPrizeStanding = (tier: EffectiveTier): PrizeStanding =>
   getPrizeStanding(tier, getTrophyRewardMultiplier(tier))
+
+type BonusEligibility = Parameters<
+  typeof resolveEffectiveTier
+>[0]['bonusEligibility']
+
+/** Flagged and bonus-blocked accounts: the standings that cut a prize. */
+export const isPrizeStandingCut = (bonusEligibility: BonusEligibility) =>
+  bonusEligibility === 'requires_verification' ||
+  bonusEligibility === 'ineligible'
+
+/**
+ * The effective tier that sets an account's trophy prizes. As for other
+ * bonuses, a membership outranks a flag or a bonus block, but here only a
+ * membership the account pays for. Prizes pay free membership days, and those
+ * must not buy back the standing a flag took away.
+ */
+export function resolveTrophyPrizeTier(args: {
+  entitlements: UserEntitlement[] | undefined
+  bonusEligibility: BonusEligibility
+  // Whether the account pays for a membership, including one set aside while
+  // free days run. Only read when the account is flagged or bonus-blocked.
+  hasPaidMembership: boolean
+  now?: number
+}): EffectiveTier {
+  const { bonusEligibility, hasPaidMembership, now } = args
+  const entitlements =
+    isPrizeStandingCut(bonusEligibility) && !hasPaidMembership
+      ? undefined
+      : args.entitlements
+  return resolveEffectiveTier({ entitlements, bonusEligibility, now })
+}
+
+/** Active entitlements that are not free membership days. */
+export const getPaidEntitlements = (
+  entitlements: UserEntitlement[] | undefined
+) => entitlements?.filter((e) => e.metadata?.membershipGrantId == null)
 
 // Who is collecting. Newcomer pays new accounts differently, and standing
 // reduces what flagged and bonus-blocked accounts get.

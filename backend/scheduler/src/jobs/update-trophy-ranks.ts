@@ -201,11 +201,13 @@ export async function payRankTitlePrizes() {
   for (const [userId, trophies] of Object.entries(groupBy(owed, 'user_id'))) {
     try {
       const paid = await pg.tx(async (tx) => {
-        // The same person rules as the ranks, checked again under the lock.
+        // The same person and exclusion rules as the ranks, checked again
+        // under the lock.
         const person = await tx.oneOrNone<{ bonus_eligibility: string | null }>(
           `select person.data->>'bonusEligibility' as bonus_eligibility
            from users person
            where person.id = $[userId] and ${TROPHY_PERSON_FILTER}
+             and not exists (select 1 from trophy_rank_exclusions e where e.user_id = person.id)
            for no key update of person`,
           { ...params, userId }
         )

@@ -8,7 +8,8 @@
 -- transaction. The row is written 'pending' and granted after commit, by
 -- claim-trophy, the nightly rank job or the scheduler's settle-trophy-prizes
 -- sweep. Every path grants under the same membership_grants source id, so a
--- retry can't grant twice.
+-- retry can't grant twice. A failed pass backs the account's pending rows off
+-- (2, 4, 8... minutes, up to 6 hours) so they can't crowd out the sweep.
 --
 -- Rank title prizes (Super, Mega) use the same table: trophy_id is the ranked
 -- trophy and milestone_id is 'rank:super' or 'rank:mega'. Milestone ids are
@@ -41,9 +42,14 @@ add column if not exists membership_status text not null default 'none',
 add column if not exists membership_outcome text,
 -- What the grant held when it was made: less than the prize if the cap cut it.
 add column if not exists membership_granted_ms bigint,
--- membership_grants.id of the receipt the grant left.
+-- membership_grants.id of the receipt the grant left. Null when no grant was
+-- made: under an hour of room below the holding cap is recorded as capped.
 add column if not exists membership_grant_id bigint,
-add column if not exists membership_settled_time timestamptz;
+add column if not exists membership_settled_time timestamptz,
+-- Failed passes over this account while the row was pending, and when the
+-- sweep may try again. A claim by the account retries at once.
+add column if not exists membership_attempts integer not null default 0,
+add column if not exists membership_next_attempt_time timestamptz;
 
 alter table user_trophy_rewards
 drop constraint if exists user_trophy_rewards_amounts,
@@ -74,10 +80,25 @@ add constraint user_trophy_rewards_membership check (
     or coalesce(membership_days, 0) > 0
   )
   and (
+    membership_status <> 'none'
+    or (
+      membership_tier is null
+      and membership_days is null
+    )
+  )
+  and (
     membership_status not in ('pending', 'granted')
     or membership_tier is not null
   )
   and (membership_status = 'granted') = (membership_outcome is not null)
+  and (
+    membership_status <> 'granted'
+    or (
+      coalesce(membership_granted_ms, -1) >= 0
+      and membership_settled_time is not null
+    )
+  )
+  and membership_attempts >= 0
   and (
     membership_outcome is null
     or membership_outcome in ('started', 'banked', 'capped', 'duplicate')

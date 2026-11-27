@@ -59,12 +59,12 @@ values
 
 - A portfolio snapshot older than 72 hours drops out of Net Worth ranks. In the production review, 2 of 63 accounts at M500,000 or more had stale snapshots. Neither had traded in the preceding 90 days.
 - The Net Worth peak shown includes today's fresh snapshot. It becomes permanent when you claim a Net Worth milestone or the nightly run records it. A dip before then can lower the displayed peak.
-- The portfolio writer reads positions before it reads cash. A sale between those reads can put both the sold position and its proceeds in one snapshot, inflating Net Worth. During the manual review of the top 25, check each holder's sales against their snapshot time.
+- The portfolio writer reads positions before it reads cash. A sale between those reads can put both the sold position and its proceeds in one snapshot, inflating Net Worth. During the manual review of the top 25, check each holder's sales against their snapshot time. A Net Worth prize or rank title prize paid on such a snapshot is kept.
 - The writer updates its in-memory portfolio before the history insert succeeds. If the insert fails and the portfolio stays the same on the next run, the writer can advance `last_calculated` on the old row. Stale values can then pass the 72-hour freshness check for peak recording and ranks.
 - Two legacy multiple-choice markets in production have `isResolved` set in their data and a null contract `resolution`. Profitable Markets skips both, so profitable holders receive no credit for either market.
 - The nav count and unlock toasts cover milestones that are reached and unclaimed. A milestone claimed before prizes existed has a prize to collect, and only its trophy card says so.
-- A prize's membership days count towards the 30-day cap on free days held (`MAX_FREE_MEMBERSHIP_HELD_MS`). Whatever doesn't fit is lost: the grant is cut short, or kept as a used receipt of zero length. One whole ladder pays 30 days (18 of Plus and 12 of Pro), so an account collecting several ladders at once keeps the first 30 days. Free days already running open the cap by only the time that has passed, so a grant made behind a full cap can be a few minutes long. Within one claim the best tier is granted first.
-- Mega pays 30 Premium days and Super 14 Pro days. An account that reaches Mega before it was paid for Super is granted Mega first, which fills the cap, so Super's days are lost. An account already holding 30 free days loses both.
+- A prize's membership days count towards the 30-day cap on free days held (`MAX_FREE_MEMBERSHIP_HELD_MS`). Whatever doesn't fit is lost: the grant is cut short, or recorded as capped. One whole ladder pays 30 days (18 of Plus and 12 of Pro), so an account collecting several ladders at once keeps the first 30 days. Free days already running open the cap by only the time that has passed. With under an hour of room no grant is made (`MIN_GRANT_ROOM_MS`), so a prize is never cut to a grant of minutes. Within one claim the best tier is granted first.
+- Mega pays 30 Premium days and Super 14 Pro days. An account that reaches Mega before it was paid for Super is granted Mega first, which fills the cap, so Super's days are recorded as capped. An account already holding 30 free days gets neither.
 - A milestone that pays mana or freezes as well as membership days is recorded as paid for a bonus-blocked account, which gets no membership days. Those days are not paid later if its standing improves. A milestone it would get nothing from stays unpaid and can be collected later.
 - A grant of three days or fewer that starts at once sends the "free days ending" notice at once (membership grants rule).
 - Rank title prizes arrive with no notification of their own.
@@ -93,13 +93,13 @@ Every account that isn't a bot collects prizes. A milestone pays once per accoun
 
 Standing follows `getPrizeStanding`, from the account's effective tier at the time it is paid:
 
-| Standing                         | Mana | Freezes | Membership days |
-| -------------------------------- | ---- | ------- | --------------- |
-| Member, or any unflagged account | 1x   | Yes     | Yes             |
-| Bonus-blocked (`reduced`)        | 0.2x | Yes     | No              |
-| Flagged (`restricted`)           | 0    | No      | No              |
+| Standing                              | Mana | Freezes | Membership days |
+| ------------------------------------- | ---- | ------- | --------------- |
+| Paid member, or any unflagged account | 1x   | Yes     | Yes             |
+| Bonus-blocked (`reduced`)             | 0.2x | Yes     | No              |
+| Flagged (`restricted`)                | 0    | No      | No              |
 
-Membership pays no more than 1x. A paid or free membership counts as a member, ahead of a flag. A milestone that would pay the account nothing is not recorded, so it can be collected later.
+Membership pays no more than 1x. A membership the account pays for counts ahead of a flag or a bonus block, as it does for other bonuses. Free membership days don't (`resolveTrophyPrizeTier`): prizes pay free days, and a flagged account holding some would otherwise collect in full and keep itself topped up. A paid membership set aside while free days run still counts. Quests, streaks and referrals still treat free days as a membership. A milestone that would pay the account nothing is not recorded, so it can be collected later.
 
 Freezes go to `users.data.streakForgiveness` with no cap. The shop's limit applies to purchases only. Free membership days keep every benefit.
 
@@ -107,7 +107,7 @@ Member (`starter-membership`) pays seven days of the tier the account pays for. 
 
 ### How a prize is paid
 
-`user_trophy_rewards` has one row per prize paid, keyed by user, trophy and milestone. No API path deletes a row, and an admin unclaim keeps it. `2026112801_trophy_prizes.sql` adds what each row paid: mana, freezes, the effective tier, and the membership tier, days, status (`none`, `pending`, `granted` or `skipped`), outcome and grant ID. Rows from before it keep null mana and freezes. Their amount is on the transaction in `txn_id`.
+`user_trophy_rewards` has one row per prize paid, keyed by user, trophy and milestone. No API path deletes a row, and an admin unclaim keeps it. `2026112801_trophy_prizes.sql` adds what each row paid: mana, freezes, the effective tier, and the membership tier, days, status (`none`, `pending`, `granted` or `skipped`), outcome, grant ID, and the retry count and next retry time. Rows from before it keep null mana and freezes. Their amount is on the transaction in `txn_id`.
 
 `claim-trophy` locks the user's row, inserts the claims, then inserts the reward rows with `on conflict do nothing`. It pays only the rows it inserted, in the same transaction: one `TROPHY_REWARD` transaction for the mana and one update for the freezes. Membership days are written as `pending`. The balance and freeze count are broadcast after commit.
 
@@ -117,20 +117,20 @@ Membership days are granted after commit, outside the transaction and the bet qu
 | ----------- | -------------------------------------------------------------- |
 | `started`   | The days are running                                           |
 | `banked`    | Saved. They start when the account's current membership allows |
-| `capped`    | The 30-day cap left nothing. Kept as a used receipt            |
+| `capped`    | The 30-day cap left nothing, or under an hour of room          |
 | `duplicate` | An earlier attempt made the grant, and it has since ended      |
 
-A grant that fails leaves the row `pending`. Three paths retry it, and all are safe to repeat:
+An account's pending rows are granted best tier first. A grant that fails leaves its row `pending` and stops the pass for that account, so a lesser prize can't take the room under the cap that a better one is owed. Three paths retry, and all are safe to repeat:
 
 1. Every later claim by the account settles its pending rows before answering.
-2. The main scheduler's `settle-trophy-prizes` job runs every two minutes and grants pending rows older than one minute, oldest first, 200 a run. It asks the API to broadcast the new membership, as the membership grant job does.
+2. The main scheduler's `settle-trophy-prizes` job runs every two minutes. It takes up to 100 accounts with a pending row that is due, oldest first, and settles all their pending rows. A row is due one minute after it was written. After a failed pass the account waits 2, 4, 8 minutes and so on, up to 6 hours, and each failure is logged as an error. The job asks the API to broadcast a membership it started, as the membership grant job does.
 3. The nightly rank job settles the accounts it pays.
 
 `claim-trophy` returns `prize: { mana, freezes, membership: [{ tier, days, grantedDays, outcome }] }` beside `rewardAmount`. `outcome` can also be `pending` (still to be granted) or `skipped` (needs a paid membership). `rewarded` lists paid milestones for every account, in `claim-trophy` and `get-user-trophies`.
 
 ### Rank title prizes
 
-After `update-trophy-ranks` publishes, it pays each account whose best rank on a ranked trophy has reached Super (top 25) or Mega (top 5) and has no row for that title yet. Mega also pays Super. The same person rules as the ranks apply, checked again under the user's row lock, and the same standing rules. An account whose standing leaves the prize empty is not recorded, and a later run pays it once its standing allows.
+After `update-trophy-ranks` publishes, it pays each account whose best rank on a ranked trophy has reached Super (top 25) or Mega (top 5) and has no row for that title yet. Mega also pays Super. The same person and exclusion rules as the ranks apply, checked again under the user's row lock, and the same standing rules. An account whose standing leaves the prize empty is not recorded, and a later run pays it once its standing allows.
 
 The rows share `user_trophy_rewards`, with the ranked trophy in `trophy_id` and `rank:super` or `rank:mega` in `milestone_id`. The colon keeps them apart from milestone IDs. Their grants use source `trophy-rank` and source ID `<trophy>/<super|mega>`. `rewarded` leaves them out.
 

@@ -8,6 +8,9 @@ import {
   RANKED_TROPHY_DEFINITIONS,
   formatLeagueRemaining,
   getNetWorthStatus,
+  getPaidEntitlements,
+  isPrizeStandingCut,
+  resolveTrophyPrizeTier,
   TROPHY_TIER_ORDER,
   getLeagueLevel,
   getHeldTrophyTitles,
@@ -929,6 +932,67 @@ describe('trophy claim prizes', () => {
         }
       }
     }
+  })
+})
+
+describe('trophy prize standing', () => {
+  const now = Date.UTC(2026, 11, 1)
+  const paid = {
+    userId: 'u',
+    entitlementId: 'supporter-basic',
+    grantedTime: now - 1000,
+    expiresTime: now + 1000,
+    enabled: true,
+    autoRenew: false,
+  }
+  const free = { ...paid, metadata: { membershipGrantId: '7' } }
+  const tier = (
+    entitlements: (typeof paid)[],
+    bonusEligibility: Parameters<
+      typeof resolveTrophyPrizeTier
+    >[0]['bonusEligibility'],
+    hasPaidMembership = entitlements.some((e) => !('metadata' in e))
+  ) =>
+    resolveTrophyPrizeTier({
+      entitlements,
+      bonusEligibility,
+      hasPaidMembership,
+      now,
+    })
+
+  it('lets a paid membership outrank a flag or a bonus block', () => {
+    expect(tier([paid], 'requires_verification')).toBe('basic')
+    expect(tier([paid], 'ineligible')).toBe('basic')
+    // Paid time set aside while free days run still counts.
+    expect(tier([free], 'requires_verification', true)).toBe('basic')
+  })
+
+  it('does not let free membership days outrank a flag or a bonus block', () => {
+    expect(tier([free], 'requires_verification')).toBe('restricted')
+    expect(tier([free], 'ineligible')).toBe('reduced')
+    expect(tier([], 'requires_verification')).toBe('restricted')
+    expect(tier([], 'ineligible')).toBe('reduced')
+  })
+
+  it('treats every other account as before, with or without a membership', () => {
+    for (const eligibility of [
+      undefined,
+      'verified',
+      'grandfathered',
+      'eligible',
+    ] as const) {
+      expect(isPrizeStandingCut(eligibility)).toBe(false)
+      expect(tier([], eligibility)).toBe('free')
+      expect(tier([free], eligibility)).toBe('basic')
+      expect(tier([paid], eligibility)).toBe('basic')
+    }
+    expect(isPrizeStandingCut('requires_verification')).toBe(true)
+    expect(isPrizeStandingCut('ineligible')).toBe(true)
+  })
+
+  it('tells paid entitlements from free membership days', () => {
+    expect(getPaidEntitlements([paid, free])).toEqual([paid])
+    expect(getPaidEntitlements(undefined)).toBeUndefined()
   })
 })
 

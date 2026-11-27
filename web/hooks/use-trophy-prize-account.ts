@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 
-import { resolveEffectiveTier } from 'common/supporter-config'
+import { getUserSupporterTier } from 'common/supporter-config'
 import {
   TrophyPrizeAccount,
+  getPaidEntitlements,
   getTrophyPrizeStanding,
   isStarterTrophyAccount,
+  resolveTrophyPrizeTier,
 } from 'common/trophies'
 import { useUser } from 'web/hooks/use-user'
 
@@ -25,7 +27,15 @@ export function useTrophyPrizeAccount(): TrophyPrizeAccount | undefined {
         : {
             isStarterAccount: isStarterTrophyAccount(createdTime),
             standing: getTrophyPrizeStanding(
-              resolveEffectiveTier({ entitlements, bonusEligibility })
+              resolveTrophyPrizeTier({
+                entitlements,
+                bonusEligibility,
+                // A paid membership set aside while free days run isn't
+                // public. The server counts it; the page can't.
+                hasPaidMembership: !!getUserSupporterTier(
+                  getPaidEntitlements(entitlements)
+                ),
+              })
             ),
           },
     [isBot, createdTime, entitlements, bonusEligibility]

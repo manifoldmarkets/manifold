@@ -10,7 +10,9 @@
 //   slot itself). It grants each pending part and records the outcome. A part
 //   that fails stays pending for the next caller: the next claim, or the
 //   scheduler's settle-trophy-prizes sweep. The grant is keyed by the row, so
-//   no number of retries grants twice.
+//   no number of retries grants twice. An account's parts are granted best
+//   tier first and the pass stops at its first failure, so a lesser prize
+//   can't take the room under the holding cap that a better one is owed.
 //
 // Free days count towards the 30-day holding cap, and what doesn't fit is
 // lost. Behind free days that are already running, the room under a full cap
@@ -26,16 +28,18 @@ import {
 } from 'common/membership-grants'
 import {
   EffectiveTier,
+  SUPPORTER_ENTITLEMENT_IDS,
   SUPPORTER_TIERS,
   SupporterTier,
   TIER_ORDER,
-  resolveEffectiveTier,
 } from 'common/supporter-config'
 import {
   TrophyMembershipOutcome,
   TrophyMembershipResult,
   getRankPrizeTierFromRewardId,
   getTrophyPrizeStanding,
+  isPrizeStandingCut,
+  resolveTrophyPrizeTier,
 } from 'common/trophies'
 import { TrophyMembershipPrize, TrophyPrizeTotal } from 'common/trophy-prizes'
 import { TrophyRewardTxn } from 'common/txn'
@@ -43,7 +47,10 @@ import { User } from 'common/user'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { grantMembershipDays } from './membership-grants'
 import { log } from './monitoring/log'
-import { getActiveSupporterEntitlements } from './supabase/entitlements'
+import {
+  activeSupporterAccessSql,
+  getActiveSupporterEntitlements,
+} from './supabase/entitlements'
 import { heldGrants } from './supabase/membership-grants'
 import {
   SupabaseDirectClientTimeout,
@@ -115,8 +122,9 @@ const BONUS_ELIGIBILITY_VALUES: BonusEligibility[] = [
 ]
 
 /**
- * The account's effective tier and what it collects of a prize. Membership
- * takes precedence over a flag and collects the full prize. Without it,
+ * The account's effective tier and what it collects of a prize. A membership
+ * the account pays for takes precedence over a flag and collects the full
+ * prize. Free membership days don't: see resolveTrophyPrizeTier. Otherwise
  * flagged accounts get nothing and bonus-blocked ones get reduced mana and no
  * membership days (getPrizeStanding).
  *
@@ -127,12 +135,17 @@ export async function getAccountPrizeStanding(
   userId: string,
   bonusEligibility: string | null
 ) {
+  const eligibility = BONUS_ELIGIBILITY_VALUES.find(
+    (v) => v === bonusEligibility
+  )
   const entitlements = await getActiveSupporterEntitlements(tx, userId)
-  const effectiveTier = resolveEffectiveTier({
+  const effectiveTier = resolveTrophyPrizeTier({
     entitlements,
-    bonusEligibility: BONUS_ELIGIBILITY_VALUES.find(
-      (v) => v === bonusEligibility
-    ),
+    bonusEligibility: eligibility,
+    // Only a flagged or bonus-blocked account needs the answer.
+    hasPaidMembership:
+      isPrizeStandingCut(eligibility) &&
+      !!(await getPaidSupporterTier(tx, userId)),
   })
   return { effectiveTier, standing: getTrophyPrizeStanding(effectiveTier) }
 }
@@ -157,6 +170,10 @@ export async function payTrophyPrizes(
   }
 ): Promise<PaidTrophyPrizes> {
   const { userId, trophyId, prizes, effectiveTier, multiplier } = input
+  // Only inserted ids come back from the insert below: a repeated id would
+  // be paid once for every copy.
+  if (new Set(prizes.map((p) => p.rewardId)).size !== prizes.length)
+    throw new Error(`Repeated trophy prize for ${trophyId}`)
 
   const needsPaidTier = prizes.some((p) =>
     p.prize.membership.some((m) => m.tier === 'paid-tier')
@@ -316,35 +333,36 @@ function toMembershipPart(
  * days don't count: while they run the supporter row belongs to the grant
  * (metadata.membershipGrantId) and the paid membership waits in the grant's
  * paused_paid, where it counts while it has paid time left.
+ *
+ * One statement, so one snapshot: a grant that ends between two reads would
+ * move the paid membership from one place to the other and show in neither.
  */
 export async function getPaidSupporterTier(
   tx: SupabaseTransaction,
   userId: string
 ): Promise<SupporterTier | null> {
-  // Already limited to rows with access now, by the database's clock.
-  const active = await getActiveSupporterEntitlements(tx, userId)
-  const paidIds = new Set(
-    active
-      .filter((e) => e.metadata?.membershipGrantId == null)
-      .map((e) => e.entitlementId)
-  )
-  const paid = bestTier(
-    TIER_ORDER.filter((tier) => paidIds.has(SUPPORTER_TIERS[tier].id))
-  )
-  if (paid) return paid
-
-  const paused = await tx.oneOrNone<{ tier: string | null }>(
-    `select paused_paid->>'tier' as tier from membership_grants
+  const rows = await tx.manyOrNone<{ tier: string | null }>(
+    `select substr(entitlement_id, length('supporter-') + 1) as tier
+     from user_entitlements
+     where user_id = $1 and entitlement_id = any($2)
+       and metadata->>'membershipGrantId' is null
+       and ${activeSupporterAccessSql}
+     union all
+     select paused_paid->>'tier' as tier
+     from membership_grants
      where user_id = $1 and status = 'active'
        and (paused_paid->>'remainingMs')::numeric > 0
        and coalesce((paused_paid->>'enabled')::boolean, true)`,
-    [userId]
+    [userId, SUPPORTER_ENTITLEMENT_IDS]
   )
-  return bestTier(TIER_ORDER.filter((tier) => tier === paused?.tier))
+  const paid = new Set(rows.map((r) => r.tier))
+  return (
+    sortBy(
+      TIER_ORDER.filter((tier) => paid.has(tier)),
+      (tier) => -SUPPORTER_TIERS[tier].order
+    )[0] ?? null
+  )
 }
-
-const bestTier = (tiers: SupporterTier[]): SupporterTier | null =>
-  sortBy(tiers, (tier) => -SUPPORTER_TIERS[tier].order)[0] ?? null
 
 type PendingRow = {
   user_id: string
@@ -364,15 +382,18 @@ export type SettledTrophyMembership = {
 type GrantedOutcome = Exclude<TrophyMembershipOutcome, 'pending' | 'skipped'>
 
 /**
- * Grants the pending membership days of paid prizes: one user's, or every
- * part older than `minAgeMs` (the sweep leaves fresh ones to the request that
- * wrote them). Never throws: a part that fails is logged and stays pending.
+ * Grants the pending membership days of paid prizes: one user's, or those of
+ * up to `maxUsers` accounts with a part that is due. A part is due once it is
+ * `minAgeMs` old (the sweep leaves fresh ones to the request that wrote
+ * them), or at the time a failed pass put it off to. Never throws: a part
+ * that fails is logged and stays pending, with the account's other parts.
+ * `failed` counts the accounts left with pending parts.
  *
  * Call it outside any transaction and outside the user's bet queue slot.
  */
 export async function settleTrophyMembershipPrizes(
   pg: SupabaseDirectClientTimeout,
-  scope: { userId: string } | { minAgeMs: number; limit: number }
+  scope: { userId: string } | { minAgeMs: number; maxUsers: number }
 ): Promise<{ settled: SettledTrophyMembership[]; failed: number }> {
   const settled: SettledTrophyMembership[] = []
   let failed = 0
@@ -386,21 +407,27 @@ export async function settleTrophyMembershipPrizes(
              where membership_status = 'pending' and user_id = $1`,
             [scope.userId]
           )
-        : await pg.manyOrNone<PendingRow>(
+        : // Whole accounts, so the limit can't split one account's parts and
+          // grant them out of order.
+          await pg.manyOrNone<PendingRow>(
             `select user_id, trophy_id, milestone_id, membership_tier, membership_days
              from user_trophy_rewards
-             where membership_status = 'pending'
-               and created_time < now() - make_interval(secs => $1)
-             order by created_time
-             limit $2`,
-            [scope.minAgeMs / 1000, scope.limit]
+             where membership_status = 'pending' and user_id in (
+               select user_id from user_trophy_rewards
+               where membership_status = 'pending'
+               group by user_id
+               having min(coalesce(membership_next_attempt_time,
+                 created_time + make_interval(secs => $1))) <= now()
+               order by min(created_time)
+               limit $2)`,
+            [scope.minAgeMs / 1000, scope.maxUsers]
           )
   } catch (error) {
     log.error('Failed to read pending trophy membership prizes', { error })
     return { settled, failed: 1 }
   }
 
-  for (const rows of Object.values(groupBy(pending, 'user_id'))) {
+  for (const [userId, rows] of Object.entries(groupBy(pending, 'user_id'))) {
     // The holding cap can cut later grants short, so the best tier goes first.
     const ordered = sortBy(
       rows,
@@ -411,7 +438,7 @@ export async function settleTrophyMembershipPrizes(
       try {
         const outcome = await settleRow(pg, row)
         settled.push({
-          userId: row.user_id,
+          userId,
           trophyId: row.trophy_id,
           rewardId: row.milestone_id,
           outcome,
@@ -419,15 +446,42 @@ export async function settleTrophyMembershipPrizes(
       } catch (error) {
         failed++
         log.error('Failed to grant trophy membership days; left pending', {
-          userId: row.user_id,
+          userId,
           trophyId: row.trophy_id,
           rewardId: row.milestone_id,
           error: error instanceof Error ? error.message : String(error),
         })
+        await postponePending(pg, userId)
+        // The parts after this one wait with it, to keep their order.
+        break
       }
     }
   }
   return { settled, failed }
+}
+
+// The sweep tries the account again in 2, 4, 8... minutes, up to 6 hours, so
+// parts that keep failing can't crowd out everyone else's. A claim by the
+// account retries at once.
+async function postponePending(
+  pg: SupabaseDirectClientTimeout,
+  userId: string
+) {
+  try {
+    await pg.none(
+      `update user_trophy_rewards
+       set membership_attempts = membership_attempts + 1,
+         membership_next_attempt_time =
+           now() + least(power(2, membership_attempts + 1), 360) * interval '1 minute'
+       where user_id = $1 and membership_status = 'pending'`,
+      [userId]
+    )
+  } catch (error) {
+    log.error('Failed to postpone pending trophy membership prizes', {
+      userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+  }
 }
 
 // Less room than this under the holding cap counts as none.

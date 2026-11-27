@@ -11,22 +11,23 @@ import { log } from 'shared/utils'
 // between the two steps) the part stays 'pending' in user_trophy_rewards and
 // this sweep grants it. Parts under a minute old are left to the request that
 // wrote them. Each grant is keyed by its row, so a part granted twice over
-// (here and by a claim) is still one grant.
+// (here and by a claim) is still one grant. An account whose grant fails here
+// is put off for longer each time (see postponePending).
 const MIN_AGE_MS = MINUTE_MS
-const MAX_PER_RUN = 200
+const MAX_USERS_PER_RUN = 100
 
 export async function settleTrophyPrizes() {
   const pg = createSupabaseDirectClient()
   const { settled, failed } = await settleTrophyMembershipPrizes(pg, {
     minAgeMs: MIN_AGE_MS,
-    limit: MAX_PER_RUN,
+    maxUsers: MAX_USERS_PER_RUN,
   })
   await relayTrophyPrizeBroadcasts(
     settled.filter((s) => s.outcome === 'started').map((s) => s.userId)
   )
   if (settled.length || failed) {
     log(
-      `Trophy prizes: granted ${settled.length} pending membership parts, ${failed} failed`
+      `Trophy prizes: settled ${settled.length} pending membership parts, ${failed} accounts failed`
     )
   }
 }

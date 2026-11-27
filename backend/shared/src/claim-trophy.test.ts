@@ -1676,6 +1676,73 @@ describe('trophy prizes', () => {
     expect((await balance('flagged')).balance).toBe(50)
   })
 
+  // Prizes pay free membership days. Those must not lift a flag, or a flagged
+  // account holding some would collect in full and keep itself topped up.
+  describe('free membership days and standing', () => {
+    const gift = (uid: string, tier: 'basic' | 'premium') =>
+      membershipGrants.grantMembershipDays(pg(), {
+        userId: uid,
+        tier,
+        durationMs: 5 * DAY,
+        source: 'admin',
+        sourceId: 'gift',
+      })
+
+    it('pay a flagged account holding only free days nothing', async () => {
+      await addOldUser('flagged', {
+        bonusEligibility: 'requires_verification',
+      })
+      await gift('flagged', 'basic')
+      const result = await enthusiast('flagged')
+      expect(result.newlyClaimed).toHaveLength(4)
+      expect(result.prize).toEqual(NOTHING)
+      expect(await prizeRows('flagged', 'total-trades')).toEqual({})
+      expect(await grantRows('flagged')).toHaveLength(1)
+      expect((await balance('flagged')).balance).toBe(0)
+    })
+
+    it('pay a bonus-blocked account holding only free days its reduced prize', async () => {
+      await addOldUser('blocked', { bonusEligibility: 'ineligible' })
+      await gift('blocked', 'basic')
+      expect((await enthusiast('blocked')).prize).toEqual({
+        mana: 10,
+        freezes: 3,
+        membership: [],
+      })
+      expect((await rewardTxns('blocked'))[0].data.data).toMatchObject({
+        effectiveTier: 'reduced',
+        multiplier: 0.2,
+      })
+      expect(await grantRows('blocked')).toHaveLength(1)
+    })
+
+    it('pay a flagged account in full while it pays for a membership, even one set aside', async () => {
+      await addOldUser('member', { bonusEligibility: 'requires_verification' })
+      await rows(
+        `insert into user_entitlements (user_id, entitlement_id, expires_time)
+         values ('member', 'supporter-basic', now() + interval '10 days')`
+      )
+      // Free Premium days take over the supporter row; paid Plus waits.
+      await gift('member', 'premium')
+      const result = await enthusiast('member')
+      expect(result.prize).toMatchObject({ mana: 50, freezes: 3 })
+      expect(result.prize.membership).toHaveLength(2)
+      expect((await rewardTxns('member'))[0].data.data).toMatchObject({
+        effectiveTier: 'premium',
+        multiplier: 1,
+      })
+    })
+
+    it('pay an unflagged account holding free days in full', async () => {
+      await addOldUser('old')
+      await gift('old', 'basic')
+      expect((await enthusiast('old')).prize).toMatchObject({
+        mana: 50,
+        freezes: 3,
+      })
+    })
+  })
+
   it('leaves a milestone that pays only membership days unpaid for a bonus-blocked account', async () => {
     await addUser('u', { data: { bonusEligibility: 'ineligible' } })
     // 25 market-days: In the Groove, which pays three days of Pro.
@@ -1771,9 +1838,12 @@ describe('trophy prizes', () => {
       (grantSpy = jest
         .spyOn(membershipGrants, 'grantMembershipDays')
         .mockRejectedValueOnce(new Error('Bet queue full')))
+    // Old enough for the sweep, and past any wait a failed pass set.
     const ageRewards = (uid: string) =>
       rows(
-        `update user_trophy_rewards set created_time = now() - interval '2 minutes' where user_id = $1`,
+        `update user_trophy_rewards set created_time = now() - interval '2 minutes',
+           membership_next_attempt_time = now() - interval '1 second'
+         where user_id = $1`,
         [uid]
       )
     afterEach(() => {
@@ -1850,6 +1920,49 @@ describe('trophy prizes', () => {
 
       await settleTrophyPrizes()
       expect(grant).toHaveBeenCalledTimes(2)
+      expect(await grantRows('old')).toHaveLength(1)
+    })
+
+    it('wait longer after each failed pass, but not when the account claims', async () => {
+      await addOldUser('old')
+      const grant = (grantSpy = jest
+        .spyOn(membershipGrants, 'grantMembershipDays')
+        .mockRejectedValue(new Error('Bet queue full')))
+      const waits = async () =>
+        (
+          await rows(
+            `select membership_attempts as attempts,
+               extract(epoch from membership_next_attempt_time - now()) / 60 as minutes
+             from user_trophy_rewards where user_id = 'old' and milestone_id = 'regular'`
+          )
+        )[0]
+      expect((await regular('old')).prize.membership).toEqual([pending])
+      expect(await waits()).toMatchObject({ attempts: 1 })
+      expect((await waits()).minutes).toBeGreaterThan(1.9)
+      expect((await waits()).minutes).toBeLessThanOrEqual(2)
+
+      // A minute old, but put off: the sweep leaves it alone.
+      await rows(
+        `update user_trophy_rewards set created_time = now() - interval '2 minutes' where user_id = 'old'`
+      )
+      await settleTrophyPrizes()
+      expect(grant).toHaveBeenCalledTimes(1)
+
+      await ageRewards('old')
+      await settleTrophyPrizes()
+      expect(grant).toHaveBeenCalledTimes(2)
+      expect(await waits()).toMatchObject({ attempts: 2 })
+      expect((await waits()).minutes).toBeGreaterThan(3.9)
+      expect((await waits()).minutes).toBeLessThanOrEqual(4)
+      expect(relayMembershipBroadcast).not.toHaveBeenCalled()
+
+      // The account's own claim doesn't wait.
+      grant.mockRestore()
+      await claim('old', 'account-age', 'newcomer')
+      expect((await prizeRows('old', 'total-trades')).regular).toMatchObject({
+        status: 'granted',
+        outcome: 'started',
+      })
       expect(await grantRows('old')).toHaveLength(1)
     })
 
@@ -2285,38 +2398,40 @@ describe('rank title prizes', () => {
     expect(await grantRows('u')).toEqual([])
   })
 
-  it('leaves the days pending when a grant fails, for the sweep to finish', async () => {
+  it('leaves the days pending in order when a grant fails, for the sweep to finish', async () => {
     await holder('u', 900_000)
     const grant = jest
       .spyOn(membershipGrants, 'grantMembershipDays')
       .mockRejectedValueOnce(new Error('Database restarting'))
     try {
       await updateTrophyRanks()
-      // Mega failed and stays owed. Super was granted in the meantime.
+      // Mega failed and stays owed. Super waits behind it rather than take
+      // 14 of the 30 days of room Mega's Premium days are owed.
       expect(await prizeRows('u', 'net-worth')).toMatchObject({
         'rank:mega': { status: 'pending', outcome: null },
-        'rank:super': { status: 'granted', outcome: 'started' },
+        'rank:super': { status: 'pending', outcome: null },
       })
+      expect(grant).toHaveBeenCalledTimes(1)
+      expect(await grantRows('u')).toEqual([])
       // Another night doesn't pay it twice.
       await updateTrophyRanks()
-      expect(grant).toHaveBeenCalledTimes(2)
+      expect(grant).toHaveBeenCalledTimes(1)
 
       await rows(
-        `update user_trophy_rewards set created_time = now() - interval '2 minutes'`
+        `update user_trophy_rewards set created_time = now() - interval '2 minutes',
+           membership_next_attempt_time = now() - interval '1 second'`
       )
       await settleTrophyPrizes()
-      expect(grant).toHaveBeenCalledTimes(3)
+      expect(grant).toHaveBeenCalledTimes(2)
     } finally {
       grant.mockRestore()
     }
-    const settled = await prizeRows('u', 'net-worth')
-    expect(settled['rank:mega']).toMatchObject({
-      status: 'granted',
-      outcome: 'banked',
+    // Mega in full, then Super finds the cap full.
+    expect(await prizeRows('u', 'net-worth')).toEqual({
+      'rank:mega': mega,
+      'rank:super': { ...superPrize, outcome: 'capped', granted_ms: 0 },
     })
-    // 16 of the 30 days fit under the cap behind Super's 14.
-    expect(settled['rank:mega'].granted_ms / DAY).toBeGreaterThanOrEqual(16)
-    expect(settled['rank:mega'].granted_ms / DAY).toBeLessThan(16.01)
-    expect(await grantRows('u')).toHaveLength(2)
+    expect(await grantRows('u')).toHaveLength(1)
+    expect(relayMembershipBroadcast).toHaveBeenCalledWith('u')
   })
 })
