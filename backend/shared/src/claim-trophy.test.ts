@@ -277,6 +277,7 @@ beforeEach(async () => {
     delete from contract_bets;
     delete from perp_orders;
     delete from user_entitlements;
+    delete from private_users;
     delete from users;
     delete from leagues;
     refresh materialized view mv_ach_txns_achievements;
@@ -336,10 +337,11 @@ const claim = async (
     {} as never
   )) as APIResponse<'claim-trophy'>
 
-const trophiesOf = async (userId: string) =>
+// As a signed-out visitor, unless a viewer is given.
+const trophiesOf = async (userId: string, viewerId?: string) =>
   (await getUserTrophies(
     { userId },
-    undefined as never,
+    (viewerId ? { uid: viewerId } : undefined) as never,
     {} as never
   )) as APIResponse<'get-user-trophies'>
 
@@ -449,6 +451,41 @@ describe('starter stats', () => {
     await addUser('old', { createdTime: START - 1 })
     await bet('old', 'm1', 100, 0)
     expect((await trophiesOf('old')).starter).toBeNull()
+  })
+
+  // get-user-trophies is public. Push settings and membership payments are
+  // the owner's to see.
+  it('show whether push is on and a membership was paid for to the owner only', async () => {
+    await addUser('u')
+    await addUser('visitor')
+    await bet('u', 'm1', 10, 0)
+    await db.exec(`
+      insert into private_users (id, data) values ('u', '{"pushToken": "device"}');
+      insert into txns (amount, category, from_id, from_type, to_id, to_type, token)
+        values (500, 'MEMBERSHIP_PAYMENT', 'u', 'USER', 'BANK', 'BANK', 'M$');
+    `)
+    const own = (await trophiesOf('u', 'u')).starter
+    expect(own).toMatchObject({
+      starterTrades: 1,
+      pushEnabled: 1,
+      paidMembership: 1,
+    })
+    for (const viewer of ['visitor', undefined]) {
+      // Everything public is the same; the two private counts read as zero.
+      expect((await trophiesOf('u', viewer)).starter).toEqual({
+        ...own,
+        pushEnabled: 0,
+        paidMembership: 0,
+      })
+    }
+
+    // A claim is public, so what it shows is no longer hidden.
+    await claim('u', 'starter-push', 'stay-in-the-loop')
+    expect((await trophiesOf('u', 'visitor')).starter).toMatchObject({
+      pushEnabled: 1,
+      paidMembership: 0,
+    })
+    expect((await trophiesOf('u', 'u')).starter).toEqual(own)
   })
 })
 
@@ -1816,6 +1853,225 @@ describe('trophy prizes', () => {
     expect(await grantRows('bot')).toEqual([])
   })
 
+  // These accounts were banned from trading before user_bans existed and
+  // have no ban row.
+  it('pays an account on the old trading ban list nothing, like a bot', async () => {
+    const banned = BANNED_TRADING_USER_IDS[0]
+    await addOldUser(banned)
+    expect(await rows(`select 1 from user_bans`)).toEqual([])
+    const result = await enthusiast(banned)
+    // The claim is still recorded.
+    expect(result.newlyClaimed).toHaveLength(4)
+    expect(result.prize).toEqual(NOTHING)
+    expect(result.rewarded).toEqual([])
+    expect(await prizeRows(banned, 'total-trades')).toEqual({})
+    expect(await rewardTxns(banned)).toEqual([])
+    expect(await balance(banned)).toEqual({ balance: 0, total_deposits: 0 })
+    expect(await freezesOf(banned)).toBeNull()
+    expect(await grantRows(banned)).toEqual([])
+    // Nor on a second try.
+    expect((await enthusiast(banned)).prize).toEqual(NOTHING)
+  })
+
+  // Someone who claimed before prizes existed sees Collect on the milestone.
+  // The stat it was claimed on may have dropped since.
+  describe('collecting on a milestone claimed earlier', () => {
+    it('pays without checking the stat again', async () => {
+      await addOldUser('old', { bonusEligibility: 'requires_verification' })
+      // Claimed, and left unpaid.
+      expect((await enthusiast('old')).prize).toEqual(NOTHING)
+      await setEligibility('old', 'verified')
+      // Since then the count has dropped, say with deleted markets.
+      withTrades(0)
+      const checks = jest.mocked(loadUserAchievements).mock.calls.length
+
+      const paid = await enthusiast('old')
+      expect(paid.newlyClaimed).toEqual([])
+      expect(paid.prize).toMatchObject({ mana: 50, freezes: 3 })
+      expect(paid.prize.membership).toHaveLength(2)
+      expect(paid.rewarded).toHaveLength(4)
+      expect((await balance('old')).balance).toBe(50)
+      expect(jest.mocked(loadUserAchievements).mock.calls).toHaveLength(checks)
+      // Once.
+      expect((await enthusiast('old')).prize).toEqual(NOTHING)
+      expect((await balance('old')).balance).toBe(50)
+    })
+
+    it('still checks the stat for a milestone not claimed yet', async () => {
+      await addOldUser('old')
+      withTrades(25)
+      await claim('old', 'total-trades', 'dabbler')
+      withTrades(0)
+      await expect(
+        claim('old', 'total-trades', 'regular')
+      ).rejects.toMatchObject({ code: 403 })
+      expect(
+        (await claimRows('old')).map((c) => c.milestone_id).sort()
+      ).toEqual(['dabbler', 'rookie'])
+      expect(
+        Object.keys(await prizeRows('old', 'total-trades')).sort()
+      ).toEqual(['dabbler', 'rookie'])
+    })
+
+    it('pays only the claimed milestones at or below it, never an unclaimed one', async () => {
+      await addOldUser('old')
+      // Claims from before prizes, with a gap where Dabbler joined the ladder.
+      await rows(
+        `insert into user_trophy_milestones (user_id, trophy_id, milestone_id)
+         values ('old', 'total-trades', 'rookie'), ('old', 'total-trades', 'regular'),
+           ('old', 'total-trades', 'enthusiast')`
+      )
+      withTrades(0)
+      const result = await claim('old', 'total-trades', 'regular')
+      expect(result.newlyClaimed).toEqual([])
+      // Rookie's freeze and Regular's freeze and day of Plus. Not Dabbler,
+      // which was never claimed, nor Enthusiast, which is above.
+      expect(result.prize).toEqual({
+        mana: 0,
+        freezes: 2,
+        membership: [
+          { tier: 'basic', days: 1, grantedDays: 1, outcome: 'started' },
+        ],
+      })
+      expect(
+        Object.keys(await prizeRows('old', 'total-trades')).sort()
+      ).toEqual(['regular', 'rookie'])
+      expect(
+        (await claimRows('old')).map((c) => c.milestone_id).sort()
+      ).toEqual(['enthusiast', 'regular', 'rookie'])
+      // Dabbler needs a claim of its own, and the stat to back it.
+      await expect(
+        claim('old', 'total-trades', 'dabbler')
+      ).rejects.toMatchObject({ code: 403 })
+    })
+
+    it('refuses if the claim was removed while the request was on its way', async () => {
+      await addOldUser('old', { bonusEligibility: 'requires_verification' })
+      await enthusiast('old')
+      await setEligibility('old', 'verified')
+      withTrades(0)
+      // An admin unclaims between the first read and the user's row lock.
+      const real = createSupabaseDirectClient()
+      jest.mocked(createSupabaseDirectClient).mockReturnValueOnce({
+        ...real,
+        tx: async (...args: unknown[]) => {
+          await rows(`delete from user_trophy_milestones where user_id = 'old'`)
+          return (real.tx as (...a: unknown[]) => Promise<unknown>)(...args)
+        },
+      } as never)
+      await expect(enthusiast('old')).rejects.toMatchObject({ code: 409 })
+      expect(await claimRows('old')).toEqual([])
+      expect(await prizeRows('old', 'total-trades')).toEqual({})
+      expect((await balance('old')).balance).toBe(0)
+    })
+
+    it('keeps the current-value check for Net Worth', async () => {
+      await addOldUser('old', { bonusEligibility: 'requires_verification' })
+      await rows(
+        `insert into user_portfolio_history_latest (user_id, balance, investment_value) values ('old', 2500, 0)`
+      )
+      expect(
+        (await claim('old', 'net-worth', 'minnow')).newlyClaimed
+      ).toHaveLength(1)
+      await setEligibility('old', 'verified')
+      await rows(
+        `update user_portfolio_history_latest set balance = 2499 where user_id = 'old'`
+      )
+      await expect(claim('old', 'net-worth', 'minnow')).rejects.toMatchObject({
+        code: 403,
+      })
+      expect(await prizeRows('old', 'net-worth')).toEqual({})
+      // Back at the tier, the prize can be collected.
+      await rows(
+        `update user_portfolio_history_latest set balance = 2500 where user_id = 'old'`
+      )
+      expect((await claim('old', 'net-worth', 'minnow')).prize).toEqual({
+        mana: 0,
+        freezes: 1,
+        membership: [],
+      })
+    })
+  })
+
+  // Stay in the Loop replaces the push notification bonus older accounts got.
+  describe('Stay in the Loop', () => {
+    const stayInTheLoop = (uid: string) =>
+      claim(uid, 'starter-push', 'stay-in-the-loop')
+    const oldPushBonus = (uid: string) =>
+      rows(
+        `insert into txns (amount, category, from_id, from_type, to_id, to_type, token)
+         values (1000, 'PUSH_NOTIFICATION_BONUS', 'BANK', 'BANK', $1, 'USER', 'M$')`,
+        [uid]
+      )
+    const pushOn = (uid: string) =>
+      rows(
+        `insert into private_users (id, data) values ($1, '{"pushToken": "device"}')`,
+        [uid]
+      )
+
+    it('pays M500 and a freeze for turning push on', async () => {
+      await addUser('u')
+      await pushOn('u')
+      expect((await stayInTheLoop('u')).prize).toEqual({
+        mana: 500,
+        freezes: 1,
+        membership: [],
+      })
+      expect((await balance('u')).balance).toBe(500)
+    })
+
+    it('pays the freeze but no mana to an account already paid the old push bonus', async () => {
+      await addUser('u')
+      await oldPushBonus('u')
+      const result = await stayInTheLoop('u')
+      expect(result.newlyClaimed).toHaveLength(1)
+      expect(result.rewardAmount).toBe(0)
+      expect(result.prize).toEqual({ mana: 0, freezes: 1, membership: [] })
+      expect(await rewardTxns('u')).toEqual([])
+      expect(await balance('u')).toEqual({ balance: 0, total_deposits: 0 })
+      expect(await freezesOf('u')).toBe(1)
+      // Recorded as paid, so the mana can't be collected later either: not
+      // with push on as well, and not on another try.
+      expect(await prizeRows('u', 'starter-push')).toMatchObject({
+        'stay-in-the-loop': { mana: 0, freezes: 1, status: 'none' },
+      })
+      await pushOn('u')
+      expect((await stayInTheLoop('u')).prize).toEqual(NOTHING)
+      expect((await balance('u')).balance).toBe(0)
+      expect(await freezesOf('u')).toBe(1)
+    })
+
+    it('holds the mana back however late the account collects', async () => {
+      // Claimed while flagged, so nothing was paid or recorded.
+      await addUser('u', {
+        data: { bonusEligibility: 'requires_verification' },
+      })
+      await oldPushBonus('u')
+      expect((await stayInTheLoop('u')).prize).toEqual(NOTHING)
+      expect(await prizeRows('u', 'starter-push')).toEqual({})
+      await setEligibility('u', 'verified')
+      expect((await stayInTheLoop('u')).prize).toEqual({
+        mana: 0,
+        freezes: 1,
+        membership: [],
+      })
+      expect((await balance('u')).balance).toBe(0)
+    })
+
+    it('leaves every other prize of that account alone', async () => {
+      await addUser('u')
+      await addUser('other')
+      await oldPushBonus('u')
+      await pushOn('other')
+      await bet('u', 'm1', 10, 0)
+      expect(
+        (await claim('u', 'starter-trades', 'first-trade')).prize.mana
+      ).toBe(50)
+      // Someone else's old bonus changes nothing for this account.
+      expect((await stayInTheLoop('other')).prize.mana).toBe(500)
+    })
+  })
+
   it('rolls back the claim, mana and freezes together when the payout fails', async () => {
     await addOldUser('old')
     await rows(
@@ -1984,6 +2240,162 @@ describe('trophy prizes', () => {
         outcome: 'started',
       })
       expect(await grantRows('old')).toHaveLength(1)
+    })
+
+    // The days can be granted minutes or hours after the prize was judged.
+    describe('for an account that can no longer be paid', () => {
+      const banFrom = (type: string) => (uid: string) =>
+        rows(`insert into user_bans (user_id, ban_type) values ($1, $2)`, [
+          uid,
+          type,
+        ])
+      const skippedRow = {
+        m_tier: 'basic',
+        days: 1,
+        status: 'skipped',
+        outcome: null,
+        granted_ms: null,
+      }
+
+      it.each([
+        [
+          'became a bot',
+          (uid: string) =>
+            rows(`update users set is_bot = true where id = $1`, [uid]),
+          (uid: string) =>
+            rows(`update users set is_bot = false where id = $1`, [uid]),
+        ],
+        [
+          'was deleted',
+          (uid: string) =>
+            rows(
+              `update users set data = data || '{"userDeleted": true}' where id = $1`,
+              [uid]
+            ),
+          (uid: string) =>
+            rows(`update users set data = data - 'userDeleted' where id = $1`, [
+              uid,
+            ]),
+        ],
+        [
+          'was banned from trading',
+          banFrom('trading'),
+          () => rows(`delete from user_bans`),
+        ],
+        [
+          'was banned from posting',
+          banFrom('posting'),
+          () => rows(`delete from user_bans`),
+        ],
+        [
+          'was flagged',
+          (uid: string) => setEligibility(uid, 'requires_verification'),
+          (uid: string) => setEligibility(uid, 'verified'),
+        ],
+        [
+          'was bonus-blocked',
+          (uid: string) => setEligibility(uid, 'ineligible'),
+          (uid: string) => setEligibility(uid, 'verified'),
+        ],
+      ])(
+        'are skipped, not granted, when it %s before they were granted',
+        async (_, change, undo) => {
+          await addOldUser('old')
+          const grant = failGrantOnce()
+          expect((await regular('old')).prize.membership).toEqual([pending])
+          await change('old')
+          await ageRewards('old')
+          await settleTrophyPrizes()
+          // Only the attempt that failed: no grant was tried for it again.
+          expect(grant).toHaveBeenCalledTimes(1)
+          expect(
+            (await prizeRows('old', 'total-trades')).regular
+          ).toMatchObject(skippedRow)
+          expect(await grantRows('old')).toEqual([])
+          expect(relayMembershipBroadcast).not.toHaveBeenCalled()
+
+          // Skipped is final, even once the account can be paid again.
+          await undo('old')
+          await ageRewards('old')
+          await settleTrophyPrizes()
+          await claim('old', 'account-age', 'newcomer')
+          expect(grant).toHaveBeenCalledTimes(1)
+          expect(
+            (await prizeRows('old', 'total-trades')).regular
+          ).toMatchObject(skippedRow)
+          expect(await grantRows('old')).toEqual([])
+        }
+      )
+
+      it('are skipped for an account on the old trading ban list', async () => {
+        const banned = BANNED_TRADING_USER_IDS[0]
+        await addOldUser(banned)
+        // Its claims pay nothing now. A part owed from before must not pay.
+        await rows(
+          `insert into user_trophy_rewards
+             (user_id, trophy_id, milestone_id, mana, freezes,
+              membership_tier, membership_days, membership_status)
+           values ($1, 'total-trades', 'regular', 0, 1, 'basic', 1, 'pending')`,
+          [banned]
+        )
+        await ageRewards(banned)
+        await settleTrophyPrizes()
+        expect((await prizeRows(banned, 'total-trades')).regular).toMatchObject(
+          skippedRow
+        )
+        expect(await grantRows(banned)).toEqual([])
+      })
+
+      it("are not granted by a bot's later claim", async () => {
+        await addOldUser('old')
+        const grant = failGrantOnce()
+        expect((await regular('old')).prize.membership).toEqual([pending])
+        await rows(`update users set is_bot = true where id = 'old'`)
+        // The claim settles what is pending, after paying the bot nothing.
+        const next = await claim('old', 'account-age', 'newcomer')
+        expect(next.prize).toEqual(NOTHING)
+        expect(grant).toHaveBeenCalledTimes(1)
+        expect((await prizeRows('old', 'total-trades')).regular).toMatchObject(
+          skippedRow
+        )
+        expect(await grantRows('old')).toEqual([])
+      })
+
+      it('are still recorded when the grant was made before the change', async () => {
+        await addOldUser('old')
+        expect((await regular('old')).prize.membership).toEqual([started])
+        // As if the process died after the grant and before recording it.
+        await rows(
+          `update user_trophy_rewards set membership_status = 'pending', membership_outcome = null,
+             membership_granted_ms = null, membership_grant_id = null, membership_settled_time = null
+           where user_id = 'old' and milestone_id = 'regular'`
+        )
+        await rows(`update users set is_bot = true where id = 'old'`)
+        await ageRewards('old')
+        await settleTrophyPrizes()
+        expect((await prizeRows('old', 'total-trades')).regular).toMatchObject({
+          status: 'granted',
+          outcome: 'started',
+          granted_ms: DAY,
+        })
+        expect(await grantRows('old')).toHaveLength(1)
+      })
+
+      it.each(['modAlert', 'marketControl'])(
+        'are still granted under a %s ban, which does not stop a claim',
+        async (type) => {
+          await addOldUser('old')
+          const grant = failGrantOnce()
+          expect((await regular('old')).prize.membership).toEqual([pending])
+          await banFrom(type)('old')
+          await ageRewards('old')
+          await settleTrophyPrizes()
+          expect(grant).toHaveBeenCalledTimes(2)
+          expect(
+            (await prizeRows('old', 'total-trades')).regular
+          ).toMatchObject({ status: 'granted', outcome: 'started' })
+        }
+      )
     })
 
     it('are granted once when a retry finds the grant already made', async () => {
@@ -2433,9 +2845,6 @@ describe('rank title prizes', () => {
       })
       expect(grant).toHaveBeenCalledTimes(1)
       expect(await grantRows('u')).toEqual([])
-      // Another night doesn't pay it twice.
-      await updateTrophyRanks()
-      expect(grant).toHaveBeenCalledTimes(1)
 
       await rows(
         `update user_trophy_rewards set created_time = now() - interval '2 minutes',
@@ -2453,5 +2862,69 @@ describe('rank title prizes', () => {
     })
     expect(await grantRows('u')).toHaveLength(1)
     expect(relayMembershipBroadcast).toHaveBeenCalledWith('u')
+  })
+
+  // The holder is owed no new title, but its days are still owed.
+  it('grants days left pending by an earlier night, and pays the title once', async () => {
+    await holder('u', 900_000)
+    const grant = jest
+      .spyOn(membershipGrants, 'grantMembershipDays')
+      .mockRejectedValueOnce(new Error('Database restarting'))
+    try {
+      await updateTrophyRanks()
+      expect(await prizeRows('u', 'net-worth')).toMatchObject({
+        'rank:mega': { status: 'pending' },
+        'rank:super': { status: 'pending' },
+      })
+      expect(relayMembershipBroadcast).toHaveBeenCalledTimes(1)
+
+      // The next night, with no sweep in between and the wait still running.
+      await updateTrophyRanks()
+      expect(grant).toHaveBeenCalledTimes(2)
+      expect(await prizeRows('u', 'net-worth')).toEqual({
+        'rank:mega': mega,
+        'rank:super': { ...superPrize, outcome: 'capped', granted_ms: 0 },
+      })
+      expect(await grantRows('u')).toHaveLength(1)
+      // The membership that started is announced.
+      expect(relayMembershipBroadcast).toHaveBeenCalledTimes(2)
+
+      // Nothing is pending now: a third night grants and announces nothing.
+      await updateTrophyRanks()
+      expect(grant).toHaveBeenCalledTimes(2)
+      expect(relayMembershipBroadcast).toHaveBeenCalledTimes(2)
+      expect(
+        await rows(`select count(*)::int as n from user_trophy_rewards`)
+      ).toEqual([{ n: 2 }])
+    } finally {
+      grant.mockRestore()
+    }
+  })
+
+  it('skips days still pending for a holder kept out of the ranks or banned since', async () => {
+    await holder('house', 900_000)
+    await holder('banned', 800_000)
+    const grant = jest
+      .spyOn(membershipGrants, 'grantMembershipDays')
+      .mockRejectedValue(new Error('Database restarting'))
+    try {
+      await updateTrophyRanks()
+      expect(grant).toHaveBeenCalledTimes(2)
+    } finally {
+      grant.mockRestore()
+    }
+    await db.exec(`
+      insert into trophy_rank_exclusions (user_id, reason) values ('house', 'House account');
+      -- Not a ban that stops a claim, but one that keeps an account unranked.
+      insert into user_bans (user_id, ban_type) values ('banned', 'marketControl');
+    `)
+    await updateTrophyRanks()
+    for (const id of ['house', 'banned']) {
+      expect(await prizeRows(id, 'net-worth')).toMatchObject({
+        'rank:mega': { status: 'skipped', outcome: null },
+        'rank:super': { status: 'skipped', outcome: null },
+      })
+      expect(await grantRows(id)).toEqual([])
+    }
   })
 })

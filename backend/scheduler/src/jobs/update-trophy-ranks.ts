@@ -6,6 +6,7 @@ import {
   MAX_TROPHY_RANK,
   NET_WORTH_RANK_ACTIVE_DAYS,
   RANKED_TROPHY_DEFINITIONS,
+  RANK_PRIZE_TIERS,
   REFERRAL_MIN_TRADES,
   getRankPrizeRewardId,
   getRankPrizeTiers,
@@ -198,6 +199,7 @@ export async function payRankTitlePrizes() {
   let accounts = 0
   let prizes = 0
   let failed = 0
+  const settledUserIds = new Set<string>()
   for (const [userId, trophies] of Object.entries(groupBy(owed, 'user_id'))) {
     try {
       const paid = await pg.tx(async (tx) => {
@@ -247,6 +249,7 @@ export async function payRankTitlePrizes() {
       prizes += paid.length
       // After commit, outside the transaction: grantMembershipDays opens its
       // own. A part that fails stays pending for settle-trophy-prizes.
+      settledUserIds.add(userId)
       const { failed: pending } = await settleTrophyMembershipPrizes(pg, {
         userId,
       })
@@ -260,8 +263,28 @@ export async function payRankTitlePrizes() {
       })
     }
   }
+
+  // A holder whose title prize was recorded on an earlier night, with its
+  // days still pending, is owed nothing new and was passed over above. Its
+  // days are owed all the same.
+  const waiting = await pg.manyOrNone<{ user_id: string }>(
+    `select distinct user_id from user_trophy_rewards
+     where membership_status = 'pending' and milestone_id = any($1::text[])
+     order by user_id`,
+    [RANK_PRIZE_TIERS.map(getRankPrizeRewardId)]
+  )
+  let retried = 0
+  for (const { user_id: userId } of waiting) {
+    if (settledUserIds.has(userId)) continue
+    retried++
+    const result = await settleTrophyMembershipPrizes(pg, { userId })
+    failed += result.failed
+    if (result.settled.some((s) => s.outcome === 'started')) {
+      await relayTrophyPrizeBroadcasts([userId])
+    }
+  }
   log(
-    `Rank title prizes: paid ${prizes} to ${accounts} accounts, ${failed} failed`
+    `Rank title prizes: paid ${prizes} to ${accounts} accounts, retried ${retried} with days pending, ${failed} failed`
   )
 }
 

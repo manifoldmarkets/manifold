@@ -27,6 +27,7 @@ import {
   getMilestonePrizesFor,
   getTrophyBadgeImagePath,
   getTrophyClaimPrize,
+  getTrophyCollectPrize,
   isMilestoneReached,
 } from 'common/trophies'
 import { EMPTY_PRIZE_TOTAL, isEmptyPrizeTotal } from 'common/trophy-prizes'
@@ -196,11 +197,20 @@ export function TrophyCard(props: {
   const isClaimed = claimedIds.has(viewing.id)
   const earned = isEarned(viewing)
   // What a claim would collect: this milestone's prize and those of unpaid
-  // lower ones. Only the owner sees prizes.
-  const claimPrize =
-    isOwnProfile && prizeAccount
-      ? getTrophyClaimPrize(definition, viewing, rewarded, prizeAccount)
-      : EMPTY_PRIZE_TOTAL
+  // lower ones. Collecting on a milestone claimed earlier pays only for
+  // claimed ones (claim-trophy doesn't check the stat again then); Net Worth
+  // is claimed afresh each time. Only the owner sees prizes.
+  const claimPrize = !(isOwnProfile && prizeAccount)
+    ? EMPTY_PRIZE_TOTAL
+    : isClaimed && !isNetWorth
+    ? getTrophyCollectPrize(
+        definition,
+        viewing,
+        claimedIds,
+        rewarded,
+        prizeAccount
+      )
+    : getTrophyClaimPrize(definition, viewing, rewarded, prizeAccount)
   const unpaidPrize = !isEmptyPrizeTotal(claimPrize)
   // A milestone still ahead shows its own prize, which doesn't shrink as the
   // ones below it are collected.

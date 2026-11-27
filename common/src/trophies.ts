@@ -137,6 +137,13 @@ export const EMPTY_STARTER_STATS: StarterStats = {
   starterReferrals: 0,
   paidMembership: 0,
 }
+// Starter stats only the account's owner may read: whether push is on is in
+// private_users, and whether it has paid for a membership is its own business.
+// get-user-trophies is public, so other callers get getPublicStarterStats.
+export const PRIVATE_STARTER_STAT_KEYS: readonly StarterStatKey[] = [
+  'pushEnabled',
+  'paidMembership',
+]
 export const STARTER_MIN_TRADE_AMOUNT = 10
 export const STARTER_QUESTION_MIN_TRADERS = 5
 
@@ -715,6 +722,28 @@ export function getTrophyDefinitionsFor(
     : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
 }
 
+/**
+ * Starter stats as anyone may see them. A private stat shows only what the
+ * account's claims already show in public: the highest threshold it has
+ * claimed on the trophies that measure it, or 0.
+ */
+export function getPublicStarterStats(
+  stats: StarterStats,
+  claims: TrophyMilestoneRef[]
+): StarterStats {
+  const shown = { ...stats }
+  for (const key of PRIVATE_STARTER_STAT_KEYS) {
+    const claimed = TROPHY_DEFINITIONS.filter(
+      (d) => isStarterTrophy(d) && d.statKey === key
+    ).flatMap((d) => {
+      const ids = getClaimedMilestoneIds(claims, d.id)
+      return d.milestones.filter((m) => ids.has(m.id)).map((m) => m.threshold)
+    })
+    shown[key] = Math.max(0, ...claimed.filter((t) => Number.isFinite(t)))
+  }
+  return shown
+}
+
 /** The top milestone threshold of a starter stat: counting past it changes
  * nothing, so the live count can stop there. 0 if no trophy measures it. */
 export function getStarterStatCap(key: StarterStatKey): number {
@@ -835,6 +864,44 @@ export function getTrophyClaimPrize(
 }
 
 /**
+ * The claimed milestones at or below this one. Collecting on a milestone
+ * claimed earlier pays for these and no others: claim-trophy skips the stat
+ * check then, so it must not claim or pay a lower milestone that isn't claimed.
+ */
+export function getClaimedMilestonesUpTo(
+  definition: TrophyDefinition,
+  milestone: TrophyMilestone,
+  claimedIds: ReadonlySet<string>
+): TrophyMilestone[] {
+  return definition.milestones.filter(
+    (m) => m.threshold <= milestone.threshold && claimedIds.has(m.id)
+  )
+}
+
+/**
+ * What collecting on a milestone claimed earlier pays: the unpaid prizes of
+ * the claimed milestones at or below it. Not for Net Worth, which is claimed
+ * afresh against the current value each time (getTrophyClaimPrize).
+ */
+export function getTrophyCollectPrize(
+  definition: TrophyDefinition,
+  milestone: TrophyMilestone,
+  claimedIds: ReadonlySet<string>,
+  rewarded: TrophyMilestoneRef[],
+  account: TrophyPrizeAccount
+): TrophyPrizeTotal {
+  const paid = getClaimedMilestoneIds(rewarded, definition.id)
+  const unpaid = getClaimedMilestonesUpTo(
+    definition,
+    milestone,
+    claimedIds
+  ).filter((m) => !paid.has(m.id))
+  return addPrizeTotals(
+    getMilestonePrizesFor(definition, unpaid, account).map((p) => p.prize)
+  )
+}
+
+/**
  * This milestone's own unpaid prize, without the lower ones a claim would also
  * collect. For lists that show each milestone on its own row, so the amounts
  * don't add up twice.
@@ -850,6 +917,14 @@ export function getOwnMilestonePrize(
   return addPrizeTotals(
     getMilestonePrizesFor(definition, [milestone], account).map((p) => p.prize)
   )
+}
+
+// Stay in the Loop replaces the push notification bonus older accounts were
+// paid (PUSH_NOTIFICATION_BONUS). An account that already has that bonus is
+// paid no mana for this milestone: claim-trophy checks.
+export const PUSH_BONUS_MILESTONE: TrophyMilestoneRef = {
+  trophyId: 'starter-push',
+  milestoneId: 'stay-in-the-loop',
 }
 
 // Rank titles with a prize, best first. The #1 crown is its own prize.
@@ -892,7 +967,9 @@ export const getRankTierPrize = (
 // - capped: the account already holds the most free days allowed.
 // - duplicate: granted by an earlier attempt that has since run out.
 // - pending: not granted yet; the claim and the scheduler retry it.
-// - skipped: the prize is days of your paid tier and there is none.
+// - skipped: not granted. Either the prize is days of your paid tier and
+//   there is none (tier 'paid-tier'; it can be collected later), or the
+//   account could no longer be paid when the days came to be granted.
 export type TrophyMembershipOutcome =
   | 'started'
   | 'banked'
@@ -989,7 +1066,10 @@ export function formatMembershipResult(result: TrophyMembershipResult) {
     freezes: 0,
     membership: [{ tier, days }],
   })
-  const text = MEMBERSHIP_OUTCOME_TEXT[outcome]
+  const text =
+    outcome === 'skipped' && tier !== 'paid-tier'
+      ? 'not added'
+      : MEMBERSHIP_OUTCOME_TEXT[outcome]
   const cut =
     (outcome === 'started' || outcome === 'banked') &&
     Number.isFinite(grantedDays) &&

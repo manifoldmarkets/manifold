@@ -14,6 +14,11 @@ import {
   formatLeagueRemaining,
   getNetWorthStatus,
   getPaidEntitlements,
+  getPublicStarterStats,
+  getClaimedMilestonesUpTo,
+  getTrophyCollectPrize,
+  PRIVATE_STARTER_STAT_KEYS,
+  PUSH_BONUS_MILESTONE,
   isPrizeStandingCut,
   resolveTrophyPrizeTier,
   TROPHY_TIER_ORDER,
@@ -852,6 +857,57 @@ describe('trophy claim prizes', () => {
     }
   })
 
+  it('collects only for claimed milestones when collecting on an earlier claim', () => {
+    // Claimed before prizes, with a gap: Dabbler was never claimed.
+    const claimed = new Set(['rookie', 'regular', 'enthusiast'])
+    expect(
+      getClaimedMilestonesUpTo(trades, milestone('regular'), claimed).map(
+        (m) => m.id
+      )
+    ).toEqual(['rookie', 'regular'])
+    // Rookie's freeze, and Regular's freeze and day of Plus. Not Dabbler's
+    // freeze, which a fresh claim of Regular would also collect.
+    const collect = (rewarded: TrophyClaim[]) =>
+      getTrophyCollectPrize(
+        trades,
+        milestone('regular'),
+        claimed,
+        rewarded,
+        account('free')
+      )
+    expect(collect([])).toEqual({
+      mana: 0,
+      freezes: 2,
+      membership: [{ tier: 'basic', days: 1 }],
+    })
+    expect(
+      getTrophyClaimPrize(trades, milestone('regular'), [], account('free'))
+        .freezes
+    ).toBe(3)
+    // Paid ones are left out, as for a claim.
+    expect(collect([claim(trades.id, 'rookie')]).freezes).toBe(1)
+    expect(
+      collect([claim(trades.id, 'rookie'), claim(trades.id, 'regular')])
+    ).toEqual(EMPTY_PRIZE_TOTAL)
+    // Nothing claimed, nothing to collect.
+    expect(
+      getTrophyCollectPrize(
+        trades,
+        milestone('regular'),
+        new Set(),
+        [],
+        account('free')
+      )
+    ).toEqual(EMPTY_PRIZE_TOTAL)
+    // With no gap it is the same as a claim.
+    const all = new Set(trades.milestones.map((m) => m.id))
+    for (const m of trades.milestones) {
+      expect(
+        getTrophyCollectPrize(trades, m, all, [], account('free'))
+      ).toEqual(getTrophyClaimPrize(trades, m, [], account('free')))
+    }
+  })
+
   it('never pays for milestones above the one claimed', () => {
     expect(
       getTrophyClaimPrize(trades, milestone('rookie'), [], account('free'))
@@ -1002,6 +1058,62 @@ describe('trophy claim prizes', () => {
   })
 })
 
+describe('starter stats other people can see', () => {
+  const stats = {
+    ...EMPTY_STARTER_STATS,
+    starterTrades: 7,
+    topicsFollowed: 3,
+    pushEnabled: 1,
+    paidMembership: 1,
+  }
+
+  it('hide whether push is on and whether the account has paid for a membership', () => {
+    expect(PRIVATE_STARTER_STAT_KEYS).toEqual(['pushEnabled', 'paidMembership'])
+    expect(getPublicStarterStats(stats, [])).toEqual({
+      ...stats,
+      pushEnabled: 0,
+      paidMembership: 0,
+    })
+    // Other trophies' claims say nothing about them.
+    expect(
+      getPublicStarterStats(stats, [claim('starter-trades', 'first-trade')])
+    ).toMatchObject({ starterTrades: 7, pushEnabled: 0, paidMembership: 0 })
+  })
+
+  it('show what a claim has already made public, and no more', () => {
+    expect(
+      getPublicStarterStats(stats, [claim('starter-push', 'stay-in-the-loop')])
+    ).toMatchObject({ pushEnabled: 1, paidMembership: 0 })
+    expect(
+      getPublicStarterStats(stats, [claim('starter-membership', 'member')])
+    ).toMatchObject({ pushEnabled: 0, paidMembership: 1 })
+    // A claim shows the threshold claimed, not the live value behind it.
+    expect(
+      getPublicStarterStats({ ...stats, pushEnabled: 0 }, [
+        claim('starter-push', 'stay-in-the-loop'),
+      ]).pushEnabled
+    ).toBe(1)
+  })
+
+  it('cover every private stat with a trophy, so a claim can show it', () => {
+    for (const key of PRIVATE_STARTER_STAT_KEYS) {
+      expect(
+        TROPHY_DEFINITIONS.filter(
+          (d) => isStarterTrophy(d) && d.statKey === key
+        )
+      ).toHaveLength(1)
+    }
+  })
+
+  it('names the milestone that replaces the old push bonus', () => {
+    const def = getTrophyDefinition(PUSH_BONUS_MILESTONE.trophyId)!
+    expect(def.statKey).toBe('pushEnabled')
+    expect(def.milestones.map((m) => m.id)).toContain(
+      PUSH_BONUS_MILESTONE.milestoneId
+    )
+  })
+})
+
 describe('trophy prize standing', () => {
   const now = Date.UTC(2026, 11, 1)
   const paid = {
@@ -1129,6 +1241,10 @@ describe('membership prize results', () => {
         outcome: 'skipped',
       })
     ).toBe('7 days of your membership: needs a paid membership')
+    // Skipped because the account could no longer be paid.
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 0, outcome: 'skipped' })
+    ).toBe('3 days of Plus: not added')
     expect(
       formatMembershipResult({
         tier: 'plus',

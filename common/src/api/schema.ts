@@ -3331,6 +3331,9 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    // The owner gets the private starter stats too, so the client waits for
+    // sign-in to settle before it asks.
+    preferAuth: true,
     returns: {} as {
       ranks: TrophyRank[]
       rankPeaks: TrophyRankPeak[]
@@ -3344,7 +3347,8 @@ export const API = (_apiTypeCheck = {
       // Effective season used for the league lookup, even when league is null.
       season: number
       // Counts for the "Getting started" trophies, or null for accounts that
-      // don't get them (see isStarterTrophyAccount).
+      // don't get them (see isStarterTrophyAccount). Only the owner gets the
+      // private ones as they are (getPublicStarterStats).
       starter: StarterStats | null
       // Milestones whose prize has been paid. A milestone pays once.
       rewarded: TrophyMilestoneRef[]

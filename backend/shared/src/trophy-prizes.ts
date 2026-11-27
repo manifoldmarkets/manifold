@@ -13,6 +13,9 @@
 //   no number of retries grants twice. An account's parts are granted best
 //   tier first and the pass stops at its first failure, so a lesser prize
 //   can't take the room under the holding cap that a better one is owed.
+//   The days can be granted minutes or hours after the prize was judged, so
+//   the account is checked again first (canStillGrantMembership): one that
+//   could no longer be paid has the part recorded as skipped instead.
 //
 // Free days count towards the 30-day holding cap, and what doesn't fit is
 // lost. Behind free days that are already running, the room under a full cap
@@ -22,6 +25,8 @@
 
 import { groupBy, sortBy, sumBy } from 'lodash'
 
+import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
+import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import {
   MembershipGrantResult,
   capGrantDuration,
@@ -43,7 +48,7 @@ import {
 } from 'common/trophies'
 import { TrophyMembershipPrize, TrophyPrizeTotal } from 'common/trophy-prizes'
 import { TrophyRewardTxn } from 'common/txn'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { grantMembershipDays } from './membership-grants'
 import { log } from './monitoring/log'
@@ -53,6 +58,7 @@ import {
 } from './supabase/entitlements'
 import { heldGrants } from './supabase/membership-grants'
 import {
+  SupabaseDirectClient,
   SupabaseDirectClientTimeout,
   SupabaseTransaction,
 } from './supabase/init'
@@ -112,6 +118,11 @@ export const NO_TROPHY_PRIZES_PAID: PaidTrophyPrizes = {
   unpaidForPaidTier: [],
 }
 
+// Accounts banned from trading before user_bans existed. They have no ban
+// row, so every payout path checks the list as well: no prizes, as for bots.
+export const isLegacyBannedTrader = (userId: string) =>
+  BANNED_TRADING_USER_IDS.includes(userId)
+
 type BonusEligibility = NonNullable<User['bonusEligibility']>
 const BONUS_ELIGIBILITY_VALUES: BonusEligibility[] = [
   'verified',
@@ -128,10 +139,11 @@ const BONUS_ELIGIBILITY_VALUES: BonusEligibility[] = [
  * flagged accounts get nothing and bonus-blocked ones get reduced mana and no
  * membership days (getPrizeStanding).
  *
- * `bonusEligibility` is users.data->>'bonusEligibility', read under the lock.
+ * `bonusEligibility` is users.data->>'bonusEligibility'. A payout reads it
+ * under the user's row lock.
  */
 export async function getAccountPrizeStanding(
-  tx: SupabaseTransaction,
+  tx: SupabaseDirectClient,
   userId: string,
   bonusEligibility: string | null
 ) {
@@ -338,7 +350,7 @@ function toMembershipPart(
  * move the paid membership from one place to the other and show in neither.
  */
 export async function getPaidSupporterTier(
-  tx: SupabaseTransaction,
+  tx: SupabaseDirectClient,
   userId: string
 ): Promise<SupporterTier | null> {
   const rows = await tx.manyOrNone<{ tier: string | null }>(
@@ -376,14 +388,16 @@ export type SettledTrophyMembership = {
   userId: string
   trophyId: string
   rewardId: string
-  outcome: GrantedOutcome
+  // 'skipped': the account could no longer be paid, so no grant was made.
+  outcome: GrantedOutcome | 'skipped'
 }
 
 type GrantedOutcome = Exclude<TrophyMembershipOutcome, 'pending' | 'skipped'>
 
 /**
  * Grants the pending membership days of paid prizes: one user's, or those of
- * up to `maxUsers` accounts with a part that is due. A part is due once it is
+ * up to `maxUsers` accounts with a part that is due. An account that can no
+ * longer be paid has its parts recorded as skipped. A part is due once it is
  * `minAgeMs` old (the sweep leaves fresh ones to the request that wrote
  * them), or at the time a failed pass put it off to. Never throws: a part
  * that fails is logged and stays pending, with the account's other parts.
@@ -434,9 +448,19 @@ export async function settleTrophyMembershipPrizes(
       (r) => -(SUPPORTER_TIERS[r.membership_tier]?.order ?? 0),
       (r) => -r.membership_days
     )
+    // Checked once a pass for each kind of prize, not once a part: a claim
+    // of a whole ladder has eight.
+    const checks = new Map<boolean, Promise<boolean>>()
+    const canGrant = (isRankPrize: boolean) => {
+      const check =
+        checks.get(isRankPrize) ??
+        canStillGrantMembership(pg, userId, isRankPrize)
+      checks.set(isRankPrize, check)
+      return check
+    }
     for (const row of ordered) {
       try {
-        const outcome = await settleRow(pg, row)
+        const outcome = await settleRow(pg, row, canGrant)
         settled.push({
           userId,
           trophyId: row.trophy_id,
@@ -489,8 +513,9 @@ export const MIN_GRANT_ROOM_MS = HOUR_MS
 
 async function settleRow(
   pg: SupabaseDirectClientTimeout,
-  row: PendingRow
-): Promise<GrantedOutcome> {
+  row: PendingRow,
+  canGrant: (isRankPrize: boolean) => Promise<boolean>
+): Promise<SettledTrophyMembership['outcome']> {
   const { user_id, trophy_id, milestone_id, membership_tier } = row
   const days = row.membership_days
   if (!TIER_ORDER.includes(membership_tier) || !(days > 0))
@@ -508,6 +533,21 @@ async function settleRow(
      where user_id = $1 and source = $2 and source_id = $3`,
     [user_id, source, sourceId]
   )
+  if (!granted && !(await canGrant(!!rankTier))) {
+    // Final: the part is not granted later if the account recovers. As with
+    // the cap below, a grant that has appeared since is left to its maker.
+    await pg.none(
+      `update user_trophy_rewards
+       set membership_status = 'skipped', membership_settled_time = now()
+       where user_id = $1 and trophy_id = $2 and milestone_id = $3
+         and membership_status = 'pending'
+         and not exists (
+           select 1 from membership_grants g
+           where g.user_id = $1 and g.source = $4 and g.source_id = $5)`,
+      [...key, source, sourceId]
+    )
+    return 'skipped'
+  }
   if (!granted && !(await hasRoomUnderCap(pg, user_id, durationMs))) {
     // No grant is made, so this row is the receipt. If a grant for it has
     // appeared since the check above, its maker records the outcome instead.
@@ -536,7 +576,8 @@ async function settleRow(
   const outcome = getGrantedOutcome(result)
   // Only a pending row is marked, so whichever caller grants first records
   // the outcome and a slower duplicate changes nothing. A grant that was made
-  // also corrects a row marked capped without one.
+  // also corrects a row another pass marked capped or skipped without one
+  // (a row skipped at claim time has no tier, and no grant to record).
   await pg.none(
     `update user_trophy_rewards
      set membership_status = 'granted', membership_outcome = $4,
@@ -544,7 +585,8 @@ async function settleRow(
        membership_settled_time = now()
      where user_id = $1 and trophy_id = $2 and milestone_id = $3
        and (membership_status = 'pending'
-         or (membership_outcome = 'capped' and membership_grant_id is null))`,
+         or (membership_outcome = 'capped' and membership_grant_id is null)
+         or (membership_status = 'skipped' and membership_tier is not null))`,
     [
       ...key,
       outcome,
@@ -553,6 +595,59 @@ async function settleRow(
     ]
   )
   return outcome
+}
+
+/**
+ * Whether the account can still be granted the membership days of a prize.
+ * The prize was judged when it was paid, but a grant that failed then is made
+ * later, and by then the account may be a bot, deleted, banned, flagged or
+ * bonus-blocked, or (for a rank title) kept out of the ranks. The rules are
+ * those of the payout itself: claim-trophy's for a milestone, the rank job's
+ * for a rank title.
+ */
+async function canStillGrantMembership(
+  pg: SupabaseDirectClientTimeout,
+  userId: string,
+  isRankPrize: boolean
+) {
+  if (isLegacyBannedTrader(userId)) return false
+  const user = await pg.oneOrNone<{
+    bonus_eligibility: string | null
+    is_bot: boolean
+    user_deleted: boolean
+    excluded: boolean
+  }>(
+    `select data->>'bonusEligibility' as bonus_eligibility,
+       coalesce(is_bot, false) as is_bot,
+       coalesce((data->>'userDeleted')::boolean, false) as user_deleted,
+       exists (
+         select 1 from trophy_rank_exclusions e where e.user_id = users.id
+       ) as excluded
+     from users where id = $1`,
+    [userId]
+  )
+  if (!user || user.is_bot || user.user_deleted) return false
+  if (isRankPrize && user.excluded) return false
+
+  const bans = await pg.manyOrNone<UserBan>(
+    `select * from user_bans where user_id = $1 and ended_at is null
+       and (end_time is null or end_time > now())`,
+    [userId]
+  )
+  const banned = isRankPrize
+    ? // TROPHY_PERSON_FILTER: any ban but a mod alert.
+      bans.some((ban) => ban.ban_type !== 'modAlert')
+    : getBanTypesForAction('claimTrophy').some((type) =>
+        isUserBanned(bans, type)
+      )
+  if (banned) return false
+
+  const { standing } = await getAccountPrizeStanding(
+    pg,
+    userId,
+    user.bonus_eligibility
+  )
+  return standing.membership
 }
 
 async function hasRoomUnderCap(

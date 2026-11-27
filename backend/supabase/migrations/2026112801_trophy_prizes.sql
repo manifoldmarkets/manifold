@@ -35,7 +35,9 @@ add column if not exists membership_tier text,
 add column if not exists membership_days integer,
 -- none: no membership days in what this account was paid.
 -- pending: owed, not granted yet. granted: see membership_outcome.
--- skipped: days of the account's paid tier, and it had no paid membership.
+-- skipped: not granted. Days of the account's paid tier when it had no paid
+-- membership (no tier is stored), or days still pending when the account
+-- could no longer be paid: a bot, deleted, banned, flagged or bonus-blocked.
 add column if not exists membership_status text not null default 'none',
 -- started | banked | capped (the 30-day holding cap left nothing) |
 -- duplicate (an earlier attempt's grant, since used up or revoked).

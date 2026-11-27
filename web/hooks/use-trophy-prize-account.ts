@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 
+import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import { getUserSupporterTier } from 'common/supporter-config'
 import {
   TrophyPrizeAccount,
@@ -12,17 +13,19 @@ import { useUser } from 'web/hooks/use-user'
 
 /**
  * What the signed-in account collects of a trophy prize: claim-trophy applies
- * the same rules. Undefined when signed out, and for bots, which get none.
+ * the same rules. Undefined when signed out, and for the accounts that get no
+ * prizes: bots, and those on the old trading ban list.
  */
 export function useTrophyPrizeAccount(): TrophyPrizeAccount | undefined {
   const user = useUser()
-  const isBot = !user || !!user.isBot
+  const getsNoPrizes =
+    !user || !!user.isBot || BANNED_TRADING_USER_IDS.includes(user.id)
   const createdTime = user?.createdTime
   const entitlements = user?.entitlements
   const bonusEligibility = user?.bonusEligibility
   return useMemo(
     () =>
-      isBot || createdTime === undefined
+      getsNoPrizes || createdTime === undefined
         ? undefined
         : {
             isStarterAccount: isStarterTrophyAccount(createdTime),
@@ -38,7 +41,7 @@ export function useTrophyPrizeAccount(): TrophyPrizeAccount | undefined {
               })
             ),
           },
-    [isBot, createdTime, entitlements, bonusEligibility]
+    [getsNoPrizes, createdTime, entitlements, bonusEligibility]
   )
 }
 

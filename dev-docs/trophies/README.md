@@ -92,11 +92,13 @@ The Getting Started trophies are for new accounts only. `getStarterStats` counts
 
 The bet stats (trades, markets, days, sales and limit orders) read the account's first 500 bets and orders. Only those placed in mana markets and not via the API count, but API bets and bets in other currencies still use up the 500. Arbitrage legs, redemptions and automatic full-set redemptions (`isAutoRedemption`) don't use it up and never count, but the read stops after 3,000 rows in all. Activity after either limit doesn't count, so a first sale or limit order placed later earns nothing, and the Next trophy card can keep asking for one. The other counts stop at their top milestone: Wins shows at most 3.
 
-Accounts with these trophies no longer get the M1,000 push notification bonus from `set-push-token`. Stay in the Loop replaces it. Other accounts still do.
+Accounts with these trophies no longer get the M1,000 push notification bonus from `set-push-token`. Stay in the Loop replaces it. Other accounts still do. An account that was paid that bonus before (a `PUSH_NOTIFICATION_BONUS` transaction) can still claim Stay in the Loop, but `claim-trophy` pays it no mana for the milestone, only the freeze. The trophy card can't tell and still shows the mana.
 
 Prizes are in the Prizes section below. The eligibility cutoff is 1 November 2026 on dev and disabled on prod. Everyone can claim Newcomer.
 
 Navigation and the Trophies tab share claim counts and unlock notifications. Missing badge art falls back to the milestone emoji.
+
+`get-user-trophies` is public. It returns `pushEnabled` and `paidMembership` as they are only to the account's owner (`preferAuth`, so the page waits for sign-in). Anyone else gets what the account's claims already show: 1 once Stay in the Loop or Member is claimed, otherwise 0 (`getPublicStarterStats`).
 
 ## Prizes
 
@@ -111,7 +113,7 @@ Navigation and the Trophies tab share claim counts and unlock notifications. Mis
 | Newcomer                             | M50 for an account that gets the starter trophies, one freeze for everyone else                |
 | Rank title                           | `RANK_TIER_PRIZES`: Super and Mega, once each per trophy. The #1 crown has no prize of its own |
 
-Every account that isn't a bot collects prizes. A milestone pays once per account, ever. Claiming a milestone also pays the unpaid ones below it. Net Worth pays a tier only while the account is at or above it.
+Every account collects prizes except bots and the accounts in `BANNED_TRADING_USER_IDS` (banned from trading before `user_bans` existed, so they have no ban row). Those can claim, and are paid nothing. A milestone pays once per account, ever. Claiming a milestone also pays the unpaid ones below it. Net Worth pays a tier only while the account is at or above it.
 
 Standing follows `getPrizeStanding`, from the account's effective tier at the time it is paid:
 
@@ -126,6 +128,10 @@ Membership pays no more than 1x. A membership the account pays for counts ahead 
 Freezes go to `users.data.streakForgiveness` with no cap. The shop's limit applies to purchases only. Free membership days keep every benefit.
 
 Member (`starter-membership`) pays seven days of the tier the account pays for. Free days don't count as a paid membership. While free days run, the paid membership waits in the grant's `paused_paid`, and it counts while it has paid time left. With no paid membership the prize stays unpaid and can be collected once there is one.
+
+### Collecting on a milestone claimed earlier
+
+A milestone claimed before prizes existed, or left unpaid by the account's standing, shows Collect. For every trophy but Net Worth, `claim-trophy` then skips the stat check: the stat may have dropped since the claim (a deleted market, a lost referral), and the claim stands. It pays the unpaid prizes of the claimed milestones at or below the one asked for, and never claims or pays an unclaimed one. Net Worth keeps its check of the current snapshot. A milestone not claimed yet keeps the stat check. Raising the threshold of a shipped milestone ID would let old claims collect the new prize, so don't.
 
 ### How a prize is paid
 
@@ -146,9 +152,11 @@ An account's pending rows are granted best tier first. A grant that fails leaves
 
 1. Every later claim by the account settles its pending rows before answering.
 2. The main scheduler's `settle-trophy-prizes` job runs every two minutes. It takes up to 100 accounts with a pending row that is due, oldest first, and settles all their pending rows. A row is due one minute after it was written. After a failed pass the account waits 2, 4, 8 minutes and so on, up to 6 hours, and each failure is logged as an error. The job asks the API to broadcast a membership it started, as the membership grant job does.
-3. The nightly rank job settles the accounts it pays.
+3. The nightly rank job settles the accounts it pays, and any holder with a title prize still pending from an earlier night.
 
-`claim-trophy` returns `prize: { mana, freezes, membership: [{ tier, days, grantedDays, outcome }] }` beside `rewardAmount`. `outcome` can also be `pending` (still to be granted) or `skipped` (needs a paid membership). `rewarded` lists paid milestones for every account, in `claim-trophy` and `get-user-trophies`.
+The account is checked again before a pending part is granted, since that can be minutes or hours after the prize was judged. A bot, a deleted account, one in `BANNED_TRADING_USER_IDS`, one with a ban that stops a claim (posting or trading), or one whose standing no longer allows membership days has the part recorded as `skipped` and gets no grant. A rank title part uses the rank job's rules instead: any ban but a mod alert, and `trophy_rank_exclusions`. `skipped` is final. A grant an earlier attempt already made is still recorded as it is.
+
+`claim-trophy` returns `prize: { mana, freezes, membership: [{ tier, days, grantedDays, outcome }] }` beside `rewardAmount`. `outcome` can also be `pending` (still to be granted) or `skipped` (not granted: days of a paid tier the account doesn't have, or an account that could no longer be paid). `rewarded` lists paid milestones for every account, in `claim-trophy` and `get-user-trophies`.
 
 ### Rank title prizes
 

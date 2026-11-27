@@ -8,10 +8,13 @@ import {
   getTrophyClaims,
 } from 'api/helpers/trophies'
 import {
+  PUSH_BONUS_MILESTONE,
   TrophyClaimPrize,
   TrophyDefinition,
   TrophyMembershipResult,
+  TrophyMilestonePrize,
   formatTrophyValue,
+  getClaimedMilestonesUpTo,
   getMilestone,
   getMilestonePrizesFor,
   getMilestonesToClaim,
@@ -20,10 +23,12 @@ import {
   isStarterTrophy,
   isStarterTrophyAccount,
 } from 'common/trophies'
+import { isEmptyPrizeTotal } from 'common/trophy-prizes'
 import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
 import { UserBan } from 'common/user'
 import { log } from 'shared/monitoring/log'
 import {
+  SupabaseDirectClient,
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -38,6 +43,7 @@ import {
   PaidTrophyPrizes,
   getAccountPrizeStanding,
   getTrophyMembershipResults,
+  isLegacyBannedTrader,
   payTrophyPrizes,
   settleTrophyMembershipPrizes,
 } from 'shared/trophy-prizes'
@@ -79,9 +85,17 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           `You haven't reached ${milestone.name} yet: it needs ${needed}`
         )
       }
-      // Net Worth records the snapshot used for the claim inside the transaction.
+      // A milestone claimed earlier keeps its prize: collecting it needs no
+      // new proof, though the stat may have dropped since (a deleted market,
+      // a lost referral). Net Worth is the exception. A tier pays only while
+      // the account is at or above it, and the transaction checks the
+      // snapshot it records.
+      const isNetWorth = def.id === 'net-worth'
+      const collecting =
+        !isNetWorth &&
+        (await readClaimedMilestoneIds(pg, auth.uid, def.id)).has(milestoneId)
       const verifiedMilestones =
-        def.id === 'net-worth'
+        isNetWorth || collecting
           ? undefined
           : milestonesForValue(await getStatValue(def, auth.uid))
 
@@ -117,9 +131,22 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           throw new APIError(403, 'You are banned from claiming trophies')
         }
 
-        const toClaim =
-          verifiedMilestones ??
-          milestonesForValue(await readNetWorthAndRecordPeak(tx, auth.uid))
+        let toClaim = verifiedMilestones
+        if (collecting) {
+          // Only what is claimed, read again under the lock: never a lower
+          // milestone that isn't, which would need the stat checked.
+          const claimed = await readClaimedMilestoneIds(tx, auth.uid, def.id)
+          if (!claimed.has(milestoneId)) {
+            throw new APIError(
+              409,
+              `${milestone.name} is no longer claimed. Reload and claim it again.`
+            )
+          }
+          toClaim = getClaimedMilestonesUpTo(def, milestone, claimed)
+        }
+        toClaim ??= milestonesForValue(
+          await readNetWorthAndRecordPeak(tx, auth.uid)
+        )
 
         // One row per milestone. A repeated or concurrent claim inserts
         // nothing the second time, and a claim can never be lowered.
@@ -135,8 +162,12 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
           [auth.uid, def.id, toClaim.map((m) => m.id)]
         )
 
-        // Bots can claim, but get no prizes.
-        if (locked.is_bot) return { inserted, paid: NO_TROPHY_PRIZES_PAID }
+        // Bots can claim, but get no prizes. Nor do the accounts banned from
+        // trading before user_bans existed, which have no ban row to stop
+        // them above.
+        if (locked.is_bot || isLegacyBannedTrader(auth.uid)) {
+          return { inserted, paid: NO_TROPHY_PRIZES_PAID }
+        }
 
         const { effectiveTier, standing } = await getAccountPrizeStanding(
           tx,
@@ -146,10 +177,12 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         // A milestone that would pay this account nothing is left out: it
         // stays unpaid rather than used up, so claiming again (directly, or
         // via a higher milestone) pays it if the account's standing changes.
-        const prizes = getMilestonePrizesFor(def, toClaim, {
-          isStarterAccount,
-          standing,
-        })
+        const prizes = await withoutRepeatedPushBonus(
+          tx,
+          auth.uid,
+          def,
+          getMilestonePrizesFor(def, toClaim, { isStarterAccount, standing })
+        )
         if (!prizes.length) return { inserted, paid: NO_TROPHY_PRIZES_PAID }
 
         // Mana and freezes are paid here. Membership days are only marked
@@ -199,6 +232,52 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
       }
     }
   )
+
+async function readClaimedMilestoneIds(
+  pg: SupabaseDirectClient,
+  userId: string,
+  trophyId: string
+) {
+  const rows = await pg.manyOrNone<{ milestone_id: string }>(
+    `select milestone_id from user_trophy_milestones
+     where user_id = $1 and trophy_id = $2`,
+    [userId, trophyId]
+  )
+  return new Set(rows.map((r) => r.milestone_id))
+}
+
+// Stay in the Loop replaces the push notification bonus older accounts were
+// paid. An account that has that bonus is paid no mana for the milestone, at
+// any time: the bonus txn is never deleted. The rest of the prize still pays.
+async function withoutRepeatedPushBonus(
+  tx: SupabaseTransaction,
+  userId: string,
+  def: TrophyDefinition,
+  prizes: TrophyMilestonePrize[]
+) {
+  const isPushPrize = (p: TrophyMilestonePrize) =>
+    def.id === PUSH_BONUS_MILESTONE.trophyId &&
+    p.milestone.id === PUSH_BONUS_MILESTONE.milestoneId &&
+    p.prize.mana > 0
+  if (!prizes.some(isPushPrize)) return prizes
+  const bonus = await tx.oneOrNone(
+    `select 1 from txns
+     where category = 'PUSH_NOTIFICATION_BONUS' and to_id = $1 limit 1`,
+    [userId]
+  )
+  if (!bonus) return prizes
+  return prizes
+    .map((p) =>
+      isPushPrize(p)
+        ? {
+            ...p,
+            base: { ...p.base, mana: 0 },
+            prize: { ...p.prize, mana: 0 },
+          }
+        : p
+    )
+    .filter((p) => !isEmptyPrizeTotal(p.prize))
+}
 
 // What became of the membership days this claim paid, in ladder order. The
 // payout has committed, so a failed read reports them as still on their way.
