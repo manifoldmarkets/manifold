@@ -1,6 +1,6 @@
 # Trophies
 
-The 11 main trophies have 105 milestones. The ten-step Spectrum runs from green through teal, blue, indigo, purple, pink, crimson, orange and gold to prismatic. Net Worth has nine steps and skips teal. Legacy Charity keeps six colours (green, blue, purple, crimson, gold and prismatic). The three Getting Started ladders have nine additional milestones.
+The 12 main trophies have 106 milestones. The ten-step Spectrum runs from green through teal, blue, indigo, purple, pink, crimson, orange and gold to prismatic. Net Worth has nine steps and skips teal. Legacy Charity keeps six colours (green, blue, purple, crimson, gold and prismatic). Close Call has one step. The 11 Getting Started trophies have 23 additional milestones.
 
 `common/src/trophies.ts` defines thresholds, titles, claim eligibility and pin rules. Claiming records the selected milestone and all lower ones in `user_trophy_milestones`. The records last. Each eligible reward pays once. Retired IDs are ignored. Keep IDs stable after launch.
 
@@ -9,6 +9,8 @@ The 11 main trophies have 105 milestones. The ten-step Spectrum runs from green 
 A drop lowers the displayed Net Worth tier. A higher previous tier appears as history. Below Minnow, a pinned badge shows the best tier in grey with a **Best** label. Claims still count towards the showcase slots. Other claimed milestone badges last, including Prediction Streak, which measures the longest-ever streak.
 
 **Account Age** uses UTC calendar anniversaries at signup, 1, 3, 6, 12 and 18 months, then 2, 3, 4 and 5 years. The live stat expresses completed months plus the elapsed fraction of the current month in years. A January 31 signup reaches one month on the last day of February at its signup time.
+
+**Close Call** has one milestone: a streak freeze saved your streak. The nightly `reset-betting-streaks` job adds one to `users.data.streakFreezesUsed` in the same update that uses the freeze, so saves from before that job's deploy don't count. The trophy has no nightly title.
 
 **Profitable Markets** runs from Lucky (10), Steady (25), Savvy (50), Shrewd (100), Tactician (250), Sage (400), Seer (500) and Sharpe (750) to Clairvoyant (1,000) and Oracle (2,000). Talent Scout requires 25 qualifying referrals.
 
@@ -65,7 +67,27 @@ values
 
 ## Onboarding and rewards
 
-The three Getting Started ladders count market-days, distinct markets and distinct days among an account's first 500 bets. Each qualifying market-day needs at least M10 in non-API mana buys. Eligible accounts can collect the existing starter rewards and M25 for Newcomer, subject to the account's reward multiplier. The eligibility cutoff is 1 November 2026 on dev and disabled on prod. Everyone can claim Newcomer.
+The Getting Started trophies are for new accounts only. `getStarterStats` counts their stats live, on profile views and claims.
+
+| Trophy           | Milestones                                                                  | Stat                                                                                                         |
+| ---------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| First Trades     | First Trade 1, Hat Trick 3, High Five 5, Getting Going 10, In the Groove 25 | Market-days whose buys add up to M10 or more                                                                 |
+| Markets Explored | Curious 3, Explorer 10, Globetrotter 25, Cartographer 50                    | Distinct markets among those market-days                                                                     |
+| Days Active      | Back Again 2, Three Days 3, Five Days 5, Full Week 7, Ten Days 10           | Distinct Pacific days among them                                                                             |
+| Wins             | Called It 1, Hot Hand 3                                                     | Resolved mana markets with a profit: the Profitable Markets rule, less markets the account created           |
+| Topics           | Pick Your Topics 3                                                          | Topics followed                                                                                              |
+| First Sale       | First Sale 1                                                                | Market-days whose sells add up to M10 or more                                                                |
+| Limit Order      | Limit Order 1                                                               | Limit orders of M10 or more, filled or not. Slippage-protected buys (silent orders) don't count              |
+| Stay in the Loop | Stay in the Loop 1                                                          | A push token on the account, or the old push notification bonus                                              |
+| First Question   | First Question 1                                                            | Public mana markets the account created with at least 5 traders, excluding polls and bounties                |
+| Bring a Friend   | Bring a Friend 1                                                            | People who signed up with the account's referral. The person rules for likers and qualifying referrals apply |
+| Member           | Member 1                                                                    | A `MEMBERSHIP_PAYMENT` from the account. Free membership days pay nothing, so they don't count               |
+
+The bet stats (trades, markets, days, sales and limit orders) read the account's first 500 bets and orders, not via the API and in mana markets. Arbitrage legs and redemptions don't use up the 500, but the read stops after 3,000 rows in all. Activity after either limit doesn't count, so a first sale or limit order placed later earns nothing. The other counts stop at their top milestone: Wins shows at most 3.
+
+Accounts with these trophies no longer get the M1,000 push notification bonus from `set-push-token`. Stay in the Loop replaces it. Other accounts still do.
+
+Eligible accounts can collect the existing starter rewards and M25 for Newcomer, subject to the account's reward multiplier. The eligibility cutoff is 1 November 2026 on dev and disabled on prod. Everyone can claim Newcomer.
 
 `claim-trophy` records payment in `user_trophy_rewards` in the same transaction as the payout. Admin unclaims preserve this record. Navigation and the Trophies tab share claim counts and unlock notifications. Missing badge art falls back to the milestone emoji. Rank prizes are separate work.
 
