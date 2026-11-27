@@ -47,7 +47,11 @@ export type EsportsStageSignal = {
   teamCount?: number
   /** Series per round label, as sent. Unlabelled series are not counted. */
   labelCounts?: Record<string, number>
-  /** Sent values that disagreed between captures; the latest capture won. */
+  /**
+   * Sent values that disagreed between captures. The latest capture wins; when
+   * the latest captures tie and disagree, the value is left unset and the
+   * stage is shown as a list.
+   */
   problems?: string[]
 }
 
@@ -131,9 +135,10 @@ export type SwissRecord = {
   /** Results in the order played. Counted only from trusted finals. */
   results: ('W' | 'L')[]
   /**
-   * Only from evidence: 'through' when the team plays in a later stage of the
-   * same tournament or meets the provider's promotion count, 'out' when the
-   * stage is done and neither holds. Otherwise null.
+   * Only from evidence. 'through' when the team plays in a stage of the same
+   * event that starts after this stage's last series. 'out' only when the
+   * stage is done, the provider sent a promotion count, and exactly that many
+   * teams are through. Otherwise null: never from a fixed win threshold.
    */
   status: 'through' | 'out' | null
 }
