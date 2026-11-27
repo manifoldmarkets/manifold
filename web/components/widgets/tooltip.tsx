@@ -6,7 +6,9 @@ import {
   Placement,
   safePolygon,
   shift,
+  useDismiss,
   useFloating,
+  useFocus,
   useHover,
   useInteractions,
   useRole,
@@ -26,6 +28,7 @@ type TooltipProps = {
   tooltipClassName?: string
   placement?: Placement
   noTap?: boolean
+  showOnFocus?: boolean
   noFade?: boolean
   hasSafePolygon?: boolean
   suppressHydrationWarning?: boolean
@@ -39,6 +42,7 @@ export function Tooltip({
   tooltipClassName,
   placement = 'top',
   noTap,
+  showOnFocus = false,
   noFade,
   hasSafePolygon,
   suppressHydrationWarning,
@@ -83,6 +87,8 @@ export function Tooltip({
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
   const { getReferenceProps, getFloatingProps } = useInteractions([
+    useFocus(context, { enabled: showOnFocus }),
+    useDismiss(context, { enabled: showOnFocus, outsidePress: false }),
     useHover(context, {
       mouseOnly: noTap,
       handleClose: hasSafePolygon ? safePolygon({ buffer: -0.5 }) : null,

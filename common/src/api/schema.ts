@@ -57,6 +57,8 @@ import {
   type StarterStats,
   type TrophyClaim,
   type TrophyMilestoneRef,
+  type TrophyRank,
+  type TrophyRankPeak,
 } from 'common/trophies'
 import { type LinkPreview } from 'common/link-preview'
 import { LiquidityProvision } from 'common/liquidity-provision'
@@ -3265,6 +3267,15 @@ export const API = (_apiTypeCheck = {
     cache: LIGHT_CACHE_STRATEGY,
     returns: {} as {
       userId: string
+      netWorth: number
+      peakNetWorth: number
+      likedComments: number
+      marketsCreatedWithTraders: number
+      referredTraders: number
+      resolvedProfitableMarkets: number
+      seasonsSilverOrHigher: number
+      seasonsGoldOrHigher: number
+      leagueLevel: number
       creatorTraders: number
       totalReferrals: number
       totalReferredProfitMana: number
@@ -3300,6 +3311,10 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: {} as {
+      ranks: TrophyRank[]
+      rankPeaks: TrophyRankPeak[]
+      ranksComputedTime: number | null
+      storedPeakNetWorth: number | null
       claims: TrophyClaim[]
       // null: never set, so the profile shows the best trophies by default.
       // []: the user removed every pin.

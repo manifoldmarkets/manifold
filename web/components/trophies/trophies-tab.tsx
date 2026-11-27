@@ -13,17 +13,18 @@ import {
   TROPHY_DEFINITIONS,
   TrophyCategory,
   TrophyDefinition,
-  TrophyStats,
   computeAllTrophyProgress,
   countClaimedMilestones,
   countEarnedMilestones,
   countUnclaimedReachedMilestones,
   getClaimedMilestoneIds,
   getHighestClaimedMilestone,
+  getNetWorthStatus,
   getMilestone,
   getTrophyDefinition,
   getTotalPossibleMilestones,
   getTrophyDefinitionsFor,
+  getTrophyDisplayStats,
   getTrophyPinId,
 } from 'common/trophies'
 import {
@@ -44,6 +45,7 @@ import { useUserAchievements } from 'web/hooks/use-user-achievements'
 import {
   addTrophyClaims,
   addTrophyRewards,
+  refreshUserTrophies,
   replaceTrophyClaims,
   useUserTrophies,
 } from 'web/hooks/use-user-trophies'
@@ -76,11 +78,11 @@ export function TrophiesTab(props: {
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
   const [dialog, setDialog] = useState<TrophyDialog | null>(null)
 
-  const openExplainer = (trophyId?: string) => {
+  // After a first claim. The tab's "How trophies work" link opens the same
+  // explainer with no trophy to highlight afterwards.
+  const openExplainer = (trophyId: string) => {
     setDialog({ step: 'explainer', trophyId })
-    track('trophy explainer shown', {
-      source: trophyId ? 'first claim' : 'tab',
-    })
+    track('trophy explainer shown', { source: 'first claim' })
   }
   const pinTrophy = (trophyId: string) => {
     setDialog(null)
@@ -102,6 +104,7 @@ export function TrophiesTab(props: {
       )
       addTrophyClaims(userId, claims)
       addTrophyRewards(userId, rewarded)
+      if (trophyId === 'net-worth') void refreshUserTrophies(userId)
       const first =
         trophies.claims.length === 0 &&
         newlyClaimed.length > 0 &&
@@ -135,6 +138,7 @@ export function TrophiesTab(props: {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e))
     } finally {
+      if (trophyId === 'net-worth') retryAchievements()
       setClaimingId(null)
     }
   }
@@ -213,12 +217,12 @@ export function TrophiesTab(props: {
     )
   }
 
-  const { claims, starter } = trophies
+  const { claims, starter, ranks, rankPeaks, ranksComputedTime } = trophies
   // "Getting started" trophies, and their live counts, are for new accounts.
   const earnableDefs = getTrophyDefinitionsFor(!!starter)
-  const stats: TrophyStats = { ...achievements, ...(starter ?? {}) }
+  const stats = getTrophyDisplayStats(achievements, trophies)
+  const netWorth = getNetWorthStatus(stats, claims)
   const progressList = computeAllTrophyProgress(stats, earnableDefs)
-  // Reached or claimed: a claim stays even if the stat drops back.
   const reached = countEarnedMilestones(stats, claims, earnableDefs)
   const total = getTotalPossibleMilestones(earnableDefs)
   const claimedCount = countClaimedMilestones(claims)
@@ -231,10 +235,18 @@ export function TrophiesTab(props: {
   const claimedIdsByTrophy = new Map(
     TROPHY_DEFINITIONS.map((d) => [d.id, getClaimedMilestoneIds(claims, d.id)])
   )
-  // Other people's profiles show only trophies they have claimed.
+  // Nightly titles and peaks are public, even when the trophy has no claims.
   const visibleDefs = isOwnProfile
     ? earnableDefs
-    : TROPHY_DEFINITIONS.filter((d) => claimedIdsByTrophy.get(d.id)?.size)
+    : TROPHY_DEFINITIONS.filter(
+        (d) =>
+          claimedIdsByTrophy.get(d.id)?.size ||
+          (d.id === 'net-worth' &&
+            (netWorth.current || netWorth.previousBest)) ||
+          (d.ranked &&
+            (ranks.some((r) => r.trophyId === d.id) ||
+              rankPeaks.some((p) => p.trophyId === d.id)))
+      )
 
   const byCategory = new Map<TrophyCategory, TrophyDefinition[]>(
     CATEGORY_ORDER.map((c) => [c, []])
@@ -274,8 +286,12 @@ export function TrophiesTab(props: {
             Earn trophies by trading, creating markets and being active. Claim
             them to pin them to your profile.{' '}
             <button
+              type="button"
               className="text-primary-600 hover:underline"
-              onClick={() => openExplainer()}
+              onClick={() => {
+                setDialog({ step: 'explainer' })
+                track('trophy explainer shown', { source: 'tab' })
+              }}
             >
               How trophies work
             </button>
@@ -288,7 +304,7 @@ export function TrophiesTab(props: {
       {isOwnProfile && (
         <ShowcaseSlotTracker
           claimedCount={claimedCount}
-          reachedCount={reached}
+          reachedCount={claimedCount + unclaimedCount}
         />
       )}
 
@@ -303,6 +319,9 @@ export function TrophiesTab(props: {
             </div>
             <TrophyGrid
               progressList={progressList}
+              previousBestNetWorth={netWorth.previousBest}
+              ranks={ranks}
+              rankPeaks={rankPeaks}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
               rewarded={trophies.rewarded}
@@ -321,6 +340,8 @@ export function TrophiesTab(props: {
       })}
 
       <AchievementsSection data={achievements} />
+
+      <AboutTrophies ranksComputedTime={ranksComputedTime} />
 
       {isAdmin && isOwnProfile && claimedTrophyIds.length > 0 && (
         <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
@@ -344,6 +365,35 @@ export function TrophiesTab(props: {
   )
 }
 
+// A quiet note at the foot of the tab; the "How trophies work" link opens the
+// explainer modal instead. Copy is Tod's, verbatim (11/28).
+function AboutTrophies(props: { ranksComputedTime: number | null }) {
+  const { ranksComputedTime } = props
+  return (
+    <Col className="border-ink-200 text-ink-600 gap-2 border-t pt-4 text-sm">
+      <span className="text-ink-900 font-semibold">About trophies</span>
+      <p>
+        Trophies are awarded for your achievements on Manifold. Most trophies
+        are kept forever, but some may be lost due to changing tiers or
+        thresholds. The net worth trophy is an exception, and is lost as your
+        net worth falls.
+      </p>
+      <p>
+        Pin your favourite trophies to your profile. As you claim more tiers,
+        more pin slots become available. Some trophies have ranked tiers,
+        meaning those ranked in the top 25 will get a Super title, top 5 get a
+        Mega title, and #1 gets a crown.
+      </p>
+      <p>
+        Calculations for ranks occur nightly
+        {ranksComputedTime != null &&
+          `, last updated ${new Date(ranksComputedTime).toLocaleString()}`}
+        .
+      </p>
+    </Col>
+  )
+}
+
 function StatsRefreshNotice(props: { onRetry: () => void }) {
   return (
     <Row className="text-ink-500 items-center gap-2 text-sm">
@@ -360,7 +410,7 @@ function StatsRefreshNotice(props: { onRetry: () => void }) {
 
 function ShowcaseSlotTracker(props: {
   claimedCount: number
-  reachedCount: number // earned, whether claimed or not
+  reachedCount: number // permanent claims plus currently claimable milestones
 }) {
   const { claimedCount, reachedCount } = props
   const maxClaims = SHOWCASE_SLOT_UNLOCKS[SHOWCASE_SLOT_UNLOCKS.length - 1]

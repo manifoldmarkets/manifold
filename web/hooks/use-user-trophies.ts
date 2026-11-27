@@ -111,10 +111,13 @@ function loadUserTrophies(userId: string, forPinRecovery = false) {
   const startPinsSaves = entry.pinsSaves
   const loading = api('get-user-trophies', { userId })
     .then((response) => {
-      // An API from before starter rewards (stage 1, e.g. mid-deploy) sends
-      // neither field.
+      // Older API instances can omit fields during deployment.
       const fresh: UserTrophies = {
         ...response,
+        ranks: response.ranks ?? [],
+        rankPeaks: response.rankPeaks ?? [],
+        ranksComputedTime: response.ranksComputedTime ?? null,
+        storedPeakNetWorth: response.storedPeakNetWorth ?? null,
         starter: response.starter ?? null,
         rewarded: response.rewarded ?? [],
       }

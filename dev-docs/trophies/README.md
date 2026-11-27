@@ -1,77 +1,97 @@
 # Trophies
 
-Named milestones on a user's long-running stats, such as Goldfish → Shark → Whale for trading volume. A user claims a milestone once they reach it, keeps it forever, and can pin trophies to their profile.
+The 11 main trophies have 105 milestones. The ten-step Spectrum runs from green through teal, blue, indigo, purple, pink, crimson, orange and gold to prismatic. Net Worth has nine steps and skips teal. Legacy Charity keeps six colours (green, blue, purple, crimson, gold and prismatic). The three Getting Started ladders have nine additional milestones.
 
-The full product plan, including how trophies fit new-user onboarding and the reward amounts still to be decided, is the Notion page "New-user mana, bailouts and trophies: onboarding plan" in the Claude containment zone. This file describes the code.
+`common/src/trophies.ts` defines thresholds, titles, claim eligibility and pin rules. Claiming records the selected milestone and all lower ones in `user_trophy_milestones`. The records last. Each eligible reward pays once. Retired IDs are ignored. Keep IDs stable after launch.
 
-## How it works
+**Net Worth** shows the highest tier covered by the latest portfolio snapshot, starting at M2,500 for Minnow and ending at M500,000 for Whale. It adds mana balance and investment value from the same snapshot and rounds down to whole mana. Investment value already accounts for position loans. The live stat uses the latest available snapshot at any age and is zero before the first one. A claim checks that value inside its transaction, with no holding period. A fresh snapshot (at most 72 hours old) can also raise the stored peak, both at claim time and in the nightly job.
 
-| Piece                                                                          | Where                                                                                                                                |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Trophy and milestone definitions, progress, claim and pin rules (pure, shared) | `common/src/trophies.ts`, tests in `common/src/trophies.test.ts`                                                                     |
-| Stats a trophy measures                                                        | `get-user-achievements` (`backend/api/src/get-user-achievements.ts`), unchanged by trophies                                          |
-| Claims and pins                                                                | `get-user-trophies`, `claim-trophy`, `set-showcase-pins`, admin `unclaim-trophy` in `backend/api/src/`                               |
-| Tables                                                                         | `user_trophy_milestones`, `user_showcase` (migrations `2026112210_trophy_milestones.sql`, `2026112211_trophy_milestone_rewards.sql`) |
-| UI                                                                             | `web/components/trophies/`: Trophies tab on the profile, profile showcase under the name                                             |
+A drop lowers the displayed Net Worth tier. A higher previous tier appears as history. Below Minnow, a pinned badge shows the best tier in grey with a **Best** label. Claims still count towards the showcase slots. Other claimed milestone badges last, including Prediction Streak, which measures the longest-ever streak.
 
-Data flow:
+**Account Age** uses UTC calendar anniversaries at signup, 1, 3, 6, 12 and 18 months, then 2, 3, 4 and 5 years. The live stat expresses completed months plus the elapsed fraction of the current month in years. A January 31 signup reaches one month on the last day of February at its signup time.
 
-1. Navigation, the Trophies tab and the profile showcase share the user's stats (`get-user-achievements`) and their claims, starter stats, rewards and pins (`get-user-trophies`) through `web/hooks/use-user-achievements.ts` and `web/hooks/use-user-trophies.ts`. On mount and focus, navigation reuses reads for five minutes. The profile uses a 30-second freshness window and can refresh claims on mount. A successful claim updates the shared store immediately.
-2. The web works out progress from the stats with the shared helpers, so it shows the same answer the server will give.
-3. Claiming a milestone calls `claim-trophy`. The server reloads the stats, checks the milestone is reached, and inserts one row per milestone, the requested one and every lower one. The primary key `(user_id, trophy_id, milestone_id)` makes repeats and concurrent claims harmless, and a claim can never be lowered. Only the admin `unclaim-trophy` deletes claim rows, after which a milestone can be claimed anew: anything paid for a claim must be recorded in a table that is never deleted (stage 2's `user_trophy_rewards`), not keyed to the claim row.
-4. Pinning calls `set-showcase-pins`. The server checks each pin is a claimed trophy (`trophy-<id>`) or the league badge (`league`), and that the user has unlocked that many slots: one at the start, two at 25 claimed milestones, three at 50.
+**Profitable Markets** runs from Lucky (10), Steady (25), Savvy (50), Shrewd (100), Tactician (250), Sage (400), Seer (500) and Sharpe (750) to Clairvoyant (1,000) and Oracle (2,000). Talent Scout requires 25 qualifying referrals.
 
-Both write endpoints run through `onlyUsersWhoCanPerformAction`: claiming is blocked by a posting or trading ban, pinning by a posting ban. Both also take the profile's `userId` and refuse it unless it is the signed-in user, so a session that switched accounts after the page loaded can't change the wrong account.
+Owners can browse all milestones. Visitors see claimed trophies, current Net Worth and nightly titles. Showcase pins are stored in `user_showcase`. Slots open at 0, 10 and 25 claimed milestones. A pin can show a claimed trophy or the current league badge.
 
-Visitors see only the milestones the owner has claimed; the owner sees everything they have reached.
+## Nightly titles
 
-## Onboarding trophies and rewards
+The main scheduler runs `update-trophy-ranks` at 4:10 AM Los Angeles time after the achievement refreshes. A score must reach the trophy's prismatic threshold to qualify.
 
-The onboarding milestones are Newcomer (the first Account Age milestone) and every milestone of First Trades, Markets Explored and Days Active. Each has a base mana reward (`rewardMana`). Newcomer's base reward is M25.
+| Trophy             | Ranked value                                                                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Net Worth          | Latest qualifying portfolio snapshot for an active trader                                                                    |
+| Prediction Streak  | Longest of the paid bonus streak, longest ended streak and current streak, from the 3:40 AM transactions view                |
+| Profitable Markets | Resolved, undeleted, non-cancelled mana markets where the user's finite summary profit exceeds M0.00000001                   |
+| Markets Created    | Public, undeleted mana markets you created with at least 10 traders, excluding polls and bounties                            |
+| Creator Popularity | All-time creator traders, counted once per market                                                                            |
+| Liked Comments     | Distinct visible market or legacy post comments by the holder that another eligible person liked                             |
+| Leagues            | Silver, Gold, Platinum and Diamond score 1–4. Each Masters season adds one to 4. GOAT requires 8 Masters seasons (level 12). |
 
-- **Eligibility:** accounts created at or after `STARTER_TROPHIES_START_TIME` in `common/src/trophies.ts` get the three starter trophies and onboarding rewards. The cutoff is 1 Nov 2026 on dev. On prod it is `null`, disabling both. Everyone can still claim Newcomer. Older accounts receive no mana or reward row, including when claiming Newcomer through a higher Account Age milestone.
-- **What counts:** market-days among the account's first 500 bets. A market-day is a market and Pacific day in which the account's buys, not via the API and in a mana market, add up to M10 or more, so a purchase split across answers counts and selling and buying the same market again that day doesn't. A limit order counts on the day it was placed, once its fills reach M10. `get-user-trophies` counts these live (`getStarterStats` in `backend/api/src/helpers/trophies.ts`), and only for those accounts.
-- **Paying once:** `claim-trophy` locks the user row and, in one transaction, records the claims, inserts one row per paying milestone into `user_trophy_rewards`, and pays only for the rows it inserted (`TROPHY_REWARD` txn from the bank). Nothing deletes reward rows, so a repeat or concurrent claim, an admin unclaim followed by a new claim, or a deploy that briefly runs older code alongside cannot pay a milestone twice. A failed payout rolls the claim back. Deletion and bans are checked again under the lock; bot accounts are never paid.
-- **Payouts** use the printed amount for free, Plus, Pro and Premium accounts. Someone who claims before buying a membership receives the same amount as someone who waits. Without an active membership, flagged accounts receive zero and bonus-blocked accounts receive 20% of the printed reward. Membership takes precedence over a flag. A zero payout leaves the reward unpaid. If the account's standing improves, the card shows "Collect" and calls `claim-trophy` again. The "Pays" chip shows the viewer's own amount and hides when it would be zero or has been paid.
-- **Known limits:** automation through a signed-in browser session isn't marked as API, and the same M10 can be bought and sold across different markets and days. Each account can collect at most M875 at the placeholder amounts, including Newcomer. A ban committed in the milliseconds between the claim's ban check and its payout doesn't stop that payout. An account that places 500 bets before its seventh active day can't reach Full Week, because only the first 500 bets are counted.
-- **Tests:** `backend/shared/src/claim-trophy.test.ts` runs the real handlers and payout against an in-memory PostgreSQL built from the migrations.
+For Net Worth, an active trader has placed a trade or order in the last 90 days, or has an open order that can still fill. The 90-day window runs from placement and includes perpetuals orders and maker orders that have since filled. To qualify through an older open order, the holder needs at least M1 in spendable mana and trading must be enabled for the market's token. The order must have remaining quantity, be uncancelled and unexpired, and be on a market that is still trading with an unresolved answer if it specifies one.
 
-For every signed-in human account, the desktop and mobile profile links and the Trophies tab title count all reached, unclaimed milestones the account can earn. Starter accounts see their known onboarding count while achievements load. Counts above 99 display as `99+`. Screen readers announce the exact count.
+Ranked accounts must be people. Bots, deleted accounts, accounts in `BANNED_TRADING_USER_IDS` and users with active bans other than mod alerts are ineligible. The migration seeds `trophy_rank_exclusions` with the production IDs of `@Manifund`, `@Manifold`, `@ManifoldSports`, `@ManifoldPolitics`, `@MNX` and `@predyx_markets`. The same person rules apply to likers and qualifying referrals independently of that exclusions table.
 
-The first read with both stats and claims establishes a silent baseline, including earlier claims. Subsequent unlocks appear in a visible tab, with the highest new milestone per trophy, up to three individual toasts and one summary linking to the tab. The browser remembers all announced milestones across tabs, including those covered by the summary. After a bet, navigation refreshes achievements and, for starter accounts, starter stats. Bets within 30 seconds of a refresh share one trailing refresh.
+Markets Created uses `contracts.unique_bettor_count`, which includes bot traders. The streak rank reflects the last successful `mv_ach_txns_achievements` refresh.
 
-On the owner's tab, onboarding claims appear first, followed by a next goal once those claims are collected. A paid claim or the first claim opens a celebration. The first celebration leads to the trophy explainer, which also opens from the tab header.
+Equal scores share a rank. First place holds #1, ranks 2–5 hold Mega and ranks 6–25 hold Super. The prefix uses the prismatic milestone's name, such as Mega Whale. Held titles appear automatically above the pins. Falling out removes the title and the trophy card can show the best tier previously held.
 
-To switch on for prod: set the amounts, set `STARTER_TROPHIES_START_TIME.PROD` to the launch time, then deploy the API and web. To switch off: set it back to `null` and deploy the API (claims already made stay paid).
+| New table                | Contents                                                                    |
+| ------------------------ | --------------------------------------------------------------------------- |
+| `trophy_rank_exclusions` | Private holder exclusions and their reasons                                 |
+| `user_net_worth_peaks`   | Private positive high recorded by a claim or nightly run, and its timestamp |
+| `trophy_ranks`           | Public current holders, values, ranks and a single publication timestamp    |
+| `trophy_rank_state`      | Public timestamp of the latest publication, including a run with no holders |
+| `user_trophy_rank_peaks` | Public best numeric rank, first ranked time and time of the best rank       |
 
-Ids are stored in the database. Never change a trophy's or milestone's `id`; change its `name` instead. Claims of an id that no longer exists are ignored.
+A session advisory lock serializes nightly publishers. Each run samples net worth and computes all ranks in one read-only, repeatable-read transaction. A read-committed transaction publishes the sampled highs, ranks, best ranks and publication time together. A higher peak recorded by a concurrent claim wins. `get-user-trophies` reads ranks, peaks, claims, starter progress and pins in one snapshot.
 
-## Stages
+To exclude another holder, insert their user ID and a reason. Dev needs its own rows for any desired exclusions.
 
-Each stage is its own PR.
+```sql
+insert into
+  trophy_rank_exclusions (user_id, reason)
+values
+  ('<user ID>', '<reason>');
+```
 
-| Stage | What                                                                                                                                                                                  | State                    |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| 1     | Trophies v1, cosmetic: per-milestone claims, server-checked claims and pins, emoji badges                                                                                             | Built                    |
-| 1b    | Live trade counts and volume: `user_stats`, kept by triggers on `contract_bets` (the `ach_trades` refresh job stopped in Sep 2025). Trades Placed reads a frozen count until it ships | Separate PR off main     |
-| 2     | "Getting started" milestones for new accounts that pay mana once each, off on prod                                                                                                    | Built                    |
-| 3     | Claim counts and unlock notifications for all signed-in human accounts, Newcomer reward, next trophy and claim celebration                                                            | Built                    |
-| 4     | Days of Plus membership as rewards, never auto-renewing                                                                                                                               | Needs a product decision |
-| 5     | Badge art: one image per milestone, made by GPT image generation, 256 px WebP in `web/public/trophy-badges/`, emoji fallback (`art-guide.md`)                                         | Built                    |
+## Known limitations
 
-Ideas from the March plan kept for later: streak freezes as rewards (they already exist as a shop item, so a reward adds one to the user's count), leaderboard and subscription trophies, gifted titles that only other users can buy you, and animations that scale with tier.
+- A portfolio snapshot older than 72 hours drops out of Net Worth ranks. In the production review, 2 of 63 accounts at M500,000 or more had stale snapshots. Neither had traded in the preceding 90 days.
+- The Net Worth peak shown includes today's fresh snapshot. It becomes permanent when you claim a Net Worth milestone or the nightly run records it. A dip before then can lower the displayed peak.
+- The portfolio writer reads positions before it reads cash. A sale between those reads can put both the sold position and its proceeds in one snapshot, inflating Net Worth. During the manual review of the top 25, check each holder's sales against their snapshot time.
+- The writer updates its in-memory portfolio before the history insert succeeds. If the insert fails and the portfolio stays the same on the next run, the writer can advance `last_calculated` on the old row. Stale values can then pass the 72-hour freshness check for peak recording and ranks.
+- Two legacy multiple-choice markets in production have `isResolved` set in their data and a null contract `resolution`. Profitable Markets skips both, so profitable holders receive no credit for either market.
 
-## Design principles
+## Onboarding and rewards
 
-From the original plan, still true:
+The three Getting Started ladders count market-days, distinct markets and distinct days among an account's first 500 bets. Each qualifying market-day needs at least M10 in non-API mana buys. Eligible accounts can collect the existing starter rewards and M25 for Newcomer, subject to the account's reward multiplier. The eligibility cutoff is 1 November 2026 on dev and disabled on prod. Everyone can claim Newcomer.
 
-- Work backwards from the pin: every trophy should be something people want to show off.
-- Each milestone has its own name (Minnow, Shark, Whale), not a colour grade.
-- Claim once, keep forever, even if the stat later drops.
-- Adding a trophy is adding an entry to `TROPHY_DEFINITIONS`.
+`claim-trophy` records payment in `user_trophy_rewards` in the same transaction as the payout. Admin unclaims preserve this record. Navigation and the Trophies tab share claim counts and unlock notifications. Missing badge art falls back to the milestone emoji. Rank prizes are separate work.
 
 ## Deploy
 
-**Before the Trophies tab goes live:** the live trade counts (`user_stats`, branch `feat/live-user-stats`) must be deployed and their backfill complete. Until then Trades Placed reads `ach_trades`, frozen since Sep 2025, so anyone who joined since shows 0 trades.
+The existing trophy migrations, live trade counters and completed trade backfill are prerequisites. Run `backend/supabase/migrations/2026112501_user_reactions_comment_likes_idx.sql` (a concurrent index, outside a transaction), then `2026112502_trophy_ladders_v2.sql`. Deploy the API and main scheduler, then web. Held ranks first populate on a successful nightly run.
 
-Then the migration on dev, then prod, then the API, then web. The old design's `user_trophy_claims` table exists on dev only and is no longer read; drop it there by hand if wanted.
+After the concurrent build, verify the index before continuing.
+
+```sql
+select indisvalid from pg_index where indexrelid = 'user_reactions_comment_likes_by_owner'::regclass;
+```
+
+If the result is false, run `drop index concurrently user_reactions_comment_likes_by_owner;` outside a transaction, rerun `2026112501` and verify again.
+
+### Dev only
+
+Run this once on dev immediately after deploying v2. Some lifetime milestone IDs now have higher thresholds. Removing their old claims prevents a 200-day Phoenix from becoming a 1,000-day Phoenix. Production has no pre-v2 claims.
+
+```sql
+delete from user_trophy_milestones
+where
+  trophy_id not in (
+    'starter-trades',
+    'starter-markets',
+    'starter-days'
+  )
+  and (trophy_id, milestone_id) <> ('account-age', 'newcomer');
+```

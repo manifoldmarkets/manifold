@@ -15,12 +15,15 @@ import {
   TrophyMilestone,
   TrophyStats,
   TrophyTier,
+  TrophyRankTier,
+  getHeldTrophyTitles,
   countClaimedMilestones,
+  getNetWorthStatus,
   formatTrophyValue,
   getHighestClaimedMilestone,
   getMaxShowcasePins,
+  getTrophyDisplayStats,
   getTrophyPinId,
-  getTrophyStatValue,
 } from 'common/trophies'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -30,6 +33,8 @@ import {
   takeShowcasePickerRequest,
 } from 'web/components/trophies/open-showcase-picker'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
+import { TROPHY_TIER_STYLES } from './trophy-styles'
+import { formatRankValue, TrophyRankChip, TrophyRankRing } from './trophy-rank'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
   useCurrentSeason,
@@ -71,6 +76,9 @@ export function ProfileShowcase(props: {
   const [request, setRequest] = useState<ShowcasePickerRequest | null>(null)
 
   const claims = trophies?.claims ?? []
+  const stats = getTrophyDisplayStats(achievements, trophies)
+  const netWorth = getNetWorthStatus(stats, claims)
+  const held = getHeldTrophyTitles(trophies?.ranks ?? [])
   const maxPins = getMaxShowcasePins(countClaimedMilestones(claims))
 
   const savedPins = trophies?.pins
@@ -82,10 +90,7 @@ export function ProfileShowcase(props: {
     ? [LEAGUE_PLACEHOLDER_BADGE]
     : []
   const badges = sortBadges([
-    ...getTrophyBadges(
-      achievements && { ...achievements, ...(trophies?.starter ?? {}) },
-      claims
-    ),
+    ...getTrophyBadges(stats, claims, held, netWorth),
     ...leagueBadges,
   ])
   const badgeById = new Map(badges.map((b) => [b.id, b]))
@@ -147,10 +152,29 @@ export function ProfileShowcase(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [request, trophies])
 
-  if (!trophies || (badges.length === 0 && !isOwnProfile)) return null
+  if (!trophies || (badges.length === 0 && !held.length && !isOwnProfile))
+    return null
 
   return (
     <>
+      {held.length > 0 && (
+        <Row className="mb-1.5 flex-wrap items-center gap-1.5">
+          {held.map(({ definition, tier, rank, value }) => (
+            <TrophyRankChip
+              key={definition.id}
+              definition={definition}
+              tier={tier}
+              rank={rank}
+              value={value}
+              netWorthStatus={
+                definition.id === 'net-worth' && stats.netWorth !== undefined
+                  ? netWorth
+                  : undefined
+              }
+            />
+          ))}
+        </Row>
+      )}
       <Row className="flex-wrap items-center gap-1.5">
         {pinnedBadges.map((b) => (
           <ShowcaseBadge
@@ -232,38 +256,21 @@ type ShowcaseBadgeData = {
   // A trophy's art, shown instead of the emoji.
   art?: { trophyId: string; milestone: TrophyMilestone }
   tier: BadgeTier
+  rankTier?: TrophyRankTier
 }
 
 const BADGE_TIER_ORDER: BadgeTier[] = [...TROPHY_TIER_ORDER, 'gray']
 
-const BADGE_STYLES: Record<BadgeTier, { gradient: string; text: string }> = {
+const BADGE_STYLES = {
+  ...TROPHY_TIER_STYLES,
   gray: {
     gradient: 'from-zinc-400 to-zinc-500',
-    text: 'text-zinc-600 dark:text-zinc-400',
-  },
-  green: {
-    gradient: 'from-emerald-400 to-emerald-600',
-    text: 'text-emerald-600 dark:text-emerald-400',
-  },
-  blue: {
-    gradient: 'from-sky-400 to-blue-600',
-    text: 'text-blue-600 dark:text-blue-400',
-  },
-  purple: {
-    gradient: 'from-violet-400 to-purple-600',
-    text: 'text-violet-600 dark:text-violet-400',
-  },
-  crimson: {
-    gradient: 'from-red-500 to-rose-700',
-    text: 'text-red-600 dark:text-red-400',
-  },
-  gold: {
-    gradient: 'from-amber-400 to-yellow-600',
-    text: 'text-amber-600 dark:text-amber-400',
+    textColor: 'text-zinc-600 dark:text-zinc-400',
   },
   prismatic: {
-    gradient: 'from-pink-400 via-cyan-400 to-yellow-400',
-    text: 'bg-gradient-to-r from-pink-500 via-cyan-500 to-yellow-500 bg-clip-text text-transparent',
+    ...TROPHY_TIER_STYLES.prismatic,
+    textColor:
+      'bg-gradient-to-r from-pink-500 via-cyan-500 to-yellow-500 bg-clip-text text-transparent',
   },
 }
 
@@ -275,37 +282,65 @@ const sortBadges = (badges: ShowcaseBadgeData[]) =>
         BADGE_TIER_ORDER.indexOf(a.tier) - BADGE_TIER_ORDER.indexOf(b.tier)
     )
 
-// One badge per trophy: its highest claimed milestone. Without stats (still
-// loading, or failed) a badge shows no value rather than a wrong one.
+// A claim unlocks pinning. Net Worth then follows the latest snapshot.
 function getTrophyBadges(
-  stats: TrophyStats | undefined,
-  claims: TrophyClaim[]
+  stats: TrophyStats,
+  claims: TrophyClaim[],
+  held: ReturnType<typeof getHeldTrophyTitles>,
+  netWorth: ReturnType<typeof getNetWorthStatus>
 ): ShowcaseBadgeData[] {
   return TROPHY_DEFINITIONS.flatMap((def) => {
-    const milestone = getHighestClaimedMilestone(def, claims)
+    const claimed = getHighestClaimedMilestone(def, claims)
+    if (!claimed) return []
+    const status = def.id === 'net-worth' ? netWorth : undefined
+    const milestone = status ? status.current ?? status.previousBest : claimed
     if (!milestone) return []
-    const stat = stats ? getTrophyStatValue(def, stats) : undefined
-    return [getTrophyShowcaseBadge(def, milestone, stat)]
+    const stat = stats[def.statKey]
+    return [
+      getTrophyShowcaseBadge(
+        def,
+        milestone,
+        Number.isFinite(stat) ? stat : undefined,
+        held.find((h) => h.definition.id === def.id),
+        status
+      ),
+    ]
   })
 }
 
 export function getTrophyShowcaseBadge(
   def: TrophyDefinition,
   milestone: TrophyMilestone,
-  stat: number | undefined
+  stat: number | undefined,
+  held?: ReturnType<typeof getHeldTrophyTitles>[number],
+  status?: ReturnType<typeof getNetWorthStatus>
 ): ShowcaseBadgeData {
   const value = stat === undefined ? undefined : formatTrophyValue(def, stat)
+  const historic = status && !status.current
+  const rank = status && status.current?.tier !== 'prismatic' ? undefined : held
+  const history = status?.previousBest
+    ? `Best: ${status.previousBest.name}`
+    : undefined
+  const scoreValue = held && !status ? held.value : stat
+  const score =
+    scoreValue === undefined ? undefined : formatRankValue(def, scoreValue)
   return {
     id: getTrophyPinId(def.id),
-    label: milestone.name,
-    stat: value,
-    detail:
-      value === undefined
-        ? def.label
-        : `${def.label}: ${value}${def.formatPrefix ? '' : ` ${def.unit}`}`,
+    label: historic ? `Best: ${milestone.name}` : rank?.title ?? milestone.name,
+    rankTier: rank?.tier,
+    stat: historic ? score : [score, history].filter(Boolean).join(' · '),
+    detail: held
+      ? `${def.label} · #${held.rank}`
+      : value === undefined
+      ? def.label
+      : `${def.label}: ${value}${
+          def.formatPrefix || def.unit === 'league' || def.unit === 'years'
+            ? ''
+            : ` ${def.unit}`
+        }`,
     emoji: milestone.emoji,
     art: { trophyId: def.id, milestone },
-    tier: milestone.tier,
+    tier: historic ? 'gray' : milestone.tier,
   }
 }
 
@@ -370,7 +405,13 @@ export function ShowcaseBadge(props: {
   const isLarge = size === 'lg'
 
   const content = (
-    <div className={clsx('rounded-[5px] bg-gradient-to-br', style.gradient)}>
+    <div
+      className={clsx(
+        'rounded-[5px] bg-gradient-to-br',
+        style.gradient,
+        badge.art && badge.tier === 'gray' && 'opacity-70 grayscale'
+      )}
+    >
       <Row
         className={clsx(
           'items-center gap-1.5 rounded-[4px]',
@@ -382,12 +423,15 @@ export function ShowcaseBadge(props: {
         }}
       >
         {badge.art ? (
-          <TrophyBadgeImage
-            trophyId={badge.art.trophyId}
-            milestone={badge.art.milestone}
-            className={isLarge ? 'h-7 w-7' : 'h-5 w-5'}
-            emojiClassName={isLarge ? 'text-lg' : 'text-sm'}
-          />
+          <TrophyRankRing tier={badge.rankTier} small>
+            <TrophyBadgeImage
+              trophyId={badge.art.trophyId}
+              milestone={badge.art.milestone}
+              rankTier={badge.rankTier}
+              className={isLarge ? 'h-7 w-7' : 'h-5 w-5'}
+              emojiClassName={isLarge ? 'text-lg' : 'text-sm'}
+            />
+          </TrophyRankRing>
         ) : (
           <span className={isLarge ? 'text-lg' : 'text-sm'} aria-hidden>
             {badge.emoji}
@@ -397,7 +441,7 @@ export function ShowcaseBadge(props: {
           className={clsx(
             'font-semibold',
             isLarge ? 'text-sm' : 'text-xs',
-            style.text
+            style.textColor
           )}
         >
           {badge.label}

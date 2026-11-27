@@ -10,6 +10,7 @@ import {
 import { resolveEffectiveTier, roundTierBonus } from 'common/supporter-config'
 import {
   TrophyDefinition,
+  formatTrophyValue,
   getMilestone,
   getMilestonesToClaim,
   getRewardManaTotal,
@@ -23,7 +24,15 @@ import { getBanTypesForAction, isUserBanned } from 'common/ban-utils'
 import { TrophyRewardTxn } from 'common/txn'
 import { User, UserBan } from 'common/user'
 import { getActiveSupporterEntitlements } from 'shared/supabase/entitlements'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import {
+  TROPHY_FRESH_PORTFOLIO_FILTER,
+  TROPHY_NET_WORTH_PEAK_CONFLICT,
+  TROPHY_SNAPSHOT_NET_WORTH,
+} from 'shared/supabase/trophy-eligibility'
 import { UserUpdate, broadcastUserUpdates } from 'shared/supabase/users'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { loadUserAchievements } from './get-user-achievements'
@@ -51,23 +60,27 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         throw new APIError(403, 'These trophies are for new accounts')
       }
 
-      // A stat can only grow, apart from rare cases such as a deleted
-      // comment, and a claim is kept either way.
-      const value = await getStatValue(def, auth.uid)
-      const toClaim = getMilestonesToClaim(def, milestoneId, value)
-      if (!toClaim) {
+      const milestonesForValue = (value: number) => {
+        const toClaim = getMilestonesToClaim(def, milestoneId, value)
+        if (toClaim) return toClaim
+        const needed =
+          def.unit === 'league' || def.unit === 'years'
+            ? formatTrophyValue(def, milestone.threshold)
+            : `${milestone.threshold.toLocaleString()} ${def.unit}`
         throw new APIError(
           403,
-          `You haven't reached ${
-            milestone.name
-          } yet: it needs ${milestone.threshold.toLocaleString()} ${def.unit}`
+          `You haven't reached ${milestone.name} yet: it needs ${needed}`
         )
       }
+      // Net Worth records the snapshot used for the claim inside the transaction.
+      const verifiedMilestones =
+        def.id === 'net-worth'
+          ? undefined
+          : milestonesForValue(await getStatValue(def, auth.uid))
 
       const userUpdates: UserUpdate[] = []
       const { inserted, rewardAmount } = await pg.tx(async (tx) => {
-        // Taken first, as quest rewards do, and the only lock waited for, so
-        // this cannot deadlock with a bet or another payout.
+        // Lock the user first, as quest rewards do.
         const locked = await tx.one<{
           bonus_eligibility: string | null
           user_deleted: boolean
@@ -96,6 +109,10 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
         ) {
           throw new APIError(403, 'You are banned from claiming trophies')
         }
+
+        const toClaim =
+          verifiedMilestones ??
+          milestonesForValue(await readNetWorthAndRecordPeak(tx, auth.uid))
 
         // One row per milestone. A repeated or concurrent claim inserts
         // nothing the second time, and a claim can never be lowered.
@@ -192,6 +209,30 @@ export const claimTrophy: APIHandler<'claim-trophy'> =
       }
     }
   )
+
+// Read the same latest value as get-user-achievements. Only fresh snapshots
+// can raise the permanent peak. Both operations see the same statement snapshot.
+async function readNetWorthAndRecordPeak(
+  tx: SupabaseTransaction,
+  userId: string
+) {
+  const snapshot = await tx.oneOrNone<{ value: number }>(
+    `with snapshot as (
+       select uphl.user_id, ${TROPHY_SNAPSHOT_NET_WORTH} as value,
+         ${TROPHY_FRESH_PORTFOLIO_FILTER} as is_fresh
+       from user_portfolio_history_latest uphl where uphl.user_id = $1
+     ), record_peak as (
+       insert into user_net_worth_peaks (user_id, peak_net_worth, peak_time)
+       select user_id, value, now() from snapshot
+       where is_fresh and value > 0 and value < 'Infinity'::numeric
+       ${TROPHY_NET_WORTH_PEAK_CONFLICT}
+     )
+     select value from snapshot where value > '-Infinity'::numeric and value < 'Infinity'::numeric`,
+    [userId]
+  )
+  const value = Number(snapshot?.value ?? 0)
+  return Number.isFinite(value) ? value : 0
+}
 
 // Same numbers the profile shows: achievements for most trophies, the live
 // starter count for "Getting started".

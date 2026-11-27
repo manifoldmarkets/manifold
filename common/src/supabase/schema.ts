@@ -3780,6 +3780,79 @@ export type Database = {
         }
         Relationships: []
       }
+      trophy_rank_exclusions: {
+        Row: {
+          created_time: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'trophy_rank_exclusions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      trophy_rank_state: {
+        Row: {
+          computed_time: string
+          id: boolean
+        }
+        Insert: {
+          computed_time: string
+          id?: boolean
+        }
+        Update: {
+          computed_time?: string
+          id?: boolean
+        }
+        Relationships: []
+      }
+      trophy_ranks: {
+        Row: {
+          computed_time: string
+          rank: number
+          trophy_id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          computed_time: string
+          rank: number
+          trophy_id: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          computed_time?: string
+          rank?: number
+          trophy_id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'trophy_ranks_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       txns: {
         Row: {
           amount: number
@@ -4147,6 +4220,32 @@ export type Database = {
           }
         ]
       }
+      user_net_worth_peaks: {
+        Row: {
+          peak_net_worth: number
+          peak_time: string
+          user_id: string
+        }
+        Insert: {
+          peak_net_worth: number
+          peak_time: string
+          user_id: string
+        }
+        Update: {
+          peak_net_worth?: number
+          peak_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_net_worth_peaks_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       user_notifications: {
         Row: {
           data: Json
@@ -4413,6 +4512,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_trophy_rank_peaks: {
+        Row: {
+          best_rank: number
+          best_rank_time: string
+          first_ranked_time: string
+          trophy_id: string
+          user_id: string
+        }
+        Insert: {
+          best_rank: number
+          best_rank_time: string
+          first_ranked_time: string
+          trophy_id: string
+          user_id: string
+        }
+        Update: {
+          best_rank?: number
+          best_rank_time?: string
+          first_ranked_time?: string
+          trophy_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_trophy_rank_peaks_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       user_view_events: {
         Row: {

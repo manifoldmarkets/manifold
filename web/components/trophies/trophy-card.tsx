@@ -12,6 +12,15 @@ import {
   type TrophyDefinition,
   type TrophyMilestone,
   type TrophyMilestoneRef,
+  type TrophyRank,
+  type TrophyRankPeak,
+  type TrophyRankTier,
+  MAX_TROPHY_RANK,
+  formatLeagueRemaining,
+  getPeakRankTier,
+  getTopMilestone,
+  getTrophyRankTier,
+  getTrophyRankTitle,
   formatTrophyValue,
   getAccountAnniversaryTime,
   getTrophyBadgeImagePath,
@@ -22,6 +31,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { TrophyBadgeImage } from 'web/components/trophies/trophy-badge-image'
+import { TrophyRankChip, TrophyRankRing, formatRankValue } from './trophy-rank'
 import { TrophyRewardChip, formatTrophyReward } from './trophy-reward-chip'
 import { TROPHY_TIER_STYLES } from 'web/components/trophies/trophy-styles'
 import { useIsVisible } from 'web/hooks/use-is-visible'
@@ -29,6 +39,9 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 export function TrophyGrid(props: {
   progressList: ComputedTrophyProgress[]
   definitions: TrophyDefinition[]
+  ranks: TrophyRank[]
+  rankPeaks: TrophyRankPeak[]
+  previousBestNetWorth?: TrophyMilestone | null
   claimedIdsByTrophy: Map<string, Set<string>>
   rewarded: TrophyMilestoneRef[]
   isOwnProfile?: boolean
@@ -64,9 +77,16 @@ export function TrophyGrid(props: {
         if (!progress) return null
         return (
           <TrophyCard
-            key={def.id}
+            key={
+              def.id === 'net-worth'
+                ? `net-worth/${progress.highestMilestone?.id ?? 'none'}`
+                : def.id
+            }
+            previousBestNetWorth={props.previousBestNetWorth}
             definition={def}
             progress={progress}
+            rank={props.ranks.find((r) => r.trophyId === def.id)}
+            peakTier={getPeakRankTier(props.rankPeaks, def.id)}
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
             rewarded={rewarded}
             isOwnProfile={isOwnProfile}
@@ -87,6 +107,9 @@ const EMPTY_SET: Set<string> = new Set()
 
 export function TrophyCard(props: {
   definition: TrophyDefinition
+  rank?: TrophyRank
+  peakTier: TrophyRankTier | null
+  previousBestNetWorth?: TrophyMilestone | null
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
   rewarded: TrophyMilestoneRef[]
@@ -100,6 +123,8 @@ export function TrophyCard(props: {
 }) {
   const {
     definition,
+    rank,
+    peakTier,
     progress,
     claimedIds,
     rewarded,
@@ -115,27 +140,30 @@ export function TrophyCard(props: {
   const claiming = claimingId === definition.id
   const { currentValue, highestMilestone } = progress
 
-  // The owner sees every milestone and which they have reached; a visitor
-  // sees only the ones the owner claimed.
+  const isNetWorth = definition.id === 'net-worth'
+  const best = isNetWorth ? props.previousBestNetWorth : null
+  // Visitors see the current Net Worth tier even before it is claimed.
   const shown = isOwnProfile
     ? milestones
+    : isNetWorth
+    ? [highestMilestone ?? best].filter((m): m is TrophyMilestone => !!m)
     : milestones.filter((m) => claimedIds.has(m.id))
-  // A claim stays earned even if the stat drops back below it.
   const isEarned = (m: TrophyMilestone) =>
-    claimedIds.has(m.id) ||
-    (!!isOwnProfile && isMilestoneReached(m, currentValue))
-  const startIdx = Math.max(
-    highestMilestone
-      ? shown.findIndex((m) => m.id === highestMilestone.id)
-      : -1,
-    findLastIndex(shown, (m) => claimedIds.has(m.id))
-  )
+    isNetWorth
+      ? isMilestoneReached(m, currentValue)
+      : claimedIds.has(m.id) ||
+        (!!isOwnProfile && isMilestoneReached(m, currentValue))
+  const startIdx = findLastIndex(shown, isEarned)
   // Start on the highest milestone earned, or the first one.
   const [selectedIdx, setViewingIdx] = useState(Math.max(startIdx, 0))
   // Claims can be removed (admin unclaim) while the card is showing.
   const viewingIdx = Math.min(selectedIdx, shown.length - 1)
 
-  const viewing = shown[viewingIdx]
+  const heldTier = getTrophyRankTier(rank?.rank)
+  // A visitor can see a nightly title even before the owner claims a milestone.
+  const rankOnly = !shown.length && (heldTier || peakTier)
+  const viewing =
+    shown[viewingIdx] ?? (rankOnly ? getTopMilestone(definition) : undefined)
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const { ref } = useIsVisible(
     () => setHasBeenVisible(true),
@@ -170,26 +198,64 @@ export function TrophyCard(props: {
   const canGoLeft = viewingIdx > 0
   const canGoRight = viewingIdx < shown.length - 1
   const progressPct =
-    viewing.threshold > 0 ? Math.min(currentValue / viewing.threshold, 1) : 1
+    viewing.threshold > 0
+      ? Math.max(0, Math.min(currentValue / viewing.threshold, 1))
+      : 1
+
+  const badge = (
+    <TrophyRankRing tier={heldTier}>
+      <span
+        className={clsx(
+          'flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br transition-all',
+          style.gradient,
+          earned || rankOnly ? style.glow : 'opacity-40 grayscale'
+        )}
+      >
+        <TrophyBadgeImage
+          trophyId={definition.id}
+          milestone={viewing}
+          rankTier={
+            viewing.tier === 'prismatic' && (!isNetWorth || earned)
+              ? heldTier
+              : null
+          }
+          className="h-24 w-24"
+          emojiClassName="text-5xl"
+        />
+      </span>
+    </TrophyRankRing>
+  )
+  const rankLabel =
+    heldTier && rank ? (
+      <TrophyRankChip
+        hideScore
+        definition={definition}
+        tier={heldTier}
+        rank={rank.rank}
+        value={rank.value}
+      />
+    ) : peakTier ? (
+      <span className="text-ink-500 text-xs">
+        Peak: {getTrophyRankTitle(definition, peakTier)}
+      </span>
+    ) : null
+  if (rankOnly)
+    return (
+      <Col className="bg-canvas-0 items-center gap-2 rounded-2xl px-3 pb-3 pt-5">
+        {badge}
+        {rankLabel}
+        <span className="text-ink-500 text-center text-xs">
+          {definition.label}
+          {best && ` · Best: ${best.name}`}
+        </span>
+      </Col>
+    )
 
   return (
     <Col ref={ref} className="bg-canvas-0 relative overflow-hidden rounded-2xl">
       <div className="relative">
         <div className="flex items-center justify-center px-6 pb-2 pt-5">
-          <div
-            className={clsx(
-              'flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br transition-all',
-              style.gradient,
-              earned ? style.glow : 'opacity-40 grayscale'
-            )}
-          >
-            <TrophyBadgeImage
-              trophyId={definition.id}
-              milestone={viewing}
-              className="h-24 w-24"
-              emojiClassName="text-5xl"
-            />
-          </div>
+          {badge}
         </div>
 
         <button
@@ -221,6 +287,7 @@ export function TrophyCard(props: {
       </div>
 
       <Col className="items-center gap-1.5 px-3 pb-3 pt-1">
+        {rankLabel}
         <span
           className={clsx(
             'text-base font-bold',
@@ -234,6 +301,7 @@ export function TrophyCard(props: {
           {definition.label}
           {' · '}
           {formatStat(definition, currentValue, accountCreatedTime)}
+          {best && ` · Best: ${best.name}`}
         </span>
 
         {!isClaimed && <TrophyRewardChip amount={rewardAmount} />}
@@ -244,6 +312,14 @@ export function TrophyCard(props: {
           viewingIndex={viewingIdx}
           onSelect={setViewingIdx}
         />
+
+        {definition.ranked && isOwnProfile && !heldTier && !peakTier && (
+          <span className="text-ink-500 text-center text-[11px]">
+            Top {MAX_TROPHY_RANK} with at least{' '}
+            {formatRankValue(definition, getTopMilestone(definition).threshold)}
+            : {getTrophyRankTitle(definition, 'super')}
+          </span>
+        )}
 
         <div className="bg-ink-200 h-1 w-full overflow-hidden rounded-full">
           <div
@@ -273,7 +349,10 @@ export function TrophyCard(props: {
           </button>
         ) : isClaimed ? (
           // An unpaid reward comes first, even right after a claim.
-          isOwnProfile && unpaidReward && onClaim ? (
+          isOwnProfile &&
+          unpaidReward &&
+          (!isNetWorth || isReached) &&
+          onClaim ? (
             <button
               className={clsx(
                 'mt-1 w-full rounded-lg bg-gradient-to-r py-1.5 text-xs font-semibold transition-all',
@@ -317,11 +396,16 @@ export function TrophyCard(props: {
           <span className="text-ink-400 text-center text-[11px]">
             {formatRemaining(
               definition,
-              viewing.threshold - currentValue,
-              accountCreatedTime &&
-                getAccountAnniversaryTime(accountCreatedTime, viewing.threshold)
-            )}{' '}
-            to go
+              currentValue,
+              viewing.threshold,
+              definition.unit === 'years' && accountCreatedTime
+                ? getAccountAnniversaryTime(
+                    accountCreatedTime,
+                    viewing.threshold
+                  )
+                : undefined
+            )}
+            {definition.unit !== 'league' && ' to go'}
           </span>
         )}
       </Col>
@@ -379,17 +463,20 @@ function formatStat(
         : Math.floor(value * DAYS_PER_YEAR)
     )
   }
-  if (def.formatPrefix) return formatTrophyValue(def, value)
+  if (def.formatPrefix || def.unit === 'league')
+    return formatTrophyValue(def, value)
   return `${formatTrophyValue(def, value)} ${def.unit}`
 }
 
 // Days left until the anniversary when given, so the countdown is exact.
 function formatRemaining(
   def: TrophyDefinition,
-  remaining: number,
+  current: number,
+  target: number,
   anniversaryTime?: number
 ) {
-  const value = Math.max(remaining, 0)
+  if (def.unit === 'league') return formatLeagueRemaining(current, target)
+  const value = Math.max(target - current, 0)
   if (def.unit === 'years') {
     return days(
       anniversaryTime

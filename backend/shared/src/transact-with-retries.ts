@@ -44,7 +44,7 @@ export const runTransactionWithRetries = async <T>(
   return transactWithRetries(pg, maxAttempts, callback, options)
 }
 
-async function transactWithRetries<T>(
+export async function transactWithRetries<T>(
   pg: SupabaseDirectClient,
   maxAttempts = 5,
   fn: (t: SupabaseTransaction) => Promise<T>,
