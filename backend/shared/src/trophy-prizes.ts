@@ -11,10 +11,19 @@
 //   that fails stays pending for the next caller: the next claim, or the
 //   scheduler's settle-trophy-prizes sweep. The grant is keyed by the row, so
 //   no number of retries grants twice.
+//
+// Free days count towards the 30-day holding cap, and what doesn't fit is
+// lost. Behind free days that are already running, the room under a full cap
+// is only the time that has passed since it filled. A grant of those seconds
+// would still be banked, started and announced like any other, so under an
+// hour of room counts as none and no grant is made (MIN_GRANT_ROOM_MS).
 
 import { groupBy, sortBy, sumBy } from 'lodash'
 
-import { MembershipGrantResult } from 'common/membership-grants'
+import {
+  MembershipGrantResult,
+  capGrantDuration,
+} from 'common/membership-grants'
 import {
   EffectiveTier,
   SUPPORTER_TIERS,
@@ -31,10 +40,11 @@ import {
 import { TrophyMembershipPrize, TrophyPrizeTotal } from 'common/trophy-prizes'
 import { TrophyRewardTxn } from 'common/txn'
 import { User } from 'common/user'
-import { DAY_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS } from 'common/util/time'
 import { grantMembershipDays } from './membership-grants'
 import { log } from './monitoring/log'
 import { getActiveSupporterEntitlements } from './supabase/entitlements'
+import { heldGrants } from './supabase/membership-grants'
 import {
   SupabaseDirectClientTimeout,
   SupabaseTransaction,
@@ -420,40 +430,90 @@ export async function settleTrophyMembershipPrizes(
   return { settled, failed }
 }
 
-async function settleRow(pg: SupabaseDirectClientTimeout, row: PendingRow) {
+// Less room than this under the holding cap counts as none.
+export const MIN_GRANT_ROOM_MS = HOUR_MS
+
+async function settleRow(
+  pg: SupabaseDirectClientTimeout,
+  row: PendingRow
+): Promise<GrantedOutcome> {
   const { user_id, trophy_id, milestone_id, membership_tier } = row
   const days = row.membership_days
   if (!TIER_ORDER.includes(membership_tier) || !(days > 0))
     throw new Error('Invalid pending trophy membership prize')
   const rankTier = getRankPrizeTierFromRewardId(milestone_id)
+  const durationMs = days * DAY_MS
+  const source = rankTier ? 'trophy-rank' : 'trophy'
+  const sourceId = `${trophy_id}/${rankTier ?? milestone_id}`
+  const key = [user_id, trophy_id, milestone_id]
+
+  // An earlier attempt may have made the grant and died before recording it.
+  // Then the grant below returns it, whatever room is left now.
+  const granted = await pg.oneOrNone(
+    `select 1 from membership_grants
+     where user_id = $1 and source = $2 and source_id = $3`,
+    [user_id, source, sourceId]
+  )
+  if (!granted && !(await hasRoomUnderCap(pg, user_id, durationMs))) {
+    // No grant is made, so this row is the receipt. If a grant for it has
+    // appeared since the check above, its maker records the outcome instead.
+    await pg.none(
+      `update user_trophy_rewards
+       set membership_status = 'granted', membership_outcome = 'capped',
+         membership_granted_ms = 0, membership_settled_time = now()
+       where user_id = $1 and trophy_id = $2 and milestone_id = $3
+         and membership_status = 'pending'
+         and not exists (
+           select 1 from membership_grants g
+           where g.user_id = $1 and g.source = $4 and g.source_id = $5)`,
+      [...key, source, sourceId]
+    )
+    return 'capped'
+  }
+
   const result = await grantMembershipDays(pg, {
     userId: user_id,
     tier: membership_tier,
-    durationMs: days * DAY_MS,
-    source: rankTier ? 'trophy-rank' : 'trophy',
-    sourceId: `${trophy_id}/${rankTier ?? milestone_id}`,
+    durationMs,
+    source,
+    sourceId,
     note: `Trophy prize ${trophy_id}/${milestone_id}.`,
   })
   const outcome = getGrantedOutcome(result)
   // Only a pending row is marked, so whichever caller grants first records
-  // the outcome and a slower duplicate changes nothing.
+  // the outcome and a slower duplicate changes nothing. A grant that was made
+  // also corrects a row marked capped without one.
   await pg.none(
     `update user_trophy_rewards
      set membership_status = 'granted', membership_outcome = $4,
        membership_granted_ms = $5, membership_grant_id = $6::bigint,
        membership_settled_time = now()
      where user_id = $1 and trophy_id = $2 and milestone_id = $3
-       and membership_status = 'pending'`,
+       and (membership_status = 'pending'
+         or (membership_outcome = 'capped' and membership_grant_id is null))`,
     [
-      user_id,
-      trophy_id,
-      milestone_id,
+      ...key,
       outcome,
       outcome === 'capped' ? 0 : result.grant.durationMs,
       result.grant.id,
     ]
   )
   return outcome
+}
+
+async function hasRoomUnderCap(
+  pg: SupabaseDirectClientTimeout,
+  userId: string,
+  durationMs: number
+) {
+  const held = await heldGrants(pg, userId)
+  const { now } = await pg.one<{ now: number }>(
+    `select (extract(epoch from now()) * 1000)::float8 as now`
+  )
+  const nowMs = Math.trunc(Number(now))
+  if (!Number.isFinite(nowMs)) throw new Error('Invalid database time')
+  const room = capGrantDuration(durationMs, held, nowMs).durationMs
+  return room >= Math.min(durationMs, MIN_GRANT_ROOM_MS)
 }
 
 // A retry finds the grant an earlier attempt made ('duplicate'). Report what

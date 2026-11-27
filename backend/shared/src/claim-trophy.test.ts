@@ -1883,21 +1883,83 @@ describe('trophy prizes', () => {
       })
     })
 
-    it('report the holding cap when the account already holds 30 free days', async () => {
+    it.each([
+      ['banked behind a paid Premium membership', true],
+      ['already running', false],
+    ])(
+      'report the holding cap when the account holds 30 free days %s',
+      async (_, paidPremium) => {
+        await addOldUser('old')
+        if (paidPremium) {
+          await rows(
+            `insert into user_entitlements (user_id, entitlement_id, expires_time)
+             values ('old', 'supporter-premium', now() + interval '60 days')`
+          )
+        }
+        await membershipGrants.grantMembershipDays(pg(), {
+          userId: 'old',
+          tier: 'basic',
+          durationMs: 30 * DAY,
+          source: 'admin',
+          sourceId: 'gift',
+        })
+        const grant = jest.spyOn(membershipGrants, 'grantMembershipDays')
+        const result = await enthusiast('old').finally(() =>
+          grant.mockRestore()
+        )
+        // Mana and freezes are not affected by the cap.
+        expect(result.prize).toEqual({
+          mana: 50,
+          freezes: 3,
+          membership: [
+            { tier: 'basic', days: 1, grantedDays: 0, outcome: 'capped' },
+            { tier: 'basic', days: 2, grantedDays: 0, outcome: 'capped' },
+          ],
+        })
+        expect(await prizeRows('old', 'total-trades')).toMatchObject({
+          regular: { status: 'granted', outcome: 'capped', granted_ms: 0 },
+          enthusiast: { status: 'granted', outcome: 'capped', granted_ms: 0 },
+        })
+        // No grant is made: not even one of the moments that have passed
+        // since running days filled the cap. The rows are the receipts.
+        expect(grant).not.toHaveBeenCalled()
+        expect(await grantRows('old')).toEqual([
+          expect.objectContaining({
+            source: 'admin',
+            status: paidPremium ? 'banked' : 'active',
+          }),
+        ])
+        // Capped is final: more room later doesn't grant these again.
+        await rows(`delete from membership_grants where user_id = 'old'`)
+        await rows(`delete from user_entitlements where user_id = 'old'`)
+        await ageRewards('old')
+        await settleTrophyPrizes()
+        expect((await claim('old', 'account-age', 'newcomer')).prize).toEqual({
+          mana: 0,
+          freezes: 1,
+          membership: [],
+        })
+        expect(await grantRows('old')).toEqual([])
+      }
+    )
+
+    it('record the grant when the cap was reached by the grant itself', async () => {
       await addOldUser('old')
-      // Thirty banked Plus days, waiting behind a paid Premium membership.
-      await rows(
-        `insert into user_entitlements (user_id, entitlement_id, expires_time)
-         values ('old', 'supporter-premium', now() + interval '60 days')`
-      )
-      await membershipGrants.grantMembershipDays(pg(), {
-        userId: 'old',
-        tier: 'basic',
-        durationMs: 30 * DAY,
-        source: 'admin',
-        sourceId: 'gift',
-      })
-      const result = await enthusiast('old')
+      // As grantMembershipDays answers when the room goes between the check
+      // and the grant: a used receipt of no length.
+      const real = membershipGrants.grantMembershipDays
+      const grant = jest
+        .spyOn(membershipGrants, 'grantMembershipDays')
+        .mockImplementation(async (db, input) => {
+          await rows(
+            `insert into membership_grants (user_id, tier, duration_ms, source, source_id, status, ended_time)
+             values ($1, $2, 0, $3, $4, 'used', now())`,
+            [input.userId, input.tier, input.source, input.sourceId]
+          )
+          const duplicate = await real(db, input)
+          return { ...duplicate, outcome: 'capped' }
+        })
+      const result = await enthusiast('old').finally(() => grant.mockRestore())
       // Mana and freezes are not affected by the cap.
       expect(result.prize).toEqual({
         mana: 50,
@@ -1912,8 +1974,7 @@ describe('trophy prizes', () => {
         enthusiast: { status: 'granted', outcome: 'capped', granted_ms: 0 },
       })
       // Kept as used receipts, so the same prize can't be granted later.
-      expect((await grantRows('old'))[0]).toMatchObject({ status: 'banked' })
-      expect((await grantRows('old')).slice(1)).toEqual([
+      expect(await grantRows('old')).toEqual([
         expect.objectContaining({ duration_ms: 0, status: 'used' }),
         expect.objectContaining({ duration_ms: 0, status: 'used' }),
       ])
@@ -2103,19 +2164,13 @@ describe('rank title prizes', () => {
     for (let i = 1; i <= 6; i++) await holder(`u${i}`, 1_000_000 - i * 1_000)
     await updateTrophyRanks()
 
-    // Mega's 30 Premium days go first and fill the 30-day holding cap.
-    // Super's Pro days get the moment of room the clock has opened since, or
-    // none at all.
-    const first = await prizeRows('u1', 'net-worth')
-    expect(first['rank:mega']).toEqual(mega)
-    expect(first['rank:super']).toMatchObject({
-      m_tier: 'plus',
-      days: 14,
-      status: 'granted',
+    // Mega's 30 Premium days go first and fill the 30-day holding cap, so
+    // Super's Pro days are recorded as capped and no grant is made for them.
+    expect(await prizeRows('u1', 'net-worth')).toEqual({
+      'rank:mega': mega,
+      'rank:super': { ...superPrize, outcome: 'capped', granted_ms: 0 },
     })
-    expect(['capped', 'banked']).toContain(first['rank:super'].outcome)
-    expect(first['rank:super'].granted_ms).toBeLessThan(60_000)
-    expect(await grantRows('u1')).toMatchObject([
+    expect(await grantRows('u1')).toEqual([
       {
         tier: 'premium',
         duration_ms: 30 * DAY,
@@ -2123,7 +2178,6 @@ describe('rank title prizes', () => {
         source_id: 'net-worth/mega',
         status: 'active',
       },
-      { tier: 'plus', source: 'trophy-rank', source_id: 'net-worth/super' },
     ])
     expect(Object.keys(await prizeRows('u5', 'net-worth')).sort()).toEqual([
       'rank:mega',
@@ -2157,9 +2211,10 @@ describe('rank title prizes', () => {
         `select count(*)::int as n from user_trophy_rewards where milestone_id like 'rank:%'`
       )
     ).toEqual([{ n: 11 }])
+    // One grant each: Mega for the top five, Super for sixth place.
     expect(
       await rows(`select count(*)::int as n from membership_grants`)
-    ).toEqual([{ n: 11 }])
+    ).toEqual([{ n: 6 }])
 
     // Sixth place climbs to first: Mega is new, Super is not paid again.
     await rows(
@@ -2186,7 +2241,7 @@ describe('rank title prizes', () => {
     )
     await updateTrophyRanks()
     expect(Object.keys(await prizeRows('u1', 'net-worth'))).toHaveLength(2)
-    expect(await grantRows('u1')).toHaveLength(2)
+    expect(await grantRows('u1')).toHaveLength(1)
   })
 
   it('leaves a flagged or bonus-blocked holder unpaid until its standing allows membership days', async () => {
