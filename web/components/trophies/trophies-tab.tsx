@@ -78,11 +78,10 @@ export function TrophiesTab(props: {
   const [justClaimed, setJustClaimed] = useState<string | null>(null)
   const [dialog, setDialog] = useState<TrophyDialog | null>(null)
 
-  const openExplainer = (trophyId?: string) => {
+  // After a first claim. The tab's own link scrolls to AboutTrophies.
+  const openExplainer = (trophyId: string) => {
     setDialog({ step: 'explainer', trophyId })
-    track('trophy explainer shown', {
-      source: trophyId ? 'first claim' : 'tab',
-    })
+    track('trophy explainer shown', { source: 'first claim' })
   }
   const pinTrophy = (trophyId: string) => {
     setDialog(null)
@@ -285,12 +284,13 @@ export function TrophiesTab(props: {
           <div className="text-ink-500 text-sm">
             Earn trophies by trading, creating markets and being active. Claim
             them to pin them to your profile.{' '}
-            <button
+            <a
+              href={`#${ABOUT_TROPHIES_ID}`}
               className="text-primary-600 hover:underline"
-              onClick={() => openExplainer()}
+              onClick={() => track('trophy explainer shown', { source: 'tab' })}
             >
               How trophies work
-            </button>
+            </a>
           </div>
         )}
       </Col>
@@ -318,7 +318,6 @@ export function TrophiesTab(props: {
               previousBestNetWorth={netWorth.previousBest}
               ranks={ranks}
               rankPeaks={rankPeaks}
-              ranksComputedTime={ranksComputedTime}
               definitions={defs}
               claimedIdsByTrophy={claimedIdsByTrophy}
               rewarded={trophies.rewarded}
@@ -338,6 +337,11 @@ export function TrophiesTab(props: {
 
       <AchievementsSection data={achievements} />
 
+      <AboutTrophies
+        showRewards={isOwnProfile && !!starter && rewardMultiplier > 0}
+        ranksComputedTime={ranksComputedTime}
+      />
+
       {isAdmin && isOwnProfile && claimedTrophyIds.length > 0 && (
         <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
           <span className="text-ink-500 font-mono text-xs">
@@ -356,6 +360,45 @@ export function TrophiesTab(props: {
           </Row>
         </Col>
       )}
+    </Col>
+  )
+}
+
+const ABOUT_TROPHIES_ID = 'about-trophies'
+
+// The one place the page explains trophies, in general terms.
+function AboutTrophies(props: {
+  showRewards: boolean
+  ranksComputedTime: number | null
+}) {
+  const { showRewards, ranksComputedTime } = props
+  return (
+    <Col
+      id={ABOUT_TROPHIES_ID}
+      className="border-ink-200 text-ink-600 scroll-mt-20 gap-2 border-t pt-4 text-sm"
+    >
+      <span className="text-ink-900 font-semibold">About trophies</span>
+      <p>
+        Trophies track what you do on Manifold: trading, creating markets,
+        commenting, inviting friends and sticking around. Each one has tiers
+        that get harder to reach.
+      </p>
+      <p>
+        When you reach a tier, claim it. Claimed tiers stay yours. Net Worth is
+        the exception: it shows where you stand now and keeps your best tier as
+        history.
+      </p>
+      {showRewards && <p>Some tiers pay mana the first time you claim them.</p>}
+      <p>
+        Pin your favourite trophies to your profile. More pin slots open up as
+        you claim more tiers.
+      </p>
+      <p>
+        Some trophies also rank everyone each night: the top 25 get a Super
+        title, the top 5 a Mega title, and #1 a crown.
+        {ranksComputedTime != null &&
+          ` Last updated ${new Date(ranksComputedTime).toLocaleString()}.`}
+      </p>
     </Col>
   )
 }

@@ -171,7 +171,6 @@ export function ProfileShowcase(props: {
                   ? netWorth
                   : undefined
               }
-              computedTime={trophies.ranksComputedTime}
             />
           ))}
         </Row>
@@ -331,7 +330,7 @@ export function getTrophyShowcaseBadge(
     rankTier: rank?.tier,
     stat: historic ? score : [score, history].filter(Boolean).join(' · '),
     detail: held
-      ? `${def.label} · #${held.rank}. ${def.rankNote}`
+      ? `${def.label} · #${held.rank}`
       : value === undefined
       ? def.label
       : `${def.label}: ${value}${

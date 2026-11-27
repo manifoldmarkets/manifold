@@ -8,7 +8,6 @@ import {
   getTrophyRankTitle,
   getNetWorthStatus,
 } from 'common/trophies'
-import { Tooltip } from 'web/components/widgets/tooltip'
 
 const rankRing = (tier: TrophyRankTier) =>
   tier === 'super'
@@ -19,22 +18,18 @@ export function formatRankValue(def: TrophyDefinition, value: number) {
   return (def.id === 'net-worth' ? 'M' : '') + formatTrophyValue(def, value)
 }
 
+// Everything the chip means is in its text; the trophies page explains ranks.
 export function TrophyRankChip(props: {
   definition: TrophyDefinition
   tier: TrophyRankTier
   rank: number
   value: number
-  computedTime: number | null
   hideScore?: boolean
   netWorthStatus?: ReturnType<typeof getNetWorthStatus>
 }) {
-  const { definition, tier, rank, value, computedTime, hideScore } = props
+  const { definition, tier, rank, value, hideScore } = props
   const title = getTrophyRankTitle(definition, tier)
   const score = formatRankValue(definition, value)
-  const updated =
-    computedTime == null
-      ? ''
-      : ` · Updated ${new Date(computedTime).toLocaleString()}`
   const status = props.netWorthStatus
   const currentLabel =
     status && status.current?.tier !== 'prismatic'
@@ -43,31 +38,26 @@ export function TrophyRankChip(props: {
   const bestLabel = status?.previousBest
     ? ` · Best: ${status.previousBest.name}`
     : ''
-  const description = `${title} · ${definition.label} · #${rank} · ${score}. ${definition.rankNote}${updated}${currentLabel}${bestLabel}`
   return (
-    <Tooltip text={description} showOnFocus>
-      <button
-        type="button"
-        aria-label={description}
-        className={clsx(
-          'bg-canvas-50 text-ink-800 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1',
-          hideScore && 'whitespace-nowrap',
-          rankRing(tier)
-        )}
-      >
-        {tier === 'crown' && (
-          <span aria-hidden className="mr-1">
-            👑
-          </span>
-        )}
-        {title}
-        {tier !== 'crown' && ` · #${rank}`}
-        {currentLabel}
-        {!hideScore &&
-          ` · ${status ? formatRankValue(definition, status.value) : score}`}
-        {bestLabel}
-      </button>
-    </Tooltip>
+    <span
+      className={clsx(
+        'bg-canvas-50 text-ink-800 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1',
+        hideScore && 'whitespace-nowrap',
+        rankRing(tier)
+      )}
+    >
+      {tier === 'crown' && (
+        <span aria-hidden className="mr-1">
+          👑
+        </span>
+      )}
+      {title}
+      {tier !== 'crown' && ` · #${rank}`}
+      {currentLabel}
+      {!hideScore &&
+        ` · ${status ? formatRankValue(definition, status.value) : score}`}
+      {bestLabel}
+    </span>
   )
 }
 

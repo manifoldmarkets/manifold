@@ -113,7 +113,7 @@ describe('trophy definitions', () => {
 })
 
 describe('nightly ranks', () => {
-  it('defines a rank note for exactly the seven ranked trophies', () => {
+  it('ranks exactly the seven ranked trophies', () => {
     expect(RANKED_TROPHY_DEFINITIONS.map((d) => d.id)).toEqual([
       'net-worth',
       'prediction-streak',
@@ -123,8 +123,6 @@ describe('nightly ranks', () => {
       'liked-comments',
       'leagues',
     ])
-    for (const def of RANKED_TROPHY_DEFINITIONS)
-      expect(def.rankNote?.trim()).toBeTruthy()
   })
 
   it.each([

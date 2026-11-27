@@ -142,7 +142,8 @@ export type TrophyDefinition = {
   unit: string
   formatPrefix?: string // e.g. "$", shown before the value instead of the unit
   milestones: TrophyMilestone[] // ascending thresholds
-} & ({ ranked: true; rankNote: string } | { ranked?: false; rankNote?: string })
+  ranked?: boolean // nightly top-25 ranks with Super, Mega and #1 titles
+}
 
 // Compact milestone constructor so each milestone fits on one line.
 const m = (
@@ -211,7 +212,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'netWorth',
     unit: 'mana',
     ranked: true,
-    rankNote: `Ranked nightly by current net worth from a snapshot at most ${NET_WORTH_SNAPSHOT_MAX_AGE_HOURS} hours old. An account qualifies if it has placed a trade or order in the last ${NET_WORTH_RANK_ACTIVE_DAYS} days, or has an open order that can still fill`,
     milestones: [
       m('minnow', 'Minnow', '🐟', 2_500, 'green'),
       m('pufferfish', 'Pufferfish', '🐡', 5_000, 'blue'),
@@ -254,7 +254,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'longestBettingStreak',
     unit: 'days',
     ranked: true,
-    rankNote: 'Ranked nightly by longest prediction streak',
     milestones: [
       m('kindling', 'Kindling', '🪵', 3, 'green'),
       m('spark', 'Spark', '✨', 7, 'teal'),
@@ -277,8 +276,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'resolvedProfitableMarkets',
     unit: 'markets',
     ranked: true,
-    rankNote:
-      'Ranked nightly by profitable resolved markets, excluding cancellations',
     milestones: [
       m('lucky', 'Lucky', '🍀', 10, 'green'),
       m('steady', 'Steady', '⚖', 25, 'teal'),
@@ -301,8 +298,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'marketsCreatedWithTraders',
     unit: 'markets',
     ranked: true,
-    rankNote:
-      'Ranked nightly by public mana markets created with at least 10 traders',
     milestones: [
       m('apprentice', 'Apprentice', '🧱', 1, 'green'),
       m('tinkerer', 'Tinkerer', '🔧', 2, 'teal'),
@@ -326,8 +321,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'creatorTraders',
     unit: 'traders',
     ranked: true,
-    rankNote:
-      'Ranked nightly by traders on your markets, counted once per market',
     milestones: [
       m('noticed', 'Noticed', '👀', 10, 'green'),
       m('discovered', 'Discovered', '🔍', 50, 'teal'),
@@ -349,7 +342,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'likedComments',
     unit: 'comments',
     ranked: true,
-    rankNote: 'Ranked nightly by distinct comments liked by other people',
     milestones: [
       m('well-said', 'Well Said', '💬', 1, 'green'),
       m('chatterbox', 'Chatterbox', '🗨', 3, 'teal'),
@@ -372,8 +364,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'leagueLevel',
     unit: 'league',
     ranked: true,
-    rankNote:
-      'Ranked nightly by best division from Silver up. Each Masters season adds one level above Diamond.',
     milestones: [
       m('silver-season', 'Silver Season', '🥈', 1, 'green'),
       m('gold-season', 'Gold Season', '🥇', 2, 'teal'),
@@ -395,7 +385,6 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'referredTraders',
     unit: 'referrals',
     ranked: false,
-    rankNote: 'Ranked nightly by invited people who made at least 10 trades',
     milestones: [
       m('networker', 'Networker', '🤝', 1, 'green'),
       m('plus-one', 'Plus One', '👥', 2, 'teal'),

@@ -41,7 +41,6 @@ export function TrophyGrid(props: {
   definitions: TrophyDefinition[]
   ranks: TrophyRank[]
   rankPeaks: TrophyRankPeak[]
-  ranksComputedTime: number | null
   previousBestNetWorth?: TrophyMilestone | null
   claimedIdsByTrophy: Map<string, Set<string>>
   rewarded: TrophyMilestoneRef[]
@@ -88,7 +87,6 @@ export function TrophyGrid(props: {
             progress={progress}
             rank={props.ranks.find((r) => r.trophyId === def.id)}
             peakTier={getPeakRankTier(props.rankPeaks, def.id)}
-            ranksComputedTime={props.ranksComputedTime}
             claimedIds={claimedIdsByTrophy.get(def.id) ?? EMPTY_SET}
             rewarded={rewarded}
             isOwnProfile={isOwnProfile}
@@ -111,7 +109,6 @@ export function TrophyCard(props: {
   definition: TrophyDefinition
   rank?: TrophyRank
   peakTier: TrophyRankTier | null
-  ranksComputedTime: number | null
   previousBestNetWorth?: TrophyMilestone | null
   progress: ComputedTrophyProgress
   claimedIds: Set<string>
@@ -128,7 +125,6 @@ export function TrophyCard(props: {
     definition,
     rank,
     peakTier,
-    ranksComputedTime,
     progress,
     claimedIds,
     rewarded,
@@ -237,7 +233,6 @@ export function TrophyCard(props: {
         tier={heldTier}
         rank={rank.rank}
         value={rank.value}
-        computedTime={ranksComputedTime}
       />
     ) : peakTier ? (
       <span className="text-ink-500 text-xs">
@@ -302,14 +297,12 @@ export function TrophyCard(props: {
           {viewing.name}
         </span>
 
-        <Tooltip text={definition.description}>
-          <span className="text-ink-500 text-center text-xs">
-            {definition.label}
-            {' · '}
-            {formatStat(definition, currentValue, accountCreatedTime)}
-            {best && ` · Best: ${best.name}`}
-          </span>
-        </Tooltip>
+        <span className="text-ink-500 text-center text-xs">
+          {definition.label}
+          {' · '}
+          {formatStat(definition, currentValue, accountCreatedTime)}
+          {best && ` · Best: ${best.name}`}
+        </span>
 
         {!isClaimed && <TrophyRewardChip amount={rewardAmount} />}
 
