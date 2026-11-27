@@ -8,7 +8,7 @@ import {
 import { isAdminId } from 'common/envs/constants'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Tables } from 'common/supabase/utils'
-import { camelCase, mapValues, sortBy } from 'lodash'
+import { camelCase, groupBy, mapValues, sortBy, uniq } from 'lodash'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { SupabaseDirectClient } from 'shared/supabase/init'
@@ -70,22 +70,29 @@ export const getContractsDirect = async (
   contractIds: string[],
   pg: SupabaseDirectClient
 ) => {
-  if (contractIds.length === 0) return [] as Contract[]
+  const ids = uniq(contractIds)
+  if (ids.length === 0) return [] as Contract[]
 
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts
             where id in ($1:list);
             select * from answers where contract_id in ($1:list);
             `,
-    [contractIds]
+    [ids]
   )
   const contracts = results[0].map(convertContract)
-  const answers = results[1].map(convertAnswer)
-  const multiContracts = contracts.filter((c) => isMultiCpmm(c))
-  for (const contract of multiContracts) {
-    // eslint-disable-next-line no-extra-semi
-    ;(contract as CPMMMultiContract).answers = sortBy(
-      answers.filter((a) => a.contractId === contract.id),
+  // Group the answers in one pass. Filtering every answer once per contract
+  // is O(contracts x answers), which froze an API worker for 12 minutes on
+  // 2026-11-21 when a request passed it a whole account's markets.
+  const answersByContract = groupBy(
+    results[1].map(convertAnswer),
+    (a) => a.contractId
+  )
+  for (const contract of contracts) {
+    if (!isMultiCpmm(contract)) continue
+    const multiContract = contract as CPMMMultiContract
+    multiContract.answers = sortBy(
+      answersByContract[contract.id] ?? [],
       (a) => a.index
     )
   }

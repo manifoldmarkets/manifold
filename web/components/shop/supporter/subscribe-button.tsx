@@ -9,7 +9,7 @@ import {
 import { UserEntitlement } from 'common/shop/types'
 import { Button } from 'web/components/buttons/button'
 import { TIER_ITEMS } from './tier-items'
-import { DAY_MS } from 'common/util/time'
+import { membershipChangeCredit } from 'common/membership-grants'
 
 export function SubscribeButton({
   tier,
@@ -20,7 +20,8 @@ export function SubscribeButton({
   onClick,
   onCancelClick,
   entitlements,
-  currentExpiresTime,
+  currentEntitlement,
+  lockMessage,
   isAutoRenewing = false,
 }: {
   tier: SupporterTier
@@ -31,7 +32,8 @@ export function SubscribeButton({
   onClick: () => void
   onCancelClick?: () => void
   entitlements?: UserEntitlement[]
-  currentExpiresTime?: number // expiration timestamp for accurate credit calculation
+  currentEntitlement: UserEntitlement | null
+  lockMessage?: string
   isAutoRenewing?: boolean
 }) {
   const tierConfig = SUPPORTER_TIERS[tier]
@@ -39,6 +41,17 @@ export function SubscribeButton({
   const isCurrentTier = currentTier === tier
   const canUpgrade = canUpgradeTo(currentTier, tier)
   const isDowngrade = !!currentTier && !canUpgrade && !isCurrentTier
+
+  if (lockMessage)
+    return (
+      <Button
+        color="gray-outline"
+        className="w-full whitespace-normal"
+        disabled
+      >
+        {lockMessage}
+      </Button>
+    )
 
   // If user is on their current tier and auto-renewing, show cancel button
   if (isCurrentTier && isAutoRenewing) {
@@ -86,16 +99,11 @@ export function SubscribeButton({
   }
 
   // Calculate credit for tier changes (matches backend logic - uses fractional days)
-  const msRemaining = currentExpiresTime
-    ? Math.max(0, currentExpiresTime - Date.now())
-    : 0
-  const fractionalDaysRemaining = msRemaining / DAY_MS
-  const tierChangeCredit =
-    currentTier && !isCurrentTier && fractionalDaysRemaining > 0
-      ? Math.floor(
-          fractionalDaysRemaining * (TIER_ITEMS[currentTier].price / 30)
-        )
-      : 0
+  const tierChangeCredit = membershipChangeCredit(
+    currentEntitlement,
+    item.id,
+    Date.now()
+  )
   const finalPrice = Math.max(0, item.price - tierChangeCredit)
   const canAfford = effectiveBalance >= finalPrice
 

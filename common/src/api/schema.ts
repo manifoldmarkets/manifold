@@ -1,3 +1,7 @@
+import type {
+  MembershipGrantResult,
+  MembershipGrantView,
+} from 'common/membership-grants'
 import {
   socialPostDraftSchema,
   socialPostEditSchema,
@@ -1506,6 +1510,19 @@ export const API = (_apiTypeCheck = {
       .object({
         apiSecret: z.string().min(1),
         quote: perpQuoteSchema,
+      })
+      .strict(),
+  },
+  // Scheduler -> API writer; must stay off the read-replica allowlist.
+  'internal-membership-broadcast': {
+    method: 'POST',
+    visibility: 'private',
+    authed: false,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        apiSecret: z.string().min(1),
+        userId: z.string().min(1),
       })
       .strict(),
   },
@@ -4748,6 +4765,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         itemId: z.string(),
+        expectedPrice: z.number().finite().nonnegative().optional(),
       })
       .strict(),
     returns: {} as {
@@ -4768,6 +4786,28 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean; entitlements: UserEntitlement[] },
+  },
+  'get-membership-grants': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ userId: z.string().optional() }).strict(),
+    returns: {} as MembershipGrantView & { userId: string },
+  },
+  'admin-grant-membership-days': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string().min(1),
+        tier: z.enum(['basic', 'plus', 'premium']),
+        days: z.number().int().min(1).max(90),
+        key: z.string().min(1).max(100),
+        note: z.string().trim().min(1),
+      })
+      .strict(),
+    returns: {} as MembershipGrantResult,
   },
   'shop-cancel-subscription': {
     method: 'POST',
@@ -4836,6 +4876,7 @@ export const API = (_apiTypeCheck = {
         itemId: z.string(),
         variantId: z.string(),
         shippingCost: z.number().int().min(0),
+        expectedTotal: z.number().finite().nonnegative().optional(),
         shipping: z.object({
           name: z.string().max(200),
           address1: z.string().max(200),
@@ -4992,6 +5033,7 @@ export const API = (_apiTypeCheck = {
         quantity: number
         revenue: number
       }[]
+      freeDayMembers: number
       subscribersByTier: {
         tier: 'basic' | 'plus' | 'premium'
         count: number
