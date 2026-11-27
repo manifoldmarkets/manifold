@@ -337,10 +337,7 @@ export function TrophiesTab(props: {
 
       <AchievementsSection data={achievements} />
 
-      <AboutTrophies
-        showRewards={isOwnProfile && !!starter && rewardMultiplier > 0}
-        ranksComputedTime={ranksComputedTime}
-      />
+      <AboutTrophies ranksComputedTime={ranksComputedTime} />
 
       {isAdmin && isOwnProfile && claimedTrophyIds.length > 0 && (
         <Col className="border-ink-200 mt-4 gap-2 rounded-lg border border-dashed p-3">
@@ -366,12 +363,10 @@ export function TrophiesTab(props: {
 
 const ABOUT_TROPHIES_ID = 'about-trophies'
 
-// The one place the page explains trophies, in general terms.
-function AboutTrophies(props: {
-  showRewards: boolean
-  ranksComputedTime: number | null
-}) {
-  const { showRewards, ranksComputedTime } = props
+// The one place the page explains trophies, in general terms. Copy is Tod's,
+// verbatim (11/28).
+function AboutTrophies(props: { ranksComputedTime: number | null }) {
+  const { ranksComputedTime } = props
   return (
     <Col
       id={ABOUT_TROPHIES_ID}
@@ -379,26 +374,22 @@ function AboutTrophies(props: {
     >
       <span className="text-ink-900 font-semibold">About trophies</span>
       <p>
-        Trophies track what you do on Manifold: trading, creating markets,
-        commenting, inviting friends and sticking around. Each one has tiers
-        that get harder to reach.
+        Trophies are awarded for your achievements on Manifold. Most trophies
+        are kept forever, but some may be lost due to changing tiers or
+        thresholds. The net worth trophy is an exception, and is lost as your
+        net worth falls.
       </p>
       <p>
-        When you reach a tier, claim it. Claimed tiers stay yours. Net Worth is
-        the exception: it shows where you stand now and keeps your best tier as
-        history.
-      </p>
-      {showRewards && <p>Some tiers pay mana the first time you claim them.</p>}
-      <p>
-        Pin your favourite trophies to your profile. More pin slots open up as
-        you claim more tiers.
+        Pin your favourite trophies to your profile. As you claim more tiers,
+        more pin slots become available. Some trophies have ranked tiers,
+        meaning those ranked in the top 25 will get a Super title, top 5 get a
+        Mega title, and #1 gets a crown.
       </p>
       <p>
-        On some trophies, everyone who reaches the top tier is ranked each
-        night: the top 25 get a Super title, the top 5 a Mega title, and #1 a
-        crown.
+        Calculations for ranks occur nightly
         {ranksComputedTime != null &&
-          ` Last updated ${new Date(ranksComputedTime).toLocaleString()}.`}
+          `, last updated ${new Date(ranksComputedTime).toLocaleString()}`}
+        .
       </p>
     </Col>
   )
