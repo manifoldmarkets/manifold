@@ -270,6 +270,7 @@ import { sportsMarkets } from './sports-markets'
 import { sportsSchedule } from './sports-schedule'
 import { sportsIndex } from './sports-index'
 import { sportsLeaderboards } from './sports-leaderboards'
+import { getEsportsTournaments } from './get-esports-tournaments'
 import { electionLeaderboards } from './election-leaderboards'
 import { adminSportsResolve } from './admin-sports-resolve'
 import { adminSportsCommunityMarket } from './admin-sports-community-market'
@@ -685,6 +686,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'sports-schedule': sportsSchedule,
   'sports-index': sportsIndex,
   'sports-leaderboards': sportsLeaderboards,
+  'get-esports-tournaments': getEsportsTournaments,
   'election-leaderboards': electionLeaderboards,
   'admin-sports-resolve': adminSportsResolve,
   'admin-sports-community-market': adminSportsCommunityMarket,
