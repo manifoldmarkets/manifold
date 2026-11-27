@@ -1,3 +1,5 @@
+import { groupBy } from 'lodash'
+
 import { BANNED_TRADING_USER_IDS } from 'common/envs/constants'
 import {
   MARKET_CREATED_MIN_TRADERS,
@@ -5,8 +7,17 @@ import {
   NET_WORTH_RANK_ACTIVE_DAYS,
   RANKED_TROPHY_DEFINITIONS,
   REFERRAL_MIN_TRADES,
+  getRankPrizeRewardId,
+  getRankPrizeTiers,
+  getRankTierPrize,
   getTopMilestone,
+  getTrophyRankTitle,
 } from 'common/trophies'
+import {
+  RANK_TIER_PRIZES,
+  isEmptyPrizeTotal,
+  totalPrizes,
+} from 'common/trophy-prizes'
 import { EPSILON } from 'common/util/math'
 import {
   createSupabaseDirectClient,
@@ -22,7 +33,13 @@ import {
   trophyLikedCommentsQuery,
 } from 'shared/supabase/trophy-eligibility'
 import { transactWithRetries } from 'shared/transact-with-retries'
+import {
+  getAccountPrizeStanding,
+  payTrophyPrizes,
+  settleTrophyMembershipPrizes,
+} from 'shared/trophy-prizes'
 import { log } from 'shared/utils'
+import { relayTrophyPrizeBroadcasts } from './settle-trophy-prizes'
 
 const valueQueries: Record<string, string> = {
   // Restrict the indexed bet and order lookups to Whale candidates.
@@ -123,6 +140,13 @@ export async function updateTrophyRanks() {
       log(
         `Raised ${updatedPeaks} net worth peaks from ${snapshot.peakCandidates.length} candidates`
       )
+      // The ranks are published. A prize that fails here is still owed, and
+      // tomorrow's run pays it: best ranks are kept, and a prize pays once.
+      try {
+        await payRankTitlePrizes()
+      } catch (error) {
+        log.error('Failed to pay trophy rank title prizes', { error })
+      }
     } finally {
       await session.one(
         "select pg_advisory_unlock(hashtext('update-trophy-ranks'))"
@@ -130,6 +154,113 @@ export async function updateTrophyRanks() {
     }
   })
   log(`Updated trophy ranks in ${Date.now() - started}ms`)
+}
+
+/**
+ * Pays RANK_TIER_PRIZES to every account whose best rank on a ranked trophy
+ * has reached Super or Mega and hasn't been paid for it: once per account,
+ * trophy and title, the first run after the best rank gets there. Mega also
+ * pays Super. Like a claim, each account is paid in its own transaction with
+ * its row locked, and what its standing leaves empty stays unpaid.
+ */
+export async function payRankTitlePrizes() {
+  const pg = createSupabaseDirectClient()
+  const params = {
+    rankedIds: RANKED_TROPHY_DEFINITIONS.map((def) => def.id),
+    maxRank: MAX_TROPHY_RANK,
+    bannedTradingIds: BANNED_TRADING_USER_IDS,
+  }
+  const peaks = await pg.manyOrNone<{
+    user_id: string
+    trophy_id: string
+    best_rank: number
+    paid_ids: string[]
+  }>(
+    `select peak.user_id, peak.trophy_id, peak.best_rank,
+       array(select r.milestone_id from user_trophy_rewards r
+         where r.user_id = peak.user_id and r.trophy_id = peak.trophy_id) as paid_ids
+     from user_trophy_rank_peaks peak
+     join users person on person.id = peak.user_id
+     where peak.trophy_id in ($[rankedIds:csv]) and peak.best_rank <= $[maxRank]
+       and ${TROPHY_PERSON_FILTER}
+       and not exists (select 1 from trophy_rank_exclusions e where e.user_id = peak.user_id)
+     order by peak.user_id, peak.trophy_id`,
+    params
+  )
+  const owed = peaks.flatMap(({ user_id, trophy_id, best_rank, paid_ids }) => {
+    const definition = RANKED_TROPHY_DEFINITIONS.find((d) => d.id === trophy_id)
+    const tiers = getRankPrizeTiers(best_rank).filter(
+      (tier) => !paid_ids.includes(getRankPrizeRewardId(tier))
+    )
+    return definition && tiers.length ? [{ user_id, definition, tiers }] : []
+  })
+
+  let accounts = 0
+  let prizes = 0
+  let failed = 0
+  for (const [userId, trophies] of Object.entries(groupBy(owed, 'user_id'))) {
+    try {
+      const paid = await pg.tx(async (tx) => {
+        // The same person rules as the ranks, checked again under the lock.
+        const person = await tx.oneOrNone<{ bonus_eligibility: string | null }>(
+          `select person.data->>'bonusEligibility' as bonus_eligibility
+           from users person
+           where person.id = $[userId] and ${TROPHY_PERSON_FILTER}
+           for no key update of person`,
+          { ...params, userId }
+        )
+        if (!person) return []
+        const { effectiveTier, standing } = await getAccountPrizeStanding(
+          tx,
+          userId,
+          person.bonus_eligibility
+        )
+        const paid: string[] = []
+        for (const { definition, tiers } of trophies) {
+          const due = tiers
+            .map((tier) => ({
+              rewardId: getRankPrizeRewardId(tier),
+              name: getTrophyRankTitle(definition, tier),
+              baseMana: totalPrizes([RANK_TIER_PRIZES[tier]]).mana,
+              prize: getRankTierPrize(tier, standing),
+            }))
+            .filter(({ prize }) => !isEmptyPrizeTotal(prize))
+          if (!due.length) continue
+          const result = await payTrophyPrizes(tx, {
+            userId,
+            trophyId: definition.id,
+            prizes: due,
+            effectiveTier,
+            multiplier: standing.manaMultiplier,
+            describe: (names) => `Trophy title prize: ${names.join(', ')}`,
+            // The scheduler has no browser sockets: see the relay below.
+            onUserUpdates: () => {},
+          })
+          paid.push(...result.paidRewardIds)
+        }
+        return paid
+      })
+      if (!paid.length) continue
+      accounts++
+      prizes += paid.length
+      // After commit, outside the transaction: grantMembershipDays opens its
+      // own. A part that fails stays pending for settle-trophy-prizes.
+      const { failed: pending } = await settleTrophyMembershipPrizes(pg, {
+        userId,
+      })
+      failed += pending
+      await relayTrophyPrizeBroadcasts([userId])
+    } catch (error) {
+      failed++
+      log.error('Failed to pay trophy rank title prizes to an account', {
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
+  log(
+    `Rank title prizes: paid ${prizes} to ${accounts} accounts, ${failed} failed`
+  )
 }
 
 // Read the portfolio once for both consumers. A null rank identifies a peak

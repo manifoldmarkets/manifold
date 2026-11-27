@@ -15,10 +15,18 @@ import {
   getTrophyRankTier,
   getTrophyRankTitle,
   TrophyClaim,
+  TrophyPrizeAccount,
   countClaimedMilestones,
-  getRewardManaTotal,
-  getTrophyClaimReward,
+  formatMembershipResult,
+  getMilestonePrizesFor,
+  getRankPrizeRewardId,
+  getRankPrizeTierFromRewardId,
+  getRankPrizeTiers,
+  getRankTierPrize,
+  getTrophyClaimPrize,
+  getTrophyPrizeStanding,
   getTrophyRewardMultiplier,
+  isRankPrizeRewardId,
   getTrophyDefinitionsFor,
   getTrophyDisplayStats,
   isStarterTrophy,
@@ -43,6 +51,15 @@ import {
   getTrophyStatValue,
   selectTrophyUnlockToasts,
 } from './trophies'
+import {
+  EMPTY_PRIZE_TOTAL,
+  RANK_TIER_PRIZES,
+  applyPrizeStanding,
+  getMilestonePrize,
+  isEmptyPrizeTotal,
+  totalPrizes,
+} from './trophy-prizes'
+import { EFFECTIVE_TIER_ORDER } from './supporter-config'
 
 const claim = (trophyId: string, milestoneId: string): TrophyClaim => ({
   trophyId,
@@ -57,6 +74,21 @@ describe('trophy definitions', () => {
     const ids = TROPHY_DEFINITIONS.map((d) => d.id)
     expect(new Set(ids).size).toBe(ids.length)
     for (const id of ids) expect(id).toMatch(/^[a-z0-9-]+$/)
+  })
+
+  // user_trophy_rewards keeps rank title prizes next to milestone prizes,
+  // under ids with a colon. A milestone id must never look like one.
+  it('have slug-shaped milestone ids that no rank prize id can match', () => {
+    for (const def of TROPHY_DEFINITIONS) {
+      for (const m of def.milestones) {
+        expect([def.id, m.id]).toEqual([
+          def.id,
+          expect.stringMatching(/^[a-z0-9-]+$/),
+        ])
+        expect(isRankPrizeRewardId(m.id)).toBe(false)
+        expect(getRankPrizeTierFromRewardId(m.id)).toBeNull()
+      }
+    }
   })
 
   it('have unique, slug-shaped milestone ids within each trophy', () => {
@@ -619,7 +651,7 @@ describe('getting started trophies', () => {
     expect(getTrophyRewardMultiplier(tier)).toBe(multiplier)
   })
 
-  it('pay a positive finite reward on every starter milestone and Newcomer', () => {
+  it('list every starter milestone and Newcomer for onboarding, each with a prize', () => {
     expect(starterDefs.length).toBeGreaterThan(0)
     for (const def of TROPHY_DEFINITIONS) {
       for (const m of def.milestones) {
@@ -633,10 +665,14 @@ describe('getting started trophies', () => {
           )
         ).toBe(onboarding)
         if (onboarding) {
-          expect(Number.isFinite(m.rewardMana)).toBe(true)
-          expect(m.rewardMana).toBeGreaterThan(0)
-        } else {
-          expect(m.rewardMana).toBeUndefined()
+          const prize = totalPrizes([
+            getMilestonePrize(def.id, m, { isStarterAccount: true }),
+          ])
+          expect([def.id, m.id, isEmptyPrizeTotal(prize)]).toEqual([
+            def.id,
+            m.id,
+            false,
+          ])
         }
       }
     }
@@ -663,39 +699,331 @@ describe('getting started trophies', () => {
     expect(getTrophyDefinitionsFor(true)).toEqual(TROPHY_DEFINITIONS)
   })
 
-  it('total rewards, skipping missing, negative and non-finite amounts', () => {
-    const base = starterDefs[0].milestones[0]
-    expect(
-      getRewardManaTotal([
-        { ...base, rewardMana: 50 },
-        { ...base, rewardMana: 100 },
-        { ...base, rewardMana: undefined },
-        { ...base, rewardMana: -10 },
-        { ...base, rewardMana: NaN },
-        { ...base, rewardMana: Infinity },
-      ])
-    ).toBe(150)
-  })
-
   it('claiming a higher starter milestone pays the lower ones too', () => {
     const trades = getTrophyDefinition('starter-trades')!
-    const toClaim = getMilestonesToClaim(trades, 'getting-going', 10)
-    expect(toClaim?.map((m) => m.id)).toEqual([
-      'first-trade',
-      'hat-trick',
-      'getting-going',
-    ])
-    expect(getRewardManaTotal(toClaim ?? [])).toBe(200)
+    const hatTrick = trades.milestones.find((m) => m.id === 'hat-trick')!
+    const account = (tier: 'free' | 'reduced'): TrophyPrizeAccount => ({
+      isStarterAccount: true,
+      standing: getTrophyPrizeStanding(tier),
+    })
     expect(
-      getTrophyClaimReward(
+      getMilestonesToClaim(trades, 'hat-trick', 3)?.map((m) => m.id)
+    ).toEqual(['first-trade', 'hat-trick'])
+    // M50 + M50.
+    expect(getTrophyClaimPrize(trades, hatTrick, [], account('free'))).toEqual({
+      mana: 100,
+      freezes: 0,
+      membership: [],
+    })
+    // First Trade is paid already; a bonus-blocked account gets 0.2x.
+    expect(
+      getTrophyClaimPrize(
         trades,
-        trades.milestones[2],
+        hatTrick,
         [claim(trades.id, 'first-trade')],
-        getTrophyRewardMultiplier('reduced')
+        account('reduced')
       )
-    ).toBe(30)
+    ).toEqual({ mana: 10, freezes: 0, membership: [] })
   })
 })
+
+describe('trophy claim prizes', () => {
+  const account = (
+    tier: (typeof EFFECTIVE_TIER_ORDER)[number],
+    isStarterAccount = false
+  ): TrophyPrizeAccount => ({
+    isStarterAccount,
+    standing: getTrophyPrizeStanding(tier),
+  })
+  const trades = getTrophyDefinition('total-trades')!
+  const milestone = (id: string) => trades.milestones.find((m) => m.id === id)!
+
+  it('pays the colour schedule for a claim and every unpaid lower milestone', () => {
+    // green and teal: a freeze each. blue: a freeze and a day of Plus.
+    // indigo: M50 and two days of Plus.
+    expect(
+      getTrophyClaimPrize(trades, milestone('enthusiast'), [], account('free'))
+    ).toEqual({
+      mana: 50,
+      freezes: 3,
+      membership: [
+        { tier: 'basic', days: 1 },
+        { tier: 'basic', days: 2 },
+      ],
+    })
+  })
+
+  it('pays each milestone once: paid ones are left out of a later claim', () => {
+    const rewarded = [
+      claim(trades.id, 'rookie'),
+      claim(trades.id, 'regular'),
+      // Another trophy's payment doesn't count.
+      claim('liked-comments', 'chatterbox'),
+    ]
+    expect(
+      getTrophyClaimPrize(
+        trades,
+        milestone('enthusiast'),
+        rewarded,
+        account('free')
+      )
+    ).toEqual({
+      mana: 50,
+      freezes: 1,
+      membership: [{ tier: 'basic', days: 2 }],
+    })
+    const all = trades.milestones.map((m) => claim(trades.id, m.id))
+    for (const m of trades.milestones) {
+      expect(getTrophyClaimPrize(trades, m, all, account('free'))).toEqual(
+        EMPTY_PRIZE_TOTAL
+      )
+    }
+  })
+
+  it('never pays for milestones above the one claimed', () => {
+    expect(
+      getTrophyClaimPrize(trades, milestone('rookie'), [], account('free'))
+    ).toEqual({ mana: 0, freezes: 1, membership: [] })
+  })
+
+  it('cuts the prize to the standing of the account', () => {
+    const top = getTopOf(trades)
+    const full = getTrophyClaimPrize(trades, top, [], account('free'))
+    expect(full.mana).toBe(50 + 100 + 150 + 250 + 350 + 500 + 1_000)
+    expect(full.freezes).toBe(3)
+    expect(full.membership).toHaveLength(8)
+    // Members get no more than everyone else.
+    for (const tier of ['basic', 'plus', 'premium'] as const) {
+      expect(getTrophyClaimPrize(trades, top, [], account(tier))).toEqual(full)
+    }
+    // Bonus-blocked: a fifth of the mana, the freezes, no membership days.
+    expect(getTrophyClaimPrize(trades, top, [], account('reduced'))).toEqual({
+      mana: full.mana / 5,
+      freezes: 3,
+      membership: [],
+    })
+    // Flagged: nothing.
+    expect(getTrophyClaimPrize(trades, top, [], account('restricted'))).toEqual(
+      EMPTY_PRIZE_TOTAL
+    )
+  })
+
+  it('leaves out milestones that would pay the account nothing, so they stay unpaid', () => {
+    // Every Prediction Streak milestone has a freeze, which a bonus-blocked
+    // account still gets.
+    const streak = getTrophyDefinition('prediction-streak')!
+    const ids = (tier: 'free' | 'reduced' | 'restricted') =>
+      getMilestonePrizesFor(streak, streak.milestones, account(tier)).map(
+        (p) => p.milestone.id
+      )
+    expect(ids('free')).toEqual(streak.milestones.map((m) => m.id))
+    expect(ids('reduced')).toEqual(streak.milestones.map((m) => m.id))
+    expect(ids('restricted')).toEqual([])
+    // In the Groove pays Pro days only.
+    const starter = getTrophyDefinition('starter-trades')!
+    const groove = starter.milestones.filter((m) => m.id === 'in-the-groove')
+    expect(groove).toHaveLength(1)
+    expect(
+      getMilestonePrizesFor(starter, groove, account('reduced', true))
+    ).toEqual([])
+    expect(
+      getMilestonePrizesFor(starter, groove, account('free', true))
+    ).toEqual([
+      {
+        milestone: groove[0],
+        base: { mana: 0, freezes: 0, membership: [{ tier: 'plus', days: 3 }] },
+        prize: { mana: 0, freezes: 0, membership: [{ tier: 'plus', days: 3 }] },
+      },
+    ])
+  })
+
+  it('pays Newcomer as mana to a new account and as a freeze to the rest', () => {
+    const age = getTrophyDefinition('account-age')!
+    const newcomer = age.milestones[0]
+    expect(newcomer.id).toBe('newcomer')
+    expect(
+      getTrophyClaimPrize(age, newcomer, [], account('free', true))
+    ).toEqual({ mana: 50, freezes: 0, membership: [] })
+    expect(
+      getTrophyClaimPrize(age, newcomer, [], account('free', false))
+    ).toEqual({ mana: 0, freezes: 1, membership: [] })
+  })
+
+  it('collects exactly the milestones a Net Worth claim records', () => {
+    const toClaim = getMilestonesToClaim(netWorth, 'goldfish', 10_000)!
+    expect(toClaim.map((m) => m.id)).toEqual([
+      'minnow',
+      'pufferfish',
+      'goldfish',
+    ])
+    const prize = getTrophyClaimPrize(
+      netWorth,
+      toClaim[toClaim.length - 1],
+      [],
+      account('free')
+    )
+    expect(
+      getMilestonePrizesFor(netWorth, toClaim, account('free')).map(
+        (p) => p.prize
+      )
+    ).toEqual([
+      { mana: 0, freezes: 1, membership: [] },
+      { mana: 0, freezes: 1, membership: [{ tier: 'basic', days: 1 }] },
+      { mana: 50, freezes: 0, membership: [{ tier: 'basic', days: 2 }] },
+    ])
+    expect(prize).toEqual({
+      mana: 50,
+      freezes: 2,
+      membership: [
+        { tier: 'basic', days: 1 },
+        { tier: 'basic', days: 2 },
+      ],
+    })
+  })
+
+  // The server pays milestone by milestone and the page shows the sum. Both
+  // must be the prize table's total, cut once for standing, with no mana
+  // lost or made by rounding.
+  it('adds up to the prize table for every trophy, account age and standing', () => {
+    for (const def of TROPHY_DEFINITIONS) {
+      for (const tier of EFFECTIVE_TIER_ORDER) {
+        for (const isStarterAccount of [true, false]) {
+          const acct = account(tier, isStarterAccount)
+          const expected = applyPrizeStanding(
+            totalPrizes(
+              def.milestones.map((m) =>
+                getMilestonePrize(def.id, m, { isStarterAccount })
+              )
+            ),
+            acct.standing
+          )
+          const prize = getTrophyClaimPrize(def, getTopOf(def), [], acct)
+          expect([def.id, tier, prize]).toEqual([def.id, tier, expected])
+          expect(Number.isFinite(prize.mana) && prize.mana >= 0).toBe(true)
+          expect(Number.isInteger(prize.freezes) && prize.freezes >= 0).toBe(
+            true
+          )
+          // Claiming rung by rung pays the same as claiming the top at once.
+          const paid: TrophyClaim[] = []
+          let mana = 0
+          let freezes = 0
+          let days = 0
+          for (const m of def.milestones) {
+            const step = getTrophyClaimPrize(def, m, paid, acct)
+            mana += step.mana
+            freezes += step.freezes
+            days += step.membership.reduce((sum, p) => sum + p.days, 0)
+            paid.push(
+              ...def.milestones
+                .filter((lower) => lower.threshold <= m.threshold)
+                .map((lower) => claim(def.id, lower.id))
+            )
+          }
+          expect(Math.round(mana * 100) / 100).toBe(expected.mana)
+          expect(freezes).toBe(expected.freezes)
+          expect(days).toBe(
+            expected.membership.reduce((sum, p) => sum + p.days, 0)
+          )
+        }
+      }
+    }
+  })
+})
+
+describe('rank title prizes', () => {
+  it('pays Super to the top 25 and Mega as well to the top 5', () => {
+    expect(getRankPrizeTiers(1)).toEqual(['mega', 'super'])
+    expect(getRankPrizeTiers(5)).toEqual(['mega', 'super'])
+    expect(getRankPrizeTiers(6)).toEqual(['super'])
+    expect(getRankPrizeTiers(25)).toEqual(['super'])
+    for (const rank of [26, 0, -1, 1.5, NaN, Infinity, null, undefined]) {
+      expect(getRankPrizeTiers(rank)).toEqual([])
+    }
+  })
+
+  it('keys each prize under an id no milestone can have', () => {
+    for (const tier of ['super', 'mega'] as const) {
+      const id = getRankPrizeRewardId(tier)
+      expect(id).toBe(`rank:${tier}`)
+      expect(id).not.toMatch(/^[a-z0-9-]+$/)
+      expect(isRankPrizeRewardId(id)).toBe(true)
+      expect(getRankPrizeTierFromRewardId(id)).toBe(tier)
+    }
+    expect(getRankPrizeTierFromRewardId('rank:crown')).toBeNull()
+  })
+
+  it('applies account standing', () => {
+    for (const tier of ['super', 'mega'] as const) {
+      const full = totalPrizes([RANK_TIER_PRIZES[tier]])
+      expect(isEmptyPrizeTotal(full)).toBe(false)
+      expect(getRankTierPrize(tier, getTrophyPrizeStanding('free'))).toEqual(
+        full
+      )
+      expect(
+        getRankTierPrize(tier, getTrophyPrizeStanding('restricted'))
+      ).toEqual(EMPTY_PRIZE_TOTAL)
+      expect(
+        getRankTierPrize(tier, getTrophyPrizeStanding('reduced')).membership
+      ).toEqual([])
+    }
+  })
+})
+
+describe('membership prize results', () => {
+  const part = { tier: 'basic' as const, days: 3, grantedDays: 3 }
+
+  it('say what became of the days in a few words', () => {
+    expect(formatMembershipResult({ ...part, outcome: 'started' })).toBe(
+      '3 days of Plus: started'
+    )
+    expect(formatMembershipResult({ ...part, outcome: 'banked' })).toBe(
+      '3 days of Plus: saved for later'
+    )
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 0, outcome: 'capped' })
+    ).toBe('3 days of Plus: 30-day limit reached')
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 0, outcome: 'pending' })
+    ).toBe('3 days of Plus: on its way')
+    expect(formatMembershipResult({ ...part, outcome: 'duplicate' })).toBe(
+      '3 days of Plus: already added'
+    )
+    expect(
+      formatMembershipResult({
+        tier: 'paid-tier',
+        days: 7,
+        grantedDays: 0,
+        outcome: 'skipped',
+      })
+    ).toBe('7 days of your membership: needs a paid membership')
+    expect(
+      formatMembershipResult({
+        tier: 'plus',
+        days: 1,
+        grantedDays: 1,
+        outcome: 'started',
+      })
+    ).toBe('1 day of Pro: started')
+  })
+
+  it('say when the holding cap cut a grant short, rounding down', () => {
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 1.96, outcome: 'started' })
+    ).toBe('3 days of Plus: started (1.9 days, 30-day limit)')
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 1, outcome: 'banked' })
+    ).toBe('3 days of Plus: saved for later (1 day, 30-day limit)')
+    expect(
+      formatMembershipResult({ ...part, grantedDays: 0.01, outcome: 'started' })
+    ).toBe('3 days of Plus: started (under 0.1 days, 30-day limit)')
+    expect(
+      formatMembershipResult({ ...part, grantedDays: NaN, outcome: 'started' })
+    ).toBe('3 days of Plus: started')
+  })
+})
+
+const getTopOf = (def: (typeof TROPHY_DEFINITIONS)[number]) =>
+  def.milestones[def.milestones.length - 1]
 
 describe('onboarding milestones', () => {
   const zero = { starterTrades: 0, starterMarkets: 0, starterDays: 0 }

@@ -36,9 +36,8 @@ export const getUserTrophies: APIHandler<'get-user-trophies'> = async ({
     // live count.
     const isStarterAccount = await getIsStarterTrophyAccount(tx, userId)
     const starter = isStarterAccount ? await getStarterStats(tx, userId) : null
-    const rewarded = isStarterAccount
-      ? await getRewardedMilestones(tx, userId)
-      : []
+    // Every account's milestones pay a prize once.
+    const rewarded = await getRewardedMilestones(tx, userId)
     const rankedIds = RANKED_TROPHY_DEFINITIONS.map((def) => def.id)
     const ranks = await tx.manyOrNone<TrophyRank>(
       `select trophy_id as "trophyId", rank, value from trophy_ranks

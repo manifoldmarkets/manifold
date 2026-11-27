@@ -8,16 +8,30 @@
 // the authority on what can be claimed (claim-trophy recomputes the stat); the
 // helpers here are shared so the web shows the same answer.
 //
-// Starter accounts can collect a one-time reward for Newcomer and each
-// "Getting started" milestone. All accounts can claim Newcomer.
+// Every milestone pays its prize once, to any account (see trophy-prizes.ts
+// for the amounts). The "Getting started" trophies are for new accounts only.
 
 import { minBy, sortBy } from 'lodash'
 import { ENV } from 'common/envs/constants'
 import {
   EffectiveTier,
   getEffectiveBonusMultiplier,
-  roundTierBonus,
 } from 'common/supporter-config'
+import { MAX_FREE_MEMBERSHIP_HELD_MS } from 'common/membership-grants'
+import {
+  PrizeStanding,
+  RANK_TIER_PRIZES,
+  TrophyMembershipPrize,
+  TrophyPrizeTotal,
+  addPrizeTotals,
+  applyPrizeStanding,
+  formatPrizeParts,
+  getMilestonePrize,
+  getPrizeStanding,
+  isEmptyPrizeTotal,
+  totalPrizes,
+} from 'common/trophy-prizes'
+import { DAY_MS } from 'common/util/time'
 
 // Best first.
 export const TROPHY_TIER_ORDER = [
@@ -36,15 +50,13 @@ export type TrophyTier = (typeof TROPHY_TIER_ORDER)[number]
 
 export type TrophyMilestone = {
   // Stored in user_trophy_milestones.milestone_id. Never change an id once
-  // shipped; rename `name` instead.
+  // shipped; rename `name` instead. Lower-case letters, digits and hyphens
+  // only: user_trophy_rewards keeps rank title prizes under ids with a colon.
   id: string
   name: string
   emoji: string
   threshold: number
   tier: TrophyTier
-  // One-time base reward before any reduction for account standing.
-  // Only onboarding milestones pay, and only to starter accounts.
-  rewardMana?: number
 }
 
 export type TrophyCategory =
@@ -89,7 +101,6 @@ export const STARTER_MIN_TRADE_AMOUNT = 10
 
 // Accounts created at or after this time get the "Getting started" trophies.
 // null switches them off: they are hidden, and claim-trophy refuses them.
-// The reward amounts below are placeholders until this is set for prod.
 const STARTER_TROPHIES_START_TIMES: Record<typeof ENV, number | null> = {
   PROD: null,
   DEV: Date.UTC(2026, 10, 1),
@@ -145,18 +156,15 @@ export type TrophyDefinition = {
   ranked?: boolean // nightly top-25 ranks with Super, Mega and #1 titles
 }
 
-// Compact milestone constructor so each milestone fits on one line.
+// Compact milestone constructor so each milestone fits on one line. Prizes
+// are not set here: see getMilestonePrize in trophy-prizes.ts.
 const m = (
   id: string,
   name: string,
   emoji: string,
   threshold: number,
-  tier: TrophyTier,
-  rewardMana?: number
-): TrophyMilestone =>
-  rewardMana === undefined
-    ? { id, name, emoji, threshold, tier }
-    : { id, name, emoji, threshold, tier, rewardMana }
+  tier: TrophyTier
+): TrophyMilestone => ({ id, name, emoji, threshold, tier })
 
 export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
   // --- Getting started (new accounts only; each milestone pays once) ---
@@ -164,42 +172,42 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     id: 'starter-trades',
     label: 'First Trades',
     description:
-      'Trades of M10 or more, counting each market once a day. Each milestone pays mana once',
+      'Trades of M10 or more, counting each market once a day. Each milestone pays a prize once',
     category: 'starter',
     statKey: 'starterTrades',
     unit: 'trades',
     milestones: [
-      m('first-trade', 'First Trade', '\u{1F423}', 1, 'green', 50),
-      m('hat-trick', 'Hat Trick', '\u{1F3A9}', 3, 'green', 50),
-      m('getting-going', 'Getting Going', '\u{1F6B2}', 10, 'blue', 100),
-      m('in-the-groove', 'In the Groove', '\u{1F3B6}', 25, 'purple', 150),
+      m('first-trade', 'First Trade', '\u{1F423}', 1, 'green'),
+      m('hat-trick', 'Hat Trick', '\u{1F3A9}', 3, 'green'),
+      m('getting-going', 'Getting Going', '\u{1F6B2}', 10, 'blue'),
+      m('in-the-groove', 'In the Groove', '\u{1F3B6}', 25, 'purple'),
     ],
   },
   {
     id: 'starter-markets',
     label: 'Markets Explored',
     description:
-      'Different markets you have traded M10 or more in on a day. Each milestone pays mana once',
+      'Different markets you have traded M10 or more in on a day. Each milestone pays a prize once',
     category: 'starter',
     statKey: 'starterMarkets',
     unit: 'markets',
     milestones: [
-      m('curious', 'Curious', '\u{1F9ED}', 3, 'green', 50),
-      m('explorer', 'Explorer', '\u{1F5FA}', 10, 'blue', 100),
+      m('curious', 'Curious', '\u{1F9ED}', 3, 'green'),
+      m('explorer', 'Explorer', '\u{1F5FA}', 10, 'blue'),
     ],
   },
   {
     id: 'starter-days',
     label: 'Days Active',
     description:
-      'Days you traded M10 or more in a market. Each milestone pays mana once',
+      'Days you traded M10 or more in a market. Each milestone pays a prize once',
     category: 'starter',
     statKey: 'starterDays',
     unit: 'days',
     milestones: [
-      m('back-again', 'Back Again', '\u{1F44B}', 2, 'green', 100),
-      m('three-days', 'Three Days', '\u{1F4C5}', 3, 'green', 100),
-      m('full-week', 'Full Week', '\u{1F5D3}', 7, 'blue', 150),
+      m('back-again', 'Back Again', '\u{1F44B}', 2, 'green'),
+      m('three-days', 'Three Days', '\u{1F4C5}', 3, 'green'),
+      m('full-week', 'Full Week', '\u{1F5D3}', 7, 'blue'),
     ],
   },
 
@@ -406,7 +414,7 @@ export const TROPHY_DEFINITIONS: TrophyDefinition[] = [
     statKey: 'accountAgeYears',
     unit: 'years',
     milestones: [
-      m('newcomer', 'Newcomer', '🌱', 0, 'green', 25),
+      m('newcomer', 'Newcomer', '🌱', 0, 'green'),
       m('settling-in', 'Settling In', '🌿', 1 / 12, 'teal'),
       m('committed', 'Committed', '🪴', 1 / 4, 'blue'),
       m('half-year', 'Half Year', '🌳', 1 / 2, 'indigo'),
@@ -570,8 +578,8 @@ export function getTrophyDefinitionsFor(
     : TROPHY_DEFINITIONS.filter((d) => !isStarterTrophy(d))
 }
 
-// One-time welcome rewards keep the quest reductions. Capping them at face
-// value lets future members claim now without missing out on mana.
+// Trophy mana keeps the quest reductions. Capping it at face value lets
+// future members claim now without missing out on mana.
 export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
   const multiplier = getEffectiveBonusMultiplier(tier, 'quest')
   return Number.isFinite(multiplier) && multiplier > 0
@@ -579,27 +587,176 @@ export function getTrophyRewardMultiplier(tier: EffectiveTier): number {
     : 0
 }
 
-/** Total base mana for the given milestones, before any standing reduction. */
-export function getRewardManaTotal(milestones: TrophyMilestone[]): number {
-  return milestones.reduce((sum, m) => {
-    const reward = m.rewardMana ?? 0
-    return Number.isFinite(reward) && reward > 0 ? sum + reward : sum
-  }, 0)
+// ---------------------------------------------------------------------------
+// Prizes
+// ---------------------------------------------------------------------------
+
+/** What this effective tier collects of a trophy prize. */
+export const getTrophyPrizeStanding = (tier: EffectiveTier): PrizeStanding =>
+  getPrizeStanding(tier, getTrophyRewardMultiplier(tier))
+
+// Who is collecting. Newcomer pays new accounts differently, and standing
+// reduces what flagged and bonus-blocked accounts get.
+export type TrophyPrizeAccount = {
+  isStarterAccount: boolean
+  standing: PrizeStanding
+}
+
+export type TrophyMilestonePrize = {
+  milestone: TrophyMilestone
+  // The milestone's prize, before any reduction for account standing.
+  base: TrophyPrizeTotal
+  // What this account collects of it.
+  prize: TrophyPrizeTotal
+}
+
+/**
+ * What this account collects from each of the given milestones. A milestone
+ * that would pay it nothing is left out: claim-trophy records no payment for
+ * it, so it can still pay later if the account's standing changes.
+ */
+export function getMilestonePrizesFor(
+  definition: TrophyDefinition,
+  milestones: TrophyMilestone[],
+  account: TrophyPrizeAccount
+): TrophyMilestonePrize[] {
+  return milestones
+    .map((milestone) => {
+      const base = totalPrizes([
+        getMilestonePrize(definition.id, milestone, {
+          isStarterAccount: account.isStarterAccount,
+        }),
+      ])
+      return {
+        milestone,
+        base,
+        prize: applyPrizeStanding(base, account.standing),
+      }
+    })
+    .filter(({ prize }) => !isEmptyPrizeTotal(prize))
 }
 
 /** What claiming this milestone would collect, including unpaid lower ones. */
-export function getTrophyClaimReward(
+export function getTrophyClaimPrize(
   definition: TrophyDefinition,
   milestone: TrophyMilestone,
   rewarded: TrophyMilestoneRef[],
-  multiplier: number
-) {
-  if (!Number.isFinite(multiplier) || multiplier <= 0) return 0
+  account: TrophyPrizeAccount
+): TrophyPrizeTotal {
   const paid = getClaimedMilestoneIds(rewarded, definition.id)
   const unpaid = definition.milestones.filter(
     (m) => m.threshold <= milestone.threshold && !paid.has(m.id)
   )
-  return roundTierBonus(getRewardManaTotal(unpaid) * multiplier)
+  return addPrizeTotals(
+    getMilestonePrizesFor(definition, unpaid, account).map((p) => p.prize)
+  )
+}
+
+// Rank titles with a prize, best first. The #1 crown is its own prize.
+export const RANK_PRIZE_TIERS = ['mega', 'super'] as const
+export type TrophyRankPrizeTier = (typeof RANK_PRIZE_TIERS)[number]
+
+// Rank title prizes share user_trophy_rewards with milestone prizes, under
+// these ids in milestone_id. The colon keeps them apart from milestone ids.
+const RANK_PRIZE_ID_PREFIX = 'rank:'
+export const getRankPrizeRewardId = (tier: TrophyRankPrizeTier) =>
+  `${RANK_PRIZE_ID_PREFIX}${tier}`
+export const getRankPrizeTierFromRewardId = (
+  rewardId: string
+): TrophyRankPrizeTier | null =>
+  RANK_PRIZE_TIERS.find((tier) => getRankPrizeRewardId(tier) === rewardId) ??
+  null
+export const isRankPrizeRewardId = (rewardId: string) =>
+  rewardId.startsWith(RANK_PRIZE_ID_PREFIX)
+
+/** The title prizes a best rank has earned: Mega (and #1) also earn Super. */
+export function getRankPrizeTiers(
+  bestRank: number | null | undefined
+): TrophyRankPrizeTier[] {
+  if (bestRank == null || !Number.isInteger(bestRank) || bestRank < 1) return []
+  return RANK_PRIZE_TIERS.filter((tier) => {
+    const maxRank = TROPHY_RANK_TIERS.find((t) => t.tier === tier)?.maxRank
+    return maxRank !== undefined && bestRank <= maxRank
+  })
+}
+
+/** What this standing collects for first reaching a rank title. */
+export const getRankTierPrize = (
+  tier: TrophyRankPrizeTier,
+  standing: PrizeStanding
+): TrophyPrizeTotal =>
+  applyPrizeStanding(totalPrizes([RANK_TIER_PRIZES[tier]]), standing)
+
+// How the membership days of a paid prize ended up.
+// - started: running now. banked: saved, they start later.
+// - capped: the account already holds the most free days allowed.
+// - duplicate: granted by an earlier attempt that has since run out.
+// - pending: not granted yet; the claim and the scheduler retry it.
+// - skipped: the prize is days of your paid tier and there is none.
+export type TrophyMembershipOutcome =
+  | 'started'
+  | 'banked'
+  | 'capped'
+  | 'duplicate'
+  | 'pending'
+  | 'skipped'
+
+export type TrophyMembershipResult = {
+  tier: TrophyMembershipPrize['tier']
+  days: number
+  // Fewer than `days` when the holding cap cut the grant short.
+  grantedDays: number
+  outcome: TrophyMembershipOutcome
+}
+
+/** What a claim paid, as claim-trophy returns it. */
+export type TrophyClaimPrize = {
+  mana: number
+  freezes: number
+  membership: TrophyMembershipResult[]
+}
+
+export const EMPTY_CLAIM_PRIZE: TrophyClaimPrize = {
+  mana: 0,
+  freezes: 0,
+  membership: [],
+}
+
+export const isEmptyClaimPrize = (prize: TrophyClaimPrize) =>
+  !(prize.mana > 0) && !(prize.freezes > 0) && prize.membership.length === 0
+
+const MEMBERSHIP_CAP_DAYS = MAX_FREE_MEMBERSHIP_HELD_MS / DAY_MS
+const MEMBERSHIP_OUTCOME_TEXT: Record<TrophyMembershipOutcome, string> = {
+  started: 'started',
+  banked: 'saved for later',
+  capped: `${MEMBERSHIP_CAP_DAYS}-day limit reached`,
+  duplicate: 'already added',
+  pending: 'on its way',
+  skipped: 'needs a paid membership',
+}
+
+/** One short line per membership part, e.g. "3 days of Plus: started". */
+export function formatMembershipResult(result: TrophyMembershipResult) {
+  const { tier, days, grantedDays, outcome } = result
+  const [label] = formatPrizeParts({
+    mana: 0,
+    freezes: 0,
+    membership: [{ tier, days }],
+  })
+  const text = MEMBERSHIP_OUTCOME_TEXT[outcome]
+  const cut =
+    (outcome === 'started' || outcome === 'banked') &&
+    Number.isFinite(grantedDays) &&
+    grantedDays > 0 &&
+    grantedDays < days
+  if (!cut) return `${label}: ${text}`
+  // Rounded down, so a cut grant never reads as the full prize.
+  const granted = Math.floor(grantedDays * 10) / 10
+  const amount =
+    granted < 0.1
+      ? 'under 0.1 days'
+      : `${granted} ${granted === 1 ? 'day' : 'days'}`
+  return `${label}: ${text} (${amount}, ${MEMBERSHIP_CAP_DAYS}-day limit)`
 }
 
 export function getTrophyDefinition(

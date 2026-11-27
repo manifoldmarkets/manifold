@@ -58,6 +58,7 @@ import { scoreContracts } from './score-contracts'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { sendPrizeEndingSoonNotifications } from './send-prize-ending-soon-notifications'
 import { sendStreakExpirationNotification } from './streak-expiration-notice'
+import { settleTrophyPrizes } from './settle-trophy-prizes'
 import { unbanUsers } from './unban-users'
 import { updateLeague } from './update-league'
 import { updateTrophyRanks } from './update-trophy-ranks'
@@ -308,6 +309,11 @@ export function createJobs(jobSet: SchedulerJobSet) {
       'process-membership-grants',
       '0 */2 * * * *',
       processMembershipGrants
+    ),
+    createJob(
+      'settle-trophy-prizes',
+      '30 */2 * * * *', // every 2 minutes, between membership grant runs
+      settleTrophyPrizes
     ),
     createJob(
       'process-membership-renewals',

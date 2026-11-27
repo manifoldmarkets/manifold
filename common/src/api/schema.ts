@@ -60,6 +60,7 @@ import {
   MAX_SHOWCASE_PINS,
   type StarterStats,
   type TrophyClaim,
+  type TrophyClaimPrize,
   type TrophyMilestoneRef,
   type TrophyRank,
   type TrophyRankPeak,
@@ -3342,8 +3343,7 @@ export const API = (_apiTypeCheck = {
       // Counts for the "Getting started" trophies, or null for accounts that
       // don't get them (see isStarterTrophyAccount).
       starter: StarterStats | null
-      // Milestones whose reward has been paid, for accounts that get the
-      // starter trophies.
+      // Milestones whose prize has been paid. A milestone pays once.
       rewarded: TrophyMilestoneRef[]
     },
     props: z
@@ -3366,7 +3366,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  // Claims a reached milestone and every lower one, paying any reward once.
+  // Claims a reached milestone and every lower one, paying each prize once.
   'claim-trophy': {
     method: 'POST',
     visibility: 'undocumented',
@@ -3374,8 +3374,12 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       newlyClaimed: TrophyClaim[]
       claims: TrophyClaim[]
-      // Mana paid for the newly claimed milestones, after the tier multiplier.
+      // Mana this claim paid, after the account's multiplier. Same as
+      // prize.mana; kept for clients from before prizes.
       rewardAmount: number
+      // Everything this claim paid: mana, streak freezes and free membership
+      // days, with what became of each membership grant.
+      prize: TrophyClaimPrize
       rewarded: TrophyMilestoneRef[]
     },
     props: z

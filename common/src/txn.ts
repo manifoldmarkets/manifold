@@ -590,8 +590,8 @@ type PushNotificationBonus = {
   token: 'M$'
 }
 
-// Paid once per onboarding milestone. The user_trophy_rewards rows record
-// the transaction ID, including for Newcomer.
+// The mana of trophy prizes, paid once per milestone or rank title. The
+// user_trophy_rewards rows record the transaction ID and what else each paid.
 type TrophyReward = {
   category: 'TROPHY_REWARD'
   fromType: 'BANK'
@@ -599,12 +599,20 @@ type TrophyReward = {
   token: 'M$'
   data: {
     trophyId: string
+    // The prizes whose mana this pays: milestone ids, or rank title prize ids
+    // such as 'rank:super'.
     milestoneIds: string[]
-    // Sum of the milestones' rewardMana, before the multiplier.
+    // Sum of those prizes' mana, before the multiplier.
     baseAmount: number
     effectiveTier: string
-    // Applied at claim time. New trophy payouts cap this at 1 for every tier.
+    // Applied at claim time. Trophy payouts cap this at 1 for every tier.
     multiplier: number
+    // Paid in the same transaction, to the same account (since trophy
+    // prizes, 28 Nov 2026): streak freezes added, and free membership days
+    // marked for granting. tier is null when the prize was days of a paid
+    // membership the account didn't have.
+    freezes?: number
+    membership?: { milestoneId: string; tier: string | null; days: number }[]
   }
 }
 

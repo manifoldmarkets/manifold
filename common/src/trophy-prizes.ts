@@ -185,6 +185,23 @@ export function totalPrizes(prizes: TrophyPrize[]): TrophyPrizeTotal {
 export const isEmptyPrizeTotal = (t: TrophyPrizeTotal) =>
   !(t.mana > 0) && !(t.freezes > 0) && t.membership.length === 0
 
+/** Adds totals, e.g. one per milestone of a claim. Mana rounds to 0.01. */
+export function addPrizeTotals(totals: TrophyPrizeTotal[]): TrophyPrizeTotal {
+  const mana =
+    Math.round(
+      totals.reduce((sum, t) => sum + (isPositive(t.mana) ? t.mana : 0), 0) *
+        100
+    ) / 100
+  return {
+    mana,
+    freezes: totals.reduce(
+      (sum, t) => sum + (isPositive(t.freezes) ? Math.floor(t.freezes) : 0),
+      0
+    ),
+    membership: totals.flatMap((t) => t.membership),
+  }
+}
+
 // What an account's standing lets it collect. Mana keeps the quest
 // multiplier capped at 1 (flagged 0, bonus-blocked 0.2). Defaults for Tod to
 // confirm: flagged accounts get no freezes or membership; bonus-blocked

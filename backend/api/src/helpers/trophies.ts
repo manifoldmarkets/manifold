@@ -4,6 +4,7 @@ import {
   StarterStats,
   TrophyClaim,
   TrophyMilestoneRef,
+  isRankPrizeRewardId,
   isStarterTrophyAccount,
 } from 'common/trophies'
 import { SupabaseDirectClient, SupabaseTransaction } from 'shared/supabase/init'
@@ -58,7 +59,8 @@ export async function getShowcasePins(
   return row ? row.pins : null
 }
 
-// Paid onboarding milestones, including Newcomer in the Account Age trophy.
+// Milestones whose prize has been paid. The table also holds rank title
+// prizes, which aren't milestones.
 export async function getRewardedMilestones(
   pg: Pg,
   userId: string
@@ -67,13 +69,12 @@ export async function getRewardedMilestones(
     `select trophy_id, milestone_id from user_trophy_rewards where user_id = $1`,
     [userId]
   )
-  return rows.map((r) => ({
-    trophyId: r.trophy_id,
-    milestoneId: r.milestone_id,
-  }))
+  return rows
+    .filter((r) => !isRankPrizeRewardId(r.milestone_id))
+    .map((r) => ({ trophyId: r.trophy_id, milestoneId: r.milestone_id }))
 }
 
-// Whether the account gets onboarding rewards, or null if there is no such user.
+// Whether the account gets the starter trophies, or null if there is no such user.
 export async function getIsStarterTrophyAccount(
   pg: Pg,
   userId: string

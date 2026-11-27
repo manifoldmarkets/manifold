@@ -10,6 +10,7 @@ import {
   NO_MANA_TROPHY_IDS,
   RANK_TIER_PRIZES,
   TrophyPrize,
+  addPrizeTotals,
   applyPrizeStanding,
   formatPrizeParts,
   getMilestonePrize,
@@ -165,6 +166,25 @@ describe('trophy prizes', () => {
       membership: [
         { tier: 'basic', days: 2 },
         { tier: 'basic', days: 1 },
+      ],
+    })
+  })
+
+  it('adds totals, rounding mana to 0.01 and ignoring bad amounts', () => {
+    expect(addPrizeTotals([])).toEqual({ mana: 0, freezes: 0, membership: [] })
+    expect(
+      addPrizeTotals([
+        { mana: 0.1, freezes: 1, membership: [{ tier: 'basic', days: 2 }] },
+        { mana: 0.2, freezes: 2, membership: [] },
+        { mana: Number.NaN, freezes: -3, membership: [] },
+        { mana: 10, freezes: 0, membership: [{ tier: 'plus', days: 1 }] },
+      ])
+    ).toEqual({
+      mana: 10.3,
+      freezes: 3,
+      membership: [
+        { tier: 'basic', days: 2 },
+        { tier: 'plus', days: 1 },
       ],
     })
   })
