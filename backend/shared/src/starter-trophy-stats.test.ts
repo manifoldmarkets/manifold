@@ -35,8 +35,9 @@ const parsers = {
   1700: parseFloat,
 }
 
-const rows = async (sql: string, params?: unknown) =>
-  (await db.query(pgp.as.format(sql, params))).rows as any[]
+type Row = Record<string, unknown>
+const rows = async <T extends Row = Row>(sql: string, params?: unknown) =>
+  (await db.query<T>(pgp.as.format(sql, params))).rows
 
 // The parts of pg-promise the code under test uses.
 const client = {
@@ -151,7 +152,7 @@ const bet = (
   userId: string,
   contractId: string,
   amount: number,
-  day: number,
+  day: number | Date,
   extra: { isRedemption?: boolean; isApi?: boolean; data?: object } = {}
 ) =>
   rows(
@@ -163,7 +164,7 @@ const bet = (
       userId,
       contractId,
       amount,
-      at(day),
+      typeof day === 'number' ? at(day) : day,
       extra.isRedemption ?? false,
       extra.isApi ?? null,
       extra.data ?? {},
@@ -238,11 +239,32 @@ describe('starter bet stats', () => {
     await bet('u', 'm2', -40, 2, { isRedemption: true })
     await bet('u', 'm2', -40, 2, { isApi: true })
     await bet('u', 'cash1', -40, 2) // not a mana market
+    // The sell legs redeem-shares writes when it redeems a full set.
+    await bet('u', 'm2', -20, 3, { data: { isAutoRedemption: true } })
+    await bet('u', 'm2', -20, 3, { data: { isAutoRedemption: true } })
     await expectStats('u', {
       starterTrades: 1,
       starterMarkets: 1,
       starterDays: 1,
       starterSells: 2,
+    })
+  })
+
+  it('groups bets by the Pacific day, not the UTC day', async () => {
+    await addUser('u')
+    // 3 pm and 5 pm Pacific, either side of midnight UTC: one day, twice.
+    await bet('u', 'm1', 6, new Date('2026-12-01T23:00:00Z'))
+    await bet('u', 'm1', 6, new Date('2026-12-02T01:00:00Z'))
+    await bet('u', 'm2', 6, new Date('2026-12-05T23:00:00Z'))
+    await bet('u', 'm2', 6, new Date('2026-12-06T01:00:00Z'))
+    // 11 pm and 1 am Pacific on one UTC day: two days, M6 on each.
+    await market('m3')
+    await bet('u', 'm3', 6, new Date('2026-12-03T07:00:00Z'))
+    await bet('u', 'm3', 6, new Date('2026-12-03T09:00:00Z'))
+    await expectStats('u', {
+      starterTrades: 2,
+      starterMarkets: 2,
+      starterDays: 2,
     })
   })
 
@@ -260,6 +282,7 @@ describe('starter bet stats', () => {
     })
     await bet('u', 'm1', 0, 0, order(10)) // resting, nothing filled yet
     await bet('u', 'm1', 0, 0, order(9.99)) // too small
+    await bet('u', 'm1', 0, 0, order(9.9999995)) // an order amount is exact
     // A slippage-protected buy: a silent limit order that expires at once.
     await bet('u', 'm1', 50, 1, order(50, { silent: true }))
     await bet('u', 'm2', 20, 1, { data: { orderAmount: 20 } }) // a market buy
@@ -333,6 +356,42 @@ describe('starter bet stats', () => {
     })
   })
 
+  it('does not spend the bet limit on automatic redemptions', async () => {
+    await addUser('u')
+    await rows(
+      `insert into contract_bets
+        (bet_id, user_id, contract_id, amount, created_time, is_redemption, data)
+       select 'auto-' || n, 'u', 'm1', -1,
+         $1::timestamptz + n * interval '1 second', false,
+         '{"isAutoRedemption": true}'
+       from generate_series(1, $2) n`,
+      [at(0), STARTER_STATS_BET_LIMIT]
+    )
+    await bet('u', 'm2', 100, 1)
+    await expectStats('u', {
+      starterTrades: 1,
+      starterMarkets: 1,
+      starterDays: 1,
+    })
+  })
+
+  it.each([
+    ['API bets', 'm1', true],
+    ['bets in another currency', 'cash1', null],
+  ] as const)('spends the bet limit on %s', async (_, contractId, isApi) => {
+    await addUser('u')
+    await rows(
+      `insert into contract_bets
+        (bet_id, user_id, contract_id, amount, created_time, is_redemption, is_api)
+       select 'other-' || n, 'u', $3, 100,
+         $1::timestamptz + n * interval '1 second', false, $4
+       from generate_series(1, $2) n`,
+      [at(0), STARTER_STATS_BET_LIMIT, contractId, isApi]
+    )
+    await bet('u', 'm2', 100, 1)
+    await expectStats('u', {})
+  })
+
   it('stops reading at the row limit', async () => {
     await addUser('u')
     await rows(
@@ -377,11 +436,17 @@ describe('starter account stats', () => {
     await metric('u', 'dust', 1e-9)
     await market('nan', { resolution: 'YES' })
     await metric('u', 'nan', 'NaN')
-    await market('no-creator', { resolution: 'MKT' })
+    // An answer id that is empty, not missing, is still an answer row.
+    await market('blank-answer', { resolution: 'YES' })
+    await metric('u', 'blank-answer', 30, '')
+    // With no creator on record, nothing shows the account didn't create it.
+    await market('no-creator', { resolution: 'YES' })
     await rows(`update contracts set creator_id = null where id = 'no-creator'`)
+    await metric('u', 'no-creator', 30)
     await expectStats('u', { starterWins: 1 })
 
-    await metric('u', 'no-creator', 0.01)
+    await market('w2', { resolution: 'MKT' })
+    await metric('u', 'w2', 0.01)
     await expectStats('u', { starterWins: 2 })
     for (const id of ['w3', 'w4', 'w5']) {
       await market(id, { resolution: 'NO' })
@@ -483,13 +548,14 @@ describe('starter account stats', () => {
 
 describe('streak freezes used', () => {
   const user = async (id: string) =>
-    (await rows(`select data from users where id = $1`, [id]))[0].data
+    (await rows<{ data: Row }>(`select data from users where id = $1`, [id]))[0]
+      .data
   const addStreakUser = (id: string, data: object, lastBetDaysAgo: number) =>
     addUser(id, {
       data: { ...data, lastBetTime: Date.now() - lastBetDaysAgo * DAY },
     })
 
-  it('counts each night a freeze saves the streak', async () => {
+  it('counts each freeze the nightly job uses to save the streak', async () => {
     await addStreakUser(
       'saved',
       { currentBettingStreak: 5, streakForgiveness: 2 },
@@ -528,7 +594,9 @@ describe('streak freezes used', () => {
       expect.anything()
     )
 
-    // The second night uses the last freeze; the third ends the streak.
+    // The job has no memory of a night: run again with the last bet still
+    // more than a day old, it uses the last freeze, and after that the streak
+    // ends.
     await resetBettingStreaksInternal()
     expect(await user('saved')).toMatchObject({
       currentBettingStreak: 5,

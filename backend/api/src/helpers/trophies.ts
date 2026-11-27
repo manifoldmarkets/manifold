@@ -95,11 +95,13 @@ export async function getIsStarterTrophyAccount(
 // for an account with a long history: each bet is a heap read, and 5,000 cold
 // reads took 6 s on prod (22 Nov 2026).
 //
-// The limit counts bets and orders, not rows. One purchase in a market whose
-// answers sum to one writes a row per answer (the arbitrage legs, saved as
-// redemptions), so a row limit ran out after 10 to 20 trades in a 30-answer
-// market. The highest thresholds are 50 markets, 25 trades and 10 days: 500
-// bets leave room for 10 per market, or 50 a day.
+// The limit counts the bets and orders the account placed, not rows. One
+// purchase in a market whose answers sum to one writes a row per answer (the
+// arbitrage legs, saved as redemptions), so a row limit ran out after 10 to 20
+// trades in a 30-answer market. The highest thresholds are 50 markets, 25
+// trades and 10 days: 500 bets leave room for 10 per market, or 50 a day.
+// API bets and bets in other currencies are placed bets too: they use up the
+// limit without counting.
 export const STARTER_STATS_BET_LIMIT = 500
 // Rows read to find those bets, redemptions included. The rows of one purchase
 // are written together and mostly share a heap page, so this costs far less
@@ -117,10 +119,11 @@ type StarterBetStatsRow = {
 // From the account's first bets (see STARTER_STAT_KEYS), not via the API and
 // in mana markets. A market-day counts as a trade when its buys add up to M10
 // or more, and as a sale when its sells do. A purchase split across answers
-// adds up; redemptions don't count. A limit order counts as a trade on the
-// day it was placed, once its fills reach M10, and as a limit order when the
-// order itself is M10 or more. Bets after the limits don't count, so every
-// number is at most the true one.
+// adds up; redemptions don't count, nor do the sell legs that redeem a full
+// set automatically (isAutoRedemption, as for the Trades Placed count). A
+// limit order counts as a trade on the day it was placed, once its fills
+// reach M10, and as a limit order when the order itself is M10 or more. Bets
+// after the limits don't count, so every number is at most the true one.
 const STARTER_BET_STATS_QUERY = `
   with first_rows as (
     select b.bet_id, b.contract_id, b.amount, b.created_time, b.is_redemption,
@@ -134,6 +137,7 @@ const STARTER_BET_STATS_QUERY = `
     select r.contract_id, r.amount, r.created_time, r.is_api, r.data
     from first_rows r
     where not coalesce(r.is_redemption, false)
+      and (r.data->>'isAutoRedemption') is distinct from 'true'
     order by r.created_time, r.bet_id
     limit $[betLimit]
   ),
@@ -160,8 +164,9 @@ const STARTER_BET_STATS_QUERY = `
     from mana_bets
     group by 1, 2
   )
-  -- Amounts are floats: legs of a split M10 purchase can sum to
-  -- 9.99999999999999.
+  -- Amounts are floats: legs of a split M10 purchase or sale can sum to
+  -- 9.99999999999999. An order amount is what the trader typed, so it is
+  -- compared exactly.
   select
     (count(*) filter (where bought >= $[minAmount] - 1e-6))::int as trades,
     (count(distinct contract_id) filter (where bought >= $[minAmount] - 1e-6))::int as markets,
@@ -169,7 +174,7 @@ const STARTER_BET_STATS_QUERY = `
     (count(*) filter (where sold >= $[minAmount] - 1e-6))::int as sells,
     (
       select count(*) from mana_bets
-      where is_limit_order and order_amount >= $[minAmount] - 1e-6
+      where is_limit_order and order_amount >= $[minAmount]
     )::int as limit_orders
   from market_days`
 
@@ -184,9 +189,10 @@ type StarterAccountStatsRow = {
 
 // From the account. Each count stops at its top milestone (the limits), and
 // every part reads only this user's rows through an index:
-// - wins: unique_user_contract_answer (user_id first), then contracts_pkey.
-//   The same rule as resolvedProfitableMarkets in get-user-achievements, less
-//   the account's own markets.
+// - wins: unique_user_contract_answer (the user's summary rows), then
+//   contracts_pkey. The same rule as resolvedProfitableMarkets in
+//   get-user-achievements, less the account's own markets (and any market
+//   with no creator on record).
 // - topics: group_members_member_id_idx
 // - push_enabled: private_users_pkey; the bonus older accounts were paid
 //   (txns_category_to_id) counts too, since a sign-out removes the token
@@ -203,12 +209,15 @@ const STARTER_ACCOUNT_STATS_QUERY = `
         from user_contract_metrics ucm
         join contracts c on c.id = ucm.contract_id
         where ucm.user_id = $[userId]
+          -- The coalesce is the index's own expression, so the index skips
+          -- the per-answer rows of multiple choice markets.
+          and coalesce(ucm.answer_id, '') = ''
           and ucm.answer_id is null
           and ucm.profit > $[epsilon] and ucm.profit < 'Infinity'::numeric
           and c.token = 'MANA'
           and c.resolution is not null and c.resolution <> 'CANCEL'
           and not coalesce(c.deleted, false)
-          and c.creator_id is distinct from $[userId]
+          and c.creator_id <> $[userId]
         limit $[maxWins]
       ) won
     )::int as wins,

@@ -40,6 +40,7 @@ jest.mock('common/trophies', () => {
 import { getStarterStats } from 'api/helpers/trophies'
 import { setPushToken } from 'api/push-token'
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
+import { PrivateUser, User } from 'common/user'
 import { createPushNotificationBonusNotification } from 'shared/create-notification'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
@@ -48,8 +49,9 @@ import { getPrivateUser, getUser } from 'shared/utils'
 const pgp = pgPromise()
 let db: PGlite
 
-const rows = async (sql: string, params?: unknown) =>
-  (await db.query(pgp.as.format(sql, params))).rows as any[]
+type Row = Record<string, unknown>
+const rows = async <T extends Row = Row>(sql: string, params?: unknown) =>
+  (await db.query<T>(pgp.as.format(sql, params))).rows
 
 // The parts of pg-promise the handler uses.
 const client = {
@@ -120,19 +122,25 @@ beforeAll(async () => {
       client as unknown as ReturnType<typeof createSupabaseDirectClient>
     )
   jest.mocked(getUser).mockImplementation(async (userId: string) => {
-    const [row] = await rows(`select * from users where id = $1`, [userId])
-    return row
-      ? {
-          ...row.data,
-          id: row.id,
-          createdTime: new Date(row.created_time).valueOf(),
-        }
-      : null
+    const [row] = await rows<{
+      id: string
+      created_time: Date | string
+      data: Partial<User>
+    }>(`select * from users where id = $1`, [userId])
+    if (!row) return null
+    // The handler reads the id, the signup time and the bonus standing.
+    const user: Partial<User> = {
+      ...row.data,
+      id: row.id,
+      createdTime: new Date(row.created_time).valueOf(),
+    }
+    return user as User
   })
   jest.mocked(getPrivateUser).mockImplementation(async (userId: string) => {
-    const [row] = await rows(`select * from private_users where id = $1`, [
-      userId,
-    ])
+    const [row] = await rows<{ data: PrivateUser }>(
+      `select * from private_users where id = $1`,
+      [userId]
+    )
     return row ? row.data : null
   })
   // The real one moves the mana; here it only records the txn.
@@ -140,7 +148,7 @@ beforeAll(async () => {
     _tx: unknown,
     txn: { category: string; toId: string; amount: number }
   ) => {
-    const [row] = await rows(
+    const [row] = await rows<{ id: string }>(
       `insert into txns (category, from_id, to_id, amount)
        values ($1, 'BANK', $2, $3) returning id`,
       [txn.category, txn.toId, txn.amount]

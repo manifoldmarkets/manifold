@@ -75,8 +75,9 @@ export const CATEGORY_ORDER: TrophyCategory[] = [
 // Stats of the "Getting started" trophies, counted live by get-user-trophies
 // (see getStarterStats in backend/api).
 //
-// From the account's first bets, not via the API and in mana markets. The
-// unit is a market-day: a market and Pacific day.
+// From the account's first bets, not via the API and in mana markets.
+// Redemptions are not bets, automatic ones included. The unit is a
+// market-day: a market and Pacific day.
 // - starterTrades: market-days whose buys add up to M10 or more, so buying
 //   and selling the same market again the same day does not count again
 // - starterMarkets: distinct markets among them

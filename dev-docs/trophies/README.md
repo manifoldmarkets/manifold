@@ -83,7 +83,7 @@ The Getting Started trophies are for new accounts only. `getStarterStats` counts
 | Bring a Friend   | Bring a Friend 1                                                            | People who signed up with the account's referral. The person rules for likers and qualifying referrals apply |
 | Member           | Member 1                                                                    | A `MEMBERSHIP_PAYMENT` from the account. Free membership days pay nothing, so they don't count               |
 
-The bet stats (trades, markets, days, sales and limit orders) read the account's first 500 bets and orders, not via the API and in mana markets. Arbitrage legs and redemptions don't use up the 500, but the read stops after 3,000 rows in all. Activity after either limit doesn't count, so a first sale or limit order placed later earns nothing. The other counts stop at their top milestone: Wins shows at most 3.
+The bet stats (trades, markets, days, sales and limit orders) read the account's first 500 bets and orders. Only those placed in mana markets and not via the API count, but API bets and bets in other currencies still use up the 500. Arbitrage legs, redemptions and automatic full-set redemptions (`isAutoRedemption`) don't use it up and never count, but the read stops after 3,000 rows in all. Activity after either limit doesn't count, so a first sale or limit order placed later earns nothing, and the Next trophy card can keep asking for one. The other counts stop at their top milestone: Wins shows at most 3.
 
 Accounts with these trophies no longer get the M1,000 push notification bonus from `set-push-token`. Stay in the Loop replaces it. Other accounts still do.
 
