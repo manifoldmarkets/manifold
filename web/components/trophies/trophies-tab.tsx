@@ -394,8 +394,9 @@ function AboutTrophies(props: {
         you claim more tiers.
       </p>
       <p>
-        Some trophies also rank everyone each night: the top 25 get a Super
-        title, the top 5 a Mega title, and #1 a crown.
+        On some trophies, everyone who reaches the top tier is ranked each
+        night: the top 25 get a Super title, the top 5 a Mega title, and #1 a
+        crown.
         {ranksComputedTime != null &&
           ` Last updated ${new Date(ranksComputedTime).toLocaleString()}.`}
       </p>
